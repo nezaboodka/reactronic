@@ -1,0 +1,16 @@
+.git
+.vscode
+.editorconfig
+img
+src
+tests
+dist/tests
+node_modules
+.nyc_output
+.nycrc
+coverage
+ava.config.js
+package-lock.json
+tsconfig.json
+tslint.json
+yarn.lock

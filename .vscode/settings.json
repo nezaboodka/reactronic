@@ -1,0 +1,12 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "files.exclude": {
+    "node_modules/": true,
+    "dist/": true,
+    ".nyc_output": true,
+    "coverage": true
+  },
+  "typescript.tsdk": "node_modules\\typescript\\lib"
+}

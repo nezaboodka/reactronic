@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    // General
+    "pretty": true,
+    "watch": false,
+    "listFiles": true,
+    "inlineSources": false,
+    "removeComments": true,
+    // Targets & outputs
+    "target": "es5",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["es5", "es2016", "dom"],
+    "noEmit": false,
+    "noLib": false,
+    "baseUrl": "src",
+    // "rootDir": "src",
+    "outDir": "dist",
+    "declarationDir": "dist",
+    "declaration": true,
+    // Debugging
+    "sourceMap": true,
+    "inlineSourceMap": false,
+    // Strictness
+    "strict": true,
+    "alwaysStrict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    // Other
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "jsx": "react",
+  },
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

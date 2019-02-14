@@ -1,0 +1,25 @@
+image: node:latest
+
+stages:
+  - Test
+  - Publish
+
+test:
+  stage: Test
+  script:
+    - npm install
+    - npm run test
+    - npm run build
+  except:
+    - /^ci\/publish$/
+
+publish:
+  stage: Publish
+  script:
+    - npm install
+    - npm run test
+    - npm run build
+    - echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
+    - npm publish
+  only:
+    - /^ci\/publish$/

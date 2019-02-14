@@ -1,0 +1,45 @@
+{
+  "name": "reactronic",
+  "version": "0.8.0",
+  "description": "Reactronic - Transactionally Reactive State Management",
+  "main": "dist/src/z.index.js",
+  "types": "dist/src/z.index.d.ts",
+  "files": [
+    "dist/src/**/*.*",
+    "src/**/*.*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nezaboodka/reactronic.git"
+  },
+  "keywords": [
+    "nezaboodka",
+    "reactronic",
+    "state management",
+    "rendering",
+    "consistent",
+    "reactive",
+    "transactional",
+    "asynchronous"
+  ],
+  "author": "Yury Chetyrko <ychetyrko@gmail.com> (https://github.com/ychetyrko)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Nezaboodka/reactronic/issues"
+  },
+  "homepage": "https://github.com/Nezaboodka/reactronic",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "10.12.18",
+    "ava": "1.1.0",
+    "ts-node": "7.0.1",
+    "tslint": "5.12.1",
+    "typescript": "3.3.1"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "ava",
+    "pub": "tsc && yarn publish",
+    "cover": "nyc ava"
+  }
+}
