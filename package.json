@@ -27,7 +27,7 @@
   "bugs": {
     "url": "https://github.com/Nezaboodka/reactronic/issues"
   },
-  "homepage": "https://github.com/Nezaboodka/reactronic",
+  "homepage": "https://github.com/Nezaboodka/reactronic/blob/master/README.md#readme",
   "dependencies": {},
   "devDependencies": {
     "@types/node": "10.12.18",
