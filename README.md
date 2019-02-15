@@ -9,15 +9,15 @@ Reactronic is a JavaScript library that provides
 state management for a Web application.
 
 Transactional reactivity means that state changes are made atomically
-and then are automatically and **consistently propagated** to corresponding
-UI rendering components in a fine-grained way.
+and then are **consistently propagated** to corresponding visual
+components in an automatic and fine-grained way.
 
 ## Conceptual Model
 
 Transactional reactivity is based on the three fundamental concepts:
 
-  - **State** - a set of objects storing data of an application;
-  - **Transaction** - a function changing state objects in atomic way;
+  - **State** - a set of objects that store data of an application;
+  - **Transaction** - a function that changes state objects in an atomic way;
   - **Cache** - a computed value having associated function that is automatically called to renew the cache in response to state changes.
 
 The following picture illustrates relationships between the concepts
@@ -29,7 +29,7 @@ Below is the detailed description of each concept.
 
 ### State
 
-State is a set of objects storing data of an application.
+State is a set of objects that store data of an application.
 All state objects are transparently hooked to track access to
 their properties, both on reads and writes.
 
@@ -48,9 +48,9 @@ are hooked.
 
 ### Transaction
 
-Transaction is a function changing state objects in atomic way.
-Every transaction function is instrumented with hooks to
-provide atomicity by transparent context switching and isolation.
+Transaction is a function that changes state objects in an atomic way.
+Every transaction function is instrumented with hooks to provide
+transparent atomicity (by implicit context switching and isolation).
 
 ``` typescript
 @state
@@ -177,6 +177,10 @@ invocation of the caching function to renew the cache:
 which it is attached to. A single indicator object can be shared
 between multiple transaction and cache functions, thus maintaining
 consolidated busy/idle status for all of them.
+
+## Installation
+
+NPM: `npm install reactronic`
 
 ## Notes
 
