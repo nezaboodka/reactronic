@@ -5,12 +5,12 @@ workflows:
   test-publish:
     jobs:
       - test
-      - publist:
+      - publish:
           requires:
             - test
           filters:
             branches:
-              only: /^ci\/publish/
+              only: /^publish/
 
 defaults: &defaults
   working_directory: ~/repo
