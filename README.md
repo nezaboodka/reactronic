@@ -10,8 +10,9 @@ Reactronic is a JavaScript library that provides
 state management for a Web application.
 
 Transactional reactivity means that state changes are made atomically
-and then are **consistently propagated** to corresponding visual
-components in an automatic and fine-grained way.
+in an isolated data snapshot and then are **consistently propagated** to
+corresponding visual components for rendering. And all that automatically,
+transparently, and in a fine-grained way.
 
 ## Conceptual Model
 
