@@ -9,15 +9,15 @@ Reactronic is a JavaScript library that provides
 state management for a Web application.
 
 Transactional reactivity means that state changes are made atomically
-and then are automatically and **consistently propagated** to corresponding
-UI rendering components in a fine-grained way.
+and then are **consistently propagated** to corresponding visual
+components in an automatic and fine-grained way.
 
 ## Conceptual Model
 
 Transactional reactivity is based on the three fundamental concepts:
 
-  - **State** - a set of objects storing data of an application;
-  - **Transaction** - a function changing state objects in atomic way;
+  - **State** - a set of objects that store data of an application;
+  - **Transaction** - a function that changes state objects in an atomic way;
   - **Cache** - a computed value having associated function that is automatically called to renew the cache in response to state changes.
 
 The following picture illustrates relationships between the concepts
@@ -29,7 +29,7 @@ Below is the detailed description of each concept.
 
 ### State
 
-State is a set of objects storing data of an application.
+State is a set of objects that store data of an application.
 All state objects are transparently hooked to track access to
 their properties, both on reads and writes.
 
@@ -48,9 +48,9 @@ are hooked.
 
 ### Transaction
 
-Transaction is a function changing state objects in atomic way.
-Every transaction function is instrumented with hooks to
-provide atomicity by transparent context switching and isolation.
+Transaction is a function that changes state objects in an atomic way.
+Every transaction function is instrumented with hooks to provide
+transparent atomicity (by implicit context switching and isolation).
 
 ``` typescript
 @state
@@ -154,29 +154,33 @@ There are multiple options to fine tune transactional reactivity.
 **Latency** option defines a delay between cache invalidation and
 invocation of the caching function to renew the cache:
 
-  - *(ms)* - delay in milliseconds;
-  - *Renew.Immediately* - renew immediately with zero latency;
-  - *Renew.OnDemand* - renew on access if cache has been invalidated;
-  - *Renew.Manually* - manual renew (explicit only);
-  - *Renew.DoNotCache* - renew on every call of the function.
+  - `(ms)` - delay in milliseconds;
+  - `Renew.Immediately` - renew immediately with zero latency;
+  - `Renew.OnDemand` - renew on access if cache has been invalidated;
+  - `Renew.Manually` - manual renew (explicit only);
+  - `Renew.DoNotCache` - renew on every call of the function.
 
 **Isolation** option defines if a transaction is independent from the parent one:
 
-  - *Isolation.Default* - transaction prolongs parent one, but reaction (renewing of affected caches) is started as a separate transaction;
-  - *Isolation.ProlongParentTransaction* - both transaction and reaction prolong parent transaction;
-  - *Isolation.StartSeparateTransaction* - always executed as a separate self-sufficient transaction.
+  - `Isolation.Default` - transaction prolongs parent one, but reaction (renewing of affected caches) is started as a separate transaction;
+  - `Isolation.ProlongParentTransaction` - both transaction and reaction prolong parent transaction;
+  - `Isolation.StartSeparateTransaction` - always executed as a separate self-sufficient transaction.
 
 **AsyncCalls** option defines how to handle multiple async calls of the same function:
 
-  - *AsyncCalls.Single* - fail if there is an existing concurrent call;
-  - *AsyncCalls.Reused* - reuse the result of the existing concurrent call (if any);
-  - *AsyncCalls.Relayed* - cancel and supresede the existing concurrent call;
-  - *AsyncCalls.Multiple* - multiple simultaneous calls are allowed.
+  - `AsyncCalls.Single` - fail if there is an existing concurrent call;
+  - `AsyncCalls.Reused` - reuse the result of the existing concurrent call (if any);
+  - `AsyncCalls.Relayed` - cancel and supresede the existing concurrent call;
+  - `AsyncCalls.Multiple` - multiple simultaneous calls are allowed.
 
 **Indicator** option is an object holding the status of running functions,
 which it is attached to. A single indicator object can be shared
 between multiple transaction and cache functions, thus maintaining
 consolidated busy/idle status for all of them.
+
+## Installation
+
+NPM: `npm install reactronic`
 
 ## Notes
 
