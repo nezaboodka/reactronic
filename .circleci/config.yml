@@ -1,8 +1,6 @@
 version: 2
 jobs:
 
-# BUILD
-
   build:
     docker:
       - image: circleci/node:latest
@@ -29,8 +27,6 @@ jobs:
           key: v1-dependencies-{{ checksum "package.json" }}
 
       - run: yarn test
-
-# PUBLISH
 
   publish:
     docker:
