@@ -8,7 +8,7 @@ workflows:
           filters:
             branches:
               ignore: /^publish/
-      - publish:
+      - publish
           filters:
             branches:
               only: /^publish/
