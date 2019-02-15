@@ -32,7 +32,7 @@ export class ConfigImpl implements Config {
   static default = new ConfigImpl(undef, {
     body: undef,
     mode: Mode.Stateless,
-    latency: Renew.DoNotCache,
+    latency: Renew.DoesNotCache,
     isolation: Isolation.Default,
     asyncCalls: AsyncCalls.Single,
     indicator: null }, {});

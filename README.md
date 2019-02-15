@@ -158,7 +158,7 @@ invocation of the caching function to renew the cache:
   - `Renew.Immediately` - renew immediately with zero latency;
   - `Renew.OnDemand` - renew on access if cache has been invalidated;
   - `Renew.Manually` - manual renew (explicit only);
-  - `Renew.DoNotCache` - renew on every call of the function.
+  - `Renew.DoesNotCache` - renew on every call of the function.
 
 **Isolation** option defines if a transaction is independent from the parent one:
 
@@ -234,7 +234,7 @@ enum Renew {
   Immediately = 0,
   OnDemand = -1, // default for cache
   Manually = -2,
-  DoNotCache = -3, // default for transaction
+  DoesNotCache = -3, // default for transaction
 }
 
 enum Isolation {
