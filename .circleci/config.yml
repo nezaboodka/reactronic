@@ -4,11 +4,11 @@ workflows:
   version: 2
   test-publish:
     jobs:
-      - test
+      - test:
           filters:
             branches:
               ignore: /^publish/
-      - publish
+      - publish:
           filters:
             branches:
               only: /^publish/
