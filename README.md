@@ -1,5 +1,7 @@
 ﻿
 # **Reactronic** - Transactionally Reactive State Management
+[![GitHub license](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/Nezaboodka/reactronic/blob/master/LICENSE)
+[![npm version](https://img.shields.io/npm/v/reactronic.svg?style=flat)](https://www.npmjs.com/package/reactronic)
 
 Reactronic is a JavaScript library that provides
 [transactionally reactive](https://blog.nezaboodka.com/post/2019/593-modern-database-should-natively-support-transactionally-reactive-programming)
