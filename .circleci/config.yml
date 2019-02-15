@@ -1,62 +1,51 @@
 version: 2
+
+workflows:
+  version: 2
+  test-publish:
+    jobs:
+      - test:
+          filters:
+            branches:
+              ignore: /^publish/
+      - publish:
+          filters:
+            branches:
+              only: /^publish/
+
+defaults: &defaults
+  working_directory: ~/repo
+  docker:
+    - image: circleci/node:latest
+
 jobs:
-
-# BUILD
-
-  build:
-    docker:
-      - image: circleci/node:latest
-
-    working_directory: ~/repo
-
-    branches:
-      only:
-        - master
-
+  test:
+    <<: *defaults  
     steps:
       - checkout
-
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            - v1-dependencies-
-
+          - v1-dependencies-{{ checksum "package.json" }}
+          - v1-dependencies-
       - run: yarn install
-
-      - save_cache:
-          paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
-
       - run: yarn test
-
-# PUBLISH
-
-  publish:
-    docker:
-      - image: circleci/node:latest
-
-    working_directory: ~/repo
-
-    branches:
-      only:
-        - ci/publish
-
-    steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            - v1-dependencies-
-
-      - run: yarn install
-
       - save_cache:
           paths:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
-
+  publish:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}
+          - v1-dependencies-
+      - run: yarn install
       - run: yarn test
       - run: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > ~/repo/.npmrc
       - run: npm publish
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
