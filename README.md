@@ -154,24 +154,24 @@ There are multiple options to fine tune transactional reactivity.
 **Latency** option defines a delay between cache invalidation and
 invocation of the caching function to renew the cache:
 
-  - *(ms)* - delay in milliseconds;
-  - *Renew.Immediately* - renew immediately with zero latency;
-  - *Renew.OnDemand* - renew on access if cache has been invalidated;
-  - *Renew.Manually* - manual renew (explicit only);
-  - *Renew.DoNotCache* - renew on every call of the function.
+  - `(ms)` - delay in milliseconds;
+  - `Renew.Immediately` - renew immediately with zero latency;
+  - `Renew.OnDemand` - renew on access if cache has been invalidated;
+  - `Renew.Manually` - manual renew (explicit only);
+  - `Renew.DoNotCache` - renew on every call of the function.
 
 **Isolation** option defines if a transaction is independent from the parent one:
 
-  - *Isolation.Default* - transaction prolongs parent one, but reaction (renewing of affected caches) is started as a separate transaction;
-  - *Isolation.ProlongParentTransaction* - both transaction and reaction prolong parent transaction;
-  - *Isolation.StartSeparateTransaction* - always executed as a separate self-sufficient transaction.
+  - `Isolation.Default` - transaction prolongs parent one, but reaction (renewing of affected caches) is started as a separate transaction;
+  - `Isolation.ProlongParentTransaction` - both transaction and reaction prolong parent transaction;
+  - `Isolation.StartSeparateTransaction` - always executed as a separate self-sufficient transaction.
 
 **AsyncCalls** option defines how to handle multiple async calls of the same function:
 
-  - *AsyncCalls.Single* - fail if there is an existing concurrent call;
-  - *AsyncCalls.Reused* - reuse the result of the existing concurrent call (if any);
-  - *AsyncCalls.Relayed* - cancel and supresede the existing concurrent call;
-  - *AsyncCalls.Multiple* - multiple simultaneous calls are allowed.
+  - `AsyncCalls.Single` - fail if there is an existing concurrent call;
+  - `AsyncCalls.Reused` - reuse the result of the existing concurrent call (if any);
+  - `AsyncCalls.Relayed` - cancel and supresede the existing concurrent call;
+  - `AsyncCalls.Multiple` - multiple simultaneous calls are allowed.
 
 **Indicator** option is an object holding the status of running functions,
 which it is attached to. A single indicator object can be shared
