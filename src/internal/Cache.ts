@@ -117,7 +117,7 @@ class Cache implements ICache {
 
   ensureUpToDate(now: boolean, ...args: any[]): void {
     if (now || this.config.latency === Renew.Immediately) {
-      if ((this.config.latency === Renew.DoNotCache || this.invalidator) && !this.error) {
+      if ((this.config.latency === Renew.DoesNotCache || this.invalidator) && !this.error) {
         let proxy: any = this.owner.proxy;
         let result: any = Reflect.get(proxy, this.member, proxy)(...args);
         if (result instanceof Promise)
@@ -251,7 +251,7 @@ class Cache implements ICache {
       let cr = impl.obtain(false, false);
       let c: Cache = cr.cache;
       let r: Record = cr.record;
-      if (c.invalidator || c.config.latency === Renew.DoNotCache) {
+      if (c.invalidator || c.config.latency === Renew.DoesNotCache) {
         if (c.updater.active) {
           if (c.config.asyncCalls === AsyncCalls.Reused) {
             if (Log.verbosity >= 2) Log.print("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is taken from pool`);
@@ -351,7 +351,7 @@ class Cache implements ICache {
     let result: boolean;
     if (oldValue instanceof Cache) {
       if (newValue instanceof Cache)
-        result = !(oldValue.config.latency === Renew.DoNotCache || oldValue.returned === newValue.returned);
+        result = !(oldValue.config.latency === Renew.DoesNotCache || oldValue.returned === newValue.returned);
       else if (newValue instanceof Function) /* istanbul ignore next */
         result = oldValue.config.body !== newValue;
       else
