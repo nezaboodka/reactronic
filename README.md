@@ -182,10 +182,6 @@ which it is attached to. A single indicator object can be shared
 between multiple transaction and cache functions, thus maintaining
 consolidated busy/idle status for all of them.
 
-## Installation
-
-NPM: `npm install reactronic`
-
 ## Notes
 
 Inspired by: MobX, Nezaboodka, Excel.
@@ -203,6 +199,10 @@ To-Do list:
   - Conflict resolition API
   - Patches API
   - Sync API and implementation
+
+## Installation
+
+NPM: `npm install reactronic`
 
 ## API (TypeScript)
 
