@@ -1,18 +1,20 @@
 ﻿
-# **Reactronic** - Transactionally Reactive State Management
 [![NPM Version](https://img.shields.io/npm/v/reactronic.svg?style=flat&colorB=4cc61e)](https://www.npmjs.com/package/reactronic)
 [![Package Size](https://img.shields.io/bundlephobia/minzip/reactronic.svg?colorB=4cc61e)](https://bundlephobia.com/result?p=reactronic)
 [![GitHub License](https://img.shields.io/badge/license-MIT-4cc61e.svg?style=flat)](https://github.com/nezaboodka/reactronic/blob/master/LICENSE)
 [![CircleCI Status](https://circleci.com/gh/nezaboodka/reactronic.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/nezaboodka/reactronic)
 
+# **Reactronic** - Transactionally Reactive State Management
+
 Reactronic is a JavaScript library that provides
 [transactionally reactive](https://blog.nezaboodka.com/post/2019/593-modern-database-should-natively-support-transactionally-reactive-programming)
 state management for a Web application.
 
-Transactional reactivity means that state changes are made atomically
-in an isolated data snapshot and then are **consistently propagated** to
-corresponding visual components for rendering. And all that automatically,
-transparently, and in a fine-grained way.
+Transactional reactivity means that state changes are being made
+in an isolated data snapshot and then, once atomically committed,
+are **consistently propagated** to corresponding visual components
+for rendering. And all that automatically, transparently, and
+in a fine-grained way.
 
 ## Conceptual Model
 
