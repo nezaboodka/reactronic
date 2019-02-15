@@ -37,7 +37,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "pack": "tsc --sourceMap=false",
+    "dist": "tsc --sourceMap false",
     "test": "ava",
     "cover": "nyc ava"
   }

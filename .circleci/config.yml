@@ -42,8 +42,8 @@ jobs:
           - v1-dependencies-{{ checksum "package.json" }}
           - v1-dependencies-
       - run: yarn install
-      - run: yarn test
-      - run: yarn pack
+      - run: yarn run test
+      - run: yarn run dist
       - run: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > ~/repo/.npmrc
       - run: npm publish
       - save_cache:
