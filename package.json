@@ -1,13 +1,11 @@
 {
   "name": "reactronic",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "Reactronic - Transactionally Reactive State Management",
   "main": "dist/src/z.index.js",
-  "module": "dist/src/z.index.js",
   "types": "dist/src/z.index.d.ts",
   "files": [
-    "dist/src/**/*.*",
-    "src/**/*.*"
+    "dist/src/**/*.*"
   ],
   "repository": {
     "type": "git",
@@ -39,8 +37,8 @@
   },
   "scripts": {
     "build": "tsc",
+    "pack": "tsc --sourceMap=false",
     "test": "ava",
-    "pub": "tsc && yarn publish",
     "cover": "nyc ava"
   }
 }
