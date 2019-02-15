@@ -5,9 +5,10 @@ workflows:
   test-publish:
     jobs:
       - test
+          filters:
+            branches:
+              ignore: /^publish/
       - publish:
-          requires:
-            - test
           filters:
             branches:
               only: /^publish/
@@ -35,7 +36,16 @@ jobs:
   publish:
     <<: *defaults
     steps:
-      - attach_workspace:
-          at: ~/repo
+      - checkout
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}
+          - v1-dependencies-
+      - run: yarn install
+      - run: yarn test
       - run: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > ~/repo/.npmrc
       - run: npm publish
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
