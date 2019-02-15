@@ -1,7 +1,7 @@
 ﻿
 # **Reactronic** - Transactionally Reactive State Management
-[![GitHub license](https://img.shields.io/badge/license-MIT-4cc61e.svg?style=flat&colorA=102E46)](https://github.com/Nezaboodka/reactronic/blob/master/LICENSE)
-[![npm version](https://img.shields.io/npm/v/reactronic.svg?style=flat&colorA=102E46&colorB=4cc61e)](https://www.npmjs.com/package/reactronic)
+[![GitHub license](https://img.shields.io/badge/license-MIT-4cc61e.svg?style=flat)](https://github.com/Nezaboodka/reactronic/blob/master/LICENSE)
+[![npm version](https://img.shields.io/npm/v/reactronic.svg?style=flat&colorB=4cc61e)](https://www.npmjs.com/package/reactronic)
 [![CircleCI Status](https://circleci.com/gh/Nezaboodka/reactronic.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/Nezaboodka/reactronic)
 
 Reactronic is a JavaScript library that provides
