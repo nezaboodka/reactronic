@@ -1,5 +1,17 @@
 version: 2
 
+workflows:
+  version: 2
+  test-publish:
+    jobs:
+      - test
+      - publist:
+          requires:
+            - test
+          filters:
+            branches:
+              only: /^ci\/publish/
+
 defaults: &defaults
   working_directory: ~/repo
   docker:
@@ -27,15 +39,3 @@ jobs:
           at: ~/repo
       - run: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > ~/repo/.npmrc
       - run: npm publish
-
-workflows:
-  version: 2
-  test-publish:
-    jobs:
-      - test
-      - publist:
-          requires:
-            - test
-          filters:
-            branches:
-              only: /^ci\/publish/
