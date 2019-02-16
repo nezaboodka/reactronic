@@ -1,7 +1,7 @@
 import { Utils, undef } from "./Utils";
 import { ArrayHooks } from "./Hooks";
 
-export const RT_DISMISSED: unique symbol = Symbol("RT:DISMISSED");
+export const RT_UNMOUNTED: unique symbol = Symbol("RT:UNMOUNTED");
 
 // Record
 

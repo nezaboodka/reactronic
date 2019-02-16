@@ -1,6 +1,6 @@
 import { Utils, undef } from "./Utils";
 import { Log } from "./Log";
-import { Record, ISnapshot, ICache, RT_DISMISSED } from "./Record";
+import { Record, ISnapshot, ICache, RT_UNMOUNTED } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 
 // Snapshot
@@ -120,7 +120,7 @@ export class Snapshot implements ISnapshot {
     let counter: number = -1;
     if (head.snapshot.timestamp > ours.snapshot.timestamp) {
       counter++;
-      let theirsDismissed: boolean = head.edits.has(RT_DISMISSED);
+      let theirsUnmounted: boolean = head.edits.has(RT_UNMOUNTED);
       let merged = Utils.copyAllProps(head.data, {}); // create merged copy
       ours.edits.forEach((prop: PropertyKey) => {
         counter++;
@@ -134,7 +134,7 @@ export class Snapshot implements ISnapshot {
               ours.conflicts.set(prop, theirs);
             break;
           }
-          else if (prop === RT_DISMISSED || theirsDismissed) {
+          else if (prop === RT_UNMOUNTED || theirsUnmounted) {
             if (Log.verbosity >= 2) Log.print("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "!=" ${Hint.record(theirs, false)}.${prop.toString()}.`);
             ours.conflicts.set(prop, theirs);
             break;
