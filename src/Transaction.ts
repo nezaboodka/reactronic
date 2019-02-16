@@ -158,7 +158,7 @@ export class Transaction {
 
   private performCommit(): void {
     this.snapshot.checkin();
-    Snapshot.applyNewDependencies(this.snapshot.changeset, this.reaction.effect);
+    Snapshot.applyDependencies(this.snapshot.changeset, this.reaction.effect);
     this.snapshot.archive();
     if (this.resultPromise)
       this.resultResolve();
