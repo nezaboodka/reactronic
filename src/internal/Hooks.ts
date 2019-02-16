@@ -1,6 +1,6 @@
 import { Utils, undef } from "./Utils";
 import { ArrayEx, Binding } from "./ArrayEx";
-import { Record, F } from "./Record";
+import { Record, F, RT_UNMOUNTED } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
 import { Config, Mode, Latency, Renew, AsyncCalls, Isolation } from "../Config";
@@ -186,6 +186,7 @@ function acquireHandle(obj: any): Handle {
     Snapshot.active().checkout(); // TODO: find better place?
     h = createHandle(obj, obj);
     Utils.set(obj, RT_HANDLE, h);
+    Hooks.decorateField({mode: Mode.Stateful}, obj, RT_UNMOUNTED);
   }
   return h;
 }
