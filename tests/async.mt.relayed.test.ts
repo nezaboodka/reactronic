@@ -11,8 +11,6 @@ let etalon: string[] = [
   "[...] Log: RTA",
   "Url: nezaboodka.com",
   "Log: RTA, nezaboodka.com/500",
-  "Url: nezaboodka.com",
-  "Log: RTA, nezaboodka.com/500",
 ];
 
 test("async", async t => {
