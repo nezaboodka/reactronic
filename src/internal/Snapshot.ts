@@ -1,6 +1,6 @@
 import { Utils, undef } from "./Utils";
 import { Log } from "./Log";
-import { Record, ISnapshot, ICache, RT_DISMISSED } from "./Record";
+import { Record, ISnapshot, ICache, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 
 // Snapshot
@@ -120,7 +120,7 @@ export class Snapshot implements ISnapshot {
     let counter: number = -1;
     if (head.snapshot.timestamp > ours.snapshot.timestamp) {
       counter++;
-      let theirsDismissed: boolean = head.edits.has(RT_DISMISSED);
+      let unmountTheirs: boolean = head.edits.has(RT_UNMOUNT);
       let merged = Utils.copyAllProps(head.data, {}); // create merged copy
       ours.edits.forEach((prop: PropertyKey) => {
         counter++;
@@ -134,7 +134,7 @@ export class Snapshot implements ISnapshot {
               ours.conflicts.set(prop, theirs);
             break;
           }
-          else if (prop === RT_DISMISSED || theirsDismissed) {
+          else if (prop === RT_UNMOUNT || unmountTheirs) {
             if (Log.verbosity >= 2) Log.print("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "!=" ${Hint.record(theirs, false)}.${prop.toString()}.`);
             ours.conflicts.set(prop, theirs);
             break;
@@ -150,8 +150,6 @@ export class Snapshot implements ISnapshot {
 
   checkin(error?: any): void {
     this._completed = true;
-    let last: string = "";
-    let counter: number = 0;
     this.changeset.forEach((r: Record, h: Handle) => {
       r.finalize(h.proxy);
       h.editors--;
@@ -163,23 +161,14 @@ export class Snapshot implements ISnapshot {
           let props: string[] = [];
           r.edits.forEach((prop: PropertyKey) => props.push(prop.toString()));
           let s = props.join(", ");
-          if (s !== last) {
-            if (counter > 0) {
-              Log.print("║", "•", `  +${counter} similar (${last}) changes are applied.`);
-              counter = 0;
-            }
-            Log.print("║", "•", `${Hint.record(r, true)}(${s}) is applied.`);
-            last = s;
-          }
-          else
-            counter++;
+          Log.print("║", "•", `${Hint.record(r, true)}(${s}) is applied.`);
         }
       }
     });
     if (Log.verbosity >= 1) Log.print(this.timestamp > 0 ? "╚═══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "DISCARD" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
-  static applyNewDependencies = function(changeset: Map<Handle, Record>, effect: ICache[]): void {
+  static applyDependencies = function(changeset: Map<Handle, Record>, effect: ICache[]): void {
     undef(); // to be redefined by Cache implementation
   };
 

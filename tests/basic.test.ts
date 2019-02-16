@@ -11,8 +11,6 @@ let etalon: string[] = [
   "Kevin's children: Britney",
   "Filter: Jo",
   "John's children: Billy, Barry, Steve",
-  "Filter: Jo",
-  "John's children: Billy, Barry, Steve",
 ];
 
 test("basic", t => {

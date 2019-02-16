@@ -10,10 +10,6 @@ let etalon: string[] = [
   "[...] Log: RTA",
   "Url: reactronic", // TODO: To fix
   "Log: RTA", // TODO: To fix
-  // "Url: nezaboodka.com",
-  // "Log: RTA, nezaboodka.com/500",
-  // "Url: nezaboodka.com", // printed during unmounting
-  // "Log: RTA, nezaboodka.com/500", // printed during unmounting
 ];
 
 test("async", async t => {

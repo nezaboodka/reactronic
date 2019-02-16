@@ -1,6 +1,6 @@
 import { Utils, undef } from "./Utils";
 import { ArrayEx, Binding } from "./ArrayEx";
-import { Record, F } from "./Record";
+import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
 import { Config, Mode, Latency, Renew, AsyncCalls, Isolation } from "../Config";
@@ -140,9 +140,12 @@ export class Hooks implements ProxyHandler<Handle> {
     return table;
   }
 
+  static getConfigTable(target: any): any {
+    return target[RT_CONFIG] || EMPTY_CONFIG_TABLE;
+  }
+
   static getConfig(target: any, prop: PropertyKey): ConfigImpl | undefined {
-    let table = target[RT_CONFIG] || EMPTY_CONFIG_TABLE;
-    return table[prop];
+    return Hooks.getConfigTable(target)[prop];
   }
 
   static createCacheTrap = function(h: Handle, m: PropertyKey, o: ConfigImpl): F<any> {
@@ -186,6 +189,7 @@ function acquireHandle(obj: any): Handle {
     Snapshot.active().checkout(); // TODO: find better place?
     h = createHandle(obj, obj);
     Utils.set(obj, RT_HANDLE, h);
+    Hooks.decorateField({mode: Mode.Stateful}, obj, RT_UNMOUNT);
   }
   return h;
 }
