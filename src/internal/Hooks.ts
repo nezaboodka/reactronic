@@ -140,9 +140,12 @@ export class Hooks implements ProxyHandler<Handle> {
     return table;
   }
 
+  static getConfigTable(target: any): any {
+    return target[RT_CONFIG] || EMPTY_CONFIG_TABLE;
+  }
+
   static getConfig(target: any, prop: PropertyKey): ConfigImpl | undefined {
-    let table = target[RT_CONFIG] || EMPTY_CONFIG_TABLE;
-    return table[prop];
+    return Hooks.getConfigTable(target)[prop];
   }
 
   static createCacheTrap = function(h: Handle, m: PropertyKey, o: ConfigImpl): F<any> {

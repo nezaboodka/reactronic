@@ -380,8 +380,8 @@ export class Cache implements ICache {
     Transaction.runAs<void>("unmount", false, (): void => {
       t = Transaction.active;
       for (let x of objects) {
-        // let h: Handle | undefined = Utils.get(x, RT_HANDLE);
-        x[RT_UNMOUNTED] = RT_UNMOUNTED; // TODO: Check if object is an MVCC object
+        if (Utils.get(x, RT_HANDLE))
+          x[RT_UNMOUNTED] = RT_UNMOUNTED;
       }
     });
     return t;
