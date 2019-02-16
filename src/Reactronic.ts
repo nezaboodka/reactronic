@@ -1,4 +1,4 @@
-import { Utils, F, RT_CACHE, RT_DISMISSED } from "./internal/z.index";
+import { Utils, F, RT_CACHE, RT_UNMOUNTED } from "./internal/z.index";
 import { Transaction } from "./Transaction";
 import { Config } from "./Config";
 
@@ -25,7 +25,7 @@ export abstract class Reactronic<T> {
     Transaction.runAs<void>("unmount", false, (): void => {
       t = Transaction.active;
       for (let x of objects)
-        x[RT_DISMISSED] = RT_DISMISSED; // TODO: Check if object is an MVCC object
+        x[RT_UNMOUNTED] = RT_UNMOUNTED; // TODO: Check if object is an MVCC object
     });
     return t;
   }

@@ -1,4 +1,4 @@
-import { Utils, Log, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Hooks, RT_HANDLE, RT_CACHE, RT_DISMISSED } from "./z.index";
+import { Utils, Log, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNTED } from "./z.index";
 import { Reactronic } from "../Reactronic";
 export { Reactronic } from "../Reactronic";
 import { Config, Renew, AsyncCalls, Isolation } from "../Config";
@@ -23,7 +23,7 @@ class CacheProxy extends Reactronic<any> {
     this.handle = handle;
     this.blank = new Cache(this.handle, member, config);
     Cache.freeze(this.blank);
-    Cache.dismiss(this.blank);
+    Cache.unmount(this.blank);
   }
 
   obtain(register: boolean, edit: boolean): { cache: Cache, record: Record } {
@@ -141,12 +141,12 @@ class Cache implements ICache {
 
   static applyNewDependencies(changeset: Map<Handle, Record>, effect: ICache[]): void {
     changeset.forEach((r: Record, h: Handle) => {
-      let dismissed: boolean = r.edits.has(RT_DISMISSED);
+      let unmounted: boolean = r.edits.has(RT_UNMOUNTED);
       // Either mark previous record observers as invalidated, or retain them
       if (r.prev.record) {
         let prev: Record = r.prev.record;
         prev.observers.forEach((prevObservers: Set<ICache>, prop: PropertyKey) => {
-          if (dismissed || r.edits.has(prop))
+          if (unmounted || r.edits.has(prop))
             prevObservers.forEach((c: ICache) => c.invalidate(Hint.record(r, false, false, prop), effect));
           else
             Cache.retainPrevObservers(r, prop, prev, prevObservers);
@@ -209,7 +209,7 @@ class Cache implements ICache {
   invalidate(invalidator: string, dependents: ICache[]): void {
     if (!this.invalidator) {
       this.invalidator = invalidator;
-      // TODO: Cache.dismiss(c);
+      // TODO: Cache.unmount(c);
       let r: Record = Snapshot.active().readable(this.owner);
       if (r.data[this.member] === this) // TODO: Consider better solution?
         Cache.markOverwritten(r, this.member, dependents);
@@ -368,7 +368,7 @@ class Cache implements ICache {
     Object.freeze(c);
   }
 
-  static dismiss(c: Cache): void {
+  static unmount(c: Cache): void {
     // Utils.freezeSet(c.statusObservers);
   }
 }

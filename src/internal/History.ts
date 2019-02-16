@@ -55,7 +55,7 @@
 //     // this.objects = new WeakMap<any, Object>();
 //   }
 
-//   // static dismiss(obj: object) {
+//   // static unmount(obj: object) {
 //   //   // not implemented
 //   // }
 // }
