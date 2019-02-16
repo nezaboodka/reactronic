@@ -23,7 +23,7 @@ class CacheProxy extends Reactronic<any> {
     this.handle = handle;
     this.blank = new Cache(this.handle, member, config);
     Cache.freeze(this.blank);
-    Cache.unmount(this.blank);
+    // TODO: mark cache readonly?
   }
 
   obtain(register: boolean, edit: boolean): { cache: Cache, record: Record } {
@@ -58,7 +58,7 @@ class CacheProxy extends Reactronic<any> {
 
 // Cache
 
-class Cache implements ICache {
+export class Cache implements ICache {
   static active?: Cache = undefined;
   readonly margin: number;
   readonly tran: Transaction;
@@ -89,6 +89,13 @@ class Cache implements ICache {
   }
 
   hint(tranless?: boolean): string { return `${tranless ? "" : `t${this.tran.id}'`}${Hint.handle(this.owner)}.${this.member.toString()}`; }
+
+  static at(method: F<any>): Reactronic<any> {
+    let impl: Reactronic<any> | undefined = Utils.get(method, RT_CACHE);
+    if (!impl)
+      throw new Error("given method is not a reaction");
+    return impl;
+  }
 
   static run<T>(c: Cache | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined;
@@ -209,7 +216,7 @@ class Cache implements ICache {
   invalidate(invalidator: string, dependents: ICache[]): void {
     if (!this.invalidator) {
       this.invalidator = invalidator;
-      // TODO: Cache.unmount(c);
+      // TODO: make cache readonly
       let r: Record = Snapshot.active().readable(this.owner);
       if (r.data[this.member] === this) // TODO: Consider better solution?
         Cache.markOverwritten(r, this.member, dependents);
@@ -368,8 +375,16 @@ class Cache implements ICache {
     Object.freeze(c);
   }
 
-  static unmount(c: Cache): void {
-    // Utils.freezeSet(c.statusObservers);
+  static unmount(...objects: any[]): Transaction {
+    let t: Transaction = Transaction.active;
+    Transaction.runAs<void>("unmount", false, (): void => {
+      t = Transaction.active;
+      for (let x of objects) {
+        // let h: Handle | undefined = Utils.get(x, RT_HANDLE);
+        x[RT_UNMOUNTED] = RT_UNMOUNTED; // TODO: Check if object is an MVCC object
+      }
+    });
+    return t;
   }
 }
 
