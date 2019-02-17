@@ -421,8 +421,7 @@ function init(): void {
   Snapshot.applyDependencies = Cache.applyDependencies; // override
   Hooks.createCacheTrap = Cache.createCacheTrap; // override
   Snapshot.active = Transaction.getActiveSnapshot; // override
-  Transaction.active = new Transaction("live");
-  Transaction.active.commit();
+  Transaction._init();
   Indicator.global = Transaction.run(() => new Indicator("global"));
 }
 

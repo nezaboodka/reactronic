@@ -14,7 +14,7 @@ let etalon: string[] = [
 ];
 
 test("basic", t => {
-  Log.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 1;
+  Log.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 3;
   // Simple actions
   let app = Transaction.run(() => new DemoView(new DemoModel()));
   try {
