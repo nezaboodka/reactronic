@@ -26,9 +26,9 @@ export enum Renew {
 }
 
 export enum Isolation {
-  Default = 0, // prolong-parent for transactions, but start-separate for reaction
-  ProlongParentTransaction = 1,
-  StartSeparateTransaction = 2,
+  Default = 0, // prolonged for transactions, but consolidated standalone for reaction
+  ProlongedTransaction = 1,
+  StandaloneTransaction = 2,
 }
 
 export enum AsyncCalls {

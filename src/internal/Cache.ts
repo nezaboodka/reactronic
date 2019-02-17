@@ -277,7 +277,7 @@ export class Cache implements ICache {
             throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
         }
         let hint: string = Log.verbosity > 0 ? `${Hint.handle(h)}.${c.member.toString()}` : "recache";
-        return Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StartSeparateTransaction, (...argsx: any[]): any => {
+        return Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, (...argsx: any[]): any => {
           if (c.updater.active && c.config.asyncCalls === AsyncCalls.Relayed) {
             c.updater.active.tran.discard();
             if (Log.verbosity >= 1) Log.print("║", " ", `Relaying: t${c.updater.active.tran.id} is canceled.`);

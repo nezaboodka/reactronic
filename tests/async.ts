@@ -31,7 +31,7 @@ export class DemoView {
     return result;
   }
 
-  @cache(Renew.Immediately, Isolation.StartSeparateTransaction)
+  @cache(Renew.Immediately, Isolation.StandaloneTransaction)
   async print(): Promise<void> {
     let idle = Indicator.global.isIdle;
     let lines: string[] = await this.render();
