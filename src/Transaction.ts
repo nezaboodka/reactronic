@@ -2,6 +2,7 @@ import { Log, undef, Record, ICache, F, Handle, Snapshot, Hint } from "./interna
 
 export class Transaction {
   static active: Transaction;
+  static notran: Transaction;
   private readonly snapshot: Snapshot; // assigned in constructor
   private busy: number = 0;
   private sealed: boolean = false;
@@ -87,8 +88,16 @@ export class Transaction {
     try {
       result = t.run<T>(func, ...args);
       if (root) {
-        if (result instanceof Promise)
-          result = t.whenFinished(false);
+        if (result instanceof Promise) {
+          let outer = Transaction.active;
+          try {
+            Transaction.active = Transaction.notran; // Workaround?
+            result = t.whenFinished(false);
+          }
+          finally {
+            Transaction.active = outer;
+          }
+        }
         t.seal();
       }
     }
@@ -212,10 +221,11 @@ export class Transaction {
   }
 
   static _init(): void {
-    let live = new Transaction("live");
-    live.sealed = true;
-    live.snapshot.checkin();
-    Transaction.active = live;
+    let notran = new Transaction("notran");
+    notran.sealed = true;
+    notran.snapshot.checkin();
+    Transaction.notran = notran;
+    Transaction.active = notran;
   }
 }
 
