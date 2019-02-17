@@ -45,9 +45,10 @@ export class Record {
   }
 
   static archive<T, C>(r: Record | undefined): void {
-    // TODO: Utils.freezeSet(r.overwritten);
-    if (r)
-      Utils.freezeMap(r.observers);
+    if (r) {
+      // Utils.freezeSet(r.overwritten);
+      // Utils.freezeMap(r.observers);
+    }
   }
 }
 
