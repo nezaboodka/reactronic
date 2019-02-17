@@ -74,7 +74,6 @@ export class Snapshot implements ISnapshot {
   }
 
   private getRecord(h: Handle): Record | undefined {
-    this.checkout();
     let r: Record | undefined = h.editing;
     if (r && r.snapshot !== this) {
       r = this.changeset.get(h);

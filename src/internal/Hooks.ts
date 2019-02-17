@@ -186,7 +186,6 @@ function acquireHandle(obj: any): Handle {
     throw new Error("E604: only objects can be registered in reactronic store");
   let h: Handle = Utils.get(obj, RT_HANDLE);
   if (!h) {
-    Snapshot.active().checkout(); // TODO: find better place?
     h = createHandle(obj, obj);
     Utils.set(obj, RT_HANDLE, h);
     Hooks.decorateField({mode: Mode.Stateful}, obj, RT_UNMOUNT);

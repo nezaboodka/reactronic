@@ -111,6 +111,7 @@ export class Transaction {
       Transaction.active = this;
       Log.color = 31 + (this.snapshot.id) % 6;
       Log.prefix = `t${this.snapshot.id}`;
+      this.snapshot.checkout();
       result = func(...args);
       if (this.sealed && this.busy === 1 && !this.error)
         this.checkForConflicts();
@@ -208,6 +209,13 @@ export class Transaction {
 
   static getActiveSnapshot(): Snapshot {
     return Transaction.active.snapshot;
+  }
+
+  static _init(): void {
+    let live = new Transaction("live");
+    live.sealed = true;
+    live.snapshot.checkin();
+    Transaction.active = live;
   }
 }
 
