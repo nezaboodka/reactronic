@@ -207,7 +207,7 @@ export class Transaction {
     return tran;
   }
 
-  static getActiveSnapshot(): Snapshot {
+  static _getActiveSnapshot(): Snapshot {
     return Transaction.active.snapshot;
   }
 

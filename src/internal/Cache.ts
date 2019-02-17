@@ -420,7 +420,7 @@ function init(): void {
   Record.markViewed = Cache.markViewed; // override
   Snapshot.applyDependencies = Cache.applyDependencies; // override
   Hooks.createCacheTrap = Cache.createCacheTrap; // override
-  Snapshot.active = Transaction.getActiveSnapshot; // override
+  Snapshot.active = Transaction._getActiveSnapshot; // override
   Transaction._init();
   Indicator.global = Transaction.run(() => new Indicator("global"));
 }
