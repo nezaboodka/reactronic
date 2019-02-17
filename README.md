@@ -3,9 +3,7 @@
 [![Package Size](https://img.shields.io/bundlephobia/minzip/reactronic.svg?colorB=success)](https://bundlephobia.com/result?p=reactronic)
 [![GitHub License](https://img.shields.io/badge/license-MIT-4cc61e.svg?style=flat)](https://github.com/nezaboodka/reactronic/blob/master/LICENSE)
 [![CircleCI Status](https://circleci.com/gh/nezaboodka/reactronic.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/nezaboodka/reactronic)
-![Stage](https://img.shields.io/badge/stage-beta-orange.svg)
-
-
+[![Readiness](https://img.shields.io/badge/readiness-beta-orange.svg)](https://en.wikipedia.org/wiki/Software_release_life_cycle#Beta)
 
 # **Reactronic** - Transactionally Reactive State Management
 
