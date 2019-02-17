@@ -1,6 +1,6 @@
 ﻿
-[![NPM Version](https://img.shields.io/npm/v/reactronic.svg?style=flat&colorB=4cc61e)](https://www.npmjs.com/package/reactronic)
-[![Package Size](https://img.shields.io/bundlephobia/minzip/reactronic.svg?colorB=4cc61e)](https://bundlephobia.com/result?p=reactronic)
+[![NPM Version](https://img.shields.io/npm/v/reactronic.svg?style=flat&colorB=success)](https://www.npmjs.com/package/reactronic)
+[![Package Size](https://img.shields.io/bundlephobia/minzip/reactronic.svg?colorB=success)](https://bundlephobia.com/result?p=reactronic)
 [![GitHub License](https://img.shields.io/badge/license-MIT-4cc61e.svg?style=flat)](https://github.com/nezaboodka/reactronic/blob/master/LICENSE)
 [![CircleCI Status](https://circleci.com/gh/nezaboodka/reactronic.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/nezaboodka/reactronic)
 ![Release Status](https://img.shields.io/badge/release-beta-orange.svg)
