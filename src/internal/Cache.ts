@@ -10,7 +10,7 @@ class CacheProxy extends Reactronic<any> {
   private readonly blank: Cache;
 
   get config(): Config { return this.obtain(false, false).cache.config; }
-  configure(config: Partial<Config>) { this.alter(config); }
+  configure(config: Partial<Config>): Config { return this.alter(config); }
 
   get returned(): Promise<any> | any { return this.obtain(true, false).cache.returned; }
   get value(): any { return this.obtain(true, false).cache.value; }
@@ -41,17 +41,18 @@ class CacheProxy extends Reactronic<any> {
     return { cache: c, record: r };
   }
 
-  alter(config: Partial<Config>): void {
+  alter(config: Partial<Config>): Config {
     let a1 = this.obtain(false, false);
     let c1: Cache = a1.cache;
     let r1: Record = a1.record;
     let hint: string = Log.verbosity > 0 ? `${Hint.handle(c1.owner)}.${c1.member.toString()}.configure` : "configure";
-    Transaction.runAs<void>(hint, false, () => {
+    return Transaction.runAs<Config>(hint, false, (): Config => {
       let a2 = this.obtain(false, true);
       let c2: Cache = a2.cache;
       c2.config = new ConfigImpl(c2.config.body, c2.config, config);
       if (Log.verbosity >= 2)
         Log.print("║", "w", `${Hint.record(r1)}.${c1.member.toString()}.config = ...`);
+      return c2.config;
     });
   }
 }

@@ -4,7 +4,7 @@ import { Config } from "./Config";
 
 export abstract class Reactronic<T> {
   abstract readonly config: Config;
-  abstract configure(config: Partial<Config>): void;
+  abstract configure(config: Partial<Config>): Config;
   abstract readonly returned: Promise<T> | T;
   abstract readonly value: T;
   abstract readonly error: any;

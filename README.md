@@ -285,11 +285,8 @@ class Transaction {
 // Reactronic
 
 abstract class Reactronic {
-  mode: Mode;
-  latency: Latency;
-  isolation: Isolation;
-  asyncCalls: AsyncCalls;
-  indicator: Indicator | undefined;
+  readonly config: Config;
+  configure(config: Partial<Config>): Config;
   readonly returned: any; // just return value, may be a promise
   readonly value: any; // different from this.returned for promises
   readonly error: any;
