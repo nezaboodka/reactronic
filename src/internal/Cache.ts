@@ -17,6 +17,7 @@ class CacheProxy extends Reactronic<any> {
   get error(): boolean { return this.obtain(true, false).cache.error; }
   get invalidator(): string | undefined { return this.obtain(true, false).cache.invalidator; }
   invalidate(invalidator: string | undefined): boolean { return invalidator ? Cache.enforceInvalidation(this.obtain(false, false).cache, invalidator, 0) : false; }
+  get isRunning(): boolean { return this.obtain(true, false).cache.isRunning; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
@@ -70,6 +71,7 @@ export class Cache implements ICache {
   returned: any;
   value: any;
   error: any;
+  isRunning: boolean;
   invalidator?: string;
   readonly updater: { active: Cache | undefined }; // TODO: count updaters
   readonly observables: Map<PropertyKey, Set<Record>>;
@@ -84,6 +86,7 @@ export class Cache implements ICache {
     // this.result = undefined;
     // this.value = undefined;
     // this.error = undefined;
+    this.isRunning = false;
     this.invalidator = this.hint(false);
     this.updater = { active: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
@@ -318,6 +321,7 @@ export class Cache implements ICache {
 
   enter(r: Record, prev: Cache, ind: Indicator | null): void {
     if (Log.verbosity >= 2) Log.print("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
+    this.isRunning = true;
     Cache.turnOn(ind);
     if (!prev.updater.active)
       prev.updater.active = this;
@@ -348,6 +352,7 @@ export class Cache implements ICache {
     if (prev.updater.active === this)
       prev.updater.active = undefined;
     Cache.turnOff(ind);
+    this.isRunning = false;
     if (Log.verbosity >= 1) Log.print("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`);
   }
 

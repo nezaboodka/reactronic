@@ -11,6 +11,7 @@ export abstract class Reactronic<T> {
   abstract readonly invalidator: string | undefined;
   abstract invalidate(invalidator: string | undefined): boolean;
   get isInvalidated(): boolean { return this.invalidator !== undefined; }
+  abstract readonly isRunning: boolean;
   static at<T>(method: F<Promise<T>>): Reactronic<T>;
   static at<T>(method: F<T>): Reactronic<T> { return Cache.at(method); }
   static unmount(...objects: any[]): Transaction { return Cache.unmount(...objects); }
