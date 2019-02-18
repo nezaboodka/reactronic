@@ -283,7 +283,7 @@ export class Cache implements ICache {
         let hint: string = Log.verbosity > 0 ? `${Hint.handle(h)}.${c.member.toString()}` : "recache";
         return Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, (...argsx: any[]): any => {
           if (c.updater.active && c.config.asyncCalls === AsyncCalls.Relayed) {
-            c.updater.active.tran.discard();
+            c.updater.active.tran.cancel();
             if (Log.verbosity >= 1) Log.print("║", " ", `Relaying: t${c.updater.active.tran.id} is canceled.`);
             c.updater.active = undefined;
           }

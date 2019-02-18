@@ -43,12 +43,16 @@ export class Transaction {
     return this;
   }
 
-  discard(error?: Error): Transaction {
+  reject(error: Error): Transaction {
     if (!this.error)
-      this.error = error || CANCELED;
+      this.error = error;
     if (!this.sealed)
       this.run(Transaction.seal, this);
     return this;
+  }
+
+  cancel(): Transaction {
+    return this.reject(RT_NO_THROW);
   }
 
   finished(): boolean {
@@ -102,10 +106,10 @@ export class Transaction {
       }
     }
     catch (error) {
-      t.discard(error);
+      t.reject(error);
       throw error;
     }
-    if (t.error && t.error !== CANCELED)
+    if (t.error && t.error !== RT_NO_THROW)
       throw t.error;
     return result;
   }
@@ -178,7 +182,7 @@ export class Transaction {
     this.snapshot.checkin(this.error);
     this.snapshot.archive();
     if (this.resultPromise)
-      if (this.error !== CANCELED)
+      if (this.error !== RT_NO_THROW)
         this.resultReject(this.error);
       else
         this.resultResolve();
@@ -229,4 +233,4 @@ export class Transaction {
   }
 }
 
-const CANCELED: Error = new Error("transaction is canceled");
+const RT_NO_THROW: Error = new Error("transaction is canceled");

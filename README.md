@@ -273,7 +273,8 @@ class Transaction {
   wrap<T>(func: F<T>): F<T>;
   commit(): void;
   seal(): Transaction; // t1.seal().whenFinished().then(fulfill, reject)
-  discard(error?: any): Transaction; // t1.seal().whenFinished().then(...)
+  reject(error: any): Transaction; // t1.reject().whenFinished().then(...)
+  cancel(): Transaction; // t1.cancel().whenFinished().then(...)
   finished(): boolean;
   whenFinished(): Promise<void>;
   static run<T>(func: F<T>, ...args: any[]): T;
