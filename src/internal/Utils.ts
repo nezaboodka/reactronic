@@ -65,6 +65,17 @@ export class Utils {
     // to be redefined by Cache implementation
     return !Utils.equal(oldValue, newValue);
   };
+
+  static valueHint(value: any): string {
+    let result: string = "";
+    if (Array.isArray(value))
+      result = `Array(${value.length})`;
+    else if (value)
+      result = value.toString().slice(0, 20);
+    else
+      result = "◌";
+    return result;
+  }
 }
 
 /* istanbul ignore next */
