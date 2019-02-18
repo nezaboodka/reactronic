@@ -26,6 +26,8 @@ export class Record {
 
   static markEdited = function(r: Record, prop: PropertyKey, edited: boolean): void {
     edited ? r.edits.add(prop) : r.edits.delete(prop);
+    // if (r.observers.get(prop))
+    //   console.log(`(!) Edited and has subscriptions: ${prop.toString()}`);
   };
 
   static markViewed = function(r: Record, prop: PropertyKey): void {

@@ -132,7 +132,7 @@ export class Cache implements ICache {
         let proxy: any = this.owner.proxy;
         let result: any = Reflect.get(proxy, this.member, proxy)(...args);
         if (result instanceof Promise)
-          result.catch((error: any) => { /* nop */ });
+          result.catch((error: any) => { /* nop */ }); // bad idea to hide an error
       }
     }
     else
@@ -142,11 +142,13 @@ export class Cache implements ICache {
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: Cache | undefined = Cache.active; // alias
     if (c && c.config.latency >= Renew.Manually && prop !== RT_HANDLE) {
-      let observables: Set<Record> | undefined = c.observables.get(prop);
-      if (!observables)
-        c.observables.set(prop, observables = new Set<Record>());
-      observables.add(r);
+      Cache.acquireObservableSet(c, prop).add(r);
       if (Log.verbosity >= 2) Log.print("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
+      if (c.tran.id === r.snapshot.id) {
+        let observers = Cache.acquireObserverSet(r, prop);
+        if (Log.verbosity >= 1 && !observers.has(c)) Log.print("║", "∞", `${Hint.record(Snapshot.active().readable(c.owner), false, false, c.member)} is subscribed to {${Hint.record(r, false, true, prop)}}.`);
+        observers.add(c);
+      }
     }
   }
 
@@ -196,6 +198,13 @@ export class Cache implements ICache {
         x = x.prev.record;
       }
     }
+    return result;
+  }
+
+  static acquireObservableSet(c: Cache, prop: PropertyKey): Set<Record> {
+    let result: Set<Record> | undefined = c.observables.get(prop);
+    if (!result)
+      c.observables.set(prop, result = new Set<Record>());
     return result;
   }
 
@@ -304,8 +313,8 @@ export class Cache implements ICache {
           finally {
             c2.leave(r2, c1, ind);
           }
+          Record.markEdited(r2, c2.member, true);
           Record.markViewed(r2, c2.member);
-          Record.markEdited(r2, c.member, true);
           return c2.returned;
         }, ...args);
       }

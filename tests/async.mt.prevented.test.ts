@@ -13,7 +13,7 @@ let etalon: string[] = [
 ];
 
 test("async", async t => {
-  Log.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 3;
+  Log.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 1;
   let app = Transaction.run(() => new DemoView(new DemoModel()));
   app.model.load.reactronic.configure({asyncCalls: AsyncCalls.Single});
   try {
