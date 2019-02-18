@@ -236,10 +236,10 @@ enum Mode {
 type Latency = number | Renew; // milliseconds
 
 enum Renew {
-  Immediately = 0,
-  OnDemand = -1, // default for cache
-  Manually = -2,
-  DoesNotCache = -3, // default for transaction
+  Immediately = -1,
+  OnDemand = -2, // default for cache
+  Manually = -3,
+  DoesNotCache = -4, // default for transaction
 }
 
 enum Isolation {
