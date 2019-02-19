@@ -4,7 +4,7 @@ import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
 import { Config, Mode, Latency, Renew, AsyncCalls, Isolation } from "../Config";
-import { Indicator } from "../Indicator";
+import { Monitor } from "../Monitor";
 
 // Config
 
@@ -17,7 +17,7 @@ export class ConfigImpl implements Config {
   readonly latency: Latency;
   readonly isolation: Isolation;
   readonly asyncCalls: AsyncCalls;
-  readonly indicator: Indicator | null;
+  readonly monitor: Monitor | null;
 
   constructor(body: Function | undefined, existing: ConfigImpl, patch: Partial<ConfigImpl>) {
     this.body = body !== undefined ? body : existing.body;
@@ -25,7 +25,7 @@ export class ConfigImpl implements Config {
     this.latency = patch.latency !== undefined ? patch.latency : existing.latency;
     this.isolation = patch.isolation !== undefined ? patch.isolation : existing.isolation;
     this.asyncCalls = patch.asyncCalls !== undefined ? patch.asyncCalls : existing.asyncCalls;
-    this.indicator = patch.indicator !== undefined ? patch.indicator : existing.indicator;
+    this.monitor = patch.monitor !== undefined ? patch.monitor : existing.monitor;
     Object.freeze(this);
   }
 
@@ -35,7 +35,7 @@ export class ConfigImpl implements Config {
     latency: Renew.DoesNotCache,
     isolation: Isolation.Default,
     asyncCalls: AsyncCalls.Single,
-    indicator: null }, {});
+    monitor: null }, {});
 }
 
 // Hooks

@@ -72,7 +72,7 @@ test("basic", t => {
     t.is(daddy.age, 38);
     // Check protection
     t.throws(() => { daddy.setParent.reactronic.configure({latency: 0}); });
-    t.throws(() => { console.log(daddy.setParent.reactronic.config.indicator); });
+    t.throws(() => { console.log(daddy.setParent.reactronic.config.monitor); });
     t.throws(() => { console.log(daddy.setParent.reactronic.invalidator); });
   }
   finally { // cleanup

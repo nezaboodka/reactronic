@@ -1,13 +1,13 @@
 import { F } from "./internal/Record";
 import { Hooks } from "./internal/Hooks";
-import { Indicator } from "./Indicator";
+import { Monitor } from "./Monitor";
 
 export interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
   readonly isolation: Isolation;
   readonly asyncCalls: AsyncCalls;
-  readonly indicator: Indicator | null;
+  readonly monitor: Monitor | null;
 }
 
 export enum Mode {
@@ -60,8 +60,8 @@ export function cache(
   return config({mode: Mode.Stateful, latency, isolation, asyncCalls});
 }
 
-export function indicator(value: Indicator | null): F<any> {
-  return config({indicator: value});
+export function monitor(value: Monitor | null): F<any> {
+  return config({monitor: value});
 }
 
 export function config(value: Partial<Config>): F<any> {

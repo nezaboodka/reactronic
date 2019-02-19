@@ -1,5 +1,5 @@
 ﻿import { all } from "../src/internal/z.index";
-import { state, transaction, cache, Renew, Isolation, Indicator, indicator } from "../src/z.index";
+import { state, transaction, cache, Renew, Isolation, Monitor, monitor } from "../src/z.index";
 import { sleep } from "./common";
 
 export const actual: string[] = [];
@@ -9,7 +9,7 @@ export class DemoModel {
   url: string = "reactronic";
   log: string[] = ["RTA"];
 
-  @transaction  @indicator(Indicator.global)
+  @transaction  @monitor(Monitor.global)
   async load(url: string, delay: number): Promise<void> {
     this.url = url;
     await all([sleep(delay)]);
@@ -33,7 +33,7 @@ export class DemoView {
 
   @cache(Renew.Immediately, Isolation.StandaloneTransaction)
   async print(): Promise<void> {
-    let idle = Indicator.global.isIdle;
+    let idle = Monitor.global.isIdle;
     let lines: string[] = await this.render();
     for (let x of lines) {
       actual.push(idle ? x : `[...] ${x}`);

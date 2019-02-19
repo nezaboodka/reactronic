@@ -178,8 +178,8 @@ invocation of the caching function to renew the cache:
   - `AsyncCalls.Relayed` - cancel and supresede the existing concurrent call;
   - `AsyncCalls.Multiple` - multiple simultaneous calls are allowed.
 
-**Indicator** option is an object holding the status of running functions,
-which it is attached to. A single indicator object can be shared
+**Monitor** option is an object holding the status of running functions,
+which it is attached to. A single monitor object can be shared
 between multiple transaction and cache functions, thus maintaining
 consolidated busy/idle status for all of them.
 
@@ -214,17 +214,17 @@ function state(proto: object, prop?: PropertyKey): any;
 function stateless(proto: object, prop: PropertyKey): any;
 function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
 function cache(latency: Latency, isolation: Isolation, asyncCalls: AsyncCalls): F<any>;
-function indicator(value: Indicator | null): F<any>;
+function monitor(value: Monitor | null): F<any>;
 function config(config: Partial<Config>): F<any>;
 
-// Config: Mode, Latency, Isolation, AsyncCalls, Indicator
+// Config: Mode, Latency, Isolation, AsyncCalls, Monitor
 
 interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
   readonly isolation: Isolation;
   readonly asyncCalls: AsyncCalls;
-  readonly indicator: Indicator | null;
+  readonly monitor: Monitor | null;
 }
 
 enum Mode {
@@ -256,9 +256,9 @@ enum AsyncCalls {
 }
 
 @state
-class Indicator {
+class Monitor {
   readonly isIdle: boolean;
-  readonly counter: number;
+  readonly volume: number;
   readonly message: string;
   constructor(name: string);
 }

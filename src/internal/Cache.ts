@@ -3,7 +3,7 @@ import { Reactronic } from "../Reactronic";
 export { Reactronic } from "../Reactronic";
 import { Config, Renew, AsyncCalls, Isolation } from "../Config";
 import { Transaction } from "../Transaction";
-import { Indicator } from "../Indicator";
+import { Monitor } from "../Monitor";
 
 class CacheProxy extends Reactronic<any> {
   private readonly handle: Handle;
@@ -313,7 +313,7 @@ export class Cache implements ICache {
           let cr2 = impl.obtain(false, true);
           let c2: Cache = cr2.cache;
           let r2: Record = cr2.record;
-          let ind: Indicator | null = c1.config.indicator;
+          let ind: Monitor | null = c1.config.monitor;
           c2.enter(r2, c1, ind);
           try
           {
@@ -340,7 +340,7 @@ export class Cache implements ICache {
     return cachedInvoke;
   }
 
-  enter(r: Record, prev: Cache, ind: Indicator | null): void {
+  enter(r: Record, prev: Cache, ind: Monitor | null): void {
     if (Log.verbosity >= 2) Log.print("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
     this.isRunning = true;
     Cache.turnOn(ind);
@@ -348,7 +348,7 @@ export class Cache implements ICache {
       prev.updater.active = this;
   }
 
-  leave(r: Record, prev: Cache, ind: Indicator | null): void {
+  leave(r: Record, prev: Cache, ind: Monitor | null): void {
     if (this.returned instanceof Promise) {
       this.returned = this.returned.then(
         result => {
@@ -369,7 +369,7 @@ export class Cache implements ICache {
     }
   }
 
-  private leaveImpl(r: Record, prev: Cache, ind: Indicator | null, op: string, message: string): void {
+  private leaveImpl(r: Record, prev: Cache, ind: Monitor | null, op: string, message: string): void {
     if (prev.updater.active === this)
       prev.updater.active = undefined;
     Cache.turnOff(ind);
@@ -377,16 +377,16 @@ export class Cache implements ICache {
     if (Log.verbosity >= 1) Log.print("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`);
   }
 
-  static turnOn(ind: Indicator | null): void {
-    if (ind)
-      Transaction.runAs<void>("Indicator.turnOn", ind.isolation >= Isolation.StandaloneTransaction,
-        Cache.run, undefined, () => ind.turnOn());
+  static turnOn(mon: Monitor | null): void {
+    if (mon)
+      Transaction.runAs<void>("Monitor.enter", mon.isolation >= Isolation.StandaloneTransaction,
+        Cache.run, undefined, () => mon.enter());
   }
 
-  static turnOff(ind: Indicator | null): void {
-    if (ind)
-      Transaction.runAs<void>("Indicator.turnOff", ind.isolation >= Isolation.StandaloneTransaction,
-        Cache.run, undefined, () => ind.turnOff());
+  static turnOff(mon: Monitor | null): void {
+    if (mon)
+      Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction,
+        Cache.run, undefined, () => mon.leave());
   }
 
   static differentImpl(oldValue: any, newValue: any): boolean {
@@ -450,7 +450,7 @@ function init(): void {
   Hooks.createCacheTrap = Cache.createCacheTrap; // override
   Snapshot.active = Transaction._getActiveSnapshot; // override
   Transaction._init();
-  Indicator.global = Transaction.run(() => new Indicator("global"));
+  Monitor.global = Transaction.run(() => new Monitor("global"));
 }
 
 init();
