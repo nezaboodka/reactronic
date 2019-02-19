@@ -90,14 +90,14 @@ export class Snapshot implements ISnapshot {
     let conflicts: Record[] | undefined = undefined;
     if (this.changeset.size > 0) {
       this.changeset.forEach((r: Record, h: Handle) => {
-        let merged = Snapshot.mergeRecords(r, h.head);
+        let merged = Snapshot.rebaseRecord(r, h.head);
         if (merged >= 0) {
           if (r.conflicts.size > 0) {
             if (!conflicts)
               conflicts = [];
             conflicts.push(r);
           }
-          if (Log.verbosity >= 1) Log.print("║", "Y", `${Hint.record(r, true)} is merged among ${merged} properties with ${r.conflicts.size} conflicts.`);
+          if (Log.verbosity >= 1) Log.print("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
       this._timestamp = ++Snapshot.headTimestamp;
@@ -105,7 +105,7 @@ export class Snapshot implements ISnapshot {
     return conflicts;
   }
 
-  static mergeRecords(ours: Record, head: Record): number {
+  static rebaseRecord(ours: Record, head: Record): number {
     let counter: number = -1;
     if (head.snapshot.timestamp > ours.snapshot.timestamp) {
       counter++;
@@ -133,6 +133,7 @@ export class Snapshot implements ISnapshot {
         }
       });
       Utils.copyAllProps(merged, ours.data); // overwrite with merged copy
+      ours.prev.record = head;
     }
     return counter;
   }

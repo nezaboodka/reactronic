@@ -144,25 +144,25 @@ export class Cache implements ICache {
     if (c && c.config.latency >= Renew.Manually && prop !== RT_HANDLE) {
       Cache.acquireObservableSet(c, prop).add(r);
       if (Log.verbosity >= 2) Log.print("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
-      if (c.tran.id === r.snapshot.id) {
-        let observers = Cache.acquireObserverSet(r, prop);
-        if (Log.verbosity >= 1 && !observers.has(c)) Log.print("║", "∞", `${Hint.record(Snapshot.active().readable(c.owner), false, false, c.member)} is subscribed to {${Hint.record(r, false, true, prop)}}.`);
-        observers.add(c);
-      }
+      // if (c.tran.id === r.snapshot.id) {
+      //   let observers = Cache.acquireObserverSet(r, prop);
+      //   if (Log.verbosity >= 1 && !observers.has(c)) Log.print("║", "∞", `${Hint.record(Snapshot.active().readable(c.owner), false, false, c.member)} is subscribed to {${Hint.record(r, false, true, prop)}}.`);
+      //   observers.add(c);
+      // }
     }
   }
 
   static markEdited(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
     edited ? r.edits.add(prop) : r.edits.delete(prop);
     if (Log.verbosity >= 2) Log.print("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
-    let observers: Set<ICache> | undefined = r.observers.get(prop);
-    if (observers && observers.size > 0) {
-      let effect: ICache[] = [];
-      observers.forEach((c: ICache) => c.invalidate(Hint.record(r, false, false, prop), effect));
-      if (effect.length > 0)
-        Transaction.ensureAllUpToDate(Hint.record(r), { tran: undefined, effect });
-      r.observers.delete(prop);
-    }
+    // let observers: Set<ICache> | undefined = r.observers.get(prop);
+    // if (observers && observers.size > 0) {
+    //   let effect: ICache[] = [];
+    //   observers.forEach((c: ICache) => c.invalidate(Hint.record(r, false, false, prop), effect));
+    //   if (effect.length > 0)
+    //     Transaction.ensureAllUpToDate(Hint.record(r), { tran: undefined, effect });
+    //   r.observers.delete(prop);
+    // }
   }
 
   static applyDependencies(changeset: Map<Handle, Record>, effect: ICache[]): void {
