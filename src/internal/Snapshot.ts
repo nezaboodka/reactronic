@@ -56,8 +56,7 @@ export class Snapshot implements ISnapshot {
         h.editors++;
       }
       let v: any = r.prev.record ? r.prev.record.data[prop] : undefined;
-      Record.markEdited(r, prop, !Utils.equal(v, value) /* && value !== RT_HANDLE*/);
-      if (Log.verbosity >= 2) Log.print("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
+      Record.markEdited(r, prop, !Utils.equal(v, value) /* && value !== RT_HANDLE*/, value);
     }
     else
       r = undefined; // ignore if property is set to the same value

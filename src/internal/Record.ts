@@ -24,7 +24,7 @@ export class Record {
     this.overwritten = new Set<PropertyKey>();
   }
 
-  static markEdited = function(r: Record, prop: PropertyKey, edited: boolean): void {
+  static markEdited = function(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
     undef(); // to be redefined by Cache implementation
   };
 

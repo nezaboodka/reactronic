@@ -152,8 +152,17 @@ export class Cache implements ICache {
     }
   }
 
-  static markEdited(r: Record, prop: PropertyKey, edited: boolean): void {
+  static markEdited(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
     edited ? r.edits.add(prop) : r.edits.delete(prop);
+    if (Log.verbosity >= 2) Log.print("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
+    let observers: Set<ICache> | undefined = r.observers.get(prop);
+    if (observers && observers.size > 0) {
+      let effect: ICache[] = [];
+      observers.forEach((c: ICache) => c.invalidate(Hint.record(r, false, false, prop), effect));
+      if (effect.length > 0)
+        Transaction.ensureAllUpToDate(Hint.record(r), { tran: undefined, effect });
+      r.observers.delete(prop);
+    }
   }
 
   static applyDependencies(changeset: Map<Handle, Record>, effect: ICache[]): void {
