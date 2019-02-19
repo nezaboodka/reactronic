@@ -379,13 +379,13 @@ export class Cache implements ICache {
 
   static turnOn(ind: Indicator | null): void {
     if (ind)
-      Transaction.runAs<void>("Indicator.turnOn", true,
+      Transaction.runAs<void>("Indicator.turnOn", ind.isolation >= Isolation.StandaloneTransaction,
         Cache.run, undefined, () => ind.turnOn());
   }
 
   static turnOff(ind: Indicator | null): void {
     if (ind)
-      Transaction.runAs<void>("Indicator.turnOff", true,
+      Transaction.runAs<void>("Indicator.turnOff", ind.isolation >= Isolation.StandaloneTransaction,
         Cache.run, undefined, () => ind.turnOff());
   }
 

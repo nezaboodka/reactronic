@@ -1,5 +1,5 @@
 import { Handle } from "./internal/z.index";
-import { state } from "./Config";
+import { state, Isolation } from "./Config";
 
 @state
 export class Indicator {
@@ -7,11 +7,13 @@ export class Indicator {
   private _idle: boolean = true;
   private _counter: number = 0;
   private _message: string = "";
+  readonly isolation: Isolation;
   get isIdle(): boolean { return this._idle; }
   get counter(): number { return this._counter; }
   get message(): string { return this._message; }
 
-  constructor(name: string) {
+  constructor(name: string, isolation: Isolation = Isolation.StandaloneTransaction) {
+    this.isolation = isolation;
     Handle.setHint(this, name);
   }
 
