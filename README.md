@@ -178,10 +178,10 @@ invocation of the caching function to renew the cache:
   - `AsyncCalls.Relayed` - cancel and supresede the existing concurrent call;
   - `AsyncCalls.Multiple` - multiple simultaneous calls are allowed.
 
-**Monitor** option is an object holding the status of running functions,
-which it is attached to. A single monitor object can be shared
-between multiple transaction and cache functions, thus maintaining
-consolidated busy/idle status for all of them.
+**Monitor** option is an object that holds the status of running
+functions, which it is attached to. A single monitor object can be
+shared between multiple transaction and cache functions, thus
+maintaining consolidated busy/idle status for all of them.
 
 ## Notes
 
