@@ -343,7 +343,7 @@ export class Cache implements ICache {
   enter(r: Record, prev: Cache, ind: Monitor | null): void {
     if (Log.verbosity >= 2) Log.print("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
     this.isRunning = true;
-    Cache.turnOn(ind);
+    Cache.monitorEnter(ind);
     if (!prev.updater.active)
       prev.updater.active = this;
   }
@@ -372,18 +372,18 @@ export class Cache implements ICache {
   private leaveImpl(r: Record, prev: Cache, ind: Monitor | null, op: string, message: string): void {
     if (prev.updater.active === this)
       prev.updater.active = undefined;
-    Cache.turnOff(ind);
+    Cache.monitorLeave(ind);
     this.isRunning = false;
     if (Log.verbosity >= 1) Log.print("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`);
   }
 
-  static turnOn(mon: Monitor | null): void {
+  static monitorEnter(mon: Monitor | null): void {
     if (mon)
       Transaction.runAs<void>("Monitor.enter", mon.isolation >= Isolation.StandaloneTransaction,
         Cache.run, undefined, () => mon.enter());
   }
 
-  static turnOff(mon: Monitor | null): void {
+  static monitorLeave(mon: Monitor | null): void {
     if (mon)
       Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction,
         Cache.run, undefined, () => mon.leave());
