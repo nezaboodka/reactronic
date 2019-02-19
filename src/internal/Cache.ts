@@ -152,6 +152,10 @@ export class Cache implements ICache {
     }
   }
 
+  static markEdited(r: Record, prop: PropertyKey, edited: boolean): void {
+    edited ? r.edits.add(prop) : r.edits.delete(prop);
+  }
+
   static applyDependencies(changeset: Map<Handle, Record>, effect: ICache[]): void {
     changeset.forEach((r: Record, h: Handle) => {
       let unmount: boolean = r.edits.has(RT_UNMOUNT);
@@ -432,6 +436,7 @@ Promise.prototype.then = function(
 function init(): void {
   Utils.different = Cache.differentImpl; // override
   Record.markViewed = Cache.markViewed; // override
+  Record.markEdited = Cache.markEdited; // override
   Snapshot.applyDependencies = Cache.applyDependencies; // override
   Hooks.createCacheTrap = Cache.createCacheTrap; // override
   Snapshot.active = Transaction._getActiveSnapshot; // override
