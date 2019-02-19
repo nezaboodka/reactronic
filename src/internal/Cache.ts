@@ -313,7 +313,6 @@ export class Cache implements ICache {
           finally {
             c2.leave(r2, c1, ind);
           }
-          Record.markEdited(r2, c2.member, true);
           Record.markViewed(r2, c2.member);
           return c2.returned;
         }, ...args);
