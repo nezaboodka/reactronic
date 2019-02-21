@@ -1,7 +1,7 @@
 ﻿import test from "ava";
 import { sleep } from "./common";
 import { all } from "../src/internal/z.index";
-import { Reactronic, Transaction, Log, AsyncCalls } from "../src/z.index";
+import { Reactronic, Transaction, AsyncCalls, Debug } from "../src/z.index";
 import { DemoModel, DemoView, actual } from "./async";
 
 let etalon: string[] = [
@@ -17,7 +17,7 @@ let etalon: string[] = [
 ];
 
 test("async", async t => {
-  Log.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 1;
+  Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 1;
   let app = Transaction.run(() => new DemoView(new DemoModel()));
   app.model.load.reactronic.configure({asyncCalls: AsyncCalls.Multiple});
   try {

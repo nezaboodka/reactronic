@@ -1,4 +1,4 @@
-export { Log } from "./internal/z.index";
+export { Debug } from "./internal/z.index";
 
 export { Reactronic } from "./internal/Cache";
 export { Config, Mode, Renew, Isolation, AsyncCalls,

@@ -1,4 +1,4 @@
-import { Log } from "./Log";
+import { Debug } from "./Debug";
 
 const RT_BINDING: unique symbol = Symbol("rt:binding");
 
@@ -19,7 +19,7 @@ export class Binding {
   writable(receiver: any): any[] {
     let a: any[] = this.owner[this.prop];
     if (a === receiver) { // check if it's first write and clone then
-      if (Log.verbosity >= 3) Log.print("║", "", ` Copy-on-write: ${this.owner.constructor.name}.${this.prop.toString()}(${a.length})`);
+      if (Debug.verbosity >= 3) Debug.log("║", "", ` Copy-on-write: ${this.owner.constructor.name}.${this.prop.toString()}(${a.length})`);
       a = this.owner[this.prop] = Array.prototype.slice.call(this.array);
     }
     return a;

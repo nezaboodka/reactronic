@@ -1,4 +1,4 @@
-import { Log, undef, Record, ICache, F, Handle, Snapshot, Hint } from "./internal/z.index";
+import { Debug, undef, Record, ICache, F, Handle, Snapshot, Hint } from "./internal/z.index";
 
 export class Transaction {
   static active: Transaction;
@@ -122,8 +122,8 @@ export class Transaction {
     try {
       this.busy++;
       Transaction.active = this;
-      Log.color = 31 + (this.snapshot.id) % 6;
-      Log.prefix = `t${this.snapshot.id}`;
+      Debug.color = 31 + (this.snapshot.id) % 6;
+      Debug.prefix = `t${this.snapshot.id}`;
       this.snapshot.checkout();
       result = func(...args);
       if (this.sealed && this.busy === 1 && !this.error)
@@ -139,8 +139,8 @@ export class Transaction {
         !this.error ? this.performCommit() : this.performDiscard();
         Object.freeze(this);
       }
-      Log.prefix = `t${outer.snapshot.id}`;
-      Log.color = 31 + outer.snapshot.id % 6;
+      Debug.prefix = `t${outer.snapshot.id}`;
+      Debug.color = 31 + outer.snapshot.id % 6;
       Transaction.active = outer;
     }
     if (this.reaction.effect.length > 0) {

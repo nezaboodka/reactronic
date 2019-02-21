@@ -1,5 +1,5 @@
 ﻿import test from "ava";
-import { Reactronic, Transaction, Log } from "../src/z.index";
+import { Reactronic, Transaction, Debug } from "../src/z.index";
 import { Person } from "./common";
 import { DemoModel, DemoView, actual } from "./basic";
 
@@ -14,7 +14,7 @@ let etalon: string[] = [
 ];
 
 test("basic", t => {
-  Log.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 1;
+  Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 1;
   // Simple actions
   let app = Transaction.run(() => new DemoView(new DemoModel()));
   try {

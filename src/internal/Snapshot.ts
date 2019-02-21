@@ -1,5 +1,5 @@
 import { Utils, undef } from "./Utils";
-import { Log } from "./Log";
+import { Debug } from "./Debug";
 import { Record, ISnapshot, ICache, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 
@@ -82,7 +82,7 @@ export class Snapshot implements ISnapshot {
     if (!this.completed && this.timestamp === Number.MAX_SAFE_INTEGER) {
       this._timestamp = Snapshot.headTimestamp;
       Snapshot.activeSnapshots.push(this);
-      if (Log.verbosity >= 1) Log.print("╔═══", `v${this.timestamp}`, `${this.hint}`);
+      if (Debug.verbosity >= 1) Debug.log("╔═══", `v${this.timestamp}`, `${this.hint}`);
     }
   }
 
@@ -97,7 +97,7 @@ export class Snapshot implements ISnapshot {
               conflicts = [];
             conflicts.push(r);
           }
-          if (Log.verbosity >= 1) Log.print("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
+          if (Debug.verbosity >= 1) Debug.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
       this._timestamp = ++Snapshot.headTimestamp;
@@ -118,13 +118,13 @@ export class Snapshot implements ISnapshot {
         while (theirs && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.edits.has(prop)) {
             let diff = Utils.different(theirs.data[prop], ours.data[prop]);
-            if (Log.verbosity >= 2) Log.print("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Debug.verbosity >= 2) Debug.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
             if (diff)
               ours.conflicts.set(prop, theirs);
             break;
           }
           else if (prop === RT_UNMOUNT || unmountTheirs) {
-            if (Log.verbosity >= 2) Log.print("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "!=" ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Debug.verbosity >= 2) Debug.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "!=" ${Hint.record(theirs, false)}.${prop.toString()}.`);
             ours.conflicts.set(prop, theirs);
             break;
           }
@@ -147,15 +147,15 @@ export class Snapshot implements ISnapshot {
         h.editing = undefined;
       if (!error) {
         h.head = r;
-        if (Log.verbosity >= 1) {
+        if (Debug.verbosity >= 1) {
           let props: string[] = [];
           r.edits.forEach((prop: PropertyKey) => props.push(prop.toString()));
           let s = props.join(", ");
-          Log.print("║", "•", `${Hint.record(r, true)}(${s}) is applied.`);
+          Debug.log("║", "•", `${Hint.record(r, true)}(${s}) is applied.`);
         }
       }
     });
-    if (Log.verbosity >= 1) Log.print(this.timestamp > 0 ? "╚═══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "DISCARD" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
+    if (Debug.verbosity >= 1) Debug.log(this.timestamp > 0 ? "╚═══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "DISCARD" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
   static applyDependencies = function(changeset: Map<Handle, Record>, effect: ICache[]): void {
@@ -180,9 +180,9 @@ export class Snapshot implements ISnapshot {
   }
 
   private archiveChangeset(): void {
-    if (Log.verbosity >= 3) Log.print("", "gc", `t${this.id}: ${this.hint}`);
+    if (Debug.verbosity >= 3) Debug.log("", "gc", `t${this.id}: ${this.hint}`);
     this.changeset.forEach((r: Record, h: Handle) => {
-      if (Log.verbosity >= 3 && r.prev.record) Log.print("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
+      if (Debug.verbosity >= 3 && r.prev.record) Debug.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
       r.prev.record = undefined; // unlink history
     });
