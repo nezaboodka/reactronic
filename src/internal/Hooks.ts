@@ -80,6 +80,12 @@ export class Hooks implements ProxyHandler<Handle> {
     return true;
   }
 
+  ownKeys(h: Handle): PropertyKey[] {
+    // TODO: Exclude caches from the list of own keys
+    let r: Record = Snapshot.active().readable(h);
+    return Reflect.ownKeys(r.data);
+  }
+
   static decorateClass(config: Partial<Config>, origCtor: any): any {
     let ctor: any = origCtor;
     if (config.mode !== Mode.Stateless) {
