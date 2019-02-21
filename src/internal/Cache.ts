@@ -15,6 +15,7 @@ class CacheProxy extends Reactronic<any> {
   get returned(): Promise<any> | any { return this.obtain(true, false).cache.returned; }
   get value(): any { return this.obtain(true, false).cache.value; }
   get error(): boolean { return this.obtain(true, false).cache.error; }
+  get pulsar(): any { return this.obtain(true, false).cache.pulsar; }
   get invalidator(): string | undefined { return this.obtain(true, false).cache.invalidator; }
   invalidate(invalidator: string | undefined): boolean { return invalidator ? Cache.enforceInvalidation(this.obtain(false, false).cache, invalidator, 0) : false; }
   get isRunning(): boolean { return this.obtain(true, false).cache.isRunning; }
@@ -71,6 +72,7 @@ export class Cache implements ICache {
   returned: any;
   value: any;
   error: any;
+  pulsar: any;
   isRunning: boolean;
   invalidator?: string;
   readonly updater: { active: Cache | undefined }; // TODO: count updaters
@@ -343,7 +345,7 @@ export class Cache implements ICache {
   enter(r: Record, prev: Cache, ind: Monitor | null): void {
     if (Log.verbosity >= 2) Log.print("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
     this.isRunning = true;
-    Cache.monitorEnter(ind);
+    this.monitorEnter(ind);
     if (!prev.updater.active)
       prev.updater.active = this;
   }
@@ -372,18 +374,18 @@ export class Cache implements ICache {
   private leaveImpl(r: Record, prev: Cache, ind: Monitor | null, op: string, message: string): void {
     if (prev.updater.active === this)
       prev.updater.active = undefined;
-    Cache.monitorLeave(ind);
+    this.monitorLeave(ind);
     this.isRunning = false;
     if (Log.verbosity >= 1) Log.print("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`);
   }
 
-  static monitorEnter(mon: Monitor | null): void {
+  monitorEnter(mon: Monitor | null): void {
     if (mon)
       Transaction.runAs<void>("Monitor.enter", mon.isolation >= Isolation.StandaloneTransaction,
         Cache.run, undefined, () => mon.enter());
   }
 
-  static monitorLeave(mon: Monitor | null): void {
+  monitorLeave(mon: Monitor | null): void {
     if (mon)
       Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction,
         Cache.run, undefined, () => mon.leave());
@@ -402,6 +404,10 @@ export class Cache implements ICache {
     else
       result = !Utils.equal(oldValue, newValue);
     return result;
+  }
+
+  static pulse(data: any): void {
+    //
   }
 
   static freeze(c: Cache): void {

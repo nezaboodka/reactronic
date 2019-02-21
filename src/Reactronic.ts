@@ -8,6 +8,7 @@ export abstract class Reactronic<T> {
   abstract readonly returned: Promise<T> | T;
   abstract readonly value: T;
   abstract readonly error: any;
+  abstract readonly pulsar: any;
   abstract readonly invalidator: string | undefined;
   abstract invalidate(invalidator: string | undefined): boolean;
   get isInvalidated(): boolean { return this.invalidator !== undefined; }
@@ -15,6 +16,7 @@ export abstract class Reactronic<T> {
   static at<T>(method: F<Promise<T>>): Reactronic<T>;
   static at<T>(method: F<T>): Reactronic<T> { return Cache.at(method); }
   static unmount(...objects: any[]): Transaction { return Cache.unmount(...objects); }
+  static pulse(data: any): void { Cache.pulse(data); }
 }
 
 // Function.reactronic
