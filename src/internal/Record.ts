@@ -1,5 +1,6 @@
 import { Utils, undef } from "./Utils";
 import { CopyOnWriteHooks } from "./Hooks";
+import { IOperation } from "../Monitor";
 
 export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 
@@ -63,7 +64,7 @@ export interface ISnapshot {
   readonly completed: boolean;
 }
 
-export interface ICache {
+export interface ICache extends IOperation {
   wrap<T>(func: F<T>): F<T>;
   invalidate(invalidator: string, effect: ICache[]): void;
   ensureUpToDate(now: boolean, ...args: any[]): void;

@@ -382,13 +382,13 @@ export class Cache implements ICache {
   monitorEnter(mon: Monitor | null): void {
     if (mon)
       Transaction.runAs<void>("Monitor.enter", mon.isolation >= Isolation.StandaloneTransaction,
-        Cache.run, undefined, () => mon.enter());
+        Cache.run, undefined, () => mon.enter(this));
   }
 
   monitorLeave(mon: Monitor | null): void {
     if (mon)
       Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction,
-        Cache.run, undefined, () => mon.leave());
+        Cache.run, undefined, () => mon.leave(this));
   }
 
   static differentImpl(oldValue: any, newValue: any): boolean {
