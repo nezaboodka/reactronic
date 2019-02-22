@@ -1,5 +1,5 @@
 import { Utils, undef } from "./Utils";
-import { ArrayHooks } from "./Hooks";
+import { CopyOnWriteHooks } from "./Hooks";
 
 export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 
@@ -36,7 +36,7 @@ export class Record {
     this.edits.forEach((prop: PropertyKey) => {
       let arr = this.data[prop];
       if (Array.isArray(arr) && !Object.isFrozen(arr))
-        this.data[prop] = ArrayHooks.freezeAndWrapArray(proxy, prop, arr);
+        this.data[prop] = CopyOnWriteHooks.seal(proxy, prop, arr);
     });
     Object.freeze(this.data);
     Utils.freezeSet(this.edits);

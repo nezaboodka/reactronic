@@ -1,5 +1,5 @@
 import { Utils, undef } from "./Utils";
-import { ArrayEx, Binding } from "./ArrayEx";
+import { CopyOnWriteArray, Binding } from "./ArrayEx";
 import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
@@ -169,21 +169,21 @@ function decoratedclass(...args: any[]): never {
 
 const EMPTY_CONFIG_TABLE = {};
 
-export class ArrayHooks implements ProxyHandler<Binding> {
-  static readonly global: ArrayHooks = new ArrayHooks();
+export class CopyOnWriteHooks implements ProxyHandler<Binding<any>> {
+  static readonly global: CopyOnWriteHooks = new CopyOnWriteHooks();
 
-  get(binding: Binding, prop: PropertyKey, receiver: any): any {
+  get(binding: Binding<any>, prop: PropertyKey, receiver: any): any {
     let a: any = binding.readable(receiver);
     return a[prop];
   }
 
-  set(binding: Binding, prop: PropertyKey, value: any, receiver: any): boolean {
+  set(binding: Binding<any>, prop: PropertyKey, value: any, receiver: any): boolean {
     let a: any = binding.writable(receiver);
     return a[prop] = value;
   }
 
-  static freezeAndWrapArray(owner: any, prop: PropertyKey, array: any[]): any {
-    return new Proxy(ArrayEx.bind(owner, prop, array), ArrayHooks.global);
+  static seal(owner: any, prop: PropertyKey, array: any[]): any {
+    return new Proxy(CopyOnWriteArray.seal(owner, prop, array), CopyOnWriteHooks.global);
   }
 }
 
