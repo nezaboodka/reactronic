@@ -1,7 +1,7 @@
 import { Binding, R, W } from "./Binding";
 export { Binding } from "./Binding";
 
-export class CopyOnWriteArray<T> extends Array<T> {
+export abstract class CopyOnWriteArray<T> extends Array<T> {
   get length(): number { return R<T[]>(this).length; }
   toString(): string { return super.toString.call(R<T[]>(this)); }
   toLocaleString(): string { return super.toLocaleString.call(R<T[]>(this)); }
