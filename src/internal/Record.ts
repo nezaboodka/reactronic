@@ -1,6 +1,6 @@
 import { Utils, undef } from "./Utils";
 import { CopyOnWriteHooks } from "./Hooks";
-import { IOperation } from "../Monitor";
+import { Operation } from "../Monitor";
 
 export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 
@@ -34,11 +34,7 @@ export class Record {
   };
 
   finalize<T, C>(proxy: any): void {
-    this.edits.forEach((prop: PropertyKey) => {
-      let arr = this.data[prop];
-      if (Array.isArray(arr) && !Object.isFrozen(arr))
-        this.data[prop] = CopyOnWriteHooks.seal(proxy, prop, arr);
-    });
+    this.edits.forEach(prop => CopyOnWriteHooks.sealIfNeeded(this.data, proxy, prop));
     Object.freeze(this.data);
     Utils.freezeSet(this.edits);
     Utils.freezeMap(this.conflicts);
@@ -64,7 +60,7 @@ export interface ISnapshot {
   readonly completed: boolean;
 }
 
-export interface ICache extends IOperation {
+export interface ICache extends Operation {
   wrap<T>(func: F<T>): F<T>;
   invalidate(invalidator: string, effect: ICache[]): void;
   ensureUpToDate(now: boolean, ...args: any[]): void;

@@ -4,4 +4,4 @@ export { Reactronic } from "./internal/Cache";
 export { Config, Mode, Renew, Isolation, AsyncCalls,
   state, stateless, transaction, cache, monitor, config } from "./Config";
 export { Transaction } from "./Transaction";
-export { Monitor } from "./Monitor";
+export { Monitor, Operation } from "./Monitor";

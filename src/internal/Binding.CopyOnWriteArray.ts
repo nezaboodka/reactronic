@@ -1,4 +1,4 @@
-import { Binding, RT_BINDING } from "./Binding";
+import { Binding, R, W } from "./Binding";
 export { Binding } from "./Binding";
 
 export class CopyOnWriteArray<T> extends Array<T> {
@@ -37,14 +37,4 @@ export class CopyOnWriteArray<T> extends Array<T> {
   static clone<T>(array: T[]): T[] {
     return Array.prototype.slice.call(array);
   }
-}
-
-function R<T>(self: any): T {
-  let binding: Binding<T> = self[RT_BINDING];
-  return binding.readable(self);
-}
-
-function W<T>(self: any): T {
-  let binding: Binding<T> = self[RT_BINDING];
-  return binding.writable(self);
 }

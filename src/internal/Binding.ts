@@ -37,3 +37,13 @@ export class Binding<T> {
     return binding;
   }
 }
+
+export function R<T>(self: any): T {
+  let binding: Binding<T> = self[RT_BINDING];
+  return binding.readable(self);
+}
+
+export function W<T>(self: any): T {
+  let binding: Binding<T> = self[RT_BINDING];
+  return binding.writable(self);
+}

@@ -1,5 +1,6 @@
 import { Utils, undef } from "./Utils";
 import { CopyOnWriteArray, Binding } from "./Binding.CopyOnWriteArray";
+import { CopyOnWriteSet } from "./Binding.CopyOnWriteSet";
 import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
@@ -182,8 +183,16 @@ export class CopyOnWriteHooks implements ProxyHandler<Binding<any>> {
     return a[prop] = value;
   }
 
-  static seal(owner: any, prop: PropertyKey, array: any[]): any {
-    return new Proxy(CopyOnWriteArray.seal(owner, prop, array), CopyOnWriteHooks.global);
+  static sealIfNeeded(data: any, proxy: any, prop: PropertyKey): void {
+    let value = data[prop];
+    if (Array.isArray(value)) {
+      if (!Object.isFrozen(value))
+        data[prop] = new Proxy(CopyOnWriteArray.seal(proxy, prop, value), CopyOnWriteHooks.global);
+    }
+    else if (value instanceof Set) {
+      if (!Object.isFrozen(value))
+        data[prop] = new Proxy(CopyOnWriteSet.seal(proxy, prop, value), CopyOnWriteHooks.global);
+    }
   }
 }
 
