@@ -1,5 +1,5 @@
 import { Utils, undef } from "./Utils";
-import { CopyOnWriteArray, Binding } from "./ArrayEx";
+import { CopyOnWriteArray, Binding } from "./Binding.CopyOnWriteArray";
 import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
