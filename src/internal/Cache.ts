@@ -34,7 +34,7 @@ class CacheProxy extends Reactronic<any> {
       Snapshot.active().writable(this.handle, member, RT_CACHE) :
       Snapshot.active().readable(this.handle);
     let c: Cache = r.data[member] || this.blank;
-    if (edit && c.invalidator) {
+    if (edit && (c.invalidator || c.config.latency === Renew.DoesNotCache)) {
       c = new Cache(this.handle, c.member, c);
       r.data[c.member] = c;
     }
