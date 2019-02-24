@@ -18,10 +18,15 @@ export class Transaction {
   }
 
   get id(): number { return this.snapshot.id; }
+  get hint(): string { return this.snapshot.hint; }
 
   run<T>(func: F<T>, ...args: any[]): T {
     if (this.sealed && Transaction.active !== this)
       throw new Error("E601: cannot run sealed transaction");
+    return this._run(func, ...args);
+  }
+
+  view<T>(func: F<T>, ...args: any[]): T {
     return this._run(func, ...args);
   }
 

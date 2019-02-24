@@ -16,7 +16,6 @@ export abstract class Reactronic<T> {
   static at<T>(method: F<Promise<T>>): Reactronic<T>;
   static at<T>(method: F<T>): Reactronic<T> { return Cache.at(method); }
   static unmount(...objects: any[]): Transaction { return Cache.unmount(...objects); }
-  static pulse(data: any): void { Cache.pulse(data); }
 }
 
 // Function.reactronic

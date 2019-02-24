@@ -68,7 +68,7 @@ export class Cache implements ICache {
   readonly owner: Handle;
   readonly member: PropertyKey;
   config: ConfigImpl;
-  args?: any[];
+  args: any[];
   returned: any;
   value: any;
   error: any;
@@ -83,8 +83,14 @@ export class Cache implements ICache {
     this.tran = Transaction.active;
     this.owner = owner;
     this.member = member;
-    this.config = (init instanceof Cache) ? init.config : init;
-    // this.args = undefined;
+    if (init instanceof Cache) {
+      this.config = init.config;
+      this.args = init.args;
+    }
+    else {
+      this.config = init;
+      this.args = [];
+    }
     // this.result = undefined;
     // this.value = undefined;
     // this.error = undefined;
@@ -319,7 +325,10 @@ export class Cache implements ICache {
           c2.enter(r2, c1, ind);
           try
           {
-            c2.args = argsx;
+            if (argsx.length > 0)
+              c2.args = argsx;
+            else
+              argsx = c2.args;
             c2.invalidator = undefined;
             c2.returned = Cache.run<any>(c2, (...argsy: any[]): any => {
               return c2.config.body.call(c2.owner.proxy, ...argsy);
@@ -404,10 +413,6 @@ export class Cache implements ICache {
     else
       result = !Utils.equal(oldValue, newValue);
     return result;
-  }
-
-  static pulse(data: any): void {
-    //
   }
 
   static freeze(c: Cache): void {
