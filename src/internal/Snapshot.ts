@@ -196,7 +196,7 @@ export class Snapshot implements ISnapshot {
 
 export class Hint {
   static handle(h: Handle, typeless?: boolean): string {
-    return `${h.hint ? `${h.hint}/` : ""}${typeless ? "" : h.type}#${h.id}`;
+    return typeless ? `#${h.id}` : `${h.hint ? h.hint : h.type}#${h.id}`;
   }
 
   static record(r: Record, tranless?: boolean, typeless?: boolean, prop?: PropertyKey): string {

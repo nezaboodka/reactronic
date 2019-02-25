@@ -1,4 +1,4 @@
-import { Utils, Debug, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
+import { Utils, Debug, sleep, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { Reactronic } from "../Reactronic";
 export { Reactronic } from "../Reactronic";
 import { Config, Renew, AsyncCalls, Isolation } from "../Config";
@@ -135,16 +135,18 @@ export class Cache implements ICache {
   }
 
   ensureUpToDate(now: boolean, ...args: any[]): void {
-    if (now || this.config.latency === Renew.Immediately) {
-      if ((this.config.latency === Renew.DoesNotCache || this.invalidator) && !this.error) {
-        let proxy: any = this.owner.proxy;
-        let result: any = Reflect.get(proxy, this.member, proxy)(...args);
-        if (result instanceof Promise)
-          result.catch((error: any) => { /* nop */ }); // bad idea to hide an error
+    // if (this !== Cache.active) {
+      if (now || this.config.latency === Renew.Immediately) {
+        if ((this.config.latency === Renew.DoesNotCache || this.invalidator) && !this.error) {
+          let proxy: any = this.owner.proxy;
+          let result: any = Reflect.get(proxy, this.member, proxy)(...args);
+          if (result instanceof Promise)
+            result.catch((error: any) => { /* nop */ }); // bad idea to hide an error
+        }
       }
-    }
-    else
-      setTimeout(() => this.ensureUpToDate(true), this.config.latency);
+      else
+        sleep(this.config.latency).then(() => this.ensureUpToDate(true, ...args));
+    // }
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
@@ -168,7 +170,7 @@ export class Cache implements ICache {
       let effect: ICache[] = [];
       observers.forEach((c: ICache) => c.invalidate(Hint.record(r, false, false, prop), effect));
       if (effect.length > 0)
-        Transaction.ensureAllUpToDate(Hint.record(r), { tran: undefined, effect });
+        Transaction.ensureAllUpToDate(Hint.record(r), { tran: Transaction.active, effect });
       r.observers.delete(prop);
     }
   }
@@ -278,7 +280,7 @@ export class Cache implements ICache {
     if (latency === Renew.Immediately)
       Transaction.ensureAllUpToDate(invalidator, { effect });
     else
-      setTimeout(() => Transaction.ensureAllUpToDate(invalidator, { effect }), latency);
+      sleep(latency).then(() => Transaction.ensureAllUpToDate(invalidator, { effect }));
     return true;
   }
 

@@ -28,7 +28,7 @@ export class Handle {
     this.editors = 0;
   }
 
-  static setHint(obj: object, hint: string): void {
+  static setHint(obj: object, hint: string | undefined): void {
     let h: Handle = Utils.get(obj, RT_HANDLE);
     if (h)
       h.hint = hint;

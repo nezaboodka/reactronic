@@ -15,7 +15,7 @@ export class Monitor {
   get volume(): number { return this._volume; }
   get operations(): ReadonlySet<Operation> { return this._operations; }
 
-  constructor(name: string, isolation: Isolation = Isolation.StandaloneTransaction) {
+  constructor(name?: string, isolation: Isolation = Isolation.StandaloneTransaction) {
     this.isolation = isolation;
     Handle.setHint(this, name);
   }
@@ -32,6 +32,10 @@ export class Monitor {
     this._volume--;
     if (this._volume === 0)
       this._idle = true;
+  }
+
+  static new(name?: string): Monitor {
+    return Transaction.run(() => new Monitor(name));
   }
 }
 

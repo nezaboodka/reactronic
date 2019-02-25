@@ -194,8 +194,9 @@ export class Transaction {
   }
 
   static ensureAllUpToDate(hint: string, reaction: { tran?: Transaction, effect: ICache[] }): void {
-    Transaction.runAs<void>(`${hint} - REACTION(${reaction.effect.length})`, true, () => {
-      reaction.tran = Transaction.active;
+    Transaction.runAs<void>(`${hint} - REACTION(${reaction.effect.length})`, reaction.tran === undefined, () => {
+      if (reaction.tran === undefined)
+        reaction.tran = Transaction.active;
       reaction.effect.map(r => r.ensureUpToDate(false));
     });
   }

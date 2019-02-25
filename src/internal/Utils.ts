@@ -95,3 +95,9 @@ export async function all(promises: Array<Promise<any>>): Promise<any[]> {
     throw error;
   return result;
 }
+
+export function sleep<T>(timeout: number): Promise<T> {
+  return new Promise(function(resolve: any) {
+    setTimeout(resolve.bind(null, () => resolve), timeout);
+  });
+}
