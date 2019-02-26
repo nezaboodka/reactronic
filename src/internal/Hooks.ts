@@ -70,8 +70,11 @@ export class Hooks implements ProxyHandler<Handle> {
     let config: ConfigImpl | undefined = Hooks.getConfig(h.proto, prop);
     if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
       let r: Record | undefined = Snapshot.active().tryGetWritable(h, prop, value);
-      if (r) // undefined when r.data[prop] === value, thus creation of edit record was skipped
+      if (r) { // undefined when r.data[prop] === value, thus creation of edit record was skipped
         r.data[prop] = value;
+        let v: any = r.prev.record ? r.prev.record.data[prop] : undefined;
+        Record.markEdited(r, prop, !Utils.equal(v, value) /* && value !== RT_HANDLE*/, value);
+      }
     }
     else {
       if (config.mode !== Mode.Stateless)

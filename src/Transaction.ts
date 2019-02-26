@@ -1,4 +1,4 @@
-import { Debug, undef, Record, ICache, F, Handle, Snapshot, Hint } from "./internal/z.index";
+import { Debug, Utils, undef, Record, ICache, F, Handle, Snapshot, Hint } from "./internal/z.index";
 
 export class Transaction {
   static active: Transaction;
@@ -78,8 +78,11 @@ export class Transaction {
           if (r.prev.backup) {
             let prevValue: any = r.prev.backup.data[prop];
             let t: Record | undefined = Snapshot.active().tryGetWritable(h, prop, prevValue);
-            if (t)
+            if (t) {
               t.data[prop] = prevValue;
+              let v: any = t.prev.record ? t.prev.record.data[prop] : undefined;
+              Record.markEdited(t, prop, !Utils.equal(v, prevValue) /* && value !== RT_HANDLE*/, prevValue);
+            }
           }
         });
       });

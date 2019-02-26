@@ -55,8 +55,6 @@ export class Snapshot implements ISnapshot {
         h.editing = r;
         h.editors++;
       }
-      let v: any = r.prev.record ? r.prev.record.data[prop] : undefined;
-      Record.markEdited(r, prop, !Utils.equal(v, value) /* && value !== RT_HANDLE*/, value);
     }
     else
       r = undefined; // ignore if property is set to the same value

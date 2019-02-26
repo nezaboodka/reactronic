@@ -37,6 +37,7 @@ class CacheProxy extends Reactronic<any> {
     if (edit && (c.invalidator || c.config.latency === Renew.DoesNotCache)) {
       c = new Cache(this.handle, c.member, c);
       r.data[c.member] = c;
+      Record.markEdited(r, c.member, true, RT_CACHE);
     }
     if (register)
       Record.markViewed(r, c.member);
@@ -152,7 +153,7 @@ export class Cache implements ICache {
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: Cache | undefined = Cache.active; // alias
     if (c && c.config.latency >= Renew.Manually && prop !== RT_HANDLE) {
-      Cache.acquireObservableSet(c, prop, false).add(r);
+      Cache.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
       if (Debug.verbosity >= 2) Debug.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
   }
@@ -385,6 +386,9 @@ export class Cache implements ICache {
     this.monitorLeave(ind);
     this.isRunning = false;
     if (Debug.verbosity >= 1) Debug.log("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`);
+    // TODO: handle errors
+    this.subscribeToObservables(true);
+    this.sameSnapshotObservables.clear();
   }
 
   monitorEnter(mon: Monitor | null): void {
