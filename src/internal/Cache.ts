@@ -137,18 +137,16 @@ export class Cache implements ICache {
   }
 
   ensureUpToDate(now: boolean, ...args: any[]): void {
-    // if (this !== Cache.active) {
-      if (now || this.config.latency === Renew.Immediately) {
-        if ((this.config.latency === Renew.DoesNotCache || this.invalidator) && !this.error) {
-          let proxy: any = this.owner.proxy;
-          let result: any = Reflect.get(proxy, this.member, proxy)(...args);
-          if (result instanceof Promise)
-            result.catch((error: any) => { /* nop */ }); // bad idea to hide an error
-        }
+    if (now || this.config.latency === Renew.Immediately) {
+      if ((this.config.latency === Renew.DoesNotCache || this.invalidator) && !this.error) {
+        let proxy: any = this.owner.proxy;
+        let result: any = Reflect.get(proxy, this.member, proxy)(...args);
+        if (result instanceof Promise)
+          result.catch((error: any) => { /* nop */ }); // bad idea to hide an error
       }
-      else
-        sleep(this.config.latency).then(() => this.ensureUpToDate(true, ...args));
-    // }
+    }
+    else
+      sleep(this.config.latency).then(() => this.ensureUpToDate(true, ...args));
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
