@@ -77,6 +77,7 @@ export class Cache implements ICache {
   invalidator?: string;
   readonly updater: { active: Cache | undefined }; // TODO: count updaters
   readonly observables: Map<PropertyKey, Set<Record>>;
+  readonly sameSnapshotObservables: Map<PropertyKey, Set<Record>>;
 
   constructor(owner: Handle, member: PropertyKey, init: Cache | ConfigImpl) {
     this.margin = Cache.active ? Cache.active.margin + 1 : 0;
@@ -98,6 +99,7 @@ export class Cache implements ICache {
     this.invalidator = this.hint(false);
     this.updater = { active: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
+    this.sameSnapshotObservables = new Map<PropertyKey, Set<Record>>();
   }
 
   hint(tranless?: boolean): string { return `${tranless ? "" : `t${this.tran.id}'`}${Hint.handle(this.owner)}.${this.member.toString()}`; }
@@ -152,13 +154,8 @@ export class Cache implements ICache {
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: Cache | undefined = Cache.active; // alias
     if (c && c.config.latency >= Renew.Manually && prop !== RT_HANDLE) {
-      Cache.acquireObservableSet(c, prop).add(r);
+      Cache.acquireObservableSet(c, prop, false).add(r);
       if (Debug.verbosity >= 2) Debug.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
-      if (c.tran.id === r.snapshot.id) {
-        let observers = Cache.acquireObserverSet(r, prop);
-        if (Debug.verbosity >= 1 && !observers.has(c)) Debug.log("║", "∞", `${Hint.record(Snapshot.active().readable(c.owner), false, false, c.member)} is subscribed to {${Hint.record(r, false, true, prop)}}.`);
-        observers.add(c);
-      }
     }
   }
 
@@ -201,7 +198,7 @@ export class Cache implements ICache {
           Cache.markOverwritten(r.prev.record, prop, effect);
           let c: Cache = r.data[prop];
           if (c instanceof Cache) {
-            let cause = c.subscribeToObservables();
+            let cause = c.subscribeToObservables(false);
             if (cause)
               c.invalidate(cause, effect);
           }
@@ -224,17 +221,19 @@ export class Cache implements ICache {
     return result;
   }
 
-  static acquireObservableSet(c: Cache, prop: PropertyKey): Set<Record> {
-    let result: Set<Record> | undefined = c.observables.get(prop);
+  static acquireObservableSet(c: Cache, prop: PropertyKey, sameSnapshot: boolean): Set<Record> {
+    let o = sameSnapshot ? c.sameSnapshotObservables : c.observables;
+    let result: Set<Record> | undefined = o.get(prop);
     if (!result)
-      c.observables.set(prop, result = new Set<Record>());
+      o.set(prop, result = new Set<Record>());
     return result;
   }
 
-  private subscribeToObservables(): string | undefined {
+  private subscribeToObservables(sameSnapshot: boolean): string | undefined {
     let invalidator: string | undefined = undefined;
     let subscriptions: string[] = [];
-    this.observables.forEach((observables: Set<Record>, prop: PropertyKey) => {
+    let o = sameSnapshot ? this.sameSnapshotObservables : this.observables;
+    o.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach((r: Record) => {
         Cache.acquireObserverSet(r, prop).add(this); // link
         if (Debug.verbosity >= 1) subscriptions.push(Hint.record(r, false, true, prop));
