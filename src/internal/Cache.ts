@@ -351,10 +351,10 @@ export class Cache implements ICache {
     return cachedInvoke;
   }
 
-  enter(r: Record, prev: Cache, ind: Monitor | null): void {
+  enter(r: Record, prev: Cache, mon: Monitor | null): void {
     if (Debug.verbosity >= 2) Debug.log("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
     this.isRunning = true;
-    this.monitorEnter(ind);
+    this.monitorEnter(mon);
     if (!prev.updater.active)
       prev.updater.active = this;
   }
@@ -380,10 +380,10 @@ export class Cache implements ICache {
     }
   }
 
-  private leaveImpl(r: Record, prev: Cache, ind: Monitor | null, op: string, message: string): void {
+  private leaveImpl(r: Record, prev: Cache, mon: Monitor | null, op: string, message: string): void {
     if (prev.updater.active === this)
       prev.updater.active = undefined;
-    this.monitorLeave(ind);
+    this.monitorLeave(mon);
     this.isRunning = false;
     if (Debug.verbosity >= 1) Debug.log("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`);
     // TODO: handle errors
@@ -398,9 +398,24 @@ export class Cache implements ICache {
   }
 
   monitorLeave(mon: Monitor | null): void {
-    if (mon)
-      Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction,
-        Cache.run, undefined, () => mon.leave(this));
+    if (mon) {
+      if (mon.transactionWise) {
+        let outer = Transaction.active;
+        try {
+          Transaction.active = Transaction.notran; // Workaround?
+          this.tran.whenFinished(false).then(() => {
+            Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction,
+            Cache.run, undefined, () => mon.leave(this));
+          });
+        }
+        finally {
+          Transaction.active = outer;
+        }
+      }
+      else
+        Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction,
+          Cache.run, undefined, () => mon.leave(this));
+    }
   }
 
   static differentImpl(oldValue: any, newValue: any): boolean {
