@@ -403,10 +403,11 @@ export class Cache implements ICache {
         let outer = Transaction.active;
         try {
           Transaction.active = Transaction.notran; // Workaround?
-          this.tran.whenFinished(false).then(() => {
+          let leave = () => {
             Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction,
-            Cache.run, undefined, () => mon.leave(this));
-          });
+              Cache.run, undefined, () => mon.leave(this));
+          };
+          this.tran.whenFinished(false).then(leave, leave);
         }
         finally {
           Transaction.active = outer;
