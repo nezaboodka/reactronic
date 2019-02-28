@@ -14,8 +14,8 @@ state management in a Web application.
 Transactional reactivity means that state changes are being made
 in an isolated data snapshot and then, once atomically committed,
 are **consistently propagated** to corresponding visual components
-for rendering. And all that in automatic, seamless, and fine-grained
-way.
+for rendering. All that is done in automatic, seamless, and
+fine-grained way.
 
 ## Conceptual Model
 
