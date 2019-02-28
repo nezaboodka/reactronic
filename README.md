@@ -210,7 +210,7 @@ NPM: `npm install reactronic`
 ```typescript
 // Decorators
 
-function state(proto: object, prop?: PropertyKey): any;
+function stateful(proto: object, prop?: PropertyKey): any;
 function stateless(proto: object, prop: PropertyKey): any;
 function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
 function cache(latency: Latency, isolation: Isolation, asyncCalls: AsyncCalls): F<any>;
