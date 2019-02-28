@@ -1,10 +1,10 @@
 ﻿import { all } from "../src/internal/z.index";
-import { state, transaction, cache, Renew, Isolation, Monitor, monitor } from "../src/z.index";
+import { stateful, transaction, cache, Renew, Isolation, Monitor, monitor } from "../src/z.index";
 import { sleep } from "./common";
 
 export const actual: string[] = [];
 
-@state
+@stateful
 export class DemoModel {
   url: string = "reactronic";
   log: string[] = ["RTA"];
@@ -18,7 +18,7 @@ export class DemoModel {
 }
 
 export class DemoView {
-  @state test: any;
+  @stateful test: any;
   constructor(readonly model: DemoModel) { }
 
   @cache(Renew.OnDemand)

@@ -38,7 +38,7 @@ export enum AsyncCalls {
   Multiple = -2,
 }
 
-export function state(proto: object, prop?: PropertyKey): any {
+export function stateful(proto: object, prop?: PropertyKey): any {
   let config = { mode: Mode.Stateful };
   return prop ? Hooks.decorateField(config, proto, prop) : Hooks.decorateClass(config, proto);
 }

@@ -49,7 +49,7 @@ export class Record {
   }
 }
 
-// Dependecies (abstract)
+// Dependencies (abstract)
 
 export type F<T> = (...args: any[]) => T;
 

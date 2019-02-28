@@ -1,8 +1,8 @@
 import { Handle } from "./internal/z.index";
-import { state, Isolation } from "./Config";
+import { stateful, Isolation } from "./Config";
 import { Transaction } from "./Transaction";
 
-@state
+@stateful
 export class Monitor {
   static global: Monitor;
 

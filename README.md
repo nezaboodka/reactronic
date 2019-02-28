@@ -39,7 +39,7 @@ All state objects are transparently hooked to track access to
 their properties, both on reads and writes.
 
 ``` typescript
-@state
+@stateful
 class MyModel {
   url: string = "https://nezaboodka.com";
   content: string = "database reinvented";
@@ -48,7 +48,7 @@ class MyModel {
 ```
 
 In the example above, the class `MyModel` is instrumented with the
-`@state` decorator and its properties `url`, `content`, and `timestamp`
+`@stateful` decorator and its properties `url`, `content`, and `timestamp`
 are hooked.
 
 ### Transaction
@@ -58,7 +58,7 @@ Every transaction function is instrumented with hooks to provide
 transparent atomicity (by implicit context switching and isolation).
 
 ``` typescript
-@state
+@stateful
 class MyModel {
   // ...
   @transaction
@@ -255,7 +255,7 @@ enum AsyncCalls {
   Multiple = -2,
 }
 
-@state
+@stateful
 class Monitor {
   readonly isIdle: boolean;
   readonly volume: number;

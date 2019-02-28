@@ -1,9 +1,9 @@
-﻿import { state, stateless, transaction, cache, Renew } from "../src/z.index";
+﻿import { stateful, stateless, transaction, cache, Renew } from "../src/z.index";
 import { Person } from "./common";
 
 export const actual: string[] = [];
 
-@state
+@stateful
 export class DemoModel {
   title: string = "Demo";
   users: Person[] = [];
@@ -33,7 +33,7 @@ export class DemoModel {
   }
 }
 
-@state
+@stateful
 export class DemoView {
   @stateless readonly model: DemoModel;
   userFilter: string = "Jo";

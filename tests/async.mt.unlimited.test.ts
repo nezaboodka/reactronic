@@ -21,7 +21,7 @@ test("async", async t => {
   let app = Transaction.run(() => new DemoView(new DemoModel()));
   app.model.load.reactronic.configure({asyncCalls: AsyncCalls.Multiple});
   try {
-    t.throws(() => { app.test = "testing @state for fields"; });
+    t.throws(() => { app.test = "testing @stateful for fields"; });
     await app.print(); // trigger first run
     let list: Array<{ url: string, delay: number }> = [
       { url: "nezaboodka.com", delay: 100 },

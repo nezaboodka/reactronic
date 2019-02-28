@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { state } from "../src/z.index";
+import { stateful } from "../src/z.index";
 
 // sleep
 
@@ -12,7 +12,7 @@ export async function sleep(timeout: number): Promise<void> {
 
 // Person
 
-@state
+@stateful
 export class Person {
   id: string | null = null;
   name: string | null = null;
