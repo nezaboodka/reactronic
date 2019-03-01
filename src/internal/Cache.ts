@@ -78,7 +78,7 @@ export class Cache implements ICache {
   invalidator?: string;
   readonly updater: { active: Cache | undefined }; // TODO: count updaters
   readonly observables: Map<PropertyKey, Set<Record>>;
-  readonly sameSnapshotObservables: Map<PropertyKey, Set<Record>>;
+  readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
   constructor(owner: Handle, member: PropertyKey, init: Cache | ConfigImpl) {
     this.margin = Cache.active ? Cache.active.margin + 1 : 0;
@@ -100,7 +100,7 @@ export class Cache implements ICache {
     this.invalidator = this.hint(false);
     this.updater = { active: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
-    this.sameSnapshotObservables = new Map<PropertyKey, Set<Record>>();
+    this.hotObservables = new Map<PropertyKey, Set<Record>>();
   }
 
   hint(tranless?: boolean): string { return `${tranless ? "" : `t${this.tran.id}'`}${Hint.handle(this.owner)}.${this.member.toString()}`; }
@@ -164,10 +164,12 @@ export class Cache implements ICache {
     let observers: Set<ICache> | undefined = r.observers.get(prop);
     if (observers && observers.size > 0) {
       let effect: ICache[] = [];
-      observers.forEach((c: ICache) => c.invalidate(Hint.record(r, false, false, prop), effect));
-      if (effect.length > 0)
-        Transaction.ensureAllUpToDate(Hint.record(r), { tran: Transaction.active, effect });
+      observers.forEach((c: ICache) => c.invalidateBy(
+        Hint.record(r, false, false, prop), true, effect));
       r.observers.delete(prop);
+      if (effect.length > 0)
+        Transaction.ensureAllUpToDate(Hint.record(r),
+          { tran: Transaction.active, effect });
     }
   }
 
@@ -179,14 +181,14 @@ export class Cache implements ICache {
         let prev: Record = r.prev.record;
         if (unmount) {
           for (let prop in prev.data)
-            Cache.markOverwritten(prev, prop, effect);
+            Cache.markOverwritten(prev, prop, false, effect);
           prev.observers.forEach((prevObservers: Set<ICache>, prop: PropertyKey) =>
-            prevObservers.forEach((c: ICache) => c.invalidate(Hint.record(r, false, false, prop), effect)));
+            prevObservers.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, prop), false, effect)));
         }
         else
           prev.observers.forEach((prevObservers: Set<ICache>, prop: PropertyKey) => {
             if (r.edits.has(prop))
-              prevObservers.forEach((c: ICache) => c.invalidate(Hint.record(r, false, false, prop), effect));
+              prevObservers.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, prop), false, effect));
             else
               Cache.retainPrevObservers(r, prop, prev, prevObservers);
           });
@@ -194,12 +196,12 @@ export class Cache implements ICache {
       // Mark previous properties as overwritten and check if reactions are not yet invalidated
       if (!unmount)
         r.edits.forEach((prop: PropertyKey) => {
-          Cache.markOverwritten(r.prev.record, prop, effect);
+          Cache.markOverwritten(r.prev.record, prop, false, effect);
           let c: Cache = r.data[prop];
           if (c instanceof Cache) {
             let cause = c.subscribeToObservables(false);
             if (cause)
-              c.invalidate(cause, effect);
+              c.invalidateBy(cause, false, effect);
           }
         });
     });
@@ -220,18 +222,18 @@ export class Cache implements ICache {
     return result;
   }
 
-  static acquireObservableSet(c: Cache, prop: PropertyKey, sameSnapshot: boolean): Set<Record> {
-    let o = sameSnapshot ? c.sameSnapshotObservables : c.observables;
+  static acquireObservableSet(c: Cache, prop: PropertyKey, hot: boolean): Set<Record> {
+    let o = hot ? c.hotObservables : c.observables;
     let result: Set<Record> | undefined = o.get(prop);
     if (!result)
       o.set(prop, result = new Set<Record>());
     return result;
   }
 
-  private subscribeToObservables(sameSnapshot: boolean): string | undefined {
+  private subscribeToObservables(hot: boolean): string | undefined {
     let invalidator: string | undefined = undefined;
     let subscriptions: string[] = [];
-    let o = sameSnapshot ? this.sameSnapshotObservables : this.observables;
+    let o = hot ? this.hotObservables : this.observables;
     o.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach((r: Record) => {
         Cache.acquireObserverSet(r, prop).add(this); // link
@@ -255,13 +257,13 @@ export class Cache implements ICache {
     return prevObservers;
   }
 
-  invalidate(invalidator: string, dependents: ICache[]): void {
+  invalidateBy(invalidator: string, hot: boolean, dependents: ICache[]): void {
     if (!this.invalidator) {
       this.invalidator = invalidator;
       // TODO: make cache readonly
       let r: Record = Snapshot.active().readable(this.owner);
       if (r.data[this.member] === this) // TODO: Consider better solution?
-        Cache.markOverwritten(r, this.member, dependents);
+        Cache.markOverwritten(r, this.member, hot, dependents);
       // Check if reaction is a subject for automatic recomputation
       if (this.config.latency >= Renew.Immediately && r.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         dependents.push(this);
@@ -274,7 +276,7 @@ export class Cache implements ICache {
 
   static enforceInvalidation(c: Cache, invalidator: string, latency: number): boolean {
     let effect: Cache[] = [];
-    c.invalidate(invalidator, effect);
+    c.invalidateBy(invalidator, false, effect);
     if (latency === Renew.Immediately)
       Transaction.ensureAllUpToDate(invalidator, { effect });
     else
@@ -282,13 +284,14 @@ export class Cache implements ICache {
     return true;
   }
 
-  static markOverwritten(self: Record | undefined, prop: PropertyKey, effect: ICache[]): void {
+  static markOverwritten(self: Record | undefined, prop: PropertyKey, hot: boolean, effect: ICache[]): void {
     while (self && !self.overwritten.has(prop)) {
       let r = self;
-      r.overwritten.add(prop);
+      if (!hot)
+        r.overwritten.add(prop);
       let o: Set<ICache> | undefined = r.observers.get(prop);
       if (o)
-        o.forEach((c: ICache) => c.invalidate(Hint.record(r, false, false, prop), effect));
+        o.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, prop), hot, effect));
       // Utils.freezeSet(o);
       self = self.prev.record;
     }
@@ -300,7 +303,7 @@ export class Cache implements ICache {
       let cr = impl.obtain(false, false);
       let c: Cache = cr.cache;
       let r: Record = cr.record;
-      if (c.invalidator || c.config.latency === Renew.DoesNotCache) {
+      if (c.invalidator || c.config.latency === Renew.DoesNotCache || c.args[0] !== args[0]) {
         if (c.updater.active) {
           if (c.config.asyncCalls === AsyncCalls.Reused) {
             if (Debug.verbosity >= 2) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is taken from pool`);
@@ -388,7 +391,7 @@ export class Cache implements ICache {
     if (Debug.verbosity >= 1) Debug.log("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`);
     // TODO: handle errors
     this.subscribeToObservables(true);
-    this.sameSnapshotObservables.clear();
+    this.hotObservables.clear();
   }
 
   monitorEnter(mon: Monitor | null): void {
