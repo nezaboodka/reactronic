@@ -288,11 +288,11 @@ class Transaction {
 abstract class Reactronic {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
+  readonly cause: string | undefined;
   readonly returned: any; // just return value, may be a promise
   readonly value: any; // different from this.returned for promises
   readonly error: any;
-  readonly invalidator: string | undefined;
-  invalidate(invalidator: string | undefined): boolean;
+  invalidate(cause: string | undefined): boolean;
   readonly isInvalidated: boolean;
   static at(method: Function): Reactronic;
   static unmount(...objects: any[]): Transaction;
