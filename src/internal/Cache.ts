@@ -16,7 +16,6 @@ class CacheProxy extends Reactronic<any> {
   get returned(): Promise<any> | any { return this.obtain(true, false).cache.returned; }
   get value(): any { return this.obtain(true, false).cache.value; }
   get error(): boolean { return this.obtain(true, false).cache.error; }
-  get pulsar(): any { return this.obtain(true, false).cache.pulsar; }
   invalidate(cause: string | undefined): boolean { return cause ? Cache.enforceInvalidation(this.obtain(false, false).cache, cause, 0) : false; }
   get isRunning(): boolean { return this.obtain(true, false).cache.isRunning; }
 
@@ -73,7 +72,6 @@ export class Cache implements ICache {
   returned: any;
   value: any;
   error: any;
-  pulsar: any;
   isRunning: boolean;
   cause?: string;
   readonly updater: { active: Cache | undefined }; // TODO: count updaters
@@ -181,7 +179,7 @@ export class Cache implements ICache {
         let prev: Record = r.prev.record;
         if (unmount) {
           for (let prop in prev.data)
-            Cache.markOverwritten(prev, prop, false, effect);
+            Cache.markOverwritten(prev, prop, effect);
           prev.observers.forEach((prevObservers: Set<ICache>, prop: PropertyKey) =>
             prevObservers.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, prop), false, effect)));
         }
@@ -196,7 +194,7 @@ export class Cache implements ICache {
       // Mark previous properties as overwritten and check if reactions are not yet invalidated
       if (!unmount)
         r.edits.forEach((prop: PropertyKey) => {
-          Cache.markOverwritten(r.prev.record, prop, false, effect);
+          Cache.markOverwritten(r.prev.record, prop, effect);
           let c: Cache = r.data[prop];
           if (c instanceof Cache) {
             let cause = c.subscribeToObservables(false);
@@ -261,16 +259,27 @@ export class Cache implements ICache {
     if (!this.cause) {
       this.cause = cause;
       // TODO: make cache readonly
+      // Cascade invalidation
       let r: Record = Snapshot.active().readable(this.owner);
-      if (r.data[this.member] === this) // TODO: Consider better solution?
-        Cache.markOverwritten(r, this.member, hot, dependents);
-      // Check if reaction is a subject for automatic recomputation
+      if (r.data[this.member] === this) { // TODO: Consider better solution?
+        let rr: Record | undefined = r;
+        while (rr && !rr.overwritten.has(this.member)) {
+          let o: Set<ICache> | undefined = rr.observers.get(this.member);
+          if (o)
+            o.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, this.member), false, dependents));
+          rr = rr.prev.record;
+        }
+      }
+      // Check if cache should be renewed
       if (this.config.latency >= Renew.Immediately && r.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         dependents.push(this);
         if (Debug.verbosity >= 1) Debug.log(" ", "■", `${this.hint(false)} is invalidated by ${cause} and will run automatically`);
       }
-      else
+      else {
+        if (cause.indexOf(".cached") >= 0)
+          console.log("(!)");
         if (Debug.verbosity >= 1) Debug.log(" ", "□", `${this.hint(false)} is invalidated by ${cause}`);
+      }
     }
   }
 
@@ -284,14 +293,13 @@ export class Cache implements ICache {
     return true;
   }
 
-  static markOverwritten(self: Record | undefined, prop: PropertyKey, hot: boolean, effect: ICache[]): void {
+  static markOverwritten(self: Record | undefined, prop: PropertyKey, effect: ICache[]): void {
     while (self && !self.overwritten.has(prop)) {
       let r = self;
-      if (!hot)
-        r.overwritten.add(prop);
+      r.overwritten.add(prop);
       let o: Set<ICache> | undefined = r.observers.get(prop);
       if (o)
-        o.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, prop), hot, effect));
+        o.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, prop), false, effect));
       // Utils.freezeSet(o);
       self = self.prev.record;
     }

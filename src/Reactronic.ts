@@ -9,7 +9,6 @@ export abstract class Reactronic<T> {
   abstract readonly returned: Promise<T> | T;
   abstract readonly value: T;
   abstract readonly error: any;
-  abstract readonly pulsar: any;
   abstract invalidate(cause: string | undefined): boolean;
   get isInvalidated(): boolean { return this.cause !== undefined; }
   abstract readonly isRunning: boolean;
