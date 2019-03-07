@@ -35,8 +35,6 @@ export abstract class CopyOnWriteArray<T> extends Array<T> {
   }
 
   static clone<T>(array: T[]): T[] {
-    // let result = Array.prototype.slice.call(array);
-    let result = Array.from(array);
-    return result;
+    return Array.prototype.slice.call(array);
   }
 }
