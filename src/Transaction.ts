@@ -245,7 +245,7 @@ export class Transaction {
     Transaction.active = notran;
     Transaction.notran = notran;
     Transaction.blank = new Record(undefined, notran.snapshot, {});
-    Transaction.blank.finalize(undefined);
+    Transaction.blank.freeze();
   }
 }
 

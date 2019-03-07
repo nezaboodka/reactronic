@@ -1,5 +1,4 @@
 import { Utils, undef } from "./Utils";
-import { CopyOnWriteHooks } from "./Hooks";
 
 export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 
@@ -36,8 +35,7 @@ export class Record {
     return undef(); // to be redefined by Cache implementation
   };
 
-  finalize<T, C>(proxy: any): void {
-    this.edits.forEach(prop => CopyOnWriteHooks.sealIfNeeded(this.data, proxy, prop));
+  freeze<T, C>(): void {
     Object.freeze(this.data);
     Utils.freezeSet(this.edits);
     Utils.freezeMap(this.conflicts);

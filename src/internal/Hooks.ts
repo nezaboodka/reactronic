@@ -1,6 +1,7 @@
 import { Utils, undef } from "./Utils";
 import { CopyOnWriteArray, Binding } from "./Binding.CopyOnWriteArray";
 import { CopyOnWriteSet } from "./Binding.CopyOnWriteSet";
+import { CopyOnWriteMap } from "./Binding.CopyOnWriteMap";
 import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
@@ -11,6 +12,7 @@ import { Monitor } from "../Monitor";
 
 export const RT_CONFIG: unique symbol = Symbol("RT:CONFIG");
 export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
+const EMPTY_CONFIG_TABLE = {};
 
 export class ConfigImpl implements Config {
   readonly body: Function;
@@ -208,8 +210,6 @@ function decoratedclass(...args: any[]): never {
   /* istanbul ignore next */ throw new Error("this method should never be called");
 }
 
-const EMPTY_CONFIG_TABLE = {};
-
 export class CopyOnWriteHooks implements ProxyHandler<Binding<any>> {
   static readonly global: CopyOnWriteHooks = new CopyOnWriteHooks();
 
@@ -223,7 +223,7 @@ export class CopyOnWriteHooks implements ProxyHandler<Binding<any>> {
     return a[prop] = value;
   }
 
-  static sealIfNeeded(data: any, proxy: any, prop: PropertyKey): void {
+  static seal(data: any, proxy: any, prop: PropertyKey): void {
     let value = data[prop];
     if (Array.isArray(value)) {
       if (!Object.isFrozen(value))
@@ -232,6 +232,10 @@ export class CopyOnWriteHooks implements ProxyHandler<Binding<any>> {
     else if (value instanceof Set) {
       if (!Object.isFrozen(value))
         data[prop] = new Proxy(CopyOnWriteSet.seal(proxy, prop, value), CopyOnWriteHooks.global);
+    }
+    else if (value instanceof Map) {
+      if (!Object.isFrozen(value))
+        data[prop] = new Proxy(CopyOnWriteMap.seal(proxy, prop, value), CopyOnWriteHooks.global);
     }
   }
 }
