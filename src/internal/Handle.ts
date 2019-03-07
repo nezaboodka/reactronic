@@ -25,10 +25,13 @@ export class Handle {
     this.editors = 0;
   }
 
-  static setName(obj: object, name: string | undefined): void {
-    let h: Handle = Utils.get(obj, RT_HANDLE);
-    if (h && name)
-      h.name = name;
+  static setName<T>(obj: T, name: string | undefined): T {
+    if (name) {
+      let h: Handle = Utils.get(obj, RT_HANDLE);
+      if (h)
+        h.name = name;
+    }
+    return obj;
   }
 
   static getName(obj: object): string | undefined {
