@@ -2,7 +2,7 @@ import { Utils, undef } from "./Utils";
 import { Debug } from "./Debug";
 import { Record, ISnapshot, ICache, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
-import { CopyOnWriteHooks } from "./Hooks";
+import { CopyOnWrite } from "./Hooks";
 
 // Snapshot
 
@@ -139,7 +139,7 @@ export class Snapshot implements ISnapshot {
   checkin(error?: any): void {
     this._completed = true;
     this.changeset.forEach((r: Record, h: Handle) => {
-      r.edits.forEach(prop => CopyOnWriteHooks.seal(r.data, h.proxy, prop));
+      r.edits.forEach(prop => CopyOnWrite.seal(r.data, h.proxy, prop));
       r.freeze();
       h.editors--;
       if (h.editors === 0)

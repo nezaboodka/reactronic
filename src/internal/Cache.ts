@@ -1,4 +1,4 @@
-import { Utils, Debug, sleep, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
+import { Utils, Debug, sleep, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { Reactronic } from "../Reactronic";
 export { Reactronic } from "../Reactronic";
 import { Config, Renew, AsyncCalls, Isolation } from "../Config";
@@ -486,7 +486,7 @@ function init(): void {
   Record.markViewed = Cache.markViewed; // override
   Record.markEdited = Cache.markEdited; // override
   Snapshot.applyDependencies = Cache.applyDependencies; // override
-  Hooks.createCacheTrap = Cache.createCacheTrap; // override
+  Virt.createCacheTrap = Cache.createCacheTrap; // override
   Record.blank = Transaction._getBlankRecord; // override
   Snapshot.active = Transaction._getActiveSnapshot; // override
   Transaction._init();

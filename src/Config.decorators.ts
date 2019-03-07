@@ -1,21 +1,21 @@
 import { F } from "./internal/Record";
-import { Hooks } from "./internal/Hooks";
+import { Virt } from "./internal/Hooks";
 import { Config, Mode, Renew, Latency, Isolation, AsyncCalls } from "./Config";
 import { Monitor } from "./Monitor";
 
 export function stateful(proto: object, prop?: PropertyKey): any {
   let config = { mode: Mode.Stateful };
-  return prop ? Hooks.decorateField(config, proto, prop) : Hooks.decorateClass(config, proto);
+  return prop ? Virt.decorateField(config, proto, prop) : Virt.decorateClass(config, proto);
 }
 
 export function stateless(proto: object, prop: PropertyKey): any {
   let config = { mode: Mode.Stateless };
-  return Hooks.decorateField(config, proto, prop);
+  return Virt.decorateField(config, proto, prop);
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
   let config = { mode: Mode.Stateful, isolation: Isolation.Default };
-  return Hooks.decorateMethod(config, proto, prop, pd);
+  return Virt.decorateMethod(config, proto, prop, pd);
 }
 
 export function cache(
@@ -32,10 +32,10 @@ export function monitor(value: Monitor | null): F<any> {
 export function config(value: Partial<Config>): F<any> {
   return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
     if (prop && pd)
-      return Hooks.decorateMethod(value, proto, prop, pd);
+      return Virt.decorateMethod(value, proto, prop, pd);
     else if (prop)
-      return Hooks.decorateField(value, proto, prop);
+      return Virt.decorateField(value, proto, prop);
     else
-      return Hooks.decorateClass(value, proto);
+      return Virt.decorateClass(value, proto);
   };
 }

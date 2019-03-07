@@ -41,10 +41,10 @@ export class ConfigImpl implements Config {
     monitor: null }, {});
 }
 
-// Hooks
+// Virtualization
 
-export class Hooks implements ProxyHandler<Handle> {
-  static readonly global: Hooks = new Hooks();
+export class Virt implements ProxyHandler<Handle> {
+  static readonly proxy: Virt = new Virt();
 
   getPrototypeOf(h: Handle): object | null {
     return Reflect.getPrototypeOf(h.stateless);
@@ -52,7 +52,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   get(h: Handle, prop: PropertyKey, receiver: any): any {
     let value: any;
-    let config: ConfigImpl | undefined = Hooks.getConfig(h.stateless, prop);
+    let config: ConfigImpl | undefined = Virt.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
       let r: Record = Snapshot.active().readable(h);
       value = r.data[prop];
@@ -67,7 +67,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
-    let config: ConfigImpl | undefined = Hooks.getConfig(h.stateless, prop);
+    let config: ConfigImpl | undefined = Virt.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
       let r: Record | undefined = Snapshot.active().tryGetWritable(h, prop, value);
       if (r) { // undefined when r.data[prop] === value, thus creation of edit record was skipped
@@ -96,26 +96,26 @@ export class Hooks implements ProxyHandler<Handle> {
     if (mode !== Mode.Stateless) {
       ctor = function(this: any, ...args: any[]): any {
         let stateless = new origCtor(...args);
-        let h: Handle = Hooks.createHandle(mode, stateless, undefined);
+        let h: Handle = Virt.createHandle(mode, stateless, undefined);
         return h.proxy;
       };
       ctor.prototype = origCtor.prototype;
       Object.assign(ctor, origCtor); // preserve static definitions
     }
-    Hooks.applyConfig(ctor.prototype, RT_CLASS, decoratedclass, config);
+    Virt.applyConfig(ctor.prototype, RT_CLASS, decoratedclass, config);
     return ctor;
   }
 
   static decorateField(config: Partial<Config>, target: any, prop: PropertyKey): any {
-    config = Hooks.applyConfig(target, prop, decoratedfield, config);
+    config = Virt.applyConfig(target, prop, decoratedfield, config);
     if (config.mode !== Mode.Stateless) {
       let get = function(this: any): any {
-        let h: Handle = Hooks.acquireHandle(this);
-        return Hooks.global.get(h, prop, this);
+        let h: Handle = Virt.acquireHandle(this);
+        return Virt.proxy.get(h, prop, this);
       };
       let set = function(this: any, value: any): boolean {
-        let h: Handle = Hooks.acquireHandle(this);
-        return Hooks.global.set(h, prop, value, this);
+        let h: Handle = Virt.acquireHandle(this);
+        return Virt.proxy.set(h, prop, value, this);
       };
       let enumerable = true;
       let configurable = false;
@@ -126,11 +126,11 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateMethod(config: Partial<Config>, type: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
     let enumerable: boolean = pd ? pd.enumerable === true : true;
     let configurable: boolean = true;
-    let methodConfig = Hooks.applyConfig(type, method, pd.value, config);
+    let methodConfig = Virt.applyConfig(type, method, pd.value, config);
     let get = function(this: any): any {
-      let classConfig: ConfigImpl = Hooks.getConfig(Object.getPrototypeOf(this), RT_CLASS) || ConfigImpl.default;
-      let h: Handle = classConfig.mode !== Mode.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
-      let value = Hooks.createCacheTrap(h, method, methodConfig);
+      let classConfig: ConfigImpl = Virt.getConfig(Object.getPrototypeOf(this), RT_CLASS) || ConfigImpl.default;
+      let h: Handle = classConfig.mode !== Mode.Stateless ? Utils.get(this, RT_HANDLE) : Virt.acquireHandle(this);
+      let value = Virt.createCacheTrap(h, method, methodConfig);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
       return value;
     };
@@ -138,7 +138,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   private static applyConfig(target: any, prop: PropertyKey, body: Function | undefined, config: Partial<ConfigImpl>): ConfigImpl {
-    let table: any = Hooks.acquireConfigTable(target);
+    let table: any = Virt.acquireConfigTable(target);
     let existing: ConfigImpl = table[prop] || ConfigImpl.default;
     let result = table[prop] = new ConfigImpl(body, existing, config);
     return result;
@@ -158,7 +158,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   static getConfig(target: any, prop: PropertyKey): ConfigImpl | undefined {
-    return Hooks.getConfigTable(target)[prop];
+    return Virt.getConfigTable(target)[prop];
   }
 
   static acquireHandle(obj: any): Handle {
@@ -166,23 +166,23 @@ export class Hooks implements ProxyHandler<Handle> {
       throw new Error("E604: only objects can be registered in reactronic store");
     let h: Handle = Utils.get(obj, RT_HANDLE);
     if (!h) {
-      h = new Handle(obj, obj, Hooks.global);
+      h = new Handle(obj, obj, Virt.proxy);
       Utils.set(obj, RT_HANDLE, h);
-      Hooks.decorateField({mode: Mode.Stateful}, obj, RT_UNMOUNT);
+      Virt.decorateField({mode: Mode.Stateful}, obj, RT_UNMOUNT);
     }
     return h;
   }
 
   static createHandle(mode: Mode, stateless: any, proxy: any): Handle {
-    let h = new Handle(stateless, proxy, Hooks.global);
+    let h = new Handle(stateless, proxy, Virt.proxy);
     let r = Snapshot.active().writable(h, RT_HANDLE, RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
-    Hooks.initRecordData(h, mode, stateless, r);
+    Virt.initRecordData(h, mode, stateless, r);
     return h;
   }
 
   static initRecordData(h: Handle, mode: Mode, stateless: any, record: Record): void {
-    let configTable = Hooks.getConfigTable(Object.getPrototypeOf(stateless));
+    let configTable = Virt.getConfigTable(Object.getPrototypeOf(stateless));
     let r = Snapshot.active().writable(h, RT_HANDLE, RT_HANDLE);
     for (let prop of Object.getOwnPropertyNames(stateless)) {
       if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless) {
@@ -211,8 +211,8 @@ function decoratedclass(...args: any[]): never {
   /* istanbul ignore next */ throw new Error("this method should never be called");
 }
 
-export class CopyOnWriteHooks implements ProxyHandler<Binding<any>> {
-  static readonly global: CopyOnWriteHooks = new CopyOnWriteHooks();
+export class CopyOnWrite implements ProxyHandler<Binding<any>> {
+  static readonly global: CopyOnWrite = new CopyOnWrite();
 
   get(binding: Binding<any>, prop: PropertyKey, receiver: any): any {
     let a: any = binding.readable(receiver);
@@ -228,15 +228,15 @@ export class CopyOnWriteHooks implements ProxyHandler<Binding<any>> {
     let value = data[prop];
     if (Array.isArray(value)) {
       if (!Object.isFrozen(value))
-        data[prop] = new Proxy(CopyOnWriteArray.seal(proxy, prop, value), CopyOnWriteHooks.global);
+        data[prop] = new Proxy(CopyOnWriteArray.seal(proxy, prop, value), CopyOnWrite.global);
     }
     else if (value instanceof Set) {
       if (!Object.isFrozen(value))
-        data[prop] = new Proxy(CopyOnWriteSet.seal(proxy, prop, value), CopyOnWriteHooks.global);
+        data[prop] = new Proxy(CopyOnWriteSet.seal(proxy, prop, value), CopyOnWrite.global);
     }
     else if (value instanceof Map) {
       if (!Object.isFrozen(value))
-        data[prop] = new Proxy(CopyOnWriteMap.seal(proxy, prop, value), CopyOnWriteHooks.global);
+        data[prop] = new Proxy(CopyOnWriteMap.seal(proxy, prop, value), CopyOnWrite.global);
     }
   }
 }

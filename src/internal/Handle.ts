@@ -15,10 +15,10 @@ export class Handle {
   editing?: Record;
   editors: number;
 
-  constructor(stateless: any, proxy: any, hooks: ProxyHandler<Handle>) {
+  constructor(stateless: any, proxy: any, virtualization: ProxyHandler<Handle>) {
     this.stateless = stateless;
     this.id = ++Handle.id;
-    this.proxy = proxy || new Proxy<Handle>(this, hooks);
+    this.proxy = proxy || new Proxy<Handle>(this, virtualization);
     this.name = stateless.constructor.name;
     this.head = Record.blank();
     this.editing = undefined;
