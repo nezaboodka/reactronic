@@ -9,7 +9,6 @@ export class Snapshot implements ISnapshot {
   static lastUsedId: number = 16;
   static headTimestamp: number = 18;
   static activeSnapshots: Snapshot[] = [];
-  static readonly zero: Snapshot = new Snapshot("zero");
   readonly id: number = 0;
   readonly hint: string = "";
   readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
@@ -24,8 +23,7 @@ export class Snapshot implements ISnapshot {
   }
 
   static active = function(): Snapshot {
-    // to be redefined by Transaction implementation
-    return Snapshot.zero;
+    return undef(); // to be redefined by Transaction implementation
   };
 
   readable(h: Handle): Record {
@@ -51,6 +49,7 @@ export class Snapshot implements ISnapshot {
       if (!r || r.snapshot !== this) {
         data = Utils.copyAllProps(data, {});
         r = new Record(h.head, this, data);
+        Reflect.set(r.data, RT_HANDLE, h);
         this.changeset.set(h, r);
         h.editing = r;
         h.editors++;
@@ -105,7 +104,7 @@ export class Snapshot implements ISnapshot {
 
   static rebaseRecord(ours: Record, head: Record): number {
     let counter: number = -1;
-    if (head.snapshot.timestamp > ours.snapshot.timestamp) {
+    if (head !== Record.blank() && head.snapshot.timestamp > ours.snapshot.timestamp) {
       counter++;
       let unmountTheirs: boolean = head.edits.has(RT_UNMOUNT);
       let merged = Utils.copyAllProps(head.data, {}); // create merged copy
@@ -180,15 +179,10 @@ export class Snapshot implements ISnapshot {
   private archiveChangeset(): void {
     if (Debug.verbosity >= 3) Debug.log("", "gc", `t${this.id}: ${this.hint}`);
     this.changeset.forEach((r: Record, h: Handle) => {
-      if (Debug.verbosity >= 3 && r.prev.record) Debug.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
+      if (Debug.verbosity >= 3 && r.prev.record && r.prev.record !== Record.blank()) Debug.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
       r.prev.record = undefined; // unlink history
     });
-  }
-
-  static init(): void {
-    Snapshot.zero._timestamp = 0;
-    Snapshot.zero.checkin();
   }
 }
 
@@ -219,5 +213,3 @@ export class Hint {
     return Hint.record(theirs, false, false, prop);
   }
 }
-
-Snapshot.init();

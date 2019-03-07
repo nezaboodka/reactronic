@@ -40,10 +40,10 @@ export class Binding<T> {
 
 export function R<T>(self: any): T {
   let binding: Binding<T> = self[RT_BINDING];
-  return binding.readable(self);
+  return binding !== undefined ? binding.readable(self) : self;
 }
 
 export function W<T>(self: any): T {
   let binding: Binding<T> = self[RT_BINDING];
-  return binding.writable(self);
+  return binding !== undefined ? binding.writable(self) : self;
 }

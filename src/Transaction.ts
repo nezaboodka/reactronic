@@ -3,6 +3,7 @@ import { Debug, Utils, undef, Record, ICache, F, Handle, Snapshot, Hint } from "
 export class Transaction {
   static active: Transaction;
   static notran: Transaction;
+  static blank: Record;
   private readonly snapshot: Snapshot; // assigned in constructor
   private busy: number = 0;
   private sealed: boolean = false;
@@ -229,6 +230,10 @@ export class Transaction {
     return tran;
   }
 
+  static _getBlankRecord(): Record {
+    return Transaction.blank;
+  }
+
   static _getActiveSnapshot(): Snapshot {
     return Transaction.active.snapshot;
   }
@@ -237,8 +242,10 @@ export class Transaction {
     let notran = new Transaction("notran");
     notran.sealed = true;
     notran.snapshot.checkin();
-    Transaction.notran = notran;
     Transaction.active = notran;
+    Transaction.notran = notran;
+    Transaction.blank = new Record(undefined, notran.snapshot, {});
+    Transaction.blank.finalize(undefined);
   }
 }
 

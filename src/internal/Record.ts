@@ -1,6 +1,5 @@
 import { Utils, undef } from "./Utils";
 import { CopyOnWriteHooks } from "./Hooks";
-import { Operation } from "../Monitor";
 
 export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 
@@ -25,12 +24,16 @@ export class Record {
     this.overwritten = new Set<PropertyKey>();
   }
 
+  static blank = function(): Record {
+    return undef(); // to be redefined by Transaction implementation
+  };
+
   static markEdited = function(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
-    undef(); // to be redefined by Cache implementation
+    return undef(); // to be redefined by Cache implementation
   };
 
   static markViewed = function(r: Record, prop: PropertyKey): void {
-    undef(); // to be redefined by Cache implementation
+    return undef(); // to be redefined by Cache implementation
   };
 
   finalize<T, C>(proxy: any): void {
@@ -60,7 +63,7 @@ export interface ISnapshot {
   readonly completed: boolean;
 }
 
-export interface ICache extends Operation {
+export interface ICache {
   wrap<T>(func: F<T>): F<T>;
   invalidateBy(cause: string, hot: boolean, effect: ICache[]): void;
   ensureUpToDate(now: boolean, ...args: any[]): void;

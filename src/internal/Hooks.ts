@@ -2,7 +2,7 @@ import { Utils, undef } from "./Utils";
 import { CopyOnWriteArray, Binding } from "./Binding.CopyOnWriteArray";
 import { CopyOnWriteSet } from "./Binding.CopyOnWriteSet";
 import { Record, F, RT_UNMOUNT } from "./Record";
-import { Handle, RT_HANDLE } from "./Handle";
+import { Handle, RT_HANDLE, RT_STATELESS } from "./Handle";
 import { Snapshot } from "./Snapshot";
 import { Config, Mode, Latency, Renew, AsyncCalls, Isolation } from "../Config";
 import { Monitor } from "../Monitor";
@@ -45,41 +45,38 @@ export class Hooks implements ProxyHandler<Handle> {
   static readonly global: Hooks = new Hooks();
 
   getPrototypeOf(h: Handle): object | null {
-    return h.proto;
+    return Reflect.getPrototypeOf(h.stateless);
   }
 
   get(h: Handle, prop: PropertyKey, receiver: any): any {
     let value: any;
-    let config: ConfigImpl | undefined = Hooks.getConfig(h.proto, prop);
+    let config: ConfigImpl | undefined = Hooks.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
       let r: Record = Snapshot.active().readable(h);
       value = r.data[prop];
       if (value === undefined && !r.data.hasOwnProperty(prop))
-        value = Reflect.get(h.proto, prop, receiver);
+        value = Reflect.get(h.stateless, prop, receiver);
       Record.markViewed(r, prop);
     }
-    else {
-      value = h.stateless[prop];
-      if (config.mode !== Mode.Stateless && value === undefined)
-        value = h.stateless[prop] = Hooks.createCacheTrap(h, prop, config);
-    }
+    else
+      value = Reflect.get(h.stateless, prop, receiver);
     return value;
   }
 
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
-    let config: ConfigImpl | undefined = Hooks.getConfig(h.proto, prop);
+    let config: ConfigImpl | undefined = Hooks.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
       let r: Record | undefined = Snapshot.active().tryGetWritable(h, prop, value);
       if (r) { // undefined when r.data[prop] === value, thus creation of edit record was skipped
         r.data[prop] = value;
         let v: any = r.prev.record ? r.prev.record.data[prop] : undefined;
-        Record.markEdited(r, prop, !Utils.equal(v, value) /* && value !== RT_HANDLE*/, value);
+        Record.markEdited(r, prop, !Utils.equal(v, value), value);
       }
     }
     else {
       if (config.mode !== Mode.Stateless)
         throw new Error("not yet supported");
-      h.stateless[prop] = value;
+      Reflect.set(h.stateless, prop, value, receiver);
     }
     return true;
   }
@@ -92,10 +89,11 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static decorateClass(config: Partial<Config>, origCtor: any): any {
     let ctor: any = origCtor;
-    if (config.mode !== Mode.Stateless) {
+    let mode = config.mode || Mode.Stateful;
+    if (mode !== Mode.Stateless) {
       ctor = function(this: any, ...args: any[]): any {
-        let h: Handle = createHandle(this, undefined);
-        origCtor.call(h.proxy, ...args);
+        let stateless = new origCtor(...args);
+        let h: Handle = Hooks.createHandle(mode, stateless, undefined);
         return h.proxy;
       };
       ctor.prototype = origCtor.prototype;
@@ -109,11 +107,11 @@ export class Hooks implements ProxyHandler<Handle> {
     config = Hooks.applyConfig(target, prop, decoratedfield, config);
     if (config.mode !== Mode.Stateless) {
       let get = function(this: any): any {
-        let h: Handle = acquireHandle(this);
+        let h: Handle = Hooks.acquireHandle(this);
         return Hooks.global.get(h, prop, this);
       };
       let set = function(this: any, value: any): boolean {
-        let h: Handle = acquireHandle(this);
+        let h: Handle = Hooks.acquireHandle(this);
         return Hooks.global.set(h, prop, value, this);
       };
       let enumerable = true;
@@ -123,14 +121,16 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   static decorateMethod(config: Partial<Config>, type: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-    config = Hooks.applyConfig(type, method, pd.value, config);
-    let get = function(this: any): any {
-      let g: ConfigImpl | undefined = Hooks.getConfig(Object.getPrototypeOf(this), RT_CLASS) || ConfigImpl.default;
-      let h: Handle = g.mode !== Mode.Stateless ? Utils.get(this, RT_HANDLE) : acquireHandle(this);
-      return Hooks.global.get(h, method, this);
-    };
     let enumerable: boolean = pd ? pd.enumerable === true : true;
     let configurable: boolean = true;
+    let methodConfig = Hooks.applyConfig(type, method, pd.value, config);
+    let get = function(this: any): any {
+      let classConfig: ConfigImpl = Hooks.getConfig(Object.getPrototypeOf(this), RT_CLASS) || ConfigImpl.default;
+      let h: Handle = classConfig.mode !== Mode.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
+      let value = Hooks.createCacheTrap(h, method, methodConfig);
+      Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
+      return value;
+    };
     return Object.defineProperty(type, method, { get, enumerable, configurable });
   }
 
@@ -158,7 +158,53 @@ export class Hooks implements ProxyHandler<Handle> {
     return Hooks.getConfigTable(target)[prop];
   }
 
-  static createCacheTrap = function(h: Handle, m: PropertyKey, o: ConfigImpl): F<any> {
+  static acquireHandle(obj: any): Handle {
+    if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
+      throw new Error("E604: only objects can be registered in reactronic store");
+    let h: Handle = Utils.get(obj, RT_HANDLE);
+    if (!h) {
+      h = new Handle(obj, obj, Hooks.global);
+      Utils.set(obj, RT_HANDLE, h);
+      Hooks.decorateField({mode: Mode.Stateful}, obj, RT_UNMOUNT);
+    }
+    return h;
+  }
+
+  static createHandle(mode: Mode, stateless: any, proxy: any): Handle {
+    let h = new Handle(stateless, proxy, Hooks.global);
+    let r = Snapshot.active().writable(h, RT_HANDLE, RT_HANDLE);
+    Utils.set(r.data, RT_HANDLE, h);
+    Hooks.initRecordData(h, mode, stateless, r);
+    return h;
+  }
+
+  static initRecordData(h: Handle, mode: Mode, stateless: any, record: Record): void {
+    let configTable = Hooks.getConfigTable(Object.getPrototypeOf(stateless));
+    for (let prop in configTable) {
+      let config: ConfigImpl = configTable[prop];
+      if (config.body !== decoratedfield && config.body !== decoratedclass)
+        record.data[prop] = RT_STATELESS;
+    }
+    for (let prop of Object.getOwnPropertyNames(stateless)) {
+      let r = Snapshot.active().writable(h, prop, RT_HANDLE);
+      Hooks.createRecordDataProp(mode, configTable, stateless, r.data, prop);
+      Record.markEdited(r, prop, true, RT_HANDLE);
+    }
+    for (let prop of Object.getOwnPropertySymbols(stateless)) {
+      let r = Snapshot.active().writable(h, prop, RT_HANDLE);
+      Hooks.createRecordDataProp(mode, configTable, stateless, r.data, prop);
+      Record.markEdited(r, prop, true, RT_HANDLE);
+    }
+  }
+
+  static createRecordDataProp(mode: Mode, configTable: any, stateless: any, mvcc: any, prop: PropertyKey): void {
+    if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless)
+      Utils.copyProp(stateless, mvcc, prop);
+    else
+      mvcc[prop] = RT_STATELESS;
+  }
+
+  static createCacheTrap = function(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
     throw new Error("not implemented");
   };
 }
@@ -197,24 +243,4 @@ export class CopyOnWriteHooks implements ProxyHandler<Binding<any>> {
         data[prop] = new Proxy(CopyOnWriteSet.seal(proxy, prop, value), CopyOnWriteHooks.global);
     }
   }
-}
-
-function acquireHandle(obj: any): Handle {
-  if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
-    throw new Error("E604: only objects can be registered in reactronic store");
-  let h: Handle = Utils.get(obj, RT_HANDLE);
-  if (!h) {
-    h = createHandle(obj, obj);
-    Utils.set(obj, RT_HANDLE, h);
-    Hooks.decorateField({mode: Mode.Stateful}, obj, RT_UNMOUNT);
-  }
-  return h;
-}
-
-function createHandle(obj: any, proxy: any): Handle {
-  let r = new Record(undefined, Snapshot.zero, {});
-  let h = new Handle(proxy, Hooks.global, r, obj);
-  Utils.set(r.data, RT_HANDLE, h);
-  r.finalize(h.proxy);
-  return h;
 }

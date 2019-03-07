@@ -4,6 +4,7 @@ export { Reactronic } from "../Reactronic";
 import { Config, Renew, AsyncCalls, Isolation } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
+import { RT_STATELESS } from "./Handle";
 
 class CacheProxy extends Reactronic<any> {
   private readonly handle: Handle;
@@ -32,7 +33,11 @@ class CacheProxy extends Reactronic<any> {
     let r: Record = edit ?
       Snapshot.active().writable(this.handle, member, RT_CACHE) :
       Snapshot.active().readable(this.handle);
-    let c: Cache = r.data[member] || this.blank;
+    // TODO: Get rid of this workaround
+    let v = r.data[member];
+    if (v === RT_STATELESS || v === undefined)
+      v = this.blank;
+    let c: Cache = v;
     if (edit && (c.cause || c.config.latency === Renew.DoesNotCache)) {
       c = new Cache(this.handle, c.member, c);
       r.data[c.member] = c;
@@ -275,11 +280,8 @@ export class Cache implements ICache {
         dependents.push(this);
         if (Debug.verbosity >= 1) Debug.log(" ", "■", `${this.hint(false)} is invalidated by ${cause} and will run automatically`);
       }
-      else {
-        if (cause.indexOf(".cached") >= 0)
-          console.log("(!)");
+      else
         if (Debug.verbosity >= 1) Debug.log(" ", "□", `${this.hint(false)} is invalidated by ${cause}`);
-      }
     }
   }
 
@@ -305,8 +307,8 @@ export class Cache implements ICache {
     }
   }
 
-  static createCacheTrap(h: Handle, m: PropertyKey, config: ConfigImpl): F<any> {
-    let impl = new CacheProxy(h, m, config);
+  static createCacheTrap(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
+    let impl = new CacheProxy(h, prop, config);
     let cachedInvoke: F<any> = (...args: any[]): any => {
       let cr = impl.obtain(false, false);
       let c: Cache = cr.cache;
@@ -489,6 +491,7 @@ function init(): void {
   Record.markEdited = Cache.markEdited; // override
   Snapshot.applyDependencies = Cache.applyDependencies; // override
   Hooks.createCacheTrap = Cache.createCacheTrap; // override
+  Record.blank = Transaction._getBlankRecord; // override
   Snapshot.active = Transaction._getActiveSnapshot; // override
   Transaction._init();
   Monitor.global = Transaction.run(() => new Monitor("global"));

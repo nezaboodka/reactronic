@@ -1,5 +1,6 @@
 import { Handle } from "./internal/z.index";
-import { stateful, Isolation } from "./Config";
+import { Isolation } from "./Config";
+import { stateful } from "./Config.decorators";
 import { Transaction } from "./Transaction";
 
 @stateful
@@ -34,10 +35,6 @@ export class Monitor {
     this._volume--;
     if (this._volume === 0)
       this._idle = true;
-  }
-
-  static new(name?: string, transactionsWise: boolean = false): Monitor {
-    return Transaction.run(() => new Monitor(name, transactionsWise));
   }
 }
 
