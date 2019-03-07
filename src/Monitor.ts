@@ -5,8 +5,6 @@ import { Transaction } from "./Transaction";
 
 @stateful
 export class Monitor {
-  static global: Monitor;
-
   private _idle: boolean = true;
   private _volume: number = 0;
   private _operations = new Set<Operation>();

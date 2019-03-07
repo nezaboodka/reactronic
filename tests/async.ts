@@ -1,15 +1,17 @@
 ﻿import { all } from "../src/internal/z.index";
-import { stateful, transaction, cache, Renew, Isolation, Monitor, monitor } from "../src/z.index";
+import { stateful, transaction, cache, Renew, Isolation, Monitor, monitor, Transaction } from "../src/z.index";
 import { sleep } from "./common";
 
 export const actual: string[] = [];
+
+const demoMon = Transaction.run(() => new Monitor("demo"));
 
 @stateful
 export class DemoModel {
   url: string = "reactronic";
   log: string[] = ["RTA"];
 
-  @transaction  @monitor(Monitor.global)
+  @transaction  @monitor(demoMon)
   async load(url: string, delay: number): Promise<void> {
     this.url = url;
     await all([sleep(delay)]);
@@ -33,10 +35,9 @@ export class DemoView {
 
   @cache(Renew.Immediately, Isolation.StandaloneTransaction)
   async print(): Promise<void> {
-    let idle = Monitor.global.isIdle;
     let lines: string[] = await this.render();
     for (let x of lines) {
-      actual.push(idle ? x : `[...] ${x}`);
+      actual.push(demoMon.isIdle ? x : `[...] ${x}`);
       // console.log(idle ? x : `[...] ${x}`);
     }
   }

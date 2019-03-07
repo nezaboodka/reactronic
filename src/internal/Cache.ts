@@ -490,7 +490,6 @@ function init(): void {
   Record.blank = Transaction._getBlankRecord; // override
   Snapshot.active = Transaction._getActiveSnapshot; // override
   Transaction._init();
-  Monitor.global = Transaction.run(() => new Monitor("global"));
 }
 
 init();
