@@ -1,5 +1,5 @@
 import { F } from "./internal/Record";
-import { Virt } from "./internal/Hooks";
+import { Virt } from "./internal/Virtualization";
 import { Config, Mode, Renew, Latency, Isolation, AsyncCalls } from "./Config";
 import { Monitor } from "./Monitor";
 

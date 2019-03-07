@@ -2,7 +2,7 @@ import { Utils, undef } from "./Utils";
 import { Debug } from "./Debug";
 import { Record, ISnapshot, ICache, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
-import { CopyOnWrite } from "./Hooks";
+import { CopyOnWrite } from "./Virtualization";
 
 // Snapshot
 

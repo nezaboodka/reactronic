@@ -3,5 +3,5 @@ export * from "./Debug";
 export * from "./Record";
 export * from "./Handle";
 export * from "./Snapshot";
-export * from "./Hooks";
+export * from "./Virtualization";
 export * from "./Cache";
