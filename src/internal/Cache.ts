@@ -309,7 +309,7 @@ export class Cache implements ICache {
       let cr = impl.obtain(false, false);
       let c: Cache = cr.cache;
       let r: Record = cr.record;
-      if (c.cause || c.config.latency === Renew.DoesNotCache || c.args[0] !== args[0]) {
+      if ((c.cause || c.config.latency === Renew.DoesNotCache || c.args[0] !== args[0]) && r.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         if (c.updater.active) {
           if (c.config.asyncCalls === AsyncCalls.Reused) {
             if (Debug.verbosity >= 2) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is taken from pool`);
