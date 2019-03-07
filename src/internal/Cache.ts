@@ -408,7 +408,7 @@ export class Cache implements ICache {
 
   monitorLeave(mon: Monitor | null): void {
     if (mon) {
-      if (mon.transactionWise) {
+      if (mon.prolonged) {
         let outer = Transaction.active;
         try {
           Transaction.active = Transaction.notran; // Workaround?

@@ -189,16 +189,16 @@ export class Snapshot implements ISnapshot {
 }
 
 export class Hint {
-  static handle(h: Handle, typeless?: boolean): string {
-    return typeless ? `#${h.id}` : `${h.hint ? h.hint : h.type}#${h.id}`;
+  static handle(h: Handle, nameless?: boolean): string {
+    return nameless ? `#${h.id}` : `${h.name}#${h.id}`;
   }
 
-  static record(r: Record, tranless?: boolean, typeless?: boolean, prop?: PropertyKey): string {
+  static record(r: Record, tranless?: boolean, nameless?: boolean, prop?: PropertyKey): string {
     let h: Handle = Utils.get(r.data, RT_HANDLE);
     let t: string = tranless ? "" : `t${r.snapshot.id}'`;
     return prop !== undefined ?
-      `${t}${Hint.handle(h, typeless)}.${prop.toString()}` :
-      `${t}${Hint.handle(h, typeless)}`;
+      `${t}${Hint.handle(h, nameless)}.${prop.toString()}` :
+      `${t}${Hint.handle(h, nameless)}`;
   }
 
   static conflicts(conflicts: Record[]): string {

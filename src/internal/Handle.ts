@@ -9,9 +9,8 @@ export class Handle {
   private static id: number = 20;
   readonly stateless: any;
   readonly id: number;
-  readonly type: string;
   readonly proxy: any;
-  hint?: string;
+  name: string;
   head: Record;
   editing?: Record;
   editors: number;
@@ -19,21 +18,21 @@ export class Handle {
   constructor(stateless: any, proxy: any, hooks: ProxyHandler<Handle>) {
     this.stateless = stateless;
     this.id = ++Handle.id;
-    this.type = stateless.constructor.name;
     this.proxy = proxy || new Proxy<Handle>(this, hooks);
+    this.name = stateless.constructor.name;
     this.head = Record.blank();
     this.editing = undefined;
     this.editors = 0;
   }
 
-  static setHint(obj: object, hint: string | undefined): void {
+  static setName(obj: object, name: string | undefined): void {
     let h: Handle = Utils.get(obj, RT_HANDLE);
-    if (h)
-      h.hint = hint;
+    if (h && name)
+      h.name = name;
   }
 
-  static getHint(obj: object): string | undefined {
+  static getName(obj: object): string | undefined {
     let h: Handle = Utils.get(obj, RT_HANDLE);
-    return h ? h.hint : undefined;
+    return h ? h.name : undefined;
   }
 }

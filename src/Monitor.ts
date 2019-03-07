@@ -10,17 +10,16 @@ export class Monitor {
   private _idle: boolean = true;
   private _volume: number = 0;
   private _operations = new Set<Operation>();
-
-  readonly transactionWise: boolean;
+  readonly prolonged: boolean;
   readonly isolation: Isolation;
   get isIdle(): boolean { return this._idle; }
   get volume(): number { return this._volume; }
   get operations(): ReadonlySet<Operation> { return this._operations; }
 
-  constructor(name?: string, transactionsWise: boolean = false, isolation: Isolation = Isolation.StandaloneTransaction) {
-    this.transactionWise = transactionsWise;
+  constructor(name?: string, prolonged: boolean = false, isolation: Isolation = Isolation.StandaloneTransaction) {
+    Handle.setName(this, name);
+    this.prolonged = prolonged;
     this.isolation = isolation;
-    Handle.setHint(this, name);
   }
 
   enter(op: Operation): void {
