@@ -4,7 +4,6 @@ export { Reactronic } from "../Reactronic";
 import { Config, Renew, AsyncCalls, Isolation } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
-import { RT_STATELESS } from "./Handle";
 
 class CacheProxy extends Reactronic<any> {
   private readonly handle: Handle;
@@ -33,10 +32,7 @@ class CacheProxy extends Reactronic<any> {
     let r: Record = edit ?
       Snapshot.active().writable(this.handle, member, RT_CACHE) :
       Snapshot.active().readable(this.handle);
-    // TODO: Get rid of this workaround
-    let v = r.data[member];
-    if (v === RT_STATELESS || v === undefined)
-      v = this.blank;
+    let v = r.data[member] || this.blank;
     let c: Cache = v;
     if (edit && (c.cause || c.config.latency === Renew.DoesNotCache)) {
       c = new Cache(this.handle, c.member, c);

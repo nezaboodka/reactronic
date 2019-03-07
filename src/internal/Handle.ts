@@ -4,7 +4,6 @@ import { Record } from "./Record";
 // Handle
 
 export const RT_HANDLE: unique symbol = Symbol("RT:HANDLE");
-export const RT_STATELESS: unique symbol = Symbol("RT:STATELESS");
 
 export class Handle {
   private static id: number = 20;

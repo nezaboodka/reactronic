@@ -2,7 +2,7 @@ import { Utils, undef } from "./Utils";
 import { CopyOnWriteArray, Binding } from "./Binding.CopyOnWriteArray";
 import { CopyOnWriteSet } from "./Binding.CopyOnWriteSet";
 import { Record, F, RT_UNMOUNT } from "./Record";
-import { Handle, RT_HANDLE, RT_STATELESS } from "./Handle";
+import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
 import { Config, Mode, Latency, Renew, AsyncCalls, Isolation } from "../Config";
 import { Monitor } from "../Monitor";
@@ -180,28 +180,19 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static initRecordData(h: Handle, mode: Mode, stateless: any, record: Record): void {
     let configTable = Hooks.getConfigTable(Object.getPrototypeOf(stateless));
-    for (let prop in configTable) {
-      let config: ConfigImpl = configTable[prop];
-      if (config.body !== decoratedfield && config.body !== decoratedclass)
-        record.data[prop] = RT_STATELESS;
-    }
+    let r = Snapshot.active().writable(h, RT_HANDLE, RT_HANDLE);
     for (let prop of Object.getOwnPropertyNames(stateless)) {
-      let r = Snapshot.active().writable(h, prop, RT_HANDLE);
-      Hooks.createRecordDataProp(mode, configTable, stateless, r.data, prop);
-      Record.markEdited(r, prop, true, RT_HANDLE);
+      if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless) {
+        Utils.copyProp(stateless, r.data, prop);
+        Record.markEdited(r, prop, true, RT_HANDLE);
+      }
     }
     for (let prop of Object.getOwnPropertySymbols(stateless)) {
-      let r = Snapshot.active().writable(h, prop, RT_HANDLE);
-      Hooks.createRecordDataProp(mode, configTable, stateless, r.data, prop);
-      Record.markEdited(r, prop, true, RT_HANDLE);
+      if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless) {
+        Utils.copyProp(stateless, r.data, prop);
+        Record.markEdited(r, prop, true, RT_HANDLE);
+      }
     }
-  }
-
-  static createRecordDataProp(mode: Mode, configTable: any, stateless: any, mvcc: any, prop: PropertyKey): void {
-    if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless)
-      Utils.copyProp(stateless, mvcc, prop);
-    else
-      mvcc[prop] = RT_STATELESS;
   }
 
   static createCacheTrap = function(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
