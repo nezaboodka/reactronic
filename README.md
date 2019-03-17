@@ -4,6 +4,7 @@
 [![GitHub License](https://img.shields.io/badge/license-MIT-4cc61e.svg?style=flat)](https://github.com/nezaboodka/reactronic/blob/master/LICENSE)
 [![CircleCI Status](https://circleci.com/gh/nezaboodka/reactronic.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/nezaboodka/reactronic)
 [![Readiness](https://img.shields.io/badge/readiness-beta-orange.svg)](https://en.wikipedia.org/wiki/Software_release_life_cycle#Beta)
+[![Demo](https://img.shields.io/badge/demo-live-success.svg)](https://nezaboodka.github.io/reactronic-demo/)
 
 # **Reactronic** - Transactionally Reactive State Management
 
@@ -16,6 +17,8 @@ in an isolated data snapshot and then, once atomically committed,
 are **consistently propagated** to corresponding visual components
 for (re)rendering. All that is done in automatic, seamless, and
 fine-grained way.
+
+Live demo is available here: https://nezaboodka.github.io/reactronic-demo/
 
 ## Conceptual Model
 
