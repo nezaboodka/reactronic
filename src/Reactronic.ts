@@ -1,4 +1,4 @@
-import { Cache, F } from "./internal/z.index";
+import { Cache, F, Handle } from "./internal/z.index";
 import { Transaction } from "./Transaction";
 import { Config } from "./Config";
 
@@ -15,6 +15,7 @@ export abstract class Reactronic<T> {
   static at<T>(method: F<Promise<T>>): Reactronic<T>;
   static at<T>(method: F<T>): Reactronic<T> { return Cache.at(method); }
   static unmount(...objects: any[]): Transaction { return Cache.unmount(...objects); }
+  static setHint<T extends object>(obj: T, name: string | undefined): T { return Handle.setName(obj, name); }
 }
 
 // Function.reactronic
