@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     // General
-    "pretty": true,
+    "pretty": false, // true causes PROBLEMS panel not recognizing errors in output
     "watch": false,
     "listFiles": true,
     "inlineSources": false,
@@ -34,8 +34,12 @@
     "experimentalDecorators": true,
     "jsx": "react",
   },
+  // "include": [
+  //   "src/**/*"
+  // ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "build"
   ]
 }
