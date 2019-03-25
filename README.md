@@ -44,8 +44,8 @@ their properties, both on reads and writes.
 ``` typescript
 @stateful
 class MyModel {
-  url: string = "https://nezaboodka.com";
-  content: string = "database reinvented";
+  url: string = "https://github.com/nezaboodka/reactronic";
+  content: string = "transactionally reactive state management";
   timestamp: Date = Date.now();
 }
 ```
