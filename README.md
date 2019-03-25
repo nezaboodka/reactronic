@@ -6,6 +6,8 @@
 [![Readiness](https://img.shields.io/badge/readiness-beta-orange.svg)](https://en.wikipedia.org/wiki/Software_release_life_cycle#Beta)
 [![Demo](https://img.shields.io/badge/demo-live-success.svg)](https://nezaboodka.github.io/reactronic-demo/)
 
+Live demo: https://nezaboodka.github.io/reactronic-demo/
+
 # **Reactronic** - Transactionally Reactive State Management
 
 Reactronic is a JavaScript library that provides
@@ -17,8 +19,6 @@ in an isolated data snapshot and then, once atomically committed,
 are **consistently propagated** to corresponding visual components
 for (re)rendering. All that is done in automatic, seamless, and
 fine-grained way.
-
-Live demo is available here: https://nezaboodka.github.io/reactronic-demo/
 
 ## Conceptual Model
 
