@@ -22,7 +22,7 @@ class CacheProxy extends Reactronic<any> {
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
     this.handle = handle;
-    this.blank = new Cache(this.handle, member, config);
+    this.blank = new Cache(Record.blank(), member, config);
     Cache.freeze(this.blank);
     // TODO: mark cache readonly?
   }
@@ -32,10 +32,9 @@ class CacheProxy extends Reactronic<any> {
     let r: Record = edit ?
       Snapshot.active().writable(this.handle, member, RT_CACHE) :
       Snapshot.active().readable(this.handle);
-    let v = r.data[member] || this.blank;
-    let c: Cache = v;
+    let c: Cache = r.data[member] || this.blank;
     if (edit && (c.cause || c.config.latency === Renew.DoesNotCache)) {
-      c = new Cache(this.handle, c.member, c);
+      c = new Cache(r, c.member, c);
       r.data[c.member] = c;
       Record.markEdited(r, c.member, true, RT_CACHE);
     }
@@ -48,7 +47,7 @@ class CacheProxy extends Reactronic<any> {
     let a1 = this.obtain(false, false);
     let c1: Cache = a1.cache;
     let r1: Record = a1.record;
-    let hint: string = Debug.verbosity > 1 ? `${Hint.handle(c1.owner)}.${c1.member.toString()}.configure` : "configure";
+    let hint: string = Debug.verbosity > 1 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
     return Transaction.runAs<Config>(hint, false, (): Config => {
       let a2 = this.obtain(false, true);
       let c2: Cache = a2.cache;
@@ -66,7 +65,7 @@ export class Cache implements ICache {
   static active?: Cache = undefined;
   readonly margin: number;
   readonly tran: Transaction;
-  readonly owner: Handle;
+  readonly record: Record;
   readonly member: PropertyKey;
   config: ConfigImpl;
   args: any[];
@@ -79,10 +78,10 @@ export class Cache implements ICache {
   readonly observables: Map<PropertyKey, Set<Record>>;
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
-  constructor(owner: Handle, member: PropertyKey, init: Cache | ConfigImpl) {
+  constructor(record: Record, member: PropertyKey, init: Cache | ConfigImpl) {
     this.margin = Cache.active ? Cache.active.margin + 1 : 0;
     this.tran = Transaction.active;
-    this.owner = owner;
+    this.record = record;
     this.member = member;
     if (init instanceof Cache) {
       this.config = init.config;
@@ -96,13 +95,13 @@ export class Cache implements ICache {
     // this.value = undefined;
     // this.error = undefined;
     this.isRunning = false;
-    this.cause = this.hint(false);
+    this.cause = "Cache.ctor"; // this.hint(false);
     this.updater = { active: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
     this.hotObservables = new Map<PropertyKey, Set<Record>>();
   }
 
-  hint(tranless?: boolean): string { return `${tranless ? "" : `t${this.tran.id}'`}${Hint.handle(this.owner)}.${this.member.toString()}`; }
+  hint(tranless?: boolean): string { return `${Hint.record(this.record, tranless, false, this.member)}`; }
 
   static at(method: F<any>): Reactronic<any> {
     let impl: Reactronic<any> | undefined = Utils.get(method, RT_CACHE);
@@ -139,7 +138,7 @@ export class Cache implements ICache {
   ensureUpToDate(now: boolean, ...args: any[]): void {
     if (now || this.config.latency === Renew.Immediately) {
       if ((this.config.latency === Renew.DoesNotCache || this.cause) && !this.error) {
-        let proxy: any = this.owner.proxy;
+        let proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
         let result: any = Reflect.get(proxy, this.member, proxy)(...args);
         if (result instanceof Promise)
           result.catch((error: any) => { /* nop */ }); // bad idea to hide an error
@@ -241,7 +240,7 @@ export class Cache implements ICache {
           cause = Hint.record(r, false, false, prop); // need to invalidate
       });
     });
-    if (Debug.verbosity >= 2 && subscriptions.length > 0) Debug.log(hot ? "║" : " ", "∞", `${Hint.record(Snapshot.active().readable(this.owner), false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if (Debug.verbosity >= 2 && subscriptions.length > 0) Debug.log(hot ? "║" : " ", "∞", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
     return cause;
   }
 
@@ -266,7 +265,7 @@ export class Cache implements ICache {
       }
       // TODO: make cache readonly
       // Cascade invalidation
-      let r: Record = Snapshot.active().readable(this.owner);
+      let r: Record = Snapshot.active().readable(Utils.get(this.record.data, RT_HANDLE));
       if (r.data[this.member] === this) { // TODO: Consider better solution?
         let rr: Record | undefined = r;
         while (rr && !rr.overwritten.has(this.member)) {
@@ -344,7 +343,7 @@ export class Cache implements ICache {
             else
               argsx = c2.args;
             c2.returned = Cache.run<any>(c2, (...argsy: any[]): any => {
-              return c2.config.body.call(c2.owner.proxy, ...argsy);
+              return c2.config.body.call(h.proxy, ...argsy);
             }, ...argsx);
             c2.cause = undefined;
           }
