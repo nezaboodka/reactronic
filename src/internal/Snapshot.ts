@@ -80,7 +80,7 @@ export class Snapshot implements ISnapshot {
     if (!this.completed && this.timestamp === Number.MAX_SAFE_INTEGER) {
       this._timestamp = Snapshot.headTimestamp;
       Snapshot.activeSnapshots.push(this);
-      if (Debug.verbosity >= 2) Debug.log("╔═══", `v${this.timestamp}`, `${this.hint}`);
+      if (Debug.verbosity >= 1) Debug.log("╔═══", `v${this.timestamp}`, `${this.hint}`);
     }
   }
 

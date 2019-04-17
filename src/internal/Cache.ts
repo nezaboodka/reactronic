@@ -241,7 +241,7 @@ export class Cache implements ICache {
           cause = Hint.record(r, false, false, prop); // need to invalidate
       });
     });
-    if (Debug.verbosity >= 2 && subscriptions.length > 0) Debug.log(" ", "∞", `${Hint.record(Snapshot.active().readable(this.owner), false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if (Debug.verbosity >= 2 && subscriptions.length > 0) Debug.log(hot ? "║" : " ", "∞", `${Hint.record(Snapshot.active().readable(this.owner), false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
     return cause;
   }
 
@@ -256,9 +256,14 @@ export class Cache implements ICache {
     return prevObservers;
   }
 
-  invalidateBy(cause: string, hot: boolean, dependents: ICache[]): void {
+  invalidateBy(cause: string, hot: boolean, effect: ICache[]): void {
     if (!this.cause) {
       this.cause = cause;
+      if (this.updater.active) {
+        this.updater.active.tran.cancel();
+        if (Debug.verbosity >= 2) Debug.log("║", " ", `Invalidation: t${this.updater.active.tran.id} is canceled.`);
+        this.updater.active = undefined;
+      }
       // TODO: make cache readonly
       // Cascade invalidation
       let r: Record = Snapshot.active().readable(this.owner);
@@ -267,13 +272,13 @@ export class Cache implements ICache {
         while (rr && !rr.overwritten.has(this.member)) {
           let o: Set<ICache> | undefined = rr.observers.get(this.member);
           if (o)
-            o.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, this.member), false, dependents));
+            o.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, this.member), false, effect));
           rr = rr.prev.record;
         }
       }
       // Check if cache should be renewed
       if (this.config.latency >= Renew.Immediately && r.data[RT_UNMOUNT] !== RT_UNMOUNT) {
-        dependents.push(this);
+        effect.push(this);
         if (Debug.verbosity >= 2) Debug.log(" ", "■", `${this.hint(false)} is invalidated by ${cause} and will run automatically`);
       }
       else
