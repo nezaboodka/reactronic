@@ -33,10 +33,12 @@ class CacheProxy extends Reactronic<any> {
       Snapshot.active().writable(this.handle, member, RT_CACHE) :
       Snapshot.active().readable(this.handle);
     let c: Cache = r.data[member] || this.blank;
-    if (edit && (c.cause || c.config.latency === Renew.DoesNotCache)) {
-      c = new Cache(r, c.member, c);
-      r.data[c.member] = c;
-      Record.markEdited(r, c.member, true, RT_CACHE);
+    if (edit && ((c.cause && (c.record !== r || !c.isRunning)) || c.config.latency === Renew.DoesNotCache)) {
+      let c2 = new Cache(r, c.member, c);
+      r.data[c2.member] = c2;
+      if (Debug.verbosity >= 4) Debug.log("║", " ", `${c2.hint(false)} is created from ${c === this.blank ? "blank" : c.hint(false)}`);
+      Record.markEdited(r, c2.member, true, RT_CACHE);
+      c = c2;
     }
     if (register)
       Record.markViewed(r, c.member);
@@ -152,7 +154,7 @@ export class Cache implements ICache {
     const c: Cache | undefined = Cache.active; // alias
     if (c && c.config.latency >= Renew.Manually && prop !== RT_HANDLE) {
       Cache.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
-      if (Debug.verbosity >= 3) Debug.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
+      if (Debug.verbosity >= 4) Debug.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
   }
 
