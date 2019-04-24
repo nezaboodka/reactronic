@@ -21,6 +21,7 @@ export class ConfigImpl implements Config {
   readonly isolation: Isolation;
   readonly asyncCalls: AsyncCalls;
   readonly monitor: Monitor | null;
+  readonly tracing: number;
 
   constructor(body: Function | undefined, existing: ConfigImpl, patch: Partial<ConfigImpl>) {
     this.body = body !== undefined ? body : existing.body;
@@ -29,6 +30,7 @@ export class ConfigImpl implements Config {
     this.isolation = patch.isolation !== undefined ? patch.isolation : existing.isolation;
     this.asyncCalls = patch.asyncCalls !== undefined ? patch.asyncCalls : existing.asyncCalls;
     this.monitor = patch.monitor !== undefined ? patch.monitor : existing.monitor;
+    this.tracing = patch.tracing !== undefined ? patch.tracing : existing.tracing;
     Object.freeze(this);
   }
 
@@ -38,7 +40,8 @@ export class ConfigImpl implements Config {
     latency: Renew.DoesNotCache,
     isolation: Isolation.Default,
     asyncCalls: AsyncCalls.Single,
-    monitor: null }, {});
+    monitor: null,
+    tracing: 0 }, {});
 }
 
 // Virtualization

@@ -6,6 +6,7 @@ export interface Config {
   readonly isolation: Isolation;
   readonly asyncCalls: AsyncCalls;
   readonly monitor: Monitor | null;
+  readonly tracing: number;
 }
 
 export enum Mode {

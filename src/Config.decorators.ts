@@ -29,6 +29,10 @@ export function monitor(value: Monitor | null): F<any> {
   return config({monitor: value});
 }
 
+export function tracing(value: number): F<any> {
+  return config({tracing: value});
+}
+
 export function config(value: Partial<Config>): F<any> {
   return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
     if (prop && pd)

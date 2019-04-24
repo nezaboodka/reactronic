@@ -2,10 +2,9 @@
 // Debug
 
 export class Debug {
-  static verbosity: number = 0; // 0 = off, 1 = brief, 2 = normal, 3 = noisy, 4 = crazy
+  static verbosity: number = 0; // 0 = default, 1 = off, 2 = brief, 3 = normal, 4 = noisy, 5 = crazy
   static color: number = 0;
   static prefix: string = "";
-  static margin: number = 0;
 
   static log(operation: string, marker: string, message: string): void {
     let margin: string = ""; // "    ".repeat(Debug.margin);

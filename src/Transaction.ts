@@ -5,6 +5,7 @@ export class Transaction {
   static notran: Transaction;
   static blank: Record;
   private readonly snapshot: Snapshot; // assigned in constructor
+  private tracing: number; // assigned in constructor
   private busy: number = 0;
   private sealed: boolean = false;
   private error: Error | undefined = undefined;
@@ -14,8 +15,9 @@ export class Transaction {
   private conflicts?: Record[] = undefined;
   private reaction: { tran?: Transaction, effect: ICache[] } = { tran: undefined, effect: [] };
 
-  constructor(hint: string) {
+  constructor(hint: string, tracing: number = 0) {
     this.snapshot = new Snapshot(hint);
+    this.tracing = tracing;
   }
 
   get id(): number { return this.snapshot.id; }
@@ -73,7 +75,8 @@ export class Transaction {
   }
 
   undo(): void {
-    Transaction.runAs<void>(`Tran#${this.snapshot.hint}.undo`, false, () => {
+    let hint = Debug.verbosity >= 2 ? `Tran#${this.snapshot.hint}.undo` : "noname";
+    Transaction.runAs<void>(hint, false, 0, () => {
       this.snapshot.changeset.forEach((r: Record, h: Handle) => {
         r.edits.forEach((prop: PropertyKey) => {
           if (r.prev.backup) {
@@ -91,11 +94,11 @@ export class Transaction {
   }
 
   static run<T>(func: F<T>, ...args: any[]): T {
-    return Transaction.runAs("noname", false, func, ...args);
+    return Transaction.runAs("noname", false, 0, func, ...args);
   }
 
-  static runAs<T>(hint: string, root: boolean, func: F<T>, ...args: any[]): T {
-    let t: Transaction = (root || Transaction.active.finished()) ? new Transaction(hint) : Transaction.active;
+  static runAs<T>(hint: string, root: boolean, verbosity: number, func: F<T>, ...args: any[]): T {
+    let t: Transaction = (root || Transaction.active.finished()) ? new Transaction(hint, verbosity) : Transaction.active;
     root = t !== Transaction.active;
     let result: any;
     try {
@@ -126,13 +129,18 @@ export class Transaction {
   // Internal
 
   private _run<T>(func: F<T>, ...args: any[]): T {
-    let outer = Transaction.active;
+    const outer = Transaction.active;
+    const outerVerbosity = Debug.verbosity;
+    const outerColor = Debug.color;
+    const outerPrefix = Debug.prefix;
     let result: T;
     try {
       this.busy++;
       Transaction.active = this;
+      if (this.tracing !== 0)
+        Debug.verbosity = this.tracing;
       Debug.color = 31 + (this.snapshot.id) % 6;
-      Debug.prefix = `t${this.snapshot.id}`;
+      Debug.prefix = `t${this.snapshot.id}`; // TODO: optimize to avoid toString
       this.snapshot.checkout();
       result = func(...args);
       if (this.sealed && this.busy === 1 && !this.error)
@@ -148,8 +156,9 @@ export class Transaction {
         !this.error ? this.performCommit() : this.performDiscard();
         Object.freeze(this);
       }
-      Debug.prefix = `t${outer.snapshot.id}`;
-      Debug.color = 31 + outer.snapshot.id % 6;
+      Debug.prefix = outerPrefix;
+      Debug.color = outerColor;
+      Debug.verbosity = outerVerbosity;
       Transaction.active = outer;
     }
     if (this.reaction.effect.length > 0) {
@@ -176,7 +185,7 @@ export class Transaction {
 
   private tryResolveConflicts(conflicts: Record[]): void {
     this.error = this.error || new Error(`t${this.snapshot.id}'${this.snapshot.hint} conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
-    // throw this._error;
+    // this.error = this.error || RT_NO_THROW; // silently ignore conflicting transactions
   }
 
   private performCommit(): void {
@@ -198,7 +207,8 @@ export class Transaction {
   }
 
   static ensureAllUpToDate(hint: string, reaction: { tran?: Transaction, effect: ICache[] }): void {
-    Transaction.runAs<void>(`${hint} - REACTION(${reaction.effect.length})`, reaction.tran === undefined, () => {
+    let name = Debug.verbosity >= 2 ? `${hint} - REACTION(${reaction.effect.length})` : "noname";
+    Transaction.runAs<void>(name, reaction.tran === undefined, 0, () => {
       if (reaction.tran === undefined)
         reaction.tran = Transaction.active;
       reaction.effect.map(r => r.ensureUpToDate(false));

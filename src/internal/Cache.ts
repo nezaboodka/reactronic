@@ -36,7 +36,7 @@ class CacheProxy extends Reactronic<any> {
     if (edit && ((c.cause && (c.record !== r || !c.isRunning)) || c.config.latency === Renew.DoesNotCache)) {
       let c2 = new Cache(r, c.member, c);
       r.data[c2.member] = c2;
-      if (Debug.verbosity >= 4) Debug.log("║", " ", `${c2.hint(false)} is created from ${c === this.blank ? "blank" : c.hint(false)}`);
+      if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is created from ${c === this.blank ? "blank" : c.hint(false)}`);
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
@@ -49,13 +49,12 @@ class CacheProxy extends Reactronic<any> {
     let a1 = this.obtain(false, false);
     let c1: Cache = a1.cache;
     let r1: Record = a1.record;
-    let hint: string = Debug.verbosity > 1 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
-    return Transaction.runAs<Config>(hint, false, (): Config => {
+    let hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
+    return Transaction.runAs<Config>(hint, false, 0, (): Config => {
       let a2 = this.obtain(false, true);
       let c2: Cache = a2.cache;
       c2.config = new ConfigImpl(c2.config.body, c2.config, config);
-      if (Debug.verbosity >= 3)
-        Debug.log("║", "w", `${Hint.record(r1)}.${c1.member.toString()}.config = ...`);
+      if (Debug.verbosity >= 4) Debug.log("║", "w", `${Hint.record(r1)}.${c1.member.toString()}.config = ...`);
       return c2.config;
     });
   }
@@ -115,9 +114,11 @@ export class Cache implements ICache {
   static run<T>(c: Cache | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined;
     let outer = Cache.active;
+    let outerVerbosity = Debug.verbosity;
     try {
       Cache.active = c;
-      Debug.margin = c ? c.margin : 0;
+      if (c && c.config.tracing !== 0)
+        Debug.verbosity = c.config.tracing;
       result = func(...args);
     }
     catch (e) {
@@ -126,7 +127,7 @@ export class Cache implements ICache {
       throw e;
     }
     finally {
-      Debug.margin = outer ? outer.margin : 0;
+      Debug.verbosity = outerVerbosity;
       Cache.active = outer;
     }
     return result;
@@ -154,13 +155,13 @@ export class Cache implements ICache {
     const c: Cache | undefined = Cache.active; // alias
     if (c && c.config.latency >= Renew.Manually && prop !== RT_HANDLE) {
       Cache.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
-      if (Debug.verbosity >= 4) Debug.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
+      if (Debug.verbosity >= 5) Debug.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
   }
 
   static markEdited(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
     edited ? r.edits.add(prop) : r.edits.delete(prop);
-    if (Debug.verbosity >= 3) Debug.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
+    if (Debug.verbosity >= 4) Debug.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
     let observers: Set<ICache> | undefined = r.observers.get(prop);
     if (observers && observers.size > 0) {
       let effect: ICache[] = [];
@@ -211,11 +212,11 @@ export class Cache implements ICache {
     let result: Set<ICache> | undefined = r.observers.get(prop);
     if (!result) {
       r.observers.set(prop, result = new Set<Cache>());
-      if (Debug.verbosity >= 4) Debug.log("", "   Observers:", `${Hint.record(r, false, false, prop)} = new`);
+      if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(r, false, false, prop)} = new`);
       let x: Record | undefined = r.prev.record;
       while (x && !x.observers.get(prop) && x.data[prop] === r.data[prop]) { // "===" - workaround?
         x.observers.set(prop, result);
-        if (Debug.verbosity >= 4) Debug.log("", "   Observers:", `${Hint.record(x, false, false, prop)} = ${Hint.record(r, false, false, prop)}`);
+        if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(x, false, false, prop)} = ${Hint.record(r, false, false, prop)}`);
         x = x.prev.record;
       }
     }
@@ -237,12 +238,12 @@ export class Cache implements ICache {
     o.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach((r: Record) => {
         Cache.acquireObserverSet(r, prop).add(this); // link
-        if (Debug.verbosity >= 2) subscriptions.push(Hint.record(r, false, true, prop));
+        if (Debug.verbosity >= 3) subscriptions.push(Hint.record(r, false, true, prop));
         if (!cause && r.overwritten.has(prop))
           cause = Hint.record(r, false, false, prop); // need to invalidate
       });
     });
-    if (Debug.verbosity >= 2 && subscriptions.length > 0) Debug.log(hot ? "║" : " ", "∞", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if (Debug.verbosity >= 3 && subscriptions.length > 0) Debug.log(hot ? "║" : " ", "∞", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
     return cause;
   }
 
@@ -250,10 +251,10 @@ export class Cache implements ICache {
     let thisObservers: Set<ICache> | undefined = r.observers.get(prop);
     if (thisObservers) {
       thisObservers.forEach((c: ICache) => prevObservers.add(c));
-      if (Debug.verbosity >= 4) Debug.log("", "   Observers:", `${Hint.record(prev, false, false, prop)}(${prevObservers.size}) += ${Hint.record(r, false, false, prop)}(${thisObservers.size})`);
+      if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(prev, false, false, prop)}(${prevObservers.size}) += ${Hint.record(r, false, false, prop)}(${thisObservers.size})`);
     }
     r.observers.set(prop, prevObservers);
-    if (Debug.verbosity >= 4) Debug.log("", "   Observers:", `${Hint.record(r, false, false, prop)} = ${Hint.record(prev, false, false, prop)}(${prevObservers.size})`);
+    if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(r, false, false, prop)} = ${Hint.record(prev, false, false, prop)}(${prevObservers.size})`);
     return prevObservers;
   }
 
@@ -280,10 +281,10 @@ export class Cache implements ICache {
       // Check if cache should be renewed
       if (this.config.latency >= Renew.Immediately && r.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         effect.push(this);
-        if (Debug.verbosity >= 2) Debug.log(" ", "■", `${this.hint(false)} is invalidated by ${cause} and will run automatically`);
+        if (Debug.verbosity >= 3) Debug.log(" ", "■", `${this.hint(false)} is invalidated by ${cause} and will run automatically`);
       }
       else
-        if (Debug.verbosity >= 2) Debug.log(" ", "□", `${this.hint(false)} is invalidated by ${cause}`);
+      if (Debug.verbosity >= 3) Debug.log(" ", "□", `${this.hint(false)} is invalidated by ${cause}`);
     }
   }
 
@@ -318,18 +319,18 @@ export class Cache implements ICache {
       if ((c.cause || c.config.latency === Renew.DoesNotCache || c.args[0] !== args[0]) && r.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         if (c.updater.active) {
           if (c.config.asyncCalls === AsyncCalls.Reused) {
-            if (Debug.verbosity >= 3) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is taken from pool`);
+            if (Debug.verbosity >= 4) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is reused`);
             Record.markViewed(r, c.member);
             return c.updater.active.returned; // Is it really good idea?..
           }
           else if (c.config.asyncCalls >= 1)
             throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
         }
-        let hint: string = Debug.verbosity >= 1 ? `${Hint.handle(h)}.${c.member.toString()}` : "recache";
-        return Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, (...argsx: any[]): any => {
+        let hint: string = Debug.verbosity >= 2 ? `${Hint.handle(h)}.${c.member.toString()}` : "recache";
+        return Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, c.config.tracing, (...argsx: any[]): any => {
           if (c.updater.active && c.config.asyncCalls === AsyncCalls.Relayed) {
             c.updater.active.tran.cancel();
-            if (Debug.verbosity >= 2) Debug.log("║", " ", `Relaying: t${c.updater.active.tran.id} is canceled.`);
+            if (Debug.verbosity >= 3) Debug.log("║", " ", `Relaying: t${c.updater.active.tran.id} is canceled.`);
             c.updater.active = undefined;
           }
           let c1: Cache = c;
@@ -357,7 +358,7 @@ export class Cache implements ICache {
         }, ...args);
       }
       else {
-        if (Debug.verbosity >= 3) Debug.log("║", "f ==", `${Hint.record(r)}.${c.member.toString()}() hits cache`);
+        if (Debug.verbosity >= 4) Debug.log("║", "f ==", `${Hint.record(r)}.${c.member.toString()}() hits cache`);
         Record.markViewed(r, c.member);
         return c.returned;
       }
@@ -367,7 +368,7 @@ export class Cache implements ICache {
   }
 
   enter(r: Record, prev: Cache, mon: Monitor | null): void {
-    if (Debug.verbosity >= 3) Debug.log("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
+    if (Debug.verbosity >= 4) Debug.log("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
     this.isRunning = true;
     this.monitorEnter(mon);
     if (!prev.updater.active)
@@ -387,7 +388,7 @@ export class Cache implements ICache {
           this.leaveImpl(r, prev, ind, "<=", "is completed with error");
           throw error;
         });
-      if (Debug.verbosity >= 2) Debug.log("║", "f ..", `${Hint.record(r, true)}.${this.member.toString()} is async`);
+      if (Debug.verbosity >= 3) Debug.log("║", "f ..", `${Hint.record(r, true)}.${this.member.toString()} is async`);
     }
     else {
       this.value = this.returned;
@@ -400,7 +401,7 @@ export class Cache implements ICache {
       prev.updater.active = undefined;
     this.monitorLeave(mon);
     this.isRunning = false;
-    if (Debug.verbosity >= 2) Debug.log("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`);
+    if (Debug.verbosity >= 3) Debug.log("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`);
     // TODO: handle errors
     this.subscribeToObservables(true);
     this.hotObservables.clear();
@@ -408,7 +409,7 @@ export class Cache implements ICache {
 
   monitorEnter(mon: Monitor | null): void {
     if (mon)
-      Transaction.runAs<void>("Monitor.enter", mon.isolation >= Isolation.StandaloneTransaction,
+      Transaction.runAs<void>("Monitor.enter", mon.isolation >= Isolation.StandaloneTransaction, 0,
         Cache.run, undefined, () => mon.enter(this));
   }
 
@@ -419,7 +420,7 @@ export class Cache implements ICache {
         try {
           Transaction.active = Transaction.notran; // Workaround?
           let leave = () => {
-            Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction,
+            Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction, 0,
               Cache.run, undefined, () => mon.leave(this));
           };
           this.tran.whenFinished(false).then(leave, leave);
@@ -429,7 +430,7 @@ export class Cache implements ICache {
         }
       }
       else
-        Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction,
+        Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction, 0,
           Cache.run, undefined, () => mon.leave(this));
     }
   }
@@ -457,7 +458,7 @@ export class Cache implements ICache {
 
   static unmount(...objects: any[]): Transaction {
     let t: Transaction = Transaction.active;
-    Transaction.runAs<void>("unmount", false, (): void => {
+    Transaction.runAs<void>("unmount", false, 0, (): void => {
       t = Transaction.active;
       for (let x of objects) {
         if (Utils.get(x, RT_HANDLE))
