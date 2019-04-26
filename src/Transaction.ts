@@ -139,7 +139,11 @@ export class Transaction {
       Transaction.active = this;
       if (this.tracing !== 0)
         Debug.verbosity = this.tracing;
-      Debug.color = 31 + (this.snapshot.id) % 6;
+      if (Debug.verbosity >= 2)
+        Debug.color = 31 + (this.snapshot.id) % 6;
+      else
+        Debug.color = 37;
+      // Debug.color = 31 + (this.snapshot.id) % 6;
       Debug.prefix = `t${this.snapshot.id}`; // TODO: optimize to avoid toString
       this.snapshot.checkout();
       result = func(...args);
@@ -163,7 +167,7 @@ export class Transaction {
     }
     if (this.reaction.effect.length > 0) {
       try {
-        Transaction.ensureAllUpToDate(this.snapshot.hint, this.reaction);
+        Transaction.ensureAllUpToDate(this.snapshot.hint, this.reaction, this.tracing);
       }
       finally {
         if (!this.finished())
@@ -206,9 +210,9 @@ export class Transaction {
         this.resultResolve();
   }
 
-  static ensureAllUpToDate(hint: string, reaction: { tran?: Transaction, effect: ICache[] }): void {
+  static ensureAllUpToDate(hint: string, reaction: { tran?: Transaction, effect: ICache[] }, tracing: number = 0): void {
     let name = Debug.verbosity >= 2 ? `${hint} - REACTION(${reaction.effect.length})` : "noname";
-    Transaction.runAs<void>(name, reaction.tran === undefined, 0, () => {
+    Transaction.runAs<void>(name, reaction.tran === undefined, tracing, () => {
       if (reaction.tran === undefined)
         reaction.tran = Transaction.active;
       reaction.effect.map(r => r.ensureUpToDate(false));

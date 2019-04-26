@@ -63,6 +63,6 @@ export interface ISnapshot {
 
 export interface ICache {
   wrap<T>(func: F<T>): F<T>;
-  invalidateBy(cause: string, hot: boolean, effect: ICache[]): void;
+  invalidateBy(cause: string, hot: boolean, cascade: boolean, effect: ICache[]): void;
   ensureUpToDate(now: boolean, ...args: any[]): void;
 }
