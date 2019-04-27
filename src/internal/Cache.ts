@@ -14,10 +14,11 @@ class CacheProxy extends Reactronic<any> {
 
   get cause(): string | undefined { return this.obtain(true, false).cache.cause; }
   get returned(): Promise<any> | any { return this.obtain(true, false).cache.returned; }
-  get value(): any { return this.obtain(true, false).cache.value; }
+  get value(): any { return this.getValue(); }
   get error(): boolean { return this.obtain(true, false).cache.error; }
   invalidate(cause: string | undefined): boolean { return cause ? Cache.enforceInvalidation(this.obtain(false, false).cache, cause, 0) : false; }
-  get pending(): boolean { return this.obtain(true, false).cache.pending; }
+  get isBeingComputed(): boolean { return this.obtain(true, false).cache.computing; }
+  get isBeingUpdated(): boolean { return this.obtain(true, false).cache.updater.active !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
@@ -33,7 +34,7 @@ class CacheProxy extends Reactronic<any> {
       Snapshot.active().writable(this.handle, member, RT_CACHE) :
       Snapshot.active().readable(this.handle);
     let c: Cache = r.data[member] || this.blank;
-    if (edit && ((c.cause && (c.record !== r || !c.pending)) || c.config.latency === Renew.DoesNotCache)) {
+    if (edit && ((c.cause && (c.record !== r || !c.computing)) || c.config.latency === Renew.DoesNotCache)) {
       let c2 = new Cache(r, c.member, c);
       r.data[c2.member] = c2;
       if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is created from ${c === this.blank ? "blank" : c.hint(false)}`);
@@ -58,6 +59,67 @@ class CacheProxy extends Reactronic<any> {
       return c2.config;
     });
   }
+
+  getValue(): any {
+    const c = this.obtain(true, false).cache;
+    // if (c.cause !== undefined && !c.updater.active !== undefined)
+    //   c.ensureUpToDate(true, ...c.args);
+    return c.value;
+  }
+
+  invoke(...args: any[]): any {
+    let cr = this.obtain(false, false);
+    let c: Cache = cr.cache;
+    let r: Record = cr.record;
+    let reuse = !c.cause && c.config.latency !== Renew.DoesNotCache &&
+      c.args[0] === args[0] || c.computing || r.data[RT_UNMOUNT] === RT_UNMOUNT;
+    if (!reuse) {
+      if (c.updater.active) {
+        if (c.config.asyncCalls === AsyncCalls.Reused) {
+          if (Debug.verbosity >= 4) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is reused`);
+          Record.markViewed(r, c.member);
+          return c.updater.active.returned; // Is it really good idea?..
+        }
+        else if (c.config.asyncCalls >= 1)
+          throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
+      }
+      let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}` : "recache";
+      return Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, c.config.tracing, (...argsx: any[]): any => {
+        if (c.updater.active && c.config.asyncCalls === AsyncCalls.Relayed) {
+          c.updater.active.tran.cancel();
+          if (Debug.verbosity >= 3) Debug.log("║", " ", `Relaying: t${c.updater.active.tran.id} is canceled.`);
+          c.updater.active = undefined;
+        }
+        let c1: Cache = c;
+        let cr2 = this.obtain(false, true);
+        let c2: Cache = cr2.cache;
+        let r2: Record = cr2.record;
+        let ind: Monitor | null = c1.config.monitor;
+        c2.enter(r2, c1, ind);
+        try
+        {
+          if (argsx.length > 0)
+            c2.args = argsx;
+          else
+            argsx = c2.args;
+          c2.returned = Cache.run<any>(c2, (...argsy: any[]): any => {
+            return c2.config.body.call(this.handle.proxy, ...argsy);
+          }, ...argsx);
+          c2.cause = undefined;
+        }
+        finally {
+          c2.leave(r2, c1, ind);
+        }
+        Record.markViewed(r2, c2.member);
+        return c2.returned;
+      }, ...args);
+    }
+    else {
+      if (Debug.verbosity >= 4) Debug.log("║", "f ==", `${Hint.record(r)}.${c.member.toString()}() hits cache`);
+      Record.markViewed(r, c.member);
+      return c.returned;
+    }
+  }
 }
 
 // Cache
@@ -71,7 +133,7 @@ export class Cache implements ICache {
   config: ConfigImpl;
   args: any[];
   returned: any;
-  pending: boolean;
+  computing: boolean;
   value: any;
   error: any;
   cause?: string;
@@ -93,7 +155,7 @@ export class Cache implements ICache {
       this.args = [];
     }
     // this.returned = undefined;
-    this.pending = false;
+    this.computing = false;
     // this.value = undefined;
     // this.error = undefined;
     this.cause = "Cache.ctor"; // this.hint(false);
@@ -312,66 +374,14 @@ export class Cache implements ICache {
 
   static createCacheTrap(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
     let impl = new CacheProxy(h, prop, config);
-    let cachedInvoke: F<any> = (...args: any[]): any => {
-      let cr = impl.obtain(false, false);
-      let c: Cache = cr.cache;
-      let r: Record = cr.record;
-      let reuse = !c.cause && c.config.latency !== Renew.DoesNotCache &&
-        c.args[0] === args[0] || r.data[RT_UNMOUNT] === RT_UNMOUNT;
-      if (!reuse) {
-        if (c.updater.active) {
-          if (c.config.asyncCalls === AsyncCalls.Reused) {
-            if (Debug.verbosity >= 4) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is reused`);
-            Record.markViewed(r, c.member);
-            return c.updater.active.returned; // Is it really good idea?..
-          }
-          else if (c.config.asyncCalls >= 1)
-            throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
-        }
-        let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(h)}.${c.member.toString()}` : "recache";
-        return Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, c.config.tracing, (...argsx: any[]): any => {
-          if (c.updater.active && c.config.asyncCalls === AsyncCalls.Relayed) {
-            c.updater.active.tran.cancel();
-            if (Debug.verbosity >= 3) Debug.log("║", " ", `Relaying: t${c.updater.active.tran.id} is canceled.`);
-            c.updater.active = undefined;
-          }
-          let c1: Cache = c;
-          let cr2 = impl.obtain(false, true);
-          let c2: Cache = cr2.cache;
-          let r2: Record = cr2.record;
-          let ind: Monitor | null = c1.config.monitor;
-          c2.enter(r2, c1, ind);
-          try
-          {
-            if (argsx.length > 0)
-              c2.args = argsx;
-            else
-              argsx = c2.args;
-            c2.returned = Cache.run<any>(c2, (...argsy: any[]): any => {
-              return c2.config.body.call(h.proxy, ...argsy);
-            }, ...argsx);
-            c2.cause = undefined;
-          }
-          finally {
-            c2.leave(r2, c1, ind);
-          }
-          Record.markViewed(r2, c2.member);
-          return c2.returned;
-        }, ...args);
-      }
-      else {
-        if (Debug.verbosity >= 4) Debug.log("║", "f ==", `${Hint.record(r)}.${c.member.toString()}() hits cache`);
-        Record.markViewed(r, c.member);
-        return c.returned;
-      }
-    };
+    let cachedInvoke: F<any> = (...args: any[]): any => impl.invoke(...args);
     Utils.set(cachedInvoke, RT_CACHE, impl);
     return cachedInvoke;
   }
 
   enter(r: Record, prev: Cache, mon: Monitor | null): void {
     if (this.config.tracing >= 4 || (this.config.tracing === 0 && Debug.verbosity >= 4)) Debug.log("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
-    this.pending = true;
+    this.computing = true;
     this.monitorEnter(mon);
     if (!prev.updater.active)
       prev.updater.active = this;
@@ -402,7 +412,7 @@ export class Cache implements ICache {
     if (prev.updater.active === this)
       prev.updater.active = undefined;
     this.monitorLeave(mon);
-    this.pending = false;
+    this.computing = false;
     if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`);
     // TODO: handle errors
     this.subscribeToObservables(true);
