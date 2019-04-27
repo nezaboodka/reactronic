@@ -13,8 +13,8 @@ class CacheProxy extends Reactronic<any> {
   configure(config: Partial<Config>): Config { return this.alter(config); }
 
   get cause(): string | undefined { return this.obtain(true, false).cache.cause; }
-  get returned(): Promise<any> | any { return this.obtain(true, false).cache.returned; }
-  get value(): any { return this.getValue(); }
+  get returnValue(): Promise<any> | any { return this.obtain(true, false).cache.returnValue; }
+  get result(): any { return this.getResult(); }
   get error(): boolean { return this.obtain(true, false).cache.error; }
   invalidate(cause: string | undefined): boolean { return cause ? Cache.enforceInvalidation(this.obtain(false, false).cache, cause, 0) : false; }
   get isBeingComputed(): boolean { return this.obtain(true, false).cache.computing; }
@@ -60,11 +60,11 @@ class CacheProxy extends Reactronic<any> {
     });
   }
 
-  getValue(): any {
+  getResult(): any {
     const c = this.obtain(true, false).cache;
     // if (c.cause !== undefined && !c.updater.active !== undefined)
     //   c.ensureUpToDate(true, ...c.args);
-    return c.value;
+    return c.result;
   }
 
   invoke(...args: any[]): any {
@@ -78,7 +78,7 @@ class CacheProxy extends Reactronic<any> {
         if (c.config.asyncCalls === AsyncCalls.Reused) {
           if (Debug.verbosity >= 4) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is reused`);
           Record.markViewed(r, c.member);
-          return c.updater.active.returned; // Is it really good idea?..
+          return c.updater.active.returnValue; // Is it really good idea?..
         }
         else if (c.config.asyncCalls >= 1)
           throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
@@ -102,7 +102,7 @@ class CacheProxy extends Reactronic<any> {
             c2.args = argsx;
           else
             argsx = c2.args;
-          c2.returned = Cache.run<any>(c2, (...argsy: any[]): any => {
+          c2.returnValue = Cache.run<any>(c2, (...argsy: any[]): any => {
             return c2.config.body.call(this.handle.proxy, ...argsy);
           }, ...argsx);
           c2.cause = undefined;
@@ -111,13 +111,13 @@ class CacheProxy extends Reactronic<any> {
           c2.leave(r2, c1, ind);
         }
         Record.markViewed(r2, c2.member);
-        return c2.returned;
+        return c2.returnValue;
       }, ...args);
     }
     else {
       if (Debug.verbosity >= 4) Debug.log("║", "f ==", `${Hint.record(r)}.${c.member.toString()}() hits cache`);
       Record.markViewed(r, c.member);
-      return c.returned;
+      return c.returnValue;
     }
   }
 }
@@ -132,9 +132,9 @@ export class Cache implements ICache {
   readonly member: PropertyKey;
   config: ConfigImpl;
   args: any[];
-  returned: any;
+  returnValue: any;
+  result: any;
   computing: boolean;
-  value: any;
   error: any;
   cause?: string;
   readonly updater: { active: Cache | undefined }; // TODO: count updaters
@@ -388,10 +388,10 @@ export class Cache implements ICache {
   }
 
   leave(r: Record, prev: Cache, ind: Monitor | null): void {
-    if (this.returned instanceof Promise) {
-      this.returned = this.returned.then(
+    if (this.returnValue instanceof Promise) {
+      this.returnValue = this.returnValue.then(
         result => {
-          this.value = result;
+          this.result = result;
           this.leaveImpl(r, prev, ind, "<=", "is completed");
           return result;
         },
@@ -403,7 +403,7 @@ export class Cache implements ICache {
       if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "f ..", `${Hint.record(r, true)}.${this.member.toString()} is async`);
     }
     else {
-      this.value = this.returned;
+      this.result = this.returnValue;
       this.leaveImpl(r, prev, ind, "<=", "is completed");
     }
   }
@@ -451,7 +451,7 @@ export class Cache implements ICache {
     let result: boolean;
     if (oldValue instanceof Cache) {
       if (newValue instanceof Cache)
-        result = !(oldValue.config.latency === Renew.DoesNotCache || oldValue.returned === newValue.returned);
+        result = !(oldValue.config.latency === Renew.DoesNotCache || oldValue.returnValue === newValue.returnValue);
       else if (newValue instanceof Function) /* istanbul ignore next */
         result = oldValue.config.body !== newValue;
       else
