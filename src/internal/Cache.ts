@@ -62,8 +62,8 @@ class CacheProxy extends Reactronic<any> {
 
   getResult(): any {
     const c = this.obtain(true, false).cache;
-    // if (c.cause !== undefined && !c.updater.active !== undefined)
-    //   c.ensureUpToDate(true, ...c.args);
+    if (c.cause !== undefined && c.updater.active === undefined)
+      this.invoke();
     return c.result;
   }
 
@@ -71,8 +71,8 @@ class CacheProxy extends Reactronic<any> {
     let cr = this.obtain(false, false);
     let c: Cache = cr.cache;
     let r: Record = cr.record;
-    let reuse = !c.cause && c.config.latency !== Renew.DoesNotCache &&
-      c.args[0] === args[0] || c.computing || r.data[RT_UNMOUNT] === RT_UNMOUNT;
+    let reuse = (!c.cause || c.computing) && c.config.latency !== Renew.DoesNotCache &&
+      c.args[0] === args[0] || r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (!reuse) {
       if (c.updater.active) {
         if (c.config.asyncCalls === AsyncCalls.Reused) {
