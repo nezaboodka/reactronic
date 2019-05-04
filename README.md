@@ -272,6 +272,8 @@ type F<T> = (...args: any[]) => T;
 
 class Transaction {
   constructor(hint: string);
+  readonly id: number;
+  readonly hint: string;
   run<T>(func: F<T>, ...args: any[]): T;
   wrap<T>(func: F<T>): F<T>;
   commit(): void;
@@ -282,22 +284,24 @@ class Transaction {
   whenFinished(): Promise<void>;
   static run<T>(func: F<T>, ...args: any[]): T;
   static runAs<T>(hint: string, root: boolean, func: F<T>, ...args: any[]): T;
-  static get active(): Transaction;
-  static debug: number = 0; // 0 = off, 1 = brief, 2 = normal, 3 = noisy, 4 = crazy
+  static readonly active: Transaction;
 }
 
 // Reactronic
 
-abstract class Reactronic {
+abstract class Reactronic<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
   readonly cause: string | undefined;
-  readonly returned: any; // just return value, may be a promise
-  readonly value: any; // different from this.returned for promises
+  readonly interim: Promise<T> | T;
+  result(...args: any[]): T;
   readonly error: any;
   invalidate(cause: string | undefined): boolean;
   readonly isInvalidated: boolean;
-  static at(method: Function): Reactronic;
+  readonly isBeingComputed: boolean;
+  readonly isBeingUpdated: boolean;
+  static at<T>(method: F<Promise<T>>): Reactronic<T>;
+  static at<T>(method: F<T>): Reactronic<T>;
   static unmount(...objects: any[]): Transaction;
 }
 

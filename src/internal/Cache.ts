@@ -13,11 +13,11 @@ class CacheProxy extends Reactronic<any> {
   configure(config: Partial<Config>): Config { return this.alter(config); }
 
   get cause(): string | undefined { return this.obtain(true, false).cache.cause; }
-  get returnValue(): Promise<any> | any { return this.obtain(true, false).cache.returnValue; }
-  get result(): any { return this.getResult(); }
+  get interim(): Promise<any> | any { return this.obtain(true, false).cache.interim; }
+  result(...args: any[]): any { return this.getResult(...args); }
   get error(): boolean { return this.obtain(true, false).cache.error; }
   invalidate(cause: string | undefined): boolean { return cause ? Cache.enforceInvalidation(this.obtain(false, false).cache, cause, 0) : false; }
-  get isBeingComputed(): boolean { return this.obtain(true, false).cache.computing; }
+  get isBeingComputed(): boolean { return this.obtain(true, false).cache.started > 0; }
   get isBeingUpdated(): boolean { return this.obtain(true, false).cache.updater.active !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
@@ -34,7 +34,7 @@ class CacheProxy extends Reactronic<any> {
       Snapshot.active().writable(this.handle, member, RT_CACHE) :
       Snapshot.active().readable(this.handle);
     let c: Cache = r.data[member] || this.blank;
-    if (edit && ((c.cause && (c.record !== r || !c.computing)) || c.config.latency === Renew.DoesNotCache)) {
+    if (edit && ((c.cause && (c.record !== r || c.started === 0)) || c.config.latency === Renew.DoesNotCache)) {
       let c2 = new Cache(r, c.member, c);
       r.data[c2.member] = c2;
       if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is created from ${c === this.blank ? "blank" : c.hint(false)}`);
@@ -60,10 +60,10 @@ class CacheProxy extends Reactronic<any> {
     });
   }
 
-  getResult(): any {
+  getResult(...args: any): any {
     const c = this.obtain(true, false).cache;
     if (c.cause !== undefined && c.updater.active === undefined)
-      this.invoke();
+      this.invoke(...args);
     return c.result;
   }
 
@@ -71,14 +71,14 @@ class CacheProxy extends Reactronic<any> {
     let cr = this.obtain(false, false);
     let c: Cache = cr.cache;
     let r: Record = cr.record;
-    let reuse = (!c.cause || c.computing) && c.config.latency !== Renew.DoesNotCache &&
+    let reuse = (!c.cause || c.started > 0) && c.config.latency !== Renew.DoesNotCache &&
       c.args[0] === args[0] || r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (!reuse) {
       if (c.updater.active) {
         if (c.config.asyncCalls === AsyncCalls.Reused) {
           if (Debug.verbosity >= 4) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is reused`);
           Record.markViewed(r, c.member);
-          return c.updater.active.returnValue; // Is it really good idea?..
+          return c.updater.active.interim; // Is it really good idea?..
         }
         else if (c.config.asyncCalls >= 1)
           throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
@@ -102,7 +102,7 @@ class CacheProxy extends Reactronic<any> {
             c2.args = argsx;
           else
             argsx = c2.args;
-          c2.returnValue = Cache.run<any>(c2, (...argsy: any[]): any => {
+          c2.interim = Cache.run<any>(c2, (...argsy: any[]): any => {
             return c2.config.body.call(this.handle.proxy, ...argsy);
           }, ...argsx);
           c2.cause = undefined;
@@ -111,13 +111,13 @@ class CacheProxy extends Reactronic<any> {
           c2.leave(r2, c1, ind);
         }
         Record.markViewed(r2, c2.member);
-        return c2.returnValue;
+        return c2.interim;
       }, ...args);
     }
     else {
       if (Debug.verbosity >= 4) Debug.log("║", "f ==", `${Hint.record(r)}.${c.member.toString()}() hits cache`);
       Record.markViewed(r, c.member);
-      return c.returnValue;
+      return c.interim;
     }
   }
 }
@@ -132,9 +132,9 @@ export class Cache implements ICache {
   readonly member: PropertyKey;
   config: ConfigImpl;
   args: any[];
-  returnValue: any;
+  interim: any;
   result: any;
-  computing: boolean;
+  started: number;
   error: any;
   cause?: string;
   readonly updater: { active: Cache | undefined }; // TODO: count updaters
@@ -154,9 +154,9 @@ export class Cache implements ICache {
       this.config = init;
       this.args = [];
     }
-    // this.returned = undefined;
-    this.computing = false;
-    // this.value = undefined;
+    // this.interim = undefined;
+    // this.result = undefined;
+    this.started = 0;
     // this.error = undefined;
     this.cause = "Cache.ctor"; // this.hint(false);
     this.updater = { active: undefined };
@@ -381,15 +381,15 @@ export class Cache implements ICache {
 
   enter(r: Record, prev: Cache, mon: Monitor | null): void {
     if (this.config.tracing >= 4 || (this.config.tracing === 0 && Debug.verbosity >= 4)) Debug.log("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
-    this.computing = true;
+    this.started = Date.now();
     this.monitorEnter(mon);
     if (!prev.updater.active)
       prev.updater.active = this;
   }
 
   leave(r: Record, prev: Cache, ind: Monitor | null): void {
-    if (this.returnValue instanceof Promise) {
-      this.returnValue = this.returnValue.then(
+    if (this.interim instanceof Promise) {
+      this.interim = this.interim.then(
         result => {
           this.result = result;
           this.leaveImpl(r, prev, ind, "<=", "is completed");
@@ -403,7 +403,7 @@ export class Cache implements ICache {
       if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "f ..", `${Hint.record(r, true)}.${this.member.toString()} is async`);
     }
     else {
-      this.result = this.returnValue;
+      this.result = this.interim;
       this.leaveImpl(r, prev, ind, "<=", "is completed");
     }
   }
@@ -412,8 +412,9 @@ export class Cache implements ICache {
     if (prev.updater.active === this)
       prev.updater.active = undefined;
     this.monitorLeave(mon);
-    this.computing = false;
-    if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`);
+    const ms: number = Date.now() - this.started;
+    this.started = 0;
+    if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}${ms > 2 ? ` // ${ms} ms` : ``}`);
     // TODO: handle errors
     this.subscribeToObservables(true);
     this.hotObservables.clear();
@@ -451,7 +452,7 @@ export class Cache implements ICache {
     let result: boolean;
     if (oldValue instanceof Cache) {
       if (newValue instanceof Cache)
-        result = !(oldValue.config.latency === Renew.DoesNotCache || oldValue.returnValue === newValue.returnValue);
+        result = !(oldValue.config.latency === Renew.DoesNotCache || oldValue.interim === newValue.interim);
       else if (newValue instanceof Function) /* istanbul ignore next */
         result = oldValue.config.body !== newValue;
       else
