@@ -414,7 +414,7 @@ export class Cache implements ICache {
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
-    if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}${ms > 2 ? ` // ${ms} ms` : ``}`);
+    if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms);
     // TODO: handle errors
     this.subscribeToObservables(true);
     this.hotObservables.clear();
