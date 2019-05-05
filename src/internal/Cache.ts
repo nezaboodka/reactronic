@@ -11,12 +11,11 @@ class CacheProxy extends Reactronic<any> {
 
   get config(): Config { return this.obtain(false, false).cache.config; }
   configure(config: Partial<Config>): Config { return this.alter(config); }
-
   get interim(): Promise<any> | any { return this.obtain(true, false).cache.interim; }
-  result(...args: any[]): any { return this.getResult(...args); }
   get error(): boolean { return this.obtain(true, false).cache.error; }
-  get isOutdated(): boolean { return this.obtain(true, false).outdated; }
+  result(...args: any[]): any { return this.getResult(...args); }
   outdate(cause: string | undefined): boolean { return cause ? Cache.enforceOutdated(this.obtain(false, false).cache, cause, 0) : false; }
+  get isOutdated(): boolean { return this.obtain(true, false).outdated; }
   get isComputing(): boolean { return this.obtain(true, false).cache.started > 0; }
   get isUpdating(): boolean { return this.obtain(true, false).cache.updating.candidate !== undefined; }
 

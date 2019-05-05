@@ -6,8 +6,8 @@ export abstract class Reactronic<T> {
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
   abstract readonly interim: Promise<T> | T;
-  abstract result(...args: any[]): T;
   abstract readonly error: any;
+  abstract result(...args: any[]): T;
   abstract outdate(cause: string | undefined): boolean;
   abstract readonly isOutdated: boolean;
   abstract readonly isComputing: boolean;

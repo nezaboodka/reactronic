@@ -293,8 +293,8 @@ abstract class Reactronic<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
   readonly interim: Promise<T> | T;
-  result(...args: any[]): T;
   readonly error: any;
+  result(...args: any[]): T;
   outdate(cause: string | undefined): boolean;
   readonly isOutdated: boolean;
   readonly isComputing: boolean;
