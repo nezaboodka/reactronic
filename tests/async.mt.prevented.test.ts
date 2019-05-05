@@ -1,6 +1,6 @@
 ﻿import test from "ava";
 import { sleep } from "./common";
-import { Reactronic, Transaction, AsyncCalls, Debug } from "../src/z.index";
+import { ReactiveCache, Transaction, AsyncCalls, Debug } from "../src/z.index";
 import { DemoModel, DemoView, actual } from "./async";
 
 let etalon: string[] = [
@@ -34,7 +34,7 @@ test("async", async t => {
   }
   finally {
     await sleep(400);
-    await Reactronic.unmount(app, app.model).whenFinished(true);
+    await ReactiveCache.unmount(app, app.model).whenFinished(true);
   }
   // for (let x of actual)
   //   console.log(x);

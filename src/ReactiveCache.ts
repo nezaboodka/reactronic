@@ -2,7 +2,7 @@ import { Cache, F, Handle } from "./internal/z.index";
 import { Transaction } from "./Transaction";
 import { Config } from "./Config";
 
-export abstract class Reactronic<T> {
+export abstract class ReactiveCache<T> {
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
   abstract readonly interim: Promise<T> | T;
@@ -12,22 +12,22 @@ export abstract class Reactronic<T> {
   abstract readonly isOutdated: boolean;
   abstract readonly isComputing: boolean;
   abstract readonly isUpdating: boolean;
-  static getReactiveCache<T>(method: F<Promise<T>>): Reactronic<T>;
-  static getReactiveCache<T>(method: F<T>): Reactronic<T> { return Cache.at(method); }
+  static get<T>(method: F<Promise<T>>): ReactiveCache<T>;
+  static get<T>(method: F<T>): ReactiveCache<T> { return Cache.get(method); }
   static unmount(...objects: any[]): Transaction { return Cache.unmount(...objects); }
   static named<T extends object>(obj: T, name: string | undefined): T { return Handle.setName(obj, name); }
 }
 
-// Function.reactronic
+// Function.reactiveCache
 
 declare global {
   interface Function {
-    readonly reactiveCache: Reactronic<any>;
+    readonly reactiveCache: ReactiveCache<any>;
   }
 }
 
 Object.defineProperty(Function.prototype, "reactiveCache", {
-  get(): Reactronic<any> { return Reactronic.getReactiveCache(this); },
+  get(): ReactiveCache<any> { return ReactiveCache.get(this); },
   configurable: false,
   enumerable: false,
 });

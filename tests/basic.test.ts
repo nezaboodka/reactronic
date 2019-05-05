@@ -1,5 +1,5 @@
 ﻿import test from "ava";
-import { Reactronic, Transaction, Debug } from "../src/z.index";
+import { ReactiveCache, Transaction, Debug } from "../src/z.index";
 import { Person } from "./common";
 import { DemoModel, DemoView, actual } from "./basic";
 
@@ -76,7 +76,7 @@ test("basic", t => {
     t.throws(() => { console.log(daddy.setParent.reactiveCache.result); });
   }
   finally { // cleanup
-    Reactronic.unmount(app, app.model);
+    ReactiveCache.unmount(app, app.model);
   }
   let n: number = Math.max(actual.length, etalon.length);
   for (let i = 0; i < n; i++)

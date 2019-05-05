@@ -287,9 +287,9 @@ class Transaction {
   static readonly active: Transaction;
 }
 
-// Reactronic
+// ReactiveCache
 
-abstract class Reactronic<T> {
+abstract class ReactiveCache<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
   readonly interim: Promise<T> | T;
@@ -299,14 +299,14 @@ abstract class Reactronic<T> {
   readonly isOutdated: boolean;
   readonly isComputing: boolean;
   readonly isUpdating: boolean;
-  static getReactiveCache<T>(method: F<Promise<T>>): Reactronic<T>;
-  static getReactiveCache<T>(method: F<T>): Reactronic<T>;
+  static get<T>(method: F<Promise<T>>): ReactiveCache<T>;
+  static get<T>(method: F<T>): ReactiveCache<T>;
   static unmount(...objects: any[]): Transaction;
 }
 
 declare global {
   interface Function {
-    readonly reactiveCache: Reactronic; // = Reactronic.getReactiveCache(this)
+    readonly reactiveCache: ReactiveCache; // = ReactiveCache.get(this)
   }
 }
 ```

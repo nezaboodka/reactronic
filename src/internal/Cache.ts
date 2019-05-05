@@ -1,11 +1,11 @@
 import { Utils, Debug, sleep, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
-import { Reactronic } from "../Reactronic";
-export { Reactronic } from "../Reactronic";
+import { ReactiveCache } from "../ReactiveCache";
+export { ReactiveCache } from "../ReactiveCache";
 import { Config, Renew, AsyncCalls, Isolation } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
 
-class CacheProxy extends Reactronic<any> {
+class CacheProxy extends ReactiveCache<any> {
   private readonly handle: Handle;
   private readonly blank: Cache;
 
@@ -167,8 +167,8 @@ export class Cache implements ICache {
 
   hint(tranless?: boolean): string { return `${Hint.record(this.record, tranless, false, this.member)}`; }
 
-  static at(method: F<any>): Reactronic<any> {
-    let impl: Reactronic<any> | undefined = Utils.get(method, RT_CACHE);
+  static get(method: F<any>): ReactiveCache<any> {
+    let impl: ReactiveCache<any> | undefined = Utils.get(method, RT_CACHE);
     if (!impl)
       throw new Error("given method is not a reaction");
     return impl;
