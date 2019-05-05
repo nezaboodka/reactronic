@@ -12,8 +12,8 @@ export abstract class Reactronic<T> {
   abstract readonly isOutdated: boolean;
   abstract readonly isComputing: boolean;
   abstract readonly isUpdating: boolean;
-  static at<T>(method: F<Promise<T>>): Reactronic<T>;
-  static at<T>(method: F<T>): Reactronic<T> { return Cache.at(method); }
+  static getReactiveCache<T>(method: F<Promise<T>>): Reactronic<T>;
+  static getReactiveCache<T>(method: F<T>): Reactronic<T> { return Cache.at(method); }
   static unmount(...objects: any[]): Transaction { return Cache.unmount(...objects); }
   static named<T extends object>(obj: T, name: string | undefined): T { return Handle.setName(obj, name); }
 }
@@ -22,12 +22,12 @@ export abstract class Reactronic<T> {
 
 declare global {
   interface Function {
-    readonly reactronic: Reactronic<any>;
+    readonly reactiveCache: Reactronic<any>;
   }
 }
 
-Object.defineProperty(Function.prototype, "reactronic", {
-  get(): Reactronic<any> { return Reactronic.at(this); },
+Object.defineProperty(Function.prototype, "reactiveCache", {
+  get(): Reactronic<any> { return Reactronic.getReactiveCache(this); },
   configurable: false,
   enumerable: false,
 });

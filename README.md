@@ -299,14 +299,14 @@ abstract class Reactronic<T> {
   readonly isOutdated: boolean;
   readonly isComputing: boolean;
   readonly isUpdating: boolean;
-  static at<T>(method: F<Promise<T>>): Reactronic<T>;
-  static at<T>(method: F<T>): Reactronic<T>;
+  static getReactiveCache<T>(method: F<Promise<T>>): Reactronic<T>;
+  static getReactiveCache<T>(method: F<T>): Reactronic<T>;
   static unmount(...objects: any[]): Transaction;
 }
 
 declare global {
   interface Function {
-    readonly reactronic: Reactronic; // = Reactronic.at(this)
+    readonly reactiveCache: Reactronic; // = Reactronic.getReactiveCache(this)
   }
 }
 ```
