@@ -296,8 +296,8 @@ abstract class Reactronic<T> {
   readonly interim: Promise<T> | T;
   result(...args: any[]): T;
   readonly error: any;
-  invalidate(cause: string | undefined): boolean;
-  readonly isInvalidated: boolean;
+  outdate(cause: string | undefined): boolean;
+  readonly isOutdated: boolean;
   readonly isBeingComputed: boolean;
   readonly isBeingUpdated: boolean;
   static at<T>(method: F<Promise<T>>): Reactronic<T>;
