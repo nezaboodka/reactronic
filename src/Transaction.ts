@@ -167,7 +167,8 @@ export class Transaction {
     }
     if (this.reaction.effect.length > 0) {
       try {
-        Transaction.ensureAllUpToDate(this.snapshot.hint, this.reaction, this.tracing);
+        Transaction.ensureAllUpToDate(this.snapshot.hint,
+          this.snapshot.timestamp, this.reaction, this.tracing);
       }
       finally {
         if (!this.finished())
@@ -210,12 +211,12 @@ export class Transaction {
         this.resultResolve();
   }
 
-  static ensureAllUpToDate(hint: string, reaction: { tran?: Transaction, effect: ICache[] }, tracing: number = 0): void {
+  static ensureAllUpToDate(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICache[] }, tracing: number = 0): void {
     let name = Debug.verbosity >= 2 ? `${hint} - REACTION(${reaction.effect.length})` : "noname";
     Transaction.runAs<void>(name, reaction.tran === undefined, tracing, () => {
       if (reaction.tran === undefined)
         reaction.tran = Transaction.active;
-      reaction.effect.map(r => r.ensureUpToDate(false));
+      reaction.effect.map(r => r.ensureUpToDate(timestamp, false));
     });
   }
 

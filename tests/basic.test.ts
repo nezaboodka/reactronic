@@ -73,7 +73,7 @@ test("basic", t => {
     // Check protection
     t.throws(() => { daddy.setParent.reactronic.configure({latency: 0}); });
     t.throws(() => { console.log(daddy.setParent.reactronic.config.monitor); });
-    t.throws(() => { console.log(daddy.setParent.reactronic.cause); });
+    t.throws(() => { console.log(daddy.setParent.reactronic.result); });
   }
   finally { // cleanup
     Reactronic.unmount(app, app.model);

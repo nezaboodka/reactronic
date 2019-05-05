@@ -10,7 +10,7 @@ export class Debug {
   static log(operation: string, marker: string, message: string, ms: number = 0): void {
     let margin: string = ""; // "  ".repeat(Debug.margin);
     console.log("\x1b[37m%s\x1b[0m \x1b[" + Debug.color +
-      "m%s %s\x1b[0m \x1b[" + Debug.color + "m%s%s\x1b[0m \x1b[" + Debug.color + "m%s\x1b[31m%s\x1b[0m",
+      "m%s %s\x1b[0m \x1b[" + Debug.color + "m%s%s\x1b[0m \x1b[" + Debug.color + "m%s\x1b[0m%s",
       "#rt", Debug.prefix, operation, margin, marker, message, ms > 2 ? `    [ ${ms}ms ]` : ``);
   }
 }

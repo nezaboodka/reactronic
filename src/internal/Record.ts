@@ -63,6 +63,6 @@ export interface ISnapshot {
 
 export interface ICache {
   wrap<T>(func: F<T>): F<T>;
-  invalidateBy(cause: string, hot: boolean, cascade: boolean, effect: ICache[]): void;
-  ensureUpToDate(now: boolean, ...args: any[]): void;
+  markOutdated(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICache[]): void;
+  ensureUpToDate(timestamp: number, now: boolean, ...args: any[]): void;
 }

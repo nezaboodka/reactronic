@@ -12,13 +12,13 @@ class CacheProxy extends Reactronic<any> {
   get config(): Config { return this.obtain(false, false).cache.config; }
   configure(config: Partial<Config>): Config { return this.alter(config); }
 
-  get cause(): string | undefined { return this.obtain(true, false).cache.cause; }
   get interim(): Promise<any> | any { return this.obtain(true, false).cache.interim; }
   result(...args: any[]): any { return this.getResult(...args); }
   get error(): boolean { return this.obtain(true, false).cache.error; }
-  invalidate(cause: string | undefined): boolean { return cause ? Cache.enforceInvalidation(this.obtain(false, false).cache, cause, 0) : false; }
+  get isOutdated(): boolean { return this.obtain(true, false).outdated; }
+  outdate(cause: string | undefined): boolean { return cause ? Cache.enforceOutdated(this.obtain(false, false).cache, cause, 0) : false; }
   get isBeingComputed(): boolean { return this.obtain(true, false).cache.started > 0; }
-  get isBeingUpdated(): boolean { return this.obtain(true, false).cache.updater.active !== undefined; }
+  get isBeingUpdated(): boolean { return this.obtain(true, false).cache.updating.candidate !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
@@ -28,13 +28,15 @@ class CacheProxy extends Reactronic<any> {
     // TODO: mark cache readonly?
   }
 
-  obtain(register: boolean, edit: boolean): { cache: Cache, record: Record } {
+  obtain(register: boolean, edit: boolean): { cache: Cache, record: Record, outdated: boolean } {
+    let snapshot = Snapshot.active();
     let member = this.blank.member;
     let r: Record = edit ?
-      Snapshot.active().writable(this.handle, member, RT_CACHE) :
-      Snapshot.active().readable(this.handle);
+      snapshot.writable(this.handle, member, RT_CACHE) :
+      snapshot.readable(this.handle);
     let c: Cache = r.data[member] || this.blank;
-    if (edit && ((c.cause && (c.record !== r || c.started === 0)) || c.config.latency === Renew.DoesNotCache)) {
+    let outdated = snapshot.timestamp >= c.validBefore;
+    if (edit && ((outdated && (c.record !== r || c.started === 0)) || c.config.latency === Renew.DoesNotCache)) {
       let c2 = new Cache(r, c.member, c);
       r.data[c2.member] = c2;
       if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is created from ${c === this.blank ? "blank" : c.hint(false)}`);
@@ -43,7 +45,7 @@ class CacheProxy extends Reactronic<any> {
     }
     if (register)
       Record.markViewed(r, c.member);
-    return { cache: c, record: r };
+    return { cache: c, record: r, outdated };
   }
 
   alter(config: Partial<Config>): Config {
@@ -61,34 +63,34 @@ class CacheProxy extends Reactronic<any> {
   }
 
   getResult(...args: any): any {
-    const c = this.obtain(true, false).cache;
-    if (c.cause !== undefined && c.updater.active === undefined)
+    const cri = this.obtain(true, false);
+    if (cri.outdated && cri.cache.updating.candidate === undefined)
       this.invoke(...args);
-    return c.result;
+    return cri.cache.result;
   }
 
   invoke(...args: any[]): any {
-    let cr = this.obtain(false, false);
-    let c: Cache = cr.cache;
-    let r: Record = cr.record;
-    let reuse = (!c.cause || c.started > 0) && c.config.latency !== Renew.DoesNotCache &&
+    let cri = this.obtain(false, false);
+    let c: Cache = cri.cache;
+    let r: Record = cri.record;
+    let reuse = (!cri.outdated || c.started > 0) && c.config.latency !== Renew.DoesNotCache &&
       c.args[0] === args[0] || r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (!reuse) {
-      if (c.updater.active) {
+      if (c.updating.candidate) {
         if (c.config.asyncCalls === AsyncCalls.Reused) {
           if (Debug.verbosity >= 4) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is reused`);
           Record.markViewed(r, c.member);
-          return c.updater.active.interim; // Is it really good idea?..
+          return c.updating.candidate.interim; // Is it really good idea?..
         }
         else if (c.config.asyncCalls >= 1)
           throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
       }
       let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}` : "recache";
       return Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, c.config.tracing, (...argsx: any[]): any => {
-        if (c.updater.active && c.config.asyncCalls === AsyncCalls.Relayed) {
-          c.updater.active.tran.cancel();
-          if (Debug.verbosity >= 3) Debug.log("║", " ", `Relaying: t${c.updater.active.tran.id} is canceled.`);
-          c.updater.active = undefined;
+        if (c.updating.candidate && c.config.asyncCalls === AsyncCalls.Relayed) {
+          c.updating.candidate.tran.cancel();
+          if (Debug.verbosity >= 3) Debug.log("║", " ", `Relaying: t${c.updating.candidate.tran.id} is canceled.`);
+          c.updating.candidate = undefined;
         }
         let c1: Cache = c;
         let cr2 = this.obtain(false, true);
@@ -105,7 +107,7 @@ class CacheProxy extends Reactronic<any> {
           c2.interim = Cache.run<any>(c2, (...argsy: any[]): any => {
             return c2.config.body.call(this.handle.proxy, ...argsy);
           }, ...argsx);
-          c2.cause = undefined;
+          c2.validBefore = Number.MAX_SAFE_INTEGER;
         }
         finally {
           c2.leave(r2, c1, ind);
@@ -136,8 +138,8 @@ export class Cache implements ICache {
   result: any;
   started: number;
   error: any;
-  cause?: string;
-  readonly updater: { active: Cache | undefined }; // TODO: count updaters
+  validBefore: number;
+  readonly updating: { candidate: Cache | undefined }; // TODO: count updaters
   readonly observables: Map<PropertyKey, Set<Record>>;
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
@@ -158,8 +160,8 @@ export class Cache implements ICache {
     // this.result = undefined;
     this.started = 0;
     // this.error = undefined;
-    this.cause = "Cache.ctor"; // this.hint(false);
-    this.updater = { active: undefined };
+    this.validBefore = 0;
+    this.updating = { candidate: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
     this.hotObservables = new Map<PropertyKey, Set<Record>>();
   }
@@ -200,9 +202,9 @@ export class Cache implements ICache {
     return caching;
   }
 
-  ensureUpToDate(now: boolean, ...args: any[]): void {
+  ensureUpToDate(timestamp: number, now: boolean, ...args: any[]): void {
     if (now || this.config.latency === Renew.Immediately) {
-      if ((this.config.latency === Renew.DoesNotCache || this.cause) && !this.error) {
+      if ((this.config.latency === Renew.DoesNotCache || timestamp >= this.validBefore) && !this.error) {
         let proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
         let result: any = Reflect.get(proxy, this.member, proxy)(...args);
         if (result instanceof Promise)
@@ -210,7 +212,7 @@ export class Cache implements ICache {
       }
     }
     else
-      sleep(this.config.latency).then(() => this.ensureUpToDate(true, ...args));
+      sleep(this.config.latency).then(() => this.ensureUpToDate(timestamp, true, ...args));
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
@@ -227,11 +229,10 @@ export class Cache implements ICache {
     let observers: Set<ICache> | undefined = r.observers.get(prop);
     if (observers && observers.size > 0) {
       let effect: ICache[] = [];
-      observers.forEach((c: ICache) => c.invalidateBy(
-        Hint.record(r, false, false, prop), true, false, effect));
+      observers.forEach((c: ICache) => c.markOutdated(r, prop, true, false, effect));
       r.observers.delete(prop);
       if (effect.length > 0)
-        Transaction.ensureAllUpToDate(Hint.record(r),
+        Transaction.ensureAllUpToDate(Hint.record(r), r.snapshot.timestamp,
           { tran: Transaction.active, effect });
     }
   }
@@ -239,33 +240,30 @@ export class Cache implements ICache {
   static applyDependencies(changeset: Map<Handle, Record>, effect: ICache[]): void {
     changeset.forEach((r: Record, h: Handle) => {
       let unmount: boolean = r.edits.has(RT_UNMOUNT);
-      // Either mark previous record observers as invalidated, or retain them
+      // Either mark previous record observers as outdated, or retain them
       if (r.prev.record) {
         let prev: Record = r.prev.record;
         if (unmount) {
           for (let prop in prev.data)
             Cache.markOverwritten(prev, prop, effect);
           prev.observers.forEach((prevObservers: Set<ICache>, prop: PropertyKey) =>
-            prevObservers.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, prop), false, false, effect)));
+            prevObservers.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect)));
         }
         else
           prev.observers.forEach((prevObservers: Set<ICache>, prop: PropertyKey) => {
             if (r.edits.has(prop))
-              prevObservers.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, prop), false, false, effect));
+              prevObservers.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect));
             else
               Cache.retainPrevObservers(r, prop, prev, prevObservers);
           });
       }
-      // Mark previous properties as overwritten and check if reactions are not yet invalidated
+      // Mark previous properties as overwritten and check if reactions are not yet outdated
       if (!unmount)
         r.edits.forEach((prop: PropertyKey) => {
           Cache.markOverwritten(r.prev.record, prop, effect);
           let c: Cache = r.data[prop];
-          if (c instanceof Cache) {
-            let cause = c.subscribeToObservables(false);
-            if (cause)
-              c.invalidateBy(cause, false, false, effect);
-          }
+          if (c instanceof Cache)
+            c.subscribeToObservables(false, effect);
         });
     });
   }
@@ -293,20 +291,18 @@ export class Cache implements ICache {
     return result;
   }
 
-  private subscribeToObservables(hot: boolean): string | undefined {
-    let cause: string | undefined = undefined;
+  private subscribeToObservables(hot: boolean, effect?: ICache[]): void {
     let subscriptions: string[] = [];
     let o = hot ? this.hotObservables : this.observables;
     o.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach((r: Record) => {
         Cache.acquireObserverSet(r, prop).add(this); // link
         if (Debug.verbosity >= 3) subscriptions.push(Hint.record(r, false, true, prop));
-        if (!cause && r.overwritten.has(prop))
-          cause = Hint.record(r, false, false, prop); // need to invalidate
+        if (effect && r.overwritten.has(prop))
+          this.markOutdated(r, prop, hot, false, effect);
       });
     });
     if (Debug.verbosity >= 3 && subscriptions.length > 0) Debug.log(hot ? "║" : " ", "∞", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
-    return cause;
   }
 
   static retainPrevObservers(r: Record, prop: PropertyKey, prev: Record, prevObservers: Set<ICache>): Set<ICache> {
@@ -320,44 +316,51 @@ export class Cache implements ICache {
     return prevObservers;
   }
 
-  invalidateBy(cause: string, hot: boolean, cascade: boolean, effect: ICache[]): void {
-    if (!this.cause && (!cascade || this.config.latency !== Renew.WhenReady)) {
-      this.cause = cause;
-      // if (this.updater.active) {
-      //   this.updater.active.tran.cancel();
-      //   if (Debug.verbosity >= 2) Debug.log("║", " ", `Invalidation: t${this.updater.active.tran.id} is canceled.`);
-      //   this.updater.active = undefined;
-      // }
-      // TODO: make cache readonly
-      // Cascade invalidation
-      let r: Record = Snapshot.active().readable(Utils.get(this.record.data, RT_HANDLE));
-      if (r.data[this.member] === this) { // TODO: Consider better solution?
-        let rr: Record | undefined = r;
-        while (rr && !rr.overwritten.has(this.member)) {
-          let o: Set<ICache> | undefined = rr.observers.get(this.member);
-          if (o)
-            o.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, this.member), false, true, effect));
-          rr = rr.prev.record;
+  markOutdated(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICache[]): void {
+    const ts = cause.snapshot.timestamp;
+    if (ts < this.validBefore && (!cascade || this.config.latency !== Renew.WhenReady)) {
+      if (this.validBefore === Number.MAX_SAFE_INTEGER) {
+        this.validBefore = ts;
+        // this.cause = Hint.record(cause, false, false, causeProp);
+        // if (this.updater.active) {
+        //   this.updater.active.tran.cancel();
+        //   if (Debug.verbosity >= 2) Debug.log("║", " ", `Invalidation: t${this.updater.active.tran.id} is canceled.`);
+        //   this.updater.active = undefined;
+        // }
+        // TODO: make cache readonly
+        // Cascade invalidation
+        let r: Record = Snapshot.active().readable(Utils.get(this.record.data, RT_HANDLE));
+        if (r.data[this.member] === this) { // TODO: Consider better solution?
+          let rr: Record | undefined = r;
+          while (rr && !rr.overwritten.has(this.member)) {
+            let o: Set<ICache> | undefined = rr.observers.get(this.member);
+            if (o)
+              o.forEach((c: ICache) => c.markOutdated(r, this.member, false, true, effect));
+            rr = rr.prev.record;
+          }
         }
-      }
-      // Check if cache should be renewed
-      if (this.config.latency >= Renew.Immediately && r.data[RT_UNMOUNT] !== RT_UNMOUNT) {
-        effect.push(this);
-        if (Debug.verbosity >= 2) Debug.log(" ", "■", `${this.hint(false)} is invalidated by ${cause} and will run automatically`);
+        // Check if cache should be renewed
+        if (this.config.latency >= Renew.Immediately && r.data[RT_UNMOUNT] !== RT_UNMOUNT) {
+          effect.push(this);
+          if (Debug.verbosity >= 2) Debug.log(" ", "■", `${this.hint(false)} is outdated due to ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
+        }
+        else
+          if (Debug.verbosity >= 2) Debug.log(" ", "□", `${this.hint(false)} is outdated due to ${Hint.record(cause, false, false, causeProp)}`);
       }
       else
-      if (Debug.verbosity >= 2) Debug.log(" ", "□", `${this.hint(false)} is invalidated by ${cause}`);
+        this.validBefore = ts;
     }
   }
 
-  static enforceInvalidation(c: Cache, cause: string, latency: number): boolean {
-    let effect: Cache[] = [];
-    c.invalidateBy(cause, false, false, effect);
-    if (latency === Renew.Immediately)
-      Transaction.ensureAllUpToDate(cause, { effect });
-    else
-      sleep(latency).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
-    return true;
+  static enforceOutdated(c: Cache, cause: string, latency: number): boolean {
+    throw new Error("not implemented");
+    // let effect: Cache[] = [];
+    // c.markOutdated(cause, false, false, effect);
+    // if (latency === Renew.Immediately)
+    //   Transaction.ensureAllUpToDate(cause, { effect });
+    // else
+    //   sleep(latency).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
+    // return true;
   }
 
   static markOverwritten(self: Record | undefined, prop: PropertyKey, effect: ICache[]): void {
@@ -366,7 +369,7 @@ export class Cache implements ICache {
       r.overwritten.add(prop);
       let o: Set<ICache> | undefined = r.observers.get(prop);
       if (o)
-        o.forEach((c: ICache) => c.invalidateBy(Hint.record(r, false, false, prop), false, false, effect));
+        o.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect));
       // Utils.freezeSet(o);
       self = self.prev.record;
     }
@@ -383,8 +386,8 @@ export class Cache implements ICache {
     if (this.config.tracing >= 4 || (this.config.tracing === 0 && Debug.verbosity >= 4)) Debug.log("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
     this.started = Date.now();
     this.monitorEnter(mon);
-    if (!prev.updater.active)
-      prev.updater.active = this;
+    if (!prev.updating.candidate)
+      prev.updating.candidate = this;
   }
 
   leave(r: Record, prev: Cache, ind: Monitor | null): void {
@@ -409,8 +412,8 @@ export class Cache implements ICache {
   }
 
   private leaveImpl(r: Record, prev: Cache, mon: Monitor | null, op: string, message: string): void {
-    if (prev.updater.active === this)
-      prev.updater.active = undefined;
+    if (prev.updating.candidate === this)
+      prev.updating.candidate = undefined;
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;

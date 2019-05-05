@@ -5,12 +5,11 @@ import { Config } from "./Config";
 export abstract class Reactronic<T> {
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
-  abstract readonly cause: string | undefined;
   abstract readonly interim: Promise<T> | T;
   abstract result(...args: any[]): T;
   abstract readonly error: any;
-  abstract invalidate(cause: string | undefined): boolean;
-  get isInvalidated(): boolean { return this.cause !== undefined; }
+  abstract outdate(cause: string | undefined): boolean;
+  abstract readonly isOutdated: boolean;
   abstract readonly isBeingComputed: boolean;
   abstract readonly isBeingUpdated: boolean;
   static at<T>(method: F<Promise<T>>): Reactronic<T>;
