@@ -17,8 +17,8 @@ class CacheProxy extends Reactronic<any> {
   get error(): boolean { return this.obtain(true, false).cache.error; }
   get isOutdated(): boolean { return this.obtain(true, false).outdated; }
   outdate(cause: string | undefined): boolean { return cause ? Cache.enforceOutdated(this.obtain(false, false).cache, cause, 0) : false; }
-  get isBeingComputed(): boolean { return this.obtain(true, false).cache.started > 0; }
-  get isBeingUpdated(): boolean { return this.obtain(true, false).cache.updating.candidate !== undefined; }
+  get isComputing(): boolean { return this.obtain(true, false).cache.started > 0; }
+  get isUpdating(): boolean { return this.obtain(true, false).cache.updating.candidate !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();

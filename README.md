@@ -292,14 +292,13 @@ class Transaction {
 abstract class Reactronic<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
-  readonly cause: string | undefined;
   readonly interim: Promise<T> | T;
   result(...args: any[]): T;
   readonly error: any;
   outdate(cause: string | undefined): boolean;
   readonly isOutdated: boolean;
-  readonly isBeingComputed: boolean;
-  readonly isBeingUpdated: boolean;
+  readonly isComputing: boolean;
+  readonly isUpdating: boolean;
   static at<T>(method: F<Promise<T>>): Reactronic<T>;
   static at<T>(method: F<T>): Reactronic<T>;
   static unmount(...objects: any[]): Transaction;
