@@ -11,7 +11,7 @@ interface CacheInfo {
   readonly outdated: boolean;
 }
 
-class CacheProxy extends ReactiveCache<any> {
+class ReactiveCacheImpl extends ReactiveCache<any> {
   private readonly handle: Handle;
   private readonly blank: Cache;
 
@@ -385,7 +385,7 @@ export class Cache implements ICache {
   }
 
   static createCacheTrap(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
-    let impl = new CacheProxy(h, prop, config);
+    let impl = new ReactiveCacheImpl(h, prop, config);
     let cachedInvoke: F<any> = (...args: any[]): any => impl.invoke(...args);
     Utils.set(cachedInvoke, RT_CACHE, impl);
     return cachedInvoke;
