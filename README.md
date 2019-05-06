@@ -306,7 +306,7 @@ abstract class ReactiveCache<T> {
 
 declare global {
   interface Function {
-    readonly reactiveCache: ReactiveCache; // = ReactiveCache.get(this)
+    readonly rcache: ReactiveCache; // = ReactiveCache.get(this)
   }
 }
 ```

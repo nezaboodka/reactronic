@@ -22,11 +22,11 @@ export abstract class ReactiveCache<T> {
 
 declare global {
   interface Function {
-    readonly reactiveCache: ReactiveCache<any>;
+    readonly rcache: ReactiveCache<any>;
   }
 }
 
-Object.defineProperty(Function.prototype, "reactiveCache", {
+Object.defineProperty(Function.prototype, "rcache", {
   get(): ReactiveCache<any> { return ReactiveCache.get(this); },
   configurable: false,
   enumerable: false,

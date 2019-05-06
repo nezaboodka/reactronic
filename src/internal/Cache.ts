@@ -5,19 +5,25 @@ import { Config, Renew, AsyncCalls, Isolation } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
 
+interface CacheInfo {
+  readonly record: Record;
+  readonly cache: Cache;
+  readonly outdated: boolean;
+}
+
 class CacheProxy extends ReactiveCache<any> {
   private readonly handle: Handle;
   private readonly blank: Cache;
 
-  get config(): Config { return this.obtain(false, false).cache.config; }
+  get config(): Config { return this.read(false).cache.config; }
   configure(config: Partial<Config>): Config { return this.alter(config); }
-  get interim(): Promise<any> | any { return this.obtain(true, false).cache.interim; }
-  get error(): boolean { return this.obtain(true, false).cache.error; }
+  get interim(): Promise<any> | any { return this.read(true).cache.interim; }
+  get error(): boolean { return this.read(true).cache.error; }
   result(...args: any[]): any { return this.getResult(...args); }
-  outdate(cause: string | undefined): boolean { return cause ? Cache.enforceOutdated(this.obtain(false, false).cache, cause, 0) : false; }
-  get isOutdated(): boolean { return this.obtain(true, false).outdated; }
-  get isComputing(): boolean { return this.obtain(true, false).cache.started > 0; }
-  get isUpdating(): boolean { return this.obtain(true, false).cache.outdated.recomputation !== undefined; }
+  outdate(cause: string | undefined): boolean { return cause ? Cache.enforceOutdated(this.read(false).cache, cause, 0) : false; }
+  get isOutdated(): boolean { return this.read(true).outdated; }
+  get isComputing(): boolean { return this.read(true).cache.started > 0; }
+  get isUpdating(): boolean { return this.read(true).cache.outdated.recomputation !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
@@ -27,34 +33,41 @@ class CacheProxy extends ReactiveCache<any> {
     // TODO: mark cache readonly?
   }
 
-  obtain(register: boolean, edit: boolean): { cache: Cache, record: Record, outdated: boolean } {
+  read(markViewed: boolean): CacheInfo {
     let snapshot = Snapshot.active();
     let member = this.blank.member;
-    let r: Record = edit ?
-      snapshot.writable(this.handle, member, RT_CACHE) :
-      snapshot.readable(this.handle);
+    let r: Record = snapshot.read(this.handle);
     let c: Cache = r.data[member] || this.blank;
     let outdated = snapshot.timestamp >= c.outdated.timestamp;
-    if (edit && ((outdated && (c.record !== r || c.started === 0)) || c.config.latency === Renew.DoesNotCache)) {
+    if (markViewed)
+      Record.markViewed(r, c.member);
+    return { cache: c, record: r, outdated };
+  }
+
+  edit(): CacheInfo {
+    let snapshot = Snapshot.active();
+    let member = this.blank.member;
+    let r: Record = snapshot.edit(this.handle, member, RT_CACHE);
+    let c: Cache = r.data[member] || this.blank;
+    let outdated = snapshot.timestamp >= c.outdated.timestamp;
+    if ((outdated && (c.record !== r || c.started === 0)) || c.config.latency === Renew.DoesNotCache) {
       let c2 = new Cache(r, c.member, c);
       r.data[c2.member] = c2;
       if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is created from ${c === this.blank ? "blank" : c.hint(false)}`);
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
-    if (register)
-      Record.markViewed(r, c.member);
     return { cache: c, record: r, outdated };
   }
 
   alter(config: Partial<Config>): Config {
-    let a1 = this.obtain(false, false);
-    let c1: Cache = a1.cache;
-    let r1: Record = a1.record;
+    let ci1 = this.read(false);
+    let c1: Cache = ci1.cache;
+    let r1: Record = ci1.record;
     let hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
     return Transaction.runAs<Config>(hint, false, 0, (): Config => {
-      let a2 = this.obtain(false, true);
-      let c2: Cache = a2.cache;
+      let ci2 = this.edit();
+      let c2: Cache = ci2.cache;
       c2.config = new ConfigImpl(c2.config.body, c2.config, config);
       if (Debug.verbosity >= 4) Debug.log("║", "w", `${Hint.record(r1)}.${c1.member.toString()}.config = ...`);
       return c2.config;
@@ -62,64 +75,67 @@ class CacheProxy extends ReactiveCache<any> {
   }
 
   getResult(...args: any): any {
-    const cr = this.obtain(true, false);
-    if (cr.outdated && cr.cache.outdated.recomputation === undefined)
+    let cr = this.read(false);
+    if (cr.outdated && cr.cache.started === 0)
       this.invoke(...args);
     return cr.cache.result;
   }
 
   invoke(...args: any[]): any {
-    let cr = this.obtain(false, false);
+    let cr = this.read(false);
     let c: Cache = cr.cache;
     let r: Record = cr.record;
     let hit = (!cr.outdated || c.started > 0) && c.config.latency !== Renew.DoesNotCache &&
       c.args[0] === args[0] || r.data[RT_UNMOUNT] === RT_UNMOUNT;
-    if (!hit) {
-      if (c.outdated.recomputation) {
-        if (c.config.asyncCalls === AsyncCalls.Reused) {
-          if (Debug.verbosity >= 4) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is reused`);
-          Record.markViewed(r, c.member);
-          return c.outdated.recomputation.interim; // Is it really good idea?..
-        }
-        else if (c.config.asyncCalls >= 1)
-          throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
-      }
-      let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}` : "recache";
-      return Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, c.config.tracing, (...argsx: any[]): any => {
-        if (c.outdated.recomputation && c.config.asyncCalls === AsyncCalls.Relayed) {
-          c.outdated.recomputation.tran.cancel();
-          if (Debug.verbosity >= 3) Debug.log("║", " ", `Relaying: t${c.outdated.recomputation.tran.id} is canceled.`);
-          c.outdated.recomputation = undefined;
-        }
-        let c1: Cache = c;
-        let cr2 = this.obtain(false, true);
-        let c2: Cache = cr2.cache;
-        let r2: Record = cr2.record;
-        let ind: Monitor | null = c1.config.monitor;
-        c2.enter(r2, c1, ind);
-        try
-        {
-          if (argsx.length > 0)
-            c2.args = argsx;
-          else
-            argsx = c2.args;
-          c2.interim = Cache.run<any>(c2, (...argsy: any[]): any => {
-            return c2.config.body.call(this.handle.proxy, ...argsy);
-          }, ...argsx);
-          c2.outdated.timestamp = Number.MAX_SAFE_INTEGER;
-        }
-        finally {
-          c2.tryLeave(r2, c1, ind);
-        }
-        Record.markViewed(r2, c2.member);
-        return c2.interim;
-      }, ...args);
-    }
-    else {
+    if (hit) {
       if (Debug.verbosity >= 4) Debug.log("║", "f ==", `${Hint.record(r)}.${c.member.toString()}() hits cache`);
       Record.markViewed(r, c.member);
       return c.interim;
     }
+    else
+      return this.recompute(c, r, ...args);
+  }
+
+  recompute(c: Cache, r: Record, ...args: any[]): any {
+    if (c.outdated.recomputation) {
+      if (c.config.asyncCalls === AsyncCalls.Reused) {
+        if (Debug.verbosity >= 4) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is reused`);
+        Record.markViewed(r, c.member);
+        return c.outdated.recomputation.interim; // Is it really good idea?..
+      }
+      else if (c.config.asyncCalls >= 1)
+        throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
+    }
+    let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}` : "recache";
+    return Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, c.config.tracing, (...argsx: any[]): any => {
+      if (c.outdated.recomputation && c.config.asyncCalls === AsyncCalls.Relayed) {
+        c.outdated.recomputation.tran.cancel();
+        if (Debug.verbosity >= 3) Debug.log("║", " ", `Relaying: t${c.outdated.recomputation.tran.id} is canceled.`);
+        c.outdated.recomputation = undefined;
+      }
+      let c1: Cache = c;
+      let cr2 = this.edit();
+      let c2: Cache = cr2.cache;
+      let r2: Record = cr2.record;
+      let ind: Monitor | null = c1.config.monitor;
+      c2.enter(r2, c1, ind);
+      try
+      {
+        if (argsx.length > 0)
+          c2.args = argsx;
+        else
+          argsx = c2.args;
+        c2.interim = Cache.run<any>(c2, (...argsy: any[]): any => {
+          return c2.config.body.call(this.handle.proxy, ...argsy);
+        }, ...argsx);
+        c2.outdated.timestamp = Number.MAX_SAFE_INTEGER;
+      }
+      finally {
+        c2.tryLeave(r2, c1, ind);
+      }
+      Record.markViewed(r2, c2.member);
+      return c2.interim;
+    }, ...args);
   }
 }
 
@@ -325,7 +341,7 @@ export class Cache implements ICache {
       // }
       // TODO: make cache readonly
       // Cascade invalidation
-      let r: Record = Snapshot.active().readable(Utils.get(this.record.data, RT_HANDLE));
+      let r: Record = Snapshot.active().read(Utils.get(this.record.data, RT_HANDLE));
       if (r.data[this.member] === this) { // TODO: Consider better solution?
         let rr: Record | undefined = r;
         while (rr && !rr.overwritten.has(this.member)) {

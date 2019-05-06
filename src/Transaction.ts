@@ -81,7 +81,7 @@ export class Transaction {
         r.edits.forEach((prop: PropertyKey) => {
           if (r.prev.backup) {
             let prevValue: any = r.prev.backup.data[prop];
-            let t: Record | undefined = Snapshot.active().tryGetWritable(h, prop, prevValue);
+            let t: Record | undefined = Snapshot.active().tryEdit(h, prop, prevValue);
             if (t) {
               t.data[prop] = prevValue;
               let v: any = t.prev.record ? t.prev.record.data[prop] : undefined;

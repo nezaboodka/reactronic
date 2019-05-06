@@ -71,9 +71,9 @@ test("basic", t => {
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     // Check protection
-    t.throws(() => { daddy.setParent.reactiveCache.configure({latency: 0}); });
-    t.throws(() => { console.log(daddy.setParent.reactiveCache.config.monitor); });
-    t.throws(() => { console.log(daddy.setParent.reactiveCache.result); });
+    t.throws(() => { daddy.setParent.rcache.configure({latency: 0}); });
+    t.throws(() => { console.log(daddy.setParent.rcache.config.monitor); });
+    t.throws(() => { console.log(daddy.setParent.rcache.result); });
   }
   finally { // cleanup
     ReactiveCache.unmount(app, app.model);

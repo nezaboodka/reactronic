@@ -27,21 +27,21 @@ export class Snapshot implements ISnapshot {
     return undef(); // to be redefined by Transaction implementation
   };
 
-  readable(h: Handle): Record {
+  read(h: Handle): Record {
     let result = this.getRecord(h);
     if (!result) /* istanbul ignore next */
       throw new Error("E607: internal error");
     return result;
   }
 
-  writable(h: Handle, prop: PropertyKey, value: Symbol): Record {
-    let result: Record | undefined = this.tryGetWritable(h, prop, value);
+  edit(h: Handle, prop: PropertyKey, value: Symbol): Record {
+    let result: Record | undefined = this.tryEdit(h, prop, value);
     if (!result) /* istanbul ignore next */
       throw new Error("unknown error");
     return result;
   }
 
-  tryGetWritable(h: Handle, prop: PropertyKey, value: any): Record | undefined {
+  tryEdit(h: Handle, prop: PropertyKey, value: any): Record | undefined {
     if (this.completed)
       throw new Error("E609: object can only be modified inside transaction");
     let r: Record | undefined = this.getRecord(h);

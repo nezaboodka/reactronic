@@ -57,7 +57,7 @@ export class Virt implements ProxyHandler<Handle> {
     let value: any;
     let config: ConfigImpl | undefined = Virt.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
-      let r: Record = Snapshot.active().readable(h);
+      let r: Record = Snapshot.active().read(h);
       value = r.data[prop];
       if (value === undefined && !r.data.hasOwnProperty(prop))
         value = Reflect.get(h.stateless, prop, receiver);
@@ -72,7 +72,7 @@ export class Virt implements ProxyHandler<Handle> {
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
     let config: ConfigImpl | undefined = Virt.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
-      let r: Record | undefined = Snapshot.active().tryGetWritable(h, prop, value);
+      let r: Record | undefined = Snapshot.active().tryEdit(h, prop, value);
       if (r) { // undefined when r.data[prop] === value, thus creation of edit record was skipped
         r.data[prop] = value;
         let v: any = r.prev.record ? r.prev.record.data[prop] : undefined;
@@ -89,7 +89,7 @@ export class Virt implements ProxyHandler<Handle> {
 
   ownKeys(h: Handle): PropertyKey[] {
     // TODO: Exclude caches from the list of own keys
-    let r: Record = Snapshot.active().readable(h);
+    let r: Record = Snapshot.active().read(h);
     return Reflect.ownKeys(r.data);
   }
 
@@ -178,7 +178,7 @@ export class Virt implements ProxyHandler<Handle> {
 
   static createHandle(mode: Mode, stateless: any, proxy: any): Handle {
     let h = new Handle(stateless, proxy, Virt.proxy);
-    let r = Snapshot.active().writable(h, RT_HANDLE, RT_HANDLE);
+    let r = Snapshot.active().edit(h, RT_HANDLE, RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
     Virt.initRecordData(h, mode, stateless, r);
     return h;
@@ -186,7 +186,7 @@ export class Virt implements ProxyHandler<Handle> {
 
   static initRecordData(h: Handle, mode: Mode, stateless: any, record: Record): void {
     let configTable = Virt.getConfigTable(Object.getPrototypeOf(stateless));
-    let r = Snapshot.active().writable(h, RT_HANDLE, RT_HANDLE);
+    let r = Snapshot.active().edit(h, RT_HANDLE, RT_HANDLE);
     for (let prop of Object.getOwnPropertyNames(stateless)) {
       if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless) {
         Utils.copyProp(stateless, r.data, prop);
