@@ -19,7 +19,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
   get interim(): Promise<any> | any { return this.read(true).cache.interim; }
   get error(): boolean { return this.read(true).cache.error; }
-  result(...args: any[]): any { return this.getResult(...args); }
+  result(...args: any[]): any { return this.obtain(...args); }
   outdate(cause: string | undefined): boolean { return cause ? Cache.enforceOutdated(this.read(false).cache, cause, 0) : false; }
   get isOutdated(): boolean { return this.read(true).outdated; }
   get isComputing(): boolean { return this.read(true).cache.started > 0; }
@@ -33,7 +33,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     // TODO: mark cache readonly?
   }
 
-  getResult(...args: any): any {
+  obtain(...args: any): any {
     let ci = this.read(false);
     if (ci.outdated && ci.cache.started === 0)
       this.invoke(...args);
@@ -54,9 +54,10 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     else {
       if (c.outdated.recomputation) {
         if (c.config.asyncCalls === AsyncCalls.Reused) {
-          if (Debug.verbosity >= 4) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is reused`);
-          Record.markViewed(r, c.member);
-          return c.outdated.recomputation.interim; // Is it really good idea?..
+          throw new Error("not implemented");
+          // if (Debug.verbosity >= 4) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is reused`);
+          // Record.markViewed(r, c.member);
+          // return c.outdated.recomputation.interim; // Is it really good idea?..
         }
         else if (c.config.asyncCalls >= 1)
           throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
@@ -107,8 +108,8 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let ci2 = this.edit();
     let c2: Cache = ci2.cache;
     let r2: Record = ci2.record;
-    let ind: Monitor | null = c.config.monitor;
-    c2.enter(r2, c, ind);
+    let mon: Monitor | null = c.config.monitor;
+    c2.enter(r2, c, mon);
     try
     {
       if (argsx.length > 0)
@@ -121,7 +122,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       c2.outdated.timestamp = Number.MAX_SAFE_INTEGER;
     }
     finally {
-      c2.tryLeave(r2, c, ind);
+      c2.tryLeave(r2, c, mon);
     }
     return ci2;
   }
@@ -401,24 +402,24 @@ export class Cache implements ICache {
       prev.outdated.recomputation = this;
   }
 
-  tryLeave(r: Record, prev: Cache, ind: Monitor | null): void {
+  tryLeave(r: Record, prev: Cache, mon: Monitor | null): void {
     if (this.interim instanceof Promise) {
       this.interim = this.interim.then(
         result => {
           this.result = result;
-          this.leave(r, prev, ind, "<=", "is completed");
+          this.leave(r, prev, mon, "<=", "is completed");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, prev, ind, "<=", "is completed with error");
+          this.leave(r, prev, mon, "<=", "is completed with error");
           throw error;
         });
       if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "f ..", `${Hint.record(r, true)}.${this.member.toString()} is async`);
     }
     else {
       this.result = this.interim;
-      this.leave(r, prev, ind, "<=", "is completed");
+      this.leave(r, prev, mon, "<=", "is completed");
     }
   }
 
