@@ -5,7 +5,7 @@ import { Config } from "./Config";
 export abstract class ReactiveCache<T> {
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
-  abstract readonly interim: Promise<T> | T;
+  abstract readonly returnValue: Promise<T> | T;
   abstract readonly error: any;
   abstract result(...args: any[]): T;
   abstract outdate(cause: string | undefined): boolean;
