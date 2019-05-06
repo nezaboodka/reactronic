@@ -104,6 +104,7 @@ export class Transaction {
     try {
       result = t.run<T>(func, ...args);
       if (root) {
+        // TODO: Fix the logic to support promises with non-void values
         if (result instanceof Promise) {
           let outer = Transaction.active;
           try {

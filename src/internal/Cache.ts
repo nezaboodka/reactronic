@@ -79,10 +79,12 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       return c.interim;
     }
     else
-      return this.recompute(c, r, ...args);
+      return this.recompute(ci, ...args);
   }
 
-  recompute(c: Cache, r: Record, ...args: any[]): any {
+  recompute(ci: CacheInfo, ...args: any[]): any {
+    let c = ci.cache;
+    let r = ci.record;
     if (c.outdated.recomputation) {
       if (c.config.asyncCalls === AsyncCalls.Reused) {
         if (Debug.verbosity >= 4) Debug.log("║", "f =%", `${Hint.record(r)}.${c.member.toString()}() is reused`);
@@ -99,12 +101,11 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         if (Debug.verbosity >= 3) Debug.log("║", " ", `Relaying: t${c.outdated.recomputation.tran.id} is canceled.`);
         c.outdated.recomputation = undefined;
       }
-      let c1: Cache = c;
       let ci2 = this.edit();
       let c2: Cache = ci2.cache;
       let r2: Record = ci2.record;
-      let ind: Monitor | null = c1.config.monitor;
-      c2.enter(r2, c1, ind);
+      let ind: Monitor | null = c.config.monitor;
+      c2.enter(r2, c, ind);
       try
       {
         if (argsx.length > 0)
@@ -117,7 +118,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         c2.outdated.timestamp = Number.MAX_SAFE_INTEGER;
       }
       finally {
-        c2.tryLeave(r2, c1, ind);
+        c2.tryLeave(r2, c, ind);
       }
       Record.markViewed(r2, c2.member);
       return c2.interim;
