@@ -118,7 +118,7 @@ export class Transaction {
     return result;
   }
 
-  private async wrapPromiseForOuterTransaction<T>(p: Promise<T>): Promise<T> {    
+  private async wrapPromiseForOuterTransaction<T>(p: Promise<T>): Promise<T> {
     let result = await p;
     await this.whenFinished(false);
     return result; // return only when transaction is finished
