@@ -12,8 +12,7 @@ let etalon: string[] = [
   "[...] Url: nezaboodka.com",
   "[...] Log: RTA, nezaboodka.com/100",
   "Url: nezaboodka.com",
-  "Log: RTA, nezaboodka.com/100",
-  "Error: t28'recache conflicts with other transactions on: t22'DemoModel#22.url, t22'DemoModel#22.log",
+  "Log: RTA, nezaboodka.com/100"
 ];
 
 test("async", async t => {

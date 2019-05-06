@@ -104,17 +104,8 @@ export class Transaction {
     try {
       result = t.run<T>(func, ...args);
       if (root) {
-        // TODO: Fix the logic to support promises with non-void values
-        if (result instanceof Promise) {
-          let outer = Transaction.active;
-          try {
-            Transaction.active = Transaction.notran; // Workaround?
-            result = t.whenFinished(false);
-          }
-          finally {
-            Transaction.active = outer;
-          }
-        }
+        if (result instanceof Promise)
+          result = t.wrapPromiseForOuterTransaction(result);
         t.seal();
       }
     }
@@ -125,6 +116,12 @@ export class Transaction {
     if (t.error && t.error !== RT_NO_THROW)
       throw t.error;
     return result;
+  }
+
+  private async wrapPromiseForOuterTransaction<T>(p: Promise<T>): Promise<T> {    
+    let result = await p;
+    await this.whenFinished(false);
+    return result; // return only when transaction is finished
   }
 
   // Internal
