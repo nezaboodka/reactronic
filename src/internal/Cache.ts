@@ -16,7 +16,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   private readonly blank: Cache;
 
   get config(): Config { return this.read(false).cache.config; }
-  configure(config: Partial<Config>): Config { return this.alter(config); }
+  configure(config: Partial<Config>): Config { return this._configure(config); }
   get interim(): Promise<any> | any { return this.read(true).cache.interim; }
   get error(): boolean { return this.read(true).cache.error; }
   result(...args: any[]): any { return this.getResult(...args); }
@@ -60,32 +60,18 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     return { cache: c, record: r, outdated };
   }
 
-  alter(config: Partial<Config>): Config {
-    let ci1 = this.read(false);
-    let c1: Cache = ci1.cache;
-    let r1: Record = ci1.record;
-    let hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
-    return Transaction.runAs<Config>(hint, false, 0, (): Config => {
-      let ci2 = this.edit();
-      let c2: Cache = ci2.cache;
-      c2.config = new ConfigImpl(c2.config.body, c2.config, config);
-      if (Debug.verbosity >= 4) Debug.log("║", "w", `${Hint.record(r1)}.${c1.member.toString()}.config = ...`);
-      return c2.config;
-    });
-  }
-
   getResult(...args: any): any {
-    let cr = this.read(false);
-    if (cr.outdated && cr.cache.started === 0)
+    let ci = this.read(false);
+    if (ci.outdated && ci.cache.started === 0)
       this.invoke(...args);
-    return cr.cache.result;
+    return ci.cache.result;
   }
 
   invoke(...args: any[]): any {
-    let cr = this.read(false);
-    let c: Cache = cr.cache;
-    let r: Record = cr.record;
-    let hit = (!cr.outdated || c.started > 0) && c.config.latency !== Renew.DoesNotCache &&
+    let ci = this.read(false);
+    let c: Cache = ci.cache;
+    let r: Record = ci.record;
+    let hit = (!ci.outdated || c.started > 0) && c.config.latency !== Renew.DoesNotCache &&
       c.args[0] === args[0] || r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (hit) {
       if (Debug.verbosity >= 4) Debug.log("║", "f ==", `${Hint.record(r)}.${c.member.toString()}() hits cache`);
@@ -114,9 +100,9 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         c.outdated.recomputation = undefined;
       }
       let c1: Cache = c;
-      let cr2 = this.edit();
-      let c2: Cache = cr2.cache;
-      let r2: Record = cr2.record;
+      let ci2 = this.edit();
+      let c2: Cache = ci2.cache;
+      let r2: Record = ci2.record;
       let ind: Monitor | null = c1.config.monitor;
       c2.enter(r2, c1, ind);
       try
@@ -136,6 +122,20 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       Record.markViewed(r2, c2.member);
       return c2.interim;
     }, ...args);
+  }
+
+  private _configure(config: Partial<Config>): Config {
+    let ci1 = this.read(false);
+    let c1: Cache = ci1.cache;
+    let r1: Record = ci1.record;
+    let hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
+    return Transaction.runAs<Config>(hint, false, 0, (): Config => {
+      let ci2 = this.edit();
+      let c2: Cache = ci2.cache;
+      c2.config = new ConfigImpl(c2.config.body, c2.config, config);
+      if (Debug.verbosity >= 4) Debug.log("║", "w", `${Hint.record(r1)}.${c1.member.toString()}.config = ...`);
+      return c2.config;
+    });
   }
 }
 
