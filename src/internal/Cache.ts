@@ -8,7 +8,7 @@ import { Monitor } from "../Monitor";
 interface CacheCall {
   record: Record;
   cache: Cache;
-  valid: boolean;
+  isUpToDate: boolean;
 }
 
 class ReactiveCacheImpl extends ReactiveCache<any> {
@@ -20,7 +20,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   get returnValue(): Promise<any> | any { return this.read(true).cache.returnValue; }
   get error(): boolean { return this.read(true).cache.error; }
   outdate(cause: string | undefined): boolean { return cause ? Cache.enforceOutdated(this.read(false).cache, cause, 0) : false; }
-  get isOutdated(): boolean { return !this.read(true).valid; }
+  get isOutdated(): boolean { return !this.read(true).isUpToDate; }
   get isComputing(): boolean { return this.read(true).cache.started > 0; }
   get isUpdating(): boolean { return this.read(true).cache.outdated.recomputation !== undefined; }
 
@@ -34,11 +34,10 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
 
   result(...args: any): any {
     let cc = this.obtain(...args);
-    if (cc.valid)
+    if (cc.isUpToDate)
       Record.markViewed(cc.record, cc.cache.member);
     else if (cc.record.prev.record !== Record.empty)
-      // Record.markViewed(cc.record.prev.record, cc.cache.member);
-      Record.markViewed(cc.record, cc.cache.member);
+      Record.markViewed(cc.record.prev.record, cc.cache.member);
     return cc.cache.result;
   }
 
@@ -51,7 +50,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   private obtain(...args: any[]): CacheCall {
     let cc = this.read(false);
     let c: Cache = cc.cache;
-    let hit = (cc.valid || c.started > 0) && c.config.latency !== Renew.DoesNotCache &&
+    let hit = (cc.isUpToDate || c.started > 0) && c.config.latency !== Renew.DoesNotCache &&
       c.args[0] === args[0] || cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (!hit) {
       if (c.outdated.recomputation) {
@@ -79,7 +78,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let valid = ctx.timestamp < c.outdated.timestamp;
     if (markViewed)
       Record.markViewed(r, c.member);
-    return { cache: c, record: r, valid };
+    return { cache: c, record: r, isUpToDate: valid };
   }
 
   private edit(): CacheCall {
@@ -87,15 +86,15 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let member = this.blank.member;
     let r: Record = ctx.edit(this.handle, member, RT_CACHE);
     let c: Cache = r.data[member] || this.blank;
-    let valid = ctx.timestamp < c.outdated.timestamp;
-    if ((!valid && (c.record !== r || c.started === 0)) || c.config.latency === Renew.DoesNotCache) {
+    let isUpToDate = ctx.timestamp < c.outdated.timestamp;
+    if ((!isUpToDate && (c.record !== r || c.started === 0)) || c.config.latency === Renew.DoesNotCache) {
       let c2 = new Cache(r, c.member, c);
       r.data[c2.member] = c2;
       if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.blank ? "blank" : c.hint(false)}`);
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
-    return { cache: c, record: r, valid };
+    return { cache: c, record: r, isUpToDate };
   }
 
   private recache(cc: CacheCall, ...argsx: any[]): CacheCall {
@@ -120,7 +119,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         return c2.config.body.call(this.handle.proxy, ...argsy);
       }, ...argsx);
       c2.outdated.timestamp = Number.MAX_SAFE_INTEGER;
-      cc2.valid = c2.started === 0;
+      cc2.isUpToDate = c2.started === 0;
     }
     finally {
       c2.tryLeave(r2, c, mon);
@@ -244,10 +243,10 @@ export class Cache implements ICache {
   static markEdited(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
     edited ? r.edits.add(prop) : r.edits.delete(prop);
     if (Debug.verbosity >= 4) Debug.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
-    let observers: Set<ICache> | undefined = r.observers.get(prop);
-    if (observers && observers.size > 0) {
+    let oo = r.observers.get(prop);
+    if (oo && oo.size > 0) {
       let effect: ICache[] = [];
-      observers.forEach((c: ICache) => c.markOutdated(r, prop, true, false, effect));
+      oo.forEach((c: ICache) => c.markOutdated(r, prop, true, false, effect));
       r.observers.delete(prop);
       if (effect.length > 0)
         Transaction.ensureAllUpToDate(Hint.record(r), r.snapshot.timestamp,
@@ -259,39 +258,32 @@ export class Cache implements ICache {
     changeset.forEach((r: Record, h: Handle) => {
       let unmount: boolean = r.edits.has(RT_UNMOUNT);
       let prev: Record = r.prev.record;
-      if (!unmount) {
+      if (!unmount)
         r.edits.forEach((prop: PropertyKey) => {
           Cache.markOverwritten(r.prev.record, prop, effect);
-          let o: Set<ICache> | undefined = prev.observers.get(prop);
-          if (o)
-            o.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect));
-          let c: Cache = r.data[prop];
-          if (c instanceof Cache)
-            c.subscribeToObservables(false, effect);
+          let value = r.data[prop];
+          if (value instanceof Cache)
+            value.subscribeToObservables(false, effect);
         });
-      }
-      else {
+      else
         for (let prop in prev.data)
           Cache.markOverwritten(prev, prop, effect);
-        prev.observers.forEach((prevObservers: Set<ICache>, prop: PropertyKey) =>
-          prevObservers.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect)));
-      }
     });
   }
 
   static acquireObserverSet(r: Record, prop: PropertyKey): Set<ICache> {
-    let result: Set<ICache> | undefined = r.observers.get(prop);
-    if (!result) {
-      r.observers.set(prop, result = new Set<Cache>());
+    let oo = r.observers.get(prop);
+    if (!oo) {
+      r.observers.set(prop, oo = new Set<Cache>());
       if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(r, false, false, prop)} = new`);
       let x: Record = r.prev.record;
       while (x !== Record.empty && !x.observers.get(prop) && x.data[prop] === r.data[prop]) { // "===" - workaround?
-        x.observers.set(prop, result);
+        x.observers.set(prop, oo);
         if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(x, false, false, prop)} = ${Hint.record(r, false, false, prop)}`);
         x = x.prev.record;
       }
     }
-    return result;
+    return oo;
   }
 
   static acquireObservableSet(c: Cache, prop: PropertyKey, hot: boolean): Set<Record> {
@@ -339,18 +331,18 @@ export class Cache implements ICache {
       // }
       // TODO: make cache readonly
       // Cascade invalidation
-      let r: Record = Snapshot.active().read(Utils.get(this.record.data, RT_HANDLE));
-      if (r.data[this.member] === this) { // TODO: Consider better solution?
-        let rr: Record = r;
-        while (rr !== Record.empty && !rr.overwritten.has(this.member)) {
-          let o: Set<ICache> | undefined = rr.observers.get(this.member);
-          if (o)
-            o.forEach((c: ICache) => c.markOutdated(r, this.member, false, true, effect));
-          rr = rr.prev.record;
+      let upper: Record = Snapshot.active().read(Utils.get(this.record.data, RT_HANDLE));
+      if (upper.data[this.member] === this) { // TODO: Consider better solution?
+        let r: Record = upper;
+        while (r !== Record.empty && !r.overwritten.has(this.member)) {
+          let oo = r.observers.get(this.member);
+          if (oo)
+            oo.forEach((c: ICache) => c.markOutdated(upper, this.member, false, true, effect));
+          r = r.prev.record;
         }
       }
       // Check if cache should be renewed
-      if (this.config.latency >= Renew.Immediately && r.data[RT_UNMOUNT] !== RT_UNMOUNT) {
+      if (this.config.latency >= Renew.Immediately && upper.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         effect.push(this);
         if (Debug.verbosity >= 2) Debug.log(" ", "■", `${this.hint(false)} is outdated due to ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
       }
@@ -373,9 +365,9 @@ export class Cache implements ICache {
   static markOverwritten(r: Record, prop: PropertyKey, effect: ICache[]): void {
     while (r !== Record.empty && !r.overwritten.has(prop)) {
       r.overwritten.add(prop);
-      let o: Set<ICache> | undefined = r.observers.get(prop);
-      if (o)
-        o.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect));
+      let oo = r.observers.get(prop);
+      if (oo)
+        oo.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
