@@ -28,24 +28,39 @@ export class Snapshot implements ISnapshot {
   };
 
   read(h: Handle): Record {
-    let result = this.getRecord(h);
-    if (!result) /* istanbul ignore next */
+    let result = this.tryRead(h);
+    if (result === Record.empty) /* istanbul ignore next */
       throw new Error("E607: internal error");
     return result;
   }
 
   edit(h: Handle, prop: PropertyKey, value: Symbol): Record {
-    let result: Record | undefined = this.tryEdit(h, prop, value);
-    if (!result) /* istanbul ignore next */
+    let result: Record = this.tryEdit(h, prop, value);
+    if (result === Record.empty) /* istanbul ignore next */
       throw new Error("unknown error");
     return result;
   }
 
-  tryEdit(h: Handle, prop: PropertyKey, value: any): Record | undefined {
+  tryRead(h: Handle): Record {
+    let r: Record | undefined = h.editing;
+    if (r && r.snapshot !== this) {
+      r = this.changeset.get(h);
+      if (r)
+        h.editing = r; // remember last edit record
+    }
+    if (!r) {
+      r = h.head;
+      while (r !== Record.empty && r.snapshot.timestamp > this.timestamp)
+        r = r.prev.record;
+    }
+    return r;
+  }
+
+  tryEdit(h: Handle, prop: PropertyKey, value: any): Record {
     if (this.completed)
       throw new Error("E609: object can only be modified inside transaction");
-    let r: Record | undefined = this.getRecord(h);
-    if (!r || !Utils.equal(r.data[prop], value)) {
+    let r: Record = this.tryRead(h);
+    if (r === Record.empty || !Utils.equal(r.data[prop], value)) {
       let data = r ? r.data : value;
       if (!r || r.snapshot !== this) {
         data = Utils.copyAllProps(data, {});
@@ -57,22 +72,7 @@ export class Snapshot implements ISnapshot {
       }
     }
     else
-      r = undefined; // ignore if property is set to the same value
-    return r;
-  }
-
-  private getRecord(h: Handle): Record | undefined {
-    let r: Record | undefined = h.editing;
-    if (r && r.snapshot !== this) {
-      r = this.changeset.get(h);
-      if (r)
-        h.editing = r; // remember last edit record
-    }
-    if (!r) {
-      r = h.head;
-      while (r && r.snapshot.timestamp > this.timestamp)
-        r = r.prev.record;
-    }
+      r = Record.empty; // ignore if property is set to the same value
     return r;
   }
 
@@ -105,15 +105,18 @@ export class Snapshot implements ISnapshot {
 
   static rebaseRecord(ours: Record, head: Record): number {
     let counter: number = -1;
-    if (head !== Record.blank() && head.snapshot.timestamp > ours.snapshot.timestamp) {
+    if (head !== Record.empty && head.snapshot.timestamp > ours.snapshot.timestamp) {
       counter++;
       let unmountTheirs: boolean = head.edits.has(RT_UNMOUNT);
+      head.observers.forEach((o: Set<ICache>, prop: PropertyKey) => {
+        Snapshot.mergeObservers(ours, prop, o);
+      });
       let merged = Utils.copyAllProps(head.data, {}); // create merged copy
       ours.edits.forEach((prop: PropertyKey) => {
         counter++;
-        let theirs: Record | undefined = head;
+        let theirs: Record = head;
         Utils.copyProp(ours.data, merged, prop);
-        while (theirs && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
+        while (theirs !== Record.empty && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.edits.has(prop)) {
             let diff = Utils.different(theirs.data[prop], ours.data[prop]);
             if (Debug.verbosity >= 4) Debug.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
@@ -136,6 +139,15 @@ export class Snapshot implements ISnapshot {
     return counter;
   }
 
+  static mergeObservers(r: Record, prop: PropertyKey, source: Set<ICache>): Set<ICache> {
+    let existing: Set<ICache> | undefined = r.observers.get(prop);
+    let merged = existing || new Set<ICache>();
+    if (!existing)
+      r.observers.set(prop, merged);
+    source.forEach((c: ICache) => merged.add(c));
+    return merged;
+  }
+
   checkin(error?: any): void {
     this._completed = true;
     this.changeset.forEach((r: Record, h: Handle) => {
@@ -150,7 +162,7 @@ export class Snapshot implements ISnapshot {
           let props: string[] = [];
           r.edits.forEach((prop: PropertyKey) => props.push(prop.toString()));
           let s = props.join(", ");
-          Debug.log("║", "•", `${Hint.record(r, true)}(${s}) is applied.`);
+          Debug.log("║", "•", `${Hint.record(r, true)}(${s}) is applied over ${Hint.record(r.prev.record)}.`);
         }
       }
     });
@@ -181,9 +193,9 @@ export class Snapshot implements ISnapshot {
   private archiveChangeset(): void {
     if (Debug.verbosity >= 5) Debug.log("", "gc", `t${this.id}: ${this.hint}`);
     this.changeset.forEach((r: Record, h: Handle) => {
-      if (Debug.verbosity >= 5 && r.prev.record && r.prev.record !== Record.blank()) Debug.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
+      if (Debug.verbosity >= 5 && r.prev.record !== Record.empty) Debug.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
-      r.prev.record = undefined; // unlink history
+      r.prev.record = Record.empty; // unlink history
     });
   }
 }
@@ -194,11 +206,10 @@ export class Hint {
   }
 
   static record(r: Record, tranless?: boolean, nameless?: boolean, prop?: PropertyKey): string {
-    let h: Handle = Utils.get(r.data, RT_HANDLE);
     let t: string = tranless ? "" : `t${r.snapshot.id}'`;
-    return prop !== undefined ?
-      `${t}${Hint.handle(h, nameless)}.${prop.toString()}` :
-      `${t}${Hint.handle(h, nameless)}`;
+    let h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
+    let name: string = h ? `${t}${Hint.handle(h, nameless)}` : "[new]";
+    return prop !== undefined ? `${name}.${prop.toString()}` : `${name}`;
   }
 
   static conflicts(conflicts: Record[]): string {

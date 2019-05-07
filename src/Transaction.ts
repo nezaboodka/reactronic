@@ -1,9 +1,8 @@
 import { Debug, Utils, undef, Record, ICache, F, Handle, Snapshot, Hint } from "./internal/z.index";
 
 export class Transaction {
+  static head: Transaction;
   static active: Transaction;
-  static notran: Transaction;
-  static blank: Record;
   private readonly snapshot: Snapshot; // assigned in constructor
   private tracing: number; // assigned in constructor
   private busy: number = 0;
@@ -81,10 +80,10 @@ export class Transaction {
         r.edits.forEach((prop: PropertyKey) => {
           if (r.prev.backup) {
             let prevValue: any = r.prev.backup.data[prop];
-            let t: Record | undefined = Snapshot.active().tryEdit(h, prop, prevValue);
-            if (t) {
+            let t: Record = Snapshot.active().tryEdit(h, prop, prevValue);
+            if (t !== Record.empty) {
               t.data[prop] = prevValue;
-              let v: any = t.prev.record ? t.prev.record.data[prop] : undefined;
+              let v: any = t.prev.record.data[prop];
               Record.markEdited(t, prop, !Utils.equal(v, prevValue) /* && value !== RT_HANDLE*/, prevValue);
             }
           }
@@ -104,8 +103,16 @@ export class Transaction {
     try {
       result = t.run<T>(func, ...args);
       if (root) {
-        if (result instanceof Promise)
-          result = t.wrapPromiseForOuterTransaction(result);
+        if (result instanceof Promise) {
+          let outer = Transaction.active;
+          try {
+            Transaction.active = Transaction.head;
+            result = t.wrapPromiseForOuterTransaction(result);
+          }
+          finally {
+            Transaction.active = outer;
+          }
+        }
         t.seal();
       }
     }
@@ -119,8 +126,10 @@ export class Transaction {
   }
 
   private async wrapPromiseForOuterTransaction<T>(p: Promise<T>): Promise<T> {
+    // if (Debug.verbosity >= 5) Debug.log("║", "", ` wrap promise of t${this.id}'${this.hint}`);
     let result = await p;
     await this.whenFinished(false);
+    // (result as any)[RT_UNMOUNT] = `wrapped-when-finished: t${this.id}'${this.hint}`;
     return result; // return only when transaction is finished
   }
 
@@ -243,22 +252,22 @@ export class Transaction {
     return tran;
   }
 
-  static _getBlankRecord(): Record {
-    return Transaction.blank;
-  }
-
   static _getActiveSnapshot(): Snapshot {
     return Transaction.active.snapshot;
   }
 
   static _init(): void {
-    let notran = new Transaction("notran");
-    notran.sealed = true;
-    notran.snapshot.checkin();
-    Transaction.active = notran;
-    Transaction.notran = notran;
-    Transaction.blank = new Record(undefined, notran.snapshot, {});
-    Transaction.blank.freeze();
+    let head = new Transaction("head");
+    head.sealed = true;
+    head.snapshot.checkin();
+    Transaction.head = head;
+    Transaction.active = head;
+    let empty = new Record(Record.empty, head.snapshot, {});
+    empty.prev.record = empty; // loopback
+    empty.freeze();
+    Utils.freezeMap(empty.observers);
+    Utils.freezeSet(empty.overwritten);
+    Record.empty = empty;
   }
 }
 

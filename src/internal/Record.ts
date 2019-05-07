@@ -5,7 +5,7 @@ export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 // Record
 
 export class Record {
-  readonly prev: { record?: Record, backup?: Record };
+  readonly prev: { record: Record, backup?: Record };
   readonly snapshot: ISnapshot;
   readonly data: any;
   readonly edits: Set<PropertyKey>;
@@ -13,7 +13,7 @@ export class Record {
   readonly observers: Map<PropertyKey, Set<ICache>>;
   readonly overwritten: Set<PropertyKey>;
 
-  constructor(prev: Record | undefined, snapshot: ISnapshot, data: object) {
+  constructor(prev: Record, snapshot: ISnapshot, data: object) {
     this.prev = { record: prev, backup: prev };
     this.snapshot = snapshot;
     this.data = data;
@@ -23,9 +23,7 @@ export class Record {
     this.overwritten = new Set<PropertyKey>();
   }
 
-  static blank = function(): Record {
-    return undef(); // to be redefined by Transaction implementation
-  };
+  static empty: Record;
 
   static markEdited = function(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
     return undef(); // to be redefined by Cache implementation
@@ -42,8 +40,8 @@ export class Record {
     Object.freeze(this);
   }
 
-  static archive<T, C>(r: Record | undefined): void {
-    if (r) {
+  static archive<T, C>(r: Record): void {
+    if (r !== Record.empty) {
       // Utils.freezeSet(r.overwritten);
       // Utils.freezeMap(r.observers);
     }

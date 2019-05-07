@@ -27,7 +27,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
     this.handle = handle;
-    this.blank = new Cache(Record.blank(), member, config);
+    this.blank = new Cache(Record.empty, member, config);
     Cache.freeze(this.blank);
     // TODO: mark cache readonly?
   }
@@ -36,8 +36,9 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let cc = this.obtain(...args);
     if (cc.valid)
       Record.markViewed(cc.record, cc.cache.member);
-    else if (cc.record.prev.record)
-      Record.markViewed(cc.record.prev.record, cc.cache.member);
+    else if (cc.record.prev.record !== Record.empty)
+      // Record.markViewed(cc.record.prev.record, cc.cache.member);
+      Record.markViewed(cc.record, cc.cache.member);
     return cc.cache.result;
   }
 
@@ -73,7 +74,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   private read(markViewed: boolean): CacheCall {
     let ctx = Snapshot.active();
     let member = this.blank.member;
-    let r: Record = ctx.read(this.handle);
+    let r: Record = ctx.tryRead(this.handle);
     let c: Cache = r.data[member] || this.blank;
     let valid = ctx.timestamp < c.outdated.timestamp;
     if (markViewed)
@@ -90,7 +91,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     if ((!valid && (c.record !== r || c.started === 0)) || c.config.latency === Renew.DoesNotCache) {
       let c2 = new Cache(r, c.member, c);
       r.data[c2.member] = c2;
-      if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is created from ${c === this.blank ? "blank" : c.hint(false)}`);
+      if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.blank ? "blank" : c.hint(false)}`);
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
@@ -257,31 +258,24 @@ export class Cache implements ICache {
   static applyDependencies(changeset: Map<Handle, Record>, effect: ICache[]): void {
     changeset.forEach((r: Record, h: Handle) => {
       let unmount: boolean = r.edits.has(RT_UNMOUNT);
-      // Either mark previous record observers as outdated, or retain them
-      if (r.prev.record) {
-        let prev: Record = r.prev.record;
-        if (unmount) {
-          for (let prop in prev.data)
-            Cache.markOverwritten(prev, prop, effect);
-          prev.observers.forEach((prevObservers: Set<ICache>, prop: PropertyKey) =>
-            prevObservers.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect)));
-        }
-        else
-          prev.observers.forEach((prevObservers: Set<ICache>, prop: PropertyKey) => {
-            if (r.edits.has(prop))
-              prevObservers.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect));
-            else
-              Cache.retainPrevObservers(r, prop, prev, prevObservers);
-          });
-      }
-      // Mark previous properties as overwritten and check if reactions are not yet outdated
-      if (!unmount)
+      let prev: Record = r.prev.record;
+      if (!unmount) {
         r.edits.forEach((prop: PropertyKey) => {
           Cache.markOverwritten(r.prev.record, prop, effect);
+          let o: Set<ICache> | undefined = prev.observers.get(prop);
+          if (o)
+            o.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect));
           let c: Cache = r.data[prop];
           if (c instanceof Cache)
             c.subscribeToObservables(false, effect);
         });
+      }
+      else {
+        for (let prop in prev.data)
+          Cache.markOverwritten(prev, prop, effect);
+        prev.observers.forEach((prevObservers: Set<ICache>, prop: PropertyKey) =>
+          prevObservers.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect)));
+      }
     });
   }
 
@@ -290,8 +284,8 @@ export class Cache implements ICache {
     if (!result) {
       r.observers.set(prop, result = new Set<Cache>());
       if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(r, false, false, prop)} = new`);
-      let x: Record | undefined = r.prev.record;
-      while (x && !x.observers.get(prop) && x.data[prop] === r.data[prop]) { // "===" - workaround?
+      let x: Record = r.prev.record;
+      while (x !== Record.empty && !x.observers.get(prop) && x.data[prop] === r.data[prop]) { // "===" - workaround?
         x.observers.set(prop, result);
         if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(x, false, false, prop)} = ${Hint.record(r, false, false, prop)}`);
         x = x.prev.record;
@@ -322,16 +316,16 @@ export class Cache implements ICache {
     if (Debug.verbosity >= 3 && subscriptions.length > 0) Debug.log(hot ? "║" : " ", "∞", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
-  static retainPrevObservers(r: Record, prop: PropertyKey, prev: Record, prevObservers: Set<ICache>): Set<ICache> {
-    let thisObservers: Set<ICache> | undefined = r.observers.get(prop);
-    if (thisObservers) {
-      thisObservers.forEach((c: ICache) => prevObservers.add(c));
-      if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(prev, false, false, prop)}(${prevObservers.size}) += ${Hint.record(r, false, false, prop)}(${thisObservers.size})`);
-    }
-    r.observers.set(prop, prevObservers);
-    if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(r, false, false, prop)} = ${Hint.record(prev, false, false, prop)}(${prevObservers.size})`);
-    return prevObservers;
-  }
+  // static mergeObservers(r: Record, prop: PropertyKey, prev: Record, prevObservers: Set<ICache>): Set<ICache> {
+  //   let thisObservers: Set<ICache> | undefined = r.observers.get(prop);
+  //   if (thisObservers) {
+  //     thisObservers.forEach((c: ICache) => prevObservers.add(c));
+  //     if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(prev, false, false, prop)}(${prevObservers.size}) += ${Hint.record(r, false, false, prop)}(${thisObservers.size})`);
+  //   }
+  //   r.observers.set(prop, prevObservers);
+  //   if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(r, false, false, prop)} = ${Hint.record(prev, false, false, prop)}(${prevObservers.size})`);
+  //   return prevObservers;
+  // }
 
   markOutdated(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICache[]): void {
     const stamp = cause.snapshot.timestamp;
@@ -347,8 +341,8 @@ export class Cache implements ICache {
       // Cascade invalidation
       let r: Record = Snapshot.active().read(Utils.get(this.record.data, RT_HANDLE));
       if (r.data[this.member] === this) { // TODO: Consider better solution?
-        let rr: Record | undefined = r;
-        while (rr && !rr.overwritten.has(this.member)) {
+        let rr: Record = r;
+        while (rr !== Record.empty && !rr.overwritten.has(this.member)) {
           let o: Set<ICache> | undefined = rr.observers.get(this.member);
           if (o)
             o.forEach((c: ICache) => c.markOutdated(r, this.member, false, true, effect));
@@ -376,15 +370,14 @@ export class Cache implements ICache {
     // return true;
   }
 
-  static markOverwritten(self: Record | undefined, prop: PropertyKey, effect: ICache[]): void {
-    while (self && !self.overwritten.has(prop)) {
-      let r = self;
+  static markOverwritten(r: Record, prop: PropertyKey, effect: ICache[]): void {
+    while (r !== Record.empty && !r.overwritten.has(prop)) {
       r.overwritten.add(prop);
       let o: Set<ICache> | undefined = r.observers.get(prop);
       if (o)
         o.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect));
       // Utils.freezeSet(o);
-      self = self.prev.record;
+      r = r.prev.record;
     }
   }
 
@@ -448,7 +441,7 @@ export class Cache implements ICache {
       if (mon.prolonged) {
         let outer = Transaction.active;
         try {
-          Transaction.active = Transaction.notran; // Workaround?
+          Transaction.active = Transaction.head; // Workaround?
           let leave = () => {
             Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction, 0,
               Cache.run, undefined, () => mon.leave(this));
@@ -509,6 +502,7 @@ Promise.prototype.then = function(
   let t = Transaction.active;
   if (!t.finished()) {
     if (onsuccess) {
+      // if (Debug.verbosity >= 5) Debug.log("║", "", ` Promise.then (${(this as any)[RT_UNMOUNT]})`);
       onsuccess = Transaction._wrap<any>(t, Cache.active, true, true, onsuccess);
       onfailure = Transaction._wrap<any>(t, Cache.active, false, true, onfailure || rethrow);
     }
@@ -524,7 +518,6 @@ function init(): void {
   Record.markEdited = Cache.markEdited; // override
   Snapshot.applyDependencies = Cache.applyDependencies; // override
   Virt.createCacheTrap = Cache.createCacheTrap; // override
-  Record.blank = Transaction._getBlankRecord; // override
   Snapshot.active = Transaction._getActiveSnapshot; // override
   Transaction._init();
 }

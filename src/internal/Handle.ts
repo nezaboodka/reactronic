@@ -20,7 +20,7 @@ export class Handle {
     this.id = ++Handle.id;
     this.proxy = proxy || new Proxy<Handle>(this, virtualization);
     this.name = stateless.constructor.name;
-    this.head = Record.blank();
+    this.head = Record.empty;
     this.editing = undefined;
     this.editors = 0;
   }

@@ -72,10 +72,10 @@ export class Virt implements ProxyHandler<Handle> {
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
     let config: ConfigImpl | undefined = Virt.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
-      let r: Record | undefined = Snapshot.active().tryEdit(h, prop, value);
-      if (r) { // undefined when r.data[prop] === value, thus creation of edit record was skipped
+      let r: Record = Snapshot.active().tryEdit(h, prop, value);
+      if (r !== Record.empty) { // empty when r.data[prop] === value, thus creation of edit record was skipped
         r.data[prop] = value;
-        let v: any = r.prev.record ? r.prev.record.data[prop] : undefined;
+        let v: any = r.prev.record.data[prop];
         Record.markEdited(r, prop, !Utils.equal(v, value), value);
       }
     }
