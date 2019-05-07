@@ -225,7 +225,7 @@ export class Cache implements ICache {
         let proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
         let result: any = Reflect.get(proxy, this.member, proxy)(...args);
         if (result instanceof Promise)
-          result.catch((error: any) => { /* nop */ }); // bad idea to hide an error
+          result.catch(error => { /* nop */ }); // bad idea to hide an error
       }
     }
     else
@@ -246,7 +246,7 @@ export class Cache implements ICache {
     let oo = r.observers.get(prop);
     if (oo && oo.size > 0) {
       let effect: ICache[] = [];
-      oo.forEach((c: ICache) => c.markOutdated(r, prop, true, false, effect));
+      oo.forEach(c => c.markOutdated(r, prop, true, false, effect));
       r.observers.delete(prop);
       if (effect.length > 0)
         Transaction.ensureAllUpToDate(Hint.record(r), r.snapshot.timestamp,
@@ -256,18 +256,16 @@ export class Cache implements ICache {
 
   static applyDependencies(changeset: Map<Handle, Record>, effect: ICache[]): void {
     changeset.forEach((r: Record, h: Handle) => {
-      let unmount: boolean = r.edits.has(RT_UNMOUNT);
-      let prev: Record = r.prev.record;
-      if (!unmount)
-        r.edits.forEach((prop: PropertyKey) => {
+      if (!r.edits.has(RT_UNMOUNT))
+        r.edits.forEach(prop => {
           Cache.markOverwritten(r.prev.record, prop, effect);
           let value = r.data[prop];
           if (value instanceof Cache)
             value.subscribeToObservables(false, effect);
         });
       else
-        for (let prop in prev.data)
-          Cache.markOverwritten(prev, prop, effect);
+        for (let prop in r.prev.record.data)
+          Cache.markOverwritten(r.prev.record, prop, effect);
     });
   }
 
@@ -298,7 +296,7 @@ export class Cache implements ICache {
     let subscriptions: string[] = [];
     let o = hot ? this.hotObservables : this.observables;
     o.forEach((observables: Set<Record>, prop: PropertyKey) => {
-      observables.forEach((r: Record) => {
+      observables.forEach(r => {
         Cache.acquireObserverSet(r, prop).add(this); // link
         if (Debug.verbosity >= 3) subscriptions.push(Hint.record(r, false, true, prop));
         if (effect && r.overwritten.has(prop))
@@ -311,7 +309,7 @@ export class Cache implements ICache {
   // static mergeObservers(r: Record, prop: PropertyKey, prev: Record, prevObservers: Set<ICache>): Set<ICache> {
   //   let thisObservers: Set<ICache> | undefined = r.observers.get(prop);
   //   if (thisObservers) {
-  //     thisObservers.forEach((c: ICache) => prevObservers.add(c));
+  //     thisObservers.forEach(c => prevObservers.add(c));
   //     if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(prev, false, false, prop)}(${prevObservers.size}) += ${Hint.record(r, false, false, prop)}(${thisObservers.size})`);
   //   }
   //   r.observers.set(prop, prevObservers);
@@ -337,7 +335,7 @@ export class Cache implements ICache {
         while (r !== Record.empty && !r.overwritten.has(this.member)) {
           let oo = r.observers.get(this.member);
           if (oo)
-            oo.forEach((c: ICache) => c.markOutdated(upper, this.member, false, true, effect));
+            oo.forEach(c => c.markOutdated(upper, this.member, false, true, effect));
           r = r.prev.record;
         }
       }
@@ -367,7 +365,7 @@ export class Cache implements ICache {
       r.overwritten.add(prop);
       let oo = r.observers.get(prop);
       if (oo)
-        oo.forEach((c: ICache) => c.markOutdated(r, prop, false, false, effect));
+        oo.forEach(c => c.markOutdated(r, prop, false, false, effect));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }

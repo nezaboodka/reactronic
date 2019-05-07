@@ -77,7 +77,7 @@ export class Transaction {
     let hint = Debug.verbosity >= 2 ? `Tran#${this.snapshot.hint}.undo` : "noname";
     Transaction.runAs<void>(hint, false, 0, () => {
       this.snapshot.changeset.forEach((r: Record, h: Handle) => {
-        r.edits.forEach((prop: PropertyKey) => {
+        r.edits.forEach(prop => {
           if (r.prev.backup) {
             let prevValue: any = r.prev.backup.data[prop];
             let t: Record = Snapshot.active().tryEdit(h, prop, prevValue);

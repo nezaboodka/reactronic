@@ -108,11 +108,8 @@ export class Snapshot implements ISnapshot {
     if (head !== Record.empty && head.snapshot.timestamp > ours.snapshot.timestamp) {
       counter++;
       let unmountTheirs: boolean = head.edits.has(RT_UNMOUNT);
-      head.observers.forEach((o: Set<ICache>, prop: PropertyKey) => {
-        Snapshot.mergeObservers(ours, prop, o);
-      });
       let merged = Utils.copyAllProps(head.data, {}); // create merged copy
-      ours.edits.forEach((prop: PropertyKey) => {
+      ours.edits.forEach(prop => {
         counter++;
         let theirs: Record = head;
         Utils.copyProp(ours.data, merged, prop);
@@ -139,14 +136,14 @@ export class Snapshot implements ISnapshot {
     return counter;
   }
 
-  static mergeObservers(r: Record, prop: PropertyKey, source: Set<ICache>): Set<ICache> {
-    let existing: Set<ICache> | undefined = r.observers.get(prop);
-    let merged = existing || new Set<ICache>();
-    if (!existing)
-      r.observers.set(prop, merged);
-    source.forEach((c: ICache) => merged.add(c));
-    return merged;
-  }
+  // static mergeObservers(r: Record, prop: PropertyKey, source: Set<ICache>): Set<ICache> {
+  //   let existing: Set<ICache> | undefined = r.observers.get(prop);
+  //   let merged = existing || new Set<ICache>();
+  //   if (!existing)
+  //     r.observers.set(prop, merged);
+  //   source.forEach((c: ICache) => merged.add(c));
+  //   return merged;
+  // }
 
   checkin(error?: any): void {
     this._completed = true;
@@ -160,7 +157,7 @@ export class Snapshot implements ISnapshot {
         h.head = r;
         if (Debug.verbosity >= 3) {
           let props: string[] = [];
-          r.edits.forEach((prop: PropertyKey) => props.push(prop.toString()));
+          r.edits.forEach(prop => props.push(prop.toString()));
           let s = props.join(", ");
           Debug.log("║", "•", `${Hint.record(r, true)}(${s}) is applied over ${Hint.record(r.prev.record)}.`);
         }
