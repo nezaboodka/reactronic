@@ -8,8 +8,8 @@ export abstract class ReactiveCache<T> {
   abstract readonly returnValue: Promise<T> | T;
   abstract readonly error: any;
   abstract result(...args: any[]): T;
-  abstract outdate(cause: string | undefined): boolean;
-  abstract readonly isOutdated: boolean;
+  abstract invalidate(cause: string | undefined): boolean;
+  abstract readonly isInvalidated: boolean;
   abstract readonly isComputing: boolean;
   abstract readonly isUpdating: boolean;
   static get<T>(method: F<Promise<T>>): ReactiveCache<T>;

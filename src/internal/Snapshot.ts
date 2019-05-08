@@ -144,9 +144,9 @@ export class Snapshot implements ISnapshot {
         if (!existing)
           target.observers.set(prop, merged);
         oo.forEach((c: ICache) => {
-          if (!c.isOutdated()) {
+          if (!c.isInvalidated()) {
             merged.add(c);
-            if (Debug.verbosity >= 3) Debug.log(" ", "∞", `${c.hint(false)} is re-subscribed to {${Hint.record(target, false, true, prop)}} from {${Hint.record(source, false, true, prop)}}.`);
+            if (Debug.verbosity >= 3) Debug.log(" ", "∞", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} from ${Hint.record(source, false, true, prop)}.`);
           }
         });
       }

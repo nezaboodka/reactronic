@@ -19,10 +19,10 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
   get returnValue(): Promise<any> | any { return this.read(true).cache.returnValue; }
   get error(): boolean { return this.read(true).cache.error; }
-  outdate(cause: string | undefined): boolean { return cause ? Cache.enforceOutdated(this.read(false).cache, cause, 0) : false; }
-  get isOutdated(): boolean { return !this.read(true).isUpToDate; }
+  invalidate(cause: string | undefined): boolean { return cause ? Cache.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
+  get isInvalidated(): boolean { return !this.read(true).isUpToDate; }
   get isComputing(): boolean { return this.read(true).cache.started > 0; }
-  get isUpdating(): boolean { return this.read(true).cache.outdated.recomputation !== undefined; }
+  get isUpdating(): boolean { return this.read(true).cache.invalidation.recomputation !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
@@ -53,7 +53,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let hit = (cc.isUpToDate || c.started > 0) && c.config.latency !== Renew.DoesNotCache &&
       c.args[0] === args[0] || cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (!hit) {
-      if (c.outdated.recomputation) {
+      if (c.invalidation.recomputation) {
         if (c.config.asyncCalls === AsyncCalls.Reused)
           throw new Error("not implemented");
         else if (c.config.asyncCalls >= 1)
@@ -75,7 +75,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let member = this.blank.member;
     let r: Record = ctx.tryRead(this.handle);
     let c: Cache = r.data[member] || this.blank;
-    let valid = ctx.timestamp < c.outdated.timestamp;
+    let valid = ctx.timestamp < c.invalidation.timestamp;
     if (markViewed)
       Record.markViewed(r, c.member);
     return { cache: c, record: r, isUpToDate: valid };
@@ -86,7 +86,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let member = this.blank.member;
     let r: Record = ctx.edit(this.handle, member, RT_CACHE);
     let c: Cache = r.data[member] || this.blank;
-    let isUpToDate = ctx.timestamp < c.outdated.timestamp;
+    let isUpToDate = ctx.timestamp < c.invalidation.timestamp;
     if ((!isUpToDate && (c.record !== r || c.started === 0)) || c.config.latency === Renew.DoesNotCache) {
       let c2 = new Cache(r, c.member, c);
       r.data[c2.member] = c2;
@@ -99,10 +99,10 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
 
   private recache(cc: CacheCall, ...argsx: any[]): CacheCall {
     let c = cc.cache;
-    if (c.outdated.recomputation && c.config.asyncCalls === AsyncCalls.Relayed) {
-      c.outdated.recomputation.tran.cancel();
-      if (Debug.verbosity >= 3) Debug.log("║", " ", `Relaying: t${c.outdated.recomputation.tran.id} is canceled.`);
-      c.outdated.recomputation = undefined;
+    if (c.invalidation.recomputation && c.config.asyncCalls === AsyncCalls.Relayed) {
+      c.invalidation.recomputation.tran.cancel();
+      if (Debug.verbosity >= 3) Debug.log("║", " ", `Relaying: t${c.invalidation.recomputation.tran.id} is canceled.`);
+      c.invalidation.recomputation = undefined;
     }
     let cc2 = this.edit();
     let c2: Cache = cc2.cache;
@@ -118,7 +118,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       c2.returnValue = Cache.run<any>(c2, (...argsy: any[]): any => {
         return c2.config.body.call(this.handle.proxy, ...argsy);
       }, ...argsx);
-      c2.outdated.timestamp = Number.MAX_SAFE_INTEGER;
+      c2.invalidation.timestamp = Number.MAX_SAFE_INTEGER;
       cc2.isUpToDate = c2.started === 0;
     }
     finally {
@@ -156,7 +156,7 @@ export class Cache implements ICache {
   result: any;
   error: any;
   started: number;
-  readonly outdated: { timestamp: number, recomputation: Cache | undefined };
+  readonly invalidation: { timestamp: number, recomputation: Cache | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
@@ -178,7 +178,7 @@ export class Cache implements ICache {
     // this.returnValue = undefined;
     // this.error = undefined;
     this.started = 0;
-    this.outdated = { timestamp: 0, recomputation: undefined };
+    this.invalidation = { timestamp: 0, recomputation: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
     this.hotObservables = new Map<PropertyKey, Set<Record>>();
   }
@@ -221,7 +221,7 @@ export class Cache implements ICache {
 
   ensureUpToDate(timestamp: number, now: boolean, ...args: any[]): void {
     if (now || this.config.latency === Renew.Immediately) {
-      if ((this.config.latency === Renew.DoesNotCache || timestamp >= this.outdated.timestamp) && !this.error) {
+      if ((this.config.latency === Renew.DoesNotCache || timestamp >= this.invalidation.timestamp) && !this.error) {
         let proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
         let result: any = Reflect.get(proxy, this.member, proxy)(...args);
         if (result instanceof Promise)
@@ -246,7 +246,7 @@ export class Cache implements ICache {
     let oo = r.observers.get(prop);
     if (oo && oo.size > 0) {
       let effect: ICache[] = [];
-      oo.forEach(c => c.markOutdated(r, prop, true, false, effect));
+      oo.forEach(c => c.invalidate(r, prop, true, false, effect));
       r.observers.delete(prop);
       if (effect.length > 0)
         Transaction.ensureAllUpToDate(Hint.record(r), r.snapshot.timestamp,
@@ -293,20 +293,20 @@ export class Cache implements ICache {
         Cache.acquireObserverSet(r, prop).add(this); // link
         if (Debug.verbosity >= 3) subscriptions.push(Hint.record(r, false, true, prop));
         if (effect && r.overwritten.has(prop))
-          this.markOutdated(r, prop, hot, false, effect);
+          this.invalidate(r, prop, hot, false, effect);
       });
     });
     if (Debug.verbosity >= 3 && subscriptions.length > 0) Debug.log(hot ? "║" : " ", "∞", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
-  isOutdated(): boolean {
-    return this.outdated.timestamp !== Number.MAX_SAFE_INTEGER;
+  isInvalidated(): boolean {
+    return this.invalidation.timestamp !== Number.MAX_SAFE_INTEGER;
   }
 
-  markOutdated(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICache[]): void {
+  invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICache[]): void {
     const stamp = cause.snapshot.timestamp;
-    if (this.outdated.timestamp === Number.MAX_SAFE_INTEGER && (!cascade || this.config.latency !== Renew.WhenReady)) {
-      this.outdated.timestamp = stamp;
+    if (this.invalidation.timestamp === Number.MAX_SAFE_INTEGER && (!cascade || this.config.latency !== Renew.WhenReady)) {
+      this.invalidation.timestamp = stamp;
       // this.cause = Hint.record(cause, false, false, causeProp);
       // if (this.updater.active) {
       //   this.updater.active.tran.cancel();
@@ -321,24 +321,24 @@ export class Cache implements ICache {
         while (r !== Record.empty && !r.overwritten.has(this.member)) {
           let oo = r.observers.get(this.member);
           if (oo)
-            oo.forEach(c => c.markOutdated(upper, this.member, false, true, effect));
+            oo.forEach(c => c.invalidate(upper, this.member, false, true, effect));
           r = r.prev.record;
         }
       }
       // Check if cache should be renewed
       if (this.config.latency >= Renew.Immediately && upper.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         effect.push(this);
-        if (Debug.verbosity >= 2) Debug.log(" ", "■", `${this.hint(false)} is outdated due to ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
+        if (Debug.verbosity >= 2) Debug.log(" ", "■", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
       }
       else
-        if (Debug.verbosity >= 2) Debug.log(" ", "□", `${this.hint(false)} is outdated due to ${Hint.record(cause, false, false, causeProp)}`);
+        if (Debug.verbosity >= 2) Debug.log(" ", "□", `${this.hint(false)} is invlidated by ${Hint.record(cause, false, false, causeProp)}`);
     }
   }
 
-  static enforceOutdated(c: Cache, cause: string, latency: number): boolean {
+  static enforceInvalidation(c: Cache, cause: string, latency: number): boolean {
     throw new Error("not implemented");
     // let effect: Cache[] = [];
-    // c.markOutdated(cause, false, false, effect);
+    // c.invalidate(cause, false, false, effect);
     // if (latency === Renew.Immediately)
     //   Transaction.ensureAllUpToDate(cause, { effect });
     // else
@@ -351,7 +351,7 @@ export class Cache implements ICache {
       r.overwritten.add(prop);
       let oo = r.observers.get(prop);
       if (oo)
-        oo.forEach(c => c.markOutdated(r, prop, false, false, effect));
+        oo.forEach(c => c.invalidate(r, prop, false, false, effect));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
@@ -368,8 +368,8 @@ export class Cache implements ICache {
     if (this.config.tracing >= 4 || (this.config.tracing === 0 && Debug.verbosity >= 4)) Debug.log("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
     this.started = Date.now();
     this.monitorEnter(mon);
-    if (!prev.outdated.recomputation)
-      prev.outdated.recomputation = this;
+    if (!prev.invalidation.recomputation)
+      prev.invalidation.recomputation = this;
   }
 
   tryLeave(r: Record, prev: Cache, mon: Monitor | null): void {
@@ -394,8 +394,8 @@ export class Cache implements ICache {
   }
 
   private leave(r: Record, prev: Cache, mon: Monitor | null, op: string, message: string): void {
-    if (prev.outdated.recomputation === this)
-      prev.outdated.recomputation = undefined;
+    if (prev.invalidation.recomputation === this)
+      prev.invalidation.recomputation = undefined;
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;

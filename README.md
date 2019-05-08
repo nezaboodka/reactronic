@@ -295,8 +295,8 @@ abstract class ReactiveCache<T> {
   readonly interim: Promise<T> | T;
   readonly error: any;
   result(...args: any[]): T;
-  outdate(cause: string | undefined): boolean;
-  readonly isOutdated: boolean;
+  invalidate(cause: string | undefined): boolean;
+  readonly isInvalidated: boolean;
   readonly isComputing: boolean;
   readonly isUpdating: boolean;
   static get<T>(method: F<Promise<T>>): ReactiveCache<T>;
