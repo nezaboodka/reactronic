@@ -266,21 +266,14 @@ export class Cache implements ICache {
       else
         for (let prop in r.prev.record.data)
           Cache.markOverwritten(r.prev.record, prop, effect);
+      Snapshot.mergeObservers(r, r.prev.record);
     });
   }
 
   static acquireObserverSet(r: Record, prop: PropertyKey): Set<ICache> {
     let oo = r.observers.get(prop);
-    if (!oo) {
+    if (!oo)
       r.observers.set(prop, oo = new Set<Cache>());
-      if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(r, false, false, prop)} = new`);
-      let x: Record = r.prev.record;
-      while (x !== Record.empty && !x.observers.get(prop) && x.data[prop] === r.data[prop]) { // "===" - workaround?
-        x.observers.set(prop, oo);
-        if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(x, false, false, prop)} = ${Hint.record(r, false, false, prop)}`);
-        x = x.prev.record;
-      }
-    }
     return oo;
   }
 
@@ -306,16 +299,9 @@ export class Cache implements ICache {
     if (Debug.verbosity >= 3 && subscriptions.length > 0) Debug.log(hot ? "║" : " ", "∞", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
-  // static mergeObservers(r: Record, prop: PropertyKey, prev: Record, prevObservers: Set<ICache>): Set<ICache> {
-  //   let thisObservers: Set<ICache> | undefined = r.observers.get(prop);
-  //   if (thisObservers) {
-  //     thisObservers.forEach(c => prevObservers.add(c));
-  //     if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(prev, false, false, prop)}(${prevObservers.size}) += ${Hint.record(r, false, false, prop)}(${thisObservers.size})`);
-  //   }
-  //   r.observers.set(prop, prevObservers);
-  //   if (Debug.verbosity >= 5) Debug.log("", "   Observers:", `${Hint.record(r, false, false, prop)} = ${Hint.record(prev, false, false, prop)}(${prevObservers.size})`);
-  //   return prevObservers;
-  // }
+  isOutdated(): boolean {
+    return this.outdated.timestamp !== Number.MAX_SAFE_INTEGER;
+  }
 
   markOutdated(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICache[]): void {
     const stamp = cause.snapshot.timestamp;

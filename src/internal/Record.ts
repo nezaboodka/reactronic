@@ -62,6 +62,7 @@ export interface ISnapshot {
 export interface ICache {
   hint(tranless?: boolean): string;
   wrap<T>(func: F<T>): F<T>;
+  isOutdated(): boolean;
   markOutdated(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICache[]): void;
   ensureUpToDate(timestamp: number, now: boolean, ...args: any[]): void;
 }

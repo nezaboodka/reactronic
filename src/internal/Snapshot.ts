@@ -136,16 +136,20 @@ export class Snapshot implements ISnapshot {
     return counter;
   }
 
-  static mergeObservers(r: Record, source: Record): void {
+  static mergeObservers(target: Record, source: Record): void {
     source.observers.forEach((oo: Set<ICache>, prop: PropertyKey) => {
-      let existing: Set<ICache> | undefined = r.observers.get(prop);
-      let merged = existing || new Set<ICache>();
-      if (!existing)
-        r.observers.set(prop, merged);
-      oo.forEach((c: ICache) => {
-        merged.add(c);
-        if (Debug.verbosity >= 3) Debug.log(" ", "∞", `${c.hint(false)} is re-subscribed to {${Hint.record(r, false, false, prop)}} from {${Hint.record(source, false, false, prop)}}.`);
-      });
+      if (!target.edits.has(prop)) {
+        let existing: Set<ICache> | undefined = target.observers.get(prop);
+        let merged = existing || new Set<ICache>();
+        if (!existing)
+          target.observers.set(prop, merged);
+        oo.forEach((c: ICache) => {
+          if (!c.isOutdated()) {
+            merged.add(c);
+            if (Debug.verbosity >= 3) Debug.log(" ", "∞", `${c.hint(false)} is re-subscribed to {${Hint.record(target, false, true, prop)}} from {${Hint.record(source, false, true, prop)}}.`);
+          }
+        });
+      }
     });
   }
 
