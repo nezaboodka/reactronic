@@ -7,8 +7,8 @@ import { CopyOnWrite } from "./Virtualization";
 // Snapshot
 
 export class Snapshot implements ISnapshot {
-  static lastUsedId: number = 16;
-  static headTimestamp: number = 18;
+  static lastUsedId: number = 20;
+  static headTimestamp: number = 100;
   static activeSnapshots: Snapshot[] = [];
   readonly id: number = 0;
   readonly hint: string = "";
@@ -136,14 +136,18 @@ export class Snapshot implements ISnapshot {
     return counter;
   }
 
-  // static mergeObservers(r: Record, prop: PropertyKey, source: Set<ICache>): Set<ICache> {
-  //   let existing: Set<ICache> | undefined = r.observers.get(prop);
-  //   let merged = existing || new Set<ICache>();
-  //   if (!existing)
-  //     r.observers.set(prop, merged);
-  //   source.forEach((c: ICache) => merged.add(c));
-  //   return merged;
-  // }
+  static mergeObservers(r: Record, source: Record): void {
+    source.observers.forEach((oo: Set<ICache>, prop: PropertyKey) => {
+      let existing: Set<ICache> | undefined = r.observers.get(prop);
+      let merged = existing || new Set<ICache>();
+      if (!existing)
+        r.observers.set(prop, merged);
+      oo.forEach((c: ICache) => {
+        merged.add(c);
+        if (Debug.verbosity >= 3) Debug.log(" ", "∞", `${c.hint(false)} is re-subscribed to {${Hint.record(r, false, false, prop)}} from {${Hint.record(source, false, false, prop)}}.`);
+      });
+    });
+  }
 
   checkin(error?: any): void {
     this._completed = true;
@@ -176,7 +180,7 @@ export class Snapshot implements ISnapshot {
         let i: number = 0;
         for (let x of Snapshot.activeSnapshots) {
           if (x.completed)
-            x.archiveChangeset();
+            x.unlinkHistory();
           else
             break;
           i++;
@@ -187,11 +191,12 @@ export class Snapshot implements ISnapshot {
     Utils.freezeMap(this.changeset);
   }
 
-  private archiveChangeset(): void {
+  private unlinkHistory(): void {
     if (Debug.verbosity >= 5) Debug.log("", "gc", `t${this.id}: ${this.hint}`);
     this.changeset.forEach((r: Record, h: Handle) => {
       if (Debug.verbosity >= 5 && r.prev.record !== Record.empty) Debug.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
+      // Snapshot.mergeObservers(r, r.prev.record);
       r.prev.record = Record.empty; // unlink history
     });
   }

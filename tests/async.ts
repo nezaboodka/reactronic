@@ -38,7 +38,7 @@ export class DemoView {
     let lines: string[] = await this.render();
     for (let x of lines) {
       actual.push(demoMon.isIdle ? x : `[...] ${x}`);
-      // console.log(idle ? x : `[...] ${x}`);
+      // console.log(demoMon.isIdle ? x : `[...] ${x}`);
     }
   }
 }

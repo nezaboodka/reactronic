@@ -36,6 +36,7 @@ test("async", async t => {
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
   }
+  // console.log("\nResults:\n");
   // for (let i = 0; i < actual.length; i++)
   //   console.log(actual[i]);
   let n: number = Math.max(actual.length, etalon.length);
