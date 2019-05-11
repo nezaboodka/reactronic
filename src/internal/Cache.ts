@@ -20,7 +20,6 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   get returnValue(): Promise<any> | any { return this.read(true).cache.returnValue; }
   get error(): boolean { return this.read(true).cache.error; }
   invalidate(cause: string | undefined): boolean { return cause ? Cache.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
-  get isInvalidated(): boolean { return !this.read(true).isUpToDate; }
   get isComputing(): boolean { return this.read(true).cache.started > 0; }
   get isUpdating(): boolean { return this.read(true).cache.invalidation.recomputation !== undefined; }
 
@@ -33,7 +32,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   }
 
   result(...args: any): any {
-    let cc = this.obtain(...args);
+    let cc = this.obtain(true, ...args);
     if (cc.isUpToDate)
       Record.markViewed(cc.record, cc.cache.member);
     else if (cc.record.prev.record !== Record.empty)
@@ -42,31 +41,43 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   }
 
   invoke(...args: any[]): any {
-    let cc = this.obtain(...args);
+    let cc = this.obtain(true, ...args);
     Record.markViewed(cc.record, cc.cache.member);
     return cc.cache.returnValue;
   }
 
-  private obtain(...args: any[]): CacheCall {
+  get isInvalidated(): boolean {
+    let cc = this.obtain(false);
+    // if (cc.isUpToDate)
+    //   Record.markViewed(cc.record, cc.cache.member);
+    // else if (cc.record.prev.record !== Record.empty)
+    //   Record.markViewed(cc.record.prev.record, cc.cache.member);
+    Record.markViewed(cc.record, cc.cache.member);
+    return cc.cache.isInvalidated();
+  }
+
+  private obtain(recachable: boolean, ...args: any[]): CacheCall {
     let cc = this.read(false);
     let c: Cache = cc.cache;
     let hit = (cc.isUpToDate || c.started > 0) && c.config.latency !== Renew.DoesNotCache &&
       c.args[0] === args[0] || cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (!hit) {
-      if (c.invalidation.recomputation) {
-        if (c.config.asyncCalls === AsyncCalls.Reused)
-          throw new Error("not implemented");
-        else if (c.config.asyncCalls >= 1)
-          throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
+      if (recachable) {
+        if (c.invalidation.recomputation) {
+          if (c.config.asyncCalls === AsyncCalls.Reused)
+            throw new Error("not implemented");
+          else if (c.config.asyncCalls >= 1)
+            throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
+        }
+        let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}` : "recache";
+        Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, c.config.tracing, (...argsx: any[]): any => {
+          cc = this.recache(cc, ...argsx);
+          return cc.cache.returnValue;
+        }, ...args);
       }
-      let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}` : "recache";
-      Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, c.config.tracing, (...argsx: any[]): any => {
-        cc = this.recache(cc, ...argsx);
-        return cc.cache.returnValue;
-      }, ...args);
     }
     else
-      if (Debug.verbosity >= 4) Debug.log("║", "f ==", `${Hint.record(cc.record)}.${c.member.toString()}() hits cache`);
+      if (Debug.verbosity >= 4) Debug.log("║", "  ==", `${Hint.record(cc.record)}.${c.member.toString()}() hits cache`);
     return cc;
   }
 
@@ -75,10 +86,10 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let member = this.blank.member;
     let r: Record = ctx.tryRead(this.handle);
     let c: Cache = r.data[member] || this.blank;
-    let valid = ctx.timestamp < c.invalidation.timestamp;
+    let isUpToDate = ctx.timestamp < c.invalidation.timestamp && c.started === 0;
     if (markViewed)
       Record.markViewed(r, c.member);
-    return { cache: c, record: r, isUpToDate: valid };
+    return { cache: c, record: r, isUpToDate };
   }
 
   private edit(): CacheCall {
@@ -119,11 +130,11 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         return c2.config.body.call(this.handle.proxy, ...argsy);
       }, ...argsx);
       c2.invalidation.timestamp = Number.MAX_SAFE_INTEGER;
-      cc2.isUpToDate = c2.started === 0;
     }
     finally {
       c2.tryLeave(r2, c, mon);
     }
+    cc2.isUpToDate = c2.started === 0;
     return cc2;
   }
 
@@ -136,7 +147,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       let cc2 = this.edit();
       let c2: Cache = cc2.cache;
       c2.config = new ConfigImpl(c2.config.body, c2.config, config);
-      if (Debug.verbosity >= 4) Debug.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
+      if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
     });
   }
@@ -161,7 +172,7 @@ export class Cache implements ICache {
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
   constructor(record: Record, member: PropertyKey, init: Cache | ConfigImpl) {
-    this.margin = Cache.active ? Cache.active.margin + 1 : 0;
+    this.margin = Debug.margin + 1;
     this.tran = Transaction.active;
     this.record = record;
     this.member = member;
@@ -196,10 +207,14 @@ export class Cache implements ICache {
     let result: T | undefined = undefined;
     let outer = Cache.active;
     let outerVerbosity = Debug.verbosity;
+    let outerMargin = Debug.margin;
     try {
       Cache.active = c;
-      if (c && c.config.tracing !== 0)
-        Debug.verbosity = c.config.tracing;
+      if (c) {
+        if (c.config.tracing !== 0)
+          Debug.verbosity = c.config.tracing;
+        Debug.margin = c.margin;
+      }
       result = func(...args);
     }
     catch (e) {
@@ -208,6 +223,7 @@ export class Cache implements ICache {
       throw e;
     }
     finally {
+      Debug.margin = outerMargin;
       Debug.verbosity = outerVerbosity;
       Cache.active = outer;
     }
@@ -242,7 +258,7 @@ export class Cache implements ICache {
 
   static markEdited(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
     edited ? r.edits.add(prop) : r.edits.delete(prop);
-    if (Debug.verbosity >= 4) Debug.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
+    if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
     let oo = r.observers.get(prop);
     if (oo && oo.size > 0) {
       let effect: ICache[] = [];
@@ -258,14 +274,16 @@ export class Cache implements ICache {
     changeset.forEach((r: Record, h: Handle) => {
       if (!r.edits.has(RT_UNMOUNT))
         r.edits.forEach(prop => {
-          Cache.markOverwritten(r.prev.record, prop, effect);
+          Cache.markPrevOverwritten(r, prop, effect);
           let value = r.data[prop];
           if (value instanceof Cache)
             value.subscribeToObservables(false, effect);
         });
       else
         for (let prop in r.prev.record.data)
-          Cache.markOverwritten(r.prev.record, prop, effect);
+          Cache.markPrevOverwritten(r, prop, effect);
+    });
+    changeset.forEach((r: Record, h: Handle) => {
       Snapshot.mergeObservers(r, r.prev.record);
     });
   }
@@ -331,7 +349,7 @@ export class Cache implements ICache {
         if (Debug.verbosity >= 2) Debug.log(" ", "■", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
       }
       else
-        if (Debug.verbosity >= 2) Debug.log(" ", "□", `${this.hint(false)} is invlidated by ${Hint.record(cause, false, false, causeProp)}`);
+        if (Debug.verbosity >= 2) Debug.log(" ", "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}`);
     }
   }
 
@@ -346,12 +364,14 @@ export class Cache implements ICache {
     // return true;
   }
 
-  static markOverwritten(r: Record, prop: PropertyKey, effect: ICache[]): void {
+  static markPrevOverwritten(r: Record, prop: PropertyKey, effect: ICache[]): void {
+    let cause = r;
+    r = r.prev.record;
     while (r !== Record.empty && !r.overwritten.has(prop)) {
       r.overwritten.add(prop);
       let oo = r.observers.get(prop);
       if (oo)
-        oo.forEach(c => c.invalidate(r, prop, false, false, effect));
+        oo.forEach(c => c.invalidate(cause, prop, false, false, effect));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
@@ -365,7 +385,7 @@ export class Cache implements ICache {
   }
 
   enter(r: Record, prev: Cache, mon: Monitor | null): void {
-    if (this.config.tracing >= 4 || (this.config.tracing === 0 && Debug.verbosity >= 4)) Debug.log("║", "f =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
+    if (this.config.tracing >= 4 || (this.config.tracing === 0 && Debug.verbosity >= 4)) Debug.log("║", "  =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
     this.started = Date.now();
     this.monitorEnter(mon);
     if (!prev.invalidation.recomputation)
@@ -385,7 +405,7 @@ export class Cache implements ICache {
           this.leave(r, prev, mon, "<=", "is completed with error");
           throw error;
         });
-      if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "f ..", `${Hint.record(r, true)}.${this.member.toString()} is async`);
+      if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  ..", `${Hint.record(r, true)}.${this.member.toString()} is async...`);
     }
     else {
       this.result = this.returnValue;
@@ -399,7 +419,7 @@ export class Cache implements ICache {
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
-    if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `f ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms);
+    if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms);
     // TODO: handle errors
     this.subscribeToObservables(true);
     this.hotObservables.clear();

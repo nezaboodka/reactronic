@@ -80,7 +80,7 @@ export class Snapshot implements ISnapshot {
     if (!this.completed && this.timestamp === Number.MAX_SAFE_INTEGER) {
       this._timestamp = Snapshot.headTimestamp;
       Snapshot.activeSnapshots.push(this);
-      if (Debug.verbosity >= 2) Debug.log("╔═══", `v${this.timestamp}`, `${this.hint}`);
+      if (Debug.verbosity >= 2) Debug.log("╔══", `v${this.timestamp}`, `${this.hint}`);
     }
   }
 
@@ -171,7 +171,7 @@ export class Snapshot implements ISnapshot {
         }
       }
     });
-    if (Debug.verbosity >= 2) Debug.log(this.timestamp > 0 ? "╚═══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "DISCARD" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
+    if (Debug.verbosity >= 2) Debug.log(this.timestamp > 0 ? "╚══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "DISCARD" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
   static applyDependencies = function(changeset: Map<Handle, Record>, effect: ICache[]): void {
