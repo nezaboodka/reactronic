@@ -70,7 +70,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
             throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}` : "recache";
-        Transaction.runAs<any>(hint, c.config.isolation >= Isolation.StandaloneTransaction, c.config.tracing, (...argsx: any[]): any => {
+        Transaction.runAs<any>(hint, c.config.isolation >= Isolation.SeparateTransaction, c.config.tracing, (...argsx: any[]): any => {
           cc = this.recache(cc, ...argsx);
           return cc.cache.returnValue;
         }, ...args);
@@ -428,7 +428,7 @@ export class Cache implements ICache {
 
   monitorEnter(mon: Monitor | null): void {
     if (mon)
-      Transaction.runAs<void>("Monitor.enter", mon.isolation >= Isolation.StandaloneTransaction, 0,
+      Transaction.runAs<void>("Monitor.enter", mon.isolation >= Isolation.SeparateTransaction, 0,
         Cache.run, undefined, () => mon.enter(this));
   }
 
@@ -439,7 +439,7 @@ export class Cache implements ICache {
         try {
           Transaction.active = Transaction.head; // Workaround?
           let leave = () => {
-            Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction, 0,
+            Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.SeparateTransaction, 0,
               Cache.run, undefined, () => mon.leave(this));
           };
           this.tran.whenFinished(false).then(leave, leave);
@@ -449,7 +449,7 @@ export class Cache implements ICache {
         }
       }
       else
-        Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.StandaloneTransaction, 0,
+        Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.SeparateTransaction, 0,
           Cache.run, undefined, () => mon.leave(this));
     }
   }

@@ -33,7 +33,7 @@ export class DemoView {
     return result;
   }
 
-  @cache(Renew.Immediately, Isolation.StandaloneTransaction)
+  @cache(Renew.Immediately, Isolation.SeparateTransaction)
   async print(): Promise<void> {
     let lines: string[] = await this.render();
     for (let x of lines) {

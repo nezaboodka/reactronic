@@ -172,7 +172,7 @@ invocation of the caching function to renew the cache:
 
   - `Isolation.Default` - transaction prolongs parent one, but reaction (renewing of affected caches) is started as a separate transaction;
   - `Isolation.ProlongedTransaction` - both transaction and reaction prolong parent transaction;
-  - `Isolation.StandaloneTransaction` - always executed as a separate self-sufficient transaction.
+  - `Isolation.SeparateTransaction` - always executed as a separate self-sufficient transaction.
 
 **AsyncCalls** option defines how to handle multiple async calls of the same function:
 
@@ -248,7 +248,7 @@ enum Renew {
 enum Isolation {
   Default = 0, // prolong-parent for transactions, but start-separate for reaction
   ProlongedTransaction = 1,
-  StandaloneTransaction = 2,
+  SeparateTransaction = 2,
 }
 
 enum AsyncCalls {
