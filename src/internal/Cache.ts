@@ -47,12 +47,6 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     return r.snapshot.timestamp;
   }
 
-  invoke(...args: any[]): any {
-    let cc = this.obtain(true, ...args);
-    Record.markViewed(cc.record, cc.cache.member);
-    return cc.cache.resultOfInvoke;
-  }
-
   get isInvalidated(): boolean {
     let cc = this.obtain(undefined);
     let result = cc.cache.isInvalidated();
@@ -62,6 +56,12 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       Record.markViewed(cc.record.prev.record, cc.cache.member);
     // Record.markViewed(cc.record, cc.cache.member);
     return result;
+  }
+
+  invoke(...args: any[]): any {
+    let cc = this.obtain(true, ...args);
+    Record.markViewed(cc.record, cc.cache.member);
+    return cc.cache.resultOfInvoke;
   }
 
   private obtain(invoke: boolean | undefined, ...args: any[]): CacheCall {
