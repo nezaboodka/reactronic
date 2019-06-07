@@ -14,7 +14,7 @@ export function stateless(proto: object, prop: PropertyKey): any {
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  let config = { mode: Mode.Stateful, isolation: Isolation.Default };
+  let config = { mode: Mode.Stateful };
   return Virt.decorateMethod(config, proto, prop, pd);
 }
 

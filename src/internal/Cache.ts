@@ -17,7 +17,6 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
 
   get config(): Config { return this.read(false).cache.config; }
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
-  get returnValue(): Promise<any> | any { return this.read(true).cache.returnValue; }
   get error(): boolean { return this.read(true).cache.error; }
   invalidate(cause: string | undefined): boolean { return cause ? Cache.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
   get isComputing(): boolean { return this.read(true).cache.started > 0; }
@@ -31,38 +30,49 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     // TODO: mark cache readonly?
   }
 
-  result(...args: any): any {
-    let cc = this.obtain(true, ...args);
+  value(...args: any): any {
+    let cc = this.obtain(false, ...args);
     if (cc.isUpToDate)
       Record.markViewed(cc.record, cc.cache.member);
     else if (cc.record.prev.record !== Record.empty)
       Record.markViewed(cc.record.prev.record, cc.cache.member);
-    return cc.cache.result;
+    return cc.cache.value;
+  }
+
+  get stamp(): number {
+    let cc = this.obtain(undefined);
+    let r = cc.isUpToDate ?  cc.record : cc.record.prev.record;
+    if (r !== Record.empty)
+      Record.markViewed(r, cc.cache.member);
+    return r.snapshot.timestamp;
   }
 
   invoke(...args: any[]): any {
     let cc = this.obtain(true, ...args);
     Record.markViewed(cc.record, cc.cache.member);
-    return cc.cache.returnValue;
+    return cc.cache.resultOfInvoke;
   }
 
   get isInvalidated(): boolean {
-    let cc = this.obtain(false);
-    // if (cc.isUpToDate)
-    //   Record.markViewed(cc.record, cc.cache.member);
-    // else if (cc.record.prev.record !== Record.empty)
-    //   Record.markViewed(cc.record.prev.record, cc.cache.member);
-    Record.markViewed(cc.record, cc.cache.member);
-    return cc.cache.isInvalidated();
+    let cc = this.obtain(undefined);
+    let result = cc.cache.isInvalidated();
+    if (result)
+      Record.markViewed(cc.record, cc.cache.member);
+    else if (cc.record.prev.record !== Record.empty)
+      Record.markViewed(cc.record.prev.record, cc.cache.member);
+    // Record.markViewed(cc.record, cc.cache.member);
+    return result;
   }
 
-  private obtain(recachable: boolean, ...args: any[]): CacheCall {
+  private obtain(invoke: boolean | undefined, ...args: any[]): CacheCall {
     let cc = this.read(false);
     let c: Cache = cc.cache;
-    let hit = (cc.isUpToDate || c.started > 0) && c.config.latency !== Renew.DoesNotCache &&
-      c.args[0] === args[0] || cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
+    let hit = (cc.isUpToDate || c.started > 0) &&
+      c.config.latency !== Renew.DoesNotCache &&
+      c.args[0] === args[0] ||
+      cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (!hit) {
-      if (recachable) {
+      if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
           if (c.config.asyncCalls === AsyncCalls.Reused)
             throw new Error("not implemented");
@@ -72,7 +82,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}` : "recache";
         Transaction.runAs<any>(hint, c.config.isolation >= Isolation.SeparateTransaction, c.config.tracing, (...argsx: any[]): any => {
           cc = this.recache(cc, ...argsx);
-          return cc.cache.returnValue;
+          return cc.cache.resultOfInvoke;
         }, ...args);
       }
     }
@@ -126,7 +136,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         c2.args = argsx;
       else
         argsx = c2.args;
-      c2.returnValue = Cache.run<any>(c2, (...argsy: any[]): any => {
+      c2.resultOfInvoke = Cache.run<any>(c2, (...argsy: any[]): any => {
         return c2.config.body.call(this.handle.proxy, ...argsy);
       }, ...argsx);
       c2.invalidation.timestamp = Number.MAX_SAFE_INTEGER;
@@ -163,8 +173,8 @@ export class Cache implements ICache {
   readonly member: PropertyKey;
   config: ConfigImpl;
   args: any[];
-  returnValue: any;
-  result: any;
+  resultOfInvoke: any;
+  value: any;
   error: any;
   started: number;
   readonly invalidation: { timestamp: number, recomputation: Cache | undefined };
@@ -179,12 +189,12 @@ export class Cache implements ICache {
     if (init instanceof Cache) {
       this.config = init.config;
       this.args = init.args;
-      this.result = init.result;
+      this.value = init.value;
     }
     else {
       this.config = init;
       this.args = [];
-      this.result = undefined;
+      this.value = undefined;
     }
     // this.returnValue = undefined;
     // this.error = undefined;
@@ -237,7 +247,8 @@ export class Cache implements ICache {
 
   ensureUpToDate(timestamp: number, now: boolean, ...args: any[]): void {
     if (now || this.config.latency === Renew.Immediately) {
-      if ((this.config.latency === Renew.DoesNotCache || timestamp >= this.invalidation.timestamp) && !this.error) {
+      if (!this.error && (this.config.latency === Renew.DoesNotCache ||
+          (timestamp >= this.invalidation.timestamp && !this.invalidation.recomputation))) {
         let proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
         let result: any = Reflect.get(proxy, this.member, proxy)(...args);
         if (result instanceof Promise)
@@ -318,7 +329,8 @@ export class Cache implements ICache {
   }
 
   isInvalidated(): boolean {
-    return this.invalidation.timestamp !== Number.MAX_SAFE_INTEGER;
+    const t = this.invalidation.timestamp;
+    return t !== Number.MAX_SAFE_INTEGER && t !== 0;
   }
 
   invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICache[]): void {
@@ -393,10 +405,10 @@ export class Cache implements ICache {
   }
 
   tryLeave(r: Record, prev: Cache, mon: Monitor | null): void {
-    if (this.returnValue instanceof Promise) {
-      this.returnValue = this.returnValue.then(
+    if (this.resultOfInvoke instanceof Promise) {
+      this.resultOfInvoke = this.resultOfInvoke.then(
         result => {
-          this.result = result;
+          this.value = result;
           this.leave(r, prev, mon, "<=", "is completed");
           return result;
         },
@@ -408,7 +420,7 @@ export class Cache implements ICache {
       if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  ..", `${Hint.record(r, true)}.${this.member.toString()} is async...`);
     }
     else {
-      this.result = this.returnValue;
+      this.value = this.resultOfInvoke;
       this.leave(r, prev, mon, "<=", "is completed");
     }
   }

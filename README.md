@@ -292,9 +292,8 @@ class Transaction {
 abstract class ReactiveCache<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
-  readonly interim: Promise<T> | T;
   readonly error: any;
-  result(...args: any[]): T;
+  value(...args: any[]): T;
   invalidate(cause: string | undefined): boolean;
   readonly isInvalidated: boolean;
   readonly isComputing: boolean;

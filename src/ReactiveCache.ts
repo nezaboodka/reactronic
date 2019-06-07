@@ -5,9 +5,9 @@ import { Config } from "./Config";
 export abstract class ReactiveCache<T> {
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
-  abstract readonly returnValue: Promise<T> | T;
   abstract readonly error: any;
-  abstract result(...args: any[]): T;
+  abstract value(...args: any[]): T;
+  abstract readonly stamp: number;
   abstract invalidate(cause: string | undefined): boolean;
   abstract readonly isInvalidated: boolean;
   abstract readonly isComputing: boolean;
