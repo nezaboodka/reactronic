@@ -146,7 +146,7 @@ export class Snapshot implements ISnapshot {
         oo.forEach((c: ICache) => {
           if (!c.isInvalidated()) {
             merged.add(c);
-            if (Debug.verbosity >= 3) Debug.log(" ", "∞", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} from ${Hint.record(source, false, true, prop)}.`);
+            if (Debug.verbosity >= 3) Debug.log(" ", "∞", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
           }
         });
       }
@@ -167,7 +167,7 @@ export class Snapshot implements ISnapshot {
           let props: string[] = [];
           r.edits.forEach(prop => props.push(prop.toString()));
           let s = props.join(", ");
-          Debug.log("║", "•", `${Hint.record(r, true)}(${s}) is applied over ${Hint.record(r.prev.record)}.`);
+          Debug.log("║", "•", r.prev.record !== Record.empty ? `${Hint.record(r.prev.record)}(${s}) is overwritten.` : `${Hint.record(r)}(${s}) is created.`);
         }
       }
     });
@@ -208,11 +208,11 @@ export class Snapshot implements ISnapshot {
 
 export class Hint {
   static handle(h: Handle, nameless?: boolean): string {
-    return nameless ? `#${h.id}` : `${h.name}#${h.id}`;
+    return nameless ? `#${h.id}` : `#${h.id} ${h.name}`;
   }
 
   static record(r: Record, tranless?: boolean, nameless?: boolean, prop?: PropertyKey): string {
-    let t: string = tranless ? "" : `t${r.snapshot.id}'`;
+    let t: string = tranless ? "" : `t${r.snapshot.id}`;
     let h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
     let name: string = h ? `${t}${Hint.handle(h, nameless)}` : "[new]";
     return prop !== undefined ? `${name}.${prop.toString()}` : `${name}`;
