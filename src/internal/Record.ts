@@ -64,5 +64,5 @@ export interface ICache {
   wrap<T>(func: F<T>): F<T>;
   isInvalidated(): boolean;
   invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICache[]): void;
-  ensureUpToDate(timestamp: number, now: boolean, ...args: any[]): void;
+  triggerRecache(timestamp: number, now: boolean, ...args: any[]): void;
 }

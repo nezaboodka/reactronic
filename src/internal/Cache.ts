@@ -40,7 +40,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   }
 
   get stamp(): number {
-    let cc = this.obtain(undefined);
+    let cc = this.obtain();
     let r = cc.isUpToDate ?  cc.record : cc.record.prev.record;
     if (r !== Record.empty)
       Record.markViewed(r, cc.cache.member);
@@ -48,7 +48,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   }
 
   get isInvalidated(): boolean {
-    let cc = this.obtain(undefined);
+    let cc = this.obtain();
     let result = cc.cache.isInvalidated();
     if (result)
       Record.markViewed(cc.record, cc.cache.member);
@@ -64,7 +64,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     return cc.cache.resultOfInvoke;
   }
 
-  private obtain(invoke: boolean | undefined, ...args: any[]): CacheCall {
+  obtain(invoke?: boolean, ...args: any[]): CacheCall {
     let cc = this.read(false);
     let c: Cache = cc.cache;
     let hit = (cc.isUpToDate || c.started > 0) &&
@@ -245,18 +245,23 @@ export class Cache implements ICache {
     return caching;
   }
 
-  ensureUpToDate(timestamp: number, now: boolean, ...args: any[]): void {
+  triggerRecache(timestamp: number, now: boolean, ...args: any[]): void {
     if (now || this.config.latency === Renew.Immediately) {
       if (!this.error && (this.config.latency === Renew.DoesNotCache ||
           (timestamp >= this.invalidation.timestamp && !this.invalidation.recomputation))) {
+        // let proxy = this.record.data
+        // let cachedInvoke = this.record.data[this.member];
         let proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
-        let result: any = Reflect.get(proxy, this.member, proxy)(...args);
-        if (result instanceof Promise)
-          result.catch(error => { /* nop */ }); // bad idea to hide an error
+        let trap: Function = Reflect.get(proxy, this.member, proxy);
+        let impl: ReactiveCacheImpl = Utils.get(trap, RT_CACHE);
+        // let result: any = trap(...args);
+        let cc = impl.obtain(false, ...args);
+        if (cc.cache.resultOfInvoke instanceof Promise)
+          cc.cache.resultOfInvoke.catch(error => { /* nop */ }); // bad idea to hide an error
       }
     }
     else
-      sleep(this.config.latency).then(() => this.ensureUpToDate(timestamp, true, ...args));
+      sleep(this.config.latency).then(() => this.triggerRecache(timestamp, true, ...args));
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
@@ -276,7 +281,7 @@ export class Cache implements ICache {
       oo.forEach(c => c.invalidate(r, prop, true, false, effect));
       r.observers.delete(prop);
       if (effect.length > 0)
-        Transaction.ensureAllUpToDate(Hint.record(r), r.snapshot.timestamp,
+        Transaction.triggerRecacheAll(Hint.record(r), r.snapshot.timestamp,
           { tran: Transaction.active, effect });
     }
   }
@@ -389,7 +394,7 @@ export class Cache implements ICache {
     }
   }
 
-  static createCacheTrap(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
+  static createCachedInvoke(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
     let impl = new ReactiveCacheImpl(h, prop, config);
     let cachedInvoke: F<any> = (...args: any[]): any => impl.invoke(...args);
     Utils.set(cachedInvoke, RT_CACHE, impl);
@@ -525,7 +530,7 @@ function init(): void {
   Record.markViewed = Cache.markViewed; // override
   Record.markEdited = Cache.markEdited; // override
   Snapshot.applyDependencies = Cache.applyDependencies; // override
-  Virt.createCacheTrap = Cache.createCacheTrap; // override
+  Virt.createCachedInvoke = Cache.createCachedInvoke; // override
   Snapshot.active = Transaction._getActiveSnapshot; // override
   Transaction._init();
 }
