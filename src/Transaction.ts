@@ -266,7 +266,7 @@ export class Transaction {
     empty.prev.record = empty; // loopback
     empty.freeze();
     Utils.freezeMap(empty.observers);
-    Utils.freezeSet(empty.overwritten);
+    Utils.freezeSet(empty.outdated);
     Record.empty = empty;
   }
 }

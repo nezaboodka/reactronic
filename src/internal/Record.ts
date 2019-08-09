@@ -11,7 +11,7 @@ export class Record {
   readonly edits: Set<PropertyKey>;
   readonly conflicts: Map<PropertyKey, Record>;
   readonly observers: Map<PropertyKey, Set<ICache>>;
-  readonly overwritten: Set<PropertyKey>;
+  readonly outdated: Set<PropertyKey>;
 
   constructor(prev: Record, snapshot: ISnapshot, data: object) {
     this.prev = { record: prev, backup: prev };
@@ -20,7 +20,7 @@ export class Record {
     this.edits = new Set<PropertyKey>();
     this.conflicts = new Map<PropertyKey, Record>();
     this.observers = new Map<PropertyKey, Set<ICache>>();
-    this.overwritten = new Set<PropertyKey>();
+    this.outdated = new Set<PropertyKey>();
   }
 
   static empty: Record;
@@ -42,7 +42,7 @@ export class Record {
 
   static archive<T, C>(r: Record): void {
     if (r !== Record.empty) {
-      // Utils.freezeSet(r.overwritten);
+      // Utils.freezeSet(r.outdated);
       // Utils.freezeMap(r.observers);
     }
   }

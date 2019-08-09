@@ -290,14 +290,14 @@ export class Cache implements ICache {
     changeset.forEach((r: Record, h: Handle) => {
       if (!r.edits.has(RT_UNMOUNT))
         r.edits.forEach(prop => {
-          Cache.markPrevOverwritten(r, prop, effect);
+          Cache.markPrevAsOutdated(r, prop, effect);
           let value = r.data[prop];
           if (value instanceof Cache)
             value.subscribeToObservables(false, effect);
         });
       else
         for (let prop in r.prev.record.data)
-          Cache.markPrevOverwritten(r, prop, effect);
+          Cache.markPrevAsOutdated(r, prop, effect);
     });
     changeset.forEach((r: Record, h: Handle) => {
       Snapshot.mergeObservers(r, r.prev.record);
@@ -326,7 +326,7 @@ export class Cache implements ICache {
       observables.forEach(r => {
         Cache.acquireObserverSet(r, prop).add(this); // link
         if (Debug.verbosity >= 3) subscriptions.push(Hint.record(r, false, true, prop));
-        if (effect && r.overwritten.has(prop))
+        if (effect && r.outdated.has(prop))
           this.invalidate(r, prop, hot, false, effect);
       });
     });
@@ -353,7 +353,7 @@ export class Cache implements ICache {
       let upper: Record = Snapshot.active().read(Utils.get(this.record.data, RT_HANDLE));
       if (upper.data[this.member] === this) { // TODO: Consider better solution?
         let r: Record = upper;
-        while (r !== Record.empty && !r.overwritten.has(this.member)) {
+        while (r !== Record.empty && !r.outdated.has(this.member)) {
           let oo = r.observers.get(this.member);
           if (oo)
             oo.forEach(c => c.invalidate(upper, this.member, false, true, effect));
@@ -381,11 +381,11 @@ export class Cache implements ICache {
     // return true;
   }
 
-  static markPrevOverwritten(r: Record, prop: PropertyKey, effect: ICache[]): void {
+  static markPrevAsOutdated(r: Record, prop: PropertyKey, effect: ICache[]): void {
     let cause = r;
     r = r.prev.record;
-    while (r !== Record.empty && !r.overwritten.has(prop)) {
-      r.overwritten.add(prop);
+    while (r !== Record.empty && !r.outdated.has(prop)) {
+      r.outdated.add(prop);
       let oo = r.observers.get(prop);
       if (oo)
         oo.forEach(c => c.invalidate(cause, prop, false, false, effect));
