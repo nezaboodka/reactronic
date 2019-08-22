@@ -116,13 +116,13 @@ export class Snapshot implements ISnapshot {
         while (theirs !== Record.empty && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.edits.has(prop)) {
             let diff = Utils.different(theirs.data[prop], ours.data[prop]);
-            if (Debug.verbosity >= 4) Debug.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Debug.verbosity >= 3) Debug.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
             if (diff)
               ours.conflicts.set(prop, theirs);
             break;
           }
           else if (prop === RT_UNMOUNT || unmountTheirs) {
-            if (Debug.verbosity >= 4) Debug.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "!=" ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Debug.verbosity >= 3) Debug.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "!=" ${Hint.record(theirs, false)}.${prop.toString()}.`);
             ours.conflicts.set(prop, theirs);
             break;
           }
@@ -131,7 +131,7 @@ export class Snapshot implements ISnapshot {
         }
       });
       Utils.copyAllProps(merged, ours.data); // overwrite with merged copy
-      ours.prev.record = head;
+      ours.prev.record = head; // rebased
     }
     return counter;
   }
