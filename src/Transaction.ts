@@ -107,7 +107,7 @@ export class Transaction {
           let outer = Transaction.active;
           try {
             Transaction.active = Transaction.head;
-            result = t.wrapPromiseForOuterTransaction(result);
+            result = t.holdOnUntilFinished(result);
           }
           finally {
             Transaction.active = outer;
@@ -125,7 +125,7 @@ export class Transaction {
     return result;
   }
 
-  private async wrapPromiseForOuterTransaction<T>(p: Promise<T>): Promise<T> {
+  private async holdOnUntilFinished<T>(p: Promise<T>): Promise<T> {
     // if (Debug.verbosity >= 5) Debug.log("║", "", ` wrap promise of t${this.id}'${this.hint}`);
     let result = await p;
     await this.whenFinished(false);
