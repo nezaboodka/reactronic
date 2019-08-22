@@ -75,9 +75,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     if (!hit) {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
-          if (c.config.asyncCalls === AsyncCalls.Reused)
-            throw new Error("not implemented");
-          else if (c.config.asyncCalls >= 1)
+          if (c.config.asyncCalls === AsyncCalls.Single && c.config.asyncCalls >= 1)
             throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}` : "recache";
@@ -137,9 +135,12 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         c2.args = argsx;
       else
         argsx = c2.args;
-      c2.resultOfInvoke = Cache.run<any>(c2, (...argsy: any[]): any => {
-        return c2.config.body.call(this.handle.proxy, ...argsy);
-      }, ...argsx);
+      if (c.invalidation.recomputation && c2 !== c.invalidation.recomputation && c.config.asyncCalls === AsyncCalls.Reused)
+        c2.resultOfInvoke = c.invalidation.recomputation.tran.holdOnUntilFinished(c.invalidation.recomputation.resultOfInvoke);
+      else
+        c2.resultOfInvoke = Cache.run<any>(c2, (...argsy: any[]): any => {
+          return c2.config.body.call(this.handle.proxy, ...argsy);
+        }, ...argsx);
       c2.invalidation.timestamp = Number.MAX_SAFE_INTEGER;
     }
     finally {

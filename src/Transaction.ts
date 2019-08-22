@@ -125,7 +125,7 @@ export class Transaction {
     return result;
   }
 
-  private async holdOnUntilFinished<T>(p: Promise<T>): Promise<T> {
+  async holdOnUntilFinished<T>(p: Promise<T>): Promise<T> {
     // if (Debug.verbosity >= 5) Debug.log("║", "", ` wrap promise of t${this.id}'${this.hint}`);
     let result = await p;
     await this.whenFinished(false);
