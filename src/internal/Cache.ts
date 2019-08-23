@@ -135,8 +135,8 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         c2.args = argsx;
       else
         argsx = c2.args;
-      if (c.invalidation.recomputation && c2 !== c.invalidation.recomputation && c.config.asyncCalls === AsyncCalls.Reused)
-        c2.resultOfInvoke = c.invalidation.recomputation.tran.holdOnUntilFinished(c.invalidation.recomputation.resultOfInvoke);
+      if (c.invalidation.recomputation && c2 !== c.invalidation.recomputation && c.config.asyncCalls === AsyncCalls.Rebased)
+        c2.resultOfInvoke = ReactiveCacheImpl.throwRebaseRequestWhenFinished(c.invalidation.recomputation.tran);
       else
         c2.resultOfInvoke = Cache.run<any>(c2, (...argsy: any[]): any => {
           return c2.config.body.call(this.handle.proxy, ...argsy);
@@ -162,6 +162,11 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
     });
+  }
+
+  static async throwRebaseRequestWhenFinished(t: Transaction): Promise<void> {
+    await t.whenFinished(true);
+    throw RT_ERR_REBASE_REQUEST;
   }
 }
 
@@ -536,5 +541,7 @@ function init(): void {
   Snapshot.active = Transaction._getActiveSnapshot; // override
   Transaction._init();
 }
+
+const RT_ERR_REBASE_REQUEST: Error = new Error("transaction rebasing is requested");
 
 init();

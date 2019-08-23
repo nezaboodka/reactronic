@@ -177,9 +177,9 @@ invocation of the caching function to renew the cache:
 **AsyncCalls** option defines how to handle multiple async calls of the same function:
 
   - `AsyncCalls.Single` - fail if there is an existing concurrent call;
-  - `AsyncCalls.Reused` - reuse the result of the existing concurrent call (if any);
-  - `AsyncCalls.Relayed` - cancel and supresede the existing concurrent call;
-  - `AsyncCalls.Multiple` - multiple simultaneous calls are allowed.
+  - `AsyncCalls.Rebased` - wait for existing concurrent call and then rerun current one;
+  - `AsyncCalls.Relayed` - cancel and supresede existing concurrent call;
+  - `AsyncCalls.Concurrent` - multiple simultaneous calls are allowed.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
@@ -255,7 +255,7 @@ enum AsyncCalls {
   Single = 1, // only one can run at a time (default)
   Reused = 0, // reuse existing (if any)
   Relayed = -1, // cancel existing in favor of newer one
-  Multiple = -2,
+  Concurrent = -2,
 }
 
 @stateful
@@ -293,7 +293,7 @@ abstract class ReactiveCache<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
   readonly error: any;
-  value(...args: any[]): T;
+  getRecentValue(...args: any[]): T;
   invalidate(cause: string | undefined): boolean;
   readonly isInvalidated: boolean;
   readonly isComputing: boolean;

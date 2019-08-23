@@ -59,7 +59,7 @@ export class Transaction {
   }
 
   cancel(): Transaction {
-    return this.reject(RT_NO_THROW);
+    return this.reject(RT_ERR_NO_THROW);
   }
 
   finished(): boolean {
@@ -120,7 +120,7 @@ export class Transaction {
       t.reject(error);
       throw error;
     }
-    if (t.error && t.error !== RT_NO_THROW)
+    if (t.error && t.error !== RT_ERR_NO_THROW)
       throw t.error;
     return result;
   }
@@ -212,7 +212,7 @@ export class Transaction {
     this.snapshot.checkin(this.error);
     this.snapshot.archive();
     if (this.resultPromise)
-      if (this.error !== RT_NO_THROW)
+      if (this.error !== RT_ERR_NO_THROW)
         this.resultReject(this.error);
       else
         this.resultResolve();
@@ -271,4 +271,4 @@ export class Transaction {
   }
 }
 
-const RT_NO_THROW: Error = new Error("transaction is canceled");
+const RT_ERR_NO_THROW: Error = new Error("transaction is canceled");

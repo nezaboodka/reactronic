@@ -33,7 +33,7 @@ export enum Isolation {
 
 export enum AsyncCalls {
   Single = 1, // only one can run at a time (default)
-  Reused = 0, // reuse existing (if any)
+  Rebased = 0, // reuse existing (if any)
   Relayed = -1, // cancel existing in favor of newer one
-  Multiple = -2,
+  Concurrent = -2,
 }
