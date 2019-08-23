@@ -66,11 +66,13 @@ export class Transaction {
     return this.sealed && this.busy === 0;
   }
 
-  async whenFinished(includingReactions: boolean): Promise<void> {
+  async whenFinished(includingReactions: boolean, error?: Error): Promise<void> {
     if (!this.finished())
       await this.acquirePromise();
     if (includingReactions && this.reaction.tran)
       await this.reaction.tran.whenFinished(true);
+    if (error)
+      throw error;
   }
 
   undo(): void {
@@ -107,7 +109,7 @@ export class Transaction {
           let outer = Transaction.active;
           try {
             Transaction.active = Transaction.head;
-            result = t.holdOnUntilFinished(result);
+            result = t.whenFinishedThen(result);
           }
           finally {
             Transaction.active = outer;
@@ -125,7 +127,7 @@ export class Transaction {
     return result;
   }
 
-  async holdOnUntilFinished<T>(p: Promise<T>): Promise<T> {
+  async whenFinishedThen<T>(p: Promise<T>): Promise<T> {
     // if (Debug.verbosity >= 5) Debug.log("║", "", ` wrap promise of t${this.id}'${this.hint}`);
     let result = await p;
     await this.whenFinished(false);

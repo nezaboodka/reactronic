@@ -119,10 +119,11 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
 
   private recache(cc: CacheCall, ...argsx: any[]): CacheCall {
     let c = cc.cache;
-    if (c.invalidation.recomputation && c.config.asyncCalls === AsyncCalls.Relayed) {
-      c.invalidation.recomputation.tran.cancel();
-      if (Debug.verbosity >= 3) Debug.log("║", " ", `Relaying: t${c.invalidation.recomputation.tran.id} is canceled.`);
+    let existing = c.invalidation.recomputation;
+    if (existing && c.config.asyncCalls === AsyncCalls.Relayed) {
+      existing.tran.cancel();
       c.invalidation.recomputation = undefined;
+      if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is canceled - RELAYED.`);
     }
     let cc2 = this.edit();
     let c2: Cache = cc2.cache;
@@ -135,8 +136,8 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         c2.args = argsx;
       else
         argsx = c2.args;
-      if (c.invalidation.recomputation && c2 !== c.invalidation.recomputation && c.config.asyncCalls === AsyncCalls.Rebased)
-        c2.resultOfInvoke = ReactiveCacheImpl.throwRebaseRequestWhenFinished(c.invalidation.recomputation.tran);
+      if (existing && c2 !== existing && c.config.asyncCalls === AsyncCalls.Rebased)
+        c2.resultOfInvoke = existing.tran.whenFinished(true, RT_ERR_REBASE_REQUEST);
       else
         c2.resultOfInvoke = Cache.run<any>(c2, (...argsy: any[]): any => {
           return c2.config.body.call(this.handle.proxy, ...argsy);
@@ -162,11 +163,6 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
     });
-  }
-
-  static async throwRebaseRequestWhenFinished(t: Transaction): Promise<void> {
-    await t.whenFinished(true);
-    throw RT_ERR_REBASE_REQUEST;
   }
 }
 
