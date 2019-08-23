@@ -1,7 +1,6 @@
 {
   "extends": [
-    "tslint:latest",
-    "tslint-react"
+    "tslint:latest"
   ],
   "rules": {
     "indent": [
@@ -34,12 +33,6 @@
     "no-console": [
       false
     ],
-    "jsx-alignment": [
-      false
-    ],
-    "no-implicit-dependencies": false,
-    "jsx-no-string-ref": false,
-    "jsx-no-multiline-js": false,
-    "jsx-no-lambda": false
+    "no-implicit-dependencies": false
   }
 }

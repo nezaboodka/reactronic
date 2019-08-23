@@ -7,7 +7,7 @@
       "label": "Build - TypeScript",
       "type": "typescript",
       "tsconfig": "tsconfig.json",
-      "problemMatcher": ["$tsc-watch"],
+      "problemMatcher": ["$tsc", "$tslint5"],
       "group": "build",
       "presentation": {
         "echo": true,
