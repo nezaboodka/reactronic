@@ -30,17 +30,18 @@ test("async", async t => {
   }
   catch (error) {
     actual.push(error.toString());
-    // console.log(error.toString());
+    if (Debug.verbosity >= 5) console.log(error.toString());
   }
   finally {
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
   }
-  // for (let x of actual)
-  //   console.log(x);
+  if (Debug.verbosity >= 5) 
+    for (let x of actual)
+      console.log(x);
   let n: number = Math.max(actual.length, etalon.length);
   for (let i = 0; i < n; i++) {
-    // console.log(`actual[${i}] = ${actual[i]}, etalon[${i}] = ${etalon[i]}`);
+    if (Debug.verbosity >= 5) console.log(`actual[${i}] = ${actual[i]}, etalon[${i}] = ${etalon[i]}`);
     t.is(actual[i], etalon[i]);
   }
 });

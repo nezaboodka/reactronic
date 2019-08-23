@@ -9,7 +9,8 @@ import { CopyOnWrite } from "./Virtualization";
 export class Snapshot implements ISnapshot {
   static lastUsedId: number = 20;
   static headTimestamp: number = 100;
-  static activeSnapshots: Snapshot[] = [];
+  static pending: Snapshot[] = [];
+  static oldest: Snapshot | undefined = undefined;
   readonly id: number = 0;
   readonly hint: string = "";
   readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
@@ -79,7 +80,9 @@ export class Snapshot implements ISnapshot {
   checkout(): void {
     if (!this.completed && this.timestamp === Number.MAX_SAFE_INTEGER) {
       this._timestamp = Snapshot.headTimestamp;
-      Snapshot.activeSnapshots.push(this);
+      Snapshot.pending.push(this);
+      if (Snapshot.oldest === undefined)
+        Snapshot.oldest = this;
       if (Debug.verbosity >= 2) Debug.log("╔══", `v${this.timestamp}`, `${this.hint}`);
     }
   }
@@ -179,25 +182,33 @@ export class Snapshot implements ISnapshot {
   };
 
   archive(): void {
-    if (this.timestamp !== 0) {
-      if (Snapshot.activeSnapshots[0] === this) {
-        let i: number = 0;
-        for (let x of Snapshot.activeSnapshots) {
-          if (x.completed)
-            x.unlinkHistory();
-          else
-            break;
-          i++;
-        }
-        Snapshot.activeSnapshots = Snapshot.activeSnapshots.slice(i);
-      }
-    }
+    Snapshot.gc(this);
     Utils.freezeMap(this.changeset);
   }
 
-  private unlinkHistory(): void {
-    if (Debug.verbosity >= 5) Debug.log("", "gc", `t${this.id}: ${this.hint}`);
-    this.changeset.forEach((r: Record, h: Handle) => {
+  private static gc(s: Snapshot): void {
+    if (s.timestamp !== 0) {
+      if (s === Snapshot.oldest) {
+        Snapshot.oldest = undefined;
+        Snapshot.pending.sort((a, b) => a._timestamp - b._timestamp);
+        let i: number = 0;
+        for (let x of Snapshot.pending) {
+          if (!x.completed) {
+            Snapshot.oldest = x;
+            break;
+          }
+          else
+            Snapshot.unlinkHistory(x);
+          i++;
+        }
+        Snapshot.pending = Snapshot.pending.slice(i);
+      }
+    }
+  }
+
+  private static unlinkHistory(s: Snapshot): void {
+    if (Debug.verbosity >= 5) Debug.log("", "  ", `Transaction "t${s.id}: ${s.hint}" is being collected`);
+    s.changeset.forEach((r: Record, h: Handle) => {
       if (Debug.verbosity >= 5 && r.prev.record !== Record.empty) Debug.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
       // Snapshot.mergeObservers(r, r.prev.record);

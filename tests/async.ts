@@ -1,4 +1,4 @@
-﻿import { all } from "../src/internal/z.index";
+﻿import { all, Debug } from "../src/internal/z.index";
 import { stateful, transaction, cache, Renew, Isolation, Monitor, monitor, Transaction } from "../src/z.index";
 import { sleep } from "./common";
 
@@ -38,7 +38,7 @@ export class DemoView {
     let lines: string[] = await this.render();
     for (let x of lines) {
       actual.push(demoMon.isIdle ? x : `[...] ${x}`);
-      // console.log(demoMon.isIdle ? x : `[...] ${x}`);
+      if (Debug.verbosity >= 5) console.log(demoMon.isIdle ? x : `[...] ${x}`);
     }
   }
 }

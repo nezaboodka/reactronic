@@ -71,7 +71,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       c.config.latency !== Renew.DoesNotCache &&
       c.args[0] === args[0] ||
       cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
-    if (Debug.verbosity >= 3 && c.invalidation.recomputation) Debug.log("║", "  \/", `${Hint.record(cc.record)}.${c.member.toString()}() is concurrent.`);
+    if (Debug.verbosity >= 3 && c.invalidation.recomputation) Debug.log("║", "  ‼", `${Hint.record(cc.record)}.${c.member.toString()}() is concurrent.`);
     if (!hit) {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
