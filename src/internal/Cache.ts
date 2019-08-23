@@ -137,7 +137,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       else
         argsx = c2.args;
       if (existing && c2 !== existing && c.config.asyncCalls === AsyncCalls.Rebased)
-        c2.resultOfInvoke = existing.tran.whenFinished(true, RT_ERR_REBASE_REQUEST);
+        c2.resultOfInvoke = existing.tran.whenFinished(true, RT_ERR_REBASE);
       else
         c2.resultOfInvoke = Cache.run<any>(c2, (...argsy: any[]): any => {
           return c2.config.body.call(this.handle.proxy, ...argsy);
@@ -538,6 +538,6 @@ function init(): void {
   Transaction._init();
 }
 
-const RT_ERR_REBASE_REQUEST: Error = new Error("transaction rebasing is requested");
+const RT_ERR_REBASE: Error = new Error("transaction rebasing is requested");
 
 init();
