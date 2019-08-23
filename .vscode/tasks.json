@@ -5,8 +5,8 @@
   "tasks": [
     {
       "label": "Build - TypeScript",
-      "type": "typescript",
-      "tsconfig": "tsconfig.json",
+      "type": "shell",
+      "command": "npm run build",
       "problemMatcher": ["$tsc", "$tslint5"],
       "group": "build",
       "presentation": {

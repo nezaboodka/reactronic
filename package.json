@@ -36,7 +36,7 @@
     "typescript": "3.5.3"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tslint -c tslint.json 'src/**/*.ts' 'tests/**/*.test.ts'",
     "dist": "tsc --sourceMap false",
     "test": "ava",
     "cover": "nyc ava"

@@ -12,7 +12,7 @@ let etalon: string[] = [
   "[...] Url: nezaboodka.com",
   "[...] Log: RTA, nezaboodka.com/100",
   "Url: nezaboodka.com",
-  "Log: RTA, nezaboodka.com/100"
+  "Log: RTA, nezaboodka.com/100",
 ];
 
 test("async", async t => {
@@ -39,8 +39,8 @@ test("async", async t => {
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
   }
   if (Debug.verbosity >= 5)
-    for (let i = 0; i < actual.length; i++)
-      console.log(actual[i]);
+    for (let x of actual)
+      console.log(x);
   let n: number = Math.max(actual.length, etalon.length);
   for (let i = 0; i < n; i++) {
     if (Debug.verbosity >= 5) console.log(`actual[${i}] = ${actual[i]}, etalon[${i}] = ${etalon[i]}`);

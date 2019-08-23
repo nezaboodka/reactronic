@@ -38,8 +38,8 @@ test("async", async t => {
   }
   if (Debug.verbosity >= 5) {
     console.log("\nResults:\n");
-    for (let i = 0; i < actual.length; i++)
-      console.log(actual[i]);
+    for (let x of actual)
+      console.log(x);
   }
   let n: number = Math.max(actual.length, etalon.length);
   for (let i = 0; i < n; i++) {
