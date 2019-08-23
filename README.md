@@ -253,7 +253,7 @@ enum Isolation {
 
 enum AsyncCalls {
   Single = 1, // only one can run at a time (default)
-  Reused = 0, // reuse existing (if any)
+  Rebased = 0, // wait for existing and then rerun current one
   Relayed = -1, // cancel existing in favor of newer one
   Concurrent = -2,
 }
