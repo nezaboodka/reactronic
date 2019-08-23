@@ -4,16 +4,31 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Build - TypeScript",
       "type": "typescript",
       "tsconfig": "tsconfig.json",
       "problemMatcher": ["$tsc-watch"],
-      "group": { "kind": "build", "isDefault": true },
+      "group": "build",
       "presentation": {
         "echo": true,
-        "reveal": "never",
-        "focus": false,
+        "reveal": "always",
+        "focus": true,
         "panel": "shared"
       }
+    },
+    {
+      "label": "Test - Ava",
+      "type": "shell",
+      "command": "npm run test",
+      "isBackground": true,
+      "group": "build",
+      "problemMatcher": [],
+      "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": true,
+          "panel": "shared"
+      },
     }
   ]
 }
