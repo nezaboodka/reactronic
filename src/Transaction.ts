@@ -75,6 +75,10 @@ export class Transaction {
       throw error;
   }
 
+  async restartAfter(t: Transaction): Promise<void> {
+    return t.whenFinished(true, RT_ERR_RESTART);
+  }
+
   undo(): void {
     let hint = Debug.verbosity >= 2 ? `Tran#${this.snapshot.hint}.undo` : "noname";
     Transaction.runAs<void>(hint, false, 0, () => {
@@ -99,31 +103,36 @@ export class Transaction {
   }
 
   static runAs<T>(hint: string, root: boolean, verbosity: number, func: F<T>, ...args: any[]): T {
-    let t: Transaction = (root || Transaction.active.finished()) ? new Transaction(hint, verbosity) : Transaction.active;
-    root = t !== Transaction.active;
-    let result: any;
-    try {
-      result = t.run<T>(func, ...args);
-      if (root) {
-        if (result instanceof Promise) {
-          let outer = Transaction.active;
-          try {
-            Transaction.active = Transaction.head;
-            result = t.whenFinishedThen(result);
+    let result: any = RT_ERR_RESTART;
+    while (result === RT_ERR_RESTART) {
+      let inception = root || Transaction.active.finished();
+      let t: Transaction = inception ? new Transaction(hint, verbosity) : Transaction.active;
+      root = t !== Transaction.active;
+      try {
+        result = t.run<T>(func, ...args);
+        if (root) {
+          if (result instanceof Promise) {
+            let outer = Transaction.active;
+            try {
+              Transaction.active = Transaction.head;
+              result = t.whenFinishedThen(result);
+            }
+            finally {
+              Transaction.active = outer;
+            }
           }
-          finally {
-            Transaction.active = outer;
-          }
+          t.seal();
         }
-        t.seal();
       }
+      catch (error) {
+        t.reject(error);
+        throw error;
+      }
+      if (t.error === RT_ERR_RESTART)
+        result = RT_ERR_RESTART;
+      else if (t.error && t.error !== RT_ERR_NO_THROW)
+        throw t.error;
     }
-    catch (error) {
-      t.reject(error);
-      throw error;
-    }
-    if (t.error && t.error !== RT_ERR_NO_THROW)
-      throw t.error;
     return result;
   }
 
@@ -274,3 +283,4 @@ export class Transaction {
 }
 
 const RT_ERR_NO_THROW: Error = new Error("transaction is canceled");
+const RT_ERR_RESTART: Error = new Error("transaction rebasing is requested");
