@@ -174,12 +174,12 @@ invocation of the caching function to renew the cache:
   - `Isolation.ProlongedTransaction` - both transaction and reaction prolong parent transaction;
   - `Isolation.SeparateTransaction` - always executed as a separate self-sufficient transaction.
 
-**AsyncCalls** option defines how to handle multiple async calls of the same function:
+**Reentrance** option defines how to handle reentrant calls of the same function:
 
-  - `AsyncCalls.Prevent` - fail if there is an existing concurrent call;
-  - `AsyncCalls.Restart` - wait for existing concurrent call and then restart current one;
-  - `AsyncCalls.Relay` - cancel and supresede existing concurrent call;
-  - `AsyncCalls.Allow` - multiple simultaneous calls are allowed.
+  - `Reentrance.Prevented` - fail if there is an existing concurrent call;
+  - `Reentrance.RestartLatter` - wait for existing concurrent call and then restart latter one;
+  - `Reentrance.CancelExisting` - cancel existing in favor of latter one;
+  - `Reentrance.Unlimited` - multiple simultaneous calls are allowed.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
@@ -216,17 +216,17 @@ NPM: `npm install reactronic`
 function stateful(proto: object, prop?: PropertyKey): any;
 function stateless(proto: object, prop: PropertyKey): any;
 function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
-function cache(latency: Latency, isolation: Isolation, asyncCalls: AsyncCalls): F<any>;
+function cache(latency: Latency, isolation: Isolation, reentrance: Reentrance): F<any>;
 function monitor(value: Monitor | null): F<any>;
 function config(config: Partial<Config>): F<any>;
 
-// Config: Mode, Latency, Isolation, AsyncCalls, Monitor
+// Config: Mode, Latency, Isolation, Reentrance, Monitor
 
 interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
   readonly isolation: Isolation;
-  readonly asyncCalls: AsyncCalls;
+  readonly reentrance: Reentrance;
   readonly monitor: Monitor | null;
 }
 
@@ -251,11 +251,11 @@ enum Isolation {
   SeparateTransaction = 2,
 }
 
-enum AsyncCalls {
-  Prevent = 1, // only one can run at a time (default)
-  Restart = 0, // wait for existing and then rerun current one
-  Relay = -1, // cancel existing in favor of newer one
-  Allow = -2,
+enum Reentrance {
+  Prevented = 1, // only one can run at a time (default)
+  RestartLatter = 0, // restart latter after existing one
+  CancelExisting = -1, // cancel existing in favor of latter one
+  Unlimited = -2, // no limitations
 }
 
 @stateful

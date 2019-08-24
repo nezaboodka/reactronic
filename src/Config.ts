@@ -4,7 +4,7 @@ export interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
   readonly isolation: Isolation;
-  readonly asyncCalls: AsyncCalls;
+  readonly reentrance: Reentrance;
   readonly monitor: Monitor | null;
   readonly tracing: number;
 }
@@ -31,9 +31,9 @@ export enum Isolation {
   SeparateTransaction = 2,
 }
 
-export enum AsyncCalls {
-  Prevent = 1, // only one can run at a time (default)
-  Restart = 0, // reuse existing (if any)
-  Relay = -1, // cancel existing in favor of newer one
-  Allow = -2,
+export enum Reentrance { // https://en.wikipedia.org/wiki/Reentrancy_(computing)
+  Prevented = 1, // only one can run at a time (default)
+  RestartLatter = 0, // restart latter after existing one
+  CancelExisting = -1, // cancel existing in favor of latter one
+  Unlimited = -2, // no limitations
 }

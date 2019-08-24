@@ -1,7 +1,7 @@
 import { Utils, Debug, sleep, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
 export { ReactiveCache } from "../ReactiveCache";
-import { Config, Renew, AsyncCalls, Isolation } from "../Config";
+import { Config, Renew, Reentrance, Isolation } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
 
@@ -75,8 +75,8 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     if (!hit) {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
-          if (c.config.asyncCalls === AsyncCalls.Prevent && c.config.asyncCalls >= 1)
-            throw new Error(`[E609] the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
+          if (c.config.reentrance === Reentrance.Prevented && c.config.reentrance >= 1)
+            throw new Error(`[E609] the number of simultaneous tasks reached the maximum (${c.config.reentrance})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         let result = Transaction.runAs<any>(hint, c.config.isolation >= Isolation.SeparateTransaction, c.config.tracing, (...argsx: any[]): any => {
@@ -121,7 +121,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   private recache(cc: CacheCall, ...argsx: any[]): CacheCall {
     let c = cc.cache;
     let existing = c.invalidation.recomputation;
-    if (existing && c.config.asyncCalls === AsyncCalls.Relay) {
+    if (existing && c.config.reentrance === Reentrance.CancelExisting) {
       existing.tran.discard(); // ignore silently
       c.invalidation.recomputation = undefined;
       if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is canceled and being relayed`);
@@ -137,7 +137,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         c2.args = argsx;
       else
         argsx = c2.args;
-      if (existing && c2 !== existing && c.config.asyncCalls === AsyncCalls.Restart) {
+      if (existing && c2 !== existing && c.config.reentrance === Reentrance.RestartLatter) {
         const error = new Error(`Transaction will be restarted after t${existing.tran.id}`);
         c2.resultOfInvoke = Promise.reject(error);
         Transaction.active.discard(error, existing.tran);

@@ -5,7 +5,7 @@ import { CopyOnWriteMap } from "./Binding.CopyOnWriteMap";
 import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
-import { Config, Mode, Latency, Renew, AsyncCalls, Isolation } from "../Config";
+import { Config, Mode, Latency, Renew, Reentrance, Isolation } from "../Config";
 import { Monitor } from "../Monitor";
 
 // Config
@@ -19,7 +19,7 @@ export class ConfigImpl implements Config {
   readonly mode: Mode;
   readonly latency: Latency;
   readonly isolation: Isolation;
-  readonly asyncCalls: AsyncCalls;
+  readonly reentrance: Reentrance;
   readonly monitor: Monitor | null;
   readonly tracing: number;
 
@@ -28,7 +28,7 @@ export class ConfigImpl implements Config {
     this.mode = patch.mode !== undefined ? patch.mode : existing.mode;
     this.latency = patch.latency !== undefined ? patch.latency : existing.latency;
     this.isolation = patch.isolation !== undefined ? patch.isolation : existing.isolation;
-    this.asyncCalls = patch.asyncCalls !== undefined ? patch.asyncCalls : existing.asyncCalls;
+    this.reentrance = patch.reentrance !== undefined ? patch.reentrance : existing.reentrance;
     this.monitor = patch.monitor !== undefined ? patch.monitor : existing.monitor;
     this.tracing = patch.tracing !== undefined ? patch.tracing : existing.tracing;
     Object.freeze(this);
@@ -39,7 +39,7 @@ export class ConfigImpl implements Config {
     mode: Mode.Stateless,
     latency: Renew.DoesNotCache,
     isolation: Isolation.Default,
-    asyncCalls: AsyncCalls.Prevent,
+    reentrance: Reentrance.Prevented,
     monitor: null,
     tracing: 0 }, {});
 }
