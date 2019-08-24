@@ -291,7 +291,6 @@ export class Transaction {
 class TransactionCanceled extends Error {
   constructor(readonly tran: Transaction, readonly restartAfter?: Transaction) {
     super(`transaction ${tran.id}/${tran.hint} is canceled and will be ${restartAfter ? `restarted after ${restartAfter.id}/${restartAfter.hint}` : `ignored`}`);
-    Object.setPrototypeOf(this, TransactionCanceled.prototype);
-    // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
+    Object.setPrototypeOf(this, TransactionCanceled.prototype); // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
   }
 }
