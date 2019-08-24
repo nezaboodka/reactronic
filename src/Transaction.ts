@@ -137,9 +137,9 @@ export class Transaction {
       await this.whenFinished(false);
     }
     catch (error) {
-      if (error instanceof TransactionCanceled && error.restartAfter) {
+      if (error instanceof TransactionCanceled && error.cause) {
         if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is waiting for restart`);
-        await error.restartAfter.whenFinished(true);
+        await error.cause.whenFinished(true);
         if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is restarted`);
         result = Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
       }
@@ -213,7 +213,7 @@ export class Transaction {
   }
 
   private tryResolveConflicts(conflicts: Record[]): void {
-    this.error = this.error || new Error(`t${this.snapshot.id}'${this.snapshot.hint} conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
+    this.error = this.error || new Error(`E604: transaction t${this.snapshot.id}'${this.snapshot.hint} conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
     // this.error = this.error || RT_NO_THROW; // silently ignore conflicting transactions
   }
 
@@ -289,8 +289,8 @@ export class Transaction {
 }
 
 class TransactionCanceled extends Error {
-  constructor(readonly tran: Transaction, readonly restartAfter?: Transaction) {
-    super(`transaction ${tran.id}/${tran.hint} is canceled and will be ${restartAfter ? `restarted after ${restartAfter.id}/${restartAfter.hint}` : `ignored`}`);
+  constructor(readonly tran: Transaction, readonly cause?: Transaction) {
+    super(`transaction ${tran.id}/${tran.hint} is canceled and will be ${cause ? `restarted after ${cause.id}/${cause.hint}` : `ignored`}`);
     Object.setPrototypeOf(this, TransactionCanceled.prototype); // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
   }
 }

@@ -39,7 +39,7 @@ export class Person {
         if (i >= 0)
           a.splice(i, 1);
         else
-          throw new Error("invariant is broken, please restart the application");
+          throw new Error("E600: invariant is broken, please restart the application");
       }
       if (value) { // add to children of a new parent
         value._children.push(this);

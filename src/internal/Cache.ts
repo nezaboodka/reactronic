@@ -76,7 +76,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
           if (c.config.asyncCalls === AsyncCalls.Prevent && c.config.asyncCalls >= 1)
-            throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
+            throw new Error(`E609: the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         Transaction.runAs<any>(hint, c.config.isolation >= Isolation.SeparateTransaction, c.config.tracing, (...argsx: any[]): any => {
@@ -215,7 +215,7 @@ export class Cache implements ICache {
   static get(method: F<any>): ReactiveCache<any> {
     let impl: ReactiveCache<any> | undefined = Utils.get(method, RT_CACHE);
     if (!impl)
-      throw new Error("given method is not a reaction");
+      throw new Error("E610: given method is not a reactronic cache");
     return impl;
   }
 
@@ -377,7 +377,7 @@ export class Cache implements ICache {
   }
 
   static enforceInvalidation(c: Cache, cause: string, latency: number): boolean {
-    throw new Error("not implemented");
+    throw new Error("E600: not implemented - Cache.enforceInvalidation");
     // let effect: Cache[] = [];
     // c.invalidate(cause, false, false, effect);
     // if (latency === Renew.Immediately)

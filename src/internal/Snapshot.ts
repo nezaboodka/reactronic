@@ -31,14 +31,14 @@ export class Snapshot implements ISnapshot {
   read(h: Handle): Record {
     let result = this.tryRead(h);
     if (result === Record.empty) /* istanbul ignore next */
-      throw new Error("E607: internal error");
+      throw new Error("E606: suitable object revision is not found in history");
     return result;
   }
 
   edit(h: Handle, prop: PropertyKey, value: Symbol): Record {
     let result: Record = this.tryEdit(h, prop, value);
     if (result === Record.empty) /* istanbul ignore next */
-      throw new Error("unknown error");
+      throw new Error("E607: suitable object revision is not found in history");
     return result;
   }
 
@@ -59,7 +59,7 @@ export class Snapshot implements ISnapshot {
 
   tryEdit(h: Handle, prop: PropertyKey, value: any): Record {
     if (this.completed)
-      throw new Error("E609: object can only be modified inside transaction");
+      throw new Error("E608: object can only be modified inside transaction");
     let r: Record = this.tryRead(h);
     if (r === Record.empty || !Utils.equal(r.data[prop], value)) {
       let data = r ? r.data : value;
