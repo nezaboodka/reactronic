@@ -78,7 +78,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
           if (c.config.asyncCalls === AsyncCalls.Prevent && c.config.asyncCalls >= 1)
             throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
         }
-        let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}` : "recache";
+        let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         Transaction.runAs<any>(hint, c.config.isolation >= Isolation.SeparateTransaction, c.config.tracing, (...argsx: any[]): any => {
           cc = this.recache(cc, ...argsx);
           return cc.cache.resultOfInvoke;

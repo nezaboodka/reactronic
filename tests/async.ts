@@ -38,7 +38,7 @@ export class DemoView {
     let lines: string[] = await this.render();
     for (let x of lines) {
       actual.push(demoMon.isIdle ? x : `[...] ${x}`);
-      if (Debug.verbosity >= 2) console.log(demoMon.isIdle ? x : `[...] ${x}`);
+      if (Debug.verbosity >= 5) console.log(demoMon.isIdle ? x : `[...] ${x}`);
     }
   }
 }

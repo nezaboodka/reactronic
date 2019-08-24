@@ -59,7 +59,7 @@ export class Transaction {
   }
 
   cancel(): Transaction {
-    return this.reject(RT_ERR_NO_THROW);
+    return this.reject(new TransactionCanceled(this));
   }
 
   finished(): boolean {
@@ -73,10 +73,8 @@ export class Transaction {
       await this.reaction.tran.whenFinished(true);
   }
 
-  async restartAfter(t: Transaction): Promise<void> {
-    this.reject(RT_ERR_RESTART);
-    await t.whenFinished(true);
-    // throw RT_ERR_RESTART;
+  async restartAfter(after: Transaction): Promise<void> {
+    throw new TransactionCanceled(this, after);
   }
 
   undo(): void {
@@ -127,17 +125,26 @@ export class Transaction {
       t.reject(error);
       throw error;
     }
-    if (t.error && t.error !== RT_ERR_NO_THROW && t.error !== RT_ERR_RESTART)
+    if (t.error && !(t.error instanceof TransactionCanceled))
       throw t.error;
     return result;
   }
 
   async whenFinishedThen<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
-    // if (Debug.verbosity >= 5) Debug.log("║", "", ` wrap promise of t${this.id}'${this.hint}`);
-    let result: T = await p;
-    await this.whenFinished(false);
-    if (this.error === RT_ERR_RESTART) {
-      result = Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
+    let result: T;
+    try {
+      result = await p;
+      await this.whenFinished(false);
+    }
+    catch (error) {
+      if (error instanceof TransactionCanceled && error.restartAfter) {
+        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is waiting for restart`);
+        await error.restartAfter.whenFinished(true);
+        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is restarted`);
+        result = Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
+      }
+      else
+        throw error;
     }
     // (result as any)[RT_UNMOUNT] = `wrapped-when-finished: t${this.id}'${this.hint}`;
     return result; // return only when transaction is finished
@@ -222,10 +229,10 @@ export class Transaction {
     this.snapshot.checkin(this.error);
     this.snapshot.archive();
     if (this.resultPromise)
-      if (this.error !== RT_ERR_NO_THROW)
-        this.resultReject(this.error);
-      else
+      if (this.error instanceof TransactionCanceled)
         this.resultResolve();
+      else
+        this.resultReject(this.error);
   }
 
   static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICache[] }, tracing: number = 0): void {
@@ -281,5 +288,10 @@ export class Transaction {
   }
 }
 
-const RT_ERR_NO_THROW: Error = new Error("transaction is canceled");
-const RT_ERR_RESTART: Error = new Error("transaction rebasing is requested");
+class TransactionCanceled extends Error {
+  constructor(readonly tran: Transaction, readonly restartAfter?: Transaction) {
+    super(`transaction ${tran.id}/${tran.hint} is canceled and will be ${restartAfter ? `restarted after ${restartAfter.id}/${restartAfter.hint}` : `ignored`}`);
+    Object.setPrototypeOf(this, TransactionCanceled.prototype);
+    // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
+  }
+}
