@@ -29,6 +29,7 @@ export enum Nesting {
   Default = 0, // prolonged for transactions, but consolidated standalone for reaction
   ProlongParent = 1,
   SeparateFromParent = 2,
+  SeparateFromChildren = 3,
 }
 
 export enum Reentrance { // https://en.wikipedia.org/wiki/Reentrancy_(computing)

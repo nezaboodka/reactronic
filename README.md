@@ -250,6 +250,7 @@ enum Nesting {
   Default = 0, // prolong for transactions, but separate reaction
   ProlongParent = 1,
   SeparateFromParent = 2,
+  SeparateFromChildren = 3,
 }
 
 enum Reentrance {
