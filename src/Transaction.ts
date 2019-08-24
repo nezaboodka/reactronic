@@ -7,8 +7,8 @@ export class Transaction {
   tracing: number; // assigned in constructor
   private busy: number = 0;
   private sealed: boolean = false;
-  private error: Error | undefined = undefined;
-  private awaiting: Transaction | undefined = undefined;
+  private error?: Error = undefined;
+  private awaiting?: Transaction = undefined;
   private resultPromise?: Promise<void> = undefined;
   private resultResolve: (value?: void) => void = undef;
   private resultReject: (reason: any) => void = undef;
@@ -51,10 +51,10 @@ export class Transaction {
     return this;
   }
 
-  cancel(error?: Error, retryAfter?: Transaction): Transaction {
+  discard(error: Error = RT_IGNORE, retryAfter: Transaction = Transaction.nope): Transaction {
     if (!this.error) {
-      this.error = error || RT_IGNORE;
-      this.awaiting = retryAfter || Transaction.nope;
+      this.error = error;
+      this.awaiting = retryAfter;
     }
     if (!this.sealed)
       this.run(Transaction.seal, this);
@@ -123,7 +123,7 @@ export class Transaction {
       }
     }
     catch (error) {
-      t.cancel(error);
+      t.discard(error);
       throw error;
     }
     if (t.error && !t.awaiting)
@@ -232,7 +232,7 @@ export class Transaction {
 
   private tryResolveConflicts(conflicts: Record[]): void {
     this.error = this.error || new Error(`[E604] transaction t${this.snapshot.id}'${this.snapshot.hint} conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
-    // this.error = this.error || RT_NO_THROW; // silently ignore conflicting transactions
+    throw this.error;
   }
 
   private performCommit(): void {
@@ -247,10 +247,10 @@ export class Transaction {
     this.snapshot.checkin(this.error);
     this.snapshot.archive();
     if (this.resultPromise)
-      if (this.error instanceof TransactionCanceled)
-        this.resultResolve();
-      else
+      if (this.error !== RT_IGNORE)
         this.resultReject(this.error);
+      else
+        this.resultResolve();
   }
 
   static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICache[] }, tracing: number = 0): void {
@@ -303,13 +303,6 @@ export class Transaction {
     Utils.freezeMap(empty.observers);
     Utils.freezeSet(empty.outdated);
     Record.empty = empty;
-  }
-}
-
-class TransactionCanceled extends Error {
-  constructor(readonly tran: Transaction, readonly cause?: Transaction) {
-    super(`transaction ${tran.id}/${tran.hint} is canceled and will be ${cause ? `restarted after ${cause.id}/${cause.hint}` : `ignored`}`);
-    Object.setPrototypeOf(this, TransactionCanceled.prototype); // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
   }
 }
 

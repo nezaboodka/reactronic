@@ -9,14 +9,21 @@ let etalon: string[] = [
   "Log: RTA",
   "[...] Url: reactronic",
   "[...] Log: RTA",
-  "Url: nezaboodka.com",
-  "Log: RTA, nezaboodka.com/500",
+  "Url: reactronic",
+  "Log: RTA",
+  "[...] Url: google.com",
+  "[...] Log: RTA, google.com/300",
+  "[...] Url: microsoft.com",
+  "[...] Log: RTA, google.com/300, microsoft.com/200",
+  "Url: microsoft.com",
+  "Log: RTA, google.com/300, microsoft.com/200",
+  "Error: [E604] transaction t43'recache conflicts with other transactions on: t39#22 DemoModel.url, t39#22 DemoModel.log",
 ];
 
 test("async", async t => {
   Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 3;
   let app = Transaction.run(() => new DemoView(new DemoModel()));
-  app.model.load.rcache.configure({asyncCalls: AsyncCalls.Relay});
+  app.model.load.rcache.configure({asyncCalls: AsyncCalls.Restart});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; });
     await app.print(); // trigger first run

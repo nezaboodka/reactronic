@@ -122,7 +122,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let c = cc.cache;
     let existing = c.invalidation.recomputation;
     if (existing && c.config.asyncCalls === AsyncCalls.Relay) {
-      existing.tran.cancel();
+      existing.tran.discard(); // ignore silently
       c.invalidation.recomputation = undefined;
       if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is canceled and being relayed`);
     }
@@ -140,7 +140,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       if (existing && c2 !== existing && c.config.asyncCalls === AsyncCalls.Restart) {
         const error = new Error(`Transaction will be restarted after t${existing.tran.id}`);
         c2.resultOfInvoke = Promise.reject(error);
-        Transaction.active.cancel(error, existing.tran);
+        Transaction.active.discard(error, existing.tran);
         if (Debug.verbosity >= 3) Debug.log("║", " ", error.message);
       }
       else {
