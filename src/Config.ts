@@ -22,7 +22,7 @@ export enum Renew {
   WhenReady = -2,
   OnDemand = -3, // default for cache
   Manually = -4,
-  DoesNotCache = -5, // default for transaction
+  NoCache = -5, // default for transaction
 }
 
 export enum Isolation {

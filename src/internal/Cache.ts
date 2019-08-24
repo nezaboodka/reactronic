@@ -68,7 +68,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let cc = this.read(false);
     let c: Cache = cc.cache;
     let hit = (cc.isUpToDate || c.started > 0) &&
-      c.config.latency !== Renew.DoesNotCache &&
+      c.config.latency !== Renew.NoCache &&
       c.args[0] === args[0] ||
       cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
     // if (Debug.verbosity >= 3 && c.invalidation.recomputation) Debug.log("", "    ‼", `${Hint.record(cc.record)}.${c.member.toString()} is concurrent`);
@@ -108,7 +108,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let r: Record = ctx.edit(this.handle, member, RT_CACHE);
     let c: Cache = r.data[member] || this.blank;
     let isUpToDate = ctx.timestamp < c.invalidation.timestamp;
-    if ((!isUpToDate && (c.record !== r || c.started === 0)) || c.config.latency === Renew.DoesNotCache) {
+    if ((!isUpToDate && (c.record !== r || c.started === 0)) || c.config.latency === Renew.NoCache) {
       let c2 = new Cache(r, c.member, c);
       r.data[c2.member] = c2;
       if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.blank ? "blank" : c.hint(false)}`);
@@ -256,7 +256,7 @@ export class Cache implements ICache {
 
   triggerRecache(timestamp: number, now: boolean, ...args: any[]): void {
     if (now || this.config.latency === Renew.Immediately) {
-      if (!this.error && (this.config.latency === Renew.DoesNotCache ||
+      if (!this.error && (this.config.latency === Renew.NoCache ||
           (timestamp >= this.invalidation.timestamp && !this.invalidation.recomputation))) {
         // let proxy = this.record.data
         // let cachedInvoke = this.record.data[this.member];

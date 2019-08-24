@@ -37,7 +37,7 @@ export class ConfigImpl implements Config {
   static default = new ConfigImpl(undef, {
     body: undef,
     mode: Mode.Stateless,
-    latency: Renew.DoesNotCache,
+    latency: Renew.NoCache,
     isolation: Isolation.Default,
     reentrance: Reentrance.Prevented,
     monitor: null,
