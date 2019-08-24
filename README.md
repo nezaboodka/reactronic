@@ -280,10 +280,10 @@ class Transaction {
   wrap<T>(func: F<T>): F<T>;
   commit(): void;
   seal(): Transaction; // t1.seal().whenFinished().then(fulfill, reject)
-  reject(error: any): Transaction; // t1.reject().whenFinished().then(...)
-  cancel(): Transaction; // t1.cancel().whenFinished().then(...)
+  discard(error?: Error, retryAfter?: Transaction);
   finished(): boolean;
   whenFinished(): Promise<void>;
+  join<T>(p: Promise<T>): Promise<T>;
   static run<T>(func: F<T>, ...args: any[]): T;
   static runAs<T>(hint: string, root: boolean, func: F<T>, ...args: any[]): T;
   static readonly active: Transaction;
