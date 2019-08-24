@@ -4,7 +4,7 @@ export class Transaction {
   static head: Transaction;
   static active: Transaction;
   private readonly snapshot: Snapshot; // assigned in constructor
-  private tracing: number; // assigned in constructor
+  tracing: number; // assigned in constructor
   private busy: number = 0;
   private sealed: boolean = false;
   private error: Error | undefined = undefined;
@@ -66,17 +66,17 @@ export class Transaction {
     return this.sealed && this.busy === 0;
   }
 
-  async whenFinished(includingReactions: boolean, error?: Error): Promise<void> {
+  async whenFinished(includingReactions: boolean): Promise<void> {
     if (!this.finished())
       await this.acquirePromise();
     if (includingReactions && this.reaction.tran)
       await this.reaction.tran.whenFinished(true);
-    if (error)
-      throw error;
   }
 
   async restartAfter(t: Transaction): Promise<void> {
-    return t.whenFinished(true, RT_ERR_RESTART);
+    this.reject(RT_ERR_RESTART);
+    await t.whenFinished(true);
+    // throw RT_ERR_RESTART;
   }
 
   undo(): void {
@@ -103,43 +103,42 @@ export class Transaction {
   }
 
   static runAs<T>(hint: string, root: boolean, verbosity: number, func: F<T>, ...args: any[]): T {
-    let result: any = RT_ERR_RESTART;
-    while (result === RT_ERR_RESTART) {
-      let inception = root || Transaction.active.finished();
-      let t: Transaction = inception ? new Transaction(hint, verbosity) : Transaction.active;
-      root = t !== Transaction.active;
-      try {
-        result = t.run<T>(func, ...args);
-        if (root) {
-          if (result instanceof Promise) {
-            let outer = Transaction.active;
-            try {
-              Transaction.active = Transaction.head;
-              result = t.whenFinishedThen(result);
-            }
-            finally {
-              Transaction.active = outer;
-            }
+    let inception = root || Transaction.active.finished();
+    let t: Transaction = inception ? new Transaction(hint, verbosity) : Transaction.active;
+    root = t !== Transaction.active;
+    let result: any;
+    try {
+      result = t.run<T>(func, ...args);
+      if (root) {
+        if (result instanceof Promise) {
+          let outer = Transaction.active;
+          try {
+            Transaction.active = Transaction.head;
+            result = t.whenFinishedThen<T>(result, func, ...args);
           }
-          t.seal();
+          finally {
+            Transaction.active = outer;
+          }
         }
+        t.seal();
       }
-      catch (error) {
-        t.reject(error);
-        throw error;
-      }
-      if (t.error === RT_ERR_RESTART)
-        result = RT_ERR_RESTART;
-      else if (t.error && t.error !== RT_ERR_NO_THROW)
-        throw t.error;
     }
+    catch (error) {
+      t.reject(error);
+      throw error;
+    }
+    if (t.error && t.error !== RT_ERR_NO_THROW && t.error !== RT_ERR_RESTART)
+      throw t.error;
     return result;
   }
 
-  async whenFinishedThen<T>(p: Promise<T>): Promise<T> {
+  async whenFinishedThen<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
     // if (Debug.verbosity >= 5) Debug.log("║", "", ` wrap promise of t${this.id}'${this.hint}`);
-    let result = await p;
+    let result: T = await p;
     await this.whenFinished(false);
+    if (this.error === RT_ERR_RESTART) {
+      result = Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
+    }
     // (result as any)[RT_UNMOUNT] = `wrapped-when-finished: t${this.id}'${this.hint}`;
     return result; // return only when transaction is finished
   }

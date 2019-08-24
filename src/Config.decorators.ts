@@ -21,7 +21,7 @@ export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyD
 export function cache(
   latency: Latency = Renew.OnDemand,
   isolation: Isolation = Isolation.Default,
-  asyncCalls: AsyncCalls = AsyncCalls.Single): F<any> {
+  asyncCalls: AsyncCalls = AsyncCalls.Prevent): F<any> {
   return config({mode: Mode.Stateful, latency, isolation, asyncCalls});
 }
 

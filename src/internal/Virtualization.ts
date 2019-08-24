@@ -39,7 +39,7 @@ export class ConfigImpl implements Config {
     mode: Mode.Stateless,
     latency: Renew.DoesNotCache,
     isolation: Isolation.Default,
-    asyncCalls: AsyncCalls.Single,
+    asyncCalls: AsyncCalls.Prevent,
     monitor: null,
     tracing: 0 }, {});
 }

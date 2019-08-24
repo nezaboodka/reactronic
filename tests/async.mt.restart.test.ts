@@ -9,41 +9,42 @@ let etalon: string[] = [
   "Log: RTA",
   "[...] Url: reactronic",
   "[...] Log: RTA",
-  "[...] Url: nezaboodka.com",
-  "[...] Log: RTA, nezaboodka.com/100",
   "Url: nezaboodka.com",
-  "Log: RTA, nezaboodka.com/100",
+  "Log: RTA, nezaboodka.com/500",
 ];
 
 test("async", async t => {
   Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 2;
   let app = Transaction.run(() => new DemoView(new DemoModel()));
-  app.model.load.rcache.configure({asyncCalls: AsyncCalls.Concurrent});
+  app.model.load.rcache.configure({asyncCalls: AsyncCalls.Relay});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; });
     await app.print(); // trigger first run
     let list: Array<{ url: string, delay: number }> = [
-      { url: "nezaboodka.com", delay: 100 },
       { url: "google.com", delay: 300 },
       { url: "microsoft.com", delay: 200 },
+      { url: "nezaboodka.com", delay: 500 },
     ];
     let downloads = list.map(x => app.model.load(x.url, x.delay));
     await all(downloads);
   }
   catch (error) {
     actual.push(error.toString());
-    if (Debug.verbosity >= 5) console.log(error.toString());
+    if (Debug.verbosity >= 2) console.log(error.toString());
   }
   finally {
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
   }
-  if (Debug.verbosity >= 5)
+  if (Debug.verbosity >= 2) {
+    console.log("\nResults:\n");
     for (let x of actual)
       console.log(x);
+    console.log("\n");
+  }
   let n: number = Math.max(actual.length, etalon.length);
   for (let i = 0; i < n; i++) {
-    if (Debug.verbosity >= 5) console.log(`actual[${i}] = ${actual[i]}, etalon[${i}] = ${etalon[i]}`);
+    if (Debug.verbosity >= 2) console.log(`actual[${i}] = ${actual[i]}, etalon[${i}] = ${etalon[i]}`);
     t.is(actual[i], etalon[i]);
   }
 });

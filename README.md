@@ -176,10 +176,10 @@ invocation of the caching function to renew the cache:
 
 **AsyncCalls** option defines how to handle multiple async calls of the same function:
 
-  - `AsyncCalls.Single` - fail if there is an existing concurrent call;
-  - `AsyncCalls.Rebased` - wait for existing concurrent call and then rerun current one;
-  - `AsyncCalls.Relayed` - cancel and supresede existing concurrent call;
-  - `AsyncCalls.Concurrent` - multiple simultaneous calls are allowed.
+  - `AsyncCalls.Prevent` - fail if there is an existing concurrent call;
+  - `AsyncCalls.Restart` - wait for existing concurrent call and then restart current one;
+  - `AsyncCalls.Relay` - cancel and supresede existing concurrent call;
+  - `AsyncCalls.Allow` - multiple simultaneous calls are allowed.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
@@ -252,10 +252,10 @@ enum Isolation {
 }
 
 enum AsyncCalls {
-  Single = 1, // only one can run at a time (default)
-  Rebased = 0, // wait for existing and then rerun current one
-  Relayed = -1, // cancel existing in favor of newer one
-  Concurrent = -2,
+  Prevent = 1, // only one can run at a time (default)
+  Restart = 0, // wait for existing and then rerun current one
+  Relay = -1, // cancel existing in favor of newer one
+  Allow = -2,
 }
 
 @stateful

@@ -75,7 +75,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     if (!hit) {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
-          if (c.config.asyncCalls === AsyncCalls.Single && c.config.asyncCalls >= 1)
+          if (c.config.asyncCalls === AsyncCalls.Prevent && c.config.asyncCalls >= 1)
             throw new Error(`the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}` : "recache";
@@ -120,10 +120,10 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   private recache(cc: CacheCall, ...argsx: any[]): CacheCall {
     let c = cc.cache;
     let existing = c.invalidation.recomputation;
-    if (existing && c.config.asyncCalls === AsyncCalls.Relayed) {
+    if (existing && c.config.asyncCalls === AsyncCalls.Relay) {
       existing.tran.cancel();
       c.invalidation.recomputation = undefined;
-      if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is canceled - RELAYED.`);
+      if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is canceled and being relayed`);
     }
     let cc2 = this.edit();
     let c2: Cache = cc2.cache;
@@ -136,12 +136,15 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         c2.args = argsx;
       else
         argsx = c2.args;
-      if (existing && c2 !== existing && c.config.asyncCalls === AsyncCalls.Rebased)
+      if (existing && c2 !== existing && c.config.asyncCalls === AsyncCalls.Restart) {
         c2.resultOfInvoke = Transaction.active.restartAfter(existing.tran);
-      else
+        if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction will be restarted after t${existing.tran.id}`);
+      }
+      else {
         c2.resultOfInvoke = Cache.run<any>(c2, (...argsy: any[]): any => {
           return c2.config.body.call(this.handle.proxy, ...argsy);
         }, ...argsx);
+      }
       c2.invalidation.timestamp = Number.MAX_SAFE_INTEGER;
     }
     finally {
@@ -417,15 +420,15 @@ export class Cache implements ICache {
       this.resultOfInvoke = this.resultOfInvoke.then(
         result => {
           this.value = result;
-          this.leave(r, prev, mon, "<=", "is completed");
+          this.leave(r, prev, mon, "<:", "is completed");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, prev, mon, "<=", "is completed with error");
+          this.leave(r, prev, mon, "<:", "is completed with error");
           throw error;
         });
-      if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  ..", `${Hint.record(r, true)}.${this.member.toString()} is async...`);
+      if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  :>", `${Hint.record(r, true)}.${this.member.toString()} is async...`);
     }
     else {
       this.value = this.resultOfInvoke;
