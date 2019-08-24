@@ -1,13 +1,14 @@
-import { Debug, Utils, undef, Record, ICache, F, Handle, Snapshot, Hint } from "./internal/z.index";
+import { Debug, Utils, undef, Record, ICache, F, Handle, Snapshot, Hint, sleep } from "./internal/z.index";
 
 export class Transaction {
-  static head: Transaction;
+  static nope: Transaction;
   static active: Transaction;
   private readonly snapshot: Snapshot; // assigned in constructor
   tracing: number; // assigned in constructor
   private busy: number = 0;
   private sealed: boolean = false;
   private error: Error | undefined = undefined;
+  private awaiting: Transaction | undefined = undefined;
   private resultPromise?: Promise<void> = undefined;
   private resultResolve: (value?: void) => void = undef;
   private resultReject: (reason: any) => void = undef;
@@ -24,7 +25,7 @@ export class Transaction {
 
   run<T>(func: F<T>, ...args: any[]): T {
     if (this.sealed && Transaction.active !== this)
-      throw new Error("E601: cannot run sealed transaction");
+      throw new Error("[E601] cannot run sealed transaction");
     return this._run(func, ...args);
   }
 
@@ -38,9 +39,9 @@ export class Transaction {
 
   commit(): void {
     if (this.busy > 0)
-      throw new Error("E602: cannot commit transaction having pending async operations");
+      throw new Error("[E602] cannot commit transaction having pending async operations");
     if (this.error)
-      throw new Error(`E603: cannot commit discarded transaction: ${this.error}`);
+      throw new Error(`[E603] cannot commit discarded transaction: ${this.error}`);
     this.seal(); // commit immediately, because pending === 0
   }
 
@@ -50,16 +51,14 @@ export class Transaction {
     return this;
   }
 
-  reject(error: Error): Transaction {
-    if (!this.error)
-      this.error = error;
+  cancel(error?: Error, retryAfter?: Transaction): Transaction {
+    if (!this.error) {
+      this.error = error || RT_IGNORE;
+      this.awaiting = retryAfter || Transaction.nope;
+    }
     if (!this.sealed)
       this.run(Transaction.seal, this);
     return this;
-  }
-
-  cancel(): Transaction {
-    return this.reject(new TransactionCanceled(this));
   }
 
   finished(): boolean {
@@ -73,8 +72,10 @@ export class Transaction {
       await this.reaction.tran.whenFinished(true);
   }
 
-  async restartAfter(after: Transaction): Promise<void> {
-    throw new TransactionCanceled(this, after);
+  async retryAfter(after: Transaction): Promise<void> {
+    let error = new Error(`[E611] transaction t${this.id} (${this.hint}) will be restarted after t${after.id} (${after.hint})`);
+    this.cancel(error, after);
+    throw error;
   }
 
   undo(): void {
@@ -111,8 +112,8 @@ export class Transaction {
         if (result instanceof Promise) {
           let outer = Transaction.active;
           try {
-            Transaction.active = Transaction.head;
-            result = t.whenFinishedThen<T>(result, func, ...args);
+            Transaction.active = Transaction.nope;
+            result = t.wrapRootCallToRetry<T>(result, func, ...args);
           }
           finally {
             Transaction.active = outer;
@@ -122,32 +123,34 @@ export class Transaction {
       }
     }
     catch (error) {
-      t.reject(error);
+      t.cancel(error);
       throw error;
     }
-    if (t.error && !(t.error instanceof TransactionCanceled))
+    if (t.error && !t.awaiting)
       throw t.error;
     return result;
   }
 
-  async whenFinishedThen<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
+  private async wrapRootCallToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
     let result: T;
     try {
       result = await p;
       await this.whenFinished(false);
+      return result;
     }
     catch (error) {
-      if (error instanceof TransactionCanceled && error.cause) {
+      if (this.awaiting && this.awaiting !== Transaction.nope) {
         if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is waiting for restart`);
-        await error.cause.whenFinished(true);
+        await this.awaiting.whenFinished(true);
+        await sleep(5000); // TEMP
         if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is restarted`);
-        result = Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
+        result = await Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
       }
       else
         throw error;
     }
     // (result as any)[RT_UNMOUNT] = `wrapped-when-finished: t${this.id}'${this.hint}`;
-    return result; // return only when transaction is finished
+    return result;
   }
 
   // Internal
@@ -213,7 +216,7 @@ export class Transaction {
   }
 
   private tryResolveConflicts(conflicts: Record[]): void {
-    this.error = this.error || new Error(`E604: transaction t${this.snapshot.id}'${this.snapshot.hint} conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
+    this.error = this.error || new Error(`[E604] transaction t${this.snapshot.id}'${this.snapshot.hint} conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
     // this.error = this.error || RT_NO_THROW; // silently ignore conflicting transactions
   }
 
@@ -274,12 +277,12 @@ export class Transaction {
   }
 
   static _init(): void {
-    let head = new Transaction("head");
-    head.sealed = true;
-    head.snapshot.checkin();
-    Transaction.head = head;
-    Transaction.active = head;
-    let empty = new Record(Record.empty, head.snapshot, {});
+    let nope = new Transaction("nope");
+    nope.sealed = true;
+    nope.snapshot.checkin();
+    Transaction.nope = nope;
+    Transaction.active = nope;
+    let empty = new Record(Record.empty, nope.snapshot, {});
     empty.prev.record = empty; // loopback
     empty.freeze();
     Utils.freezeMap(empty.observers);
@@ -294,3 +297,5 @@ class TransactionCanceled extends Error {
     Object.setPrototypeOf(this, TransactionCanceled.prototype); // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
   }
 }
+
+const RT_IGNORE = new Error("[E600] transaction is canceled and ignored");

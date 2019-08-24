@@ -71,12 +71,12 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       c.config.latency !== Renew.DoesNotCache &&
       c.args[0] === args[0] ||
       cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
-    if (Debug.verbosity >= 3 && c.invalidation.recomputation) Debug.log("║", "  ‼", `${Hint.record(cc.record)}.${c.member.toString()}() is concurrent.`);
+    // if (Debug.verbosity >= 3 && c.invalidation.recomputation) Debug.log("", "    ‼", `${Hint.record(cc.record)}.${c.member.toString()} is concurrent`);
     if (!hit) {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
           if (c.config.asyncCalls === AsyncCalls.Prevent && c.config.asyncCalls >= 1)
-            throw new Error(`E609: the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
+            throw new Error(`[E609] the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         Transaction.runAs<any>(hint, c.config.isolation >= Isolation.SeparateTransaction, c.config.tracing, (...argsx: any[]): any => {
@@ -137,7 +137,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       else
         argsx = c2.args;
       if (existing && c2 !== existing && c.config.asyncCalls === AsyncCalls.Restart) {
-        c2.resultOfInvoke = Transaction.active.restartAfter(existing.tran);
+        c2.resultOfInvoke = Transaction.active.retryAfter(existing.tran);
         if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction will be restarted after t${existing.tran.id}`);
       }
       else {
@@ -215,7 +215,7 @@ export class Cache implements ICache {
   static get(method: F<any>): ReactiveCache<any> {
     let impl: ReactiveCache<any> | undefined = Utils.get(method, RT_CACHE);
     if (!impl)
-      throw new Error("E610: given method is not a reactronic cache");
+      throw new Error("[E610] given method is not a reactronic cache");
     return impl;
   }
 
@@ -377,7 +377,7 @@ export class Cache implements ICache {
   }
 
   static enforceInvalidation(c: Cache, cause: string, latency: number): boolean {
-    throw new Error("E600: not implemented - Cache.enforceInvalidation");
+    throw new Error("[E600] not implemented - Cache.enforceInvalidation");
     // let effect: Cache[] = [];
     // c.invalidate(cause, false, false, effect);
     // if (latency === Renew.Immediately)
@@ -460,7 +460,7 @@ export class Cache implements ICache {
       if (mon.prolonged) {
         let outer = Transaction.active;
         try {
-          Transaction.active = Transaction.head; // Workaround?
+          Transaction.active = Transaction.nope; // Workaround?
           let leave = () => {
             Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.SeparateTransaction, 0,
               Cache.run, undefined, () => mon.leave(this));

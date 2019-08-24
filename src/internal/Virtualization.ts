@@ -81,7 +81,7 @@ export class Virt implements ProxyHandler<Handle> {
     }
     else {
       if (config.mode !== Mode.Stateless)
-        throw new Error("E600: not yet supported - config.mode !== Mode.Stateless");
+        throw new Error("[E600] not yet supported - config.mode !== Mode.Stateless");
       Reflect.set(h.stateless, prop, value, receiver);
     }
     return true;
@@ -166,7 +166,7 @@ export class Virt implements ProxyHandler<Handle> {
 
   static acquireHandle(obj: any): Handle {
     if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
-      throw new Error("E605: only objects can be registered in reactronic store");
+      throw new Error("[E605] only objects can be registered in reactronic store");
     let h: Handle = Utils.get(obj, RT_HANDLE);
     if (!h) {
       h = new Handle(obj, obj, Virt.proxy);

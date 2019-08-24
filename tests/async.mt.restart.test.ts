@@ -14,7 +14,7 @@ let etalon: string[] = [
 ];
 
 test("async", async t => {
-  Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 5;
+  Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 3;
   let app = Transaction.run(() => new DemoView(new DemoModel()));
   app.model.load.rcache.configure({asyncCalls: AsyncCalls.Relay});
   try {
