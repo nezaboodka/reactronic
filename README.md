@@ -168,11 +168,11 @@ invocation of the caching function to renew the cache:
   - `Renew.Manually` - manual renew (explicit only);
   - `Renew.DoesNotCache` - renew on every call of the function.
 
-**Isolation** option defines if a transaction is independent from the parent one:
+**Nesting** option defines if a transaction is independent from the parent one:
 
-  - `Isolation.Default` - transaction prolongs parent one, but reaction (renewing of affected caches) is started as a separate transaction;
-  - `Isolation.ProlongedTransaction` - both transaction and reaction prolong parent transaction;
-  - `Isolation.SeparateTransaction` - always executed as a separate self-sufficient transaction.
+  - `Nesting.Default` - transaction prolongs parent one, but reaction (renewing of affected caches) is started as a separate transaction;
+  - `Nesting.ProlongParent` - both transaction and reaction prolong parent transaction;
+  - `Nesting.SeparateFromParent` - always executed as a separate self-sufficient transaction.
 
 **Reentrance** option defines how to handle reentrant calls of the same function:
 
@@ -216,16 +216,16 @@ NPM: `npm install reactronic`
 function stateful(proto: object, prop?: PropertyKey): any;
 function stateless(proto: object, prop: PropertyKey): any;
 function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
-function cache(latency: Latency, isolation: Isolation, reentrance: Reentrance): F<any>;
+function cache(latency: Latency, nesting: Nesting, reentrance: Reentrance): F<any>;
 function monitor(value: Monitor | null): F<any>;
 function config(config: Partial<Config>): F<any>;
 
-// Config: Mode, Latency, Isolation, Reentrance, Monitor
+// Config: Mode, Latency, Nesting, Reentrance, Monitor
 
 interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly isolation: Isolation;
+  readonly nesting: Nesting;
   readonly reentrance: Reentrance;
   readonly monitor: Monitor | null;
 }
@@ -246,10 +246,10 @@ enum Renew {
   NoCache = -5, // default for transaction
 }
 
-enum Isolation {
-  Default = 0, // prolong-parent for transactions, but start-separate for reaction
-  ProlongedTransaction = 1,
-  SeparateTransaction = 2,
+enum Nesting {
+  Default = 0, // prolong for transactions, but separate reaction
+  ProlongParent = 1,
+  SeparateFromParent = 2,
 }
 
 enum Reentrance {

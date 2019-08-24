@@ -3,7 +3,7 @@ import { Monitor } from "./Monitor";
 export interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly isolation: Isolation;
+  readonly nesting: Nesting;
   readonly reentrance: Reentrance;
   readonly monitor: Monitor | null;
   readonly tracing: number;
@@ -25,10 +25,10 @@ export enum Renew {
   NoCache = -5, // default for transaction
 }
 
-export enum Isolation {
+export enum Nesting {
   Default = 0, // prolonged for transactions, but consolidated standalone for reaction
-  ProlongedTransaction = 1,
-  SeparateTransaction = 2,
+  ProlongParent = 1,
+  SeparateFromParent = 2,
 }
 
 export enum Reentrance { // https://en.wikipedia.org/wiki/Reentrancy_(computing)

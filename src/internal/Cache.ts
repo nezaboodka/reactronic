@@ -1,7 +1,7 @@
 import { Utils, Debug, sleep, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
 export { ReactiveCache } from "../ReactiveCache";
-import { Config, Renew, Reentrance, Isolation } from "../Config";
+import { Config, Renew, Reentrance, Nesting } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
 
@@ -79,7 +79,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
             throw new Error(`[E609] the number of simultaneous tasks reached the maximum (${c.config.reentrance})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
-        let result = Transaction.runAs<any>(hint, c.config.isolation >= Isolation.SeparateTransaction, c.config.tracing, (...argsx: any[]): any => {
+        let result = Transaction.runAs<any>(hint, c.config.nesting >= Nesting.SeparateFromParent, c.config.tracing, (...argsx: any[]): any => {
           cc = this.recache(cc, ...argsx);
           return cc.cache.resultOfInvoke;
         }, ...args);
@@ -454,7 +454,7 @@ export class Cache implements ICache {
 
   monitorEnter(mon: Monitor | null): void {
     if (mon)
-      Transaction.runAs<void>("Monitor.enter", mon.isolation >= Isolation.SeparateTransaction, 0,
+      Transaction.runAs<void>("Monitor.enter", mon.nesting >= Nesting.SeparateFromParent, 0,
         Cache.run, undefined, () => mon.enter(this));
   }
 
@@ -465,7 +465,7 @@ export class Cache implements ICache {
         try {
           Transaction.active = Transaction.nope; // Workaround?
           let leave = () => {
-            Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.SeparateTransaction, 0,
+            Transaction.runAs<void>("Monitor.leave", mon.nesting >= Nesting.SeparateFromParent, 0,
               Cache.run, undefined, () => mon.leave(this));
           };
           this.tran.whenFinished(false).then(leave, leave);
@@ -475,7 +475,7 @@ export class Cache implements ICache {
         }
       }
       else
-        Transaction.runAs<void>("Monitor.leave", mon.isolation >= Isolation.SeparateTransaction, 0,
+        Transaction.runAs<void>("Monitor.leave", mon.nesting >= Nesting.SeparateFromParent, 0,
           Cache.run, undefined, () => mon.leave(this));
     }
   }

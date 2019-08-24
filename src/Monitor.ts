@@ -1,5 +1,5 @@
 import { Handle } from "./internal/z.index";
-import { Isolation } from "./Config";
+import { Nesting } from "./Config";
 import { stateful } from "./Config.decorators";
 import { Transaction } from "./Transaction";
 
@@ -9,15 +9,15 @@ export class Monitor {
   private _volume: number = 0;
   private _operations = new Set<Operation>();
   readonly prolonged: boolean;
-  readonly isolation: Isolation;
+  readonly nesting: Nesting;
   get isIdle(): boolean { return this._idle; }
   get volume(): number { return this._volume; }
   get operations(): ReadonlySet<Operation> { return this._operations; }
 
-  constructor(name?: string, prolonged: boolean = false, isolation: Isolation = Isolation.SeparateTransaction) {
+  constructor(name?: string, prolonged: boolean = false, nesting: Nesting = Nesting.SeparateFromParent) {
     Handle.setName(this, name);
     this.prolonged = prolonged;
-    this.isolation = isolation;
+    this.nesting = nesting;
   }
 
   enter(op: Operation): void {
