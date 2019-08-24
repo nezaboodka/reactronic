@@ -72,10 +72,10 @@ export class Transaction {
       await this.reaction.tran.whenFinished(true);
   }
 
-  async retryAfter(after: Transaction): Promise<void> {
-    let error = new Error(`[E611] transaction t${this.id} (${this.hint}) will be restarted after t${after.id} (${after.hint})`);
-    this.cancel(error, after);
-    throw error;
+  async join<T>(p: Promise<T>): Promise<T> {
+    let result = await p;
+    await this.whenFinished(false);
+    return result;
   }
 
   undo(): void {
@@ -113,8 +113,7 @@ export class Transaction {
           let outer = Transaction.active;
           try {
             Transaction.active = Transaction.nope;
-            // result = t.wrapRootCallToRetry<T>(result, func, ...args);
-            result = t.join(result);
+            result = t.wrapForRetryIfAny(t.join(result), func, ...args);
           }
           finally {
             Transaction.active = outer;
@@ -132,30 +131,41 @@ export class Transaction {
     return result;
   }
 
-  private async join<T>(p: Promise<T>): Promise<T> {
-    let result = await p;
-    await this.whenFinished(false);
-    return result;
+  private async wrapForRetryIfAny<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
+    try {
+      let result = await p;
+      return result;
+    }
+    catch (error) {
+      if (this.awaiting && this.awaiting !== Transaction.nope) {
+        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is waiting for restart`);
+        await this.awaiting.whenFinished(true);
+        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is restarted`);
+        return Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
+      }
+      else
+        throw error;
+    }
   }
 
-  // private async wrapRootCallToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
-  //   let result: T;
-  //   try {
-  //     result = await this.join<T>(p);
-  //   }
-  //   catch (error) {
-  //     if (this.awaiting && this.awaiting !== Transaction.nope) {
-  //       if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is waiting for restart`);
-  //       await this.awaiting.whenFinished(true);
-  //       await sleep(5000); // TEMP
-  //       if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is restarted`);
-  //       result = Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
+  // private wrapForRetryIfAnyOld<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
+  //   let self = this;
+  //   let wrapped = p.catch(error => {
+  //     if (self.awaiting && self.awaiting !== Transaction.nope) {
+  //       if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${self.id}'${self.hint} is waiting for restart`);
+  //       return self.awaiting.whenFinished(true).then(
+  //         () => {
+  //           if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${self.id}'${self.hint} is restarted`);
+  //           return Transaction.runAs<T>(self.hint, true, self.tracing, func, ...args);
+  //         },
+  //         error => {
+  //           throw error;
+  //         });
   //     }
   //     else
   //       throw error;
-  //   }
-  //   // (result as any)[RT_UNMOUNT] = `wrapped-when-finished: t${this.id}'${this.hint}`;
-  //   return result;
+  //   });
+  //   return wrapped;
   // }
 
   // Internal

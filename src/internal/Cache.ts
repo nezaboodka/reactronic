@@ -79,10 +79,11 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
             throw new Error(`[E609] the number of simultaneous tasks reached the maximum (${c.config.asyncCalls})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
-        Transaction.runAs<any>(hint, c.config.isolation >= Isolation.SeparateTransaction, c.config.tracing, (...argsx: any[]): any => {
+        let result = Transaction.runAs<any>(hint, c.config.isolation >= Isolation.SeparateTransaction, c.config.tracing, (...argsx: any[]): any => {
           cc = this.recache(cc, ...argsx);
           return cc.cache.resultOfInvoke;
         }, ...args);
+        cc.cache.resultOfInvoke = result;
       }
     }
     else
@@ -137,8 +138,10 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       else
         argsx = c2.args;
       if (existing && c2 !== existing && c.config.asyncCalls === AsyncCalls.Restart) {
-        c2.resultOfInvoke = Transaction.active.retryAfter(existing.tran);
-        if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction will be restarted after t${existing.tran.id}`);
+        const error = new Error(`Transaction will be restarted after t${existing.tran.id}`);
+        c2.resultOfInvoke = Promise.reject(error);
+        Transaction.active.cancel(error, existing.tran);
+        if (Debug.verbosity >= 3) Debug.log("║", " ", error.message);
       }
       else {
         c2.resultOfInvoke = Cache.run<any>(c2, (...argsy: any[]): any => {
