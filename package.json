@@ -33,7 +33,7 @@
     "ava": "2.3.0",
     "ts-node": "8.3.0",
     "tslint": "5.19.0",
-    "typescript": "3.5.3"
+    "typescript": "3.5.2"
   },
   "scripts": {
     "build": "tsc && tslint -c tslint.json 'src/**/*.ts' 'tests/**/*.test.ts'",
