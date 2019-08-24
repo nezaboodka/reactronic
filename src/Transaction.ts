@@ -1,4 +1,4 @@
-import { Debug, Utils, undef, Record, ICache, F, Handle, Snapshot, Hint, sleep } from "./internal/z.index";
+import { Debug, Utils, undef, Record, ICache, F, Handle, Snapshot, Hint } from "./internal/z.index";
 
 export class Transaction {
   static nope: Transaction;
@@ -113,7 +113,8 @@ export class Transaction {
           let outer = Transaction.active;
           try {
             Transaction.active = Transaction.nope;
-            result = t.wrapRootCallToRetry<T>(result, func, ...args);
+            // result = t.wrapRootCallToRetry<T>(result, func, ...args);
+            result = t.join(result);
           }
           finally {
             Transaction.active = outer;
@@ -131,27 +132,31 @@ export class Transaction {
     return result;
   }
 
-  private async wrapRootCallToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
-    let result: T;
-    try {
-      result = await p;
-      await this.whenFinished(false);
-      return result;
-    }
-    catch (error) {
-      if (this.awaiting && this.awaiting !== Transaction.nope) {
-        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is waiting for restart`);
-        await this.awaiting.whenFinished(true);
-        await sleep(5000); // TEMP
-        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is restarted`);
-        result = await Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
-      }
-      else
-        throw error;
-    }
-    // (result as any)[RT_UNMOUNT] = `wrapped-when-finished: t${this.id}'${this.hint}`;
+  private async join<T>(p: Promise<T>): Promise<T> {
+    let result = await p;
+    await this.whenFinished(false);
     return result;
   }
+
+  // private async wrapRootCallToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
+  //   let result: T;
+  //   try {
+  //     result = await this.join<T>(p);
+  //   }
+  //   catch (error) {
+  //     if (this.awaiting && this.awaiting !== Transaction.nope) {
+  //       if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is waiting for restart`);
+  //       await this.awaiting.whenFinished(true);
+  //       await sleep(5000); // TEMP
+  //       if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is restarted`);
+  //       result = Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
+  //     }
+  //     else
+  //       throw error;
+  //   }
+  //   // (result as any)[RT_UNMOUNT] = `wrapped-when-finished: t${this.id}'${this.hint}`;
+  //   return result;
+  // }
 
   // Internal
 
