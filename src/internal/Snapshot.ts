@@ -31,14 +31,14 @@ export class Snapshot implements ISnapshot {
   read(h: Handle): Record {
     let result = this.tryRead(h);
     if (result === Record.empty) /* istanbul ignore next */
-      throw new Error("[E606] suitable object revision is not found in history");
+      throw new Error(`[E606] object doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 
   edit(h: Handle, prop: PropertyKey, value: Symbol): Record {
     let result: Record = this.tryEdit(h, prop, value);
     if (result === Record.empty) /* istanbul ignore next */
-      throw new Error("[E607] suitable object revision is not found in history");
+      throw new Error(`[E607] object doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 
