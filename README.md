@@ -180,7 +180,7 @@ invocation of the caching function to renew the cache:
 
   - `Reenter.Prevent` - fail if there is an existing concurrent call;
   - `Reenter.RestartLatter` - wait for existing concurrent call and then restart latter one;
-  - `Reenter.CancelExisting` - cancel existing in favor of latter one;
+  - `Reenter.DiscardExisting` - discard existing in favor of latter one;
   - `Reenter.Unlimited` - multiple simultaneous calls are allowed.
 
 **Monitor** option is an object that holds the status of running
@@ -260,7 +260,7 @@ enum Dispart {
 enum Reenter {
   Prevent = 1, // only one can run at a time (default)
   RestartLatter = 0, // restart latter after existing one
-  CancelExisting = -1, // cancel existing in favor of latter one
+  DiscardExisting = -1, // discard existing in favor of latter one
   Allow = -2, // no limitations
 }
 

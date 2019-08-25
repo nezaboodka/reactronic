@@ -312,4 +312,4 @@ export class Transaction {
   }
 }
 
-const RT_IGNORE = new Error("[E600] transaction is canceled and ignored");
+const RT_IGNORE = new Error("[E600] transaction is discarded and ignored");
