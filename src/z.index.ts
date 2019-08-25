@@ -1,7 +1,7 @@
 export { Debug, sleep } from "./internal/z.index";
 
 export { ReactiveCache } from "./internal/Cache";
-export { Config, Mode, Renew, Dispart, Reenter } from "./Config";
+export { Config, Mode, Renew, Reenter, Dispart } from "./Config";
 export { stateful, stateless, transaction, cache, monitor, tracing, config } from "./Config.decorators";
 export { Transaction } from "./Transaction";
 export { Monitor, Operation } from "./Monitor";

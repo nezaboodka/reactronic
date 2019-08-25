@@ -18,8 +18,8 @@ export class ConfigImpl implements Config {
   readonly body: Function;
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly dispart: Dispart;
   readonly reenter: Reenter;
+  readonly dispart: Dispart;
   readonly monitor: Monitor | null;
   readonly tracing: number;
 
@@ -27,8 +27,8 @@ export class ConfigImpl implements Config {
     this.body = body !== undefined ? body : existing.body;
     this.mode = patch.mode !== undefined ? patch.mode : existing.mode;
     this.latency = patch.latency !== undefined ? patch.latency : existing.latency;
-    this.dispart = patch.dispart !== undefined ? patch.dispart : existing.dispart;
     this.reenter = patch.reenter !== undefined ? patch.reenter : existing.reenter;
+    this.dispart = patch.dispart !== undefined ? patch.dispart : existing.dispart;
     this.monitor = patch.monitor !== undefined ? patch.monitor : existing.monitor;
     this.tracing = patch.tracing !== undefined ? patch.tracing : existing.tracing;
     Object.freeze(this);
@@ -38,8 +38,8 @@ export class ConfigImpl implements Config {
     body: undef,
     mode: Mode.Stateless,
     latency: Renew.NoCache,
-    dispart: Dispart.Default,
     reenter: Reenter.Prevent,
+    dispart: Dispart.Default,
     monitor: null,
     tracing: 0 }, {});
 }

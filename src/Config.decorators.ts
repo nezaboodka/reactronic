@@ -1,6 +1,6 @@
 import { F } from "./internal/Record";
 import { Virt } from "./internal/Virtualization";
-import { Config, Mode, Renew, Latency, Dispart, Reenter } from "./Config";
+import { Config, Mode, Renew, Latency, Reenter, Dispart } from "./Config";
 import { Monitor } from "./Monitor";
 
 export function stateful(proto: object, prop?: PropertyKey): any {
@@ -20,9 +20,9 @@ export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyD
 
 export function cache(
   latency: Latency = Renew.OnDemand,
-  dispart: Dispart = Dispart.Default,
-  reenter: Reenter = Reenter.Prevent): F<any> {
-  return config({mode: Mode.Stateful, latency, dispart, reenter});
+  reenter: Reenter = Reenter.Prevent,
+  dispart: Dispart = Dispart.Default): F<any> {
+  return config({mode: Mode.Stateful, latency, reenter, dispart});
 }
 
 export function monitor(value: Monitor | null): F<any> {
