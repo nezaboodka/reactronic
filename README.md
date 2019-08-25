@@ -181,7 +181,7 @@ invocation of the caching function to renew the cache:
   - `Reenter.Prevent` - fail if there is an existing concurrent call;
   - `Reenter.RestartLatter` - wait for existing concurrent call and then restart latter one;
   - `Reenter.DiscardOlder` - discard older in favor of latter one;
-  - `Reenter.Unlimited` - multiple simultaneous calls are allowed.
+  - `Reenter.Allow` - multiple simultaneous calls are allowed.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
