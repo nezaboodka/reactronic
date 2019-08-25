@@ -16,7 +16,7 @@ let etalon: string[] = [
 test("async", async t => {
   Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 5;
   let app = Transaction.run(() => new DemoView(new DemoModel()));
-  app.model.load.rcache.configure({reenter: Reenter.DiscardExisting});
+  app.model.load.rcache.configure({reenter: Reenter.DiscardOlder});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; });
     await app.print(); // trigger first run

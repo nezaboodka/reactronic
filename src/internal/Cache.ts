@@ -121,7 +121,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   private recache(cc: CacheCall, ...argsx: any[]): CacheCall {
     let c = cc.cache;
     let existing = c.invalidation.recomputation;
-    if (existing && c.config.reenter === Reenter.DiscardExisting) {
+    if (existing && c.config.reenter === Reenter.DiscardOlder) {
       existing.tran.discard(); // ignore silently
       c.invalidation.recomputation = undefined;
       if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is discarded and being relayed`);

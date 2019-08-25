@@ -37,6 +37,6 @@ export enum Dispart {
 export enum Reenter { // https://en.wikipedia.org/wiki/Reentrancy_(computing)
   Prevent = 1, // only one can run at a time (default)
   RestartLatter = 0, // restart latter after existing one
-  DiscardExisting = -1, // discard existing in favor of latter one
+  DiscardOlder = -1, // discard older in favor of latter one
   Allow = -2, // no limitations
 }
