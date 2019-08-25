@@ -33,6 +33,7 @@
     "no-console": [
       false
     ],
-    "no-implicit-dependencies": false
+    "no-implicit-dependencies": false,
+    "no-bitwise": false
   }
 }

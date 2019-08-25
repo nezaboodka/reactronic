@@ -168,18 +168,20 @@ invocation of the caching function to renew the cache:
   - `Renew.Manually` - manual renew (explicit only);
   - `Renew.DoesNotCache` - renew on every call of the function.
 
-**Nesting** option defines if a transaction is independent from the parent one:
+**Apart** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
 
-  - `Nesting.Default` - transaction prolongs parent one, but reaction (renewing of affected caches) is started as a separate transaction;
-  - `Nesting.ProlongParent` - both transaction and reaction prolong parent transaction;
-  - `Nesting.SeparateFromParent` - always executed as a separate self-sufficient transaction.
+  - `Apart.Default` - equivalent to Apart.FromReaction;
+  - `Apart.FromReaction` - transaction is separated from its reaction;
+  - `Apart.FromParent` - transaction is separated from parent (calling) transactions;
+  - `Apart.FromChildren` - transaction is separated from children (callee) transactions;
+  - `Apart.FromAll` - transaction is separated from reactions, parents, and children.
 
-**Reentrance** option defines how to handle reentrant calls of the same function:
+**Reenter** option defines how to handle reentrant calls of the same function:
 
-  - `Reentrance.Prevented` - fail if there is an existing concurrent call;
-  - `Reentrance.RestartLatter` - wait for existing concurrent call and then restart latter one;
-  - `Reentrance.CancelExisting` - cancel existing in favor of latter one;
-  - `Reentrance.Unlimited` - multiple simultaneous calls are allowed.
+  - `Reenter.Prevented` - fail if there is an existing concurrent call;
+  - `Reenter.RestartLatter` - wait for existing concurrent call and then restart latter one;
+  - `Reenter.CancelExisting` - cancel existing in favor of latter one;
+  - `Reenter.Unlimited` - multiple simultaneous calls are allowed.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
@@ -216,17 +218,17 @@ NPM: `npm install reactronic`
 function stateful(proto: object, prop?: PropertyKey): any;
 function stateless(proto: object, prop: PropertyKey): any;
 function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
-function cache(latency: Latency, nesting: Nesting, reentrance: Reentrance): F<any>;
+function cache(latency: Latency, apart: Apart, reenter: Reenter): F<any>;
 function monitor(value: Monitor | null): F<any>;
 function config(config: Partial<Config>): F<any>;
 
-// Config: Mode, Latency, Nesting, Reentrance, Monitor
+// Config: Mode, Latency, Apart, Reenter, Monitor
 
 interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly nesting: Nesting;
-  readonly reentrance: Reentrance;
+  readonly apart: Apart;
+  readonly reenter: Reenter;
   readonly monitor: Monitor | null;
 }
 
@@ -246,14 +248,16 @@ enum Renew {
   NoCache = -5, // default for transaction
 }
 
-enum Nesting {
-  Default = 0, // prolong for transactions, but separate reaction
-  ProlongParent = 1,
-  SeparateFromParent = 2,
-  SeparateFromChildren = 3,
+enum Apart {
+  Nope = 0,
+  Default = 1, // = FromReaction
+  FromReaction = 1,
+  FromParent = 2,
+  FromChildren = 4,
+  FromAll = 1 + 2 + 4,
 }
 
-enum Reentrance {
+enum Reenter {
   Prevented = 1, // only one can run at a time (default)
   RestartLatter = 0, // restart latter after existing one
   CancelExisting = -1, // cancel existing in favor of latter one

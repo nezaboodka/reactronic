@@ -76,6 +76,10 @@ export class Utils {
       result = "◌";
     return result;
   }
+
+  static hasFlags(flags: number, required: number): boolean {
+    return (flags & required) === required;
+  }
 }
 
 /* istanbul ignore next */

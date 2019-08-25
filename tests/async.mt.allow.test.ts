@@ -1,7 +1,7 @@
 ﻿import test from "ava";
 import { sleep } from "./common";
 import { all } from "../src/internal/z.index";
-import { ReactiveCache, Transaction, Reentrance, Debug } from "../src/z.index";
+import { ReactiveCache, Transaction, Reenter, Debug } from "../src/z.index";
 import { DemoModel, DemoView, actual } from "./async";
 
 let etalon: string[] = [
@@ -19,7 +19,7 @@ let etalon: string[] = [
 test("async", async t => {
   Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 2;
   let app = Transaction.run(() => new DemoView(new DemoModel()));
-  app.model.load.rcache.configure({reentrance: Reentrance.Unlimited});
+  app.model.load.rcache.configure({reenter: Reenter.Unlimited});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; });
     await app.print(); // trigger first run

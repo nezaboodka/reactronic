@@ -3,8 +3,8 @@ import { Monitor } from "./Monitor";
 export interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly nesting: Nesting;
-  readonly reentrance: Reentrance;
+  readonly apart: Apart;
+  readonly reenter: Reenter;
   readonly monitor: Monitor | null;
   readonly tracing: number;
 }
@@ -25,14 +25,16 @@ export enum Renew {
   NoCache = -5, // default for transaction
 }
 
-export enum Nesting {
-  Default = 0, // prolonged for transactions, but consolidated standalone for reaction
-  ProlongParent = 1,
-  SeparateFromParent = 2,
-  SeparateFromChildren = 3,
+export enum Apart {
+  Nope = 0,
+  Default = 1, // = FromReaction
+  FromReaction = 1,
+  FromParent = 2,
+  FromChildren = 4,
+  FromAll = 1 + 2 + 4,
 }
 
-export enum Reentrance { // https://en.wikipedia.org/wiki/Reentrancy_(computing)
+export enum Reenter { // https://en.wikipedia.org/wiki/Reentrancy_(computing)
   Prevented = 1, // only one can run at a time (default)
   RestartLatter = 0, // restart latter after existing one
   CancelExisting = -1, // cancel existing in favor of latter one

@@ -1,5 +1,5 @@
 ﻿import { all, Debug } from "../src/internal/z.index";
-import { stateful, transaction, cache, Renew, Nesting, Monitor, monitor, Transaction } from "../src/z.index";
+import { stateful, transaction, cache, Renew, Apart, Monitor, monitor, Transaction } from "../src/z.index";
 import { sleep } from "./common";
 
 export const actual: string[] = [];
@@ -33,7 +33,7 @@ export class DemoView {
     return result;
   }
 
-  @cache(Renew.Immediately, Nesting.SeparateFromParent)
+  @cache(Renew.Immediately, Apart.FromParent)
   async print(): Promise<void> {
     let lines: string[] = await this.render();
     for (let x of lines) {

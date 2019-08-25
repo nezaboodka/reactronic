@@ -1,10 +1,11 @@
 import { Debug, Utils, undef, Record, ICache, F, Handle, Snapshot, Hint } from "./internal/z.index";
+import { Apart } from "./Config";
 
 export class Transaction {
   static nope: Transaction;
   static active: Transaction;
+  private readonly apart: Apart;
   private readonly snapshot: Snapshot; // assigned in constructor
-  tracing: number; // assigned in constructor
   private busy: number = 0;
   private sealed: boolean = false;
   private error?: Error = undefined;
@@ -14,8 +15,10 @@ export class Transaction {
   private resultReject: (reason: any) => void = undef;
   private conflicts?: Record[] = undefined;
   private reaction: { tran?: Transaction, effect: ICache[] } = { tran: undefined, effect: [] };
+  private readonly tracing: number; // assigned in constructor
 
-  constructor(hint: string, tracing: number = 0) {
+  constructor(hint: string, part: Apart = Apart.Default, tracing: number = 0) {
+    this.apart = part;
     this.snapshot = new Snapshot(hint);
     this.tracing = tracing;
   }
@@ -80,7 +83,7 @@ export class Transaction {
 
   undo(): void {
     let hint = Debug.verbosity >= 2 ? `Tran#${this.snapshot.hint}.undo` : "noname";
-    Transaction.runAs<void>(hint, false, 0, () => {
+    Transaction.runAs<void>(hint, Apart.Default, 0, () => {
       this.snapshot.changeset.forEach((r: Record, h: Handle) => {
         r.edits.forEach(prop => {
           if (r.prev.backup) {
@@ -98,12 +101,14 @@ export class Transaction {
   }
 
   static run<T>(func: F<T>, ...args: any[]): T {
-    return Transaction.runAs("noname", false, 0, func, ...args);
+    return Transaction.runAs("noname", Apart.Default, 0, func, ...args);
   }
 
-  static runAs<T>(hint: string, root: boolean, verbosity: number, func: F<T>, ...args: any[]): T {
-    let inception = root || Transaction.active.finished();
-    let t: Transaction = inception ? new Transaction(hint, verbosity) : Transaction.active;
+  static runAs<T>(hint: string, apart: Apart, tracing: number, func: F<T>, ...args: any[]): T {
+    let root = Utils.hasFlags(apart, Apart.FromParent)
+      || Utils.hasFlags(Transaction.active.apart, Apart.FromChildren)
+      || Transaction.active.finished();
+    let t: Transaction = root ? new Transaction(hint, apart, tracing) : Transaction.active;
     root = t !== Transaction.active;
     let result: any;
     try {
@@ -141,7 +146,7 @@ export class Transaction {
         if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is waiting for restart`);
         await this.awaiting.whenFinished(true);
         if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is ready for restart`);
-        return Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
+        return Transaction.runAs<T>(this.hint, Apart.Default | Apart.FromParent, this.tracing, func, ...args);
       }
       else
         throw error;
@@ -254,8 +259,9 @@ export class Transaction {
   }
 
   static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICache[] }, tracing: number = 0): void {
-    let name = Debug.verbosity >= 2 ? `${hint} - REACTION(${reaction.effect.length})` : "noname";
-    Transaction.runAs<void>(name, reaction.tran === undefined, tracing, () => {
+    const name = Debug.verbosity >= 2 ? `${hint} - REACTION(${reaction.effect.length})` : "noname";
+    const apart = reaction.tran ? Apart.Default : Apart.Default | Apart.FromParent;
+    Transaction.runAs<void>(name, apart, tracing, () => {
       if (reaction.tran === undefined)
         reaction.tran = Transaction.active;
       reaction.effect.map(r => r.triggerRecache(timestamp, false));
@@ -292,7 +298,7 @@ export class Transaction {
   }
 
   static _init(): void {
-    let nope = new Transaction("nope");
+    let nope = new Transaction("nope", Apart.FromAll, 0);
     nope.sealed = true;
     nope.snapshot.checkin();
     Transaction.nope = nope;
