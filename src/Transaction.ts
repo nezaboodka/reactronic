@@ -140,7 +140,7 @@ export class Transaction {
       if (this.awaiting && this.awaiting !== Transaction.nope) {
         if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is waiting for restart`);
         await this.awaiting.whenFinished(true);
-        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is restarted`);
+        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is ready for restart`);
         return Transaction.runAs<T>(this.hint, true, this.tracing, func, ...args);
       }
       else
