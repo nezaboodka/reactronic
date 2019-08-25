@@ -76,7 +76,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
           if (c.config.reenter === Reenter.Prevent && c.config.reenter >= 1)
-            throw new Error(`[E609] the number of simultaneous tasks reached the maximum (${c.config.reenter})`);
+            throw new Error(`[E609] ${c.hint()} is already running and reached the maximum of simultaneous calls (${c.config.reenter})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         let result = Transaction.runAs<any>(hint, c.config.dispart, c.config.tracing, (...argsx: any[]): any => {
