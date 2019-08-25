@@ -168,17 +168,17 @@ invocation of the caching function to renew the cache:
   - `Renew.Manually` - manual renew (explicit only);
   - `Renew.DoesNotCache` - renew on every call of the function.
 
-**Apart** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
+**Dispart** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
 
-  - `Apart.Default` - equivalent to Apart.FromReaction;
-  - `Apart.FromReaction` - transaction is separated from its reaction;
-  - `Apart.FromParent` - transaction is separated from parent (calling) transactions;
-  - `Apart.FromChildren` - transaction is separated from children (callee) transactions;
-  - `Apart.FromAll` - transaction is separated from reactions, parents, and children.
+  - `Dispart.Default` - equivalent to Dispart.FromReaction;
+  - `Dispart.FromReaction` - transaction is separated from its reaction;
+  - `Dispart.FromParent` - transaction is separated from parent (calling) transactions;
+  - `Dispart.FromChildren` - transaction is separated from children (callee) transactions;
+  - `Dispart.FromAll` - transaction is separated from reactions, parents, and children.
 
 **Reenter** option defines how to handle reentrant calls of the same function:
 
-  - `Reenter.Prevented` - fail if there is an existing concurrent call;
+  - `Reenter.Prevent` - fail if there is an existing concurrent call;
   - `Reenter.RestartLatter` - wait for existing concurrent call and then restart latter one;
   - `Reenter.CancelExisting` - cancel existing in favor of latter one;
   - `Reenter.Unlimited` - multiple simultaneous calls are allowed.
@@ -218,16 +218,16 @@ NPM: `npm install reactronic`
 function stateful(proto: object, prop?: PropertyKey): any;
 function stateless(proto: object, prop: PropertyKey): any;
 function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
-function cache(latency: Latency, apart: Apart, reenter: Reenter): F<any>;
+function cache(latency: Latency, dispart: Dispart, reenter: Reenter): F<any>;
 function monitor(value: Monitor | null): F<any>;
 function config(config: Partial<Config>): F<any>;
 
-// Config: Mode, Latency, Apart, Reenter, Monitor
+// Config: Mode, Latency, Dispart, Reenter, Monitor
 
 interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly apart: Apart;
+  readonly dispart: Dispart;
   readonly reenter: Reenter;
   readonly monitor: Monitor | null;
 }
@@ -248,7 +248,7 @@ enum Renew {
   NoCache = -5, // default for transaction
 }
 
-enum Apart {
+enum Dispart {
   Nope = 0,
   Default = 1, // = FromReaction
   FromReaction = 1,
@@ -258,10 +258,10 @@ enum Apart {
 }
 
 enum Reenter {
-  Prevented = 1, // only one can run at a time (default)
+  Prevent = 1, // only one can run at a time (default)
   RestartLatter = 0, // restart latter after existing one
   CancelExisting = -1, // cancel existing in favor of latter one
-  Unlimited = -2, // no limitations
+  Allow = -2, // no limitations
 }
 
 @stateful
@@ -289,7 +289,7 @@ class Transaction {
   whenFinished(): Promise<void>;
   join<T>(p: Promise<T>): Promise<T>;
   static run<T>(func: F<T>, ...args: any[]): T;
-  static runAs<T>(hint: string, apart: Apart, tracing: number, func: F<T>, ...args: any[]): T;
+  static runAs<T>(hint: string, dispart: Dispart, tracing: number, func: F<T>, ...args: any[]): T;
   static readonly active: Transaction;
 }
 

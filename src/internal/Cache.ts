@@ -1,7 +1,7 @@
 import { Utils, Debug, sleep, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
 export { ReactiveCache } from "../ReactiveCache";
-import { Config, Renew, Reenter, Apart } from "../Config";
+import { Config, Renew, Reenter, Dispart } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
 
@@ -75,11 +75,11 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     if (!hit) {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
-          if (c.config.reenter === Reenter.Prevented && c.config.reenter >= 1)
+          if (c.config.reenter === Reenter.Prevent && c.config.reenter >= 1)
             throw new Error(`[E609] the number of simultaneous tasks reached the maximum (${c.config.reenter})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
-        let result = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (...argsx: any[]): any => {
+        let result = Transaction.runAs<any>(hint, c.config.dispart, c.config.tracing, (...argsx: any[]): any => {
           cc = this.recache(cc, ...argsx);
           return cc.cache.resultOfInvoke;
         }, ...args);
@@ -162,7 +162,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let c: Cache = cc.cache;
     let r: Record = cc.record;
     let hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
-    return Transaction.runAs<Config>(hint, Apart.Default, 0, (): Config => {
+    return Transaction.runAs<Config>(hint, Dispart.Default, 0, (): Config => {
       let cc2 = this.edit();
       let c2: Cache = cc2.cache;
       c2.config = new ConfigImpl(c2.config.body, c2.config, config);
@@ -454,7 +454,7 @@ export class Cache implements ICache {
 
   monitorEnter(mon: Monitor | null): void {
     if (mon)
-      Transaction.runAs<void>("Monitor.enter", mon.apart, 0,
+      Transaction.runAs<void>("Monitor.enter", mon.dispart, 0,
         Cache.run, undefined, () => mon.enter(this));
   }
 
@@ -465,7 +465,7 @@ export class Cache implements ICache {
         try {
           Transaction.active = Transaction.nope; // Workaround?
           let leave = () => {
-            Transaction.runAs<void>("Monitor.leave", mon.apart, 0,
+            Transaction.runAs<void>("Monitor.leave", mon.dispart, 0,
               Cache.run, undefined, () => mon.leave(this));
           };
           this.tran.whenFinished(false).then(leave, leave);
@@ -475,7 +475,7 @@ export class Cache implements ICache {
         }
       }
       else
-        Transaction.runAs<void>("Monitor.leave", mon.apart, 0,
+        Transaction.runAs<void>("Monitor.leave", mon.dispart, 0,
           Cache.run, undefined, () => mon.leave(this));
     }
   }
@@ -503,7 +503,7 @@ export class Cache implements ICache {
 
   static unmount(...objects: any[]): Transaction {
     let t: Transaction = Transaction.active;
-    Transaction.runAs<void>("unmount", Apart.Default, 0, (): void => {
+    Transaction.runAs<void>("unmount", Dispart.Default, 0, (): void => {
       t = Transaction.active;
       for (let x of objects) {
         if (Utils.get(x, RT_HANDLE))

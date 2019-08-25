@@ -5,7 +5,7 @@ import { CopyOnWriteMap } from "./Binding.CopyOnWriteMap";
 import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
-import { Config, Mode, Latency, Renew, Reenter, Apart } from "../Config";
+import { Config, Mode, Latency, Renew, Reenter, Dispart } from "../Config";
 import { Monitor } from "../Monitor";
 
 // Config
@@ -18,7 +18,7 @@ export class ConfigImpl implements Config {
   readonly body: Function;
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly apart: Apart;
+  readonly dispart: Dispart;
   readonly reenter: Reenter;
   readonly monitor: Monitor | null;
   readonly tracing: number;
@@ -27,7 +27,7 @@ export class ConfigImpl implements Config {
     this.body = body !== undefined ? body : existing.body;
     this.mode = patch.mode !== undefined ? patch.mode : existing.mode;
     this.latency = patch.latency !== undefined ? patch.latency : existing.latency;
-    this.apart = patch.apart !== undefined ? patch.apart : existing.apart;
+    this.dispart = patch.dispart !== undefined ? patch.dispart : existing.dispart;
     this.reenter = patch.reenter !== undefined ? patch.reenter : existing.reenter;
     this.monitor = patch.monitor !== undefined ? patch.monitor : existing.monitor;
     this.tracing = patch.tracing !== undefined ? patch.tracing : existing.tracing;
@@ -38,8 +38,8 @@ export class ConfigImpl implements Config {
     body: undef,
     mode: Mode.Stateless,
     latency: Renew.NoCache,
-    apart: Apart.Default,
-    reenter: Reenter.Prevented,
+    dispart: Dispart.Default,
+    reenter: Reenter.Prevent,
     monitor: null,
     tracing: 0 }, {});
 }

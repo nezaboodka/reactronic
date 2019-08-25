@@ -3,7 +3,7 @@ import { Monitor } from "./Monitor";
 export interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly apart: Apart;
+  readonly dispart: Dispart;
   readonly reenter: Reenter;
   readonly monitor: Monitor | null;
   readonly tracing: number;
@@ -25,7 +25,7 @@ export enum Renew {
   NoCache = -5, // default for transaction
 }
 
-export enum Apart {
+export enum Dispart {
   Nope = 0,
   Default = 1, // = FromReaction
   FromReaction = 1,
@@ -35,8 +35,8 @@ export enum Apart {
 }
 
 export enum Reenter { // https://en.wikipedia.org/wiki/Reentrancy_(computing)
-  Prevented = 1, // only one can run at a time (default)
+  Prevent = 1, // only one can run at a time (default)
   RestartLatter = 0, // restart latter after existing one
   CancelExisting = -1, // cancel existing in favor of latter one
-  Unlimited = -2, // no limitations
+  Allow = -2, // no limitations
 }
