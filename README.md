@@ -178,8 +178,8 @@ invocation of the caching function to renew the cache:
 **Reentrance** option defines how to handle reentrant calls of the same function:
 
   - `Reentrance.Prevent` - fail if there is an existing concurrent call;
-  - `Reentrance.WaitAndRestart` - wait for preceding to complete and then restart latter one;
-  - `Reentrance.DiscardPreceding` - discard preceding call in favor of latter one;
+  - `Reentrance.WaitAndRestart` - wait for preceding to complete and then restart a newer one;
+  - `Reentrance.DiscardPreceding` - discard preceding call in favor of a newer one;
   - `Reentrance.Allow` - multiple simultaneous calls are allowed.
 
 **Monitor** option is an object that holds the status of running
@@ -257,8 +257,8 @@ enum ApartFrom {
 
 enum Reentrance { // https://en.wikipedia.org/wiki/Reentrancy_(computing)
   Prevent = 1, // only one can run at a time (default)
-  WaitAndRestart = 0, // wait for preceding to complete and then restart latter one
-  DiscardPreceding = -1, // discard preceding call in favor of latter one
+  WaitAndRestart = 0, // wait for preceding to complete and then restart a newer one
+  DiscardPreceding = -1, // discard preceding call in favor of a newer one
   Allow = -2, // no limitations
 }
 
