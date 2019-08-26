@@ -30,7 +30,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     // TODO: mark cache readonly?
   }
 
-  getRecentValue(...args: any): any {
+  getAvailableValue(...args: any): any {
     let cc = this.obtain(false, ...args);
     if (cc.isUpToDate)
       Record.markViewed(cc.record, cc.cache.member);
