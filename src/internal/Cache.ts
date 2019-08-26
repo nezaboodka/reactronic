@@ -32,10 +32,11 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
 
   getRecentValueAndValidate(...args: any): any {
     let cc = this.obtain(false, ...args);
-    if (cc.isUpToDate)
-      Record.markViewed(cc.record, cc.cache.member);
-    else if (cc.record.prev.record !== Record.empty)
-      Record.markViewed(cc.record.prev.record, cc.cache.member);
+    // if (cc.isUpToDate)
+    //   Record.markViewed(cc.record, cc.cache.member);
+    // else if (cc.record.prev.record !== Record.empty)
+    //   Record.markViewed(cc.record.prev.record, cc.cache.member);
+    Record.markViewed(cc.record, cc.cache.member);
     return cc.cache.value;
   }
 
