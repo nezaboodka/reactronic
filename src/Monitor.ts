@@ -1,5 +1,5 @@
 import { Handle } from "./internal/z.index";
-import { Dispart } from "./Config";
+import { ApartFrom } from "./Config";
 import { stateful } from "./Config.decorators";
 import { Transaction } from "./Transaction";
 
@@ -9,15 +9,15 @@ export class Monitor {
   private _volume: number = 0;
   private _operations = new Set<Operation>();
   readonly prolonged: boolean;
-  readonly dispart: Dispart;
+  readonly apart: ApartFrom;
   get isIdle(): boolean { return this._idle; }
   get volume(): number { return this._volume; }
   get operations(): ReadonlySet<Operation> { return this._operations; }
 
-  constructor(name?: string, prolonged: boolean = false, dispart: Dispart = Dispart.FromAll) {
+  constructor(name?: string, prolonged: boolean = false, apart: ApartFrom = ApartFrom.All) {
     Handle.setName(this, name);
     this.prolonged = prolonged;
-    this.dispart = dispart;
+    this.apart = apart;
   }
 
   enter(op: Operation): void {

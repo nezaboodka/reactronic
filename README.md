@@ -168,20 +168,19 @@ invocation of the caching function to renew the cache:
   - `Renew.Manually` - manual renew (explicit only);
   - `Renew.DoesNotCache` - renew on every call of the function.
 
-**Dispart** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
+**ApartFrom** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
 
-  - `Dispart.Default` - equivalent to Dispart.FromReaction;
-  - `Dispart.FromReaction` - transaction is separated from its reaction;
-  - `Dispart.FromParent` - transaction is separated from parent (calling) transactions;
-  - `Dispart.FromChildren` - transaction is separated from children (callee) transactions;
-  - `Dispart.FromAll` - transaction is separated from reactions, parents, and children.
+  - `ApartFrom.Reaction` - transaction is separated from its reaction;
+  - `ApartFrom.Parent` - transaction is separated from parent (calling) transactions;
+  - `ApartFrom.Children` - transaction is separated from children (callee) transactions;
+  - `ApartFrom.All` - transaction is separated from reactions, parents, and children.
 
-**Reenter** option defines how to handle reentrant calls of the same function:
+**Reentrance** option defines how to handle reentrant calls of the same function:
 
-  - `Reenter.Prevent` - fail if there is an existing concurrent call;
-  - `Reenter.RestartLatter` - wait for existing concurrent call and then restart latter one;
-  - `Reenter.DiscardOlder` - discard older in favor of latter one;
-  - `Reenter.Allow` - multiple simultaneous calls are allowed.
+  - `Reentrance.Prevent` - fail if there is an existing concurrent call;
+  - `Reentrance.WaitAndRestart` - wait for preceding to complete and then restart latter one;
+  - `Reentrance.DiscardPreceding` - discard preceding call in favor of latter one;
+  - `Reentrance.Allow` - multiple simultaneous calls are allowed.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
@@ -218,17 +217,17 @@ NPM: `npm install reactronic`
 function stateful(proto: object, prop?: PropertyKey): any;
 function stateless(proto: object, prop: PropertyKey): any;
 function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
-function cache(latency: Latency, dispart: Dispart, reenter: Reenter): F<any>;
+function cache(latency: Latency, apart: ApartFrom, reentrance: Reentrance): F<any>;
 function monitor(value: Monitor | null): F<any>;
 function config(config: Partial<Config>): F<any>;
 
-// Config: Mode, Latency, Dispart, Reenter, Monitor
+// Config: Mode, Latency, ApartFrom, Reentrance, Monitor
 
 interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly dispart: Dispart;
-  readonly reenter: Reenter;
+  readonly apart: ApartFrom;
+  readonly reentrance: Reentrance;
   readonly monitor: Monitor | null;
 }
 
@@ -248,19 +247,18 @@ enum Renew {
   NoCache = -5, // default for transaction
 }
 
-enum Dispart {
-  Nope = 0,
-  Default = 1, // = FromReaction
-  FromReaction = 1,
-  FromParent = 2,
-  FromChildren = 4,
-  FromAll = 1 + 2 + 4,
+enum ApartFrom {
+  None = 0,
+  Reaction = 1,
+  Parent = 2,
+  Children = 4,
+  All = 1 + 2 + 4,
 }
 
-enum Reenter {
+enum Reentrance { // https://en.wikipedia.org/wiki/Reentrancy_(computing)
   Prevent = 1, // only one can run at a time (default)
-  RestartLatter = 0, // restart latter after existing one
-  DiscardOlder = -1, // discard older in favor of latter one
+  WaitAndRestart = 0, // wait for preceding to complete and then restart latter one
+  DiscardPreceding = -1, // discard preceding call in favor of latter one
   Allow = -2, // no limitations
 }
 
@@ -289,7 +287,7 @@ class Transaction {
   whenFinished(): Promise<void>;
   join<T>(p: Promise<T>): Promise<T>;
   static run<T>(func: F<T>, ...args: any[]): T;
-  static runAs<T>(hint: string, dispart: Dispart, tracing: number, func: F<T>, ...args: any[]): T;
+  static runAs<T>(hint: string, apart: ApartFrom, tracing: number, func: F<T>, ...args: any[]): T;
   static readonly active: Transaction;
 }
 
