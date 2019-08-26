@@ -6,7 +6,7 @@ export abstract class ReactiveCache<T> {
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
   abstract readonly error: any;
-  abstract getAvailableValue(...args: any[]): T;
+  abstract getRecentValueAndValidate(...args: any[]): T;
   abstract readonly stamp: number;
   abstract invalidate(cause: string | undefined): boolean;
   abstract readonly isInvalidated: boolean;

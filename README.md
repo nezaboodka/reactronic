@@ -297,7 +297,7 @@ abstract class ReactiveCache<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
   readonly error: any;
-  getAvailableValue(...args: any[]): T;
+  getRecentValueAndValidate(...args: any[]): T;
   invalidate(cause: string | undefined): boolean;
   readonly isInvalidated: boolean;
   readonly isComputing: boolean;
