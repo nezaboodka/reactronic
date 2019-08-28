@@ -6,7 +6,7 @@ export abstract class ReactiveCache<T> {
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
   abstract readonly error: any;
-  abstract getRecentValueAndValidate(...args: any[]): T;
+  abstract obtain(...args: any[]): T | undefined;
   abstract readonly stamp: number;
   abstract invalidate(cause: string | undefined): boolean;
   abstract readonly isInvalidated: boolean;
@@ -16,6 +16,10 @@ export abstract class ReactiveCache<T> {
   static get<T>(method: F<T>): ReactiveCache<T> { return Cache.get(method); }
   static unmount(...objects: any[]): Transaction { return Cache.unmount(...objects); }
   static named<T extends object>(obj: T, name: string | undefined): T { return Handle.setName(obj, name); }
+}
+
+export function obtain<T>(method: F<Promise<T>>, ...args: any[]): T | undefined {
+  return ReactiveCache.get<T>(method).obtain(...args);
 }
 
 // Function.reactiveCache

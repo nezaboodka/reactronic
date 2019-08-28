@@ -1,6 +1,6 @@
 import { Utils, Debug, sleep, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
-export { ReactiveCache } from "../ReactiveCache";
+export { ReactiveCache, obtain } from "../ReactiveCache";
 import { Config, Renew, Reentrance, ApartFrom } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
@@ -30,9 +30,9 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     // TODO: mark cache readonly?
   }
 
-  getRecentValueAndValidate(...args: any): any {
-    let cc = this.obtain(false, ...args);
-    if (cc.record.snapshot.completed)
+  obtain(...args: any): any {
+    let cc = this._obtain(false, ...args);
+    if (cc.isUpToDate || cc.record.snapshot.completed)
       Record.markViewed(cc.record, cc.cache.member);
     else if (cc.record.prev.record !== Record.empty)
       Record.markViewed(cc.record.prev.record, cc.cache.member);
@@ -40,7 +40,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   }
 
   get stamp(): number {
-    let cc = this.obtain();
+    let cc = this._obtain();
     let r = cc.isUpToDate ?  cc.record : cc.record.prev.record;
     if (r !== Record.empty)
       Record.markViewed(r, cc.cache.member);
@@ -48,7 +48,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   }
 
   get isInvalidated(): boolean {
-    let cc = this.obtain();
+    let cc = this._obtain();
     let result = cc.cache.isInvalidated();
     if (result)
       Record.markViewed(cc.record, cc.cache.member);
@@ -59,12 +59,12 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   }
 
   invoke(...args: any[]): any {
-    let cc = this.obtain(true, ...args);
+    let cc = this._obtain(true, ...args);
     Record.markViewed(cc.record, cc.cache.member);
     return cc.cache.resultOfInvoke;
   }
 
-  obtain(invoke?: boolean, ...args: any[]): CacheCall {
+  _obtain(invoke?: boolean, ...args: any[]): CacheCall {
     let cc = this.read(false);
     let c: Cache = cc.cache;
     let hit = (cc.isUpToDate || c.started > 0) &&
@@ -265,7 +265,7 @@ export class Cache implements ICache {
         let trap: Function = Reflect.get(proxy, this.member, proxy);
         let impl: ReactiveCacheImpl = Utils.get(trap, RT_CACHE);
         // let result: any = trap(...args);
-        let cc = impl.obtain(false, ...args);
+        let cc = impl._obtain(false, ...args);
         if (cc.cache.resultOfInvoke instanceof Promise)
           cc.cache.resultOfInvoke.catch(error => { /* nop */ }); // bad idea to hide an error
       }
