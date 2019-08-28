@@ -1,4 +1,4 @@
-import { Cache, F, Handle } from "./internal/z.index";
+import { CachedResult, F, Handle } from "./internal/z.index";
 import { Transaction } from "./Transaction";
 import { Config } from "./Config";
 
@@ -13,8 +13,8 @@ export abstract class ReactiveCache<T> {
   abstract readonly isComputing: boolean;
   abstract readonly isUpdating: boolean;
   static get<T>(method: F<Promise<T>>): ReactiveCache<T>;
-  static get<T>(method: F<T>): ReactiveCache<T> { return Cache.get(method); }
-  static unmount(...objects: any[]): Transaction { return Cache.unmount(...objects); }
+  static get<T>(method: F<T>): ReactiveCache<T> { return CachedResult.get(method); }
+  static unmount(...objects: any[]): Transaction { return CachedResult.unmount(...objects); }
   static named<T extends object>(obj: T, name: string | undefined): T { return Handle.setName(obj, name); }
 }
 

@@ -1,6 +1,6 @@
 import { Utils, undef } from "./Utils";
 import { Debug } from "./Debug";
-import { Record, ISnapshot, ICache, RT_UNMOUNT } from "./Record";
+import { Record, ISnapshot, ICachedResult, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { CopyOnWrite } from "./Virtualization";
 
@@ -140,13 +140,13 @@ export class Snapshot implements ISnapshot {
   }
 
   static mergeObservers(target: Record, source: Record): void {
-    source.observers.forEach((oo: Set<ICache>, prop: PropertyKey) => {
+    source.observers.forEach((oo: Set<ICachedResult>, prop: PropertyKey) => {
       if (!target.edits.has(prop)) {
-        let existing: Set<ICache> | undefined = target.observers.get(prop);
-        let merged = existing || new Set<ICache>();
+        let existing: Set<ICachedResult> | undefined = target.observers.get(prop);
+        let merged = existing || new Set<ICachedResult>();
         if (!existing)
           target.observers.set(prop, merged);
-        oo.forEach((c: ICache) => {
+        oo.forEach((c: ICachedResult) => {
           if (!c.isInvalidated()) {
             merged.add(c);
             if (Debug.verbosity >= 3) Debug.log(" ", "∞", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
@@ -177,7 +177,7 @@ export class Snapshot implements ISnapshot {
     if (Debug.verbosity >= 2) Debug.log(this.timestamp > 0 ? "╚══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "DISCARD" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
-  static applyDependencies = function(changeset: Map<Handle, Record>, effect: ICache[]): void {
+  static applyDependencies = function(changeset: Map<Handle, Record>, effect: ICachedResult[]): void {
     undef(); // to be redefined by Cache implementation
   };
 

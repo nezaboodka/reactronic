@@ -1,4 +1,4 @@
-import { Utils, Debug, sleep, rethrow, Record, ICache, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
+import { Utils, Debug, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
 export { ReactiveCache, obtain } from "../ReactiveCache";
 import { Config, Renew, Reentrance, ApartFrom } from "../Config";
@@ -7,26 +7,26 @@ import { Monitor } from "../Monitor";
 
 interface CacheCall {
   record: Record;
-  cache: Cache;
+  cache: CachedResult;
   isUpToDate: boolean;
 }
 
 class ReactiveCacheImpl extends ReactiveCache<any> {
   private readonly handle: Handle;
-  private readonly blank: Cache;
+  private readonly blank: CachedResult;
 
   get config(): Config { return this.read(false).cache.config; }
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
   get error(): boolean { return this.read(true).cache.error; }
-  invalidate(cause: string | undefined): boolean { return cause ? Cache.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
+  invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
   get isComputing(): boolean { return this.read(true).cache.started > 0; }
   get isUpdating(): boolean { return this.read(true).cache.invalidation.recomputation !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
     this.handle = handle;
-    this.blank = new Cache(Record.empty, member, config);
-    Cache.freeze(this.blank);
+    this.blank = new CachedResult(Record.empty, member, config);
+    CachedResult.freeze(this.blank);
     // TODO: mark cache readonly?
   }
 
@@ -66,7 +66,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
 
   _obtain(invoke?: boolean, ...args: any[]): CacheCall {
     let cc = this.read(false);
-    let c: Cache = cc.cache;
+    let c: CachedResult = cc.cache;
     let hit = (cc.isUpToDate || c.started > 0) &&
       c.config.latency !== Renew.NoCache &&
       c.args[0] === args[0] ||
@@ -95,7 +95,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let ctx = Snapshot.active();
     let member = this.blank.member;
     let r: Record = ctx.tryRead(this.handle);
-    let c: Cache = r.data[member] || this.blank;
+    let c: CachedResult = r.data[member] || this.blank;
     let isUpToDate = ctx.timestamp < c.invalidation.timestamp && c.started === 0;
     if (markViewed)
       Record.markViewed(r, c.member);
@@ -106,10 +106,10 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let ctx = Snapshot.active();
     let member = this.blank.member;
     let r: Record = ctx.edit(this.handle, member, RT_CACHE);
-    let c: Cache = r.data[member] || this.blank;
+    let c: CachedResult = r.data[member] || this.blank;
     let isUpToDate = ctx.timestamp < c.invalidation.timestamp;
     if ((!isUpToDate && (c.record !== r || c.started === 0)) || c.config.latency === Renew.NoCache) {
-      let c2 = new Cache(r, c.member, c);
+      let c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
       if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.blank ? "blank" : c.hint(false)}`);
       Record.markEdited(r, c2.member, true, RT_CACHE);
@@ -127,7 +127,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is discarded and being relayed`);
     }
     let cc2 = this.edit();
-    let c2: Cache = cc2.cache;
+    let c2: CachedResult = cc2.cache;
     let r2: Record = cc2.record;
     let mon: Monitor | null = c.config.monitor;
     c2.enter(r2, c, mon);
@@ -145,7 +145,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         if (Debug.verbosity >= 3) Debug.log("║", " ", error.message);
       }
       else {
-        c2.resultOfInvoke = Cache.run<any>(c2, (...argsy: any[]): any => {
+        c2.resultOfInvoke = CachedResult.run<any>(c2, (...argsy: any[]): any => {
           return c2.config.body.call(this.handle.proxy, ...argsy);
         }, ...argsx);
       }
@@ -160,12 +160,12 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
 
   private reconfigure(config: Partial<Config>): Config {
     let cc = this.read(false);
-    let c: Cache = cc.cache;
+    let c: CachedResult = cc.cache;
     let r: Record = cc.record;
     let hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
     return Transaction.runAs<Config>(hint, ApartFrom.Reaction, 0, (): Config => {
       let cc2 = this.edit();
-      let c2: Cache = cc2.cache;
+      let c2: CachedResult = cc2.cache;
       c2.config = new ConfigImpl(c2.config.body, c2.config, config);
       if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
@@ -173,10 +173,10 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   }
 }
 
-// Cache
+// CacheResult
 
-export class Cache implements ICache {
-  static active?: Cache = undefined;
+export class CachedResult implements ICachedResult {
+  static active?: CachedResult = undefined;
   readonly margin: number;
   readonly tran: Transaction;
   readonly record: Record;
@@ -187,16 +187,16 @@ export class Cache implements ICache {
   value: any;
   error: any;
   started: number;
-  readonly invalidation: { timestamp: number, recomputation: Cache | undefined };
+  readonly invalidation: { timestamp: number, recomputation: CachedResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
-  constructor(record: Record, member: PropertyKey, init: Cache | ConfigImpl) {
+  constructor(record: Record, member: PropertyKey, init: CachedResult | ConfigImpl) {
     this.margin = Debug.margin + 1;
     this.tran = Transaction.active;
     this.record = record;
     this.member = member;
-    if (init instanceof Cache) {
+    if (init instanceof CachedResult) {
       this.config = init.config;
       this.args = init.args;
       this.value = init.value;
@@ -223,13 +223,13 @@ export class Cache implements ICache {
     return impl;
   }
 
-  static run<T>(c: Cache | undefined, func: F<T>, ...args: any[]): T {
+  static run<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined;
-    let outer = Cache.active;
+    let outer = CachedResult.active;
     let outerVerbosity = Debug.verbosity;
     let outerMargin = Debug.margin;
     try {
-      Cache.active = c;
+      CachedResult.active = c;
       if (c) {
         if (c.config.tracing !== 0)
           Debug.verbosity = c.config.tracing;
@@ -245,13 +245,13 @@ export class Cache implements ICache {
     finally {
       Debug.margin = outerMargin;
       Debug.verbosity = outerVerbosity;
-      Cache.active = outer;
+      CachedResult.active = outer;
     }
     return result;
   }
 
   wrap<T>(func: F<T>): F<T> {
-    let caching: F<T> = (...args: any[]): T => Cache.run<T>(this, func, ...args);
+    let caching: F<T> = (...args: any[]): T => CachedResult.run<T>(this, func, ...args);
     return caching;
   }
 
@@ -275,9 +275,9 @@ export class Cache implements ICache {
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
-    const c: Cache | undefined = Cache.active; // alias
+    const c: CachedResult | undefined = CachedResult.active; // alias
     if (c && c.config.latency >= Renew.Manually && prop !== RT_HANDLE) {
-      Cache.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
+      CachedResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
       if (Debug.verbosity >= 5) Debug.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
   }
@@ -287,7 +287,7 @@ export class Cache implements ICache {
     if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
     let oo = r.observers.get(prop);
     if (oo && oo.size > 0) {
-      let effect: ICache[] = [];
+      let effect: ICachedResult[] = [];
       oo.forEach(c => c.invalidate(r, prop, true, false, effect));
       r.observers.delete(prop);
       if (effect.length > 0)
@@ -296,32 +296,32 @@ export class Cache implements ICache {
     }
   }
 
-  static applyDependencies(changeset: Map<Handle, Record>, effect: ICache[]): void {
+  static applyDependencies(changeset: Map<Handle, Record>, effect: ICachedResult[]): void {
     changeset.forEach((r: Record, h: Handle) => {
       if (!r.edits.has(RT_UNMOUNT))
         r.edits.forEach(prop => {
-          Cache.markPrevAsOutdated(r, prop, effect);
+          CachedResult.markPrevAsOutdated(r, prop, effect);
           let value = r.data[prop];
-          if (value instanceof Cache)
+          if (value instanceof CachedResult)
             value.subscribeToObservables(false, effect);
         });
       else
         for (let prop in r.prev.record.data)
-          Cache.markPrevAsOutdated(r, prop, effect);
+          CachedResult.markPrevAsOutdated(r, prop, effect);
     });
     changeset.forEach((r: Record, h: Handle) => {
       Snapshot.mergeObservers(r, r.prev.record);
     });
   }
 
-  static acquireObserverSet(r: Record, prop: PropertyKey): Set<ICache> {
+  static acquireObserverSet(r: Record, prop: PropertyKey): Set<ICachedResult> {
     let oo = r.observers.get(prop);
     if (!oo)
-      r.observers.set(prop, oo = new Set<Cache>());
+      r.observers.set(prop, oo = new Set<CachedResult>());
     return oo;
   }
 
-  static acquireObservableSet(c: Cache, prop: PropertyKey, hot: boolean): Set<Record> {
+  static acquireObservableSet(c: CachedResult, prop: PropertyKey, hot: boolean): Set<Record> {
     let o = hot ? c.hotObservables : c.observables;
     let result: Set<Record> | undefined = o.get(prop);
     if (!result)
@@ -329,12 +329,12 @@ export class Cache implements ICache {
     return result;
   }
 
-  private subscribeToObservables(hot: boolean, effect?: ICache[]): void {
+  private subscribeToObservables(hot: boolean, effect?: ICachedResult[]): void {
     let subscriptions: string[] = [];
     let o = hot ? this.hotObservables : this.observables;
     o.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach(r => {
-        Cache.acquireObserverSet(r, prop).add(this); // link
+        CachedResult.acquireObserverSet(r, prop).add(this); // link
         if (Debug.verbosity >= 3) subscriptions.push(Hint.record(r, false, true, prop));
         if (effect && r.outdated.has(prop))
           this.invalidate(r, prop, hot, false, effect);
@@ -348,7 +348,7 @@ export class Cache implements ICache {
     return t !== Number.MAX_SAFE_INTEGER && t !== 0;
   }
 
-  invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICache[]): void {
+  invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void {
     const stamp = cause.snapshot.timestamp;
     if (this.invalidation.timestamp === Number.MAX_SAFE_INTEGER && (!cascade || this.config.latency !== Renew.WhenReady)) {
       this.invalidation.timestamp = stamp;
@@ -380,7 +380,7 @@ export class Cache implements ICache {
     }
   }
 
-  static enforceInvalidation(c: Cache, cause: string, latency: number): boolean {
+  static enforceInvalidation(c: CachedResult, cause: string, latency: number): boolean {
     throw new Error("[E600] not implemented - Cache.enforceInvalidation");
     // let effect: Cache[] = [];
     // c.invalidate(cause, false, false, effect);
@@ -391,7 +391,7 @@ export class Cache implements ICache {
     // return true;
   }
 
-  static markPrevAsOutdated(r: Record, prop: PropertyKey, effect: ICache[]): void {
+  static markPrevAsOutdated(r: Record, prop: PropertyKey, effect: ICachedResult[]): void {
     let cause = r;
     r = r.prev.record;
     while (r !== Record.empty && !r.outdated.has(prop)) {
@@ -411,7 +411,7 @@ export class Cache implements ICache {
     return cachedInvoke;
   }
 
-  enter(r: Record, prev: Cache, mon: Monitor | null): void {
+  enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
     if (this.config.tracing >= 4 || (this.config.tracing === 0 && Debug.verbosity >= 4)) Debug.log("║", "  =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
     this.started = Date.now();
     this.monitorEnter(mon);
@@ -419,7 +419,7 @@ export class Cache implements ICache {
       prev.invalidation.recomputation = this;
   }
 
-  tryLeave(r: Record, prev: Cache, mon: Monitor | null): void {
+  tryLeave(r: Record, prev: CachedResult, mon: Monitor | null): void {
     if (this.resultOfInvoke instanceof Promise) {
       this.resultOfInvoke = this.resultOfInvoke.then(
         result => {
@@ -440,7 +440,7 @@ export class Cache implements ICache {
     }
   }
 
-  private leave(r: Record, prev: Cache, mon: Monitor | null, op: string, message: string): void {
+  private leave(r: Record, prev: CachedResult, mon: Monitor | null, op: string, message: string): void {
     if (prev.invalidation.recomputation === this)
       prev.invalidation.recomputation = undefined;
     this.monitorLeave(mon);
@@ -456,7 +456,7 @@ export class Cache implements ICache {
   monitorEnter(mon: Monitor | null): void {
     if (mon)
       Transaction.runAs<void>("Monitor.enter", mon.apart, 0,
-        Cache.run, undefined, () => mon.enter(this));
+        CachedResult.run, undefined, () => mon.enter(this));
   }
 
   monitorLeave(mon: Monitor | null): void {
@@ -467,7 +467,7 @@ export class Cache implements ICache {
           Transaction.active = Transaction.nope; // Workaround?
           let leave = () => {
             Transaction.runAs<void>("Monitor.leave", mon.apart, 0,
-              Cache.run, undefined, () => mon.leave(this));
+              CachedResult.run, undefined, () => mon.leave(this));
           };
           this.tran.whenFinished(false).then(leave, leave);
         }
@@ -477,14 +477,14 @@ export class Cache implements ICache {
       }
       else
         Transaction.runAs<void>("Monitor.leave", mon.apart, 0,
-          Cache.run, undefined, () => mon.leave(this));
+          CachedResult.run, undefined, () => mon.leave(this));
     }
   }
 
   static differentImpl(oldValue: any, newValue: any): boolean {
     let result: boolean;
-    if (oldValue instanceof Cache) {
-      if (newValue instanceof Cache)
+    if (oldValue instanceof CachedResult) {
+      if (newValue instanceof CachedResult)
         result = false; // consistency of caches is checked via dependencies
       else if (newValue instanceof Function) /* istanbul ignore next */
         result = oldValue.config.body !== newValue;
@@ -496,7 +496,7 @@ export class Cache implements ICache {
     return result;
   }
 
-  static freeze(c: Cache): void {
+  static freeze(c: CachedResult): void {
     Utils.freezeMap(c.observables);
     // Utils.freezeSet(c.statusObservables);
     Object.freeze(c);
@@ -526,21 +526,21 @@ Promise.prototype.then = function(
   if (!t.finished()) {
     if (onsuccess) {
       // if (Debug.verbosity >= 5) Debug.log("║", "", ` Promise.then (${(this as any)[RT_UNMOUNT]})`);
-      onsuccess = Transaction._wrap<any>(t, Cache.active, true, true, onsuccess);
-      onfailure = Transaction._wrap<any>(t, Cache.active, false, true, onfailure || rethrow);
+      onsuccess = Transaction._wrap<any>(t, CachedResult.active, true, true, onsuccess);
+      onfailure = Transaction._wrap<any>(t, CachedResult.active, false, true, onfailure || rethrow);
     }
     else if (onfailure)
-      onfailure = Transaction._wrap<any>(t, Cache.active, false, false, onfailure);
+      onfailure = Transaction._wrap<any>(t, CachedResult.active, false, false, onfailure);
   }
   return original_primise_then.call(this, onsuccess, onfailure);
 };
 
 function init(): void {
-  Utils.different = Cache.differentImpl; // override
-  Record.markViewed = Cache.markViewed; // override
-  Record.markEdited = Cache.markEdited; // override
-  Snapshot.applyDependencies = Cache.applyDependencies; // override
-  Virt.createCachedInvoke = Cache.createCachedInvoke; // override
+  Utils.different = CachedResult.differentImpl; // override
+  Record.markViewed = CachedResult.markViewed; // override
+  Record.markEdited = CachedResult.markEdited; // override
+  Snapshot.applyDependencies = CachedResult.applyDependencies; // override
+  Virt.createCachedInvoke = CachedResult.createCachedInvoke; // override
   Snapshot.active = Transaction._getActiveSnapshot; // override
   Transaction._init();
 }

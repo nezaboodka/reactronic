@@ -1,4 +1,4 @@
-import { Debug, Utils, undef, Record, ICache, F, Handle, Snapshot, Hint } from "./internal/z.index";
+import { Debug, Utils, undef, Record, ICachedResult, F, Handle, Snapshot, Hint } from "./internal/z.index";
 import { ApartFrom } from "./Config";
 
 export class Transaction {
@@ -14,7 +14,7 @@ export class Transaction {
   private resultResolve: (value?: void) => void = undef;
   private resultReject: (reason: any) => void = undef;
   private conflicts?: Record[] = undefined;
-  private reaction: { tran?: Transaction, effect: ICache[] } = { tran: undefined, effect: [] };
+  private reaction: { tran?: Transaction, effect: ICachedResult[] } = { tran: undefined, effect: [] };
   private readonly tracing: number; // assigned in constructor
 
   constructor(hint: string, apart: ApartFrom = ApartFrom.Reaction, tracing: number = 0) {
@@ -258,7 +258,7 @@ export class Transaction {
         this.resultResolve();
   }
 
-  static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICache[] }, tracing: number = 0): void {
+  static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICachedResult[] }, tracing: number = 0): void {
     const name = Debug.verbosity >= 2 ? `${hint} - REACTION(${reaction.effect.length})` : "noname";
     const apart = reaction.tran ? ApartFrom.Reaction : ApartFrom.Reaction | ApartFrom.Parent;
     Transaction.runAs<void>(name, apart, tracing, () => {
@@ -278,7 +278,7 @@ export class Transaction {
     return this.resultPromise;
   }
 
-  static _wrap<T>(t: Transaction, c: ICache | undefined, inc: boolean, dec: boolean, func: F<T>): F<T> {
+  static _wrap<T>(t: Transaction, c: ICachedResult | undefined, inc: boolean, dec: boolean, func: F<T>): F<T> {
     let f = c ? c.wrap(func) : func; // caching context
     if (inc)
       t.run<void>(() => t.busy++);
