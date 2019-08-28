@@ -413,7 +413,7 @@ export class CachedResult implements ICachedResult {
 
   enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
     if (this.config.tracing >= 4 || (this.config.tracing === 0 && Debug.verbosity >= 4)) Debug.log("║", "  =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
-    this.computing = performance.now();
+    this.computing = Date.now();
     this.monitorEnter(mon);
     if (!prev.invalidation.recomputation)
       prev.invalidation.recomputation = this;
@@ -432,6 +432,7 @@ export class CachedResult implements ICachedResult {
           this.leave(r, prev, mon, "<:", "is completed with error");
           throw error;
         });
+      Utils.set(this.ret, RT_CACHE, this);
       if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  :>", `${Hint.record(r, true)}.${this.member.toString()} is async...`);
     }
     else {
@@ -444,7 +445,7 @@ export class CachedResult implements ICachedResult {
     if (prev.invalidation.recomputation === this)
       prev.invalidation.recomputation = undefined;
     this.monitorLeave(mon);
-    const ms: number = performance.now() - this.computing;
+    const ms: number = Date.now() - this.computing;
     this.computing = 0;
     if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms);
     // TODO: handle errors
