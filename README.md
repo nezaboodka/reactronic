@@ -166,7 +166,7 @@ invocation of the caching function to renew the cache:
   - `Renew.Immediately` - renew immediately with zero latency;
   - `Renew.OnDemand` - renew on access if cache has been invalidated;
   - `Renew.Manually` - manual renew (explicit only);
-  - `Renew.DoesNotCache` - renew on every call of the function.
+  - `Renew.NoCache` - renew on every call of the function.
 
 **ApartFrom** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
 
