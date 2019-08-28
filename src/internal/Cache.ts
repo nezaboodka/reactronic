@@ -1,6 +1,6 @@
 import { Utils, Debug, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
-export { ReactiveCache, obtain } from "../ReactiveCache";
+export { ReactiveCache, cached as obtain } from "../ReactiveCache";
 import { Config, Renew, Reentrance, ApartFrom } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
@@ -30,8 +30,8 @@ class CachedMethod extends ReactiveCache<any> {
     // TODO: mark cache readonly?
   }
 
-  obtain(...args: any): any {
-    let cc = this._obtain(false, ...args);
+  cached(...args: any): any {
+    let cc = this.obtain(false, ...args);
     if (cc.isUpToDate || cc.record.snapshot.completed)
       Record.markViewed(cc.record, cc.cached.member);
     else if (cc.record.prev.record !== Record.empty)
@@ -40,7 +40,7 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   get stamp(): number {
-    let cc = this._obtain();
+    let cc = this.obtain();
     let r = cc.isUpToDate ?  cc.record : cc.record.prev.record;
     if (r !== Record.empty)
       Record.markViewed(r, cc.cached.member);
@@ -48,7 +48,7 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   get isInvalidated(): boolean {
-    let cc = this._obtain();
+    let cc = this.obtain();
     let result = cc.cached.isInvalidated();
     if (result)
       Record.markViewed(cc.record, cc.cached.member);
@@ -59,12 +59,12 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   invoke(...args: any[]): any {
-    let cc = this._obtain(true, ...args);
+    let cc = this.obtain(true, ...args);
     Record.markViewed(cc.record, cc.cached.member);
     return cc.cached.ret;
   }
 
-  _obtain(invoke?: boolean, ...args: any[]): CacheCall {
+  obtain(invoke?: boolean, ...args: any[]): CacheCall {
     let cc = this.read(false);
     let c: CachedResult = cc.cached;
     let hit = (cc.isUpToDate || c.started > 0) &&
@@ -265,7 +265,7 @@ export class CachedResult implements ICachedResult {
         let trap: Function = Reflect.get(proxy, this.member, proxy);
         let cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
         // let result: any = trap(...args);
-        let cc = cachedMethod._obtain(false, ...args);
+        let cc = cachedMethod.obtain(false, ...args);
         if (cc.cached.ret instanceof Promise)
           cc.cached.ret.catch(error => { /* nop */ }); // bad idea to hide an error
       }
