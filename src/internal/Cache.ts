@@ -19,7 +19,7 @@ class CachedMethod extends ReactiveCache<any> {
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
   get error(): boolean { return this.read(true).cached.error; }
   invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cached, cause, 0) : false; }
-  get isComputing(): boolean { return this.read(true).cached.started > 0; }
+  get isComputing(): boolean { return this.read(true).cached.computing > 0; }
   get isUpdating(): boolean { return this.read(true).cached.invalidation.recomputation !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
@@ -67,7 +67,7 @@ class CachedMethod extends ReactiveCache<any> {
   obtain(invoke?: boolean, ...args: any[]): CacheCall {
     let cc = this.read(false);
     let c: CachedResult = cc.cached;
-    let hit = (cc.isUpToDate || c.started > 0) &&
+    let hit = (cc.isUpToDate || c.computing > 0) &&
       c.config.latency !== Renew.NoCache &&
       c.args[0] === args[0] ||
       cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
@@ -96,7 +96,7 @@ class CachedMethod extends ReactiveCache<any> {
     let member = this.blank.member;
     let r: Record = ctx.tryRead(this.handle);
     let c: CachedResult = r.data[member] || this.blank;
-    let isUpToDate = ctx.timestamp < c.invalidation.timestamp && c.started === 0;
+    let isUpToDate = ctx.timestamp < c.invalidation.timestamp && c.computing === 0;
     if (markViewed)
       Record.markViewed(r, c.member);
     return { cached: c, record: r, isUpToDate };
@@ -108,7 +108,7 @@ class CachedMethod extends ReactiveCache<any> {
     let r: Record = ctx.edit(this.handle, member, RT_CACHE);
     let c: CachedResult = r.data[member] || this.blank;
     let isUpToDate = ctx.timestamp < c.invalidation.timestamp;
-    if ((!isUpToDate && (c.record !== r || c.started === 0)) || c.config.latency === Renew.NoCache) {
+    if ((!isUpToDate && (c.record !== r || c.computing === 0)) || c.config.latency === Renew.NoCache) {
       let c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
       if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.blank ? "blank" : c.hint(false)}`);
@@ -154,7 +154,7 @@ class CachedMethod extends ReactiveCache<any> {
     finally {
       c2.tryLeave(r2, c, mon);
     }
-    cc2.isUpToDate = c2.started === 0;
+    cc2.isUpToDate = c2.computing === 0;
     return cc2;
   }
 
@@ -186,7 +186,7 @@ export class CachedResult implements ICachedResult {
   ret: any;
   result: any;
   error: any;
-  started: number;
+  computing: number;
   readonly invalidation: { timestamp: number, recomputation: CachedResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
@@ -208,7 +208,7 @@ export class CachedResult implements ICachedResult {
     }
     // this.ret = undefined;
     // this.error = undefined;
-    this.started = 0;
+    this.computing = 0;
     this.invalidation = { timestamp: 0, recomputation: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
     this.hotObservables = new Map<PropertyKey, Set<Record>>();
@@ -413,7 +413,7 @@ export class CachedResult implements ICachedResult {
 
   enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
     if (this.config.tracing >= 4 || (this.config.tracing === 0 && Debug.verbosity >= 4)) Debug.log("║", "  =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
-    this.started = Date.now();
+    this.computing = performance.now();
     this.monitorEnter(mon);
     if (!prev.invalidation.recomputation)
       prev.invalidation.recomputation = this;
@@ -444,8 +444,8 @@ export class CachedResult implements ICachedResult {
     if (prev.invalidation.recomputation === this)
       prev.invalidation.recomputation = undefined;
     this.monitorLeave(mon);
-    const ms: number = Date.now() - this.started;
-    this.started = 0;
+    const ms: number = performance.now() - this.computing;
+    this.computing = 0;
     if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms);
     // TODO: handle errors
     this.subscribeToObservables(true);
