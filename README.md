@@ -307,6 +307,8 @@ abstract class ReactiveCache<T> {
   static unmount(...objects: any[]): Transaction;
 }
 
+function obtain<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
+
 declare global {
   interface Function {
     readonly rcache: ReactiveCache; // = ReactiveCache.get(this)
