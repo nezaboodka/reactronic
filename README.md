@@ -170,8 +170,8 @@ invocation of the caching function to renew the cache:
 
 **ApartFrom** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
 
-  - `ApartFrom.Reaction` - transaction is separated from its reaction;
-  - `ApartFrom.Parent` - transaction is separated from parent (calling) transactions;
+  - `ApartFrom.Reaction` - transaction is separated from its reaction (default);
+  - `ApartFrom.Parent` - transaction is separated from parent (caller) transactions;
   - `ApartFrom.Children` - transaction is separated from children (callee) transactions;
   - `ApartFrom.All` - transaction is separated from reactions, parents, and children.
 
@@ -217,17 +217,17 @@ NPM: `npm install reactronic`
 function stateful(proto: object, prop?: PropertyKey): any;
 function stateless(proto: object, prop: PropertyKey): any;
 function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
-function cache(latency: Latency, apart: ApartFrom, reentrance: Reentrance): F<any>;
+function cache(latency: Latency, reentrance: Reentrance, apart: ApartFrom): F<any>;
 function monitor(value: Monitor | null): F<any>;
 function config(config: Partial<Config>): F<any>;
 
-// Config: Mode, Latency, ApartFrom, Reentrance, Monitor
+// Config: Mode, Latency, Reentrance, ApartFrom, Monitor
 
 interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly apart: ApartFrom;
   readonly reentrance: Reentrance;
+  readonly apart: ApartFrom;
   readonly monitor: Monitor | null;
 }
 
