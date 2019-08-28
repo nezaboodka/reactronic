@@ -11,7 +11,7 @@ interface CacheCall {
   isUpToDate: boolean;
 }
 
-class ReactiveCacheImpl extends ReactiveCache<any> {
+class CachedMethod extends ReactiveCache<any> {
   private readonly handle: Handle;
   private readonly blank: CachedResult;
 
@@ -263,9 +263,9 @@ export class CachedResult implements ICachedResult {
         // let cachedInvoke = this.record.data[this.member];
         let proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
         let trap: Function = Reflect.get(proxy, this.member, proxy);
-        let impl: ReactiveCacheImpl = Utils.get(trap, RT_CACHE);
+        let cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
         // let result: any = trap(...args);
-        let cc = impl._obtain(false, ...args);
+        let cc = cachedMethod._obtain(false, ...args);
         if (cc.cached.ret instanceof Promise)
           cc.cached.ret.catch(error => { /* nop */ }); // bad idea to hide an error
       }
@@ -404,11 +404,11 @@ export class CachedResult implements ICachedResult {
     }
   }
 
-  static createCachedInvoke(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
-    let impl = new ReactiveCacheImpl(h, prop, config);
-    let cachedInvoke: F<any> = (...args: any[]): any => impl.invoke(...args);
-    Utils.set(cachedInvoke, RT_CACHE, impl);
-    return cachedInvoke;
+  static createCachedMethodTrap(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
+    let cachedMethod = new CachedMethod(h, prop, config);
+    let cachedMethodTrap: F<any> = (...args: any[]): any => cachedMethod.invoke(...args);
+    Utils.set(cachedMethodTrap, RT_CACHE, cachedMethod);
+    return cachedMethodTrap;
   }
 
   enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
@@ -540,7 +540,7 @@ function init(): void {
   Record.markViewed = CachedResult.markViewed; // override
   Record.markEdited = CachedResult.markEdited; // override
   Snapshot.applyDependencies = CachedResult.applyDependencies; // override
-  Virt.createCachedInvoke = CachedResult.createCachedInvoke; // override
+  Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
   Snapshot.active = Transaction._getActiveSnapshot; // override
   Transaction._init();
 }

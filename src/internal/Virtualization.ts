@@ -133,7 +133,7 @@ export class Virt implements ProxyHandler<Handle> {
     let get = function(this: any): any {
       let classConfig: ConfigImpl = Virt.getConfig(Object.getPrototypeOf(this), RT_CLASS) || ConfigImpl.default;
       let h: Handle = classConfig.mode !== Mode.Stateless ? Utils.get(this, RT_HANDLE) : Virt.acquireHandle(this);
-      let value = Virt.createCachedInvoke(h, method, methodConfig);
+      let value = Virt.createCachedMethodTrap(h, method, methodConfig);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
       return value;
     };
@@ -201,7 +201,7 @@ export class Virt implements ProxyHandler<Handle> {
     }
   }
 
-  static createCachedInvoke = function(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
+  static createCachedMethodTrap = function(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
     /* istanbul ignore next */ throw new Error("this method should never be called");
   };
 }
