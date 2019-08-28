@@ -1,6 +1,6 @@
 import { Utils, Debug, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
-export { ReactiveCache, cached as obtain } from "../ReactiveCache";
+export { ReactiveCache, cached } from "../ReactiveCache";
 import { Config, Renew, Reentrance, ApartFrom } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
