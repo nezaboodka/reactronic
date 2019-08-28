@@ -133,6 +133,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     c2.enter(r2, c, mon);
     try
     {
+      // TODO: To fix this logic - it causes confusion when calling methods with optional parameters
       if (argsx.length > 0)
         c2.args = argsx;
       else
