@@ -297,7 +297,7 @@ abstract class ReactiveCache<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
   readonly error: any;
-  cached(...args: any[]): T;
+  recent(...args: any[]): T;
   invalidate(cause: string | undefined): boolean;
   readonly isInvalidated: boolean;
   readonly isComputing: boolean;
@@ -307,7 +307,7 @@ abstract class ReactiveCache<T> {
   static unmount(...objects: any[]): Transaction;
 }
 
-function cached<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
+function recent<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
 
 declare global {
   interface Function {

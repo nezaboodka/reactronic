@@ -118,7 +118,9 @@ export class Transaction {
           let outer = Transaction.active;
           try {
             Transaction.active = Transaction.nope;
+            // const cache = Utils.get(result, RT_CACHE);
             result = t.wrapForRetryIfAny(t.join(result), func, ...args);
+            // Utils.set(result, RT_CACHE, cache);
           }
           finally {
             Transaction.active = outer;

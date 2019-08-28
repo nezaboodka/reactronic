@@ -1,6 +1,6 @@
 import { Utils, Debug, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
-export { ReactiveCache, cached } from "../ReactiveCache";
+export { ReactiveCache, recent } from "../ReactiveCache";
 import { Config, Renew, Reentrance, ApartFrom } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
@@ -30,7 +30,7 @@ class CachedMethod extends ReactiveCache<any> {
     // TODO: mark cache readonly?
   }
 
-  cached(...args: any): any {
+  recent(...args: any): any {
     let cc = this.obtain(false, ...args);
     if (cc.isUpToDate || cc.record.snapshot.completed)
       Record.markViewed(cc.record, cc.cached.member);
@@ -432,7 +432,7 @@ export class CachedResult implements ICachedResult {
           this.leave(r, prev, mon, "<:", "is completed with error");
           throw error;
         });
-      Utils.set(this.ret, RT_CACHE, this);
+      // Utils.set(this.ret, RT_CACHE, this);
       if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  :>", `${Hint.record(r, true)}.${this.member.toString()} is async...`);
     }
     else {
