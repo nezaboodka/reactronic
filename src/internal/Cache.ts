@@ -7,7 +7,7 @@ import { Monitor } from "../Monitor";
 
 interface CacheCall {
   record: Record;
-  cache: CachedResult;
+  cached: CachedResult;
   isUpToDate: boolean;
 }
 
@@ -15,12 +15,12 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   private readonly handle: Handle;
   private readonly blank: CachedResult;
 
-  get config(): Config { return this.read(false).cache.config; }
+  get config(): Config { return this.read(false).cached.config; }
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
-  get error(): boolean { return this.read(true).cache.error; }
-  invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
-  get isComputing(): boolean { return this.read(true).cache.started > 0; }
-  get isUpdating(): boolean { return this.read(true).cache.invalidation.recomputation !== undefined; }
+  get error(): boolean { return this.read(true).cached.error; }
+  invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cached, cause, 0) : false; }
+  get isComputing(): boolean { return this.read(true).cached.started > 0; }
+  get isUpdating(): boolean { return this.read(true).cached.invalidation.recomputation !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
@@ -33,40 +33,40 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
   obtain(...args: any): any {
     let cc = this._obtain(false, ...args);
     if (cc.isUpToDate || cc.record.snapshot.completed)
-      Record.markViewed(cc.record, cc.cache.member);
+      Record.markViewed(cc.record, cc.cached.member);
     else if (cc.record.prev.record !== Record.empty)
-      Record.markViewed(cc.record.prev.record, cc.cache.member);
-    return cc.cache.value;
+      Record.markViewed(cc.record.prev.record, cc.cached.member);
+    return cc.cached.result;
   }
 
   get stamp(): number {
     let cc = this._obtain();
     let r = cc.isUpToDate ?  cc.record : cc.record.prev.record;
     if (r !== Record.empty)
-      Record.markViewed(r, cc.cache.member);
+      Record.markViewed(r, cc.cached.member);
     return r.snapshot.timestamp;
   }
 
   get isInvalidated(): boolean {
     let cc = this._obtain();
-    let result = cc.cache.isInvalidated();
+    let result = cc.cached.isInvalidated();
     if (result)
-      Record.markViewed(cc.record, cc.cache.member);
+      Record.markViewed(cc.record, cc.cached.member);
     else if (cc.record.prev.record !== Record.empty)
-      Record.markViewed(cc.record.prev.record, cc.cache.member);
+      Record.markViewed(cc.record.prev.record, cc.cached.member);
     // Record.markViewed(cc.record, cc.cache.member);
     return result;
   }
 
   invoke(...args: any[]): any {
     let cc = this._obtain(true, ...args);
-    Record.markViewed(cc.record, cc.cache.member);
-    return cc.cache.resultOfInvoke;
+    Record.markViewed(cc.record, cc.cached.member);
+    return cc.cached.ret;
   }
 
   _obtain(invoke?: boolean, ...args: any[]): CacheCall {
     let cc = this.read(false);
-    let c: CachedResult = cc.cache;
+    let c: CachedResult = cc.cached;
     let hit = (cc.isUpToDate || c.started > 0) &&
       c.config.latency !== Renew.NoCache &&
       c.args[0] === args[0] ||
@@ -79,11 +79,11 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
             throw new Error(`[E609] ${c.hint()} is already running and reached the maximum of simultaneous calls (${c.config.reentrance})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
-        let result = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (...argsx: any[]): any => {
+        let ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (...argsx: any[]): any => {
           cc = this.recache(cc, ...argsx);
-          return cc.cache.resultOfInvoke;
+          return cc.cached.ret;
         }, ...args);
-        cc.cache.resultOfInvoke = result;
+        cc.cached.ret = ret;
       }
     }
     else
@@ -99,7 +99,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
     let isUpToDate = ctx.timestamp < c.invalidation.timestamp && c.started === 0;
     if (markViewed)
       Record.markViewed(r, c.member);
-    return { cache: c, record: r, isUpToDate };
+    return { cached: c, record: r, isUpToDate };
   }
 
   private edit(): CacheCall {
@@ -115,11 +115,11 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
-    return { cache: c, record: r, isUpToDate };
+    return { cached: c, record: r, isUpToDate };
   }
 
   private recache(cc: CacheCall, ...argsx: any[]): CacheCall {
-    let c = cc.cache;
+    let c = cc.cached;
     let existing = c.invalidation.recomputation;
     if (existing && c.config.reentrance === Reentrance.DiscardPreceding) {
       existing.tran.discard(); // ignore silently
@@ -127,7 +127,7 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
       if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is discarded and being relayed`);
     }
     let cc2 = this.edit();
-    let c2: CachedResult = cc2.cache;
+    let c2: CachedResult = cc2.cached;
     let r2: Record = cc2.record;
     let mon: Monitor | null = c.config.monitor;
     c2.enter(r2, c, mon);
@@ -140,12 +140,12 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
         argsx = c2.args;
       if (existing && c2 !== existing && c.config.reentrance === Reentrance.WaitAndRestart) {
         const error = new Error(`Transaction will be restarted after t${existing.tran.id}`);
-        c2.resultOfInvoke = Promise.reject(error);
+        c2.ret = Promise.reject(error);
         Transaction.active.discard(error, existing.tran);
         if (Debug.verbosity >= 3) Debug.log("║", " ", error.message);
       }
       else {
-        c2.resultOfInvoke = CachedResult.run<any>(c2, (...argsy: any[]): any => {
+        c2.ret = CachedResult.run<any>(c2, (...argsy: any[]): any => {
           return c2.config.body.call(this.handle.proxy, ...argsy);
         }, ...argsx);
       }
@@ -160,12 +160,12 @@ class ReactiveCacheImpl extends ReactiveCache<any> {
 
   private reconfigure(config: Partial<Config>): Config {
     let cc = this.read(false);
-    let c: CachedResult = cc.cache;
+    let c: CachedResult = cc.cached;
     let r: Record = cc.record;
     let hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
     return Transaction.runAs<Config>(hint, ApartFrom.Reaction, 0, (): Config => {
       let cc2 = this.edit();
-      let c2: CachedResult = cc2.cache;
+      let c2: CachedResult = cc2.cached;
       c2.config = new ConfigImpl(c2.config.body, c2.config, config);
       if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
@@ -183,8 +183,8 @@ export class CachedResult implements ICachedResult {
   readonly member: PropertyKey;
   config: ConfigImpl;
   args: any[];
-  resultOfInvoke: any;
-  value: any;
+  ret: any;
+  result: any;
   error: any;
   started: number;
   readonly invalidation: { timestamp: number, recomputation: CachedResult | undefined };
@@ -199,14 +199,14 @@ export class CachedResult implements ICachedResult {
     if (init instanceof CachedResult) {
       this.config = init.config;
       this.args = init.args;
-      this.value = init.value;
+      this.result = init.result;
     }
     else {
       this.config = init;
       this.args = [];
-      this.value = undefined;
+      this.result = undefined;
     }
-    // this.returnValue = undefined;
+    // this.ret = undefined;
     // this.error = undefined;
     this.started = 0;
     this.invalidation = { timestamp: 0, recomputation: undefined };
@@ -266,8 +266,8 @@ export class CachedResult implements ICachedResult {
         let impl: ReactiveCacheImpl = Utils.get(trap, RT_CACHE);
         // let result: any = trap(...args);
         let cc = impl._obtain(false, ...args);
-        if (cc.cache.resultOfInvoke instanceof Promise)
-          cc.cache.resultOfInvoke.catch(error => { /* nop */ }); // bad idea to hide an error
+        if (cc.cached.ret instanceof Promise)
+          cc.cached.ret.catch(error => { /* nop */ }); // bad idea to hide an error
       }
     }
     else
@@ -420,10 +420,10 @@ export class CachedResult implements ICachedResult {
   }
 
   tryLeave(r: Record, prev: CachedResult, mon: Monitor | null): void {
-    if (this.resultOfInvoke instanceof Promise) {
-      this.resultOfInvoke = this.resultOfInvoke.then(
+    if (this.ret instanceof Promise) {
+      this.ret = this.ret.then(
         result => {
-          this.value = result;
+          this.result = result;
           this.leave(r, prev, mon, "<:", "is completed");
           return result;
         },
@@ -435,7 +435,7 @@ export class CachedResult implements ICachedResult {
       if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  :>", `${Hint.record(r, true)}.${this.member.toString()} is async...`);
     }
     else {
-      this.value = this.resultOfInvoke;
+      this.result = this.ret;
       this.leave(r, prev, mon, "<=", "is completed");
     }
   }
