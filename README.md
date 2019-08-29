@@ -178,9 +178,9 @@ invocation of the caching function to renew the cache:
 **ReentrantCall** option defines how to handle reentrant calls of the same transactional function:
 
   - `ReentrantCall.ExitWithError` - fail with error if there is an existing transaction in progress;
-  - `ReentrantCall.WaitAndRestart` - wait for existing transaction to finish and then restart recent one;
-  - `ReentrantCall.DiscardPrevious` - discard existing transaction in favor of recent one;
-  - `ReentrantCall.DiscardPreviousNoWait` - discard existing transaction, but don't wait for its finish;
+  - `ReentrantCall.WaitAndRestart` - wait for previous transaction to finish and then restart current one;
+  - `ReentrantCall.DiscardPrevious` - discard previous transaction in favor of current one;
+  - `ReentrantCall.DiscardPreviousNoWait` - discard previous transaction, but don't wait for its finish;
   - `ReentrantCall.RunSimultaneously` - multiple simultaneous transactions are allowed.
 
 **Monitor** option is an object that holds the status of running
