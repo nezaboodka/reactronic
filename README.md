@@ -175,13 +175,13 @@ invocation of the caching function to renew the cache:
   - `ApartFrom.Children` - transaction is separated from children (callee) transactions;
   - `ApartFrom.All` - transaction is separated from reactions, parents, and children.
 
-**AsyncMode** option defines how to handle reentrant calls of the same transactional function:
+**ConcurrentCall** option defines how to handle concurrent calls of the same transactional function:
 
-  - `AsyncMode.PreventReentrance` - fail with error if there is an existing transaction in progress;
-  - `AsyncMode.RestartReentrant` - wait for existing transaction to finish and then restart recent one;
-  - `AsyncMode.DiscardExisting` - discard existing transaction in favor of recent one;
-  - `AsyncMode.DiscardExistingNoWait` - discard existing transaction, but don't wait for its finish;
-  - `AsyncMode.AllowReentrance` - multiple simultaneous transactions are allowed.
+  - `ConcurrentCall.ExitWithError` - fail with error if there is an existing transaction in progress;
+  - `ConcurrentCall.WaitAndRestart` - wait for existing transaction to finish and then restart recent one;
+  - `ConcurrentCall.DiscardPrevious` - discard existing transaction in favor of recent one;
+  - `ConcurrentCall.DiscardPreviousNoWait` - discard existing transaction, but don't wait for its finish;
+  - `ConcurrentCall.RunSimultaneously` - multiple simultaneous transactions are allowed.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
@@ -218,16 +218,16 @@ NPM: `npm install reactronic`
 function stateful(proto: object, prop?: PropertyKey): any;
 function stateless(proto: object, prop: PropertyKey): any;
 function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
-function cache(latency: Latency, asyncMode: AsyncMode, apartFrom: ApartFrom): F<any>;
+function cache(latency: Latency, concurrentCall: ConcurrentCall, apartFrom: ApartFrom): F<any>;
 function monitor(value: Monitor | null): F<any>;
 function config(config: Partial<Config>): F<any>;
 
-// Config: Mode, Latency, AsyncMode, ApartFrom, Monitor
+// Config: Mode, Latency, ConcurrentCall, ApartFrom, Monitor
 
 interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly asyncMode: AsyncMode;
+  readonly concurrentCall: ConcurrentCall;
   readonly apartFrom: ApartFrom;
   readonly monitor: Monitor | null;
 }
@@ -248,12 +248,12 @@ enum Renew {
   NoCache = -5, // default for transaction
 }
 
-enum AsyncMode {
-  PreventReentrance = 1, // fail with error if there is an existing transaction in progress (default)
-  RestartChallenger = 0, // wait for existing transaction to finish and then restart recent one
-  DiscardExisting = -1, // discard existing transaction in favor of recent one
-  DiscardExistingNoWait = -2, // discard existing transaction, but don't wait for its finish
-  AllowReentrance = -3, // multiple simultaneous transactions are allowed
+enum ConcurrentCall {
+  ExitWithError = 1, // fail with error if there is an existing transaction in progress (default)
+  WaitAndRestart = 0, // wait for existing transaction to finish and then restart reentrant one
+  DiscardPrevious = -1, // discard existing transaction in favor of recent one
+  DiscardPreviousNoWait = -2, // discard existing transaction, but don't wait for its finish
+  RunSimultaneously = -3, // multiple simultaneous transactions are allowed
 }
 
 enum ApartFrom {

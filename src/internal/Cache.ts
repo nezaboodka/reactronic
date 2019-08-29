@@ -1,7 +1,7 @@
 import { Utils, Debug, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
 export { ReactiveCache, recent } from "../ReactiveCache";
-import { Config, Renew, AsyncMode, ApartFrom } from "../Config";
+import { Config, Renew, ConcurrentCall, ApartFrom } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
 
@@ -75,7 +75,7 @@ class CachedMethod extends ReactiveCache<any> {
     if (!hit) {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
-          if (c.config.asyncMode === AsyncMode.PreventReentrance && c.config.asyncMode >= 1)
+          if (c.config.concurrentCall === ConcurrentCall.ExitWithError && c.config.concurrentCall >= 1)
             throw new Error(`[E609] ${c.hint()} is already running and reached the maximum of simultaneous calls (${c.config.mode})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
@@ -122,8 +122,8 @@ class CachedMethod extends ReactiveCache<any> {
     let c = cc.cached;
     let existing = c.invalidation.recomputation;
     if (existing && (
-      c.config.asyncMode === AsyncMode.DiscardExisting ||
-      c.config.asyncMode === AsyncMode.DiscardExistingNoWait)) {
+      c.config.concurrentCall === ConcurrentCall.DiscardPrevious ||
+      c.config.concurrentCall === ConcurrentCall.DiscardPreviousNoWait)) {
       existing.tran.discard(); // ignore silently
       c.invalidation.recomputation = undefined;
       if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is discarded and being relayed`);
@@ -141,8 +141,8 @@ class CachedMethod extends ReactiveCache<any> {
       else
         argsx = c2.args;
       if (existing && c2 !== existing && (
-        c.config.asyncMode === AsyncMode.RestartChallenger ||
-        c.config.asyncMode === AsyncMode.DiscardExisting)) {
+        c.config.concurrentCall === ConcurrentCall.WaitAndRestart ||
+        c.config.concurrentCall === ConcurrentCall.DiscardPrevious)) {
         const error = new Error(`Transaction will be restarted after t${existing.tran.id}`);
         c2.ret = Promise.reject(error);
         Transaction.active.discard(error, existing.tran);

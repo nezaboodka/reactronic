@@ -3,7 +3,7 @@ import { Monitor } from "./Monitor";
 export interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly asyncMode: AsyncMode;
+  readonly concurrentCall: ConcurrentCall;
   readonly apartFrom: ApartFrom;
   readonly monitor: Monitor | null;
   readonly tracing: number;
@@ -25,12 +25,12 @@ export enum Renew {
   NoCache = -5, // default for transaction
 }
 
-export enum AsyncMode { // https://en.wikipedia.org/wiki/Reentrancy_(computing)
-  PreventReentrance = 1, // fail with error if there is an existing transaction in progress (default)
-  RestartChallenger = 0, // wait for existing transaction to finish and then restart reentrant one
-  DiscardExisting = -1, // discard existing transaction in favor of recent one
-  DiscardExistingNoWait = -2, // discard existing transaction, but don't wait for its finish
-  AllowReentrance = -3, // multiple simultaneous transactions are allowed
+export enum ConcurrentCall {
+  ExitWithError = 1, // fail with error if there is an existing transaction in progress (default)
+  WaitAndRestart = 0, // wait for existing transaction to finish and then restart reentrant one
+  DiscardPrevious = -1, // discard existing transaction in favor of recent one
+  DiscardPreviousNoWait = -2, // discard existing transaction, but don't wait for its finish
+  RunSimultaneously = -3, // multiple simultaneous transactions are allowed
 }
 
 export enum ApartFrom {
