@@ -34,8 +34,9 @@ export enum ApartFrom {
 }
 
 export enum Reentrance { // https://en.wikipedia.org/wiki/Reentrancy_(computing)
-  Prevent = 1, // only one can run at a time (default)
-  WaitAndRestart = 0, // wait for preceding to complete and then restart a newer one
-  DiscardPreceding = -1, // discard preceding call in favor of a newer one
-  Allow = -2, // no limitations
+  Prevent = 1, // fail with error if there is an existing transaction in progress (default)
+  RestartRecent = 0, // wait for existing transaction to finish and then restart recent one
+  DiscardExisting = -1, // discard existing transaction in favor of recent one
+  DiscardExistingNoWait = -2, // discard existing transaction, but don't wait for its finish
+  Allow = -3, // multiple simultaneous transactions are allowed
 }

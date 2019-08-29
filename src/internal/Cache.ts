@@ -121,7 +121,9 @@ class CachedMethod extends ReactiveCache<any> {
   private recache(cc: CacheCall, ...argsx: any[]): CacheCall {
     let c = cc.cached;
     let existing = c.invalidation.recomputation;
-    if (existing && c.config.reentrance === Reentrance.DiscardPreceding) {
+    if (existing && (
+      c.config.reentrance === Reentrance.DiscardExisting ||
+      c.config.reentrance === Reentrance.DiscardExistingNoWait)) {
       existing.tran.discard(); // ignore silently
       c.invalidation.recomputation = undefined;
       if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is discarded and being relayed`);
@@ -138,7 +140,9 @@ class CachedMethod extends ReactiveCache<any> {
         c2.args = argsx;
       else
         argsx = c2.args;
-      if (existing && c2 !== existing && c.config.reentrance === Reentrance.WaitAndRestart) {
+      if (existing && c2 !== existing && (
+        c.config.reentrance === Reentrance.RestartRecent ||
+        c.config.reentrance === Reentrance.DiscardExisting)) {
         const error = new Error(`Transaction will be restarted after t${existing.tran.id}`);
         c2.ret = Promise.reject(error);
         Transaction.active.discard(error, existing.tran);
