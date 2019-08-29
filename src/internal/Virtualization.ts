@@ -5,7 +5,7 @@ import { CopyOnWriteMap } from "./Binding.CopyOnWriteMap";
 import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
-import { Config, Mode, Latency, Renew, Reentrance, ApartFrom } from "../Config";
+import { Config, Mode, Latency, Renew, AsyncMode, ApartFrom } from "../Config";
 import { Monitor } from "../Monitor";
 
 // Config
@@ -18,8 +18,8 @@ export class ConfigImpl implements Config {
   readonly body: Function;
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly reentrance: Reentrance;
-  readonly apart: ApartFrom;
+  readonly asyncMode: AsyncMode;
+  readonly apartFrom: ApartFrom;
   readonly monitor: Monitor | null;
   readonly tracing: number;
 
@@ -27,8 +27,8 @@ export class ConfigImpl implements Config {
     this.body = body !== undefined ? body : existing.body;
     this.mode = patch.mode !== undefined ? patch.mode : existing.mode;
     this.latency = patch.latency !== undefined ? patch.latency : existing.latency;
-    this.reentrance = patch.reentrance !== undefined ? patch.reentrance : existing.reentrance;
-    this.apart = patch.apart !== undefined ? patch.apart : existing.apart;
+    this.asyncMode = patch.asyncMode !== undefined ? patch.asyncMode : existing.asyncMode;
+    this.apartFrom = patch.apartFrom !== undefined ? patch.apartFrom : existing.apartFrom;
     this.monitor = patch.monitor !== undefined ? patch.monitor : existing.monitor;
     this.tracing = patch.tracing !== undefined ? patch.tracing : existing.tracing;
     Object.freeze(this);
@@ -38,8 +38,8 @@ export class ConfigImpl implements Config {
     body: undef,
     mode: Mode.Stateless,
     latency: Renew.NoCache,
-    reentrance: Reentrance.Prevent,
-    apart: ApartFrom.Reaction,
+    asyncMode: AsyncMode.PreventReentrance,
+    apartFrom: ApartFrom.Reaction,
     monitor: null,
     tracing: 0 }, {});
 }
