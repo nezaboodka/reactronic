@@ -75,7 +75,7 @@ class CachedMethod extends ReactiveCache<any> {
     if (!hit) {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
-          if (c.config.asyncMode === AsyncMode.PreventReentrance && c.config.mode >= 1)
+          if (c.config.asyncMode === AsyncMode.PreventReentrance && c.config.asyncMode >= 1)
             throw new Error(`[E609] ${c.hint()} is already running and reached the maximum of simultaneous calls (${c.config.mode})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
