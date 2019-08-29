@@ -5,7 +5,7 @@ import { CopyOnWriteMap } from "./Binding.CopyOnWriteMap";
 import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
-import { Config, Mode, Latency, Renew, ConcurrentCall, ApartFrom } from "../Config";
+import { Config, Mode, Latency, Renew, ReentrantCall, ApartFrom } from "../Config";
 import { Monitor } from "../Monitor";
 
 // Config
@@ -18,7 +18,7 @@ export class ConfigImpl implements Config {
   readonly body: Function;
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly concurrentCall: ConcurrentCall;
+  readonly reentrantCall: ReentrantCall;
   readonly apartFrom: ApartFrom;
   readonly monitor: Monitor | null;
   readonly tracing: number;
@@ -27,7 +27,7 @@ export class ConfigImpl implements Config {
     this.body = body !== undefined ? body : existing.body;
     this.mode = patch.mode !== undefined ? patch.mode : existing.mode;
     this.latency = patch.latency !== undefined ? patch.latency : existing.latency;
-    this.concurrentCall = patch.concurrentCall !== undefined ? patch.concurrentCall : existing.concurrentCall;
+    this.reentrantCall = patch.reentrantCall !== undefined ? patch.reentrantCall : existing.reentrantCall;
     this.apartFrom = patch.apartFrom !== undefined ? patch.apartFrom : existing.apartFrom;
     this.monitor = patch.monitor !== undefined ? patch.monitor : existing.monitor;
     this.tracing = patch.tracing !== undefined ? patch.tracing : existing.tracing;
@@ -38,7 +38,7 @@ export class ConfigImpl implements Config {
     body: undef,
     mode: Mode.Stateless,
     latency: Renew.NoCache,
-    concurrentCall: ConcurrentCall.ExitWithError,
+    reentrantCall: ReentrantCall.ExitWithError,
     apartFrom: ApartFrom.Reaction,
     monitor: null,
     tracing: 0 }, {});
