@@ -64,6 +64,10 @@ export class Transaction {
     return this;
   }
 
+  discarded(): boolean {
+    return this.error !== undefined;
+  }
+
   finished(): boolean {
     return this.sealed && this.busy === 0;
   }
