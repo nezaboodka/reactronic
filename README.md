@@ -175,7 +175,7 @@ invocation of the caching function to renew the cache:
   - `ApartFrom.Children` - transaction is separated from children (callee) transactions;
   - `ApartFrom.All` - transaction is separated from reactions, parents, and children.
 
-**ReentrantCall** option defines how to handle concurrent calls of the same transactional function:
+**ReentrantCall** option defines how to handle reentrant calls of the same transactional function:
 
   - `ReentrantCall.ExitWithError` - fail with error if there is an existing transaction in progress;
   - `ReentrantCall.WaitAndRestart` - wait for existing transaction to finish and then restart recent one;
