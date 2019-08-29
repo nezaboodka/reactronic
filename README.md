@@ -285,6 +285,7 @@ class Transaction {
   commit(): void;
   seal(): Transaction; // t1.seal().whenFinished().then(fulfill, reject)
   discard(error?: Error, retryAfter?: Transaction);
+  discarded(): boolean;
   finished(): boolean;
   whenFinished(): Promise<void>;
   join<T>(p: Promise<T>): Promise<T>;
