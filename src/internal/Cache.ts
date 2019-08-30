@@ -75,11 +75,11 @@ class CachedMethod extends ReactiveCache<any> {
     if (!hit) {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         if (c.invalidation.recomputation) {
-          if (c.config.reentrantCall === ReentrantCall.ExitWithError && c.config.reentrantCall >= 1)
+          if (c.config.reentrant === ReentrantCall.ExitWithError && c.config.reentrant >= 1)
             throw new Error(`[E609] ${c.hint()} is already running and reached the maximum of simultaneous calls (${c.config.mode})`);
         }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
-        let ret = Transaction.runAs<any>(hint, c.config.apartFrom, c.config.tracing, (...argsx: any[]): any => {
+        let ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (...argsx: any[]): any => {
           cc = this.recache(cc, ...argsx);
           return cc.cached.ret;
         }, ...args);
@@ -122,8 +122,8 @@ class CachedMethod extends ReactiveCache<any> {
     let c = cc.cached;
     let existing = c.invalidation.recomputation;
     if (existing && (
-      c.config.reentrantCall === ReentrantCall.DiscardPrevious ||
-      c.config.reentrantCall === ReentrantCall.DiscardPreviousNoWait)) {
+      c.config.reentrant === ReentrantCall.DiscardPrevious ||
+      c.config.reentrant === ReentrantCall.DiscardPreviousNoWait)) {
       existing.tran.discard(); // ignore silently
       c.invalidation.recomputation = undefined;
       if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is discarded and being relayed`);
@@ -141,8 +141,8 @@ class CachedMethod extends ReactiveCache<any> {
       else
         argsx = c2.args;
       if (existing && c2 !== existing && (
-        c.config.reentrantCall === ReentrantCall.WaitAndRestart ||
-        c.config.reentrantCall === ReentrantCall.DiscardPrevious)) {
+        c.config.reentrant === ReentrantCall.WaitAndRestart ||
+        c.config.reentrant === ReentrantCall.DiscardPrevious)) {
         const error = new Error(`Transaction will be restarted after t${existing.tran.id}`);
         c2.ret = Promise.reject(error);
         Transaction.active.discard(error, existing.tran);

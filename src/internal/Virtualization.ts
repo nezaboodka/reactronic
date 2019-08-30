@@ -18,8 +18,8 @@ export class ConfigImpl implements Config {
   readonly body: Function;
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly reentrantCall: ReentrantCall;
-  readonly apartFrom: ApartFrom;
+  readonly reentrant: ReentrantCall;
+  readonly apart: ApartFrom;
   readonly monitor: Monitor | null;
   readonly tracing: number;
 
@@ -27,8 +27,8 @@ export class ConfigImpl implements Config {
     this.body = body !== undefined ? body : existing.body;
     this.mode = patch.mode !== undefined ? patch.mode : existing.mode;
     this.latency = patch.latency !== undefined ? patch.latency : existing.latency;
-    this.reentrantCall = patch.reentrantCall !== undefined ? patch.reentrantCall : existing.reentrantCall;
-    this.apartFrom = patch.apartFrom !== undefined ? patch.apartFrom : existing.apartFrom;
+    this.reentrant = patch.reentrant !== undefined ? patch.reentrant : existing.reentrant;
+    this.apart = patch.apart !== undefined ? patch.apart : existing.apart;
     this.monitor = patch.monitor !== undefined ? patch.monitor : existing.monitor;
     this.tracing = patch.tracing !== undefined ? patch.tracing : existing.tracing;
     Object.freeze(this);
@@ -38,8 +38,8 @@ export class ConfigImpl implements Config {
     body: undef,
     mode: Mode.Stateless,
     latency: Renew.NoCache,
-    reentrantCall: ReentrantCall.ExitWithError,
-    apartFrom: ApartFrom.Reaction,
+    reentrant: ReentrantCall.ExitWithError,
+    apart: ApartFrom.Reaction,
     monitor: null,
     tracing: 0 }, {});
 }

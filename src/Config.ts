@@ -3,8 +3,8 @@ import { Monitor } from "./Monitor";
 export interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly reentrantCall: ReentrantCall;
-  readonly apartFrom: ApartFrom;
+  readonly reentrant: ReentrantCall;
+  readonly apart: ApartFrom;
   readonly monitor: Monitor | null;
   readonly tracing: number;
 }

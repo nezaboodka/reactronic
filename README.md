@@ -218,7 +218,7 @@ NPM: `npm install reactronic`
 function stateful(proto: object, prop?: PropertyKey): any;
 function stateless(proto: object, prop: PropertyKey): any;
 function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
-function cache(latency: Latency, reentrantCall: ReentrantCall, apartFrom: ApartFrom): F<any>;
+function cache(latency: Latency, reentrant: ReentrantCall, apart: ApartFrom): F<any>;
 function monitor(value: Monitor | null): F<any>;
 function config(config: Partial<Config>): F<any>;
 
@@ -227,8 +227,8 @@ function config(config: Partial<Config>): F<any>;
 interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
-  readonly reentrantCall: ReentrantCall;
-  readonly apartFrom: ApartFrom;
+  readonly reentrant: ReentrantCall;
+  readonly apart: ApartFrom;
   readonly monitor: Monitor | null;
 }
 

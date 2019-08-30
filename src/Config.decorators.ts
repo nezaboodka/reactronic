@@ -20,9 +20,9 @@ export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyD
 
 export function cache(
   latency: Latency = Renew.OnDemand,
-  reentrantCall: ReentrantCall = ReentrantCall.ExitWithError,
-  apartFrom: ApartFrom = ApartFrom.Reaction): F<any> {
-  return config({mode: Mode.Stateful, latency, reentrantCall, apartFrom});
+  reentrant: ReentrantCall = ReentrantCall.ExitWithError,
+  apart: ApartFrom = ApartFrom.Reaction): F<any> {
+  return config({mode: Mode.Stateful, latency, reentrant, apart});
 }
 
 export function monitor(value: Monitor | null): F<any> {
