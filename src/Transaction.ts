@@ -109,11 +109,8 @@ export class Transaction {
   }
 
   static runAs<T>(hint: string, apart: ApartFrom, tracing: number, func: F<T>, ...args: any[]): T {
-    let root = Utils.hasFlags(apart, ApartFrom.Parent)
-      || Utils.hasFlags(Transaction.active.apart, ApartFrom.Children)
-      || Transaction.active.finished();
-    let t: Transaction = root ? new Transaction(hint, apart, tracing) : Transaction.active;
-    root = t !== Transaction.active;
+    const t: Transaction = Transaction.acquire(hint, apart, tracing);
+    const root = t !== Transaction.active;
     let result: any;
     try {
       result = t.run<T>(func, ...args);
@@ -123,7 +120,7 @@ export class Transaction {
           try {
             Transaction.active = Transaction.nope;
             // const cache = Utils.get(result, RT_CACHE);
-            result = t.wrapForRetryIfAny(t.join(result), func, ...args);
+            result = t.retryIfNeeded(t.join(result), func, ...args);
             // Utils.set(result, RT_CACHE, cache);
           }
           finally {
@@ -142,7 +139,14 @@ export class Transaction {
     return result;
   }
 
-  private async wrapForRetryIfAny<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
+  private static acquire(hint: string, apart: ApartFrom, tracing: number): Transaction {
+    let startNew = Utils.hasAllFlags(apart, ApartFrom.Parent)
+      || Utils.hasAllFlags(Transaction.active.apart, ApartFrom.Children)
+      || Transaction.active.finished();
+    return startNew ? new Transaction(hint, apart, tracing) : Transaction.active;
+  }
+
+  private async retryIfNeeded<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
     try {
       let result = await p;
       return result;
@@ -158,26 +162,6 @@ export class Transaction {
         throw error;
     }
   }
-
-  // private wrapForRetryIfAnyOld<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
-  //   let self = this;
-  //   let wrapped = p.catch(error => {
-  //     if (self.awaiting && self.awaiting !== Transaction.nope) {
-  //       if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${self.id} (${self.hint}) is waiting for restart`);
-  //       return self.awaiting.whenFinished(true).then(
-  //         () => {
-  //           if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${self.id} (${self.hint}) is restarted`);
-  //           return Transaction.runAs<T>(self.hint, true, self.tracing, func, ...args);
-  //         },
-  //         error => {
-  //           throw error;
-  //         });
-  //     }
-  //     else
-  //       throw error;
-  //   });
-  //   return wrapped;
-  // }
 
   // Internal
 

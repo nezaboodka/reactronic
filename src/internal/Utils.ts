@@ -77,7 +77,7 @@ export class Utils {
     return result;
   }
 
-  static hasFlags(flags: number, required: number): boolean {
+  static hasAllFlags(flags: number, required: number): boolean {
     return (flags & required) === required;
   }
 }
