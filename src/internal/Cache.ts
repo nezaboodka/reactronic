@@ -417,7 +417,7 @@ export class CachedResult implements ICachedResult {
   }
 
   enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
-    if (this.config.tracing >= 4 || (this.config.tracing === 0 && Debug.verbosity >= 4)) Debug.log("║", "  =>", `${Hint.record(r, true)}.${this.member.toString()} is started`);
+    if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.computing = Date.now();
     this.monitorEnter(mon);
     if (!prev.invalidation.recomputation)
@@ -429,30 +429,30 @@ export class CachedResult implements ICachedResult {
       this.ret = this.ret.then(
         result => {
           this.result = result;
-          this.leave(r, prev, mon, "<:", "is completed");
+          this.leave(r, prev, mon, "██", "is resolved");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, prev, mon, "<:", "is completed with error");
+          this.leave(r, prev, mon, "██", "is resolved with error");
           throw error;
         });
       // Utils.set(this.ret, RT_CACHE, this);
-      if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  :>", `${Hint.record(r, true)}.${this.member.toString()} is async...`);
+      if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave...`, 0, "ASYNC");
     }
     else {
       this.result = this.ret;
-      this.leave(r, prev, mon, "<=", "is completed");
+      this.leave(r, prev, mon, "_/", "- leave");
     }
   }
 
-  private leave(r: Record, prev: CachedResult, mon: Monitor | null, op: string, message: string): void {
+  private leave(r: Record, prev: CachedResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
     if (prev.invalidation.recomputation === this)
       prev.invalidation.recomputation = undefined;
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.computing;
     this.computing = 0;
-    if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms);
+    if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
     // TODO: handle errors
     this.subscribeToObservables(true);
     this.hotObservables.clear();
