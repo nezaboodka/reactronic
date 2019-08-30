@@ -108,7 +108,8 @@ class CachedMethod extends ReactiveCache<any> {
     let r: Record = ctx.edit(this.handle, member, RT_CACHE);
     let c: CachedResult = r.data[member] || this.blank;
     let isUpToDate = ctx.timestamp < c.invalidation.timestamp;
-    if ((!isUpToDate && (c.record !== r || c.computing === 0)) || c.config.latency === Renew.NoCache) {
+    if ((!isUpToDate && (c.record !== r || c.computing === 0)) ||
+        c.config.latency === Renew.NoCache) {
       let c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
       if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.blank ? "blank" : c.hint(false)}`);
@@ -122,8 +123,8 @@ class CachedMethod extends ReactiveCache<any> {
     let c = cc.cached;
     let existing = c.invalidation.recomputation;
     if (existing && (
-      c.config.reentrant === ReentrantCall.DiscardPrevious ||
-      c.config.reentrant === ReentrantCall.DiscardPreviousNoWait)) {
+        c.config.reentrant === ReentrantCall.DiscardPrevious ||
+        c.config.reentrant === ReentrantCall.DiscardPreviousNoWait)) {
       existing.tran.discard(); // ignore silently
       c.invalidation.recomputation = undefined;
       if (Debug.verbosity >= 3) Debug.log("║", " ", `transaction t${existing.tran.id} (${existing.tran.hint}) is discarded by reentrant call of ${cc.cached.hint(true)}`);
@@ -141,8 +142,8 @@ class CachedMethod extends ReactiveCache<any> {
       else
         argsx = c2.args;
       if (existing && c2 !== existing && (
-        c.config.reentrant === ReentrantCall.WaitAndRestart ||
-        c.config.reentrant === ReentrantCall.DiscardPrevious)) {
+          c.config.reentrant === ReentrantCall.WaitAndRestart ||
+          c.config.reentrant === ReentrantCall.DiscardPrevious)) {
         const error = new Error(`transaction will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
         c2.ret = Promise.reject(error);
         Transaction.active.discard(error, existing.tran);
