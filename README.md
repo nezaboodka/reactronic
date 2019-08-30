@@ -296,6 +296,8 @@ class Transaction {
 
 // ReactiveCache
 
+function recent<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
+
 abstract class ReactiveCache<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
@@ -309,8 +311,6 @@ abstract class ReactiveCache<T> {
   static get<T>(method: F<T>): ReactiveCache<T>;
   static unmount(...objects: any[]): Transaction;
 }
-
-function recent<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
 
 declare global {
   interface Function {
