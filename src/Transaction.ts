@@ -149,9 +149,9 @@ export class Transaction {
     }
     catch (error) {
       if (this.awaiting && this.awaiting !== Transaction.nope) {
-        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is waiting for restart`);
+        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
         await this.awaiting.whenFinished(true);
-        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id}'${this.hint} is ready for restart`);
+        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
         return Transaction.runAs<T>(this.hint, ApartFrom.Reaction | ApartFrom.Parent, this.tracing, func, ...args);
       }
       else
@@ -163,10 +163,10 @@ export class Transaction {
   //   let self = this;
   //   let wrapped = p.catch(error => {
   //     if (self.awaiting && self.awaiting !== Transaction.nope) {
-  //       if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${self.id}'${self.hint} is waiting for restart`);
+  //       if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${self.id} (${self.hint}) is waiting for restart`);
   //       return self.awaiting.whenFinished(true).then(
   //         () => {
-  //           if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${self.id}'${self.hint} is restarted`);
+  //           if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${self.id} (${self.hint}) is restarted`);
   //           return Transaction.runAs<T>(self.hint, true, self.tracing, func, ...args);
   //         },
   //         error => {
@@ -197,7 +197,7 @@ export class Transaction {
       else
         Debug.color = 37;
       // Debug.color = 31 + (this.snapshot.id) % 6;
-      Debug.prefix = `t${this.snapshot.id}`; // TODO: optimize to avoid toString
+      Debug.prefix = `t${this.id}`; // TODO: optimize to avoid toString
       this.snapshot.checkout();
       result = func(...args);
       if (this.sealed && this.busy === 1 && !this.error)
@@ -242,7 +242,7 @@ export class Transaction {
   }
 
   private tryResolveConflicts(conflicts: Record[]): void {
-    this.error = this.error || new Error(`[E604] transaction t${this.snapshot.id}'${this.snapshot.hint} conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
+    this.error = this.error || new Error(`[E604] transaction t${this.id} (${this.hint}) conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
     throw this.error;
   }
 

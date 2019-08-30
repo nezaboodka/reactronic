@@ -126,7 +126,7 @@ class CachedMethod extends ReactiveCache<any> {
       c.config.reentrant === ReentrantCall.DiscardPreviousNoWait)) {
       existing.tran.discard(); // ignore silently
       c.invalidation.recomputation = undefined;
-      if (Debug.verbosity >= 3) Debug.log("║", " ", `Transaction t${existing.tran.id} is discarded and being relayed`);
+      if (Debug.verbosity >= 3) Debug.log("║", " ", `transaction t${existing.tran.id} (${existing.tran.hint}) is discarded by reentrant call of ${cc.cached.hint(true)}`);
     }
     let cc2 = this.edit();
     let c2: CachedResult = cc2.cached;
@@ -143,7 +143,7 @@ class CachedMethod extends ReactiveCache<any> {
       if (existing && c2 !== existing && (
         c.config.reentrant === ReentrantCall.WaitAndRestart ||
         c.config.reentrant === ReentrantCall.DiscardPrevious)) {
-        const error = new Error(`Transaction will be restarted after t${existing.tran.id}`);
+        const error = new Error(`transaction will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
         c2.ret = Promise.reject(error);
         Transaction.active.discard(error, existing.tran);
         if (Debug.verbosity >= 3) Debug.log("║", " ", error.message);

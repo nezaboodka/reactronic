@@ -207,7 +207,7 @@ export class Snapshot implements ISnapshot {
   }
 
   private static unlinkHistory(s: Snapshot): void {
-    if (Debug.verbosity >= 5) Debug.log("", "  ", `Transaction "t${s.id}: ${s.hint}" is being collected`);
+    if (Debug.verbosity >= 5) Debug.log("", "  ", `snapshot t${s.id} (${s.hint}) is being collected`);
     s.changeset.forEach((r: Record, h: Handle) => {
       if (Debug.verbosity >= 5 && r.prev.record !== Record.empty) Debug.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
