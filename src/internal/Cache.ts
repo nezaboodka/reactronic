@@ -425,12 +425,12 @@ export class CachedResult implements ICachedResult {
       this.ret = this.ret.then(
         result => {
           this.result = result;
-          this.leave(r, prev, mon, "▒▒", "is completed successfully");
+          this.leave(r, prev, mon, "▒▒", "is completed successfully", "RESOLVED");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, prev, mon, "▒▒", "is completed with error");
+          this.leave(r, prev, mon, "▒▒", "is completed with error", "REJECTED");
           throw error;
         });
       // Utils.set(this.ret, RT_CACHE, this);
