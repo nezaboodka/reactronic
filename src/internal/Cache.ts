@@ -31,7 +31,7 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   recent(...args: any): any {
-    let cc = this.obtain(false, ...args);
+    let cc = this.obtain(false, args);
     if (cc.isUpToDate || cc.record.snapshot.completed)
       Record.markViewed(cc.record, cc.cached.member);
     else if (cc.record.prev.record !== Record.empty)
@@ -59,17 +59,17 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   invoke(...args: any[]): any {
-    let cc = this.obtain(true, ...args);
+    let cc = this.obtain(true, args);
     Record.markViewed(cc.record, cc.cached.member);
     return cc.cached.ret;
   }
 
-  obtain(invoke?: boolean, ...args: any[]): CacheCall {
+  obtain(invoke?: boolean, args?: any[]): CacheCall {
     let cc = this.read(false);
     let c: CachedResult = cc.cached;
     let hit = (cc.isUpToDate || c.computing > 0) &&
       c.config.latency !== Renew.NoCache &&
-      c.args[0] === args[0] ||
+      (args === undefined || c.args[0] === args[0]) ||
       cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
     // if (Debug.verbosity >= 3 && c.invalidation.recomputation) Debug.log("", "    ‼", `${Hint.record(cc.record)}.${c.member.toString()} is concurrent`);
     if (!hit) {
@@ -78,11 +78,11 @@ class CachedMethod extends ReactiveCache<any> {
           if (c.config.reentrant === ReentrantCall.ExitWithError && c.config.reentrant >= 1)
             throw new Error(`[E609] ${c.hint()} is already running and reached the maximum of simultaneous calls (${c.config.mode})`);
         }
-        let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args.length > 0 ? `/${args[0]}` : ""}` : "recache";
-        let ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (...argsx: any[]): any => {
-          cc = this.recache(cc, ...argsx);
+        let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
+        let ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (argsx: any[] | undefined): any => {
+          cc = this.recache(cc, argsx);
           return cc.cached.ret;
-        }, ...args);
+        }, args);
         cc.cached.ret = ret;
       }
     }
@@ -119,7 +119,7 @@ class CachedMethod extends ReactiveCache<any> {
     return { cached: c, record: r, isUpToDate };
   }
 
-  private recache(cc: CacheCall, ...argsx: any[]): CacheCall {
+  private recache(cc: CacheCall, args: any[] | undefined): CacheCall {
     let c = cc.cached;
     let existing = c.invalidation.recomputation;
     if (existing && (
@@ -136,11 +136,10 @@ class CachedMethod extends ReactiveCache<any> {
     c2.enter(r2, c, mon);
     try
     {
-      // TODO: To fix this logic - it causes confusion when calling methods with optional parameters
-      if (argsx.length > 0)
-        c2.args = argsx;
+      if (args)
+        c2.args = args;
       else
-        argsx = c2.args;
+        args = c2.args;
       if (existing && c2 !== existing && (
           c.config.reentrant === ReentrantCall.WaitAndRestart ||
           c.config.reentrant === ReentrantCall.DiscardPrevious)) {
@@ -150,9 +149,9 @@ class CachedMethod extends ReactiveCache<any> {
         if (Debug.verbosity >= 3) Debug.log("║", " ", error.message);
       }
       else {
-        c2.ret = CachedResult.run<any>(c2, (...argsy: any[]): any => {
-          return c2.config.body.call(this.handle.proxy, ...argsy);
-        }, ...argsx);
+        c2.ret = CachedResult.run<any>(c2, (...argsx: any[]): any => {
+          return c2.config.body.call(this.handle.proxy, ...argsx);
+        }, ...args);
       }
       c2.invalidation.timestamp = Number.MAX_SAFE_INTEGER;
     }
@@ -260,23 +259,20 @@ export class CachedResult implements ICachedResult {
     return caching;
   }
 
-  triggerRecache(timestamp: number, now: boolean, ...args: any[]): void {
+  triggerRecache(timestamp: number, now: boolean, args?: any[]): void {
     if (now || this.config.latency === Renew.Immediately) {
       if (!this.error && (this.config.latency === Renew.NoCache ||
           (timestamp >= this.invalidation.timestamp && !this.invalidation.recomputation))) {
-        // let proxy = this.record.data
-        // let cachedInvoke = this.record.data[this.member];
         let proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
         let trap: Function = Reflect.get(proxy, this.member, proxy);
         let cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
-        // let result: any = trap(...args);
-        let cc = cachedMethod.obtain(false, ...args);
+        let cc = cachedMethod.obtain(false, args);
         if (cc.cached.ret instanceof Promise)
           cc.cached.ret.catch(error => { /* nop */ }); // bad idea to hide an error
       }
     }
     else
-      sleep(this.config.latency).then(() => this.triggerRecache(timestamp, true, ...args));
+      sleep(this.config.latency).then(() => this.triggerRecache(timestamp, true, args));
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
