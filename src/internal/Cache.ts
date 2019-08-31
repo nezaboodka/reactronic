@@ -9,6 +9,7 @@ interface CacheCall {
   record: Record;
   cached: CachedResult;
   isUpToDate: boolean;
+  isHit: boolean;
 }
 
 class CachedMethod extends ReactiveCache<any> {
@@ -66,17 +67,14 @@ class CachedMethod extends ReactiveCache<any> {
 
   obtain(invoke?: boolean, args?: any[]): CacheCall {
     let cc = this.read(false);
-    let c: CachedResult = cc.cached;
-    let hit = (cc.isUpToDate || c.computing > 0) &&
-      c.config.latency !== Renew.NoCache &&
-      (args === undefined || c.args[0] === args[0]) ||
-      cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
-    // if (Debug.verbosity >= 3 && c.invalidation.recomputation) Debug.log("", "    ‼", `${Hint.record(cc.record)}.${c.member.toString()} is concurrent`);
     let cc2: CacheCall = cc;
-    if (!hit) {
+    if (!cc2.isHit) {
+      let c: CachedResult = cc.cached;
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         let ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (argsx: any[] | undefined): any => {
+          if (cc2.cached.tran.discarded())
+            cc2 = this.read(false); // re-read on retry
           cc2 = this.recache(cc2.cached, argsx);
           return cc2.cached.ret;
         }, args);
@@ -84,19 +82,23 @@ class CachedMethod extends ReactiveCache<any> {
       }
     }
     else
-      if (Debug.verbosity >= 3) Debug.log("║", "  ==", `${Hint.record(cc.record)}.${c.member.toString()} hits cache`);
+      if (Debug.verbosity >= 3) Debug.log("║", "  ==", `${Hint.record(cc.record)}.${cc2.cached.member.toString()} hits cache`);
     return cc2;
   }
 
-  private read(markViewed: boolean): CacheCall {
+  private read(markViewed: boolean, args?: any[]): CacheCall {
     let ctx = Snapshot.active();
     let member = this.blank.member;
     let r: Record = ctx.tryRead(this.handle);
     let c: CachedResult = r.data[member] || this.blank;
     let isUpToDate = ctx.timestamp < c.invalidation.timestamp && c.computing === 0;
+    let isHit = (isUpToDate || c.computing > 0) &&
+      c.config.latency !== Renew.NoCache &&
+      (args === undefined || c.args[0] === args[0]) ||
+      r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (markViewed)
       Record.markViewed(r, c.member);
-    return { cached: c, record: r, isUpToDate };
+    return { cached: c, record: r, isUpToDate, isHit };
   }
 
   private edit(): CacheCall {
@@ -113,7 +115,7 @@ class CachedMethod extends ReactiveCache<any> {
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
-    return { cached: c, record: r, isUpToDate };
+    return { cached: c, record: r, isUpToDate, isHit: false };
   }
 
   private recache(c: CachedResult, args: any[] | undefined): CacheCall {
