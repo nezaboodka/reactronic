@@ -125,9 +125,9 @@ class CachedMethod extends ReactiveCache<any> {
     if (existing && (
         c.config.reentrant === ReentrantCall.DiscardPrevious ||
         c.config.reentrant === ReentrantCall.DiscardPreviousNoWait)) {
-      existing.tran.discard(); // ignore silently
-      c.invalidation.recomputation = undefined;
-      if (Debug.verbosity >= 3) Debug.log("║", " ", `transaction t${existing.tran.id} (${existing.tran.hint}) is discarded by reentrant call of ${cc.cached.hint(true)}`);
+          existing.tran.discard(); // ignore silently
+          c.invalidation.recomputation = undefined;
+          if (Debug.verbosity >= 3) Debug.log("║", " ", `transaction t${existing.tran.id} (${existing.tran.hint}) is discarded by reentrant call of ${cc.cached.hint(true)}`);
     }
     let cc2 = this.edit();
     let c2: CachedResult = cc2.cached;
@@ -425,16 +425,17 @@ export class CachedResult implements ICachedResult {
       this.ret = this.ret.then(
         result => {
           this.result = result;
-          this.leave(r, prev, mon, "▒▒", "is completed successfully", "RESOLVED");
+          this.leave(r, prev, mon, "▒▒", "- completed", " DONE ▪▪▪ ─┘");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, prev, mon, "▒▒", "is completed with error", "REJECTED");
+          this.leave(r, prev, mon, "▒▒", "- failed!  ", "ERROR ▪▪▪ ─┘");
           throw error;
         });
       // Utils.set(this.ret, RT_CACHE, this);
-      if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3)) Debug.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave...`, 0, "ASYNC");
+      if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3))
+        Debug.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave....`, 0, "ASYNC ▪▪▪ ─┐");
     }
     else {
       this.result = this.ret;
