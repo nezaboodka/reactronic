@@ -72,23 +72,20 @@ class CachedMethod extends ReactiveCache<any> {
       (args === undefined || c.args[0] === args[0]) ||
       cc.record.data[RT_UNMOUNT] === RT_UNMOUNT;
     // if (Debug.verbosity >= 3 && c.invalidation.recomputation) Debug.log("", "    ‼", `${Hint.record(cc.record)}.${c.member.toString()} is concurrent`);
+    let cc2: CacheCall = cc;
     if (!hit) {
       if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
-        if (c.invalidation.recomputation) {
-          if (c.config.reentrant === ReentrantCall.ExitWithError && c.config.reentrant >= 1)
-            throw new Error(`[E609] ${c.hint()} is already running and reached the maximum of simultaneous calls (${c.config.mode})`);
-        }
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         let ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (argsx: any[] | undefined): any => {
-          cc = this.recache(cc, argsx);
-          return cc.cached.ret;
+          cc2 = this.recache(cc2.cached, argsx);
+          return cc2.cached.ret;
         }, args);
-        cc.cached.ret = ret;
+        cc2.cached.ret = ret;
       }
     }
     else
       if (Debug.verbosity >= 3) Debug.log("║", "  ==", `${Hint.record(cc.record)}.${c.member.toString()} hits cache`);
-    return cc;
+    return cc2;
   }
 
   private read(markViewed: boolean): CacheCall {
@@ -119,47 +116,61 @@ class CachedMethod extends ReactiveCache<any> {
     return { cached: c, record: r, isUpToDate };
   }
 
-  private recache(cc: CacheCall, args: any[] | undefined): CacheCall {
-    let c = cc.cached;
-    let existing = c.invalidation.recomputation;
-    if (existing && (
-        c.config.reentrant === ReentrantCall.DiscardPrevious ||
-        c.config.reentrant === ReentrantCall.DiscardPreviousNoWait)) {
-          existing.tran.discard(); // ignore silently
-          c.invalidation.recomputation = undefined;
-          if (Debug.verbosity >= 3) Debug.log("║", " ", `transaction t${existing.tran.id} (${existing.tran.hint}) is discarded by reentrant call of ${cc.cached.hint(true)}`);
-    }
+  private recache(c: CachedResult, args: any[] | undefined): CacheCall {
+    let error: Error | undefined = this.checkForReentrance(c);
     let cc2 = this.edit();
     let c2: CachedResult = cc2.cached;
     let r2: Record = cc2.record;
     let mon: Monitor | null = c.config.monitor;
-    c2.enter(r2, c, mon);
+    if (!error)
+      c2.enter(r2, c, mon);
     try
     {
       if (args)
         c2.args = args;
       else
         args = c2.args;
-      if (existing && c2 !== existing && (
-          c.config.reentrant === ReentrantCall.WaitAndRestart ||
-          c.config.reentrant === ReentrantCall.DiscardPrevious)) {
-        const error = new Error(`transaction will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
-        c2.ret = Promise.reject(error);
-        Transaction.active.discard(error, existing.tran);
-        if (Debug.verbosity >= 3) Debug.log("║", " ", error.message);
-      }
-      else {
+      if (!error)
         c2.ret = CachedResult.run<any>(c2, (...argsx: any[]): any => {
           return c2.config.body.call(this.handle.proxy, ...argsx);
         }, ...args);
-      }
+      else
+        c2.ret = Promise.reject(error);
       c2.invalidation.timestamp = Number.MAX_SAFE_INTEGER;
     }
     finally {
-      c2.tryLeave(r2, c, mon);
+      if (!error)
+        c2.tryLeave(r2, c, mon);
     }
     cc2.isUpToDate = c2.computing === 0;
     return cc2;
+  }
+
+  private checkForReentrance(c: CachedResult): Error | undefined {
+    let result: Error | undefined = undefined;
+    const existing = c.invalidation.recomputation;
+    const caller = Transaction.active;
+    if (existing)
+      switch (c.config.reentrant) {
+        case ReentrantCall.ExitWithError:
+          throw new Error(`[E609] ${c.hint()} is not reentrant`);
+        case ReentrantCall.WaitAndRestart:
+          result = new Error(`transaction will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
+          caller.discard(result, existing.tran);
+          break;
+        case ReentrantCall.DiscardPrevious:
+          result = new Error(`transaction will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
+          existing.tran.discard();
+          caller.discard(result, existing.tran);
+          break;
+        case ReentrantCall.DiscardPreviousNoWait:
+          existing.tran.discard();
+          c.invalidation.recomputation = undefined;
+          break;
+        case ReentrantCall.RunSimultaneously:
+          break; // do nothing
+      }
+    return result;
   }
 
   private reconfigure(config: Partial<Config>): Config {
