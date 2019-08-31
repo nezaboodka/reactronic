@@ -87,7 +87,7 @@ class CachedMethod extends ReactiveCache<any> {
       }
     }
     else
-      if (Debug.verbosity >= 4) Debug.log("║", "  ==", `${Hint.record(cc.record)}.${c.member.toString()}() hits cache`);
+      if (Debug.verbosity >= 3) Debug.log("║", "  ==", `${Hint.record(cc.record)}.${c.member.toString()} hits cache`);
     return cc;
   }
 
@@ -413,7 +413,7 @@ export class CachedResult implements ICachedResult {
   }
 
   enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
-    if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
+    if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3)) Debug.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.computing = Date.now();
     this.monitorEnter(mon);
     if (!prev.invalidation.recomputation)
@@ -425,16 +425,16 @@ export class CachedResult implements ICachedResult {
       this.ret = this.ret.then(
         result => {
           this.result = result;
-          this.leave(r, prev, mon, "██", "is resolved");
+          this.leave(r, prev, mon, "▒▒", "is completed successfully");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, prev, mon, "██", "is resolved with error");
+          this.leave(r, prev, mon, "▒▒", "is completed with error");
           throw error;
         });
       // Utils.set(this.ret, RT_CACHE, this);
-      if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave...`, 0, "ASYNC");
+      if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3)) Debug.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave...`, 0, "ASYNC");
     }
     else {
       this.result = this.ret;
@@ -448,7 +448,7 @@ export class CachedResult implements ICachedResult {
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.computing;
     this.computing = 0;
-    if (this.config.tracing >= 2 || (this.config.tracing === 0 && Debug.verbosity >= 2)) Debug.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
+    if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3)) Debug.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
     // TODO: handle errors
     this.subscribeToObservables(true);
     this.hotObservables.clear();
