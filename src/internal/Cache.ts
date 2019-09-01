@@ -7,7 +7,7 @@ import { Monitor } from "../Monitor";
 
 interface CacheCall {
   record: Record;
-  cached: CachedResult;
+  cache: CachedResult;
   isUpToDate: boolean;
   isHit: boolean;
 }
@@ -16,12 +16,12 @@ class CachedMethod extends ReactiveCache<any> {
   private readonly handle: Handle;
   private readonly blank: CachedResult;
 
-  get config(): Config { return this.read(false, undefined).cached.config; }
+  get config(): Config { return this.read(false).cache.config; }
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
-  get error(): boolean { return this.read(true, undefined).cached.error; }
-  invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false, undefined).cached, cause, 0) : false; }
-  get isComputing(): boolean { return this.read(true, undefined).cached.started > 0; }
-  get isUpdating(): boolean { return this.read(true, undefined).cached.outdated.recomputation !== undefined; }
+  get error(): boolean { return this.read(true).cache.error; }
+  invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
+  get isComputing(): boolean { return this.read(true).cache.started > 0; }
+  get isUpdating(): boolean { return this.read(true).cache.outdated.recomputation !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
@@ -34,59 +34,59 @@ class CachedMethod extends ReactiveCache<any> {
   recent(...args: any): any {
     let cc = this.obtain(false, args);
     if (cc.isUpToDate || cc.record.snapshot.completed)
-      Record.markViewed(cc.record, cc.cached.member);
+      Record.markViewed(cc.record, cc.cache.member);
     else if (cc.record.prev.record !== Record.empty)
-      Record.markViewed(cc.record.prev.record, cc.cached.member);
-    return cc.cached.result;
+      Record.markViewed(cc.record.prev.record, cc.cache.member);
+    return cc.cache.result;
   }
 
   get stamp(): number {
     let cc = this.obtain();
     let r = cc.isUpToDate ?  cc.record : cc.record.prev.record;
     if (r !== Record.empty)
-      Record.markViewed(r, cc.cached.member);
+      Record.markViewed(r, cc.cache.member);
     return r.snapshot.timestamp;
   }
 
   get isInvalidated(): boolean {
     let cc = this.obtain();
-    let result = cc.cached.isInvalidated();
+    let result = cc.cache.isInvalidated();
     if (result)
-      Record.markViewed(cc.record, cc.cached.member);
+      Record.markViewed(cc.record, cc.cache.member);
     else if (cc.record.prev.record !== Record.empty)
-      Record.markViewed(cc.record.prev.record, cc.cached.member);
+      Record.markViewed(cc.record.prev.record, cc.cache.member);
     // Record.markViewed(cc.record, cc.cache.member);
     return result;
   }
 
   invoke(...args: any[]): any {
     let cc = this.obtain(true, args);
-    Record.markViewed(cc.record, cc.cached.member);
-    return cc.cached.ret;
+    Record.markViewed(cc.record, cc.cache.member);
+    return cc.cache.ret;
   }
 
   obtain(invoke?: boolean, args?: any[]): CacheCall {
     let cc = this.read(false, args);
     let cc2: CacheCall = cc;
     if (!cc2.isHit) {
-      let c: CachedResult = cc.cached;
+      let c: CachedResult = cc.cache;
       if (invoke !== undefined && (!c.outdated.recomputation || invoke)) {
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         let ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (argsx: any[] | undefined): any => {
-          if (cc2.cached.tran.discarded())
+          if (cc2.cache.tran.discarded())
             cc2 = this.read(false, argsx); // re-read on retry
-          cc2 = this.recache(cc2.cached, argsx);
-          return cc2.cached.ret;
+          cc2 = this.recache(cc2.cache, argsx);
+          return cc2.cache.ret;
         }, args);
-        cc2.cached.ret = ret;
+        cc2.cache.ret = ret;
       }
     }
     else
-      if (Debug.verbosity >= 2) Debug.log("║", "  ==", `${Hint.record(cc.record)}.${cc2.cached.member.toString()} hits cache created by ${cc.cached.tran.hint}`);
+      if (Debug.verbosity >= 2) Debug.log("║", "  ==", `${Hint.record(cc.record)}.${cc2.cache.member.toString()} hits cache created by ${cc.cache.tran.hint}`);
     return cc2;
   }
 
-  private read(markViewed: boolean, args: any[] | undefined): CacheCall {
+  private read(markViewed: boolean, args?: any[]): CacheCall {
     let ctx = Snapshot.active();
     let member = this.blank.member;
     let r: Record = ctx.tryRead(this.handle);
@@ -98,7 +98,7 @@ class CachedMethod extends ReactiveCache<any> {
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (markViewed)
       Record.markViewed(r, c.member);
-    return { cached: c, record: r, isUpToDate, isHit };
+    return { cache: c, record: r, isUpToDate, isHit };
   }
 
   private edit(): CacheCall {
@@ -115,13 +115,13 @@ class CachedMethod extends ReactiveCache<any> {
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
-    return { cached: c, record: r, isUpToDate, isHit: false };
+    return { cache: c, record: r, isUpToDate, isHit: false };
   }
 
   private recache(c: CachedResult, args: any[] | undefined): CacheCall {
     const error = this.checkForReentrance(c);
     let cc2 = this.edit();
-    let c2: CachedResult = cc2.cached;
+    let c2: CachedResult = cc2.cache;
     let r2: Record = cc2.record;
     let mon: Monitor | null = c.config.monitor;
     if (!error)
@@ -176,13 +176,13 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   private reconfigure(config: Partial<Config>): Config {
-    let cc = this.read(false, undefined);
-    let c: CachedResult = cc.cached;
+    let cc = this.read(false);
+    let c: CachedResult = cc.cache;
     let r: Record = cc.record;
     let hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
     return Transaction.runAs<Config>(hint, ApartFrom.Reaction, 0, (): Config => {
       let cc2 = this.edit();
-      let c2: CachedResult = cc2.cached;
+      let c2: CachedResult = cc2.cache;
       c2.config = new ConfigImpl(c2.config.body, c2.config, config);
       if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
@@ -280,8 +280,8 @@ export class CachedResult implements ICachedResult {
         let trap: Function = Reflect.get(proxy, this.member, proxy);
         let cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
         let cc = cachedMethod.obtain(false, args);
-        if (cc.cached.ret instanceof Promise)
-          cc.cached.ret.catch(error => { /* nop */ }); // bad idea to hide an error
+        if (cc.cache.ret instanceof Promise)
+          cc.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
       }
     }
     else
