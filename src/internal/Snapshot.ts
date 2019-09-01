@@ -149,7 +149,7 @@ export class Snapshot implements ISnapshot {
         oo.forEach((c: ICachedResult) => {
           if (!c.isInvalidated()) {
             merged.add(c);
-            if (Debug.verbosity >= 3) Debug.log(" ", "∞", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
+            if (Debug.verbosity >= 3) Debug.log(" ", "O", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
           }
         });
       }

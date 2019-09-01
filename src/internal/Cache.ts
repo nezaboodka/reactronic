@@ -9,7 +9,7 @@ interface CachedCall {
   record: Record;
   cache: CachedResult;
   isUpToDate: boolean;
-  isHit: boolean;
+  isValid: boolean;
 }
 
 class CachedMethod extends ReactiveCache<any> {
@@ -42,7 +42,7 @@ class CachedMethod extends ReactiveCache<any> {
 
   get stamp(): number {
     const call: CachedCall = this.obtain();
-    const r = call.isUpToDate ?  call.record : call.record.prev.record;
+    const r = call.isUpToDate ? call.record : call.record.prev.record;
     if (r !== Record.empty)
       Record.markViewed(r, call.cache.member);
     return r.snapshot.timestamp;
@@ -67,21 +67,19 @@ class CachedMethod extends ReactiveCache<any> {
 
   obtain(invoke?: boolean, args?: any[]): CachedCall {
     let call: CachedCall = this.read(false, args);
-    if (!call.isHit) {
-      const c: CachedResult = call.cache;
-      if (invoke !== undefined && (!c.outdated.recaching || invoke)) {
-        const hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
-        const ret = Transaction.runAs<any>(hint, c.config.separate, c.config.tracing, (argsx: any[] | undefined): any => {
-          if (call.cache.tran.discarded())
-            call = this.read(false, argsx); // re-read on retry
-          call = this.recache(call.cache, argsx);
-          return call.cache.ret;
-        }, args);
-        call.cache.ret = ret;
-      }
+    const c: CachedResult = call.cache;
+    if (!call.isValid && invoke !== undefined && (!c.outdated.recaching || invoke)) {
+      const hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
+      const ret = Transaction.runAs<any>(hint, c.config.separate, c.config.tracing, (argsx: any[] | undefined): any => {
+        if (call.cache.tran.discarded())
+          call = this.read(false, argsx); // re-read on retry
+        call = this.recache(call.cache, argsx);
+        return call.cache.ret;
+      }, args);
+      call.cache.ret = ret;
     }
     else
-      if (Debug.verbosity >= 2) Debug.log("║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} hits cache created by ${call.cache.tran.hint}`);
+      if (Debug.verbosity >= 2) Debug.log("║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (created by ${call.cache.tran.hint})`);
     return call;
   }
 
@@ -91,13 +89,13 @@ class CachedMethod extends ReactiveCache<any> {
     const r: Record = ctx.tryRead(this.handle);
     const c: CachedResult = r.data[member] || this.blank;
     const isUpToDate = ctx.timestamp < c.outdated.timestamp && c.started === 0;
-    const isHit = (isUpToDate || c.started > 0) &&
+    const isValid = (isUpToDate || c.started > 0) &&
       c.config.latency !== Renew.NoCache &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (markViewed)
       Record.markViewed(r, c.member);
-    return { cache: c, record: r, isUpToDate, isHit };
+    return { cache: c, record: r, isUpToDate, isValid };
   }
 
   private edit(): CachedCall {
@@ -114,7 +112,7 @@ class CachedMethod extends ReactiveCache<any> {
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
-    return { cache: c, record: r, isUpToDate, isHit: false };
+    return { cache: c, record: r, isUpToDate, isValid: false };
   }
 
   private recache(prev: CachedResult, args: any[] | undefined): CachedCall {
@@ -353,7 +351,7 @@ export class CachedResult implements ICachedResult {
           this.invalidate(r, prop, hot, false, effect);
       });
     });
-    if (Debug.verbosity >= 3 && subscriptions.length > 0) Debug.log(hot ? "║" : " ", "∞", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if (Debug.verbosity >= 3 && subscriptions.length > 0) Debug.log(hot ? "║  " : " ", "O", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
   isInvalidated(): boolean {
