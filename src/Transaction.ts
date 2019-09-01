@@ -1,10 +1,10 @@
 import { Debug, Utils, undef, Record, ICachedResult, F, Handle, Snapshot, Hint } from "./internal/z.index";
-import { ApartFrom } from "./Config";
+import { SeparateFrom } from "./Config";
 
 export class Transaction {
   static nope: Transaction;
   static active: Transaction;
-  private readonly apart: ApartFrom;
+  private readonly separate: SeparateFrom;
   private readonly snapshot: Snapshot; // assigned in constructor
   private busy: number = 0;
   private sealed: boolean = false;
@@ -17,8 +17,8 @@ export class Transaction {
   private reaction: { tran?: Transaction, effect: ICachedResult[] } = { tran: undefined, effect: [] };
   private readonly tracing: number; // assigned in constructor
 
-  constructor(hint: string, apart: ApartFrom = ApartFrom.Reaction, tracing: number = 0) {
-    this.apart = apart;
+  constructor(hint: string, separate: SeparateFrom = SeparateFrom.Reaction, tracing: number = 0) {
+    this.separate = separate;
     this.snapshot = new Snapshot(hint);
     this.tracing = tracing;
   }
@@ -87,7 +87,7 @@ export class Transaction {
 
   undo(): void {
     const hint = Debug.verbosity >= 2 ? `Tran#${this.snapshot.hint}.undo` : "noname";
-    Transaction.runAs<void>(hint, ApartFrom.Reaction, 0, () => {
+    Transaction.runAs<void>(hint, SeparateFrom.Reaction, 0, () => {
       this.snapshot.changeset.forEach((r: Record, h: Handle) => {
         r.edits.forEach(prop => {
           if (r.prev.backup) {
@@ -105,11 +105,11 @@ export class Transaction {
   }
 
   static run<T>(func: F<T>, ...args: any[]): T {
-    return Transaction.runAs("noname", ApartFrom.Reaction, 0, func, ...args);
+    return Transaction.runAs("noname", SeparateFrom.Reaction, 0, func, ...args);
   }
 
-  static runAs<T>(hint: string, apart: ApartFrom, tracing: number, func: F<T>, ...args: any[]): T {
-    const t: Transaction = Transaction.acquire(hint, apart, tracing);
+  static runAs<T>(hint: string, separate: SeparateFrom, tracing: number, func: F<T>, ...args: any[]): T {
+    const t: Transaction = Transaction.acquire(hint, separate, tracing);
     const root = t !== Transaction.active;
     let result: any;
     try {
@@ -137,11 +137,11 @@ export class Transaction {
     return result;
   }
 
-  private static acquire(hint: string, apart: ApartFrom, tracing: number): Transaction {
-    const startNew = Utils.hasAllFlags(apart, ApartFrom.Parent)
-      || Utils.hasAllFlags(Transaction.active.apart, ApartFrom.Children)
+  private static acquire(hint: string, separate: SeparateFrom, tracing: number): Transaction {
+    const startNew = Utils.hasAllFlags(separate, SeparateFrom.Parent)
+      || Utils.hasAllFlags(Transaction.active.separate, SeparateFrom.Children)
       || Transaction.active.finished();
-    return startNew ? new Transaction(hint, apart, tracing) : Transaction.active;
+    return startNew ? new Transaction(hint, separate, tracing) : Transaction.active;
   }
 
   private async retryIfNeeded<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
@@ -154,7 +154,7 @@ export class Transaction {
         if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
         await this.awaiting.whenFinished(true);
         if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
-        return Transaction.runAs<T>(this.hint, ApartFrom.Reaction | ApartFrom.Parent, this.tracing, func, ...args);
+        return Transaction.runAs<T>(this.hint, SeparateFrom.Reaction | SeparateFrom.Parent, this.tracing, func, ...args);
       }
       else
         throw error;
@@ -244,8 +244,8 @@ export class Transaction {
 
   static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICachedResult[] }, tracing: number = 0): void {
     const name = Debug.verbosity >= 2 ? `${hint} - REACTION(${reaction.effect.length})` : "noname";
-    const apart = reaction.tran ? ApartFrom.Reaction : ApartFrom.Reaction | ApartFrom.Parent;
-    Transaction.runAs<void>(name, apart, tracing, () => {
+    const separate = reaction.tran ? SeparateFrom.Reaction : SeparateFrom.Reaction | SeparateFrom.Parent;
+    Transaction.runAs<void>(name, separate, tracing, () => {
       if (reaction.tran === undefined)
         reaction.tran = Transaction.active;
       reaction.effect.map(r => r.triggerRecache(timestamp, false, undefined));
@@ -282,7 +282,7 @@ export class Transaction {
   }
 
   static _init(): void {
-    const nope = new Transaction("nope", ApartFrom.All, 0);
+    const nope = new Transaction("nope", SeparateFrom.All, 0);
     nope.sealed = true;
     nope.snapshot.checkin();
     Transaction.nope = nope;

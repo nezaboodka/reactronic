@@ -168,12 +168,12 @@ invocation of the caching function to renew the cache:
   - `Renew.Manually` - manual renew (explicit only);
   - `Renew.NoCache` - renew on every call of the function.
 
-**ApartFrom** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
+**SeparateFrom** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
 
-  - `ApartFrom.Reaction` - transaction is separated from its reaction (default);
-  - `ApartFrom.Parent` - transaction is separated from parent (caller) transactions;
-  - `ApartFrom.Children` - transaction is separated from children (callee) transactions;
-  - `ApartFrom.All` - transaction is separated from reactions, parents, and children.
+  - `SeparateFrom.Reaction` - transaction is separated from its reaction (default);
+  - `SeparateFrom.Parent` - transaction is separated from parent (caller) transactions;
+  - `SeparateFrom.Children` - transaction is separated from children (callee) transactions;
+  - `SeparateFrom.All` - transaction is separated from reactions, parents, and children.
 
 **ReentrantCall** option defines how to handle reentrant calls of the same transactional function:
 
@@ -218,17 +218,17 @@ NPM: `npm install reactronic`
 function stateful(proto: object, prop?: PropertyKey): any;
 function stateless(proto: object, prop: PropertyKey): any;
 function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
-function cache(latency: Latency, reentrant: ReentrantCall, apart: ApartFrom): F<any>;
+function cache(latency: Latency, reentrant: ReentrantCall, separate: SeparateFrom): F<any>;
 function monitor(value: Monitor | null): F<any>;
 function config(config: Partial<Config>): F<any>;
 
-// Config: Mode, Latency, ReentrantCall, ApartFrom, Monitor
+// Config: Mode, Latency, ReentrantCall, SeparateFrom, Monitor
 
 interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
   readonly reentrant: ReentrantCall;
-  readonly apart: ApartFrom;
+  readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
 }
 
@@ -256,7 +256,7 @@ enum ReentrantCall {
   RunSimultaneously = -3, // multiple simultaneous transactions are allowed
 }
 
-enum ApartFrom {
+enum SeparateFrom {
   None = 0,
   Reaction = 1,
   Parent = 2,
@@ -290,7 +290,7 @@ class Transaction {
   whenFinished(): Promise<void>;
   join<T>(p: Promise<T>): Promise<T>;
   static run<T>(func: F<T>, ...args: any[]): T;
-  static runAs<T>(hint: string, apart: ApartFrom, tracing: number, func: F<T>, ...args: any[]): T;
+  static runAs<T>(hint: string, separate: SeparateFrom, tracing: number, func: F<T>, ...args: any[]): T;
   static readonly active: Transaction;
 }
 

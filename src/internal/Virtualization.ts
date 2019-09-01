@@ -5,7 +5,7 @@ import { CopyOnWriteMap } from "./Binding.CopyOnWriteMap";
 import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
-import { Config, Mode, Latency, Renew, ReentrantCall, ApartFrom } from "../Config";
+import { Config, Mode, Latency, Renew, ReentrantCall, SeparateFrom } from "../Config";
 import { Monitor } from "../Monitor";
 
 // Config
@@ -19,7 +19,7 @@ export class ConfigImpl implements Config {
   readonly mode: Mode;
   readonly latency: Latency;
   readonly reentrant: ReentrantCall;
-  readonly apart: ApartFrom;
+  readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
   readonly tracing: number;
 
@@ -28,7 +28,7 @@ export class ConfigImpl implements Config {
     this.mode = patch.mode !== undefined ? patch.mode : existing.mode;
     this.latency = patch.latency !== undefined ? patch.latency : existing.latency;
     this.reentrant = patch.reentrant !== undefined ? patch.reentrant : existing.reentrant;
-    this.apart = patch.apart !== undefined ? patch.apart : existing.apart;
+    this.separate = patch.separate !== undefined ? patch.separate : existing.separate;
     this.monitor = patch.monitor !== undefined ? patch.monitor : existing.monitor;
     this.tracing = patch.tracing !== undefined ? patch.tracing : existing.tracing;
     Object.freeze(this);
@@ -39,7 +39,7 @@ export class ConfigImpl implements Config {
     mode: Mode.Stateless,
     latency: Renew.NoCache,
     reentrant: ReentrantCall.ExitWithError,
-    apart: ApartFrom.Reaction,
+    separate: SeparateFrom.Reaction,
     monitor: null,
     tracing: 0 }, {});
 }

@@ -33,7 +33,7 @@ class Jsx {
 function createJsx(tracing: number): Jsx {
   const dbg = tracing !== 0 || R.Debug.verbosity >= 2;
   const hint = dbg ? getComponentName() : undefined;
-  return R.Transaction.runAs<Jsx>(dbg ? `${hint}` : "new-jsx", R.ApartFrom.Reaction, 0, () => {
+  return R.Transaction.runAs<Jsx>(dbg ? `${hint}` : "new-jsx", R.SeparateFrom.Reaction, 0, () => {
     let jsx = new Jsx();
     if (dbg) {
       jsx = R.ReactiveCache.named(jsx, hint);

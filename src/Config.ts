@@ -4,7 +4,7 @@ export interface Config {
   readonly mode: Mode;
   readonly latency: Latency;
   readonly reentrant: ReentrantCall;
-  readonly apart: ApartFrom;
+  readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
   readonly tracing: number;
 }
@@ -33,7 +33,7 @@ export enum ReentrantCall {
   RunSimultaneously = -3, // multiple simultaneous transactions are allowed
 }
 
-export enum ApartFrom {
+export enum SeparateFrom {
   None = 0,
   Reaction = 1,
   Parent = 2,

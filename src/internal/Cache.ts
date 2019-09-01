@@ -1,7 +1,7 @@
 import { Utils, Debug, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
 export { ReactiveCache, recent } from "../ReactiveCache";
-import { Config, Renew, ReentrantCall, ApartFrom } from "../Config";
+import { Config, Renew, ReentrantCall, SeparateFrom } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
 
@@ -71,7 +71,7 @@ class CachedMethod extends ReactiveCache<any> {
       const c: CachedResult = call.cache;
       if (invoke !== undefined && (!c.outdated.recaching || invoke)) {
         const hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
-        const ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (argsx: any[] | undefined): any => {
+        const ret = Transaction.runAs<any>(hint, c.config.separate, c.config.tracing, (argsx: any[] | undefined): any => {
           if (call.cache.tran.discarded())
             call = this.read(false, argsx); // re-read on retry
           call = this.recache(call.cache, argsx);
@@ -179,7 +179,7 @@ class CachedMethod extends ReactiveCache<any> {
     const c: CachedResult = call.cache;
     const r: Record = call.record;
     const hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
-    return Transaction.runAs<Config>(hint, ApartFrom.Reaction, 0, (): Config => {
+    return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, 0, (): Config => {
       const call2 = this.edit();
       const c2: CachedResult = call2.cache;
       c2.config = new ConfigImpl(c2.config.body, c2.config, config);
@@ -470,7 +470,7 @@ export class CachedResult implements ICachedResult {
 
   monitorEnter(mon: Monitor | null): void {
     if (mon)
-      Transaction.runAs<void>("Monitor.enter", mon.apart, 0,
+      Transaction.runAs<void>("Monitor.enter", mon.separate, 0,
         CachedResult.run, undefined, () => mon.enter(this));
   }
 
@@ -481,7 +481,7 @@ export class CachedResult implements ICachedResult {
         try {
           Transaction.active = Transaction.nope; // Workaround?
           const leave = () => {
-            Transaction.runAs<void>("Monitor.leave", mon.apart, 0,
+            Transaction.runAs<void>("Monitor.leave", mon.separate, 0,
               CachedResult.run, undefined, () => mon.leave(this));
           };
           this.tran.whenFinished(false).then(leave, leave);
@@ -491,7 +491,7 @@ export class CachedResult implements ICachedResult {
         }
       }
       else
-        Transaction.runAs<void>("Monitor.leave", mon.apart, 0,
+        Transaction.runAs<void>("Monitor.leave", mon.separate, 0,
           CachedResult.run, undefined, () => mon.leave(this));
     }
   }
@@ -519,7 +519,7 @@ export class CachedResult implements ICachedResult {
 
   static unmount(...objects: any[]): Transaction {
     let t: Transaction = Transaction.active;
-    Transaction.runAs<void>("unmount", ApartFrom.Reaction, 0, (): void => {
+    Transaction.runAs<void>("unmount", SeparateFrom.Reaction, 0, (): void => {
       t = Transaction.active;
       for (const x of objects) {
         if (Utils.get(x, RT_HANDLE))
