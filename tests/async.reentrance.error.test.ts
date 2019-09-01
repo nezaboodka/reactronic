@@ -8,12 +8,14 @@ let etalon: string[] = [
   "Log: RTA",
   "[...] Url: reactronic",
   "[...] Log: RTA",
-  "Url: reactronic", // TODO: To fix
-  "Log: RTA", // TODO: To fix
+  "Url: reactronic",
+  "Log: RTA",
+  "Url: nezaboodka.com",
+  "Log: RTA, nezaboodka.com/500",
 ];
 
 test("async", async t => {
-  Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 2;
+  Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 3;
   let app = Transaction.run(() => new DemoView(new DemoModel()));
   app.model.load.rcache.configure({reentrant: ReentrantCall.ExitWithError});
   try {

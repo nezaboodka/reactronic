@@ -26,9 +26,9 @@ export class DemoView {
   @cache(Renew.OnDemand)
   async render(): Promise<string[]> {
     let result: string[] = [];
-    result.push(`Url: ${this.model.url}`);
+    result.push(`${demoMon.isIdle ? "" : "[...] "}Url: ${this.model.url}`);
     await sleep(10);
-    result.push(`Log: ${this.model.log.join(", ")}`);
+    result.push(`${demoMon.isIdle ? "" : "[...] "}Log: ${this.model.log.join(", ")}`);
     // throw new Error("test");
     return result;
   }
@@ -37,8 +37,8 @@ export class DemoView {
   async print(): Promise<void> {
     let lines: string[] = await this.render();
     for (let x of lines) {
-      actual.push(demoMon.isIdle ? x : `[...] ${x}`);
-      if (Debug.verbosity >= 1) console.log(demoMon.isIdle ? x : `[...] ${x}`);
+      actual.push(x);
+      if (Debug.verbosity >= 1) console.log(x);
     }
   }
 }

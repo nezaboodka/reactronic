@@ -11,13 +11,13 @@ let etalon: string[] = [
   "[...] Log: RTA",
   "[...] Url: nezaboodka.com",
   "[...] Log: RTA, nezaboodka.com/100",
+  "Error: [E604] transaction t31 (recache) conflicts with other transactions on: t26#22 DemoModel.url, t26#22 DemoModel.log",
   "Url: nezaboodka.com",
   "Log: RTA, nezaboodka.com/100",
-  "Error: [E604] transaction t31 (recache) conflicts with other transactions on: t26#22 DemoModel.url, t26#22 DemoModel.log",
 ];
 
 test("async", async t => {
-  Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 2;
+  Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 3;
   let app = Transaction.run(() => new DemoView(new DemoModel()));
   app.model.load.rcache.configure({reentrant: ReentrantCall.RunSimultaneously});
   try {
