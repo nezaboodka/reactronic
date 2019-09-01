@@ -261,7 +261,7 @@ enum SeparateFrom {
   Reaction = 1,
   Parent = 2,
   Children = 4,
-  All = 1 + 2 + 4,
+  All = 1 | 2 | 4,
 }
 
 @stateful
