@@ -8,7 +8,7 @@ export class Debug {
   static margin: number = 0;
 
   static log(operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
-    let margin: string = "  ".repeat(Debug.margin);
+    const margin: string = "  ".repeat(Debug.margin);
     console.log("\x1b[37m%s\x1b[0m \x1b[" + Debug.color +
       "m%s %s\x1b[0m \x1b[" + Debug.color + "m%s%s\x1b[0m \x1b[" + Debug.color + "m%s\x1b[0m%s",
       "#rt", Debug.prefix, operation, margin, marker, message,

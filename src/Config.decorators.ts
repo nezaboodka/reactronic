@@ -4,17 +4,17 @@ import { Config, Mode, Renew, Latency, ReentrantCall, ApartFrom } from "./Config
 import { Monitor } from "./Monitor";
 
 export function stateful(proto: object, prop?: PropertyKey): any {
-  let config = { mode: Mode.Stateful };
+  const config = { mode: Mode.Stateful };
   return prop ? Virt.decorateField(config, proto, prop) : Virt.decorateClass(config, proto);
 }
 
 export function stateless(proto: object, prop: PropertyKey): any {
-  let config = { mode: Mode.Stateless };
+  const config = { mode: Mode.Stateless };
   return Virt.decorateField(config, proto, prop);
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  let config = { mode: Mode.Stateful };
+  const config = { mode: Mode.Stateful };
   return Virt.decorateMethod(config, proto, prop, pd);
 }
 

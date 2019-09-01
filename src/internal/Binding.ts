@@ -29,8 +29,8 @@ export class Binding<T> {
   static seal<T>(owner: any, prop: PropertyKey, value: T, proto: object, clone: (v: T) => T): Binding<T> {
     if (Object.isFrozen(value)) /* istanbul ignore next */
       throw new Error("[E610] copy-on-write collection cannot be referenced from multiple objects");
-    let self: any = value;
-    let binding = new Binding<T>(owner, prop, value, clone);
+    const self: any = value;
+    const binding = new Binding<T>(owner, prop, value, clone);
     self[RT_BINDING] = binding;
     Object.setPrototypeOf(value, proto);
     Object.freeze(value);
@@ -39,11 +39,11 @@ export class Binding<T> {
 }
 
 export function R<T>(self: any): T {
-  let binding: Binding<T> = self[RT_BINDING];
+  const binding: Binding<T> = self[RT_BINDING];
   return binding !== undefined ? binding.readable(self) : self;
 }
 
 export function W<T>(self: any): T {
-  let binding: Binding<T> = self[RT_BINDING];
+  const binding: Binding<T> = self[RT_BINDING];
   return binding !== undefined ? binding.writable(self) : self;
 }

@@ -32,7 +32,7 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   recent(...args: any): any {
-    let call: CachedCall = this.obtain(false, args);
+    const call: CachedCall = this.obtain(false, args);
     if (call.isUpToDate || call.record.snapshot.completed)
       Record.markViewed(call.record, call.cache.member);
     else if (call.record.prev.record !== Record.empty)
@@ -41,16 +41,16 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   get stamp(): number {
-    let call: CachedCall = this.obtain();
-    let r = call.isUpToDate ?  call.record : call.record.prev.record;
+    const call: CachedCall = this.obtain();
+    const r = call.isUpToDate ?  call.record : call.record.prev.record;
     if (r !== Record.empty)
       Record.markViewed(r, call.cache.member);
     return r.snapshot.timestamp;
   }
 
   get isInvalidated(): boolean {
-    let call: CachedCall = this.obtain();
-    let result = call.cache.isInvalidated();
+    const call: CachedCall = this.obtain();
+    const result = call.cache.isInvalidated();
     if (result)
       Record.markViewed(call.record, call.cache.member);
     else if (call.record.prev.record !== Record.empty)
@@ -60,7 +60,7 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   invoke(...args: any[]): any {
-    let call: CachedCall = this.obtain(true, args);
+    const call: CachedCall = this.obtain(true, args);
     Record.markViewed(call.record, call.cache.member);
     return call.cache.ret;
   }
@@ -68,7 +68,7 @@ class CachedMethod extends ReactiveCache<any> {
   obtain(invoke?: boolean, args?: any[]): CachedCall {
     let call: CachedCall = this.read(false, args);
     if (!call.isHit) {
-      let c: CachedResult = call.cache;
+      const c: CachedResult = call.cache;
       if (invoke !== undefined && (!c.outdated.recaching || invoke)) {
         const hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         const ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (argsx: any[] | undefined): any => {
@@ -86,12 +86,12 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   private read(markViewed: boolean, args?: any[]): CachedCall {
-    let ctx = Snapshot.active();
-    let member = this.blank.member;
-    let r: Record = ctx.tryRead(this.handle);
-    let c: CachedResult = r.data[member] || this.blank;
-    let isUpToDate = ctx.timestamp < c.outdated.timestamp && c.started === 0;
-    let isHit = (isUpToDate || c.started > 0) &&
+    const ctx = Snapshot.active();
+    const member = this.blank.member;
+    const r: Record = ctx.tryRead(this.handle);
+    const c: CachedResult = r.data[member] || this.blank;
+    const isUpToDate = ctx.timestamp < c.outdated.timestamp && c.started === 0;
+    const isHit = (isUpToDate || c.started > 0) &&
       c.config.latency !== Renew.NoCache &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
@@ -101,14 +101,14 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   private edit(): CachedCall {
-    let ctx = Snapshot.active();
-    let member = this.blank.member;
-    let r: Record = ctx.edit(this.handle, member, RT_CACHE);
+    const ctx = Snapshot.active();
+    const member = this.blank.member;
+    const r: Record = ctx.edit(this.handle, member, RT_CACHE);
     let c: CachedResult = r.data[member] || this.blank;
-    let isUpToDate = ctx.timestamp < c.outdated.timestamp;
+    const isUpToDate = ctx.timestamp < c.outdated.timestamp;
     if ((!isUpToDate && (c.record !== r || c.started === 0)) ||
         c.config.latency === Renew.NoCache) {
-      let c2 = new CachedResult(r, c.member, c);
+      const c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
       if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.blank ? "blank" : c.hint(false)}`);
       Record.markEdited(r, c2.member, true, RT_CACHE);
@@ -119,10 +119,10 @@ class CachedMethod extends ReactiveCache<any> {
 
   private recache(prev: CachedResult, args: any[] | undefined): CachedCall {
     const error = this.checkForReentrance(prev);
-    let call: CachedCall = this.edit();
-    let c: CachedResult = call.cache;
-    let r: Record = call.record;
-    let mon: Monitor | null = prev.config.monitor;
+    const call: CachedCall = this.edit();
+    const c: CachedResult = call.cache;
+    const r: Record = call.record;
+    const mon: Monitor | null = prev.config.monitor;
     if (!error)
       c.enter(r, prev, mon);
     try
@@ -175,13 +175,13 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   private reconfigure(config: Partial<Config>): Config {
-    let cc = this.read(false);
-    let c: CachedResult = cc.cache;
-    let r: Record = cc.record;
-    let hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
+    const call = this.read(false);
+    const c: CachedResult = call.cache;
+    const r: Record = call.record;
+    const hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
     return Transaction.runAs<Config>(hint, ApartFrom.Reaction, 0, (): Config => {
-      let cc2 = this.edit();
-      let c2: CachedResult = cc2.cache;
+      const call2 = this.edit();
+      const c2: CachedResult = call2.cache;
       c2.config = new ConfigImpl(c2.config.body, c2.config, config);
       if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
@@ -233,7 +233,7 @@ export class CachedResult implements ICachedResult {
   hint(tranless?: boolean): string { return `${Hint.record(this.record, tranless, false, this.member)}`; }
 
   static get(method: F<any>): ReactiveCache<any> {
-    let impl: ReactiveCache<any> | undefined = Utils.get(method, RT_CACHE);
+    const impl: ReactiveCache<any> | undefined = Utils.get(method, RT_CACHE);
     if (!impl)
       throw new Error("[E610] given method is not a reactronic cache");
     return impl;
@@ -241,9 +241,9 @@ export class CachedResult implements ICachedResult {
 
   static run<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined;
-    let outer = CachedResult.active;
-    let outerVerbosity = Debug.verbosity;
-    let outerMargin = Debug.margin;
+    const outer = CachedResult.active;
+    const outerVerbosity = Debug.verbosity;
+    const outerMargin = Debug.margin;
     try {
       CachedResult.active = c;
       if (c) {
@@ -267,7 +267,7 @@ export class CachedResult implements ICachedResult {
   }
 
   wrap<T>(func: F<T>): F<T> {
-    let caching: F<T> = (...args: any[]): T => CachedResult.run<T>(this, func, ...args);
+    const caching: F<T> = (...args: any[]): T => CachedResult.run<T>(this, func, ...args);
     return caching;
   }
 
@@ -275,10 +275,10 @@ export class CachedResult implements ICachedResult {
     if (now || this.config.latency === Renew.Immediately) {
       if (!this.error && (this.config.latency === Renew.NoCache ||
           (timestamp >= this.outdated.timestamp && !this.outdated.recaching))) {
-        let proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
-        let trap: Function = Reflect.get(proxy, this.member, proxy);
-        let cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
-        let cc = cachedMethod.obtain(false, args);
+        const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
+        const trap: Function = Reflect.get(proxy, this.member, proxy);
+        const cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
+        const cc = cachedMethod.obtain(false, args);
         if (cc.cache.ret instanceof Promise)
           cc.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
       }
@@ -298,9 +298,9 @@ export class CachedResult implements ICachedResult {
   static markEdited(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
     edited ? r.edits.add(prop) : r.edits.delete(prop);
     if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
-    let oo = r.observers.get(prop);
+    const oo = r.observers.get(prop);
     if (oo && oo.size > 0) {
-      let effect: ICachedResult[] = [];
+      const effect: ICachedResult[] = [];
       oo.forEach(c => c.invalidate(r, prop, true, false, effect));
       r.observers.delete(prop);
       if (effect.length > 0)
@@ -314,12 +314,12 @@ export class CachedResult implements ICachedResult {
       if (!r.edits.has(RT_UNMOUNT))
         r.edits.forEach(prop => {
           CachedResult.markPrevAsOutdated(r, prop, effect);
-          let value = r.data[prop];
+          const value = r.data[prop];
           if (value instanceof CachedResult)
             value.subscribeToObservables(false, effect);
         });
       else
-        for (let prop in r.prev.record.data)
+        for (const prop in r.prev.record.data)
           CachedResult.markPrevAsOutdated(r, prop, effect);
     });
     changeset.forEach((r: Record, h: Handle) => {
@@ -335,7 +335,7 @@ export class CachedResult implements ICachedResult {
   }
 
   static acquireObservableSet(c: CachedResult, prop: PropertyKey, hot: boolean): Set<Record> {
-    let o = hot ? c.hotObservables : c.observables;
+    const o = hot ? c.hotObservables : c.observables;
     let result: Set<Record> | undefined = o.get(prop);
     if (!result)
       o.set(prop, result = new Set<Record>());
@@ -343,8 +343,8 @@ export class CachedResult implements ICachedResult {
   }
 
   private subscribeToObservables(hot: boolean, effect?: ICachedResult[]): void {
-    let subscriptions: string[] = [];
-    let o = hot ? this.hotObservables : this.observables;
+    const subscriptions: string[] = [];
+    const o = hot ? this.hotObservables : this.observables;
     o.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach(r => {
         CachedResult.acquireObserverSet(r, prop).add(this); // link
@@ -373,11 +373,11 @@ export class CachedResult implements ICachedResult {
       // }
       // TODO: make cache readonly
       // Cascade invalidation
-      let upper: Record = Snapshot.active().read(Utils.get(this.record.data, RT_HANDLE));
+      const upper: Record = Snapshot.active().read(Utils.get(this.record.data, RT_HANDLE));
       if (upper.data[this.member] === this) { // TODO: Consider better solution?
         let r: Record = upper;
         while (r !== Record.empty && !r.outdated.has(this.member)) {
-          let oo = r.observers.get(this.member);
+          const oo = r.observers.get(this.member);
           if (oo)
             oo.forEach(c => c.invalidate(upper, this.member, false, true, effect));
           r = r.prev.record;
@@ -405,11 +405,11 @@ export class CachedResult implements ICachedResult {
   }
 
   static markPrevAsOutdated(r: Record, prop: PropertyKey, effect: ICachedResult[]): void {
-    let cause = r;
+    const cause = r;
     r = r.prev.record;
     while (r !== Record.empty && !r.outdated.has(prop)) {
       r.outdated.add(prop);
-      let oo = r.observers.get(prop);
+      const oo = r.observers.get(prop);
       if (oo)
         oo.forEach(c => c.invalidate(cause, prop, false, false, effect));
       // Utils.freezeSet(o);
@@ -418,8 +418,8 @@ export class CachedResult implements ICachedResult {
   }
 
   static createCachedMethodTrap(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
-    let cachedMethod = new CachedMethod(h, prop, config);
-    let cachedMethodTrap: F<any> = (...args: any[]): any => cachedMethod.invoke(...args);
+    const cachedMethod = new CachedMethod(h, prop, config);
+    const cachedMethodTrap: F<any> = (...args: any[]): any => cachedMethod.invoke(...args);
     Utils.set(cachedMethodTrap, RT_CACHE, cachedMethod);
     return cachedMethodTrap;
   }
@@ -477,10 +477,10 @@ export class CachedResult implements ICachedResult {
   monitorLeave(mon: Monitor | null): void {
     if (mon) {
       if (mon.prolonged) {
-        let outer = Transaction.active;
+        const outer = Transaction.active;
         try {
           Transaction.active = Transaction.nope; // Workaround?
-          let leave = () => {
+          const leave = () => {
             Transaction.runAs<void>("Monitor.leave", mon.apart, 0,
               CachedResult.run, undefined, () => mon.leave(this));
           };
@@ -521,7 +521,7 @@ export class CachedResult implements ICachedResult {
     let t: Transaction = Transaction.active;
     Transaction.runAs<void>("unmount", ApartFrom.Reaction, 0, (): void => {
       t = Transaction.active;
-      for (let x of objects) {
+      for (const x of objects) {
         if (Utils.get(x, RT_HANDLE))
           x[RT_UNMOUNT] = RT_UNMOUNT;
       }
@@ -537,7 +537,7 @@ Promise.prototype.then = function(
   this: any, onsuccess?: ((value: any) => any | PromiseLike<any>) | undefined | null,
   onfailure?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
-  let t = Transaction.active;
+  const t = Transaction.active;
   if (!t.finished()) {
     if (onsuccess) {
       // if (Debug.verbosity >= 5) Debug.log("║", "", ` Promise.then (${(this as any)[RT_UNMOUNT]})`);

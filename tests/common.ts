@@ -34,8 +34,8 @@ export class Person {
   setParent(value: Person | null): void {
     if (this.parent !== value) {
       if (this.parent) { // remove from children of old parent
-        let a = this.parent._children;
-        let i = a.findIndex((x, i) => x === this);
+        const a = this.parent._children;
+        const i = a.findIndex((x, i) => x === this);
         if (i >= 0)
           a.splice(i, 1);
         else
@@ -52,7 +52,7 @@ export class Person {
 
   appendChildren(children: ReadonlyArray<Person>): void {
     if (children)
-      for (let x of children)
+      for (const x of children)
         x.setParent(this);
   }
 }

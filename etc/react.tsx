@@ -13,7 +13,7 @@ export function reactiveRender(render: (revision: number) => JSX.Element, tracin
 class Jsx {
   @R.transaction
   render(revision: number, doRender: (revision: number) => JSX.Element, refresh: (nextRevision: number) => void): JSX.Element {
-    let jsx: JSX.Element = this.jsx(revision, doRender);
+    const jsx: JSX.Element = this.jsx(revision, doRender);
     this.trigger(revision + 1, refresh);
     return jsx;
   }
@@ -31,8 +31,8 @@ class Jsx {
 }
 
 function createJsx(tracing: number): Jsx {
-  let dbg = tracing !== 0 || R.Debug.verbosity >= 2;
-  let hint = dbg ? getComponentName() : undefined;
+  const dbg = tracing !== 0 || R.Debug.verbosity >= 2;
+  const hint = dbg ? getComponentName() : undefined;
   return R.Transaction.runAs<Jsx>(dbg ? `${hint}` : "new-jsx", R.ApartFrom.Reaction, 0, () => {
     let jsx = new Jsx();
     if (dbg) {
@@ -56,10 +56,10 @@ function unmountEffect(jsx: Jsx): React.EffectCallback {
 }
 
 function getComponentName(): string | undefined {
-  let error = new Error();
-  let stack = error.stack || "";
-  let lines = stack.split("\n");
-  let i = lines.findIndex(x => x.indexOf(".reactiveRender") >= 0) || 6;
+  const error = new Error();
+  const stack = error.stack || "";
+  const lines = stack.split("\n");
+  const i = lines.findIndex(x => x.indexOf(".reactiveRender") >= 0) || 6;
   let result: string = lines[i + 1] || "";
   result = (result.match(/^\s*at\s*(\S+)/) || [])[1];
   return `<${result}>`;

@@ -25,7 +25,7 @@ export class DemoView {
 
   @cache(Renew.OnDemand)
   async render(): Promise<string[]> {
-    let result: string[] = [];
+    const result: string[] = [];
     result.push(`${demoMon.isIdle ? "" : "[...] "}Url: ${this.model.url}`);
     await sleep(10);
     result.push(`${demoMon.isIdle ? "" : "[...] "}Log: ${this.model.log.join(", ")}`);
@@ -35,8 +35,8 @@ export class DemoView {
 
   @cache(Renew.Immediately)
   async print(): Promise<void> {
-    let lines: string[] = await this.render();
-    for (let x of lines) {
+    const lines: string[] = await this.render();
+    for (const x of lines) {
       actual.push(x);
       if (Debug.verbosity >= 1) console.log(x);
     }

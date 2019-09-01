@@ -3,7 +3,7 @@ import { ReactiveCache, Transaction, Debug } from "../src/z.index";
 import { Person } from "./common";
 import { DemoModel, DemoView, actual } from "./basic";
 
-let etalon: string[] = [
+const etalon: string[] = [
   "Filter: Jo",
   "John's children: Billy, Barry, Steve",
   "Filter: ",
@@ -16,15 +16,15 @@ let etalon: string[] = [
 test("basic", t => {
   Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 3;
   // Simple actions
-  let app = Transaction.run(() => new DemoView(new DemoModel()));
+  const app = Transaction.run(() => new DemoView(new DemoModel()));
   try {
     app.model.loadUsers();
-    let daddy: Person = app.model.users[0];
+    const daddy: Person = app.model.users[0];
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     app.print(); // trigger first run
     // Multi-part action
-    let tran1 = new Transaction("tran1");
+    const tran1 = new Transaction("tran1");
     tran1.run(() => {
       daddy.age += 2; // causes no execution of DemoApp.render
       daddy.name = "John Smith"; // causes execution of DemoApp.render upon action commit
@@ -46,7 +46,7 @@ test("basic", t => {
         daddy.emails[0] = "daddy@mail.com";
         daddy.emails.push("someone@mail.io");
       }
-      let x = daddy.children[1];
+      const x = daddy.children[1];
       x.parent = null;
       x.parent = daddy;
       t.is(daddy.name, "John Smith");
@@ -78,7 +78,7 @@ test("basic", t => {
   finally { // cleanup
     ReactiveCache.unmount(app, app.model);
   }
-  let n: number = Math.max(actual.length, etalon.length);
+  const n: number = Math.max(actual.length, etalon.length);
   for (let i = 0; i < n; i++)
     t.is(actual[i], etalon[i]);
 });

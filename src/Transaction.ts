@@ -80,22 +80,22 @@ export class Transaction {
   }
 
   async join<T>(p: Promise<T>): Promise<T> {
-    let result = await p;
+    const result = await p;
     await this.whenFinished(false);
     return result;
   }
 
   undo(): void {
-    let hint = Debug.verbosity >= 2 ? `Tran#${this.snapshot.hint}.undo` : "noname";
+    const hint = Debug.verbosity >= 2 ? `Tran#${this.snapshot.hint}.undo` : "noname";
     Transaction.runAs<void>(hint, ApartFrom.Reaction, 0, () => {
       this.snapshot.changeset.forEach((r: Record, h: Handle) => {
         r.edits.forEach(prop => {
           if (r.prev.backup) {
-            let prevValue: any = r.prev.backup.data[prop];
-            let t: Record = Snapshot.active().tryEdit(h, prop, prevValue);
+            const prevValue: any = r.prev.backup.data[prop];
+            const t: Record = Snapshot.active().tryEdit(h, prop, prevValue);
             if (t !== Record.empty) {
               t.data[prop] = prevValue;
-              let v: any = t.prev.record.data[prop];
+              const v: any = t.prev.record.data[prop];
               Record.markEdited(t, prop, !Utils.equal(v, prevValue) /* && value !== RT_HANDLE*/, prevValue);
             }
           }
@@ -116,12 +116,10 @@ export class Transaction {
       result = t.run<T>(func, ...args);
       if (root) {
         if (result instanceof Promise) {
-          let outer = Transaction.active;
+          const outer = Transaction.active;
           try {
             Transaction.active = Transaction.nope;
-            // const cache = Utils.get(result, RT_CACHE);
             result = t.retryIfNeeded(t.join(result), func, ...args);
-            // Utils.set(result, RT_CACHE, cache);
           }
           finally {
             Transaction.active = outer;
@@ -140,7 +138,7 @@ export class Transaction {
   }
 
   private static acquire(hint: string, apart: ApartFrom, tracing: number): Transaction {
-    let startNew = Utils.hasAllFlags(apart, ApartFrom.Parent)
+    const startNew = Utils.hasAllFlags(apart, ApartFrom.Parent)
       || Utils.hasAllFlags(Transaction.active.apart, ApartFrom.Children)
       || Transaction.active.finished();
     return startNew ? new Transaction(hint, apart, tracing) : Transaction.active;
@@ -148,7 +146,7 @@ export class Transaction {
 
   private async retryIfNeeded<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
     try {
-      let result = await p;
+      const result = await p;
       return result;
     }
     catch (error) {
@@ -176,11 +174,7 @@ export class Transaction {
       Transaction.active = this;
       if (this.tracing !== 0)
         Debug.verbosity = this.tracing;
-      if (Debug.verbosity >= 2)
-        Debug.color = 31 + (this.snapshot.id) % 6;
-      else
-        Debug.color = 37;
-      // Debug.color = 31 + (this.snapshot.id) % 6;
+      Debug.color = Debug.verbosity >= 2 ? 31 + (this.snapshot.id) % 6 : 37;
       Debug.prefix = `t${this.id}`; // TODO: optimize to avoid toString
       this.snapshot.checkout();
       result = func(...args);
@@ -269,10 +263,10 @@ export class Transaction {
   }
 
   static _wrap<T>(t: Transaction, c: ICachedResult | undefined, inc: boolean, dec: boolean, func: F<T>): F<T> {
-    let f = c ? c.wrap(func) : func; // caching context
+    const f = c ? c.wrap(func) : func; // caching context
     if (inc)
       t.run<void>(() => t.busy++);
-    let tran: F<T> = (...args: any[]): T =>
+    const tran: F<T> = (...args: any[]): T =>
       t._run<T>(() => { // transaction context
         if (dec)
           t.busy--;
@@ -288,12 +282,12 @@ export class Transaction {
   }
 
   static _init(): void {
-    let nope = new Transaction("nope", ApartFrom.All, 0);
+    const nope = new Transaction("nope", ApartFrom.All, 0);
     nope.sealed = true;
     nope.snapshot.checkin();
     Transaction.nope = nope;
     Transaction.active = nope;
-    let empty = new Record(Record.empty, nope.snapshot, {});
+    const empty = new Record(Record.empty, nope.snapshot, {});
     empty.prev.record = empty; // loopback
     empty.freeze();
     Utils.freezeMap(empty.observers);

@@ -13,7 +13,7 @@ export class Utils {
 
   static freezeSet<T>(obj?: Set<T>) {
     if (obj instanceof Set) {
-      let pd = { configurable: false, enumerable: false, get: undef, set: undef };
+      const pd = { configurable: false, enumerable: false, get: undef, set: undef };
       Object.defineProperty(obj, "add", pd);
       Object.defineProperty(obj, "delete", pd);
       Object.defineProperty(obj, "clear", pd);
@@ -23,7 +23,7 @@ export class Utils {
 
   static freezeMap<K, V>(obj?: Map<K, V>) {
     if (obj instanceof Map) {
-      let pd = { configurable: false, enumerable: false, get: undef, set: undef };
+      const pd = { configurable: false, enumerable: false, get: undef, set: undef };
       Object.defineProperty(obj, "set", pd);
       Object.defineProperty(obj, "delete", pd);
       Object.defineProperty(obj, "clear", pd);
@@ -32,9 +32,9 @@ export class Utils {
   }
 
   static copyAllProps(source: any, target: any): any {
-    for (let prop of Object.getOwnPropertyNames(source))
+    for (const prop of Object.getOwnPropertyNames(source))
       Utils.copyProp(source, target, prop);
-    for (let prop of Object.getOwnPropertySymbols(source))
+    for (const prop of Object.getOwnPropertySymbols(source))
       Utils.copyProp(source, target, prop);
     return target;
   }
@@ -94,7 +94,7 @@ export function rethrow(error: any): never {
 
 export async function all(promises: Array<Promise<any>>): Promise<any[]> {
   let error: any;
-  let result = await Promise.all(promises.map(x => x.catch(e => { error = error || e; return e; })));
+  const result = await Promise.all(promises.map(x => x.catch(e => { error = error || e; return e; })));
   if (error)
     throw error;
   return result;

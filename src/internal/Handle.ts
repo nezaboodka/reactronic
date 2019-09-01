@@ -27,7 +27,7 @@ export class Handle {
 
   static setName<T>(obj: T, name: string | undefined): T {
     if (name) {
-      let h: Handle = Utils.get(obj, RT_HANDLE);
+      const h: Handle = Utils.get(obj, RT_HANDLE);
       if (h)
         h.name = name;
     }
@@ -35,7 +35,7 @@ export class Handle {
   }
 
   static getName(obj: object): string | undefined {
-    let h: Handle = Utils.get(obj, RT_HANDLE);
+    const h: Handle = Utils.get(obj, RT_HANDLE);
     return h ? h.name : undefined;
   }
 }

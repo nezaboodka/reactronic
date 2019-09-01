@@ -29,14 +29,14 @@ export class Snapshot implements ISnapshot {
   };
 
   read(h: Handle): Record {
-    let result = this.tryRead(h);
+    const result = this.tryRead(h);
     if (result === Record.empty) /* istanbul ignore next */
       throw new Error(`[E606] object doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 
   edit(h: Handle, prop: PropertyKey, value: Symbol): Record {
-    let result: Record = this.tryEdit(h, prop, value);
+    const result: Record = this.tryEdit(h, prop, value);
     if (result === Record.empty) /* istanbul ignore next */
       throw new Error(`[E607] object doesn't exist in snapshot v${this.timestamp}`);
     return result;
@@ -91,7 +91,7 @@ export class Snapshot implements ISnapshot {
     let conflicts: Record[] | undefined = undefined;
     if (this.changeset.size > 0) {
       this.changeset.forEach((r: Record, h: Handle) => {
-        let merged = Snapshot.rebaseRecord(r, h.head);
+        const merged = Snapshot.rebaseRecord(r, h.head);
         if (merged >= 0) {
           if (r.conflicts.size > 0) {
             if (!conflicts)
@@ -110,15 +110,15 @@ export class Snapshot implements ISnapshot {
     let counter: number = -1;
     if (head !== Record.empty && head.snapshot.timestamp > ours.snapshot.timestamp) {
       counter++;
-      let unmountTheirs: boolean = head.edits.has(RT_UNMOUNT);
-      let merged = Utils.copyAllProps(head.data, {}); // create merged copy
+      const unmountTheirs: boolean = head.edits.has(RT_UNMOUNT);
+      const merged = Utils.copyAllProps(head.data, {}); // create merged copy
       ours.edits.forEach(prop => {
         counter++;
         let theirs: Record = head;
         Utils.copyProp(ours.data, merged, prop);
         while (theirs !== Record.empty && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.edits.has(prop)) {
-            let diff = Utils.different(theirs.data[prop], ours.data[prop]);
+            const diff = Utils.different(theirs.data[prop], ours.data[prop]);
             if (Debug.verbosity >= 3) Debug.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
             if (diff)
               ours.conflicts.set(prop, theirs);
@@ -142,8 +142,8 @@ export class Snapshot implements ISnapshot {
   static mergeObservers(target: Record, source: Record): void {
     source.observers.forEach((oo: Set<ICachedResult>, prop: PropertyKey) => {
       if (!target.edits.has(prop)) {
-        let existing: Set<ICachedResult> | undefined = target.observers.get(prop);
-        let merged = existing || new Set<ICachedResult>();
+        const existing: Set<ICachedResult> | undefined = target.observers.get(prop);
+        const merged = existing || new Set<ICachedResult>();
         if (!existing)
           target.observers.set(prop, merged);
         oo.forEach((c: ICachedResult) => {
@@ -167,9 +167,9 @@ export class Snapshot implements ISnapshot {
       if (!error) {
         h.head = r;
         if (Debug.verbosity >= 3) {
-          let props: string[] = [];
+          const props: string[] = [];
           r.edits.forEach(prop => props.push(prop.toString()));
-          let s = props.join(", ");
+          const s = props.join(", ");
           Debug.log("║", "•", r.prev.record !== Record.empty ? `${Hint.record(r.prev.record)}(${s}) is overwritten.` : `${Hint.record(r)}(${s}) is created.`);
         }
       }
@@ -192,7 +192,7 @@ export class Snapshot implements ISnapshot {
         Snapshot.oldest = undefined;
         Snapshot.pending.sort((a, b) => a._timestamp - b._timestamp);
         let i: number = 0;
-        for (let x of Snapshot.pending) {
+        for (const x of Snapshot.pending) {
           if (!x.completed) {
             Snapshot.oldest = x;
             break;
@@ -223,15 +223,15 @@ export class Hint {
   }
 
   static record(r: Record, tranless?: boolean, nameless?: boolean, prop?: PropertyKey): string {
-    let t: string = tranless ? "" : `t${r.snapshot.id}`;
-    let h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
-    let name: string = h ? `${t}${Hint.handle(h, nameless)}` : "[new]";
+    const t: string = tranless ? "" : `t${r.snapshot.id}`;
+    const h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
+    const name: string = h ? `${t}${Hint.handle(h, nameless)}` : "[new]";
     return prop !== undefined ? `${name}.${prop.toString()}` : `${name}`;
   }
 
   static conflicts(conflicts: Record[]): string {
     return conflicts.map(ours => {
-      let items: string[] = [];
+      const items: string[] = [];
       ours.conflicts.forEach((theirs: Record, prop: PropertyKey) => {
         items.push(Hint.conflictProp(prop, ours, theirs));
       });
