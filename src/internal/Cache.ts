@@ -16,12 +16,12 @@ class CachedMethod extends ReactiveCache<any> {
   private readonly handle: Handle;
   private readonly blank: CachedResult;
 
-  get config(): Config { return this.read(false).cached.config; }
+  get config(): Config { return this.read(false, undefined).cached.config; }
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
-  get error(): boolean { return this.read(true).cached.error; }
-  invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cached, cause, 0) : false; }
-  get isComputing(): boolean { return this.read(true).cached.started > 0; }
-  get isUpdating(): boolean { return this.read(true).cached.outdated.recomputation !== undefined; }
+  get error(): boolean { return this.read(true, undefined).cached.error; }
+  invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false, undefined).cached, cause, 0) : false; }
+  get isComputing(): boolean { return this.read(true, undefined).cached.started > 0; }
+  get isUpdating(): boolean { return this.read(true, undefined).cached.outdated.recomputation !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
@@ -66,15 +66,15 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   obtain(invoke?: boolean, args?: any[]): CacheCall {
-    let cc = this.read(false);
+    let cc = this.read(false, args);
     let cc2: CacheCall = cc;
     if (!cc2.isHit) {
       let c: CachedResult = cc.cached;
       if (invoke !== undefined && (!c.outdated.recomputation || invoke)) {
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         let ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (argsx: any[] | undefined): any => {
-          // if (cc2.cached.tran.discarded())
-          //   cc2 = this.read(false); // re-read on retry
+          if (cc2.cached.tran.discarded())
+            cc2 = this.read(false, argsx); // re-read on retry
           cc2 = this.recache(cc2.cached, argsx);
           return cc2.cached.ret;
         }, args);
@@ -86,7 +86,7 @@ class CachedMethod extends ReactiveCache<any> {
     return cc2;
   }
 
-  private read(markViewed: boolean, args?: any[]): CacheCall {
+  private read(markViewed: boolean, args: any[] | undefined): CacheCall {
     let ctx = Snapshot.active();
     let member = this.blank.member;
     let r: Record = ctx.tryRead(this.handle);
@@ -176,7 +176,7 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   private reconfigure(config: Partial<Config>): Config {
-    let cc = this.read(false);
+    let cc = this.read(false, undefined);
     let c: CachedResult = cc.cached;
     let r: Record = cc.record;
     let hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
