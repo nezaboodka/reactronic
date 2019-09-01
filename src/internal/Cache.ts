@@ -20,7 +20,7 @@ class CachedMethod extends ReactiveCache<any> {
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
   get error(): boolean { return this.read(true).cached.error; }
   invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cached, cause, 0) : false; }
-  get isComputing(): boolean { return this.read(true).cached.computing > 0; }
+  get isComputing(): boolean { return this.read(true).cached.started > 0; }
   get isUpdating(): boolean { return this.read(true).cached.outdated.recomputation !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
@@ -91,8 +91,8 @@ class CachedMethod extends ReactiveCache<any> {
     let member = this.blank.member;
     let r: Record = ctx.tryRead(this.handle);
     let c: CachedResult = r.data[member] || this.blank;
-    let isUpToDate = ctx.timestamp < c.outdated.timestamp && c.computing === 0;
-    let isHit = (isUpToDate || c.computing > 0) &&
+    let isUpToDate = ctx.timestamp < c.outdated.timestamp && c.started === 0;
+    let isHit = (isUpToDate || c.started > 0) &&
       c.config.latency !== Renew.NoCache &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
@@ -107,7 +107,7 @@ class CachedMethod extends ReactiveCache<any> {
     let r: Record = ctx.edit(this.handle, member, RT_CACHE);
     let c: CachedResult = r.data[member] || this.blank;
     let isUpToDate = ctx.timestamp < c.outdated.timestamp;
-    if ((!isUpToDate && (c.record !== r || c.computing === 0)) ||
+    if ((!isUpToDate && (c.record !== r || c.started === 0)) ||
         c.config.latency === Renew.NoCache) {
       let c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
@@ -144,7 +144,7 @@ class CachedMethod extends ReactiveCache<any> {
       if (!error)
         c2.tryLeave(r2, c, mon);
     }
-    cc2.isUpToDate = c2.computing === 0;
+    cc2.isUpToDate = c2.started === 0;
     return cc2;
   }
 
@@ -203,7 +203,7 @@ export class CachedResult implements ICachedResult {
   ret: any;
   result: any;
   error: any;
-  computing: number;
+  started: number;
   readonly outdated: { timestamp: number, recomputation: CachedResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
@@ -225,7 +225,7 @@ export class CachedResult implements ICachedResult {
     }
     // this.ret = undefined;
     // this.error = undefined;
-    this.computing = 0;
+    this.started = 0;
     this.outdated = { timestamp: 0, recomputation: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
     this.hotObservables = new Map<PropertyKey, Set<Record>>();
@@ -427,7 +427,7 @@ export class CachedResult implements ICachedResult {
 
   enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
     if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3)) Debug.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
-    this.computing = Date.now();
+    this.started = Date.now();
     this.monitorEnter(mon);
     if (!prev.outdated.recomputation)
       prev.outdated.recomputation = this;
@@ -460,8 +460,8 @@ export class CachedResult implements ICachedResult {
     if (prev.outdated.recomputation === this)
       prev.outdated.recomputation = undefined;
     this.monitorLeave(mon);
-    const ms: number = Date.now() - this.computing;
-    this.computing = 0;
+    const ms: number = Date.now() - this.started;
+    this.started = 0;
     if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3)) Debug.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
     // TODO: handle errors
     this.subscribeToObservables(true);
