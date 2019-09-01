@@ -38,7 +38,7 @@ export class ConfigImpl implements Config {
     body: undef,
     mode: Mode.Stateless,
     latency: Renew.NoCache,
-    reentrant: ReentrantCall.ExitWithError,
+    reentrant: ReentrantCall.WaitAndRestart,
     separate: SeparateFrom.Reaction,
     monitor: null,
     tracing: 0 }, {});

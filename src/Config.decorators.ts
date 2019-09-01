@@ -20,7 +20,7 @@ export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyD
 
 export function cache(
   latency: Latency = Renew.OnDemand,
-  reentrant: ReentrantCall = ReentrantCall.ExitWithError,
+  reentrant: ReentrantCall = ReentrantCall.WaitAndRestart,
   separate: SeparateFrom = SeparateFrom.Reaction): F<any> {
   return config({mode: Mode.Stateful, latency, reentrant, separate});
 }

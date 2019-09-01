@@ -51,10 +51,15 @@ class CachedMethod extends ReactiveCache<any> {
     if (!call.isValid) {
       let call2 = call;
       const hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
-      const ret = Transaction.runAs<any>(hint, c.config.separate, c.config.tracing, (argsx: any[] | undefined): any => {
-        if (call2.cache.tran.discarded())
+      const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
+      const ret = Transaction.runAs<any>(hint, separate, c.config.tracing, (argsx: any[] | undefined): any => {
+        if (call2.cache.tran.discarded()) {
           call2 = this.read(false, argsx); // re-read on retry
-        call2 = this.recache(call2.cache, argsx);
+          if (!call2.isValid)
+            call2 = this.recache(call2.cache, argsx);
+        }
+        else
+          call2 = this.recache(call2.cache, argsx);
         return call2.cache.ret;
       }, args);
       call2.cache.ret = ret;
@@ -63,8 +68,7 @@ class CachedMethod extends ReactiveCache<any> {
     }
     else
       if (Debug.verbosity >= 2) Debug.log("║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
-    if (call.record !== Record.empty)
-      Record.markViewed(call.record, call.cache.member);
+    Record.markViewed(call.record, call.cache.member);
     return call;
   }
 
@@ -77,7 +81,7 @@ class CachedMethod extends ReactiveCache<any> {
       ctx.timestamp < c.outdated.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
-    if (markViewed && r !== Record.empty)
+    if (markViewed)
       Record.markViewed(r, c.member);
     return { cache: c, record: r, isValid };
   }
@@ -137,11 +141,11 @@ class CachedMethod extends ReactiveCache<any> {
         case ReentrantCall.ExitWithError:
           throw new Error(`${c.hint()} is configured as non-reentrant`);
         case ReentrantCall.WaitAndRestart:
-          result = new Error(`transaction will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
+          result = new Error(`transaction t${caller.id} (${caller.hint}) will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
           caller.discard(result, existing.tran);
           break;
         case ReentrantCall.DiscardPrevious:
-          result = new Error(`transaction will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
+          result = new Error(`transaction t${caller.id} (${caller.hint}) will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
           existing.tran.discard();
           caller.discard(result, existing.tran);
           break;
@@ -494,7 +498,7 @@ export class CachedResult implements ICachedResult {
   }
 
   static freeze(c: CachedResult): void {
-    Utils.freezeMap(c.observables);
+    // Utils.freezeMap(c.observables);
     // Utils.freezeSet(c.statusObservables);
     Object.freeze(c);
   }
