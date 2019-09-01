@@ -79,7 +79,7 @@ class CachedMethod extends ReactiveCache<any> {
       call.cache.ret = ret;
     }
     else
-      if (Debug.verbosity >= 2) Debug.log("║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (created by ${call.cache.tran.hint})`);
+      if (Debug.verbosity >= 2) Debug.log("║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
     return call;
   }
 
