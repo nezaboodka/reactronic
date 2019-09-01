@@ -31,7 +31,7 @@
       },
     },
     {
-      "label": "Install - npm",
+      "label": "Install - NPM",
       "type": "shell",
       "command": "npm install",
       "isBackground": true,
