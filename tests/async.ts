@@ -29,7 +29,6 @@ export class DemoView {
     result.push(`${demoMon.isIdle ? "" : "[...] "}Url: ${this.model.url}`);
     await sleep(10);
     result.push(`${demoMon.isIdle ? "" : "[...] "}Log: ${this.model.log.join(", ")}`);
-    // throw new Error("test");
     return result;
   }
 

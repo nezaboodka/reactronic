@@ -28,7 +28,7 @@ export class Binding<T> {
 
   static seal<T>(owner: any, prop: PropertyKey, value: T, proto: object, clone: (v: T) => T): Binding<T> {
     if (Object.isFrozen(value)) /* istanbul ignore next */
-      throw new Error("[E610] copy-on-write collection cannot be referenced from multiple objects");
+      throw new Error("copy-on-write collection cannot be referenced from multiple objects");
     const self: any = value;
     const binding = new Binding<T>(owner, prop, value, clone);
     self[RT_BINDING] = binding;

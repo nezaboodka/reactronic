@@ -28,7 +28,7 @@ export class Transaction {
 
   run<T>(func: F<T>, ...args: any[]): T {
     if (this.sealed && Transaction.active !== this)
-      throw new Error("[E601] cannot run sealed transaction");
+      throw new Error("cannot run transaction that is already sealed");
     return this._run(func, ...args);
   }
 
@@ -42,9 +42,9 @@ export class Transaction {
 
   commit(): void {
     if (this.busy > 0)
-      throw new Error("[E602] cannot commit transaction having pending async operations");
+      throw new Error("cannot commit transaction having pending async operations");
     if (this.error)
-      throw new Error(`[E603] cannot commit discarded transaction: ${this.error}`);
+      throw new Error(`cannot commit transaction that is already discarded: ${this.error}`);
     this.seal(); // commit immediately, because pending === 0
   }
 
@@ -220,7 +220,7 @@ export class Transaction {
   }
 
   private tryResolveConflicts(conflicts: Record[]): void {
-    this.error = this.error || new Error(`[E604] transaction t${this.id} (${this.hint}) conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
+    this.error = this.error || new Error(`transaction t${this.id} (${this.hint}) conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
     throw this.error;
   }
 
@@ -296,4 +296,4 @@ export class Transaction {
   }
 }
 
-const RT_IGNORE = new Error("[E600] transaction is discarded and ignored");
+const RT_IGNORE = new Error("transaction is discarded and will be silently ignored");

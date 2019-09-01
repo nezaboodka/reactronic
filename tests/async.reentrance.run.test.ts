@@ -11,7 +11,7 @@ const etalon: string[] = [
   "[...] Log: RTA",
   "[...] Url: nezaboodka.com",
   "[...] Log: RTA, nezaboodka.com/100",
-  "Error: [E604] transaction t31 (recache) conflicts with other transactions on: t26#22 DemoModel.url, t26#22 DemoModel.log",
+  "Error: transaction t31 (recache) conflicts with other transactions on: t26#22 DemoModel.url, t26#22 DemoModel.log",
   "Url: nezaboodka.com",
   "Log: RTA, nezaboodka.com/100",
 ];

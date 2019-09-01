@@ -154,7 +154,7 @@ class CachedMethod extends ReactiveCache<any> {
     if (existing)
       switch (c.config.reentrant) {
         case ReentrantCall.ExitWithError:
-          throw new Error(`[E609] ${c.hint()} is not reentrant`);
+          throw new Error(`${c.hint()} is configured as non-reentrant`);
         case ReentrantCall.WaitAndRestart:
           result = new Error(`transaction will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
           caller.discard(result, existing.tran);
@@ -235,7 +235,7 @@ export class CachedResult implements ICachedResult {
   static get(method: F<any>): ReactiveCache<any> {
     const impl: ReactiveCache<any> | undefined = Utils.get(method, RT_CACHE);
     if (!impl)
-      throw new Error("[E610] given method is not a reactronic cache");
+      throw new Error("given method is not a reactronic cache");
     return impl;
   }
 
@@ -394,7 +394,7 @@ export class CachedResult implements ICachedResult {
   }
 
   static enforceInvalidation(c: CachedResult, cause: string, latency: number): boolean {
-    throw new Error("[E600] not implemented - Cache.enforceInvalidation");
+    throw new Error("not implemented - Cache.enforceInvalidation");
     // let effect: Cache[] = [];
     // c.invalidate(cause, false, false, effect);
     // if (latency === Renew.Immediately)

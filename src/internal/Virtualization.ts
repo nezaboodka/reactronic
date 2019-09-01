@@ -81,7 +81,7 @@ export class Virt implements ProxyHandler<Handle> {
     }
     else {
       if (config.mode !== Mode.Stateless)
-        throw new Error("[E600] not yet supported - config.mode !== Mode.Stateless");
+        throw new Error("Mode.Stateless is not yet supported");
       Reflect.set(h.stateless, prop, value, receiver);
     }
     return true;
@@ -166,7 +166,7 @@ export class Virt implements ProxyHandler<Handle> {
 
   static acquireHandle(obj: any): Handle {
     if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
-      throw new Error("[E605] only objects can be registered in reactronic store");
+      throw new Error("only objects can be reactive");
     let h: Handle = Utils.get(obj, RT_HANDLE);
     if (!h) {
       h = new Handle(obj, obj, Virt.proxy);
@@ -202,16 +202,16 @@ export class Virt implements ProxyHandler<Handle> {
   }
 
   static createCachedMethodTrap = function(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
-    /* istanbul ignore next */ throw new Error("this method should never be called");
+    /* istanbul ignore next */ throw new Error("createCachedMethodTrap should never be called");
   };
 }
 
 function decoratedfield(...args: any[]): never {
-  /* istanbul ignore next */ throw new Error("this method should never be called");
+  /* istanbul ignore next */ throw new Error("decoratedfield should never be called");
 }
 
 function decoratedclass(...args: any[]): never {
-  /* istanbul ignore next */ throw new Error("this method should never be called");
+  /* istanbul ignore next */ throw new Error("decoratedclass should never be called");
 }
 
 export class CopyOnWrite implements ProxyHandler<Binding<any>> {
