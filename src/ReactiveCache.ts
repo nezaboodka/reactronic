@@ -2,15 +2,15 @@ import { CachedResult, F, Handle } from "./internal/z.index";
 import { Transaction } from "./Transaction";
 import { Config } from "./Config";
 
-export function recent<T>(method: F<Promise<T>>, ...args: any[]): T | undefined {
-  return ReactiveCache.get<T>(method).recent(...args);
+export function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined {
+  return ReactiveCache.get<T>(method).result(...args);
 }
 
 export abstract class ReactiveCache<T> {
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
   abstract readonly error: any;
-  abstract recent(...args: any[]): T | undefined;
+  abstract result(...args: any[]): T | undefined;
   abstract readonly stamp: number;
   abstract invalidate(cause: string | undefined): boolean;
   abstract readonly isInvalidated: boolean;

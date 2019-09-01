@@ -296,13 +296,13 @@ class Transaction {
 
 // ReactiveCache
 
-function recent<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
+function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
 
 abstract class ReactiveCache<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
   readonly error: any;
-  recent(...args: any[]): T;
+  result(...args: any[]): T;
   invalidate(cause: string | undefined): boolean;
   readonly isInvalidated: boolean;
   readonly isComputing: boolean;

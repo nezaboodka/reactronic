@@ -64,5 +64,5 @@ export interface ICachedResult {
   wrap<T>(func: F<T>): F<T>;
   isInvalidated(): boolean;
   invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void;
-  triggerRecache(timestamp: number, now: boolean, args?: any[]): void;
+  triggerRecache(timestamp: number, now: boolean): void;
 }

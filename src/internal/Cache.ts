@@ -1,6 +1,6 @@
 import { Utils, Debug, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
-export { ReactiveCache, recent } from "../ReactiveCache";
+export { ReactiveCache, resultof } from "../ReactiveCache";
 import { Config, Renew, ReentrantCall, SeparateFrom } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
@@ -8,7 +8,6 @@ import { Monitor } from "../Monitor";
 interface CachedCall {
   record: Record;
   cache: CachedResult;
-  isUpToDate: boolean;
   isValid: boolean;
 }
 
@@ -31,55 +30,41 @@ class CachedMethod extends ReactiveCache<any> {
     // TODO: mark cache readonly?
   }
 
-  recent(...args: any): any {
-    const call: CachedCall = this.obtain(false, args);
-    if (call.isUpToDate || call.record.snapshot.completed)
-      Record.markViewed(call.record, call.cache.member);
-    else if (call.record.prev.record !== Record.empty)
-      Record.markViewed(call.record.prev.record, call.cache.member);
+  result(...args: any): any {
+    const call: CachedCall = this.call(false, args);
     return call.cache.result;
   }
 
   get stamp(): number {
-    const call: CachedCall = this.obtain();
-    const r = call.isUpToDate ? call.record : call.record.prev.record;
-    if (r !== Record.empty)
-      Record.markViewed(r, call.cache.member);
-    return r.snapshot.timestamp;
+    const call: CachedCall = this.read(true);
+    return call.record.snapshot.timestamp;
   }
 
   get isInvalidated(): boolean {
-    const call: CachedCall = this.obtain();
-    const result = call.cache.isInvalidated();
-    if (result)
-      Record.markViewed(call.record, call.cache.member);
-    else if (call.record.prev.record !== Record.empty)
-      Record.markViewed(call.record.prev.record, call.cache.member);
-    // Record.markViewed(cc.record, cc.cache.member);
-    return result;
+    const call: CachedCall = this.read(true);
+    return call.cache.isInvalidated();
   }
 
-  invoke(...args: any[]): any {
-    const call: CachedCall = this.obtain(true, args);
-    Record.markViewed(call.record, call.cache.member);
-    return call.cache.ret;
-  }
-
-  obtain(invoke?: boolean, args?: any[]): CachedCall {
+  call(recache: boolean, args?: any[]): CachedCall {
     let call: CachedCall = this.read(false, args);
     const c: CachedResult = call.cache;
-    if (!call.isValid && invoke !== undefined && (!c.outdated.recaching || invoke)) {
+    if (!call.isValid) {
+      let call2 = call;
       const hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
       const ret = Transaction.runAs<any>(hint, c.config.separate, c.config.tracing, (argsx: any[] | undefined): any => {
-        if (call.cache.tran.discarded())
-          call = this.read(false, argsx); // re-read on retry
-        call = this.recache(call.cache, argsx);
-        return call.cache.ret;
+        if (call2.cache.tran.discarded())
+          call2 = this.read(false, argsx); // re-read on retry
+        call2 = this.recache(call2.cache, argsx);
+        return call2.cache.ret;
       }, args);
-      call.cache.ret = ret;
+      call2.cache.ret = ret;
+      if (recache)
+        call = call2;
     }
     else
       if (Debug.verbosity >= 2) Debug.log("║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
+    if (call.record !== Record.empty)
+      Record.markViewed(call.record, call.cache.member);
     return call;
   }
 
@@ -88,14 +73,13 @@ class CachedMethod extends ReactiveCache<any> {
     const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CachedResult = r.data[member] || this.blank;
-    const isUpToDate = ctx.timestamp < c.outdated.timestamp && c.started === 0;
-    const isValid = (isUpToDate || c.started > 0) &&
-      c.config.latency !== Renew.NoCache &&
+    const isValid = c.config.latency !== Renew.NoCache &&
+      ctx.timestamp < c.outdated.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
-    if (markViewed)
+    if (markViewed && r !== Record.empty)
       Record.markViewed(r, c.member);
-    return { cache: c, record: r, isUpToDate, isValid };
+    return { cache: c, record: r, isValid };
   }
 
   private edit(): CachedCall {
@@ -112,7 +96,7 @@ class CachedMethod extends ReactiveCache<any> {
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
-    return { cache: c, record: r, isUpToDate, isValid: false };
+    return { cache: c, record: r, isValid: true };
   }
 
   private recache(prev: CachedResult, args: any[] | undefined): CachedCall {
@@ -141,7 +125,6 @@ class CachedMethod extends ReactiveCache<any> {
       if (!error)
         c.tryLeave(r, prev, mon);
     }
-    call.isUpToDate = c.started === 0;
     return call;
   }
 
@@ -269,20 +252,20 @@ export class CachedResult implements ICachedResult {
     return caching;
   }
 
-  triggerRecache(timestamp: number, now: boolean, args?: any[]): void {
+  triggerRecache(timestamp: number, now: boolean): void {
     if (now || this.config.latency === Renew.Immediately) {
       if (!this.error && (this.config.latency === Renew.NoCache ||
           (timestamp >= this.outdated.timestamp && !this.outdated.recaching))) {
         const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
         const trap: Function = Reflect.get(proxy, this.member, proxy);
         const cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
-        const cc = cachedMethod.obtain(false, args);
+        const cc: CachedCall = cachedMethod.call(true);
         if (cc.cache.ret instanceof Promise)
           cc.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
       }
     }
     else
-      sleep(this.config.latency).then(() => this.triggerRecache(timestamp, true, args));
+      sleep(this.config.latency).then(() => this.triggerRecache(timestamp, true));
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
@@ -417,7 +400,8 @@ export class CachedResult implements ICachedResult {
 
   static createCachedMethodTrap(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
     const cachedMethod = new CachedMethod(h, prop, config);
-    const cachedMethodTrap: F<any> = (...args: any[]): any => cachedMethod.invoke(...args);
+    const cachedMethodTrap: F<any> = (...args: any[]): any =>
+      cachedMethod.call(true, args).cache.ret;
     Utils.set(cachedMethodTrap, RT_CACHE, cachedMethod);
     return cachedMethodTrap;
   }
