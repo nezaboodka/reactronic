@@ -73,8 +73,8 @@ class CachedMethod extends ReactiveCache<any> {
       if (invoke !== undefined && (!c.outdated.recomputation || invoke)) {
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         let ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (argsx: any[] | undefined): any => {
-          if (cc2.cached.tran.discarded())
-            cc2 = this.read(false); // re-read on retry
+          // if (cc2.cached.tran.discarded())
+          //   cc2 = this.read(false); // re-read on retry
           cc2 = this.recache(cc2.cached, argsx);
           return cc2.cached.ret;
         }, args);

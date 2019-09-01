@@ -13,14 +13,11 @@ let etalon: string[] = [
   "Log: RTA",
   "[...] Url: google.com",
   "[...] Log: RTA, google.com/300",
-  "Url: google.com",
-  "Log: RTA, google.com/300",
   "[...] Url: microsoft.com",
   "[...] Log: RTA, google.com/300, microsoft.com/200",
+  "Error: [E604] transaction t35 (recache) conflicts with other transactions on: t33#22 DemoModel.url, t33#22 DemoModel.log",
   "Url: microsoft.com",
   "Log: RTA, google.com/300, microsoft.com/200",
-  "Url: nezaboodka.com",
-  "Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500",
 ];
 
 test("async", async t => {
