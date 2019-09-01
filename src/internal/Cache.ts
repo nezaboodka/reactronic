@@ -21,7 +21,7 @@ class CachedMethod extends ReactiveCache<any> {
   get error(): boolean { return this.read(true).cached.error; }
   invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cached, cause, 0) : false; }
   get isComputing(): boolean { return this.read(true).cached.computing > 0; }
-  get isUpdating(): boolean { return this.read(true).cached.invalidation.recomputation !== undefined; }
+  get isUpdating(): boolean { return this.read(true).cached.outdated.recomputation !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
@@ -70,7 +70,7 @@ class CachedMethod extends ReactiveCache<any> {
     let cc2: CacheCall = cc;
     if (!cc2.isHit) {
       let c: CachedResult = cc.cached;
-      if (invoke !== undefined && (!c.invalidation.recomputation || invoke)) {
+      if (invoke !== undefined && (!c.outdated.recomputation || invoke)) {
         let hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
         let ret = Transaction.runAs<any>(hint, c.config.apart, c.config.tracing, (argsx: any[] | undefined): any => {
           if (cc2.cached.tran.discarded())
@@ -91,7 +91,7 @@ class CachedMethod extends ReactiveCache<any> {
     let member = this.blank.member;
     let r: Record = ctx.tryRead(this.handle);
     let c: CachedResult = r.data[member] || this.blank;
-    let isUpToDate = ctx.timestamp < c.invalidation.timestamp && c.computing === 0;
+    let isUpToDate = ctx.timestamp < c.outdated.timestamp && c.computing === 0;
     let isHit = (isUpToDate || c.computing > 0) &&
       c.config.latency !== Renew.NoCache &&
       (args === undefined || c.args[0] === args[0]) ||
@@ -106,7 +106,7 @@ class CachedMethod extends ReactiveCache<any> {
     let member = this.blank.member;
     let r: Record = ctx.edit(this.handle, member, RT_CACHE);
     let c: CachedResult = r.data[member] || this.blank;
-    let isUpToDate = ctx.timestamp < c.invalidation.timestamp;
+    let isUpToDate = ctx.timestamp < c.outdated.timestamp;
     if ((!isUpToDate && (c.record !== r || c.computing === 0)) ||
         c.config.latency === Renew.NoCache) {
       let c2 = new CachedResult(r, c.member, c);
@@ -119,7 +119,7 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   private recache(c: CachedResult, args: any[] | undefined): CacheCall {
-    let error: Error | undefined = this.checkForReentrance(c);
+    const error = this.checkForReentrance(c);
     let cc2 = this.edit();
     let c2: CachedResult = cc2.cached;
     let r2: Record = cc2.record;
@@ -138,7 +138,7 @@ class CachedMethod extends ReactiveCache<any> {
         }, ...args);
       else
         c2.ret = Promise.reject(error);
-      c2.invalidation.timestamp = Number.MAX_SAFE_INTEGER;
+      c2.outdated.timestamp = Number.MAX_SAFE_INTEGER;
     }
     finally {
       if (!error)
@@ -150,24 +150,24 @@ class CachedMethod extends ReactiveCache<any> {
 
   private checkForReentrance(c: CachedResult): Error | undefined {
     let result: Error | undefined = undefined;
-    const existing = c.invalidation.recomputation;
+    const prev = c.outdated.recomputation;
     const caller = Transaction.active;
-    if (existing)
+    if (prev)
       switch (c.config.reentrant) {
         case ReentrantCall.ExitWithError:
           throw new Error(`[E609] ${c.hint()} is not reentrant`);
         case ReentrantCall.WaitAndRestart:
-          result = new Error(`transaction will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
-          caller.discard(result, existing.tran);
+          result = new Error(`transaction will be restarted after t${prev.tran.id} (${prev.tran.hint})`);
+          caller.discard(result, prev.tran);
           break;
         case ReentrantCall.DiscardPrevious:
-          result = new Error(`transaction will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
-          existing.tran.discard();
-          caller.discard(result, existing.tran);
+          result = new Error(`transaction will be restarted after t${prev.tran.id} (${prev.tran.hint})`);
+          prev.tran.discard();
+          caller.discard(result, prev.tran);
           break;
         case ReentrantCall.DiscardPreviousNoWait:
-          existing.tran.discard();
-          c.invalidation.recomputation = undefined;
+          prev.tran.discard();
+          c.outdated.recomputation = undefined;
           break;
         case ReentrantCall.RunSimultaneously:
           break; // do nothing
@@ -204,7 +204,7 @@ export class CachedResult implements ICachedResult {
   result: any;
   error: any;
   computing: number;
-  readonly invalidation: { timestamp: number, recomputation: CachedResult | undefined };
+  readonly outdated: { timestamp: number, recomputation: CachedResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
@@ -226,7 +226,7 @@ export class CachedResult implements ICachedResult {
     // this.ret = undefined;
     // this.error = undefined;
     this.computing = 0;
-    this.invalidation = { timestamp: 0, recomputation: undefined };
+    this.outdated = { timestamp: 0, recomputation: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
     this.hotObservables = new Map<PropertyKey, Set<Record>>();
   }
@@ -275,7 +275,7 @@ export class CachedResult implements ICachedResult {
   triggerRecache(timestamp: number, now: boolean, args?: any[]): void {
     if (now || this.config.latency === Renew.Immediately) {
       if (!this.error && (this.config.latency === Renew.NoCache ||
-          (timestamp >= this.invalidation.timestamp && !this.invalidation.recomputation))) {
+          (timestamp >= this.outdated.timestamp && !this.outdated.recomputation))) {
         let proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
         let trap: Function = Reflect.get(proxy, this.member, proxy);
         let cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
@@ -358,14 +358,14 @@ export class CachedResult implements ICachedResult {
   }
 
   isInvalidated(): boolean {
-    const t = this.invalidation.timestamp;
+    const t = this.outdated.timestamp;
     return t !== Number.MAX_SAFE_INTEGER && t !== 0;
   }
 
   invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void {
     const stamp = cause.snapshot.timestamp;
-    if (this.invalidation.timestamp === Number.MAX_SAFE_INTEGER && (!cascade || this.config.latency !== Renew.WhenReady)) {
-      this.invalidation.timestamp = stamp;
+    if (this.outdated.timestamp === Number.MAX_SAFE_INTEGER && (!cascade || this.config.latency !== Renew.WhenReady)) {
+      this.outdated.timestamp = stamp;
       // this.cause = Hint.record(cause, false, false, causeProp);
       // if (this.updater.active) {
       //   this.updater.active.tran.discard();
@@ -429,8 +429,8 @@ export class CachedResult implements ICachedResult {
     if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3)) Debug.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.computing = Date.now();
     this.monitorEnter(mon);
-    if (!prev.invalidation.recomputation)
-      prev.invalidation.recomputation = this;
+    if (!prev.outdated.recomputation)
+      prev.outdated.recomputation = this;
   }
 
   tryLeave(r: Record, prev: CachedResult, mon: Monitor | null): void {
@@ -457,8 +457,8 @@ export class CachedResult implements ICachedResult {
   }
 
   private leave(r: Record, prev: CachedResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
-    if (prev.invalidation.recomputation === this)
-      prev.invalidation.recomputation = undefined;
+    if (prev.outdated.recomputation === this)
+      prev.outdated.recomputation = undefined;
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.computing;
     this.computing = 0;
