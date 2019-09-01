@@ -442,7 +442,7 @@ export class CachedResult implements ICachedResult {
         },
         error => {
           this.error = error;
-          this.leave(r, prev, mon, "▒▒", "- failed!  ", "ERROR ▪▪▪ ─┘");
+          this.leave(r, prev, mon, "▒▒", "- failed   ", "ERROR ▪▪▪ ─┘");
           throw error;
         });
       // Utils.set(this.ret, RT_CACHE, this);
