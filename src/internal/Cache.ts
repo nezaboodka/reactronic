@@ -82,7 +82,7 @@ class CachedMethod extends ReactiveCache<any> {
       }
     }
     else
-      if (Debug.verbosity >= 3) Debug.log("║", "  ==", `${Hint.record(cc.record)}.${cc2.cached.member.toString()} hits cache created by ${cc.cached.tran.hint}`);
+      if (Debug.verbosity >= 2) Debug.log("║", "  ==", `${Hint.record(cc.record)}.${cc2.cached.member.toString()} hits cache created by ${cc.cached.tran.hint}`);
     return cc2;
   }
 
