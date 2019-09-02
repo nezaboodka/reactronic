@@ -123,6 +123,7 @@ class CachedMethod extends ReactiveCache<any> {
         case ReentrantCall.WaitAndRestart:
           result = new Error(`transaction t${caller.id} (${caller.hint}) will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
           caller.cancel(result, existing.tran);
+          // TODO: "c.outdated.recaching = caller" in order serialize all the transactions
           break;
         case ReentrantCall.CancelPrevious:
           existing.tran.cancel();
