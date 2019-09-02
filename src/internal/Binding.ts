@@ -1,6 +1,6 @@
 import { Trace as T } from "./Trace";
 
-export const RT_BINDING: unique symbol = Symbol("rt:binding");
+export const RT_BINDING: unique symbol = Symbol("RT:BINDING");
 
 export class Binding<T> {
   constructor(
