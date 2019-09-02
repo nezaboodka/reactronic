@@ -12,7 +12,7 @@ export class Debug {
     console.log("\x1b[37m%s\x1b[0m \x1b[" + Debug.color +
       "m%s %s\x1b[0m \x1b[" + Debug.color + "m%s%s\x1b[0m \x1b[" + Debug.color + "m%s\x1b[0m%s",
       "#rt", Debug.prefix, operation, margin, marker, message,
-      (highlight !== undefined ? `    ${highlight}` : ``) +
+      (highlight !== undefined ? `${highlight}` : ``) +
       (ms > 2 ? `    [ ${ms}ms ]` : ``));
   }
 }

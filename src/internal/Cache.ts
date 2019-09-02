@@ -417,16 +417,16 @@ export class CachedResult implements ICachedResult {
       this.ret = this.ret.then(
         result => {
           this.result = result;
-          this.leave(r, prev, mon, "▒▒", "- completed", " DONE ▪▪▪ ─┘");
+          this.leave(r, prev, mon, "▒▒", "- finished ", "   OK ──┘");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, prev, mon, "▒▒", "- failed   ", "ERROR ▪▪▪ ─┘");
+          this.leave(r, prev, mon, "▒▒", "- finished ", "ERROR ──┘");
           throw error;
         });
       if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3))
-        Debug.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave....`, 0, "ASYNC ▪▪▪ ─┐");
+        Debug.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
     }
     else {
       this.result = this.ret;
