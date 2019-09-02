@@ -91,12 +91,10 @@ class CachedMethod extends ReactiveCache<any> {
     const member = this.empty.member;
     const r: Record = ctx.edit(this.handle, member, RT_CACHE);
     let c: CachedResult = r.data[member] || this.empty;
-    const isUpToDate = ctx.timestamp < c.outdated.timestamp;
-    if ((!isUpToDate && (c.record !== r || c.started === 0)) ||
-        c.config.latency === Renew.NoCache) {
+    if (c.record !== r) {
       const c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
-      if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.empty ? "empty" : c.hint(false)}`);
+      if (Debug.verbosity >= 3) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.empty ? "empty" : c.hint(false)}`);
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
@@ -403,6 +401,11 @@ export class CachedResult implements ICachedResult {
     if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3)) Debug.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
+    if (this.member === "renderAsync") {
+      console.log(`ENTER ${prev.hint()}`);
+      console.log(prev.outdated.recaching);
+      console.log(this);
+    }
     if (!prev.outdated.recaching)
       prev.outdated.recaching = this;
   }
@@ -430,6 +433,11 @@ export class CachedResult implements ICachedResult {
   }
 
   private leave(r: Record, prev: CachedResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
+    if (this.member === "renderAsync") {
+      console.log(`LEAVE ${prev.hint()} --- ${prev.outdated.recaching === this}`);
+      console.log(prev.outdated.recaching);
+      console.log(this);
+    }
     if (prev.outdated.recaching === this)
       prev.outdated.recaching = undefined;
     this.monitorLeave(mon);
