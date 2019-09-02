@@ -1,17 +1,27 @@
 {
-  "nyc": {
-    "include": [
-      "tests/**/*.test.ts"
-    ],
-    "extension": [
-      ".ts"
-    ],
-    "reporter": [
-      "html",
-      "text"
-    ],
-    "sourceMap": true,
-    "instrument": false,
-    "all": true
-  }
+  "check-coverage": true,
+  "lines": 50,
+  "functions": 50,
+  "branches": 50,
+  "exclude": [
+    "**/*.d.ts"
+  ],
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts"
+  ],
+  "require": [
+    "ts-node/register",
+    "source-map-support/register"
+  ],
+  "extension": [
+    ".ts",
+    ".tsx"
+  ],
+  "reporter": [
+    "html",
+    "text"
+  ],
+  "cache": false,
+  "all": true
 }
