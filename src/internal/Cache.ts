@@ -30,7 +30,7 @@ class CachedMethod extends ReactiveCache<any> {
     // TODO: mark cache readonly?
   }
 
-  result(...args: any): any {
+  getResult(...args: any): any {
     const call: CachedCall = this.call(false, args);
     return call.cache.result;
   }

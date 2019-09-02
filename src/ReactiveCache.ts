@@ -3,14 +3,14 @@ import { Transaction } from "./Transaction";
 import { Config } from "./Config";
 
 export function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined {
-  return ReactiveCache.get<T>(method).result(...args);
+  return ReactiveCache.get<T>(method).getResult(...args);
 }
 
 export abstract class ReactiveCache<T> {
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
   abstract readonly error: any;
-  abstract result(...args: any[]): T | undefined;
+  abstract getResult(...args: any[]): T | undefined;
   abstract readonly stamp: number;
   abstract invalidate(cause: string | undefined): boolean;
   abstract readonly isInvalidated: boolean;

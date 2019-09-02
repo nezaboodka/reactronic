@@ -73,7 +73,7 @@ test("basic", t => {
     // Check protection
     t.throws(() => { daddy.setParent.rcache.configure({latency: 0}); });
     t.throws(() => { console.log(daddy.setParent.rcache.config.monitor); });
-    t.throws(() => { console.log(daddy.setParent.rcache.result()); });
+    t.throws(() => { console.log(daddy.setParent.rcache.getResult()); });
   }
   finally { // cleanup
     ReactiveCache.unmount(app, app.model);

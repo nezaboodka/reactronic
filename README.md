@@ -302,7 +302,7 @@ abstract class ReactiveCache<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
   readonly error: any;
-  result(...args: any[]): T;
+  getResult(...args: any[]): T;
   invalidate(cause: string | undefined): boolean;
   readonly isInvalidated: boolean;
   readonly isComputing: boolean;
