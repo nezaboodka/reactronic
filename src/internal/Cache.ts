@@ -53,7 +53,7 @@ class CachedMethod extends ReactiveCache<any> {
       const hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
       const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
       const ret = Transaction.runAs<any>(hint, separate, c.config.tracing, (argsx: any[] | undefined): any => {
-        if (call2.cache.tran.canceled()) {
+        if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
           if (!call2.isValid)
             call2 = this.recache(call2.cache, argsx);
@@ -524,7 +524,7 @@ Promise.prototype.then = function(
   onfailure?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
   const t = Transaction.active;
-  if (!t.finished()) {
+  if (!t.isFinished()) {
     if (onsuccess) {
       // if (Debug.verbosity >= 5) Debug.log("║", "", ` Promise.then (${(this as any)[RT_UNMOUNT]})`);
       onsuccess = Transaction._wrap<any>(t, CachedResult.active, true, true, onsuccess);

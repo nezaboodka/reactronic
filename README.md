@@ -285,8 +285,8 @@ class Transaction {
   commit(): void;
   seal(): Transaction; // t1.seal().whenFinished().then(fulfill, reject)
   cancel(error?: Error, retryAfter?: Transaction);
-  canceled(): boolean;
-  finished(): boolean;
+  isCanceled(): boolean;
+  isFinished(): boolean;
   whenFinished(): Promise<void>;
   join<T>(p: Promise<T>): Promise<T>;
   static run<T>(func: F<T>, ...args: any[]): T;

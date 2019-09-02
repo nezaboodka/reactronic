@@ -6,7 +6,7 @@ export class Transaction {
   static active: Transaction;
   private readonly separate: SeparateFrom;
   private readonly snapshot: Snapshot; // assigned in constructor
-  private busy: number = 0;
+  private workers: number = 0;
   private sealed: boolean = false;
   private error?: Error = undefined;
   private awaiting?: Transaction = undefined;
@@ -41,7 +41,7 @@ export class Transaction {
   // }
 
   commit(): void {
-    if (this.busy > 0)
+    if (this.workers > 0)
       throw new Error("cannot commit transaction having pending async operations");
     if (this.error)
       throw new Error(`cannot commit transaction that is already canceled: ${this.error}`);
@@ -64,16 +64,16 @@ export class Transaction {
     return this;
   }
 
-  canceled(): boolean {
+  isCanceled(): boolean {
     return this.error !== undefined;
   }
 
-  finished(): boolean {
-    return this.sealed && this.busy === 0;
+  isFinished(): boolean {
+    return this.sealed && this.workers === 0;
   }
 
   async whenFinished(includingReactions: boolean): Promise<void> {
-    if (!this.finished())
+    if (!this.isFinished())
       await this.acquirePromise();
     if (includingReactions && this.reaction.tran)
       await this.reaction.tran.whenFinished(true);
@@ -140,7 +140,7 @@ export class Transaction {
   private static acquire(hint: string, separate: SeparateFrom, tracing: number): Transaction {
     const startNew = Utils.hasAllFlags(separate, SeparateFrom.Parent)
       || Utils.hasAllFlags(Transaction.active.separate, SeparateFrom.Children)
-      || Transaction.active.finished();
+      || Transaction.active.isFinished();
     return startNew ? new Transaction(hint, separate, tracing) : Transaction.active;
   }
 
@@ -170,7 +170,7 @@ export class Transaction {
     const outerPrefix = Debug.prefix;
     let result: T;
     try {
-      this.busy++;
+      this.workers++;
       Transaction.active = this;
       if (this.tracing !== 0)
         Debug.verbosity = this.tracing;
@@ -178,7 +178,7 @@ export class Transaction {
       Debug.prefix = `t${this.id}`; // TODO: optimize to avoid toString
       this.snapshot.checkout();
       result = func(...args);
-      if (this.sealed && this.busy === 1 && !this.error)
+      if (this.sealed && this.workers === 1 && !this.error)
         this.checkForConflicts();
     }
     catch (e) {
@@ -186,8 +186,8 @@ export class Transaction {
       throw e;
     }
     finally { // it's critical to have no exceptions in this block
-      this.busy--;
-      if (this.finished()) {
+      this.workers--;
+      if (this.isFinished()) {
         !this.error ? this.performCommit() : this.performCancel();
         Object.freeze(this);
       }
@@ -202,7 +202,7 @@ export class Transaction {
           this.snapshot.timestamp, this.reaction, this.tracing);
       }
       finally {
-        if (!this.finished())
+        if (!this.isFinished())
           this.reaction.effect = [];
       }
     }
@@ -265,11 +265,11 @@ export class Transaction {
   static _wrap<T>(t: Transaction, c: ICachedResult | undefined, inc: boolean, dec: boolean, func: F<T>): F<T> {
     const f = c ? c.wrap(func) : func; // caching context
     if (inc)
-      t.run<void>(() => t.busy++);
+      t.run<void>(() => t.workers++);
     const tran: F<T> = (...args: any[]): T =>
       t._run<T>(() => { // transaction context
         if (dec)
-          t.busy--;
+          t.workers--;
         // if (t.sealed && t.error)
         //   throw t.error;
         return f(...args);
