@@ -22,6 +22,8 @@
     "html",
     "text"
   ],
+  "temp-dir": "coverage/.output",
+  "report-dir": "coverage",
   "cache": false,
   "all": true
 }

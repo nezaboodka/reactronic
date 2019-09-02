@@ -31,7 +31,7 @@
       },
     },
     {
-      "label": "Test - Ava & Coverage",
+      "label": "Coverage - NYC & Ava",
       "type": "shell",
       "command": "npm run cover",
       "isBackground": true,
