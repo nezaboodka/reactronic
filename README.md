@@ -301,10 +301,8 @@ abstract class ReactiveCache<T> {
   configure(config: Partial<Config>): Config;
   readonly error: any;
   getResult(...args: any[]): T;
-  invalidate(cause: string | undefined): boolean;
   readonly isInvalidated: boolean;
-  readonly isComputing: boolean;
-  readonly isUpdating: boolean;
+  invalidate(cause: string | undefined): boolean;
   static get<T>(method: F<Promise<T>>): ReactiveCache<T>;
   static get<T>(method: F<T>): ReactiveCache<T>;
   static unmount(...objects: any[]): Transaction;

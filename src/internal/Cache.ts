@@ -17,10 +17,11 @@ class CachedMethod extends ReactiveCache<any> {
 
   get config(): Config { return this.read(false).cache.config; }
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
+  get stamp(): number { return this.read(true).record.snapshot.timestamp; }
   get error(): boolean { return this.read(true).cache.error; }
+  getResult(...args: any): any { return this.call(false, args).cache.result; }
+  get isInvalidated(): boolean { return this.read(true).cache.isInvalidated(); }
   invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
-  get isComputing(): boolean { return this.read(true).cache.started > 0; }
-  get isUpdating(): boolean { return this.read(true).cache.outdated.recaching !== undefined; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
@@ -28,21 +29,6 @@ class CachedMethod extends ReactiveCache<any> {
     this.empty = new CachedResult(Record.empty, member, config);
     CachedResult.freeze(this.empty);
     // TODO: mark cache readonly?
-  }
-
-  getResult(...args: any): any {
-    const call: CachedCall = this.call(false, args);
-    return call.cache.result;
-  }
-
-  get stamp(): number {
-    const call: CachedCall = this.read(true);
-    return call.record.snapshot.timestamp;
-  }
-
-  get isInvalidated(): boolean {
-    const call: CachedCall = this.read(true);
-    return call.cache.isInvalidated();
   }
 
   call(recache: boolean, args?: any[]): CachedCall {
