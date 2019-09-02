@@ -13,7 +13,7 @@ interface CachedCall {
 
 class CachedMethod extends ReactiveCache<any> {
   private readonly handle: Handle;
-  private readonly blank: CachedResult;
+  private readonly empty: CachedResult;
 
   get config(): Config { return this.read(false).cache.config; }
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
@@ -25,8 +25,8 @@ class CachedMethod extends ReactiveCache<any> {
   constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
     super();
     this.handle = handle;
-    this.blank = new CachedResult(Record.empty, member, config);
-    CachedResult.freeze(this.blank);
+    this.empty = new CachedResult(Record.empty, member, config);
+    CachedResult.freeze(this.empty);
     // TODO: mark cache readonly?
   }
 
@@ -74,9 +74,9 @@ class CachedMethod extends ReactiveCache<any> {
 
   private read(markViewed: boolean, args?: any[]): CachedCall {
     const ctx = Snapshot.active();
-    const member = this.blank.member;
+    const member = this.empty.member;
     const r: Record = ctx.tryRead(this.handle);
-    const c: CachedResult = r.data[member] || this.blank;
+    const c: CachedResult = r.data[member] || this.empty;
     const isValid = c.config.latency !== Renew.NoCache &&
       ctx.timestamp < c.outdated.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
@@ -88,15 +88,15 @@ class CachedMethod extends ReactiveCache<any> {
 
   private edit(): CachedCall {
     const ctx = Snapshot.active();
-    const member = this.blank.member;
+    const member = this.empty.member;
     const r: Record = ctx.edit(this.handle, member, RT_CACHE);
-    let c: CachedResult = r.data[member] || this.blank;
+    let c: CachedResult = r.data[member] || this.empty;
     const isUpToDate = ctx.timestamp < c.outdated.timestamp;
     if ((!isUpToDate && (c.record !== r || c.started === 0)) ||
         c.config.latency === Renew.NoCache) {
       const c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
-      if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.blank ? "blank" : c.hint(false)}`);
+      if (Debug.verbosity >= 5) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.empty ? "empty" : c.hint(false)}`);
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
@@ -163,7 +163,7 @@ class CachedMethod extends ReactiveCache<any> {
     const call = this.read(false);
     const c: CachedResult = call.cache;
     const r: Record = call.record;
-    const hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : "configure";
+    const hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.empty.member.toString()}/configure` : "configure";
     return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, 0, (): Config => {
       const call2 = this.edit();
       const c2: CachedResult = call2.cache;
