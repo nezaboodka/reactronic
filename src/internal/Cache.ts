@@ -98,7 +98,7 @@ class CachedMethod extends ReactiveCache<any> {
       else
         args = c.args;
       if (!error)
-        c.ret = CachedResult.run<any>(c, (...argsx: any[]): any => {
+        c.ret = CachedMethod.run<any>(c, (...argsx: any[]): any => {
           return c.config.body.call(this.handle.proxy, ...argsx);
         }, ...args);
       else
@@ -147,6 +147,33 @@ class CachedMethod extends ReactiveCache<any> {
       if (T.level >= 5) T.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
     });
+  }
+
+  static run<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
+    let result: T | undefined = undefined;
+    const outer = CachedResult.active;
+    const outerVerbosity = T.level;
+    const outerMargin = T.margin;
+    try {
+      CachedResult.active = c;
+      if (c) {
+        if (c.config.tracing !== 0)
+          T.level = c.config.tracing;
+        T.margin = c.margin;
+      }
+      result = func(...args);
+    }
+    catch (e) {
+      if (c)
+        c.error = e;
+      throw e;
+    }
+    finally {
+      T.margin = outerMargin;
+      T.level = outerVerbosity;
+      CachedResult.active = outer;
+    }
+    return result;
   }
 }
 
@@ -200,35 +227,8 @@ export class CachedResult implements ICachedResult {
     return impl;
   }
 
-  static run<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
-    let result: T | undefined = undefined;
-    const outer = CachedResult.active;
-    const outerVerbosity = T.level;
-    const outerMargin = T.margin;
-    try {
-      CachedResult.active = c;
-      if (c) {
-        if (c.config.tracing !== 0)
-          T.level = c.config.tracing;
-        T.margin = c.margin;
-      }
-      result = func(...args);
-    }
-    catch (e) {
-      if (c)
-        c.error = e;
-      throw e;
-    }
-    finally {
-      T.margin = outerMargin;
-      T.level = outerVerbosity;
-      CachedResult.active = outer;
-    }
-    return result;
-  }
-
   wrap<T>(func: F<T>): F<T> {
-    const caching: F<T> = (...args: any[]): T => CachedResult.run<T>(this, func, ...args);
+    const caching: F<T> = (...args: any[]): T => CachedMethod.run<T>(this, func, ...args);
     return caching;
   }
 
@@ -436,7 +436,7 @@ export class CachedResult implements ICachedResult {
   monitorEnter(mon: Monitor | null): void {
     if (mon)
       Transaction.runAs<void>("Monitor.enter", mon.separate, 0,
-        CachedResult.run, undefined, () => mon.enter(this));
+        CachedMethod.run, undefined, () => mon.enter(this));
   }
 
   monitorLeave(mon: Monitor | null): void {
@@ -447,7 +447,7 @@ export class CachedResult implements ICachedResult {
           Transaction.active = Transaction.none; // Workaround?
           const leave = () => {
             Transaction.runAs<void>("Monitor.leave", mon.separate, 0,
-              CachedResult.run, undefined, () => mon.leave(this));
+              CachedMethod.run, undefined, () => mon.leave(this));
           };
           this.tran.whenFinished(false).then(leave, leave);
         }
@@ -457,7 +457,7 @@ export class CachedResult implements ICachedResult {
       }
       else
         Transaction.runAs<void>("Monitor.leave", mon.separate, 0,
-          CachedResult.run, undefined, () => mon.leave(this));
+          CachedMethod.run, undefined, () => mon.leave(this));
     }
   }
 
