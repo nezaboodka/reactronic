@@ -1,4 +1,4 @@
-import { Trace as T } from "./Debug";
+import { Trace as T } from "./Trace";
 
 export const RT_BINDING: unique symbol = Symbol("rt:binding");
 

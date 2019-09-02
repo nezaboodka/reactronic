@@ -1,5 +1,5 @@
 import { Utils, undef } from "./Utils";
-import { Trace as T } from "./Debug";
+import { Trace as T } from "./Trace";
 import { Record, ISnapshot, ICachedResult, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { CopyOnWrite } from "./Virtualization";

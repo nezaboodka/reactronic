@@ -1,5 +1,5 @@
 export * from "./Utils";
-export * from "./Debug";
+export * from "./Trace";
 export * from "./Record";
 export * from "./Handle";
 export * from "./Snapshot";
