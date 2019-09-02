@@ -1,4 +1,4 @@
-import { Utils, Trace as T, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
+import { Utils, Trace as T, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
 export { ReactiveCache, resultof } from "../ReactiveCache";
 import { Config, Renew, ReentrantCall, SeparateFrom } from "../Config";
@@ -19,7 +19,7 @@ class CachedMethod extends ReactiveCache<any> {
   get isInvalidated(): boolean { return this.read(true).cache.isInvalidated(); }
   invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
 
-  constructor(handle: Handle, member: PropertyKey, config: ConfigImpl) {
+  constructor(handle: Handle, member: PropertyKey, config: ConfigRecord) {
     super();
     this.handle = handle;
     this.empty = new CachedResult(Record.empty, member, config);
@@ -143,7 +143,7 @@ class CachedMethod extends ReactiveCache<any> {
     return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, 0, (): Config => {
       const call2 = this.edit();
       const c2: CachedResult = call2.cache;
-      c2.config = new ConfigImpl(c2.config.body, c2.config, config);
+      c2.config = new ConfigRecord(c2.config.body, c2.config, config);
       if (T.level >= 5) T.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
     });
@@ -158,7 +158,7 @@ export class CachedResult implements ICachedResult {
   readonly tran: Transaction;
   readonly record: Record;
   readonly member: PropertyKey;
-  config: ConfigImpl;
+  config: ConfigRecord;
   args: any[];
   ret: any;
   result: any;
@@ -168,7 +168,7 @@ export class CachedResult implements ICachedResult {
   readonly observables: Map<PropertyKey, Set<Record>>;
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
-  constructor(record: Record, member: PropertyKey, init: CachedResult | ConfigImpl) {
+  constructor(record: Record, member: PropertyKey, init: CachedResult | ConfigRecord) {
     this.margin = T.margin + 1;
     this.tran = Transaction.active;
     this.record = record;
@@ -372,7 +372,7 @@ export class CachedResult implements ICachedResult {
     }
   }
 
-  static createCachedMethodTrap(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
+  static createCachedMethodTrap(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
     const cachedMethod = new CachedMethod(h, prop, config);
     const cachedMethodTrap: F<any> = (...args: any[]): any =>
       cachedMethod.call(true, args).cache.ret;

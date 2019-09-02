@@ -14,7 +14,7 @@ export const RT_CONFIG: unique symbol = Symbol("RT:CONFIG");
 export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
 const EMPTY_CONFIG_TABLE = {};
 
-export class ConfigImpl implements Config {
+export class ConfigRecord implements Config {
   readonly body: Function;
   readonly mode: Mode;
   readonly latency: Latency;
@@ -23,7 +23,7 @@ export class ConfigImpl implements Config {
   readonly monitor: Monitor | null;
   readonly tracing: number;
 
-  constructor(body: Function | undefined, existing: ConfigImpl, patch: Partial<ConfigImpl>) {
+  constructor(body: Function | undefined, existing: ConfigRecord, patch: Partial<ConfigRecord>) {
     this.body = body !== undefined ? body : existing.body;
     this.mode = patch.mode !== undefined ? patch.mode : existing.mode;
     this.latency = patch.latency !== undefined ? patch.latency : existing.latency;
@@ -34,7 +34,7 @@ export class ConfigImpl implements Config {
     Object.freeze(this);
   }
 
-  static default = new ConfigImpl(undef, {
+  static default = new ConfigRecord(undef, {
     body: undef,
     mode: Mode.Stateless,
     latency: Renew.NoCache,
@@ -55,7 +55,7 @@ export class Virt implements ProxyHandler<Handle> {
 
   get(h: Handle, prop: PropertyKey, receiver: any): any {
     let value: any;
-    const config: ConfigImpl | undefined = Virt.getConfig(h.stateless, prop);
+    const config: ConfigRecord | undefined = Virt.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
       const r: Record = Snapshot.active().read(h);
       value = r.data[prop];
@@ -70,7 +70,7 @@ export class Virt implements ProxyHandler<Handle> {
   }
 
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
-    const config: ConfigImpl | undefined = Virt.getConfig(h.stateless, prop);
+    const config: ConfigRecord | undefined = Virt.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
       const r: Record = Snapshot.active().tryEdit(h, prop, value);
       if (r !== Record.empty) { // empty when r.data[prop] === value, thus creation of edit record was skipped
@@ -131,7 +131,7 @@ export class Virt implements ProxyHandler<Handle> {
     const configurable: boolean = true;
     const methodConfig = Virt.applyConfig(type, method, pd.value, config);
     const get = function(this: any): any {
-      const classConfig: ConfigImpl = Virt.getConfig(Object.getPrototypeOf(this), RT_CLASS) || ConfigImpl.default;
+      const classConfig: ConfigRecord = Virt.getConfig(Object.getPrototypeOf(this), RT_CLASS) || ConfigRecord.default;
       const h: Handle = classConfig.mode !== Mode.Stateless ? Utils.get(this, RT_HANDLE) : Virt.acquireHandle(this);
       const value = Virt.createCachedMethodTrap(h, method, methodConfig);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
@@ -140,10 +140,10 @@ export class Virt implements ProxyHandler<Handle> {
     return Object.defineProperty(type, method, { get, enumerable, configurable });
   }
 
-  private static applyConfig(target: any, prop: PropertyKey, body: Function | undefined, config: Partial<ConfigImpl>): ConfigImpl {
+  private static applyConfig(target: any, prop: PropertyKey, body: Function | undefined, config: Partial<ConfigRecord>): ConfigRecord {
     const table: any = Virt.acquireConfigTable(target);
-    const existing: ConfigImpl = table[prop] || ConfigImpl.default;
-    const result = table[prop] = new ConfigImpl(body, existing, config);
+    const existing: ConfigRecord = table[prop] || ConfigRecord.default;
+    const result = table[prop] = new ConfigRecord(body, existing, config);
     return result;
   }
 
@@ -160,7 +160,7 @@ export class Virt implements ProxyHandler<Handle> {
     return target[RT_CONFIG] || EMPTY_CONFIG_TABLE;
   }
 
-  static getConfig(target: any, prop: PropertyKey): ConfigImpl | undefined {
+  static getConfig(target: any, prop: PropertyKey): ConfigRecord | undefined {
     return Virt.getConfigTable(target)[prop];
   }
 
@@ -201,7 +201,7 @@ export class Virt implements ProxyHandler<Handle> {
     }
   }
 
-  static createCachedMethodTrap = function(h: Handle, prop: PropertyKey, config: ConfigImpl): F<any> {
+  static createCachedMethodTrap = function(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
     /* istanbul ignore next */ throw new Error("createCachedMethodTrap should never be called");
   };
 }
