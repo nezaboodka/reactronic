@@ -350,12 +350,6 @@ export class CachedResult implements ICachedResult {
     const stamp = cause.snapshot.timestamp;
     if (this.outdated.timestamp === Number.MAX_SAFE_INTEGER && (!cascade || this.config.latency !== Renew.WhenReady)) {
       this.outdated.timestamp = stamp;
-      // this.cause = Hint.record(cause, false, false, causeProp);
-      // if (this.updater.active) {
-      //   this.updater.active.tran.cancel();
-      //   if (Debug.verbosity >= 2) Debug.log("║", " ", `Invalidation: t${this.updater.active.tran.id} is canceled.`);
-      //   this.updater.active = undefined;
-      // }
       // TODO: make cache readonly
       // Cascade invalidation
       const upper: Record = Snapshot.active().read(Utils.get(this.record.data, RT_HANDLE));
@@ -431,7 +425,6 @@ export class CachedResult implements ICachedResult {
           this.leave(r, prev, mon, "▒▒", "- failed   ", "ERROR ▪▪▪ ─┘");
           throw error;
         });
-      // Utils.set(this.ret, RT_CACHE, this);
       if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3))
         Debug.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave....`, 0, "ASYNC ▪▪▪ ─┐");
     }
