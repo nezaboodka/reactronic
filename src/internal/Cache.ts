@@ -128,7 +128,7 @@ class CachedMethod extends ReactiveCache<any> {
           existing.tran.cancel();
           c.outdated.recaching = undefined;
           break;
-        case ReentrantCall.RunSimultaneously:
+        case ReentrantCall.RunSideBySide:
           break; // do nothing
       }
     return result;
