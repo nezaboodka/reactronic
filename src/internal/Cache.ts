@@ -8,7 +8,7 @@ import { Monitor } from "../Monitor";
 interface CachedCall {
   record: Record;
   cache: CachedResult;
-  isValid: boolean;
+  valid: boolean;
 }
 
 class CachedMethod extends ReactiveCache<any> {
@@ -48,14 +48,14 @@ class CachedMethod extends ReactiveCache<any> {
   call(recache: boolean, args?: any[]): CachedCall {
     let call: CachedCall = this.read(false, args);
     const c: CachedResult = call.cache;
-    if (!call.isValid) {
+    if (!call.valid) {
       let call2 = call;
       const hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
       const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
       const ret = Transaction.runAs<any>(hint, separate, c.config.tracing, (argsx: any[] | undefined): any => {
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
-          if (!call2.isValid)
+          if (!call2.valid)
             call2 = this.recache(call2.cache, argsx);
         }
         else
@@ -77,13 +77,13 @@ class CachedMethod extends ReactiveCache<any> {
     const member = this.empty.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CachedResult = r.data[member] || this.empty;
-    const isValid = c.config.latency !== Renew.NoCache &&
+    if (markViewed)
+      Record.markViewed(r, c.member);
+    const valid = c.config.latency !== Renew.NoCache &&
       ctx.timestamp < c.outdated.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
-    if (markViewed)
-      Record.markViewed(r, c.member);
-    return { cache: c, record: r, isValid };
+    return { cache: c, record: r, valid };
   }
 
   private edit(): CachedCall {
@@ -98,7 +98,7 @@ class CachedMethod extends ReactiveCache<any> {
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
-    return { cache: c, record: r, isValid: true };
+    return { cache: c, record: r, valid: true };
   }
 
   private recache(prev: CachedResult, args: any[] | undefined): CachedCall {
