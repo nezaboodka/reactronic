@@ -266,15 +266,13 @@ export class Transaction {
     const f = c ? c.wrap(func) : func; // caching context
     if (inc)
       t.run<void>(() => t.workers++);
-    const tran: F<T> = (...args: any[]): T =>
+    const transactional: F<T> = (...args: any[]): T =>
       t._run<T>(() => { // transaction context
         if (dec)
           t.workers--;
-        // if (t.sealed && t.error)
-        //   throw t.error;
         return f(...args);
       });
-    return tran;
+    return transactional;
   }
 
   static _getActiveSnapshot(): Snapshot {
