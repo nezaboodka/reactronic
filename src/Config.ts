@@ -29,7 +29,6 @@ export enum ReentrantCall {
   ExitWithError = 1, // fail with error if there is an existing transaction in progress (default)
   WaitAndRestart = 0, // wait for existing transaction to finish and then restart reentrant one
   CancelPrevious = -1, // cancel previous transaction in favor of recent one
-  CancelPreviousNoWait = -2, // cancel previous transaction, but don't wait for its finish
   RunSimultaneously = -3, // multiple simultaneous transactions are allowed
 }
 

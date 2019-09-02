@@ -180,7 +180,6 @@ invocation of the caching function to renew the cache:
   - `ReentrantCall.ExitWithError` - fail with error if there is an existing transaction in progress;
   - `ReentrantCall.WaitAndRestart` - wait for previous transaction to finish and then restart current one;
   - `ReentrantCall.CancelPrevious` - cancel previous transaction in favor of current one;
-  - `ReentrantCall.CancelPreviousNoWait` - cancel previous transaction, but don't wait for its finish;
   - `ReentrantCall.RunSimultaneously` - multiple simultaneous transactions are allowed.
 
 **Monitor** option is an object that holds the status of running
@@ -252,7 +251,6 @@ enum ReentrantCall {
   ExitWithError = 1, // fail with error if there is an existing transaction in progress (default)
   WaitAndRestart = 0, // wait for existing transaction to finish and then restart reentrant one
   CancelPrevious = -1, // cancel previous transaction in favor of recent one
-  CancelPreviousNoWait = -2, // cancel previous transaction, but don't wait for its finish
   RunSimultaneously = -3, // multiple simultaneous transactions are allowed
 }
 
