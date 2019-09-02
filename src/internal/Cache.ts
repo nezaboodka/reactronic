@@ -53,7 +53,7 @@ class CachedMethod extends ReactiveCache<any> {
       const hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
       const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
       const ret = Transaction.runAs<any>(hint, separate, c.config.tracing, (argsx: any[] | undefined): any => {
-        if (call2.cache.tran.discarded()) {
+        if (call2.cache.tran.canceled()) {
           call2 = this.read(false, argsx); // re-read on retry
           if (!call2.isValid)
             call2 = this.recache(call2.cache, argsx);
@@ -142,15 +142,15 @@ class CachedMethod extends ReactiveCache<any> {
           throw new Error(`${c.hint()} is configured as non-reentrant`);
         case ReentrantCall.WaitAndRestart:
           result = new Error(`transaction t${caller.id} (${caller.hint}) will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
-          caller.discard(result, existing.tran);
+          caller.cancel(result, existing.tran);
           break;
-        case ReentrantCall.DiscardPrevious:
+        case ReentrantCall.CancelPrevious:
           result = new Error(`transaction t${caller.id} (${caller.hint}) will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
-          existing.tran.discard();
-          caller.discard(result, existing.tran);
+          existing.tran.cancel();
+          caller.cancel(result, existing.tran);
           break;
-        case ReentrantCall.DiscardPreviousNoWait:
-          existing.tran.discard();
+        case ReentrantCall.CancelPreviousNoWait:
+          existing.tran.cancel();
           c.outdated.recaching = undefined;
           break;
         case ReentrantCall.RunSimultaneously:
@@ -352,8 +352,8 @@ export class CachedResult implements ICachedResult {
       this.outdated.timestamp = stamp;
       // this.cause = Hint.record(cause, false, false, causeProp);
       // if (this.updater.active) {
-      //   this.updater.active.tran.discard();
-      //   if (Debug.verbosity >= 2) Debug.log("║", " ", `Invalidation: t${this.updater.active.tran.id} is discarded.`);
+      //   this.updater.active.tran.cancel();
+      //   if (Debug.verbosity >= 2) Debug.log("║", " ", `Invalidation: t${this.updater.active.tran.id} is canceled.`);
       //   this.updater.active = undefined;
       // }
       // TODO: make cache readonly

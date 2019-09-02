@@ -44,7 +44,7 @@ export class Transaction {
     if (this.busy > 0)
       throw new Error("cannot commit transaction having pending async operations");
     if (this.error)
-      throw new Error(`cannot commit transaction that is already discarded: ${this.error}`);
+      throw new Error(`cannot commit transaction that is already canceled: ${this.error}`);
     this.seal(); // commit immediately, because pending === 0
   }
 
@@ -54,7 +54,7 @@ export class Transaction {
     return this;
   }
 
-  discard(error: Error = RT_IGNORE, retryAfter: Transaction = Transaction.nope): Transaction {
+  cancel(error: Error = RT_IGNORE, retryAfter: Transaction = Transaction.nope): Transaction {
     if (!this.error) {
       this.error = error;
       this.awaiting = retryAfter;
@@ -64,7 +64,7 @@ export class Transaction {
     return this;
   }
 
-  discarded(): boolean {
+  canceled(): boolean {
     return this.error !== undefined;
   }
 
@@ -129,7 +129,7 @@ export class Transaction {
       }
     }
     catch (error) {
-      t.discard(error);
+      t.cancel(error);
       throw error;
     }
     if (t.error && !t.awaiting)
@@ -188,7 +188,7 @@ export class Transaction {
     finally { // it's critical to have no exceptions in this block
       this.busy--;
       if (this.finished()) {
-        !this.error ? this.performCommit() : this.performDiscard();
+        !this.error ? this.performCommit() : this.performCancel();
         Object.freeze(this);
       }
       Debug.prefix = outerPrefix;
@@ -232,7 +232,7 @@ export class Transaction {
       this.resultResolve();
   }
 
-  private performDiscard(): void {
+  private performCancel(): void {
     this.snapshot.checkin(this.error);
     this.snapshot.archive();
     if (this.resultPromise)
@@ -296,4 +296,4 @@ export class Transaction {
   }
 }
 
-const RT_IGNORE = new Error("transaction is discarded and will be silently ignored");
+const RT_IGNORE = new Error("transaction is canceled and will be silently ignored");

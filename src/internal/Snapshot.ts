@@ -174,7 +174,7 @@ export class Snapshot implements ISnapshot {
         }
       }
     });
-    if (Debug.verbosity >= 2) Debug.log(this.timestamp > 0 ? "╚══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "DISCARD" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
+    if (Debug.verbosity >= 2) Debug.log(this.timestamp > 0 ? "╚══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
   static applyDependencies = function(changeset: Map<Handle, Record>, effect: ICachedResult[]): void {
