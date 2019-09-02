@@ -84,7 +84,7 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   private recache(prev: CachedResult, args: any[] | undefined): CachedCall {
-    const error = this.checkForReentrance(prev);
+    const error = this.reenter(prev);
     const call: CachedCall = this.edit();
     const c: CachedResult = call.cache;
     const r: Record = call.record;
@@ -112,7 +112,7 @@ class CachedMethod extends ReactiveCache<any> {
     return call;
   }
 
-  private checkForReentrance(c: CachedResult): Error | undefined {
+  private reenter(c: CachedResult): Error | undefined {
     let error: Error | undefined = undefined;
     const prev = c.outdated.recaching;
     const caller = Transaction.active;
