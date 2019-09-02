@@ -1,7 +1,7 @@
 ﻿import test from "ava";
 import { sleep } from "./common";
 import { all } from "../src/internal/z.index";
-import { ReactiveCache, Transaction, ReentrantCall, Debug } from "../src/z.index";
+import { ReactiveCache, Transaction, ReentrantCall, Trace as T } from "../src/z.index";
 import { DemoModel, DemoView, actual } from "./async";
 
 const etalon: string[] = [
@@ -14,7 +14,7 @@ const etalon: string[] = [
 ];
 
 test("async", async t => {
-  Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 3;
+  T.level = process.env.AVA_DEBUG === undefined ? 0 : 3;
   const app = Transaction.run(() => new DemoView(new DemoModel()));
   app.model.load.rcache.configure({reentrant: ReentrantCall.CancelPrevious});
   try {
@@ -30,13 +30,13 @@ test("async", async t => {
   }
   catch (error) {
     actual.push(error.toString());
-    if (Debug.verbosity >= 1) console.log(error.toString());
+    if (T.level >= 1) console.log(error.toString());
   }
   finally {
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
   }
-  if (Debug.verbosity >= 1) {
+  if (T.level >= 1) {
     console.log("\nResults:\n");
     for (const x of actual)
       console.log(x);
@@ -44,7 +44,7 @@ test("async", async t => {
   }
   const n: number = Math.max(actual.length, etalon.length);
   for (let i = 0; i < n; i++) {
-    if (Debug.verbosity >= 1) console.log(`actual[${i}] = ${actual[i]}, etalon[${i}] = ${etalon[i]}`);
+    if (T.level >= 1) console.log(`actual[${i}] = ${actual[i]}, etalon[${i}] = ${etalon[i]}`);
     t.is(actual[i], etalon[i]);
   }
 });

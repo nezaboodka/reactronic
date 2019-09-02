@@ -31,7 +31,7 @@ class Jsx {
 }
 
 function createJsx(tracing: number): Jsx {
-  const dbg = tracing !== 0 || R.Debug.verbosity >= 2;
+  const dbg = tracing !== 0 || R.Trace.level >= 2;
   const hint = dbg ? getComponentName() : undefined;
   return R.Transaction.runAs<Jsx>(dbg ? `${hint}` : "new-jsx", R.SeparateFrom.Reaction, 0, () => {
     let jsx = new Jsx();

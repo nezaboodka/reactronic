@@ -1,4 +1,4 @@
-import { Debug, Utils, undef, Record, ICachedResult, F, Handle, Snapshot, Hint } from "./internal/z.index";
+import { Trace as T, Utils, undef, Record, ICachedResult, F, Handle, Snapshot, Hint } from "./internal/z.index";
 import { SeparateFrom } from "./Config";
 
 export class Transaction {
@@ -86,7 +86,7 @@ export class Transaction {
   }
 
   undo(): void {
-    const hint = Debug.verbosity >= 2 ? `Tran#${this.snapshot.hint}.undo` : "noname";
+    const hint = T.level >= 2 ? `Tran#${this.snapshot.hint}.undo` : "noname";
     Transaction.runAs<void>(hint, SeparateFrom.Reaction, 0, () => {
       this.snapshot.changeset.forEach((r: Record, h: Handle) => {
         r.edits.forEach(prop => {
@@ -151,9 +151,9 @@ export class Transaction {
     }
     catch (error) {
       if (this.awaiting && this.awaiting !== Transaction.none) {
-        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
+        if (T.level >= 2) T.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
         await this.awaiting.whenFinished(true);
-        if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
+        if (T.level >= 2) T.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
         return Transaction.runAs<T>(this.hint, SeparateFrom.Reaction | SeparateFrom.Parent, this.tracing, func, ...args);
       }
       else
@@ -165,17 +165,17 @@ export class Transaction {
 
   private _run<T>(func: F<T>, ...args: any[]): T {
     const outer = Transaction.active;
-    const outerVerbosity = Debug.verbosity;
-    const outerColor = Debug.color;
-    const outerPrefix = Debug.prefix;
+    const outerVerbosity = T.level;
+    const outerColor = T.color;
+    const outerPrefix = T.prefix;
     let result: T;
     try {
       this.workers++;
       Transaction.active = this;
       if (this.tracing !== 0)
-        Debug.verbosity = this.tracing;
-      Debug.color = Debug.verbosity >= 2 ? 31 + (this.snapshot.id) % 6 : 37;
-      Debug.prefix = `t${this.id}`; // TODO: optimize to avoid toString
+        T.level = this.tracing;
+      T.color = T.level >= 2 ? 31 + (this.snapshot.id) % 6 : 37;
+      T.prefix = `t${this.id}`; // TODO: optimize to avoid toString
       this.snapshot.checkout();
       result = func(...args);
       if (this.sealed && this.workers === 1 && !this.error)
@@ -191,9 +191,9 @@ export class Transaction {
         !this.error ? this.performCommit() : this.performCancel();
         Object.freeze(this);
       }
-      Debug.prefix = outerPrefix;
-      Debug.color = outerColor;
-      Debug.verbosity = outerVerbosity;
+      T.prefix = outerPrefix;
+      T.color = outerColor;
+      T.level = outerVerbosity;
       Transaction.active = outer;
     }
     if (this.reaction.effect.length > 0) {
@@ -243,7 +243,7 @@ export class Transaction {
   }
 
   static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICachedResult[] }, tracing: number = 0): void {
-    const name = Debug.verbosity >= 2 ? `${hint} - REACTION(${reaction.effect.length})` : "noname";
+    const name = T.level >= 2 ? `${hint} - REACTION(${reaction.effect.length})` : "noname";
     const separate = reaction.tran ? SeparateFrom.Reaction : SeparateFrom.Reaction | SeparateFrom.Parent;
     Transaction.runAs<void>(name, separate, tracing, () => {
       if (reaction.tran === undefined)

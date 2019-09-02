@@ -1,5 +1,5 @@
 import { Utils, undef } from "./Utils";
-import { Debug } from "./Debug";
+import { Trace as T } from "./Debug";
 import { Record, ISnapshot, ICachedResult, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { CopyOnWrite } from "./Virtualization";
@@ -83,7 +83,7 @@ export class Snapshot implements ISnapshot {
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this;
-      if (Debug.verbosity >= 2) Debug.log("╔══", `v${this.timestamp}`, `${this.hint}`);
+      if (T.level >= 2) T.log("╔══", `v${this.timestamp}`, `${this.hint}`);
     }
   }
 
@@ -98,7 +98,7 @@ export class Snapshot implements ISnapshot {
               conflicts = [];
             conflicts.push(r);
           }
-          if (Debug.verbosity >= 3) Debug.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
+          if (T.level >= 3) T.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
       this._timestamp = ++Snapshot.headTimestamp;
@@ -119,13 +119,13 @@ export class Snapshot implements ISnapshot {
         while (theirs !== Record.empty && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.edits.has(prop)) {
             const diff = Utils.different(theirs.data[prop], ours.data[prop]);
-            if (Debug.verbosity >= 3) Debug.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (T.level >= 3) T.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
             if (diff)
               ours.conflicts.set(prop, theirs);
             break;
           }
           else if (prop === RT_UNMOUNT || unmountTheirs) {
-            if (Debug.verbosity >= 3) Debug.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "!=" ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (T.level >= 3) T.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "!=" ${Hint.record(theirs, false)}.${prop.toString()}.`);
             ours.conflicts.set(prop, theirs);
             break;
           }
@@ -149,7 +149,7 @@ export class Snapshot implements ISnapshot {
         oo.forEach((c: ICachedResult) => {
           if (!c.isInvalidated()) {
             merged.add(c);
-            if (Debug.verbosity >= 3) Debug.log(" ", "O", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
+            if (T.level >= 3) T.log(" ", "O", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
           }
         });
       }
@@ -166,15 +166,15 @@ export class Snapshot implements ISnapshot {
         h.editing = undefined;
       if (!error) {
         h.head = r;
-        if (Debug.verbosity >= 3) {
+        if (T.level >= 3) {
           const props: string[] = [];
           r.edits.forEach(prop => props.push(prop.toString()));
           const s = props.join(", ");
-          Debug.log("║", "•", r.prev.record !== Record.empty ? `${Hint.record(r.prev.record)}(${s}) is overwritten.` : `${Hint.record(r)}(${s}) is created.`);
+          T.log("║", "•", r.prev.record !== Record.empty ? `${Hint.record(r.prev.record)}(${s}) is overwritten.` : `${Hint.record(r)}(${s}) is created.`);
         }
       }
     });
-    if (Debug.verbosity >= 2) Debug.log(this.timestamp > 0 ? "╚══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
+    if (T.level >= 2) T.log(this.timestamp > 0 ? "╚══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
   static applyDependencies = function(changeset: Map<Handle, Record>, effect: ICachedResult[]): void {
@@ -207,9 +207,9 @@ export class Snapshot implements ISnapshot {
   }
 
   private static unlinkHistory(s: Snapshot): void {
-    if (Debug.verbosity >= 5) Debug.log("", "  ", `snapshot t${s.id} (${s.hint}) is being collected`);
+    if (T.level >= 5) T.log("", "  ", `snapshot t${s.id} (${s.hint}) is being collected`);
     s.changeset.forEach((r: Record, h: Handle) => {
-      if (Debug.verbosity >= 5 && r.prev.record !== Record.empty) Debug.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
+      if (T.level >= 5 && r.prev.record !== Record.empty) T.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
       // Snapshot.mergeObservers(r, r.prev.record);
       r.prev.record = Record.empty; // unlink history

@@ -1,5 +1,5 @@
 ﻿import test from "ava";
-import { ReactiveCache, Transaction, Debug } from "../src/z.index";
+import { ReactiveCache, Transaction, Trace as T } from "../src/z.index";
 import { Person } from "./common";
 import { DemoModel, DemoView, actual } from "./basic";
 
@@ -14,7 +14,7 @@ const etalon: string[] = [
 ];
 
 test("basic", t => {
-  Debug.verbosity = process.env.AVA_DEBUG === undefined ? 0 : 3;
+  T.level = process.env.AVA_DEBUG === undefined ? 0 : 3;
   // Simple actions
   const app = Transaction.run(() => new DemoView(new DemoModel()));
   try {

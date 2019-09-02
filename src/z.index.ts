@@ -1,4 +1,4 @@
-export { Debug, sleep } from "./internal/z.index";
+export { Trace, sleep } from "./internal/z.index";
 
 export { ReactiveCache, resultof } from "./internal/Cache";
 export { Config, Mode, Renew, ReentrantCall, SeparateFrom } from "./Config";

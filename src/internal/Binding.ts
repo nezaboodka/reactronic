@@ -1,4 +1,4 @@
-import { Debug } from "./Debug";
+import { Trace as T } from "./Debug";
 
 export const RT_BINDING: unique symbol = Symbol("rt:binding");
 
@@ -20,7 +20,7 @@ export class Binding<T> {
   writable(receiver: any): T {
     let v: T = this.owner[this.prop];
     if (v === receiver) { // check if it's first write and clone then
-      if (Debug.verbosity >= 5) Debug.log("║", "", ` Copy-on-write: ${this.owner.constructor.name}.${this.prop.toString()}`);
+      if (T.level >= 5) T.log("║", "", ` Copy-on-write: ${this.owner.constructor.name}.${this.prop.toString()}`);
       v = this.owner[this.prop] = this.clone(this.value);
     }
     return v;

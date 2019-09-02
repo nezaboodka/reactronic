@@ -1,4 +1,4 @@
-﻿import { all, Debug } from "../src/internal/z.index";
+﻿import { all, Trace as T } from "../src/internal/z.index";
 import { stateful, transaction, cache, Renew, Monitor, monitor, Transaction } from "../src/z.index";
 import { sleep } from "./common";
 
@@ -37,7 +37,7 @@ export class DemoView {
     const lines: string[] = await this.render();
     for (const x of lines) {
       actual.push(x);
-      if (Debug.verbosity >= 1) console.log(x);
+      if (T.level >= 1) console.log(x);
     }
   }
 }

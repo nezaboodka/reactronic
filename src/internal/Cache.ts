@@ -1,4 +1,4 @@
-import { Utils, Debug, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
+import { Utils, Trace as T, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigImpl, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { ReactiveCache } from "../ReactiveCache";
 export { ReactiveCache, resultof } from "../ReactiveCache";
 import { Config, Renew, ReentrantCall, SeparateFrom } from "../Config";
@@ -32,7 +32,7 @@ class CachedMethod extends ReactiveCache<any> {
     const c: CachedResult = call.cache;
     if (!call.ok) {
       let call2 = call;
-      const hint: string = (c.config.tracing >= 2 || Debug.verbosity >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
+      const hint: string = (c.config.tracing >= 2 || T.level >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
       const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
       const ret = Transaction.runAs<any>(hint, separate, c.config.tracing, (argsx: any[] | undefined): any => {
         if (call2.cache.tran.isCanceled()) {
@@ -49,7 +49,7 @@ class CachedMethod extends ReactiveCache<any> {
         call = call2;
     }
     else
-      if (Debug.verbosity >= 2) Debug.log("║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
+      if (T.level >= 2) T.log("║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
     Record.markViewed(call.record, call.cache.member);
     return call;
   }
@@ -76,7 +76,7 @@ class CachedMethod extends ReactiveCache<any> {
     if (c.record !== r) {
       const c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
-      if (Debug.verbosity >= 3) Debug.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.empty ? "empty" : c.hint(false)}`);
+      if (T.level >= 3) T.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.empty ? "empty" : c.hint(false)}`);
       Record.markEdited(r, c2.member, true, RT_CACHE);
       c = c2;
     }
@@ -138,12 +138,12 @@ class CachedMethod extends ReactiveCache<any> {
     const call = this.read(false);
     const c: CachedResult = call.cache;
     const r: Record = call.record;
-    const hint: string = Debug.verbosity > 2 ? `${Hint.handle(this.handle)}.${this.empty.member.toString()}/configure` : "configure";
+    const hint: string = T.level > 2 ? `${Hint.handle(this.handle)}.${this.empty.member.toString()}/configure` : "configure";
     return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, 0, (): Config => {
       const call2 = this.edit();
       const c2: CachedResult = call2.cache;
       c2.config = new ConfigImpl(c2.config.body, c2.config, config);
-      if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
+      if (T.level >= 5) T.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
     });
   }
@@ -168,7 +168,7 @@ export class CachedResult implements ICachedResult {
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
   constructor(record: Record, member: PropertyKey, init: CachedResult | ConfigImpl) {
-    this.margin = Debug.margin + 1;
+    this.margin = T.margin + 1;
     this.tran = Transaction.active;
     this.record = record;
     this.member = member;
@@ -202,14 +202,14 @@ export class CachedResult implements ICachedResult {
   static run<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined;
     const outer = CachedResult.active;
-    const outerVerbosity = Debug.verbosity;
-    const outerMargin = Debug.margin;
+    const outerVerbosity = T.level;
+    const outerMargin = T.margin;
     try {
       CachedResult.active = c;
       if (c) {
         if (c.config.tracing !== 0)
-          Debug.verbosity = c.config.tracing;
-        Debug.margin = c.margin;
+          T.level = c.config.tracing;
+        T.margin = c.margin;
       }
       result = func(...args);
     }
@@ -219,8 +219,8 @@ export class CachedResult implements ICachedResult {
       throw e;
     }
     finally {
-      Debug.margin = outerMargin;
-      Debug.verbosity = outerVerbosity;
+      T.margin = outerMargin;
+      T.level = outerVerbosity;
       CachedResult.active = outer;
     }
     return result;
@@ -251,13 +251,13 @@ export class CachedResult implements ICachedResult {
     const c: CachedResult | undefined = CachedResult.active; // alias
     if (c && c.config.latency >= Renew.Manually && prop !== RT_HANDLE) {
       CachedResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
-      if (Debug.verbosity >= 5) Debug.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
+      if (T.level >= 5) T.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
   }
 
   static markEdited(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
     edited ? r.edits.add(prop) : r.edits.delete(prop);
-    if (Debug.verbosity >= 5) Debug.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
+    if (T.level >= 5) T.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
     const oo = r.observers.get(prop);
     if (oo && oo.size > 0) {
       const effect: ICachedResult[] = [];
@@ -308,12 +308,12 @@ export class CachedResult implements ICachedResult {
     o.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach(r => {
         CachedResult.acquireObserverSet(r, prop).add(this); // link
-        if (Debug.verbosity >= 3) subscriptions.push(Hint.record(r, false, true, prop));
+        if (T.level >= 3) subscriptions.push(Hint.record(r, false, true, prop));
         if (effect && r.outdated.has(prop))
           this.invalidate(r, prop, hot, false, effect);
       });
     });
-    if (Debug.verbosity >= 3 && subscriptions.length > 0) Debug.log(hot ? "║  " : " ", "O", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if (T.level >= 3 && subscriptions.length > 0) T.log(hot ? "║  " : " ", "O", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
   isInvalidated(): boolean {
@@ -340,10 +340,10 @@ export class CachedResult implements ICachedResult {
       // Check if cache should be renewed
       if (this.config.latency >= Renew.Immediately && upper.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         effect.push(this);
-        if (Debug.verbosity >= 2) Debug.log(" ", "■", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
+        if (T.level >= 2) T.log(" ", "■", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
       }
       else
-        if (Debug.verbosity >= 2) Debug.log(" ", "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}`);
+        if (T.level >= 2) T.log(" ", "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}`);
     }
   }
 
@@ -380,7 +380,7 @@ export class CachedResult implements ICachedResult {
   }
 
   enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
-    if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3)) Debug.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
+    if (this.config.tracing >= 3 || (this.config.tracing === 0 && T.level >= 3)) T.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
     if (this.member === "renderAsync") {
@@ -405,8 +405,8 @@ export class CachedResult implements ICachedResult {
           this.leave(r, prev, mon, "▒▒", "- finished ", "ERROR ──┘");
           throw error;
         });
-      if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3))
-        Debug.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
+      if (this.config.tracing >= 3 || (this.config.tracing === 0 && T.level >= 3))
+        T.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
     }
     else {
       this.result = this.ret;
@@ -425,7 +425,7 @@ export class CachedResult implements ICachedResult {
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
-    if (this.config.tracing >= 3 || (this.config.tracing === 0 && Debug.verbosity >= 3)) Debug.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
+    if (this.config.tracing >= 3 || (this.config.tracing === 0 && T.level >= 3)) T.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
     // TODO: handle errors
     this.subscribeToObservables(true);
     this.hotObservables.clear();
