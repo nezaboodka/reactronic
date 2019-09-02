@@ -113,26 +113,26 @@ class CachedMethod extends ReactiveCache<any> {
   }
 
   private checkForReentrance(c: CachedResult): Error | undefined {
-    let result: Error | undefined = undefined;
-    const existing = c.outdated.recaching;
+    let error: Error | undefined = undefined;
+    const prev = c.outdated.recaching;
     const caller = Transaction.active;
-    if (existing)
+    if (prev)
       switch (c.config.reentrant) {
         case ReentrantCall.ExitWithError:
           throw new Error(`${c.hint()} is configured as non-reentrant`);
         case ReentrantCall.WaitAndRestart:
-          result = new Error(`transaction t${caller.id} (${caller.hint}) will be restarted after t${existing.tran.id} (${existing.tran.hint})`);
-          caller.cancel(result, existing.tran);
+          error = new Error(`transaction t${caller.id} (${caller.hint}) will be restarted after t${prev.tran.id} (${prev.tran.hint})`);
+          caller.cancel(error, prev.tran);
           // TODO: "c.outdated.recaching = caller" in order serialize all the transactions
           break;
         case ReentrantCall.CancelPrevious:
-          existing.tran.cancel();
+          prev.tran.cancel();
           c.outdated.recaching = undefined;
           break;
         case ReentrantCall.RunSideBySide:
           break; // do nothing
       }
-    return result;
+    return error;
   }
 
   private reconfigure(config: Partial<Config>): Config {
