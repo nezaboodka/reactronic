@@ -5,7 +5,7 @@ import { Config, Renew, ReentrantCall, SeparateFrom } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
 
-type CachedCall = { record: Record, cache: CachedResult, ok: boolean };
+type CachedCall = { cache: CachedResult, record: Record, ok: boolean };
 
 class CachedMethod extends ReactiveCache<any> {
   private readonly handle: Handle;
