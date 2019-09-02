@@ -29,11 +29,11 @@ class CachedMethod extends ReactiveCache<any> {
 
   call(recache: boolean, args?: any[]): CachedCall {
     let call: CachedCall = this.read(false, args);
-    const c: CachedResult = call.cache;
     if (!call.ok) {
-      let call2 = call;
+      const c: CachedResult = call.cache;
       const hint: string = (c.config.tracing >= 2 || T.level >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
       const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
+      let call2 = call;
       const ret = Transaction.runAs<any>(hint, separate, c.config.tracing, (argsx: any[] | undefined): any => {
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
@@ -59,12 +59,12 @@ class CachedMethod extends ReactiveCache<any> {
     const member = this.empty.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CachedResult = r.data[member] || this.empty;
-    if (markViewed)
-      Record.markViewed(r, c.member);
     const ok = c.config.latency !== Renew.NoCache &&
       ctx.timestamp < c.outdated.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
+    if (markViewed)
+      Record.markViewed(r, c.member);
     return { cache: c, record: r, ok };
   }
 
@@ -316,7 +316,7 @@ export class CachedResult implements ICachedResult {
     if (T.level >= 3 && subscriptions.length > 0) T.log(hot ? "║  " : " ", "O", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
-  isInvalidated(): boolean {
+  isInvalidated(): boolean { // TODO: should depend on caller context
     const t = this.outdated.timestamp;
     return t !== Number.MAX_SAFE_INTEGER && t !== 0;
   }
