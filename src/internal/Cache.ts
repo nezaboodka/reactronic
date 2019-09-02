@@ -5,11 +5,7 @@ import { Config, Renew, ReentrantCall, SeparateFrom } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
 
-interface CachedCall {
-  record: Record;
-  cache: CachedResult;
-  ok: boolean;
-}
+type CachedCall = { record: Record, cache: CachedResult, ok: boolean };
 
 class CachedMethod extends ReactiveCache<any> {
   private readonly handle: Handle;
@@ -447,7 +443,7 @@ export class CachedResult implements ICachedResult {
       if (mon.prolonged) {
         const outer = Transaction.active;
         try {
-          Transaction.active = Transaction.nope; // Workaround?
+          Transaction.active = Transaction.none; // Workaround?
           const leave = () => {
             Transaction.runAs<void>("Monitor.leave", mon.separate, 0,
               CachedResult.run, undefined, () => mon.leave(this));

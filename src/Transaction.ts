@@ -2,7 +2,7 @@ import { Debug, Utils, undef, Record, ICachedResult, F, Handle, Snapshot, Hint }
 import { SeparateFrom } from "./Config";
 
 export class Transaction {
-  static nope: Transaction;
+  static none: Transaction;
   static active: Transaction;
   private readonly separate: SeparateFrom;
   private readonly snapshot: Snapshot; // assigned in constructor
@@ -54,7 +54,7 @@ export class Transaction {
     return this;
   }
 
-  cancel(error: Error = RT_IGNORE, retryAfter: Transaction = Transaction.nope): Transaction {
+  cancel(error: Error = RT_IGNORE, retryAfter: Transaction = Transaction.none): Transaction {
     if (!this.error) {
       this.error = error;
       this.awaiting = retryAfter;
@@ -118,7 +118,7 @@ export class Transaction {
         if (result instanceof Promise) {
           const outer = Transaction.active;
           try {
-            Transaction.active = Transaction.nope;
+            Transaction.active = Transaction.none;
             result = t.retryIfNeeded(t.join(result), func, ...args);
           }
           finally {
@@ -150,7 +150,7 @@ export class Transaction {
       return result;
     }
     catch (error) {
-      if (this.awaiting && this.awaiting !== Transaction.nope) {
+      if (this.awaiting && this.awaiting !== Transaction.none) {
         if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
         await this.awaiting.whenFinished(true);
         if (Debug.verbosity >= 2) Debug.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
@@ -282,12 +282,12 @@ export class Transaction {
   }
 
   static _init(): void {
-    const nope = new Transaction("nope", SeparateFrom.All, 0);
-    nope.sealed = true;
-    nope.snapshot.checkin();
-    Transaction.nope = nope;
-    Transaction.active = nope;
-    const empty = new Record(Record.empty, nope.snapshot, {});
+    const none = new Transaction("none", SeparateFrom.All, 0);
+    none.sealed = true;
+    none.snapshot.checkin();
+    Transaction.none = none;
+    Transaction.active = none;
+    const empty = new Record(Record.empty, none.snapshot, {});
     empty.prev.record = empty; // loopback
     empty.freeze();
     Utils.freezeMap(empty.observers);
