@@ -54,9 +54,9 @@ export class Transaction {
     return this;
   }
 
-  cancel(error: Error = RT_IGNORE, retryAfter: Transaction = Transaction.none): Transaction {
+  cancel(error: Error | undefined = undefined, retryAfter: Transaction = Transaction.none): Transaction {
     if (!this.error) {
-      this.error = error;
+      this.error = error || RT_IGNORE;
       this.awaiting = retryAfter;
     }
     if (!this.sealed)
