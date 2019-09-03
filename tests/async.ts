@@ -23,7 +23,7 @@ export class DemoView {
   @stateful test: any;
   constructor(readonly model: DemoModel) { }
 
-  @cache(Renew.OnDemand)
+  @cache()
   async render(): Promise<string[]> {
     const result: string[] = [];
     result.push(`${demoMon.isIdle ? "" : "[...] "}Url: ${this.model.url}`);

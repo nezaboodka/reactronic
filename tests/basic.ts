@@ -42,7 +42,7 @@ export class DemoView {
     this.model = model;
   }
 
-  @cache(Renew.OnDemand)
+  @cache()
   filteredUsers(): Person[] {
     const m = this.model;
     let result: Person[] = m.users;
@@ -55,7 +55,7 @@ export class DemoView {
     return result;
   }
 
-  @cache(Renew.OnDemand)
+  @cache()
   render(): string[] {
     // Print only those users whos name starts with filter string
     const r: string[] = [];
