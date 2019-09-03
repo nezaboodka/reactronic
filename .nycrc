@@ -20,8 +20,7 @@
     ".tsx"
   ],
   "reporter": [
-    "html",
-    "text"
+    "lcov"
   ],
   "temp-dir": "coverage/.output",
   "report-dir": "coverage",
