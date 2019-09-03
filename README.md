@@ -215,10 +215,10 @@ NPM: `npm install reactronic`
 ```typescript
 // Decorators
 
-function stateful(proto, prop?);
-function stateless(proto, prop);
-function transaction(proto, prop, pd);
-function cache(proto, prop, pd);
+function stateful(proto, prop?); // class, field, method
+function stateless(proto, prop); // field, method
+function transaction(proto, prop, pd); // method only
+function cache(proto, prop, pd); // method only
 
 function behavior(latency: Latency, reentrant: ReentrantCall, separate: SeparateFrom);
 function monitor(value: Monitor | null);
