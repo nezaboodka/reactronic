@@ -2,7 +2,7 @@
 import { stateful, transaction, cache, behavior, Renew, Monitor, monitor, Transaction } from "../src/z.index";
 import { sleep } from "./common";
 
-export const actual: string[] = [];
+export const output: string[] = [];
 
 const demoMon = Transaction.run(() => new Monitor("demo"));
 
@@ -36,7 +36,7 @@ export class DemoView {
   async print(): Promise<void> {
     const lines: string[] = await this.render();
     for (const x of lines) {
-      actual.push(x); /* istanbul ignore next */
+      output.push(x); /* istanbul ignore next */
       if (T.level >= 1 && T.level <= 5) console.log(x);
     }
   }

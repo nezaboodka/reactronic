@@ -2,9 +2,15 @@
 import { sleep } from "./common";
 import { all } from "../src/internal/z.index";
 import { ReactiveCache, Transaction, ReentrantCall, Trace as T } from "../src/z.index";
-import { DemoModel, DemoView, actual } from "./async";
+import { DemoModel, DemoView, output } from "./async";
 
-const etalon: string[] = [
+const requests: Array<{ url: string, delay: number }> = [
+  { url: "google.com", delay: 300 },
+  { url: "microsoft.com", delay: 200 },
+  { url: "nezaboodka.com", delay: 500 },
+];
+
+const expected: string[] = [
   "Url: reactronic",
   "Log: RTA",
   "[...] Url: reactronic",
@@ -30,16 +36,11 @@ test("async", async t => {
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; });
     await app.print(); // trigger first run
-    const list: Array<{ url: string, delay: number }> = [
-      { url: "google.com", delay: 300 },
-      { url: "microsoft.com", delay: 200 },
-      { url: "nezaboodka.com", delay: 500 },
-    ];
-    const downloads = list.map(x => app.model.load(x.url, x.delay));
-    await all(downloads);
+    const responses = requests.map(x => app.model.load(x.url, x.delay));
+    await all(responses);
   }
   catch (error) { /* istanbul ignore next */
-    actual.push(error.toString()); /* istanbul ignore next */
+    output.push(error.toString()); /* istanbul ignore next */
     if (T.level >= 1 && T.level <= 5) console.log(error.toString());
   }
   finally {
@@ -48,13 +49,13 @@ test("async", async t => {
   } /* istanbul ignore next */
   if (T.level >= 1 && T.level <= 5) {
     console.log("\nResults:\n");
-    for (const x of actual)
+    for (const x of output)
       console.log(x);
     console.log("\n");
   }
-  const n: number = Math.max(actual.length, etalon.length);
+  const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (T.level >= 1 && T.level <= 5) console.log(`actual[${i}] = ${actual[i]}, etalon[${i}] = ${etalon[i]}`);
-    t.is(actual[i], etalon[i]);
+    if (T.level >= 1 && T.level <= 5) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
+    t.is(output[i], expected[i]);
   }
 });
