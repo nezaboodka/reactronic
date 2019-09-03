@@ -1,5 +1,5 @@
 ﻿import { all, Trace as T } from "../src/internal/z.index";
-import { stateful, transaction, cache, config, Renew, Monitor, monitor, Transaction } from "../src/z.index";
+import { stateful, transaction, cache, behavior, Renew, Monitor, monitor, Transaction } from "../src/z.index";
 import { sleep } from "./common";
 
 export const actual: string[] = [];
@@ -32,7 +32,7 @@ export class DemoView {
     return result;
   }
 
-  @cache @config(Renew.Immediately)
+  @cache @behavior(Renew.Immediately)
   async print(): Promise<void> {
     const lines: string[] = await this.render();
     for (const x of lines) {

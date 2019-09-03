@@ -113,7 +113,7 @@ and other caches, which it uses during execution.
 
 ``` tsx
 class MyView extends React.Component<MyModel> {
-  @cache @config(Renew.OnDemand)
+  @cache @behavior(Renew.OnDemand)
   render() {
     const m: MyModel = this.props; // just a shortcut
     return (
@@ -124,7 +124,7 @@ class MyView extends React.Component<MyModel> {
     );
   } // render is subscribed to m.url and m.content
 
-  @cache @config(Renew.Immediately)
+  @cache @behavior(Renew.Immediately)
   trigger(): void {
     if (this.render.reactronic.isInvalidated)
       this.setState({}); // ask React to re-render

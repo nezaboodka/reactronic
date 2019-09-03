@@ -1,7 +1,7 @@
 import * as React from 'react';
 // import { stateful, transaction, cache, config, Renew, SeparateFrom,
 //   Transaction, ReactiveCache, Trace} from 'reactronic';
-import { stateful, transaction, cache, config, Renew, SeparateFrom,
+import { stateful, transaction, cache, behavior, Renew, SeparateFrom,
   Transaction, ReactiveCache, Trace} from '../src/z.index';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, tracing: number = 0, tran?: Transaction): JSX.Element {
@@ -25,7 +25,7 @@ class Jsx {
     return render(revision);
   }
 
-  @cache @config(Renew.Immediately)
+  @cache @behavior(Renew.Immediately)
   trigger(nextRevision: number, refresh: (nextRevision: number) => void): void {
     if (this.jsx.rcache.isInvalidated)
       refresh(nextRevision);

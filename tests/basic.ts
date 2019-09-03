@@ -1,4 +1,4 @@
-﻿import { stateful, stateless, transaction, cache, config, Renew } from "../src/z.index";
+﻿import { stateful, stateless, transaction, cache, behavior, Renew } from "../src/z.index";
 import { Person } from "./common";
 
 export const actual: string[] = [];
@@ -68,7 +68,7 @@ export class DemoView {
     return r;
   }
 
-  @cache @config(Renew.Immediately)
+  @cache @behavior(Renew.Immediately)
   print(): void {
     this.render().forEach(x => actual.push(x));
   }

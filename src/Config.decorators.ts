@@ -23,7 +23,7 @@ export function cache(proto: object, prop: PropertyKey, pd: TypedPropertyDescrip
   return Virt.decorateMethod(config, true, proto, prop, pd);
 }
 
-export function config(latency?: Latency, reentrant?: ReentrantCall, separate?: SeparateFrom): F<any> {
+export function behavior(latency?: Latency, reentrant?: ReentrantCall, separate?: SeparateFrom): F<any> {
   return reactivity({mode: Mode.Stateful, latency, reentrant, separate});
 }
 
