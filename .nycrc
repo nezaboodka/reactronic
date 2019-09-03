@@ -4,7 +4,8 @@
   "functions": 50,
   "branches": 50,
   "exclude": [
-    "**/*.d.ts"
+    "**/*.d.ts",
+    "src/internal/Binding.CopyOnWrite*.ts"
   ],
   "include": [
     "src/**/*.ts",
