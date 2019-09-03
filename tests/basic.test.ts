@@ -62,10 +62,8 @@ test("basic", t => {
     t.throws(() => {
       if (daddy.emails)
         daddy.emails.push("dad@mail.com");
-      else
-        daddy.children[1].name = "Billy Smithy";
     });
-    t.throws(() => tran1.run(() => { /* nope */ }));
+    t.throws(() => tran1.run(/* istanbul ignore next */ () => { /* nope */ }));
     // Undo action
     tran1.undo();
     t.is(daddy.name, "John");

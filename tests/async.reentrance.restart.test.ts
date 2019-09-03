@@ -38,14 +38,14 @@ test("async", async t => {
     const downloads = list.map(x => app.model.load(x.url, x.delay));
     await all(downloads);
   }
-  catch (error) {
-    actual.push(error.toString());
+  catch (error) { /* istanbul ignore next */
+    actual.push(error.toString()); /* istanbul ignore next */
     if (T.level >= 1 && T.level <= 5) console.log(error.toString());
   }
   finally {
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
-  }
+  } /* istanbul ignore next */
   if (T.level >= 1 && T.level <= 5) {
     console.log("\nResults:\n");
     for (const x of actual)
@@ -53,7 +53,7 @@ test("async", async t => {
     console.log("\n");
   }
   const n: number = Math.max(actual.length, etalon.length);
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n; i++) { /* istanbul ignore next */
     if (T.level >= 1 && T.level <= 5) console.log(`actual[${i}] = ${actual[i]}, etalon[${i}] = ${etalon[i]}`);
     t.is(actual[i], etalon[i]);
   }

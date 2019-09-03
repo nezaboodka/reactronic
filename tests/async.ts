@@ -36,7 +36,7 @@ export class DemoView {
   async print(): Promise<void> {
     const lines: string[] = await this.render();
     for (const x of lines) {
-      actual.push(x);
+      actual.push(x); /* istanbul ignore next */
       if (T.level >= 1 && T.level <= 5) console.log(x);
     }
   }
