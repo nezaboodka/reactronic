@@ -271,7 +271,7 @@ class Monitor {
   readonly isIdle: boolean;
   readonly volume: number;
   readonly message: string;
-  constructor(name: string);
+  constructor(hint: string);
 }
 
 // Transaction
