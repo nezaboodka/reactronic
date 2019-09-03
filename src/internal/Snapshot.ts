@@ -25,7 +25,7 @@ export class Snapshot implements ISnapshot {
   }
 
   static active = function(): Snapshot {
-    return undef(); // to be redefined by Transaction implementation
+    /* istanbul ignore next */ return undef(); // to be redefined by Transaction implementation
   };
 
   read(h: Handle): Record {

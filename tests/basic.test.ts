@@ -34,6 +34,7 @@ test("basic", t => {
       t.is(daddy.name, "John Smith");
       t.is(daddy.age, 40);
       t.is(daddy.children.length, 3);
+      app.userFilter = "Jo"; // set to the same value
     });
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
