@@ -10,7 +10,7 @@ export class Handle {
   readonly stateless: any;
   readonly id: number;
   readonly proxy: any;
-  name: string;
+  hint: string;
   head: Record;
   editing?: Record;
   editors: number;
@@ -19,23 +19,22 @@ export class Handle {
     this.stateless = stateless;
     this.id = ++Handle.id;
     this.proxy = proxy || new Proxy<Handle>(this, virtualization);
-    this.name = stateless.constructor.name;
+    this.hint = stateless.constructor.name;
     this.head = Record.empty;
     this.editing = undefined;
     this.editors = 0;
   }
 
-  static setName<T>(obj: T, name: string | undefined): T {
-    if (name) {
+  static setHint<T>(obj: T, hint: string | undefined): void {
+    if (hint) {
       const h: Handle = Utils.get(obj, RT_HANDLE);
       if (h)
-        h.name = name;
+        h.hint = hint;
     }
-    return obj;
   }
 
-  static getName(obj: object): string | undefined {
+  static getHint(obj: object): string | undefined {
     const h: Handle = Utils.get(obj, RT_HANDLE);
-    return h ? h.name : undefined;
+    return h ? h.hint : undefined;
   }
 }

@@ -219,7 +219,7 @@ export class Snapshot implements ISnapshot {
 
 export class Hint {
   static handle(h: Handle, nameless?: boolean): string {
-    return nameless ? `#${h.id}` : `#${h.id} ${h.name}`;
+    return nameless ? `#${h.id}` : `#${h.id} ${h.hint}`;
   }
 
   static record(r: Record, tranless?: boolean, nameless?: boolean, prop?: PropertyKey): string {

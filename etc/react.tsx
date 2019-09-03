@@ -38,7 +38,7 @@ function createJsx(tracing: number): Jsx {
   return Transaction.runAs<Jsx>(dbg ? `${hint}` : "new-jsx", SeparateFrom.Reaction, 0, () => {
     let jsx = new Jsx();
     if (dbg) {
-      jsx = ReactiveCache.named(jsx, hint);
+      ReactiveCache.setTraceHint(jsx, hint);
       jsx.render.rcache.configure({tracing});
       jsx.jsx.rcache.configure({tracing});
       jsx.trigger.rcache.configure({tracing});

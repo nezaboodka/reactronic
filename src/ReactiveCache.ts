@@ -17,7 +17,8 @@ export abstract class ReactiveCache<T> {
   static get<T>(method: F<Promise<T>>): ReactiveCache<T>;
   static get<T>(method: F<T>): ReactiveCache<T> { return CachedResult.get(method); }
   static unmount(...objects: any[]): Transaction { return CachedResult.unmount(...objects); }
-  static named<T extends object>(obj: T, name: string | undefined): T { return Handle.setName(obj, name); }
+  static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name); }
+  static getTraceHint<T extends object>(obj: T): string | undefined { return Handle.getHint(obj); }
 }
 
 // Function.rcache
