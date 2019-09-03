@@ -119,7 +119,7 @@ export class Transaction {
           const outer = Transaction.active;
           try {
             Transaction.active = Transaction.none;
-            result = t.retryIfNeeded(t.join(result), func, ...args);
+            result = t.autoretry(t.join(result), func, ...args);
           }
           finally {
             Transaction.active = outer;
@@ -144,7 +144,7 @@ export class Transaction {
     return startNew ? new Transaction(hint, separate, tracing) : Transaction.active;
   }
 
-  private async retryIfNeeded<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
+  private async autoretry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
     try {
       const result = await p;
       return result;
