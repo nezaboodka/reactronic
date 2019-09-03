@@ -62,8 +62,7 @@ export class Utils {
   }
 
   static different = function(oldValue: any, newValue: any): boolean {
-    // to be redefined by Cache implementation
-    return !Utils.equal(oldValue, newValue);
+    /* istanbul ignore next */ return !Utils.equal(oldValue, newValue); // to be redefined by Cache implementation
   };
 
   static valueHint(value: any): string {
