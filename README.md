@@ -219,6 +219,7 @@ function stateful(proto, prop);
 function stateless(proto, prop);
 function transaction(proto, prop, pd);
 function cache(proto, prop, pd);
+
 function behavior(latency: Latency, reentrant: ReentrantCall, separate: SeparateFrom);
 function monitor(value: Monitor | null);
 function config(config: Partial<Config>);
