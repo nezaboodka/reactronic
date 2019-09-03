@@ -24,18 +24,18 @@ export function cache(proto: object, prop: PropertyKey, pd: TypedPropertyDescrip
 }
 
 export function behavior(latency?: Latency, reentrant?: ReentrantCall, separate?: SeparateFrom): F<any> {
-  return reactivity({mode: Mode.Stateful, latency, reentrant, separate});
+  return config({mode: Mode.Stateful, latency, reentrant, separate});
 }
 
 export function monitor(value: Monitor | null): F<any> {
-  return reactivity({monitor: value});
+  return config({monitor: value});
 }
 
 export function tracing(value: number): F<any> {
-  return reactivity({tracing: value});
+  return config({tracing: value});
 }
 
-export function reactivity(value: Partial<Config>): F<any> {
+export function config(value: Partial<Config>): F<any> {
   return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
     if (prop && pd)
       return Virt.decorateMethod(value, false, proto, prop, pd);
