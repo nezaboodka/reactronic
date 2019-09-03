@@ -215,12 +215,13 @@ NPM: `npm install reactronic`
 ```typescript
 // Decorators
 
-function stateful(proto: object, prop?: PropertyKey): any;
-function stateless(proto: object, prop: PropertyKey): any;
-function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any;
-function cache(latency: Latency, reentrant: ReentrantCall, separate: SeparateFrom): F<any>;
-function monitor(value: Monitor | null): F<any>;
-function config(config: Partial<Config>): F<any>;
+function stateful(proto, prop);
+function stateless(proto, prop);
+function transaction(proto, prop, pd);
+function cache(proto, prop, pd);
+function behavior(latency: Latency, reentrant: ReentrantCall, separate: SeparateFrom);
+function monitor(value: Monitor | null);
+function config(config: Partial<Config>);
 
 // Config: Mode, Latency, ReentrantCall, SeparateFrom, Monitor
 
@@ -230,6 +231,7 @@ interface Config {
   readonly reentrant: ReentrantCall;
   readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
+  readonly tracing: number;
 }
 
 enum Mode {
