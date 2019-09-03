@@ -42,6 +42,6 @@
     "build": "tsc && tslint -c tslint.json 'src/**/*.ts' 'tests/**/*.test.ts'",
     "dist": "tsc --sourceMap false",
     "test": "ava",
-    "cover": "nyc ava && echo. && echo Coverage report: coverage/index.html"
+    "cover": "nyc ava && start coverage/index.html"
   }
 }
