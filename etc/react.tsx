@@ -1,29 +1,31 @@
 import * as React from 'react';
-// import * as R from 'reactronic';
-import * as R from '../src/z.index';
+// import { stateful, transaction, cache, config, Renew, SeparateFrom,
+//   Transaction, ReactiveCache, Trace} from 'reactronic';
+import { stateful, transaction, cache, config, Renew, SeparateFrom,
+  Transaction, ReactiveCache, Trace} from '../src/z.index';
 
-export function reactiveRender(render: (revision: number) => JSX.Element, tracing: number = 0, tran?: R.Transaction): JSX.Element {
+export function reactiveRender(render: (revision: number) => JSX.Element, tracing: number = 0, tran?: Transaction): JSX.Element {
   const [jsx] = React.useState(() => tran ? tran.view(createJsx, tracing) : createJsx(tracing));
   const [revision, refresh] = React.useState(0);
   React.useEffect(unmountEffect(jsx), []);
   return tran ? tran.view(() => jsx.render(revision, render, refresh)) : jsx.render(revision, render, refresh);
 }
 
-@R.stateful
+@stateful
 class Jsx {
-  @R.transaction
+  @transaction
   render(revision: number, doRender: (revision: number) => JSX.Element, refresh: (nextRevision: number) => void): JSX.Element {
     const jsx: JSX.Element = this.jsx(revision, doRender);
     this.trigger(revision + 1, refresh);
     return jsx;
   }
 
-  @R.cache(R.Renew.OnDemand)
+  @cache
   jsx(revision: number, render: (revision: number) => JSX.Element): JSX.Element {
     return render(revision);
   }
 
-  @R.cache(R.Renew.Immediately)
+  @cache @config(Renew.Immediately)
   trigger(nextRevision: number, refresh: (nextRevision: number) => void): void {
     if (this.jsx.rcache.isInvalidated)
       refresh(nextRevision);
@@ -31,12 +33,12 @@ class Jsx {
 }
 
 function createJsx(tracing: number): Jsx {
-  const dbg = tracing !== 0 || R.Trace.level >= 2;
+  const dbg = tracing !== 0 || Trace.level >= 2;
   const hint = dbg ? getComponentName() : undefined;
-  return R.Transaction.runAs<Jsx>(dbg ? `${hint}` : "new-jsx", R.SeparateFrom.Reaction, 0, () => {
+  return Transaction.runAs<Jsx>(dbg ? `${hint}` : "new-jsx", SeparateFrom.Reaction, 0, () => {
     let jsx = new Jsx();
     if (dbg) {
-      jsx = R.ReactiveCache.named(jsx, hint);
+      jsx = ReactiveCache.named(jsx, hint);
       jsx.render.rcache.configure({tracing});
       jsx.jsx.rcache.configure({tracing});
       jsx.trigger.rcache.configure({tracing});
@@ -50,7 +52,7 @@ function unmountEffect(jsx: Jsx): React.EffectCallback {
     // did mount
     return () => {
       // will unmount
-      R.ReactiveCache.unmount(jsx);
+      ReactiveCache.unmount(jsx);
     };
   };
 }

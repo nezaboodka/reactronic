@@ -1,4 +1,4 @@
-﻿import { stateful, stateless, transaction, cache, Renew } from "../src/z.index";
+﻿import { stateful, stateless, transaction, cache, config, Renew } from "../src/z.index";
 import { Person } from "./common";
 
 export const actual: string[] = [];
@@ -42,7 +42,7 @@ export class DemoView {
     this.model = model;
   }
 
-  @cache()
+  @cache
   filteredUsers(): Person[] {
     const m = this.model;
     let result: Person[] = m.users;
@@ -55,7 +55,7 @@ export class DemoView {
     return result;
   }
 
-  @cache()
+  @cache
   render(): string[] {
     // Print only those users whos name starts with filter string
     const r: string[] = [];
@@ -68,7 +68,7 @@ export class DemoView {
     return r;
   }
 
-  @cache(Renew.Immediately)
+  @cache @config(Renew.Immediately)
   print(): void {
     this.render().forEach(x => actual.push(x));
   }

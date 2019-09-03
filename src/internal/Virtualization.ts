@@ -12,7 +12,16 @@ import { Monitor } from "../Monitor";
 
 export const RT_CONFIG: unique symbol = Symbol("RT:CONFIG");
 export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
+
 const EMPTY_CONFIG_TABLE = {};
+const DEFAULT: Config = {
+  mode: Mode.Stateless,
+  latency: Renew.NoCache,
+  reentrant: ReentrantCall.WaitAndRestart,
+  separate: SeparateFrom.Reaction,
+  monitor: null,
+  tracing: 0,
+};
 
 export class ConfigRecord implements Config {
   readonly body: Function;
@@ -22,26 +31,22 @@ export class ConfigRecord implements Config {
   readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
   readonly tracing: number;
+  static default = new ConfigRecord(undef, {body: undef, ...DEFAULT}, {}, false);
 
-  constructor(body: Function | undefined, existing: ConfigRecord, patch: Partial<ConfigRecord>) {
+  constructor(body: Function | undefined, existing: ConfigRecord, patch: Partial<ConfigRecord>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body;
-    this.mode = patch.mode !== undefined ? patch.mode : existing.mode;
-    this.latency = patch.latency !== undefined ? patch.latency : existing.latency;
-    this.reentrant = patch.reentrant !== undefined ? patch.reentrant : existing.reentrant;
-    this.separate = patch.separate !== undefined ? patch.separate : existing.separate;
-    this.monitor = patch.monitor !== undefined ? patch.monitor : existing.monitor;
-    this.tracing = patch.tracing !== undefined ? patch.tracing : existing.tracing;
+    this.mode = merge(DEFAULT.mode, existing.mode, patch.mode, implicit);
+    this.latency = merge(DEFAULT.latency, existing.latency, patch.latency, implicit);
+    this.reentrant = merge(DEFAULT.reentrant, existing.reentrant, patch.reentrant, implicit);
+    this.separate = merge(DEFAULT.separate, existing.separate, patch.separate, implicit);
+    this.monitor = merge(DEFAULT.monitor, existing.monitor, patch.monitor, implicit);
+    this.tracing = merge(DEFAULT.tracing, existing.tracing, patch.tracing, implicit);
     Object.freeze(this);
   }
+}
 
-  static default = new ConfigRecord(undef, {
-    body: undef,
-    mode: Mode.Stateless,
-    latency: Renew.NoCache,
-    reentrant: ReentrantCall.WaitAndRestart,
-    separate: SeparateFrom.Reaction,
-    monitor: null,
-    tracing: 0 }, {});
+function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implicit: boolean): T {
+  return patch !== undefined && (existing === def || !implicit) ? patch : existing;
 }
 
 // Virtualization
@@ -93,7 +98,7 @@ export class Virt implements ProxyHandler<Handle> {
     return Reflect.ownKeys(r.data);
   }
 
-  static decorateClass(config: Partial<Config>, origCtor: any): any {
+  static decorateClass(config: Partial<Config>, implicit: boolean, origCtor: any): any {
     let ctor: any = origCtor;
     const mode = config.mode || Mode.Stateful;
     if (mode !== Mode.Stateless) {
@@ -105,12 +110,12 @@ export class Virt implements ProxyHandler<Handle> {
       ctor.prototype = origCtor.prototype;
       Object.assign(ctor, origCtor); // preserve static definitions
     }
-    Virt.applyConfig(ctor.prototype, RT_CLASS, decoratedclass, config);
+    Virt.applyConfig(ctor.prototype, RT_CLASS, decoratedclass, config, implicit);
     return ctor;
   }
 
-  static decorateField(config: Partial<Config>, target: any, prop: PropertyKey): any {
-    config = Virt.applyConfig(target, prop, decoratedfield, config);
+  static decorateField(config: Partial<Config>, implicit: boolean, target: any, prop: PropertyKey): any {
+    config = Virt.applyConfig(target, prop, decoratedfield, config, implicit);
     if (config.mode !== Mode.Stateless) {
       const get = function(this: any): any {
         const h: Handle = Virt.acquireHandle(this);
@@ -126,10 +131,10 @@ export class Virt implements ProxyHandler<Handle> {
     }
   }
 
-  static decorateMethod(config: Partial<Config>, type: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  static decorateMethod(config: Partial<Config>, implicit: boolean, type: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : true;
     const configurable: boolean = true;
-    const methodConfig = Virt.applyConfig(type, method, pd.value, config);
+    const methodConfig = Virt.applyConfig(type, method, pd.value, config, implicit);
     const get = function(this: any): any {
       const classConfig: ConfigRecord = Virt.getConfig(Object.getPrototypeOf(this), RT_CLASS) || ConfigRecord.default;
       const h: Handle = classConfig.mode !== Mode.Stateless ? Utils.get(this, RT_HANDLE) : Virt.acquireHandle(this);
@@ -140,10 +145,10 @@ export class Virt implements ProxyHandler<Handle> {
     return Object.defineProperty(type, method, { get, enumerable, configurable });
   }
 
-  private static applyConfig(target: any, prop: PropertyKey, body: Function | undefined, config: Partial<ConfigRecord>): ConfigRecord {
+  private static applyConfig(target: any, prop: PropertyKey, body: Function | undefined, config: Partial<ConfigRecord>, implicit: boolean): ConfigRecord {
     const table: any = Virt.acquireConfigTable(target);
     const existing: ConfigRecord = table[prop] || ConfigRecord.default;
-    const result = table[prop] = new ConfigRecord(body, existing, config);
+    const result = table[prop] = new ConfigRecord(body, existing, config, implicit);
     return result;
   }
 
@@ -171,7 +176,7 @@ export class Virt implements ProxyHandler<Handle> {
     if (!h) {
       h = new Handle(obj, obj, Virt.proxy);
       Utils.set(obj, RT_HANDLE, h);
-      Virt.decorateField({mode: Mode.Stateful}, obj, RT_UNMOUNT);
+      Virt.decorateField({mode: Mode.Stateful}, false, obj, RT_UNMOUNT);
     }
     return h;
   }

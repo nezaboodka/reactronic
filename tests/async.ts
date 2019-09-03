@@ -1,5 +1,5 @@
 ﻿import { all, Trace as T } from "../src/internal/z.index";
-import { stateful, transaction, cache, Renew, Monitor, monitor, Transaction } from "../src/z.index";
+import { stateful, transaction, cache, config, Renew, Monitor, monitor, Transaction } from "../src/z.index";
 import { sleep } from "./common";
 
 export const actual: string[] = [];
@@ -23,7 +23,7 @@ export class DemoView {
   @stateful test: any;
   constructor(readonly model: DemoModel) { }
 
-  @cache()
+  @cache
   async render(): Promise<string[]> {
     const result: string[] = [];
     result.push(`${demoMon.isIdle ? "" : "[...] "}Url: ${this.model.url}`);
@@ -32,7 +32,7 @@ export class DemoView {
     return result;
   }
 
-  @cache(Renew.Immediately)
+  @cache @config(Renew.Immediately)
   async print(): Promise<void> {
     const lines: string[] = await this.render();
     for (const x of lines) {
