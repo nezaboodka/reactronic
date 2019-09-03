@@ -14,7 +14,7 @@ const etalon: string[] = [
 ];
 
 test("async", async t => {
-  T.level = process.env.AVA_DEBUG === undefined ? 0 : 3;
+  T.level = process.env.AVA_DEBUG === undefined ? 6 : /* istanbul ignore next */ 3;
   const app = Transaction.run(() => new DemoView(new DemoModel()));
   app.model.load.rcache.configure({reentrant: ReentrantCall.CancelPrevious});
   try {
@@ -30,13 +30,13 @@ test("async", async t => {
   }
   catch (error) {
     actual.push(error.toString());
-    if (T.level >= 1) console.log(error.toString());
+    if (T.level >= 1 && T.level <= 5) console.log(error.toString());
   }
   finally {
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
   }
-  if (T.level >= 1) {
+  if (T.level >= 1 && T.level <= 5) {
     console.log("\nResults:\n");
     for (const x of actual)
       console.log(x);
@@ -44,7 +44,7 @@ test("async", async t => {
   }
   const n: number = Math.max(actual.length, etalon.length);
   for (let i = 0; i < n; i++) {
-    if (T.level >= 1) console.log(`actual[${i}] = ${actual[i]}, etalon[${i}] = ${etalon[i]}`);
+    if (T.level >= 1 && T.level <= 5) console.log(`actual[${i}] = ${actual[i]}, etalon[${i}] = ${etalon[i]}`);
     t.is(actual[i], etalon[i]);
   }
 });

@@ -14,7 +14,7 @@ const etalon: string[] = [
 ];
 
 test("basic", t => {
-  T.level = process.env.AVA_DEBUG === undefined ? 0 : 3;
+  T.level = process.env.AVA_DEBUG === undefined ? 6 : /* istanbul ignore next */ 3;
   // Simple actions
   const app = Transaction.run(() => new DemoView(new DemoModel()));
   try {

@@ -37,7 +37,7 @@ export class DemoView {
     const lines: string[] = await this.render();
     for (const x of lines) {
       actual.push(x);
-      if (T.level >= 1) console.log(x);
+      if (T.level >= 1 && T.level <= 5) console.log(x);
     }
   }
 }

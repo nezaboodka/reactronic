@@ -9,10 +9,11 @@ export class Trace {
 
   static log(operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
     const margin: string = "  ".repeat(Trace.margin);
-    console.log("\x1b[37m%s\x1b[0m \x1b[" + Trace.color +
-      "m%s %s\x1b[0m \x1b[" + Trace.color + "m%s%s\x1b[0m \x1b[" + Trace.color + "m%s\x1b[0m%s",
-      "#rt", Trace.prefix, operation, margin, marker, message,
-      (highlight !== undefined ? `${highlight}` : ``) +
-      (ms > 2 ? `    [ ${ms}ms ]` : ``));
+    if (Trace.level <= 5)
+      console.log("\x1b[37m%s\x1b[0m \x1b[" + Trace.color +
+        "m%s %s\x1b[0m \x1b[" + Trace.color + "m%s%s\x1b[0m \x1b[" + Trace.color + "m%s\x1b[0m%s",
+        "#rt", Trace.prefix, operation, margin, marker, message,
+        (highlight !== undefined ? `${highlight}` : ``) +
+        (ms > 2 ? `    [ ${ms}ms ]` : ``));
   }
 }

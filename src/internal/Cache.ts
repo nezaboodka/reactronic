@@ -385,11 +385,6 @@ export class CachedResult implements ICachedResult {
     if (this.config.tracing >= 3 || (this.config.tracing === 0 && T.level >= 3)) T.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
-    if (this.member === "renderAsync") {
-      console.log(`ENTER ${prev.hint()}`);
-      console.log(prev.outdated.recaching);
-      console.log(this);
-    }
     if (!prev.outdated.recaching)
       prev.outdated.recaching = this;
   }
@@ -417,11 +412,6 @@ export class CachedResult implements ICachedResult {
   }
 
   private leave(r: Record, prev: CachedResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
-    if (this.member === "renderAsync") {
-      console.log(`LEAVE ${prev.hint()} --- ${prev.outdated.recaching === this}`);
-      console.log(prev.outdated.recaching);
-      console.log(this);
-    }
     if (prev.outdated.recaching === this)
       prev.outdated.recaching = undefined;
     this.monitorLeave(mon);

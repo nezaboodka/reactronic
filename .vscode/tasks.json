@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build - TypeScript",
+      "label": "Build  -  TypeScript",
       "type": "shell",
       "command": "npm run build",
       "problemMatcher": ["$tsc", "$tslint5"],
@@ -17,7 +17,7 @@
       }
     },
     {
-      "label": "Test - Ava",
+      "label": "Run Tests  -  NYC & AVA",
       "type": "shell",
       "command": "npm run test",
       "isBackground": true,
@@ -31,7 +31,7 @@
       },
     },
     {
-      "label": "Coverage - NYC & Ava",
+      "label": "Show Coverage  -  NYC & AVA",
       "type": "shell",
       "command": "npm run cover",
       "isBackground": true,
@@ -45,7 +45,7 @@
       },
     },
     {
-      "label": "Install - NPM",
+      "label": "Install Modules  -  NPM",
       "type": "shell",
       "command": "npm install",
       "isBackground": true,

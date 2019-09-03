@@ -41,7 +41,7 @@
   "scripts": {
     "build": "tsc && tslint -c tslint.json 'src/**/*.ts' 'tests/**/*.test.ts'",
     "dist": "tsc --sourceMap false",
-    "test": "ava",
-    "cover": "nyc ava && start coverage/lcov-report/index.html"
+    "test": "nyc ava",
+    "cover": "nyc ava && start coverage/index.html"
   }
 }

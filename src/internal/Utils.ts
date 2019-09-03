@@ -84,12 +84,12 @@ export class Utils {
 
 /* istanbul ignore next */
 export function undef(...args: any[]): never {
-  /* istanbul ignore next */ throw new Error("this method should never be called");
+  throw new Error("this method should never be called");
 }
 
 /* istanbul ignore next */
 export function rethrow(error: any): never {
-  /* istanbul ignore next */ throw error;
+  throw error;
 }
 
 export async function all(promises: Array<Promise<any>>): Promise<any[]> {
@@ -100,6 +100,7 @@ export async function all(promises: Array<Promise<any>>): Promise<any[]> {
   return result;
 }
 
+/* istanbul ignore next */
 export function sleep<T>(timeout: number): Promise<T> {
   return new Promise(function(resolve: any) {
     setTimeout(resolve.bind(null, () => resolve), timeout);
