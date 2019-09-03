@@ -215,7 +215,7 @@ NPM: `npm install reactronic`
 ```typescript
 // Decorators
 
-function stateful(proto, prop);
+function stateful(proto, prop?);
 function stateless(proto, prop);
 function transaction(proto, prop, pd);
 function cache(proto, prop, pd);
