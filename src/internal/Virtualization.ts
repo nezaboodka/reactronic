@@ -107,8 +107,8 @@ export class Virt implements ProxyHandler<Handle> {
         const h: Handle = Virt.createHandle(mode, stateless, undefined);
         return h.proxy;
       };
-      ctor.prototype = origCtor.prototype;
-      Object.assign(ctor, origCtor); // preserve static definitions
+      Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)); // preserve prototype
+      Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)); // preserve static definitions
     }
     Virt.applyConfig(ctor.prototype, RT_CLASS, decoratedclass, config, implicit);
     return ctor;

@@ -33,6 +33,10 @@ export class Monitor {
     if (this._volume === 0)
       this._idle = true;
   }
+
+  static create(hint?: string): Monitor {
+    return Transaction.run(() => new Monitor(hint));
+  }
 }
 
 export interface Operation {

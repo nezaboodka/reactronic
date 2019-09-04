@@ -1,10 +1,10 @@
 ﻿import { all, Trace as T } from "../src/internal/z.index";
-import { stateful, transaction, cache, behavior, Renew, Monitor, monitor, Transaction } from "../src/z.index";
+import { stateful, transaction, cache, behavior, Renew, Monitor, monitor } from "../src/z.index";
 import { sleep } from "./common";
 
 export const output: string[] = [];
 
-const demoMon = Transaction.run(() => new Monitor("demo"));
+const demoMon = Monitor.create("demo");
 
 @stateful
 export class DemoModel {
