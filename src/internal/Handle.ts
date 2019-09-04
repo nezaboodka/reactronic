@@ -25,12 +25,13 @@ export class Handle {
     this.editors = 0;
   }
 
-  static setHint<T>(obj: T, hint: string | undefined): void {
+  static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
       const h: Handle = Utils.get(obj, RT_HANDLE);
       if (h)
         h.hint = hint;
     }
+    return obj;
   }
 
   static getHint(obj: object): string | undefined {

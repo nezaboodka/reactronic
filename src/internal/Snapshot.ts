@@ -24,8 +24,9 @@ export class Snapshot implements ISnapshot {
     this.hint = hint;
   }
 
+  /* istanbul ignore next */
   static active = function(): Snapshot {
-    /* istanbul ignore next */ return undef(); // to be redefined by Transaction implementation
+    return undef(); // to be redefined by Transaction implementation
   };
 
   read(h: Handle): Record {
@@ -177,6 +178,7 @@ export class Snapshot implements ISnapshot {
     if (T.level >= 2) T.log(this.timestamp > 0 ? "╚══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
+  /* istanbul ignore next */
   static applyDependencies = function(changeset: Map<Handle, Record>, effect: ICachedResult[]): void {
     undef(); // to be redefined by Cache implementation
   };

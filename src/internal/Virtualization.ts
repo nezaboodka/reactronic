@@ -132,7 +132,7 @@ export class Virt implements ProxyHandler<Handle> {
   }
 
   static decorateMethod(config: Partial<Config>, implicit: boolean, type: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-    const enumerable: boolean = pd ? pd.enumerable === true : true;
+    const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true;
     const configurable: boolean = true;
     const methodConfig = Virt.applyConfig(type, method, pd.value, config, implicit);
     const get = function(this: any): any {
@@ -206,17 +206,20 @@ export class Virt implements ProxyHandler<Handle> {
     }
   }
 
+  /* istanbul ignore next */
   static createCachedMethodTrap = function(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
-    /* istanbul ignore next */ throw new Error("createCachedMethodTrap should never be called");
+     throw new Error("createCachedMethodTrap should never be called");
   };
 }
 
+/* istanbul ignore next */
 function decoratedfield(...args: any[]): never {
-  /* istanbul ignore next */ throw new Error("decoratedfield should never be called");
+   throw new Error("decoratedfield should never be called");
 }
 
+/* istanbul ignore next */
 function decoratedclass(...args: any[]): never {
-  /* istanbul ignore next */ throw new Error("decoratedclass should never be called");
+  throw new Error("decoratedclass should never be called");
 }
 
 export class CopyOnWrite implements ProxyHandler<Binding<any>> {

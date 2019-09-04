@@ -14,8 +14,7 @@ export class Monitor {
   get volume(): number { return this._volume; }
   get operations(): ReadonlySet<Operation> { return this._operations; }
 
-  constructor(hint?: string, prolonged: boolean = false, separate: SeparateFrom = SeparateFrom.All) {
-    Handle.setHint(this, hint);
+  constructor(prolonged: boolean = false, separate: SeparateFrom = SeparateFrom.All) {
     this.prolonged = prolonged;
     this.separate = separate;
   }
@@ -35,7 +34,7 @@ export class Monitor {
   }
 
   static create(hint?: string): Monitor {
-    return Transaction.run(() => new Monitor(hint));
+    return Transaction.run(() => Handle.setHint(new Monitor(), hint));
   }
 }
 
