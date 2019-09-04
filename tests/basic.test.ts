@@ -18,6 +18,9 @@ test("basic", t => {
   // Simple actions
   const app = Transaction.run(() => new DemoView(new DemoModel()));
   try {
+    t.is(ReactiveCache.getTraceHint(app), "DemoView");
+    ReactiveCache.setTraceHint(app, "App");
+    t.is(ReactiveCache.getTraceHint(app), "App");
     app.model.loadUsers();
     const daddy: Person = app.model.users[0];
     t.is(daddy.name, "John");
