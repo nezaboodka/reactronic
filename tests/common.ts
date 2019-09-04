@@ -10,7 +10,7 @@ export class Person {
   name: string | null = null;
   age: number = 0;
   emails: string[] | null = null;
-  log: string[] = [];
+  attributes: Map<string, any> = new Map<string, any>();
   get parent(): Person | null { return this._parent; }
   set parent(value: Person | null) { this.setParent(value); }
   private _parent: Person | null = null;

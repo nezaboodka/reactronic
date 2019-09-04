@@ -49,16 +49,7 @@ export class Utils {
   }
 
   static equal(oldValue: any, newValue: any): boolean {
-    let result: boolean;
-    if (Array.isArray(oldValue)) {
-      if (Array.isArray(newValue))
-        result = newValue === oldValue; // TODO: compare array elements?
-      else
-        result = false;
-    }
-    else
-      result = newValue === oldValue;
-    return result;
+    return newValue === oldValue;
   }
 
   /* istanbul ignore next */

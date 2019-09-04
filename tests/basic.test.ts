@@ -57,6 +57,8 @@ test("basic", t => {
         daddy.emails[0] = "daddy@mail.com";
         daddy.emails.push("someone@mail.io");
       }
+      daddy.attributes.set("city", "London");
+      daddy.attributes.set("country", "United Kingdom");
       const x = daddy.children[1];
       x.parent = null;
       x.parent = daddy;
@@ -67,11 +69,13 @@ test("basic", t => {
     t.is(app.render.rcache.isOutdated, false);
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
+    t.is(daddy.attributes.size, 0);
     tran1.commit(); // changes are applied, reactions are outdated/recomputed
     t.is(app.render.rcache.isOutdated, false);
     t.not(app.render.rcache.stamp, stamp);
     t.is(daddy.name, "John Smith");
     t.is(daddy.age, 45);
+    t.is(daddy.attributes.size, 2);
     // Protection from modification outside of action
     t.throws(() => {
       if (daddy.emails)
