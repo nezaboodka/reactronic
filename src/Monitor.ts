@@ -6,12 +6,12 @@ import { Transaction } from "./Transaction";
 @stateful
 export class Monitor {
   private _idle: boolean = true;
-  private _volume: number = 0;
+  private _counter: number = 0;
   private _operations = new Set<Operation>();
   readonly prolonged: boolean;
   readonly separate: SeparateFrom;
   get isIdle(): boolean { return this._idle; }
-  get volume(): number { return this._volume; }
+  get counter(): number { return this._counter; }
   get operations(): ReadonlySet<Operation> { return this._operations; }
 
   constructor(prolonged: boolean = false, separate: SeparateFrom = SeparateFrom.All) {
@@ -20,16 +20,16 @@ export class Monitor {
   }
 
   enter(op: Operation): void {
-    if (this._volume === 0)
+    if (this._counter === 0)
       this._idle = false;
-    this._volume++;
+    this._counter++;
     this._operations.add(op);
   }
 
   leave(op: Operation): void {
     this._operations.delete(op);
-    this._volume--;
-    if (this._volume === 0)
+    this._counter--;
+    if (this._counter === 0)
       this._idle = true;
   }
 
