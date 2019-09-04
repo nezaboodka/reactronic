@@ -163,7 +163,7 @@ export class Virt implements ProxyHandler<Handle> {
   }
 
   static getConfigTable(target: any): any {
-    return target[RT_CONFIG] || EMPTY_CONFIG_TABLE;
+    return target[RT_CONFIG] || /* istanbul ignore next */ EMPTY_CONFIG_TABLE;
   }
 
   static getConfig(target: any, prop: PropertyKey): ConfigRecord | undefined {
@@ -201,7 +201,7 @@ function initRecordData(h: Handle, mode: Mode, stateless: any, record: Record): 
   const r = Snapshot.active().write(h, RT_HANDLE, RT_HANDLE);
   for (const prop of Object.getOwnPropertyNames(stateless))
     initRecordProp(mode, configTable, prop, r, stateless);
-  for (const prop of Object.getOwnPropertySymbols(stateless))
+  for (const prop of Object.getOwnPropertySymbols(stateless)) /* istanbul ignore next */
     initRecordProp(mode, configTable, prop, r, stateless);
 }
 
