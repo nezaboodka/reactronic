@@ -26,7 +26,9 @@ test("basic", t => {
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     app.print(); // trigger first run
-    t.is(app.filteredUsers.rcache.stamp, 103);
+    const stamp = app.render.rcache.stamp;
+    app.render();
+    t.is(app.render.rcache.stamp, stamp);
     t.is(app.filteredUsers.rcache.error, undefined);
     t.is(app.filteredUsers.rcache.config.latency, Renew.OnDemand);
     t.is(app.filteredUsers.rcache.isInvalidated, false);

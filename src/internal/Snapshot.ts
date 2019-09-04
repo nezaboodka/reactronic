@@ -4,6 +4,8 @@ import { Record, ISnapshot, ICachedResult, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { CopyOnWrite } from "./Virtualization";
 
+const MAX_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1;
+
 // Snapshot
 
 export class Snapshot implements ISnapshot {
@@ -16,7 +18,7 @@ export class Snapshot implements ISnapshot {
   readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
   get timestamp(): number { return this._timestamp; }
   get completed(): boolean { return this._completed; }
-  private _timestamp = Number.MAX_SAFE_INTEGER;
+  private _timestamp = MAX_TIMESTAMP;
   private _completed = false;
 
   constructor(hint: string) {
@@ -79,7 +81,7 @@ export class Snapshot implements ISnapshot {
   }
 
   checkout(): void {
-    if (!this.completed && this.timestamp === Number.MAX_SAFE_INTEGER) {
+    if (!this.completed && this.timestamp === MAX_TIMESTAMP) {
       this._timestamp = Snapshot.headTimestamp;
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)

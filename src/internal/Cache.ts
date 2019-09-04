@@ -5,6 +5,7 @@ import { Config, Renew, ReentrantCall, SeparateFrom } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
 
+const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER;
 type CachedCall = { cache: CachedResult, record: Record, ok: boolean };
 
 class CachedMethod extends ReactiveCache<any> {
@@ -103,7 +104,7 @@ class CachedMethod extends ReactiveCache<any> {
         }, ...args);
       else
         c.ret = Promise.reject(error);
-      c.outdated.timestamp = Number.MAX_SAFE_INTEGER;
+      c.outdated.timestamp = UNDEFINED_TIMESTAMP;
     }
     finally {
       if (!error)
@@ -319,12 +320,12 @@ export class CachedResult implements ICachedResult {
 
   isInvalidated(): boolean { // TODO: should depend on caller context
     const t = this.outdated.timestamp;
-    return t !== Number.MAX_SAFE_INTEGER && t !== 0;
+    return t !== UNDEFINED_TIMESTAMP && t !== 0;
   }
 
   invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void {
     const stamp = cause.snapshot.timestamp;
-    if (this.outdated.timestamp === Number.MAX_SAFE_INTEGER && (!cascade || this.config.latency !== Renew.WhenReady)) {
+    if (this.outdated.timestamp === UNDEFINED_TIMESTAMP && (!cascade || this.config.latency !== Renew.WhenReady)) {
       this.outdated.timestamp = stamp;
       // TODO: make cache readonly
       // Cascade invalidation
