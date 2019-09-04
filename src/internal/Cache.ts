@@ -426,8 +426,8 @@ export class CachedResult implements ICachedResult {
 
   monitorEnter(mon: Monitor | null): void {
     if (mon)
-      Transaction.runAs<void>("Monitor.enter", mon.separate, 0,
-        CachedMethod.run, undefined, () => mon.enter(this));
+      CachedMethod.run(undefined, Transaction.runAs, "Monitor.enter",
+        mon.separate, 0, () => mon.enter(this));
   }
 
   monitorLeave(mon: Monitor | null): void {
@@ -437,8 +437,8 @@ export class CachedResult implements ICachedResult {
         try {
           Transaction.active = Transaction.none; // Workaround?
           const leave = () => {
-            Transaction.runAs<void>("Monitor.leave", mon.separate, 0,
-              CachedMethod.run, undefined, () => mon.leave(this));
+            CachedMethod.run(undefined, Transaction.runAs, "Monitor.leave",
+              mon.separate, 0, () => mon.leave(this));
           };
           this.tran.whenFinished(false).then(leave, leave);
         }
@@ -447,8 +447,8 @@ export class CachedResult implements ICachedResult {
         }
       }
       else
-        Transaction.runAs<void>("Monitor.leave", mon.separate, 0,
-          CachedMethod.run, undefined, () => mon.leave(this));
+      CachedMethod.run(undefined, Transaction.runAs, "Monitor.leave",
+        mon.separate, 0, () => mon.leave(this));
     }
   }
 
