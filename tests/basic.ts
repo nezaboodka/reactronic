@@ -1,4 +1,4 @@
-﻿import { stateful, stateless, transaction, cache, behavior, Renew } from "../src/z.index";
+﻿import { stateful, stateless, transaction, cache, behavior, Renew, tracing } from "../src/z.index";
 import { Person } from "./common";
 
 export const output: string[] = [];
@@ -34,6 +34,7 @@ export class DemoModel {
   }
 }
 
+@tracing(0)
 export class DemoView {
   shared: string = "for testing purposes";
   readonly model: DemoModel;

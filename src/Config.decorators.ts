@@ -5,26 +5,26 @@ import { Monitor } from "./Monitor";
 
 export function stateful(proto: object, prop?: PropertyKey): any {
   const config = { mode: Mode.Stateful };
-  return prop ? Virt.decorateField(config, true, proto, prop) : Virt.decorateClass(config, true, proto);
+  return prop ? Virt.decorateField(true, config, proto, prop) : Virt.decorateClass(true, config, proto);
 }
 
 export function stateless(proto: object, prop: PropertyKey): any {
   const config = { mode: Mode.Stateless };
-  return Virt.decorateField(config, true, proto, prop);
+  return Virt.decorateField(true, config, proto, prop);
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
   const config = { mode: Mode.Stateful };
-  return Virt.decorateMethod(config, true, proto, prop, pd);
+  return Virt.decorateMethod(true, config, proto, prop, pd);
 }
 
 export function cache(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
   const config = { mode: Mode.Stateful, latency: Renew.OnDemand };
-  return Virt.decorateMethod(config, true, proto, prop, pd);
+  return Virt.decorateMethod(true, config, proto, prop, pd);
 }
 
 export function behavior(latency?: Latency, reentrant?: ReentrantCall, separate?: SeparateFrom): F<any> {
-  return config({mode: Mode.Stateful, latency, reentrant, separate});
+  return config({latency, reentrant, separate});
 }
 
 export function monitor(value: Monitor | null): F<any> {
@@ -38,10 +38,10 @@ export function tracing(value: number): F<any> {
 export function config(value: Partial<Config>): F<any> {
   return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
     if (prop && pd)
-      return Virt.decorateMethod(value, false, proto, prop, pd);
-    else if (prop)
-      return Virt.decorateField(value, false, proto, prop);
+      return Virt.decorateMethod(false, value, proto, prop, pd);
+    else if (prop) /* istanbul ignore next */
+      return Virt.decorateField(false, value, proto, prop);
     else
-      return Virt.decorateClass(value, false, proto);
+      return Virt.decorateClass(false, value, proto);
   };
 }

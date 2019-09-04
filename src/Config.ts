@@ -10,9 +10,8 @@ export interface Config {
 }
 
 export enum Mode {
-  Stateless = -1,
   Stateful = 0, // default
-  InternalStateful = 1,
+  Stateless = 1,
 }
 
 export type Latency = number | Renew; // milliseconds

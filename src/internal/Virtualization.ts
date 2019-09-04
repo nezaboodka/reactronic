@@ -99,10 +99,10 @@ export class Virt implements ProxyHandler<Handle> {
   //   return Reflect.ownKeys(r.data);
   // }
 
-  static decorateClass(config: Partial<Config>, implicit: boolean, origCtor: any): any {
+  static decorateClass(implicit: boolean, config: Partial<Config>, origCtor: any): any {
     let ctor: any = origCtor;
-    const mode = config.mode || Mode.Stateful;
-    if (mode !== Mode.Stateless) {
+    const mode = config.mode;
+    if (mode === Mode.Stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args);
         const h: Handle = Virt.createHandle(mode, stateless, undefined);
@@ -115,9 +115,9 @@ export class Virt implements ProxyHandler<Handle> {
     return ctor;
   }
 
-  static decorateField(config: Partial<Config>, implicit: boolean, target: any, prop: PropertyKey): any {
+  static decorateField(implicit: boolean, config: Partial<Config>, target: any, prop: PropertyKey): any {
     config = Virt.applyConfig(target, prop, decoratedfield, config, implicit);
-    if (config.mode !== Mode.Stateless) {
+    if (config.mode === Mode.Stateful) {
       const get = function(this: any): any {
         const h: Handle = Virt.acquireHandle(this);
         return Virt.proxy.get(h, prop, this);
@@ -132,7 +132,7 @@ export class Virt implements ProxyHandler<Handle> {
     }
   }
 
-  static decorateMethod(config: Partial<Config>, implicit: boolean, type: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  static decorateMethod(implicit: boolean, config: Partial<Config>, type: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true;
     const configurable: boolean = true;
     const methodConfig = Virt.applyConfig(type, method, pd.value, config, implicit);
@@ -177,7 +177,7 @@ export class Virt implements ProxyHandler<Handle> {
     if (!h) {
       h = new Handle(obj, obj, Virt.proxy);
       Utils.set(obj, RT_HANDLE, h);
-      Virt.decorateField({mode: Mode.Stateful}, false, obj, RT_UNMOUNT);
+      Virt.decorateField(false, {mode: Mode.Stateful}, obj, RT_UNMOUNT);
     }
     return h;
   }
