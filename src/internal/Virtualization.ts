@@ -84,11 +84,8 @@ export class Virt implements ProxyHandler<Handle> {
         Record.markChanged(r, prop, !Utils.equal(v, value), value);
       }
     }
-    else {
-      if (config.mode !== Mode.Stateless)
-        throw new Error("Mode.Stateless is not yet supported");
-      Reflect.set(h.stateless, prop, value, receiver);
-    }
+    else
+      h.stateless[prop] = value;
     return true;
   }
 
@@ -185,31 +182,30 @@ export class Virt implements ProxyHandler<Handle> {
     const h = new Handle(stateless, proxy, Virt.proxy);
     const r = Snapshot.active().write(h, RT_HANDLE, RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
-    Virt.initRecordData(h, mode, stateless, r);
+    initRecordData(h, mode, stateless, r);
     return h;
-  }
-
-  static initRecordData(h: Handle, mode: Mode, stateless: any, record: Record): void {
-    const configTable = Virt.getConfigTable(Object.getPrototypeOf(stateless));
-    const r = Snapshot.active().write(h, RT_HANDLE, RT_HANDLE);
-    for (const prop of Object.getOwnPropertyNames(stateless)) {
-      if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless) {
-        Utils.copyProp(stateless, r.data, prop);
-        Record.markChanged(r, prop, true, RT_HANDLE);
-      }
-    }
-    for (const prop of Object.getOwnPropertySymbols(stateless)) {
-      if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless) {
-        Utils.copyProp(stateless, r.data, prop);
-        Record.markChanged(r, prop, true, RT_HANDLE);
-      }
-    }
   }
 
   /* istanbul ignore next */
   static createCachedMethodTrap = function(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
      throw new Error("createCachedMethodTrap should never be called");
   };
+}
+
+function initRecordData(h: Handle, mode: Mode, stateless: any, record: Record): void {
+  const configTable = Virt.getConfigTable(Object.getPrototypeOf(stateless));
+  const r = Snapshot.active().write(h, RT_HANDLE, RT_HANDLE);
+  for (const prop of Object.getOwnPropertyNames(stateless))
+    initRecordProp(mode, configTable, prop, r, stateless);
+  for (const prop of Object.getOwnPropertySymbols(stateless))
+    initRecordProp(mode, configTable, prop, r, stateless);
+}
+
+function initRecordProp(mode: Mode, configTable: any, prop: PropertyKey, r: Record, stateless: any): void {
+  if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless) {
+    Utils.copyProp(stateless, r.data, prop);
+    Record.markChanged(r, prop, true, RT_HANDLE);
+  }
 }
 
 /* istanbul ignore next */

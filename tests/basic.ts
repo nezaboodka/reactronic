@@ -5,6 +5,7 @@ export const output: string[] = [];
 
 @stateful
 export class DemoModel {
+  @stateless shared: string = "for testing purposes";
   title: string = "Demo";
   users: Person[] = [];
 
@@ -33,10 +34,10 @@ export class DemoModel {
   }
 }
 
-@stateful
 export class DemoView {
-  @stateless readonly model: DemoModel;
-  userFilter: string = "Jo";
+  shared: string = "for testing purposes";
+  readonly model: DemoModel;
+  @stateful userFilter: string = "Jo";
 
   constructor(model: DemoModel) {
     this.model = model;

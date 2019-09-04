@@ -36,6 +36,7 @@ test("basic", t => {
     // Multi-part action
     const tran1 = new Transaction("tran1");
     tran1.run(() => {
+      app.model.shared = app.shared = tran1.hint;
       daddy.age += 2; // causes no execution of DemoApp.render
       daddy.name = "John Smith"; // causes execution of DemoApp.render upon action commit
       daddy.children[0].name = "Barry"; // Barry
@@ -46,6 +47,8 @@ test("basic", t => {
       t.is(daddy.children.length, 3);
       app.userFilter = "Jo"; // set to the same value
     });
+    t.is(app.shared, tran1.hint);
+    t.is(app.model.shared, tran1.hint);
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     t.is(daddy.children.length, 3);

@@ -457,8 +457,6 @@ export class CachedResult implements ICachedResult {
     if (oldValue instanceof CachedResult) {
       if (newValue instanceof CachedResult)
         result = false; // consistency of caches is checked via dependencies
-      else if (newValue instanceof Function) /* istanbul ignore next */
-        result = oldValue.config.body !== newValue;
       else
         result = true;
     }
