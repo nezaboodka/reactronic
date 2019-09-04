@@ -4,7 +4,7 @@
 [![Package Size](https://img.shields.io/bundlephobia/minzip/reactronic.svg?colorB=success)](https://bundlephobia.com/result?p=reactronic)
 [![GitHub License](https://img.shields.io/badge/license-MIT-4cc61e.svg?style=flat)](https://github.com/nezaboodka/reactronic/blob/master/LICENSE)
 [![CircleCI Status](https://circleci.com/gh/nezaboodka/reactronic.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/nezaboodka/reactronic)
-![Coverage](https://img.shields.io/badge/coverage-94%25-success.svg)
+![Coverage](https://img.shields.io/badge/coverage-95%25-success.svg)
 [![Demo](https://img.shields.io/badge/demo-live-success.svg)](https://nezaboodka.github.io/reactronic-demo/)
 
 Live demo: https://nezaboodka.github.io/reactronic-demo/
