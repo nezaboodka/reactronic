@@ -1,6 +1,6 @@
 ﻿import test from "ava";
 import { ReactiveCache, Transaction, ReentrantCall, sleep, Trace as T, resultof } from "../src/z.index";
-import { DemoModel, DemoView, output } from "./async";
+import { DemoModel, DemoView, mon, output } from "./async";
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: "nezaboodka.com", delay: 500 },
@@ -28,16 +28,18 @@ test("async", async t => {
     await app.print(); // trigger first run
     const first = app.model.load(requests[0].url, requests[0].delay);
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)); });
+    t.is(mon.counter, 1);
     await first;
-    t.is(app.render.rcache.error, undefined);
-    t.is(app.render.rcache.isInvalidated, true);
-    t.is((resultof(app.render) || []).length, 2);
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()); /* istanbul ignore next */
     if (T.level >= 1 && T.level <= 5) console.log(error.toString());
   }
   finally {
+    t.is(mon.counter, 0);
+    t.is(app.render.rcache.error, undefined);
+    t.is(app.render.rcache.isInvalidated, true);
+    t.is((resultof(app.render) || []).length, 2);
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */

@@ -1,14 +1,14 @@
 ﻿import { stateful, transaction, cache, behavior, Renew, Monitor, monitor, all, sleep, Trace as T } from "../src/z.index";
 
 export const output: string[] = [];
-const demoMon = Monitor.create("demo");
+export const mon = Monitor.create("demo");
 
 @stateful
 export class DemoModel {
   url: string = "reactronic";
   log: string[] = ["RTA"];
 
-  @transaction  @monitor(demoMon)
+  @transaction @monitor(mon)
   async load(url: string, delay: number): Promise<void> {
     this.url = url;
     await all([sleep(delay)]);
@@ -23,9 +23,9 @@ export class DemoView {
   @cache
   async render(): Promise<string[]> {
     const result: string[] = [];
-    result.push(`${demoMon.isIdle ? "" : "[...] "}Url: ${this.model.url}`);
+    result.push(`${mon.isIdle ? "" : "[...] "}Url: ${this.model.url}`);
     await sleep(10);
-    result.push(`${demoMon.isIdle ? "" : "[...] "}Log: ${this.model.log.join(", ")}`);
+    result.push(`${mon.isIdle ? "" : "[...] "}Log: ${this.model.log.join(", ")}`);
     return result;
   }
 

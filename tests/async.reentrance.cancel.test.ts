@@ -1,6 +1,6 @@
 ﻿import test from "ava";
 import { ReactiveCache, Transaction, ReentrantCall, all, sleep, Trace as T } from "../src/z.index";
-import { DemoModel, DemoView, output } from "./async";
+import { DemoModel, DemoView, mon, output } from "./async";
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: "google.com", delay: 300 },
@@ -25,6 +25,7 @@ test("async", async t => {
     t.throws(() => { app.test = "testing @stateful for fields"; });
     await app.print(); // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay));
+    t.is(mon.counter, 3);
     await all(responses);
   }
   catch (error) { /* istanbul ignore next */
@@ -32,6 +33,7 @@ test("async", async t => {
     if (T.level >= 1 && T.level <= 5) console.log(error.toString());
   }
   finally {
+    t.is(mon.counter, 0);
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */
