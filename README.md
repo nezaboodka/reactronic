@@ -92,8 +92,8 @@ of all the data.
 Compensating actions are not needed in case of the transaction
 failure, because all the changes made by the transaction in its
 logical snapshot are simply discarded. In case the transaction
-is successfully committed, affected caches are invalidated and
-corresponding caching functions are re-executed in a proper
+is successfully committed, affected caches are marked as outdated
+and corresponding caching functions are re-executed in a proper
 order (but only when all the data changes are fully applied).
 
 Asynchronous operations (promises) are supported out of the box
@@ -113,7 +113,7 @@ and other caches, which it uses during execution.
 
 ``` tsx
 class MyView extends React.Component<MyModel> {
-  @cache @behavior(Renew.OnDemand)
+  @cache  @behavior(Renew.OnDemand)
   render() {
     const m: MyModel = this.props; // just a shortcut
     return (
@@ -124,9 +124,9 @@ class MyView extends React.Component<MyModel> {
     );
   } // render is subscribed to m.url and m.content
 
-  @cache @behavior(Renew.Immediately)
+  @cache  @behavior(Renew.Immediately)
   trigger(): void {
-    if (this.render.reactronic.isInvalidated)
+    if (this.render.rcache.isOutdated)
       this.setState({}); // ask React to re-render
   } // trigger is subscribed to render
 }
@@ -137,17 +137,19 @@ transparently subscribed to the cache of the `render` function.
 In turn, the `render` function is subscribed to the `url` and
 `content` properties of a corresponding `MyModel` object.
 Once `url` or `content` values are changed, the `render` cache
-becomes invalidated and causes cascade invalidation of the
-`trigger` cache. The `trigger` cache is marked for immediate
-renewal, thus its function is immediately called by Reactronic
-to renew the cache. While executed, the `trigger` function
-enqueues re-rendering request to React, which calls `render`
-function and it renews its cache marked for on-demand renew.
+becomes outdated and causes the `trigger` cache to become
+outdated as well (cascaded). The `trigger` cache is marked for
+immediate renewal, thus its function is immediately called by
+Reactronic to renew the cache. While executed, the `trigger`
+function enqueues re-rendering request to React, which calls
+`render` function and it renews its cache marked for on-demand
+renew.
 
-In general case, cache is automatically and immediately invalidated
-when changes are made in those state object properties that were used
-by its function. And once invalidated, the function is automatically
-executed again to renew it, either immediately or on demand.
+In general case, cache is automatically and immediately marked
+as outdated when changes are made in those state object properties
+that were used by its function. And once marked, the function
+is automatically executed again to renew it, either immediately or
+on demand.
 
 Reactronic **takes full care of tracking dependencies** between
 all the state objects and caches (observers and observables).
@@ -165,7 +167,7 @@ invocation of the caching function to renew the cache:
 
   - `(ms)` - delay in milliseconds;
   - `Renew.Immediately` - renew immediately with zero latency;
-  - `Renew.OnDemand` - renew on access if cache has been invalidated;
+  - `Renew.OnDemand` - renew on access if cache is outdated;
   - `Renew.Manually` - manual renew (explicit only);
   - `Renew.NoCache` - renew on every call of the function.
 
@@ -304,8 +306,8 @@ abstract class ReactiveCache<T> {
   configure(config: Partial<Config>): Config;
   readonly error: any;
   getResult(...args: any[]): T;
-  readonly isInvalidated: boolean;
-  invalidate(cause: string | undefined): boolean;
+  readonly isOutdated: boolean;
+  markOutdated(cause: string | undefined): boolean;
   static get<T>(method: F<Promise<T>>): ReactiveCache<T>;
   static get<T>(method: F<T>): ReactiveCache<T>;
   static unmount(...objects: any[]): Transaction;

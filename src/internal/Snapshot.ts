@@ -150,7 +150,7 @@ export class Snapshot implements ISnapshot {
         if (!existing)
           target.observers.set(prop, merged);
         oo.forEach((c: ICachedResult) => {
-          if (!c.isInvalidated()) {
+          if (!c.isOutdated()) {
             merged.add(c);
             if (T.level >= 3) T.log(" ", "O", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
           }

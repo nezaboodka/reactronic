@@ -27,7 +27,7 @@ class Jsx {
 
   @cache @behavior(Renew.Immediately)
   trigger(nextRevision: number, refresh: (nextRevision: number) => void): void {
-    if (this.jsx.rcache.isInvalidated)
+    if (this.jsx.rcache.isOutdated)
       refresh(nextRevision);
   }
 }

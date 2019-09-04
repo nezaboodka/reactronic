@@ -17,8 +17,8 @@ class CachedMethod extends ReactiveCache<any> {
   get stamp(): number { return this.read(true).record.snapshot.timestamp; }
   get error(): boolean { return this.read(true).cache.error; }
   getResult(...args: any): any { return this.call(false, args).cache.result; }
-  get isInvalidated(): boolean { return this.read(true).cache.isInvalidated(); }
-  invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
+  get isOutdated(): boolean { return this.read(true).cache.isOutdated(); }
+  markOutdated(cause: string | undefined): boolean { return cause ? CachedResult.enforceMarkOutdated(this.read(false).cache, cause, 0) : false; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigRecord) {
     super();
@@ -263,7 +263,7 @@ export class CachedResult implements ICachedResult {
     const oo = r.observers.get(prop);
     if (oo && oo.size > 0) { // real-time notifications (inside the same transaction)
       const effect: ICachedResult[] = [];
-      oo.forEach(c => c.invalidate(r, prop, true, false, effect));
+      oo.forEach(c => c.markOutdated(r, prop, true, false, effect));
       r.observers.delete(prop);
       if (effect.length > 0)
         Transaction.triggerRecacheAll(Hint.record(r), r.snapshot.timestamp,
@@ -312,18 +312,18 @@ export class CachedResult implements ICachedResult {
         CachedResult.acquireObserverSet(r, prop).add(this); // link
         if (T.level >= 3) subscriptions.push(Hint.record(r, false, true, prop));
         if (effect && r.outdated.has(prop))
-          this.invalidate(r, prop, hot, false, effect);
+          this.markOutdated(r, prop, hot, false, effect);
       });
     });
     if (T.level >= 3 && subscriptions.length > 0) T.log(hot ? "║  " : " ", "O", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
-  isInvalidated(): boolean { // TODO: should depend on caller context
+  isOutdated(): boolean { // TODO: should depend on caller context
     const t = this.outdated.timestamp;
     return t !== UNDEFINED_TIMESTAMP && t !== 0;
   }
 
-  invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void {
+  markOutdated(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void {
     const stamp = cause.snapshot.timestamp;
     if (this.outdated.timestamp === UNDEFINED_TIMESTAMP && (!cascade || this.config.latency !== Renew.WhenReady)) {
       this.outdated.timestamp = stamp;
@@ -335,24 +335,24 @@ export class CachedResult implements ICachedResult {
         while (r !== Record.empty && !r.outdated.has(this.member)) {
           const oo = r.observers.get(this.member);
           if (oo)
-            oo.forEach(c => c.invalidate(upper, this.member, false, true, effect));
+            oo.forEach(c => c.markOutdated(upper, this.member, false, true, effect));
           r = r.prev.record;
         }
       }
       // Check if cache should be renewed
       if (this.config.latency >= Renew.Immediately && upper.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         effect.push(this);
-        if (T.level >= 2) T.log(" ", "■", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
+        if (T.level >= 2) T.log(" ", "■", `${this.hint(false)} is outdated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
       }
       else
-        if (T.level >= 2) T.log(" ", "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}`);
+        if (T.level >= 2) T.log(" ", "□", `${this.hint(false)} is outdated by ${Hint.record(cause, false, false, causeProp)}`);
     }
   }
 
-  static enforceInvalidation(c: CachedResult, cause: string, latency: number): boolean {
-    throw new Error("not implemented - Cache.enforceInvalidation");
+  static enforceMarkOutdated(c: CachedResult, cause: string, latency: number): boolean {
+    throw new Error("not implemented - Cache.enforceMarkOutdated");
     // let effect: Cache[] = [];
-    // c.invalidate(cause, false, false, effect);
+    // c.markOutdated(cause, false, false, effect);
     // if (latency === Renew.Immediately)
     //   Transaction.ensureAllUpToDate(cause, { effect });
     // else
@@ -367,7 +367,7 @@ export class CachedResult implements ICachedResult {
       r.outdated.add(prop);
       const oo = r.observers.get(prop);
       if (oo)
-        oo.forEach(c => c.invalidate(cause, prop, false, false, effect));
+        oo.forEach(c => c.markOutdated(cause, prop, false, false, effect));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
@@ -514,6 +514,7 @@ function init(): void {
   Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
   Snapshot.active = Transaction._getActiveSnapshot; // override
   Transaction._init();
+  // if (T.level >= 2) T.log("", "", "Reactronic is initialized", 0);
 }
 
 init();

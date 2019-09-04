@@ -31,7 +31,7 @@ test("basic", t => {
     t.is(app.render.rcache.stamp, stamp);
     t.is(app.filteredUsers.rcache.error, undefined);
     t.is(app.filteredUsers.rcache.config.latency, Renew.OnDemand);
-    t.is(app.filteredUsers.rcache.isInvalidated, false);
+    t.is(app.filteredUsers.rcache.isOutdated, false);
     // Multi-part action
     const tran1 = new Transaction("tran1");
     tran1.run(() => {
@@ -65,7 +65,7 @@ test("basic", t => {
     });
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
-    tran1.commit(); // changes are applied, reactions are invalidated/recomputed
+    tran1.commit(); // changes are applied, reactions are outdated/recomputed
     t.is(daddy.name, "John Smith");
     t.is(daddy.age, 45);
     // Protection from modification outside of action
