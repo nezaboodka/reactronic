@@ -199,12 +199,11 @@ Key Reactronic principles and differentiators:
   - Asynchrony, patches, undo/redo, conflict resolving are provided out of the box;
   - Seamless integration with transactionally reactive object-oriented databases like [Nezaboodka](https://nezaboodka.com/#products).
 
-To-Do list:
+Roadmap:
 
-  - History/undo/redo API and implementation
-  - Conflict resolition API
-  - Patches API
-  - Sync API and implementation
+  - v1.5: History/undo/redo API and implementation
+  - v1.7: Patches and conflict resolition API
+  - v2.0: Sync API and implementation
 
 ## Installation
 
