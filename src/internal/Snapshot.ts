@@ -65,8 +65,8 @@ export class Snapshot implements ISnapshot {
       throw new Error("object can only be modified inside transaction");
     let r: Record = this.tryRead(h);
     if (r === Record.empty || !Utils.equal(r.data[prop], value)) {
-      let data = r ? r.data : value;
-      if (!r || r.snapshot !== this) {
+      let data = r.data;
+      if (r === Record.empty || r.snapshot !== this) {
         data = Utils.copyAllProps(data, {});
         r = new Record(h.head, this, data);
         Reflect.set(r.data, RT_HANDLE, h);
@@ -177,7 +177,7 @@ export class Snapshot implements ISnapshot {
         }
       }
     });
-    if (T.level >= 2) T.log(this.timestamp > 0 ? "╚══" : "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
+    if (T.level >= 2) T.log(this.timestamp < MAX_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
   /* istanbul ignore next */
