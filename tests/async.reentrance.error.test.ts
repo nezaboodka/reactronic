@@ -1,5 +1,5 @@
 ﻿import test from "ava";
-import { ReactiveCache, Transaction, ReentrantCall, sleep, Trace as T } from "../src/z.index";
+import { ReactiveCache, Transaction, ReentrantCall, sleep, Trace as T, resultof } from "../src/z.index";
 import { DemoModel, DemoView, output } from "./async";
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -29,6 +29,9 @@ test("async", async t => {
     const first = app.model.load(requests[0].url, requests[0].delay);
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)); });
     await first;
+    t.is(app.render.rcache.error, undefined);
+    t.is(app.render.rcache.isInvalidated, true);
+    t.is((resultof(app.render) || []).length, 2);
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()); /* istanbul ignore next */

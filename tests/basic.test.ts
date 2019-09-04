@@ -1,5 +1,5 @@
 ﻿import test from "ava";
-import { ReactiveCache, Transaction, Trace as T } from "../src/z.index";
+import { ReactiveCache, Transaction, Renew, Trace as T } from "../src/z.index";
 import { Person } from "./common";
 import { DemoModel, DemoView, output } from "./basic";
 
@@ -23,6 +23,10 @@ test("basic", t => {
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     app.print(); // trigger first run
+    t.is(app.filteredUsers.rcache.stamp, 103);
+    t.is(app.filteredUsers.rcache.error, undefined);
+    t.is(app.filteredUsers.rcache.config.latency, Renew.OnDemand);
+    t.is(app.filteredUsers.rcache.isInvalidated, false);
     // Multi-part action
     const tran1 = new Transaction("tran1");
     tran1.run(() => {
