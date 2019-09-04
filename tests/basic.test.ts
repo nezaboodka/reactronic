@@ -21,17 +21,18 @@ test("basic", t => {
     t.is(ReactiveCache.getTraceHint(app), "DemoView");
     ReactiveCache.setTraceHint(app, "App");
     t.is(ReactiveCache.getTraceHint(app), "App");
+    t.is(app.render.rcache.isOutdated, true);
+    t.is(app.render.rcache.config.latency, Renew.OnDemand);
     app.model.loadUsers();
     const daddy: Person = app.model.users[0];
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     app.print(); // trigger first run
+    t.is(app.render.rcache.isOutdated, false);
+    t.is(app.render.rcache.error, undefined);
     const stamp = app.render.rcache.stamp;
     app.render();
     t.is(app.render.rcache.stamp, stamp);
-    t.is(app.filteredUsers.rcache.error, undefined);
-    t.is(app.filteredUsers.rcache.config.latency, Renew.OnDemand);
-    t.is(app.filteredUsers.rcache.isOutdated, false);
     // Multi-part action
     const tran1 = new Transaction("tran1");
     tran1.run(() => {
@@ -48,6 +49,7 @@ test("basic", t => {
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     t.is(daddy.children.length, 3);
+    t.is(app.render.rcache.isOutdated, false);
     tran1.run(() => {
       t.is(daddy.age, 40);
       daddy.age += 5;
@@ -63,9 +65,12 @@ test("basic", t => {
       t.is(daddy.age, 45);
       t.is(daddy.children.length, 3);
     });
+    t.is(app.render.rcache.isOutdated, false);
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     tran1.commit(); // changes are applied, reactions are outdated/recomputed
+    t.is(app.render.rcache.isOutdated, false);
+    t.not(app.render.rcache.stamp, stamp);
     t.is(daddy.name, "John Smith");
     t.is(daddy.age, 45);
     // Protection from modification outside of action

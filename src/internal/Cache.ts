@@ -319,8 +319,8 @@ export class CachedResult implements ICachedResult {
   }
 
   isOutdated(): boolean { // TODO: should depend on caller context
-    const t = this.outdated.timestamp;
-    return t !== UNDEFINED_TIMESTAMP && t !== 0;
+    const ctx = Snapshot.active();
+    return this.outdated.timestamp <= ctx.timestamp;
   }
 
   markOutdated(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void {

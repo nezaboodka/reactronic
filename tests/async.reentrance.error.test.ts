@@ -37,8 +37,6 @@ test("async", async t => {
   }
   finally {
     t.is(mon.counter, 0);
-    t.is(app.render.rcache.error, undefined);
-    t.is(app.render.rcache.isOutdated, true);
     t.is((resultof(app.render) || []).length, 2);
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
