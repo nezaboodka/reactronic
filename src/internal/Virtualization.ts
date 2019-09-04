@@ -89,11 +89,15 @@ export class Virt implements ProxyHandler<Handle> {
     return true;
   }
 
-  ownKeys(h: Handle): PropertyKey[] {
-    // TODO: Exclude caches from the list of own keys
-    const r: Record = Snapshot.active().read(h);
-    return Reflect.ownKeys(r.data);
-  }
+  // getOwnPropertyDescriptor(h: Handle, prop: PropertyKey): PropertyDescriptor | undefined {
+  //   const r: Record = Snapshot.active().read(h);
+  //   return Reflect.getOwnPropertyDescriptor(r.data, prop);
+  // }
+
+  // ownKeys(h: Handle): PropertyKey[] {
+  //   const r: Record = Snapshot.active().read(h);
+  //   return Reflect.ownKeys(r.data);
+  // }
 
   static decorateClass(config: Partial<Config>, implicit: boolean, origCtor: any): any {
     let ctor: any = origCtor;

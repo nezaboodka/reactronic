@@ -18,18 +18,14 @@ test("basic", t => {
   // Simple actions
   const app = Transaction.run(() => new DemoView(new DemoModel()));
   try {
-    t.is(ReactiveCache.getTraceHint(app), "DemoView");
-    ReactiveCache.setTraceHint(app, "App");
-    t.is(ReactiveCache.getTraceHint(app), "App");
     t.is(app.render.rcache.isOutdated, true);
-    t.is(app.render.rcache.config.latency, Renew.OnDemand);
     app.model.loadUsers();
     const daddy: Person = app.model.users[0];
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
+    t.is(app.render.rcache.isOutdated, true);
     app.print(); // trigger first run
     t.is(app.render.rcache.isOutdated, false);
-    t.is(app.render.rcache.error, undefined);
     const stamp = app.render.rcache.stamp;
     app.render();
     t.is(app.render.rcache.stamp, stamp);
@@ -89,6 +85,12 @@ test("basic", t => {
     // Check protection
     t.throws(() => { daddy.setParent.rcache.configure({latency: 0}); });
     t.throws(() => { console.log(daddy.setParent.rcache.config.monitor); });
+    // Other
+    t.is(app.render.rcache.config.latency, Renew.OnDemand);
+    t.is(app.render.rcache.error, undefined);
+    t.is(ReactiveCache.getTraceHint(app), "DemoView");
+    ReactiveCache.setTraceHint(app, "App");
+    t.is(ReactiveCache.getTraceHint(app), "App");
   }
   finally { // cleanup
     ReactiveCache.unmount(app, app.model);
