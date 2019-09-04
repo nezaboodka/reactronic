@@ -32,7 +32,7 @@ class CachedMethod extends ReactiveCache<any> {
     let call: CachedCall = this.read(false, args);
     if (!call.ok) {
       const c: CachedResult = call.cache;
-      const hint: string = (c.config.tracing >= 2 || T.level >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : "recache";
+      const hint: string = (c.config.tracing >= 2 || T.level >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "recache";
       const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
       let call2 = call;
       const ret = Transaction.runAs<any>(hint, separate, c.config.tracing, (argsx: any[] | undefined): any => {
@@ -140,7 +140,7 @@ class CachedMethod extends ReactiveCache<any> {
     const call = this.read(false);
     const c: CachedResult = call.cache;
     const r: Record = call.record;
-    const hint: string = T.level > 2 ? `${Hint.handle(this.handle)}.${this.empty.member.toString()}/configure` : "configure";
+    const hint: string = T.level > 2 ? `${Hint.handle(this.handle)}.${this.empty.member.toString()}/configure` : /* istanbul ignore next */ "configure";
     return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, 0, (): Config => {
       const call2 = this.write();
       const c2: CachedResult = call2.cache;
@@ -261,7 +261,7 @@ export class CachedResult implements ICachedResult {
     changed ? r.changes.add(prop) : r.changes.delete(prop);
     if (T.level >= 5) T.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
     const oo = r.observers.get(prop);
-    if (oo && oo.size > 0) {
+    if (oo && oo.size > 0) { // real-time notifications (inside the same transaction)
       const effect: ICachedResult[] = [];
       oo.forEach(c => c.invalidate(r, prop, true, false, effect));
       r.observers.delete(prop);
