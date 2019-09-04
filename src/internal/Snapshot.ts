@@ -229,7 +229,7 @@ export class Hint {
   static record(r: Record, tranless?: boolean, nameless?: boolean, prop?: PropertyKey): string {
     const t: string = tranless ? "" : `t${r.snapshot.id}`;
     const h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
-    const name: string = h ? `${t}${Hint.handle(h, nameless)}` : "[new]";
+    const name: string = h ? `${t}${Hint.handle(h, nameless)}` : /* istanbul ignore next */ "[new]";
     return prop !== undefined ? `${name}.${prop.toString()}` : `${name}`;
   }
 
