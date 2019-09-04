@@ -205,7 +205,7 @@ export class CachedResult implements ICachedResult {
       this.args = init.args;
       this.result = init.result;
     }
-    else {
+    else { // init instanceof ConfigRecord
       this.config = init;
       this.args = [];
       this.result = undefined;
