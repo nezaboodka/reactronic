@@ -88,10 +88,9 @@ class CachedMethod extends ReactiveCache<any> {
     const error = this.reenter(prev);
     const call: CachedCall = this.edit();
     const c: CachedResult = call.cache;
-    const r: Record = call.record;
     const mon: Monitor | null = prev.config.monitor;
     if (!error)
-      c.enter(r, prev, mon);
+      c.enter(call.record, prev, mon);
     try
     {
       if (args)
@@ -108,7 +107,7 @@ class CachedMethod extends ReactiveCache<any> {
     }
     finally {
       if (!error)
-        c.tryLeave(r, prev, mon);
+        c.tryLeave(call.record, prev, mon);
     }
     return call;
   }
