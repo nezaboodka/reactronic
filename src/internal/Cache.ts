@@ -69,16 +69,16 @@ class CachedMethod extends ReactiveCache<any> {
     return { cache: c, record: r, ok };
   }
 
-  private edit(): CachedCall {
+  private write(): CachedCall {
     const ctx = Snapshot.active();
     const member = this.empty.member;
-    const r: Record = ctx.edit(this.handle, member, RT_CACHE);
+    const r: Record = ctx.write(this.handle, member, RT_CACHE);
     let c: CachedResult = r.data[member] || this.empty;
     if (c.record !== r) {
       const c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
       if (T.level >= 3) T.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.empty ? "empty" : c.hint(false)}`);
-      Record.markEdited(r, c2.member, true, RT_CACHE);
+      Record.markChanged(r, c2.member, true, RT_CACHE);
       c = c2;
     }
     return { cache: c, record: r, ok: true };
@@ -86,7 +86,7 @@ class CachedMethod extends ReactiveCache<any> {
 
   private recache(prev: CachedResult, args: any[] | undefined): CachedCall {
     const error = this.reenter(prev);
-    const call: CachedCall = this.edit();
+    const call: CachedCall = this.write();
     const c: CachedResult = call.cache;
     const mon: Monitor | null = prev.config.monitor;
     if (!error)
@@ -141,7 +141,7 @@ class CachedMethod extends ReactiveCache<any> {
     const r: Record = call.record;
     const hint: string = T.level > 2 ? `${Hint.handle(this.handle)}.${this.empty.member.toString()}/configure` : "configure";
     return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, 0, (): Config => {
-      const call2 = this.edit();
+      const call2 = this.write();
       const c2: CachedResult = call2.cache;
       c2.config = new ConfigRecord(c2.config.body, c2.config, config, false);
       if (T.level >= 5) T.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
@@ -256,8 +256,8 @@ export class CachedResult implements ICachedResult {
     }
   }
 
-  static markEdited(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
-    edited ? r.edits.add(prop) : r.edits.delete(prop);
+  static markChanged(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
+    changed ? r.changes.add(prop) : r.changes.delete(prop);
     if (T.level >= 5) T.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
     const oo = r.observers.get(prop);
     if (oo && oo.size > 0) {
@@ -272,8 +272,8 @@ export class CachedResult implements ICachedResult {
 
   static applyDependencies(changeset: Map<Handle, Record>, effect: ICachedResult[]): void {
     changeset.forEach((r: Record, h: Handle) => {
-      if (!r.edits.has(RT_UNMOUNT))
-        r.edits.forEach(prop => {
+      if (!r.changes.has(RT_UNMOUNT))
+        r.changes.forEach(prop => {
           CachedResult.markPrevAsOutdated(r, prop, effect);
           const value = r.data[prop];
           if (value instanceof CachedResult)
@@ -508,7 +508,7 @@ Promise.prototype.then = function(
 function init(): void {
   Utils.different = CachedResult.differentImpl; // override
   Record.markViewed = CachedResult.markViewed; // override
-  Record.markEdited = CachedResult.markEdited; // override
+  Record.markChanged = CachedResult.markChanged; // override
   Snapshot.applyDependencies = CachedResult.applyDependencies; // override
   Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
   Snapshot.active = Transaction._getActiveSnapshot; // override

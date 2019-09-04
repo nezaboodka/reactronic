@@ -77,11 +77,11 @@ export class Virt implements ProxyHandler<Handle> {
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
     const config: ConfigRecord | undefined = Virt.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
-      const r: Record = Snapshot.active().tryEdit(h, prop, value);
-      if (r !== Record.empty) { // empty when r.data[prop] === value, thus creation of edit record was skipped
+      const r: Record = Snapshot.active().tryWrite(h, prop, value);
+      if (r !== Record.empty) { // empty when r.data[prop] === value, thus creation of changing record was skipped
         r.data[prop] = value;
         const v: any = r.prev.record.data[prop];
-        Record.markEdited(r, prop, !Utils.equal(v, value), value);
+        Record.markChanged(r, prop, !Utils.equal(v, value), value);
       }
     }
     else {
@@ -183,7 +183,7 @@ export class Virt implements ProxyHandler<Handle> {
 
   static createHandle(mode: Mode, stateless: any, proxy: any): Handle {
     const h = new Handle(stateless, proxy, Virt.proxy);
-    const r = Snapshot.active().edit(h, RT_HANDLE, RT_HANDLE);
+    const r = Snapshot.active().write(h, RT_HANDLE, RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
     Virt.initRecordData(h, mode, stateless, r);
     return h;
@@ -191,17 +191,17 @@ export class Virt implements ProxyHandler<Handle> {
 
   static initRecordData(h: Handle, mode: Mode, stateless: any, record: Record): void {
     const configTable = Virt.getConfigTable(Object.getPrototypeOf(stateless));
-    const r = Snapshot.active().edit(h, RT_HANDLE, RT_HANDLE);
+    const r = Snapshot.active().write(h, RT_HANDLE, RT_HANDLE);
     for (const prop of Object.getOwnPropertyNames(stateless)) {
       if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless) {
         Utils.copyProp(stateless, r.data, prop);
-        Record.markEdited(r, prop, true, RT_HANDLE);
+        Record.markChanged(r, prop, true, RT_HANDLE);
       }
     }
     for (const prop of Object.getOwnPropertySymbols(stateless)) {
       if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless) {
         Utils.copyProp(stateless, r.data, prop);
-        Record.markEdited(r, prop, true, RT_HANDLE);
+        Record.markChanged(r, prop, true, RT_HANDLE);
       }
     }
   }

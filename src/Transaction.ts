@@ -89,14 +89,14 @@ export class Transaction {
     const hint = T.level >= 2 ? `Tran#${this.snapshot.hint}.undo` : "noname";
     Transaction.runAs<void>(hint, SeparateFrom.Reaction, 0, () => {
       this.snapshot.changeset.forEach((r: Record, h: Handle) => {
-        r.edits.forEach(prop => {
+        r.changes.forEach(prop => {
           if (r.prev.backup) {
             const prevValue: any = r.prev.backup.data[prop];
-            const t: Record = Snapshot.active().tryEdit(h, prop, prevValue);
+            const t: Record = Snapshot.active().tryWrite(h, prop, prevValue);
             if (t !== Record.empty) {
               t.data[prop] = prevValue;
               const v: any = t.prev.record.data[prop];
-              Record.markEdited(t, prop, !Utils.equal(v, prevValue) /* && value !== RT_HANDLE*/, prevValue);
+              Record.markChanged(t, prop, !Utils.equal(v, prevValue) /* && value !== RT_HANDLE*/, prevValue);
             }
           }
         });

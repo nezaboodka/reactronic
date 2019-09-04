@@ -32,23 +32,23 @@ export class Snapshot implements ISnapshot {
   read(h: Handle): Record {
     const result = this.tryRead(h);
     if (result === Record.empty) /* istanbul ignore next */
-      throw new Error(`accessed object doesn't exist in snapshot v${this.timestamp}`);
+      throw new Error(`object being accessed doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 
-  edit(h: Handle, prop: PropertyKey, value: Symbol): Record {
-    const result: Record = this.tryEdit(h, prop, value);
+  write(h: Handle, prop: PropertyKey, value: Symbol): Record {
+    const result: Record = this.tryWrite(h, prop, value);
     if (result === Record.empty) /* istanbul ignore next */
-      throw new Error(`edited object doesn't exist in snapshot v${this.timestamp}`);
+      throw new Error(`object being changed doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 
   tryRead(h: Handle): Record {
-    let r: Record | undefined = h.editing;
+    let r: Record | undefined = h.changing;
     if (r && r.snapshot !== this) {
       r = this.changeset.get(h);
       if (r)
-        h.editing = r; // remember last edit record
+        h.changing = r; // remember last changing record
     }
     if (!r) {
       r = h.head;
@@ -58,7 +58,7 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  tryEdit(h: Handle, prop: PropertyKey, value: any): Record {
+  tryWrite(h: Handle, prop: PropertyKey, value: any): Record {
     if (this.completed)
       throw new Error("object can only be modified inside transaction");
     let r: Record = this.tryRead(h);
@@ -69,8 +69,8 @@ export class Snapshot implements ISnapshot {
         r = new Record(h.head, this, data);
         Reflect.set(r.data, RT_HANDLE, h);
         this.changeset.set(h, r);
-        h.editing = r;
-        h.editors++;
+        h.changing = r;
+        h.writers++;
       }
     }
     else
@@ -111,14 +111,14 @@ export class Snapshot implements ISnapshot {
     let counter: number = -1;
     if (head !== Record.empty && head.snapshot.timestamp > ours.snapshot.timestamp) {
       counter++;
-      const unmountTheirs: boolean = head.edits.has(RT_UNMOUNT);
+      const unmountTheirs: boolean = head.changes.has(RT_UNMOUNT);
       const merged = Utils.copyAllProps(head.data, {}); // create merged copy
-      ours.edits.forEach(prop => {
+      ours.changes.forEach(prop => {
         counter++;
         let theirs: Record = head;
         Utils.copyProp(ours.data, merged, prop);
         while (theirs !== Record.empty && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
-          if (theirs.edits.has(prop)) {
+          if (theirs.changes.has(prop)) {
             const diff = Utils.different(theirs.data[prop], ours.data[prop]);
             if (T.level >= 3) T.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
             if (diff)
@@ -142,7 +142,7 @@ export class Snapshot implements ISnapshot {
 
   static mergeObservers(target: Record, source: Record): void {
     source.observers.forEach((oo: Set<ICachedResult>, prop: PropertyKey) => {
-      if (!target.edits.has(prop)) {
+      if (!target.changes.has(prop)) {
         const existing: Set<ICachedResult> | undefined = target.observers.get(prop);
         const merged = existing || new Set<ICachedResult>();
         if (!existing)
@@ -160,16 +160,16 @@ export class Snapshot implements ISnapshot {
   checkin(error?: any): void {
     this._completed = true;
     this.changeset.forEach((r: Record, h: Handle) => {
-      r.edits.forEach(prop => CopyOnWrite.seal(r.data, h.proxy, prop));
+      r.changes.forEach(prop => CopyOnWrite.seal(r.data, h.proxy, prop));
       r.freeze();
-      h.editors--;
-      if (h.editors === 0)
-        h.editing = undefined;
+      h.writers--;
+      if (h.writers === 0)
+        h.changing = undefined;
       if (!error) {
         h.head = r;
         if (T.level >= 3) {
           const props: string[] = [];
-          r.edits.forEach(prop => props.push(prop.toString()));
+          r.changes.forEach(prop => props.push(prop.toString()));
           const s = props.join(", ");
           T.log("║", "•", r.prev.record !== Record.empty ? `${Hint.record(r.prev.record)}(${s}) is overwritten.` : `${Hint.record(r)}(${s}) is created.`);
         }

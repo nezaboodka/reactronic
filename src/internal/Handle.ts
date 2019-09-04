@@ -12,8 +12,8 @@ export class Handle {
   readonly proxy: any;
   hint: string;
   head: Record;
-  editing?: Record;
-  editors: number;
+  changing?: Record;
+  writers: number;
 
   constructor(stateless: any, proxy: any, virtualization: ProxyHandler<Handle>) {
     this.stateless = stateless;
@@ -21,8 +21,8 @@ export class Handle {
     this.proxy = proxy || new Proxy<Handle>(this, virtualization);
     this.hint = stateless.constructor.name;
     this.head = Record.empty;
-    this.editing = undefined;
-    this.editors = 0;
+    this.changing = undefined;
+    this.writers = 0;
   }
 
   static setHint<T>(obj: T, hint: string | undefined): T {

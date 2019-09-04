@@ -8,7 +8,7 @@ export class Record {
   readonly prev: { record: Record, backup?: Record };
   readonly snapshot: ISnapshot;
   readonly data: any;
-  readonly edits: Set<PropertyKey>;
+  readonly changes: Set<PropertyKey>;
   readonly conflicts: Map<PropertyKey, Record>;
   readonly observers: Map<PropertyKey, Set<ICachedResult>>;
   readonly outdated: Set<PropertyKey>;
@@ -17,7 +17,7 @@ export class Record {
     this.prev = { record: prev, backup: prev };
     this.snapshot = snapshot;
     this.data = data;
-    this.edits = new Set<PropertyKey>();
+    this.changes = new Set<PropertyKey>();
     this.conflicts = new Map<PropertyKey, Record>();
     this.observers = new Map<PropertyKey, Set<ICachedResult>>();
     this.outdated = new Set<PropertyKey>();
@@ -25,7 +25,7 @@ export class Record {
 
   static empty: Record;
 
-  static markEdited = function(r: Record, prop: PropertyKey, edited: boolean, value: any): void {
+  static markChanged = function(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
     /* istanbul ignore next */ return undef(); // to be redefined by Cache implementation
   };
 
@@ -35,7 +35,7 @@ export class Record {
 
   freeze<T, C>(): void {
     Object.freeze(this.data);
-    Utils.freezeSet(this.edits);
+    Utils.freezeSet(this.changes);
     Utils.freezeMap(this.conflicts);
     Object.freeze(this);
   }
