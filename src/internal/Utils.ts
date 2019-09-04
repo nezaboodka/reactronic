@@ -39,13 +39,13 @@ export class Utils {
     return target;
   }
 
-  static copyProp(source: any, target: any, prop: PropertyKey): void {
+  static copyProp(source: any, target: any, prop: PropertyKey): any {
     // let pd = Object.getOwnPropertyDescriptor(source, prop);
     // if (pd) {
     //   pd.writable = true;
     //   Object.defineProperty(target, prop, pd);
     // }
-    target[prop] = source[prop];
+    return target[prop] = source[prop];
   }
 
   static equal(oldValue: any, newValue: any): boolean {
@@ -70,7 +70,13 @@ export class Utils {
     let result: string = "";
     if (Array.isArray(value))
       result = `Array(${value.length})`;
-    else if (value)
+    else if (value instanceof Set)
+      result = `Set(${value.size})`;
+    else if (value instanceof Map)
+      result = `Map(${value.size})`;
+    else if (value === RT_CACHE)
+      result = `<renew>`;
+    else if (value !== undefined && value !== null)
       result = value.toString().slice(0, 20);
     else
       result = "◌";

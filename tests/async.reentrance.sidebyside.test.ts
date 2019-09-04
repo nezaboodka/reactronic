@@ -21,7 +21,7 @@ const expected: string[] = [
 ];
 
 test("async", async t => {
-  T.level = process.env.AVA_DEBUG === undefined ? 6 : /* istanbul ignore next */ 3;
+  T.level = process.env.AVA_DEBUG === undefined ? 6 : /* istanbul ignore next */ 5;
   const app = Transaction.run(() => new DemoView(new DemoModel()));
   app.model.load.rcache.configure({reentrant: ReentrantCall.RunSideBySide});
   try {
@@ -29,6 +29,7 @@ test("async", async t => {
     await app.print(); // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay));
     t.is(mon.counter, 3);
+    t.is(mon.workers.size, 3);
     await all(responses);
   }
   catch (error) { /* istanbul ignore next */
@@ -37,6 +38,7 @@ test("async", async t => {
   }
   finally {
     t.is(mon.counter, 0);
+    t.is(mon.workers.size, 0);
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */

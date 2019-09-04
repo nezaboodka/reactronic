@@ -7,7 +7,7 @@ export abstract class CopyOnWriteSet<T> extends Set<T> {
   delete(value: T): boolean { return super.delete.call(W<Set<T>>(this), value); }
   forEach(callbackfn: (value: T, value2: T, set: Set<T>) => void, thisArg?: any): void { super.forEach.call(R<Set<T>>(this), callbackfn, thisArg); }
   has(value: T): boolean { return super.has.call(R<Set<T>>(this), value); }
-  get size(): number { return R<Set<T>>(this).size; }
+  get size(): number { return super.size; }
   entries(): IterableIterator<[T, T]> { return super.entries.call(R<Set<T>>(this)); }
   keys(): IterableIterator<T> { return super.keys.call(R<Set<T>>(this)); }
   values(): IterableIterator<T> { return super.values.call(R<Set<T>>(this)); }

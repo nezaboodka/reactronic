@@ -30,6 +30,7 @@ export class Binding<T> {
     if (Object.isFrozen(value)) /* istanbul ignore next */
       throw new Error("copy-on-write collection cannot be referenced from multiple objects");
     const self: any = value;
+    if (T.level >= 5) T.log("║", "", ` Sealing for copy-on-write: ${owner.constructor.name}.${prop.toString()}`);
     const binding = new Binding<T>(owner, prop, value, clone);
     self[RT_BINDING] = binding;
     Object.setPrototypeOf(value, proto);

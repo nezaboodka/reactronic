@@ -207,8 +207,8 @@ function initRecordData(h: Handle, mode: Mode, stateless: any, record: Record): 
 
 function initRecordProp(mode: Mode, configTable: any, prop: PropertyKey, r: Record, stateless: any): void {
   if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless) {
-    Utils.copyProp(stateless, r.data, prop);
-    Record.markChanged(r, prop, true, RT_HANDLE);
+    const value = Utils.copyProp(stateless, r.data, prop);
+    Record.markChanged(r, prop, true, value);
   }
 }
 

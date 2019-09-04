@@ -36,6 +36,7 @@ test("async", async t => {
     await app.print(); // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay));
     t.is(mon.counter, 1);
+    t.is(mon.workers.size, 1);
     await all(responses);
   }
   catch (error) { /* istanbul ignore next */
@@ -44,6 +45,7 @@ test("async", async t => {
   }
   finally {
     t.is(mon.counter, 0);
+    t.is(mon.workers.size, 0);
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */

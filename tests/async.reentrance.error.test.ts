@@ -29,6 +29,7 @@ test("async", async t => {
     const first = app.model.load(requests[0].url, requests[0].delay);
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)); });
     t.is(mon.counter, 1);
+    t.is(mon.workers.size, 1);
     await first;
   }
   catch (error) { /* istanbul ignore next */
@@ -37,6 +38,7 @@ test("async", async t => {
   }
   finally {
     t.is(mon.counter, 0);
+    t.is(mon.workers.size, 0);
     t.is((resultof(app.render) || []).length, 2);
     await sleep(400);
     await ReactiveCache.unmount(app, app.model).whenFinished(true);
