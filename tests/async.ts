@@ -3,7 +3,6 @@ import { stateful, transaction, cache, behavior, Renew, Monitor, monitor } from 
 import { sleep } from "./common";
 
 export const output: string[] = [];
-
 const demoMon = Monitor.create("demo");
 
 @stateful

@@ -1,9 +1,9 @@
 ﻿import test from "ava";
 import { ReactiveCache, Transaction, Trace as T } from "../src/z.index";
 import { Person } from "./common";
-import { DemoModel, DemoView, actual } from "./basic";
+import { DemoModel, DemoView, output } from "./basic";
 
-const etalon: string[] = [
+const expected: string[] = [
   "Filter: Jo",
   "John's children: Billy, Barry, Steve",
   "Filter: ",
@@ -76,7 +76,7 @@ test("basic", t => {
   finally { // cleanup
     ReactiveCache.unmount(app, app.model);
   }
-  const n: number = Math.max(actual.length, etalon.length);
+  const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++)
-    t.is(actual[i], etalon[i]);
+    t.is(output[i], expected[i]);
 });

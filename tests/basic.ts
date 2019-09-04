@@ -1,7 +1,7 @@
 ﻿import { stateful, stateless, transaction, cache, behavior, Renew } from "../src/z.index";
 import { Person } from "./common";
 
-export const actual: string[] = [];
+export const output: string[] = [];
 
 @stateful
 export class DemoModel {
@@ -70,6 +70,6 @@ export class DemoView {
 
   @cache @behavior(Renew.Immediately)
   print(): void {
-    this.render().forEach(x => actual.push(x));
+    this.render().forEach(x => output.push(x));
   }
 }
