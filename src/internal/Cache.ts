@@ -240,9 +240,9 @@ export class CachedResult implements ICachedResult {
         const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
         const trap: Function = Reflect.get(proxy, this.member, proxy);
         const cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
-        const cc: CachedCall = cachedMethod.call(true);
-        if (cc.cache.ret instanceof Promise)
-          cc.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
+        const call: CachedCall = cachedMethod.call(true);
+        if (call.cache.ret instanceof Promise)
+          call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
       }
     }
     else
