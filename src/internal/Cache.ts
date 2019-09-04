@@ -454,12 +454,8 @@ export class CachedResult implements ICachedResult {
 
   static differentImpl(oldValue: any, newValue: any): boolean {
     let result: boolean;
-    if (oldValue instanceof CachedResult) {
-      if (newValue instanceof CachedResult)
-        result = false; // consistency of caches is checked via dependencies
-      else
-        result = true;
-    }
+    if (oldValue instanceof CachedResult)
+      result = !(newValue instanceof CachedResult);
     else
       result = !Utils.equal(oldValue, newValue);
     return result;
