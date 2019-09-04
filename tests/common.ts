@@ -2,14 +2,6 @@
 
 import { stateful } from "../src/z.index";
 
-// sleep
-
-export async function sleep(timeout: number): Promise<void> {
-  return new Promise<void>(function(resolve) {
-    setTimeout(function() { resolve(); }, timeout);
-  });
-}
-
 // Person
 
 @stateful

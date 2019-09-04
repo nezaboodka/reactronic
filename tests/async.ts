@@ -1,6 +1,4 @@
-﻿import { all, Trace as T } from "../src/internal/z.index";
-import { stateful, transaction, cache, behavior, Renew, Monitor, monitor } from "../src/z.index";
-import { sleep } from "./common";
+﻿import { stateful, transaction, cache, behavior, Renew, Monitor, monitor, all, sleep, Trace as T } from "../src/z.index";
 
 export const output: string[] = [];
 const demoMon = Monitor.create("demo");

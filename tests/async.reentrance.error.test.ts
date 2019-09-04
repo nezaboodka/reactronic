@@ -1,6 +1,5 @@
 ﻿import test from "ava";
-import { sleep } from "./common";
-import { ReactiveCache, Transaction, ReentrantCall, Trace as T } from "../src/z.index";
+import { ReactiveCache, Transaction, ReentrantCall, sleep, Trace as T } from "../src/z.index";
 import { DemoModel, DemoView, output } from "./async";
 
 const requests: Array<{ url: string, delay: number }> = [
