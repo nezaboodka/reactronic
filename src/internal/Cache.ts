@@ -1,6 +1,6 @@
 import { Utils, Trace as T, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
-import { ReactiveCache } from "../ReactiveCache";
-export { ReactiveCache, resultof } from "../ReactiveCache";
+import { Cache } from "../ReactiveCache";
+export { Cache, resultof, cacheof } from "../ReactiveCache";
 import { Config, Renew, ReentrantCall, SeparateFrom } from "../Config";
 import { Transaction } from "../Transaction";
 import { Monitor } from "../Monitor";
@@ -8,7 +8,7 @@ import { Monitor } from "../Monitor";
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER;
 type CachedCall = { cache: CachedResult, record: Record, ok: boolean };
 
-class CachedMethod extends ReactiveCache<any> {
+class CachedMethod extends Cache<any> {
   private readonly handle: Handle;
   private readonly empty: CachedResult;
 
@@ -221,8 +221,8 @@ export class CachedResult implements ICachedResult {
 
   hint(tranless?: boolean): string { return `${Hint.record(this.record, tranless, false, this.member)}`; }
 
-  static get(method: F<any>): ReactiveCache<any> {
-    const impl: ReactiveCache<any> | undefined = Utils.get(method, RT_CACHE);
+  static get(method: F<any>): Cache<any> {
+    const impl: Cache<any> | undefined = Utils.get(method, RT_CACHE);
     if (!impl)
       throw new Error("given method is not a reactronic cache");
     return impl;

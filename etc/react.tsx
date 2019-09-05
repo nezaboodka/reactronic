@@ -1,8 +1,8 @@
 import * as React from 'react';
 // import { stateful, transaction, cache, config, Renew, SeparateFrom,
 //   Transaction, ReactiveCache, Trace} from 'reactronic';
-import { stateful, transaction, cache, behavior, Renew, SeparateFrom,
-  Transaction, ReactiveCache, Trace} from '../src/z.index';
+import { stateful, transaction, cache, behavior, cacheof,
+  Renew, SeparateFrom, Transaction, Cache, Trace} from '../src/z.index';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, tracing: number = 0, tran?: Transaction): JSX.Element {
   const [jsx] = React.useState(() => tran ? tran.view(createJsx, tracing) : createJsx(tracing));
@@ -27,7 +27,7 @@ class Jsx {
 
   @cache @behavior(Renew.Immediately)
   trigger(nextRevision: number, refresh: (nextRevision: number) => void): void {
-    if (this.jsx.rcache.isOutdated)
+    if (cacheof(this.jsx).isOutdated)
       refresh(nextRevision);
   }
 }
@@ -38,10 +38,10 @@ function createJsx(tracing: number): Jsx {
   return Transaction.runAs<Jsx>(dbg ? `${hint}` : "new-jsx", SeparateFrom.Reaction, 0, () => {
     let jsx = new Jsx();
     if (dbg) {
-      ReactiveCache.setTraceHint(jsx, hint);
-      jsx.render.rcache.configure({tracing});
-      jsx.jsx.rcache.configure({tracing});
-      jsx.trigger.rcache.configure({tracing});
+      Cache.setTraceHint(jsx, hint);
+      cacheof(jsx.render).configure({tracing});
+      cacheof(jsx.jsx).configure({tracing});
+      cacheof(jsx.trigger).configure({tracing});
     }
     return jsx;
   });
@@ -52,7 +52,7 @@ function unmountEffect(jsx: Jsx): React.EffectCallback {
     // did mount
     return () => {
       // will unmount
-      ReactiveCache.unmount(jsx);
+      Cache.unmount(jsx);
     };
   };
 }

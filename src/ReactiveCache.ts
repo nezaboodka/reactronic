@@ -3,10 +3,15 @@ import { Transaction } from "./Transaction";
 import { Config } from "./Config";
 
 export function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined {
-  return ReactiveCache.get<T>(method).getResult(...args);
+  const cache: Cache<T> = cacheof(method) as any;
+  return cache.getResult(...args);
 }
 
-export abstract class ReactiveCache<T> {
+export function cacheof<T>(method: F<T>, ...args: any[]): Cache<T> {
+  return Cache.get<T>(method);
+}
+
+export abstract class Cache<T> {
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
   abstract readonly stamp: number;
@@ -14,23 +19,8 @@ export abstract class ReactiveCache<T> {
   abstract getResult(...args: any[]): T | undefined;
   abstract readonly isOutdated: boolean;
   abstract markOutdated(cause: string | undefined): boolean;
-  static get<T>(method: F<Promise<T>>): ReactiveCache<T>;
-  static get<T>(method: F<T>): ReactiveCache<T> { return CachedResult.get(method); }
+  static get<T>(method: F<T>): Cache<T> { return CachedResult.get(method); }
   static unmount(...objects: any[]): Transaction { return CachedResult.unmount(...objects); }
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name); }
   static getTraceHint<T extends object>(obj: T): string | undefined { return Handle.getHint(obj); }
 }
-
-// Function.rcache
-
-declare global {
-  interface Function {
-    readonly rcache: ReactiveCache<any>;
-  }
-}
-
-Object.defineProperty(Function.prototype, "rcache", {
-  get(): ReactiveCache<any> { return ReactiveCache.get(this); },
-  configurable: false,
-  enumerable: false,
-});

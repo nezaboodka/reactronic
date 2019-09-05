@@ -1,5 +1,5 @@
 ﻿import test from "ava";
-import { ReactiveCache, Transaction, Renew, Trace as T } from "../src/z.index";
+import { Transaction, Renew, Cache, cacheof, Trace as T } from "../src/z.index";
 import { Person } from "./common";
 import { DemoModel, DemoView, output } from "./basic";
 
@@ -18,17 +18,18 @@ test("basic", t => {
   // Simple actions
   const app = Transaction.run(() => new DemoView(new DemoModel()));
   try {
-    t.is(app.render.rcache.isOutdated, true);
+    const rendering = cacheof(app.render);
+    t.is(rendering.isOutdated, true);
     app.model.loadUsers();
     const daddy: Person = app.model.users[0];
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
-    t.is(app.render.rcache.isOutdated, true);
+    t.is(rendering.isOutdated, true);
     app.print(); // trigger first run
-    t.is(app.render.rcache.isOutdated, false);
-    const stamp = app.render.rcache.stamp;
+    t.is(rendering.isOutdated, false);
+    const stamp = rendering.stamp;
     app.render();
-    t.is(app.render.rcache.stamp, stamp);
+    t.is(rendering.stamp, stamp);
     // Multi-part action
     const tran1 = new Transaction("tran1");
     tran1.run(() => {
@@ -48,7 +49,7 @@ test("basic", t => {
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     t.is(daddy.children.length, 3);
-    t.is(app.render.rcache.isOutdated, false);
+    t.is(rendering.isOutdated, false);
     tran1.run(() => {
       t.is(daddy.age, 40);
       daddy.age += 5;
@@ -66,13 +67,13 @@ test("basic", t => {
       t.is(daddy.age, 45);
       t.is(daddy.children.length, 3);
     });
-    t.is(app.render.rcache.isOutdated, false);
+    t.is(rendering.isOutdated, false);
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     t.is(daddy.attributes.size, 0);
     tran1.commit(); // changes are applied, reactions are outdated/recomputed
-    t.is(app.render.rcache.isOutdated, false);
-    t.not(app.render.rcache.stamp, stamp);
+    t.is(rendering.isOutdated, false);
+    t.not(rendering.stamp, stamp);
     t.is(daddy.name, "John Smith");
     t.is(daddy.age, 45);
     t.is(daddy.attributes.size, 2);
@@ -87,17 +88,17 @@ test("basic", t => {
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     // Check protection
-    t.throws(() => { daddy.setParent.rcache.configure({latency: 0}); });
-    t.throws(() => { console.log(daddy.setParent.rcache.config.monitor); });
+    t.throws(() => { cacheof(daddy.setParent).configure({latency: 0}); });
+    t.throws(() => { console.log(cacheof(daddy.setParent).config.monitor); });
     // Other
-    t.is(app.render.rcache.config.latency, Renew.OnDemand);
-    t.is(app.render.rcache.error, undefined);
-    t.is(ReactiveCache.getTraceHint(app), "DemoView");
-    ReactiveCache.setTraceHint(app, "App");
-    t.is(ReactiveCache.getTraceHint(app), "App");
+    t.is(rendering.config.latency, Renew.OnDemand);
+    t.is(rendering.error, undefined);
+    t.is(Cache.getTraceHint(app), "DemoView");
+    Cache.setTraceHint(app, "App");
+    t.is(Cache.getTraceHint(app), "App");
   }
   finally { // cleanup
-    ReactiveCache.unmount(app, app.model);
+    Cache.unmount(app, app.model);
   }
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++)

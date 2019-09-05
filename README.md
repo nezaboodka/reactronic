@@ -291,11 +291,12 @@ class Transaction {
   static readonly active: Transaction;
 }
 
-// ReactiveCache
+// Cache
 
 function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
+function cacheof<T>(method: F<T>, ...args: any[]): Cache<T>;
 
-abstract class ReactiveCache<T> {
+abstract class Cache<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
   readonly error: any;
@@ -305,11 +306,5 @@ abstract class ReactiveCache<T> {
   static get<T>(method: F<Promise<T>>): ReactiveCache<T>;
   static get<T>(method: F<T>): ReactiveCache<T>;
   static unmount(...objects: any[]): Transaction;
-}
-
-declare global {
-  interface Function {
-    readonly rcache: ReactiveCache; // = ReactiveCache.get(this)
-  }
 }
 ```

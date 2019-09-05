@@ -1,5 +1,5 @@
 ﻿import test from "ava";
-import { ReactiveCache, Transaction, ReentrantCall, all, sleep, Trace as T } from "../src/z.index";
+import { Transaction, ReentrantCall, Cache, cacheof, all, sleep, Trace as T } from "../src/z.index";
 import { DemoModel, DemoView, mon, output } from "./async";
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -30,7 +30,7 @@ const expected: string[] = [
 test("async", async t => {
   T.level = process.env.AVA_DEBUG === undefined ? 6 : /* istanbul ignore next */ 3;
   const app = Transaction.run(() => new DemoView(new DemoModel()));
-  app.model.load.rcache.configure({reentrant: ReentrantCall.WaitAndRestart});
+  cacheof(app.model.load).configure({reentrant: ReentrantCall.WaitAndRestart});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; });
     await app.print(); // trigger first run
@@ -47,7 +47,7 @@ test("async", async t => {
     t.is(mon.counter, 0);
     t.is(mon.workers.size, 0);
     await sleep(400);
-    await ReactiveCache.unmount(app, app.model).whenFinished(true);
+    await Cache.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */
   if (T.level >= 1 && T.level <= 5) {
     console.log("\nResults:\n");
