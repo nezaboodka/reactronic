@@ -56,8 +56,9 @@ export class Transaction {
     return this;
   }
 
-  cancel(error?: Error, retryAfter?: Transaction): Transaction {
-    this._run(Transaction.seal, this, error || RT_IGNORE, retryAfter || Transaction.none);
+  cancel(error: Error, retryAfterOrIgnore?: Transaction | null): Transaction {
+    this._run(Transaction.seal, this, error,
+      retryAfterOrIgnore === null ? Transaction.none : retryAfterOrIgnore);
     return this;
   }
 
@@ -238,7 +239,7 @@ export class Transaction {
     this.snapshot.checkin(this.error);
     this.snapshot.archive();
     if (this.resultPromise)
-      if (this.error !== RT_IGNORE)
+      if (!this.retryAfter)
         this.resultReject(this.error);
       else
         this.resultResolve();
@@ -295,5 +296,3 @@ export class Transaction {
     Record.empty = empty;
   }
 }
-
-const RT_IGNORE = new Error("transaction is canceled and will be silently ignored");

@@ -127,7 +127,7 @@ class CachedMethod extends Cache<any> {
           // TODO: "c.outdated.recaching = caller" in order serialize all the transactions
           break;
         case ReentrantCall.CancelPrevious:
-          prev.tran.cancel();
+          prev.tran.cancel(new Error(`transaction t${prev.tran.id} (${prev.tran.hint}) is canceled by t${caller.id} (${caller.hint}) and will be silently ignored`), null);
           c.outdated.recaching = undefined;
           break;
         case ReentrantCall.RunSideBySide:
