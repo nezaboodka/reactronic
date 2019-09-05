@@ -88,15 +88,9 @@ test("basic", t => {
     tran1.undo();
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
-    // Check protection
+    // Check protection and error handling
     t.throws(() => { cacheof(daddy.setParent).configure({latency: 0}); }, "given method is not a reactronic cache");
     t.throws(() => { console.log(cacheof(daddy.setParent).config.monitor); }, "given method is not a reactronic cache");
-    // Other
-    t.is(rendering.config.latency, Renew.OnDemand);
-    t.is(rendering.error, undefined);
-    t.is(Cache.getTraceHint(app), "DemoView");
-    Cache.setTraceHint(app, "App");
-    t.is(Cache.getTraceHint(app), "App");
     const tran2 = new Transaction("tran2");
     t.throws(() => tran2.run(() => { throw new Error("test"); }), "test");
     t.throws(() => tran2.commit(), "cannot commit transaction that is already canceled: Error: test");
@@ -106,6 +100,12 @@ test("basic", t => {
       tran3.run(nop);
     }), "test");
     t.throws(() => tran3.commit(), "cannot commit transaction that is already canceled: Error: test");
+    // Other
+    t.is(rendering.config.latency, Renew.OnDemand);
+    t.is(rendering.error, undefined);
+    t.is(Cache.getTraceHint(app), "DemoView");
+    Cache.setTraceHint(app, "App");
+    t.is(Cache.getTraceHint(app), "App");
   }
   finally { // cleanup
     Cache.unmount(app, app.model);
