@@ -80,7 +80,7 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  checkout(): void {
+  acquire(): void {
     if (!this.completed && this.timestamp === MAX_TIMESTAMP) {
       this._timestamp = Snapshot.headTimestamp;
       Snapshot.pending.push(this);
@@ -159,7 +159,7 @@ export class Snapshot implements ISnapshot {
     });
   }
 
-  checkin(error?: any): void {
+  complete(error?: any): void {
     this._completed = true;
     this.changeset.forEach((r: Record, h: Handle) => {
       r.changes.forEach(prop => CopyOnWrite.seal(r.data, h.proxy, prop));

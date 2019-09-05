@@ -172,7 +172,7 @@ export class Transaction {
         T.level = this.tracing;
       T.color = T.level >= 2 ? 31 + (this.snapshot.id) % 6 : 37;
       T.prefix = `t${this.id}`; // TODO: optimize to avoid toString
-      this.snapshot.checkout();
+      this.snapshot.acquire();
       result = func(...args);
       if (this.sealed && this.workers === 1) {
         if (!this.error)
@@ -229,7 +229,7 @@ export class Transaction {
   }
 
   private performCommit(): void {
-    this.snapshot.checkin();
+    this.snapshot.complete();
     Snapshot.applyDependencies(this.snapshot.changeset, this.reaction.effect);
     this.snapshot.archive();
     if (this.resultPromise)
@@ -237,7 +237,7 @@ export class Transaction {
   }
 
   private performCancel(): void {
-    this.snapshot.checkin(this.error);
+    this.snapshot.complete(this.error);
     this.snapshot.archive();
     if (this.resultPromise)
       if (!this.retryAfter)
@@ -285,8 +285,8 @@ export class Transaction {
 
   static _init(): void {
     const none = new Transaction("none", SeparateFrom.All, 0);
-    none.sealed = true;
-    none.snapshot.checkin();
+    none.sealed = true; // semi-hack
+    none.snapshot.complete();
     Transaction.none = none;
     Transaction.current = none;
     const empty = new Record(Record.empty, none.snapshot, {});
