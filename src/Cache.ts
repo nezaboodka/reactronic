@@ -3,8 +3,7 @@ import { Transaction } from "./Transaction";
 import { Config } from "./Config";
 
 export function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined {
-  const cache: Cache<T> = cacheof(method) as any;
-  return cache.getResult(...args);
+  return (cacheof(method) as any).getResult(...args);
 }
 
 export function cacheof<T>(method: F<T>, ...args: any[]): Cache<T> {
