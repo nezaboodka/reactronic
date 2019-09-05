@@ -86,7 +86,7 @@ export class Transaction {
   }
 
   undo(): void {
-    const hint = T.level >= 2 ? `Tran#${this.snapshot.hint}.undo` : "noname";
+    const hint = T.level >= 2 ? `Tran#${this.snapshot.hint}.undo` : /* instabul ignore next */ "noname";
     Transaction.runAs<void>(hint, SeparateFrom.Reaction, 0, () => {
       this.snapshot.changeset.forEach((r: Record, h: Handle) => {
         r.changes.forEach(prop => {
@@ -243,7 +243,7 @@ export class Transaction {
   }
 
   static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICachedResult[] }, tracing: number = 0): void {
-    const name = T.level >= 2 ? `${hint} - REACTION(${reaction.effect.length})` : "noname";
+    const name = T.level >= 2 ? `${hint} - REACTION(${reaction.effect.length})` : /* istanbul ignore next */ "noname";
     const separate = reaction.tran ? SeparateFrom.Reaction : SeparateFrom.Reaction | SeparateFrom.Parent;
     Transaction.runAs<void>(name, separate, tracing, () => {
       if (reaction.tran === undefined)
