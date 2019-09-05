@@ -33,8 +33,8 @@ export class Monitor {
       this._idle = true;
   }
 
-  static create(hint?: string): Monitor {
-    return Transaction.run(() => Handle.setHint(new Monitor(), hint));
+  static create(hint?: string, prolonged: boolean = false, separate: SeparateFrom = SeparateFrom.All): Monitor {
+    return Transaction.run(() => Handle.setHint(new Monitor(prolonged, separate), hint));
   }
 }
 
