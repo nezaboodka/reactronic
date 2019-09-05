@@ -30,13 +30,13 @@ test("basic", t => {
     const stamp = rendering.stamp;
     app.render();
     t.is(rendering.stamp, stamp);
-    // Multi-part action
+    // Multi-part transaction
     const tran1 = new Transaction("tran1");
     tran1.run(() => {
       t.throws(() => tran1.commit(), "cannot commit transaction having active workers");
       app.model.shared = app.shared = tran1.hint;
       daddy.age += 2; // causes no execution of DemoApp.render
-      daddy.name = "John Smith"; // causes execution of DemoApp.render upon action commit
+      daddy.name = "John Smith"; // causes execution of DemoApp.render upon commit
       daddy.children[0].name = "Barry"; // Barry
       daddy.children[1].name = "William Smith"; // Billy
       daddy.children[2].name = "Steven Smith"; // Steve
@@ -78,13 +78,13 @@ test("basic", t => {
     t.is(daddy.name, "John Smith");
     t.is(daddy.age, 45);
     t.is(daddy.attributes.size, 2);
-    // Protection from modification outside of action
+    // Protection from modification outside of transaction
     t.throws(() => {
       if (daddy.emails)
         daddy.emails.push("dad@mail.com");
     }, "stateful properties can only be modified inside transaction");
     t.throws(() => tran1.run(/* istanbul ignore next */ () => { /* nope */ }), "cannot run transaction that is already sealed");
-    // Undo action
+    // Undo transaction
     tran1.undo();
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
