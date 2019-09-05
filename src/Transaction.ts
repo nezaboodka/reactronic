@@ -174,11 +174,12 @@ export class Transaction {
       T.prefix = `t${this.id}`; // TODO: optimize to avoid toString
       this.snapshot.checkout();
       result = func(...args);
-      if (this.sealed && this.workers === 1)
+      if (this.sealed && this.workers === 1) {
         if (!this.error)
           this.checkForConflicts();
         else if (!this.retryAfter)
           throw this.error;
+      }
     }
     catch (e) {
       this.error = this.error || e; // remember first error only
