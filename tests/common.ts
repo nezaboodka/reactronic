@@ -48,3 +48,6 @@ export class Person {
         x.setParent(this);
   }
 }
+
+/* istanbul ignore next */
+export function nop(): void { /* do nothing */ }

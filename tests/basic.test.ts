@@ -1,6 +1,6 @@
 ﻿import test from "ava";
 import { Transaction, Renew, Cache, cacheof, Trace as T } from "../src/z.index";
-import { Person } from "./common";
+import { Person, nop } from "./common";
 import { DemoModel, DemoView, output } from "./basic";
 
 const expected: string[] = [
@@ -101,7 +101,10 @@ test("basic", t => {
     t.throws(() => tran2.run(() => { throw new Error("test"); }), "test");
     t.throws(() => tran2.commit(), "cannot commit transaction that is already canceled: Error: test");
     const tran3 = new Transaction("tran3");
-    tran3.run(() => tran3.cancel(new Error("test")));
+    t.throws(() => tran3.run(() => {
+      tran3.cancel(new Error("test"));
+      tran3.run(nop);
+    }), "test");
     t.throws(() => tran3.commit(), "cannot commit transaction that is already canceled: Error: test");
   }
   finally { // cleanup
