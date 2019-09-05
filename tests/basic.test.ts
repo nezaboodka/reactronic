@@ -98,9 +98,11 @@ test("basic", t => {
     Cache.setTraceHint(app, "App");
     t.is(Cache.getTraceHint(app), "App");
     const tran2 = new Transaction("tran2");
-    tran2.run(() => { /* do nothing */ });
-    tran2.cancel();
-    t.throws(() => tran2.commit(), "cannot commit transaction that is already canceled: Error: transaction is canceled and will be silently ignored");
+    t.throws(() => tran2.run(() => { throw new Error("test"); }), "test");
+    t.throws(() => tran2.commit(), "cannot commit transaction that is already canceled: Error: test");
+    // const tran3 = new Transaction("tran3");
+    // t.throws(() => tran3.run(() => tran3.cancel(new Error("test"))), "test");
+    // t.throws(() => tran3.commit(), "cannot commit transaction that is already canceled: Error: test");
   }
   finally { // cleanup
     Cache.unmount(app, app.model);

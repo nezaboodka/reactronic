@@ -9,7 +9,7 @@ export class Transaction {
   private workers: number = 0;
   private sealed: boolean = false;
   private error?: Error = undefined;
-  private awaiting?: Transaction = undefined;
+  private retryAfter?: Transaction = undefined;
   private resultPromise?: Promise<void> = undefined;
   private resultResolve: (value?: void) => void = undef;
   private resultReject: (reason: any) => void = undef;
@@ -54,13 +54,8 @@ export class Transaction {
     return this;
   }
 
-  cancel(error: Error | undefined = undefined, retryAfter: Transaction = Transaction.none): Transaction {
-    if (!this.error) {
-      this.error = error || RT_IGNORE;
-      this.awaiting = retryAfter;
-    }
-    if (!this.sealed)
-      this.run(Transaction.seal, this);
+  cancel(error?: Error, retryAfter?: Transaction): Transaction {
+    this._run(Transaction.seal, this, error || RT_IGNORE, retryAfter || Transaction.none);
     return this;
   }
 
@@ -132,7 +127,7 @@ export class Transaction {
       t.cancel(error);
       throw error;
     }
-    if (t.error && !t.awaiting)
+    if (t.error && !t.retryAfter)
       throw t.error;
     return result;
   }
@@ -150,9 +145,9 @@ export class Transaction {
       return result;
     }
     catch (error) {
-      if (this.awaiting && this.awaiting !== Transaction.none) {
+      if (this.retryAfter && this.retryAfter !== Transaction.none) {
         if (T.level >= 2) T.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
-        await this.awaiting.whenFinished(true);
+        await this.retryAfter.whenFinished(true);
         if (T.level >= 2) T.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
         return Transaction.runAs<T>(this.hint, SeparateFrom.Reaction | SeparateFrom.Parent, this.tracing, func, ...args);
       }
@@ -209,7 +204,11 @@ export class Transaction {
     return result;
   }
 
-  private static seal(t: Transaction): void {
+  private static seal(t: Transaction, error?: Error, retryAfter?: Transaction): void {
+    if (!t.error && error) {
+      t.error = error;
+      t.retryAfter = retryAfter;
+    }
     t.sealed = true;
   }
 
