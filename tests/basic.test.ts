@@ -97,6 +97,10 @@ test("basic", t => {
     t.is(Cache.getTraceHint(app), "DemoView");
     Cache.setTraceHint(app, "App");
     t.is(Cache.getTraceHint(app), "App");
+    const tran2 = new Transaction("tran2");
+    tran2.run(() => { /* do nothing */ });
+    tran2.cancel();
+    t.throws(() => tran2.commit(), "cannot commit transaction that is already canceled: Error: transaction is canceled and will be silently ignored");
   }
   finally { // cleanup
     Cache.unmount(app, app.model);
