@@ -57,7 +57,7 @@ class CachedMethod extends Cache<any> {
   }
 
   private read(markViewed: boolean, args?: any[]): CachedCall {
-    const ctx = Snapshot.active();
+    const ctx = Snapshot.current();
     const member = this.empty.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CachedResult = r.data[member] || this.empty;
@@ -71,7 +71,7 @@ class CachedMethod extends Cache<any> {
   }
 
   private write(): CachedCall {
-    const ctx = Snapshot.active();
+    const ctx = Snapshot.current();
     const member = this.empty.member;
     const r: Record = ctx.write(this.handle, member, RT_CACHE);
     let c: CachedResult = r.data[member] || this.empty;
@@ -116,7 +116,7 @@ class CachedMethod extends Cache<any> {
   private reenter(c: CachedResult): Error | undefined {
     let error: Error | undefined = undefined;
     const prev = c.outdated.recaching;
-    const caller = Transaction.active;
+    const caller = Transaction.current;
     if (prev)
       switch (c.config.reentrant) {
         case ReentrantCall.ExitWithError:
@@ -198,7 +198,7 @@ export class CachedResult implements ICachedResult {
 
   constructor(record: Record, member: PropertyKey, init: CachedResult | ConfigRecord) {
     this.margin = T.margin + 1;
-    this.tran = Transaction.active;
+    this.tran = Transaction.current;
     this.record = record;
     this.member = member;
     if (init instanceof CachedResult) {
@@ -267,7 +267,7 @@ export class CachedResult implements ICachedResult {
       r.observers.delete(prop);
       if (effect.length > 0)
         Transaction.triggerRecacheAll(Hint.record(r), r.snapshot.timestamp,
-          { tran: Transaction.active, effect });
+          { tran: Transaction.current, effect });
     }
   }
 
@@ -319,7 +319,7 @@ export class CachedResult implements ICachedResult {
   }
 
   isOutdated(): boolean { // TODO: should depend on caller context
-    const ctx = Snapshot.active();
+    const ctx = Snapshot.current();
     return this.outdated.timestamp <= ctx.timestamp;
   }
 
@@ -329,7 +329,7 @@ export class CachedResult implements ICachedResult {
       this.outdated.timestamp = stamp;
       // TODO: make cache readonly
       // Cascade invalidation
-      const upper: Record = Snapshot.active().read(Utils.get(this.record.data, RT_HANDLE));
+      const upper: Record = Snapshot.current().read(Utils.get(this.record.data, RT_HANDLE));
       if (upper.data[this.member] === this) { // TODO: Consider better solution?
         let r: Record = upper;
         while (r !== Record.empty && !r.outdated.has(this.member)) {
@@ -433,9 +433,9 @@ export class CachedResult implements ICachedResult {
   monitorLeave(mon: Monitor | null): void {
     if (mon) {
       if (mon.prolonged) {
-        const outer = Transaction.active;
+        const outer = Transaction.current;
         try {
-          Transaction.active = Transaction.none; // Workaround?
+          Transaction.current = Transaction.none; // Workaround?
           const leave = () => {
             CachedMethod.run(undefined, Transaction.runAs, "Monitor.leave",
               mon.separate, 0, () => mon.leave(this));
@@ -443,7 +443,7 @@ export class CachedResult implements ICachedResult {
           this.tran.whenFinished(false).then(leave, leave);
         }
         finally {
-          Transaction.active = outer;
+          Transaction.current = outer;
         }
       }
       else
@@ -468,9 +468,9 @@ export class CachedResult implements ICachedResult {
   }
 
   static unmount(...objects: any[]): Transaction {
-    let t: Transaction = Transaction.active;
+    let t: Transaction = Transaction.current;
     Transaction.runAs<void>("unmount", SeparateFrom.Reaction, 0, (): void => {
-      t = Transaction.active;
+      t = Transaction.current;
       for (const x of objects) {
         if (Utils.get(x, RT_HANDLE))
           x[RT_UNMOUNT] = RT_UNMOUNT;
@@ -487,7 +487,7 @@ Promise.prototype.then = function(
   this: any, onsuccess?: ((value: any) => any | PromiseLike<any>) | undefined | null,
   onfailure?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
-  const t = Transaction.active;
+  const t = Transaction.current;
   if (!t.isFinished()) {
     if (onsuccess) {
       // if (Debug.verbosity >= 5) Debug.log("║", "", ` Promise.then (${(this as any)[RT_UNMOUNT]})`);
@@ -506,7 +506,7 @@ function init(): void {
   Record.markChanged = CachedResult.markChanged; // override
   Snapshot.applyDependencies = CachedResult.applyDependencies; // override
   Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
-  Snapshot.active = Transaction._getActiveSnapshot; // override
+  Snapshot.current = Transaction._getActiveSnapshot; // override
   Transaction._init();
   // if (T.level >= 2) T.log("", "", "Reactronic is initialized", 0);
 }

@@ -3,7 +3,7 @@ import { SeparateFrom } from "./Config";
 
 export class Transaction {
   static none: Transaction;
-  static active: Transaction;
+  static current: Transaction;
   private readonly separate: SeparateFrom;
   private readonly snapshot: Snapshot; // assigned in constructor
   private workers: number = 0;
@@ -29,7 +29,7 @@ export class Transaction {
   run<T>(func: F<T>, ...args: any[]): T {
     if (this.error) // prevent from continuing canceled transaction
       throw this.error;
-    if (this.sealed && Transaction.active !== this)
+    if (this.sealed && Transaction.current !== this)
       throw new Error("cannot run transaction that is already sealed");
     return this._run(func, ...args);
   }
@@ -90,7 +90,7 @@ export class Transaction {
         r.changes.forEach(prop => {
           if (r.prev.backup) {
             const prevValue: any = r.prev.backup.data[prop];
-            const t: Record = Snapshot.active().tryWrite(h, prop, prevValue);
+            const t: Record = Snapshot.current().tryWrite(h, prop, prevValue);
             if (t !== Record.empty) {
               t.data[prop] = prevValue;
               const v: any = t.prev.record.data[prop];
@@ -108,19 +108,19 @@ export class Transaction {
 
   static runAs<T>(hint: string, separate: SeparateFrom, tracing: number, func: F<T>, ...args: any[]): T {
     const t: Transaction = Transaction.acquire(hint, separate, tracing);
-    const root = t !== Transaction.active;
+    const root = t !== Transaction.current;
     let result: any;
     try {
       result = t.run<T>(func, ...args);
       if (root) {
         if (result instanceof Promise) {
-          const outer = Transaction.active;
+          const outer = Transaction.current;
           try {
-            Transaction.active = Transaction.none;
+            Transaction.current = Transaction.none;
             result = t.autoretry(t.join(result), func, ...args);
           }
           finally {
-            Transaction.active = outer;
+            Transaction.current = outer;
           }
         }
         t.seal();
@@ -135,9 +135,9 @@ export class Transaction {
 
   private static acquire(hint: string, separate: SeparateFrom, tracing: number): Transaction {
     const startNew = Utils.hasAllFlags(separate, SeparateFrom.Parent)
-      || Utils.hasAllFlags(Transaction.active.separate, SeparateFrom.Children)
-      || Transaction.active.isFinished();
-    return startNew ? new Transaction(hint, separate, tracing) : Transaction.active;
+      || Utils.hasAllFlags(Transaction.current.separate, SeparateFrom.Children)
+      || Transaction.current.isFinished();
+    return startNew ? new Transaction(hint, separate, tracing) : Transaction.current;
   }
 
   private async autoretry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
@@ -160,14 +160,14 @@ export class Transaction {
   // Internal
 
   private _run<T>(func: F<T>, ...args: any[]): T {
-    const outer = Transaction.active;
+    const outer = Transaction.current;
     const outerVerbosity = T.level;
     const outerColor = T.color;
     const outerPrefix = T.prefix;
     let result: T;
     try {
       this.workers++;
-      Transaction.active = this;
+      Transaction.current = this;
       if (this.tracing !== 0)
         T.level = this.tracing;
       T.color = T.level >= 2 ? 31 + (this.snapshot.id) % 6 : 37;
@@ -193,7 +193,7 @@ export class Transaction {
       T.prefix = outerPrefix;
       T.color = outerColor;
       T.level = outerVerbosity;
-      Transaction.active = outer;
+      Transaction.current = outer;
     }
     if (this.reaction.effect.length > 0) {
       try {
@@ -250,7 +250,7 @@ export class Transaction {
     const separate = reaction.tran ? SeparateFrom.Reaction : SeparateFrom.Reaction | SeparateFrom.Parent;
     Transaction.runAs<void>(name, separate, tracing, () => {
       if (reaction.tran === undefined)
-        reaction.tran = Transaction.active;
+        reaction.tran = Transaction.current;
       reaction.effect.map(r => r.triggerRecache(timestamp, false));
     });
   }
@@ -279,7 +279,7 @@ export class Transaction {
   }
 
   static _getActiveSnapshot(): Snapshot {
-    return Transaction.active.snapshot;
+    return Transaction.current.snapshot;
   }
 
   static _init(): void {
@@ -287,7 +287,7 @@ export class Transaction {
     none.sealed = true;
     none.snapshot.checkin();
     Transaction.none = none;
-    Transaction.active = none;
+    Transaction.current = none;
     const empty = new Record(Record.empty, none.snapshot, {});
     empty.prev.record = empty; // loopback
     empty.freeze();

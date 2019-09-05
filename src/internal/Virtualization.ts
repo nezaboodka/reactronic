@@ -62,7 +62,7 @@ export class Virt implements ProxyHandler<Handle> {
     let value: any;
     const config: ConfigRecord | undefined = Virt.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.stateful)) { // versioned state
-      const r: Record = Snapshot.active().read(h);
+      const r: Record = Snapshot.current().read(h);
       value = r.data[prop];
       if (value === undefined && !r.data.hasOwnProperty(prop))
         value = Reflect.get(h.stateless, prop, receiver);
@@ -77,7 +77,7 @@ export class Virt implements ProxyHandler<Handle> {
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
     const config: ConfigRecord | undefined = Virt.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.stateful)) { // versioned state
-      const r: Record = Snapshot.active().tryWrite(h, prop, value);
+      const r: Record = Snapshot.current().tryWrite(h, prop, value);
       if (r !== Record.empty) { // empty when r.data[prop] === value, thus creation of changing record was skipped
         r.data[prop] = value;
         const v: any = r.prev.record.data[prop];
@@ -184,7 +184,7 @@ export class Virt implements ProxyHandler<Handle> {
 
   static createHandle(stateful: boolean, stateless: any, proxy: any): Handle {
     const h = new Handle(stateless, proxy, Virt.proxy);
-    const r = Snapshot.active().write(h, RT_HANDLE, RT_HANDLE);
+    const r = Snapshot.current().write(h, RT_HANDLE, RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
     initRecordData(h, stateful, stateless, r);
     return h;
@@ -198,7 +198,7 @@ export class Virt implements ProxyHandler<Handle> {
 
 function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Record): void {
   const configTable = Virt.getConfigTable(Object.getPrototypeOf(stateless));
-  const r = Snapshot.active().write(h, RT_HANDLE, RT_HANDLE);
+  const r = Snapshot.current().write(h, RT_HANDLE, RT_HANDLE);
   for (const prop of Object.getOwnPropertyNames(stateless))
     initRecordProp(stateful, configTable, prop, r, stateless);
   for (const prop of Object.getOwnPropertySymbols(stateless)) /* istanbul ignore next */
