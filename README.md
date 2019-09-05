@@ -126,7 +126,7 @@ class MyView extends React.Component<MyModel> {
 
   @cache  @behavior(Renew.Immediately)
   trigger(): void {
-    if (this.render.rcache.isOutdated)
+    if (cacheof(this.render).isOutdated)
       this.setState({}); // ask React to re-render
   } // trigger is subscribed to render
 }
