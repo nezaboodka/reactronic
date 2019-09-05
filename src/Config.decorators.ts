@@ -1,25 +1,25 @@
 import { F } from "./internal/Record";
 import { Virt } from "./internal/Virtualization";
-import { Config, Mode, Renew, Latency, ReentrantCall, SeparateFrom } from "./Config";
+import { Config, Renew, Latency, ReentrantCall, SeparateFrom } from "./Config";
 import { Monitor } from "./Monitor";
 
 export function stateful(proto: object, prop?: PropertyKey): any {
-  const config = { mode: Mode.Stateful };
+  const config = { stateful: true };
   return prop ? Virt.decorateField(true, config, proto, prop) : Virt.decorateClass(true, config, proto);
 }
 
 export function stateless(proto: object, prop: PropertyKey): any {
-  const config = { mode: Mode.Stateless };
+  const config = { stateful: false };
   return Virt.decorateField(true, config, proto, prop);
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { mode: Mode.Stateful };
+  const config = { stateful: true };
   return Virt.decorateMethod(true, config, proto, prop, pd);
 }
 
 export function cache(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { mode: Mode.Stateful, latency: Renew.OnDemand };
+  const config = { stateful: true, latency: Renew.OnDemand };
   return Virt.decorateMethod(true, config, proto, prop, pd);
 }
 

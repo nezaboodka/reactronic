@@ -5,7 +5,7 @@ import { CopyOnWriteMap } from "./Binding.CopyOnWriteMap";
 import { Record, F, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
-import { Config, Mode, Latency, Renew, ReentrantCall, SeparateFrom } from "../Config";
+import { Config, Latency, Renew, ReentrantCall, SeparateFrom } from "../Config";
 import { Monitor } from "../Monitor";
 
 // Config
@@ -15,7 +15,7 @@ export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
 
 const EMPTY_CONFIG_TABLE = {};
 const DEFAULT: Config = {
-  mode: Mode.Stateless,
+  stateful: false,
   latency: Renew.NoCache,
   reentrant: ReentrantCall.WaitAndRestart,
   separate: SeparateFrom.Reaction,
@@ -25,7 +25,7 @@ const DEFAULT: Config = {
 
 export class ConfigRecord implements Config {
   readonly body: Function;
-  readonly mode: Mode;
+  readonly stateful: boolean;
   readonly latency: Latency;
   readonly reentrant: ReentrantCall;
   readonly separate: SeparateFrom;
@@ -35,7 +35,7 @@ export class ConfigRecord implements Config {
 
   constructor(body: Function | undefined, existing: ConfigRecord, patch: Partial<ConfigRecord>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body;
-    this.mode = merge(DEFAULT.mode, existing.mode, patch.mode, implicit);
+    this.stateful = merge(DEFAULT.stateful, existing.stateful, patch.stateful, implicit);
     this.latency = merge(DEFAULT.latency, existing.latency, patch.latency, implicit);
     this.reentrant = merge(DEFAULT.reentrant, existing.reentrant, patch.reentrant, implicit);
     this.separate = merge(DEFAULT.separate, existing.separate, patch.separate, implicit);
@@ -61,7 +61,7 @@ export class Virt implements ProxyHandler<Handle> {
   get(h: Handle, prop: PropertyKey, receiver: any): any {
     let value: any;
     const config: ConfigRecord | undefined = Virt.getConfig(h.stateless, prop);
-    if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
+    if (!config || (config.body === decoratedfield && config.stateful)) { // versioned state
       const r: Record = Snapshot.active().read(h);
       value = r.data[prop];
       if (value === undefined && !r.data.hasOwnProperty(prop))
@@ -76,7 +76,7 @@ export class Virt implements ProxyHandler<Handle> {
 
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
     const config: ConfigRecord | undefined = Virt.getConfig(h.stateless, prop);
-    if (!config || (config.body === decoratedfield && config.mode !== Mode.Stateless)) { // versioned state
+    if (!config || (config.body === decoratedfield && config.stateful)) { // versioned state
       const r: Record = Snapshot.active().tryWrite(h, prop, value);
       if (r !== Record.empty) { // empty when r.data[prop] === value, thus creation of changing record was skipped
         r.data[prop] = value;
@@ -101,11 +101,11 @@ export class Virt implements ProxyHandler<Handle> {
 
   static decorateClass(implicit: boolean, config: Partial<Config>, origCtor: any): any {
     let ctor: any = origCtor;
-    const mode = config.mode;
-    if (mode === Mode.Stateful) {
+    const stateful = config.stateful || false;
+    if (stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args);
-        const h: Handle = Virt.createHandle(mode, stateless, undefined);
+        const h: Handle = Virt.createHandle(stateful, stateless, undefined);
         return h.proxy;
       };
       Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)); // preserve prototype
@@ -117,7 +117,7 @@ export class Virt implements ProxyHandler<Handle> {
 
   static decorateField(implicit: boolean, config: Partial<Config>, target: any, prop: PropertyKey): any {
     config = Virt.applyConfig(target, prop, decoratedfield, config, implicit);
-    if (config.mode === Mode.Stateful) {
+    if (config.stateful) {
       const get = function(this: any): any {
         const h: Handle = Virt.acquireHandle(this);
         return Virt.proxy.get(h, prop, this);
@@ -138,7 +138,7 @@ export class Virt implements ProxyHandler<Handle> {
     const methodConfig = Virt.applyConfig(type, method, pd.value, config, implicit);
     const get = function(this: any): any {
       const classConfig: ConfigRecord = Virt.getConfig(Object.getPrototypeOf(this), RT_CLASS) || ConfigRecord.default;
-      const h: Handle = classConfig.mode !== Mode.Stateless ? Utils.get(this, RT_HANDLE) : Virt.acquireHandle(this);
+      const h: Handle = classConfig.stateful ? Utils.get(this, RT_HANDLE) : Virt.acquireHandle(this);
       const value = Virt.createCachedMethodTrap(h, method, methodConfig);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
       return value;
@@ -177,16 +177,16 @@ export class Virt implements ProxyHandler<Handle> {
     if (!h) {
       h = new Handle(obj, obj, Virt.proxy);
       Utils.set(obj, RT_HANDLE, h);
-      Virt.decorateField(false, {mode: Mode.Stateful}, obj, RT_UNMOUNT);
+      Virt.decorateField(false, {stateful: true}, obj, RT_UNMOUNT);
     }
     return h;
   }
 
-  static createHandle(mode: Mode, stateless: any, proxy: any): Handle {
+  static createHandle(stateful: boolean, stateless: any, proxy: any): Handle {
     const h = new Handle(stateless, proxy, Virt.proxy);
     const r = Snapshot.active().write(h, RT_HANDLE, RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
-    initRecordData(h, mode, stateless, r);
+    initRecordData(h, stateful, stateless, r);
     return h;
   }
 
@@ -196,17 +196,17 @@ export class Virt implements ProxyHandler<Handle> {
   };
 }
 
-function initRecordData(h: Handle, mode: Mode, stateless: any, record: Record): void {
+function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Record): void {
   const configTable = Virt.getConfigTable(Object.getPrototypeOf(stateless));
   const r = Snapshot.active().write(h, RT_HANDLE, RT_HANDLE);
   for (const prop of Object.getOwnPropertyNames(stateless))
-    initRecordProp(mode, configTable, prop, r, stateless);
+    initRecordProp(stateful, configTable, prop, r, stateless);
   for (const prop of Object.getOwnPropertySymbols(stateless)) /* istanbul ignore next */
-    initRecordProp(mode, configTable, prop, r, stateless);
+    initRecordProp(stateful, configTable, prop, r, stateless);
 }
 
-function initRecordProp(mode: Mode, configTable: any, prop: PropertyKey, r: Record, stateless: any): void {
-  if (mode !== Mode.Stateless && configTable[prop] !== Mode.Stateless) {
+function initRecordProp(stateful: boolean, configTable: any, prop: PropertyKey, r: Record, stateless: any): void {
+  if (stateful && configTable[prop] !== false) {
     const value = Utils.copyProp(stateless, r.data, prop);
     Record.markChanged(r, prop, true, value);
   }

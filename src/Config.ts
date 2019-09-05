@@ -1,17 +1,12 @@
 import { Monitor } from "./Monitor";
 
 export interface Config {
-  readonly mode: Mode;
+  readonly stateful: boolean;
   readonly latency: Latency;
   readonly reentrant: ReentrantCall;
   readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
   readonly tracing: number;
-}
-
-export enum Mode {
-  Stateful = 0, // default
-  Stateless = 1,
 }
 
 export type Latency = number | Renew; // milliseconds

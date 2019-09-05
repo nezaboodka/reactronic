@@ -225,21 +225,15 @@ function behavior(latency: Latency, reentrant: ReentrantCall, separate: Separate
 function monitor(value: Monitor | null);
 function config(config: Partial<Config>);
 
-// Config: Mode, Latency, ReentrantCall, SeparateFrom, Monitor
+// Config: Latency, ReentrantCall, SeparateFrom, Monitor
 
 interface Config {
-  readonly mode: Mode;
+  readonly stateful: boolean;
   readonly latency: Latency;
   readonly reentrant: ReentrantCall;
   readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
   readonly tracing: number;
-}
-
-enum Mode {
-  Stateless = -1,
-  Stateful = 0, // default
-  InternalStateful = 1,
 }
 
 type Latency = number | Renew; // milliseconds
