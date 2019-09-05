@@ -27,6 +27,8 @@ export class Transaction {
   get hint(): string { return this.snapshot.hint; }
 
   run<T>(func: F<T>, ...args: any[]): T {
+    if (this.error) // prevent from continuing canceled transaction
+      throw this.error;
     if (this.sealed && Transaction.active !== this)
       throw new Error("cannot run transaction that is already sealed");
     return this._run(func, ...args);
@@ -127,8 +129,6 @@ export class Transaction {
       t.cancel(error);
       throw error;
     }
-    if (t.error && !t.retryAfter)
-      throw t.error;
     return result;
   }
 
@@ -173,8 +173,11 @@ export class Transaction {
       T.prefix = `t${this.id}`; // TODO: optimize to avoid toString
       this.snapshot.checkout();
       result = func(...args);
-      if (this.sealed && this.workers === 1 && !this.error)
-        this.checkForConflicts();
+      if (this.sealed && this.workers === 1)
+        if (!this.error)
+          this.checkForConflicts();
+        else if (!this.retryAfter)
+          throw this.error;
     }
     catch (e) {
       this.error = this.error || e; // remember first error only
