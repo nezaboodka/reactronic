@@ -33,6 +33,7 @@ test("basic", t => {
     // Multi-part action
     const tran1 = new Transaction("tran1");
     tran1.run(() => {
+      t.throws(() => tran1.commit(), "cannot commit transaction having active workers");
       app.model.shared = app.shared = tran1.hint;
       daddy.age += 2; // causes no execution of DemoApp.render
       daddy.name = "John Smith"; // causes execution of DemoApp.render upon action commit
@@ -81,15 +82,15 @@ test("basic", t => {
     t.throws(() => {
       if (daddy.emails)
         daddy.emails.push("dad@mail.com");
-    });
-    t.throws(() => tran1.run(/* istanbul ignore next */ () => { /* nope */ }));
+    }, "stateful properties can only be modified inside transaction");
+    t.throws(() => tran1.run(/* istanbul ignore next */ () => { /* nope */ }), "cannot run transaction that is already sealed");
     // Undo action
     tran1.undo();
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     // Check protection
-    t.throws(() => { cacheof(daddy.setParent).configure({latency: 0}); });
-    t.throws(() => { console.log(cacheof(daddy.setParent).config.monitor); });
+    t.throws(() => { cacheof(daddy.setParent).configure({latency: 0}); }, "given method is not a reactronic cache");
+    t.throws(() => { console.log(cacheof(daddy.setParent).config.monitor); }, "given method is not a reactronic cache");
     // Other
     t.is(rendering.config.latency, Renew.OnDemand);
     t.is(rendering.error, undefined);

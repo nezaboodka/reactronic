@@ -62,7 +62,7 @@ export class Snapshot implements ISnapshot {
 
   tryWrite(h: Handle, prop: PropertyKey, value: any): Record {
     if (this.completed)
-      throw new Error("object can only be modified inside transaction");
+      throw new Error("stateful properties can only be modified inside transaction");
     let r: Record = this.tryRead(h);
     if (r === Record.empty || !Utils.equal(r.data[prop], value)) {
       let data = r.data;

@@ -42,7 +42,7 @@ export class Transaction {
 
   commit(): void {
     if (this.workers > 0)
-      throw new Error("cannot commit transaction having pending async operations");
+      throw new Error("cannot commit transaction having active workers");
     if (this.error)
       throw new Error(`cannot commit transaction that is already canceled: ${this.error}`);
     this.seal(); // commit immediately, because pending === 0
