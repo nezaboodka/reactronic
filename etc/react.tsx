@@ -33,7 +33,7 @@ class Jsx {
 
   @cache @behavior(Renew.Immediately)
   trigger(nextRevision: number, refresh: (nextRevision: number) => void): void {
-    if (cacheof(this.jsx).isOutdated)
+    if (cacheof(this.jsx).isInvalid)
       refresh(nextRevision);
   }
 }

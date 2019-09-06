@@ -16,8 +16,8 @@ export abstract class Cache<T> {
   abstract readonly stamp: number;
   abstract readonly error: any;
   abstract getResult(...args: any[]): T | undefined;
-  abstract readonly isOutdated: boolean;
-  abstract markOutdated(cause: string | undefined): boolean;
+  abstract readonly isInvalid: boolean;
+  abstract invalidate(cause: string | undefined): boolean;
   static get<T>(method: F<T>): Cache<T> { return CachedResult.get(method); }
   static unmount(...objects: any[]): Transaction { return CachedResult.unmount(...objects); }
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name); }

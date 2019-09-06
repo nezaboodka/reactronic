@@ -15,7 +15,7 @@ export class Dbg implements Trace, TraceDecor {
   readonly writes: boolean;
   readonly changes: boolean;
   readonly subscriptions: boolean;
-  readonly outdating: boolean;
+  readonly invalidations: boolean;
   readonly gc: boolean;
   readonly silent: boolean;
   readonly color: number;
@@ -29,7 +29,7 @@ export class Dbg implements Trace, TraceDecor {
     this.writes = t.writes !== undefined ? t.writes : existing.writes;
     this.changes = t.changes !== undefined ? t.changes : existing.changes;
     this.subscriptions = t.subscriptions !== undefined ? t.subscriptions : existing.subscriptions;
-    this.outdating = t.outdating !== undefined ? t.outdating : existing.outdating;
+    this.invalidations = t.invalidations !== undefined ? t.invalidations : existing.invalidations;
     this.gc = t.gc !== undefined ? t.gc : existing.gc;
     this.silent = t.silent !== undefined ? t.silent : existing.silent;
     this.color = decor ? decor.color : existing.color;
@@ -44,7 +44,7 @@ export class Dbg implements Trace, TraceDecor {
     writes: false,
     changes: false,
     subscriptions: false,
-    outdating: false,
+    invalidations: false,
     gc: false,
     silent: false,
     color: 37,

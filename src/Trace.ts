@@ -6,7 +6,7 @@ export interface Trace {
   readonly writes: boolean;
   readonly changes: boolean;
   readonly subscriptions: boolean;
-  readonly outdating: boolean;
+  readonly invalidations: boolean;
   readonly gc: boolean;
   readonly silent: boolean;
 }

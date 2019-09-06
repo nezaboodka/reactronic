@@ -92,7 +92,7 @@ of all the data.
 Compensating actions are not needed in case of the transaction
 failure, because all the changes made by the transaction in its
 logical snapshot are simply discarded. In case the transaction
-is successfully committed, affected caches are marked as outdated
+is successfully committed, affected caches are invalidated
 and corresponding caching functions are re-executed in a proper
 order (but only when all the data changes are fully applied).
 
@@ -126,7 +126,7 @@ class MyView extends React.Component<MyModel> {
 
   @cache  @behavior(Renew.Immediately)
   trigger(): void {
-    if (cacheof(this.render).isOutdated)
+    if (cacheof(this.render).isInvalid)
       this.setState({}); // ask React to re-render
   } // trigger is subscribed to render
 }
@@ -137,8 +137,8 @@ transparently subscribed to the cache of the `render` function.
 In turn, the `render` function is subscribed to the `url` and
 `content` properties of a corresponding `MyModel` object.
 Once `url` or `content` values are changed, the `render` cache
-becomes outdated and causes the `trigger` cache to become
-outdated as well (cascaded). The `trigger` cache is marked for
+becomes invalid and causes the `trigger` cache to become
+invalid as well (cascaded). The `trigger` cache is marked for
 immediate renewal, thus its function is immediately called by
 Reactronic to renew the cache. While executed, the `trigger`
 function enqueues re-rendering request to React, which calls
@@ -146,7 +146,7 @@ function enqueues re-rendering request to React, which calls
 renew.
 
 In general case, cache is automatically and immediately marked
-as outdated when changes are made in those state object properties
+as invalid when changes are made in those state object properties
 that were used by its function. And once marked, the function
 is automatically executed again to renew it, either immediately or
 on demand.
@@ -167,7 +167,7 @@ invocation of the caching function to renew the cache:
 
   - `(ms)` - delay in milliseconds;
   - `Renew.Immediately` - renew immediately with zero latency;
-  - `Renew.OnDemand` - renew on access if cache is outdated;
+  - `Renew.OnDemand` - renew on access if cache is invalid;
   - `Renew.Manually` - manual renew (explicit only);
   - `Renew.NoCache` - renew on every call of the function.
 
@@ -276,7 +276,7 @@ interface Trace {
   readonly writes: boolean;
   readonly changes: boolean;
   readonly subscriptions: boolean;
-  readonly outdating: boolean;
+  readonly invalidations: boolean;
   readonly gc: boolean;
   readonly silent: boolean;
 }
@@ -313,8 +313,8 @@ abstract class Cache<T> {
   configure(config: Partial<Config>): Config;
   readonly error: any;
   getResult(...args: any[]): T;
-  readonly isOutdated: boolean;
-  markOutdated(cause: string | undefined): boolean;
+  readonly isInvalid: boolean;
+  invalidate(cause: string | undefined): boolean;
   static get<T>(method: F<Promise<T>>): ReactiveCache<T>;
   static get<T>(method: F<T>): ReactiveCache<T>;
   static unmount(...objects: any[]): Transaction;

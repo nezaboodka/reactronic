@@ -62,7 +62,7 @@ export interface ISnapshot {
 export interface ICachedResult {
   hint(tranless?: boolean): string;
   wrap<T>(func: F<T>): F<T>;
-  isOutdated(): boolean;
-  markOutdated(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void;
+  readonly isInvalid: boolean;
+  invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void;
   triggerRecache(timestamp: number, now: boolean): void;
 }

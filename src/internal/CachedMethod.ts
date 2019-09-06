@@ -17,8 +17,8 @@ class CachedMethod extends Cache<any> {
   get stamp(): number { return this.read(true).record.snapshot.timestamp; }
   get error(): boolean { return this.read(true).cache.error; }
   getResult(...args: any): any { return this.call(false, args).cache.result; }
-  get isOutdated(): boolean { return this.read(true).cache.isOutdated(); }
-  markOutdated(cause: string | undefined): boolean { return cause ? CachedResult.enforceMarkOutdated(this.read(false).cache, cause, 0) : false; }
+  get isInvalid(): boolean { return this.read(true).cache.isInvalid; }
+  invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigRecord) {
     super();
@@ -62,7 +62,7 @@ class CachedMethod extends Cache<any> {
     const r: Record = ctx.tryRead(this.handle);
     const c: CachedResult = r.data[member] || this.empty;
     const ok = c.config.latency !== Renew.NoCache &&
-      ctx.timestamp < c.outdated.timestamp &&
+      ctx.timestamp < c.invalidation.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (markViewed)
@@ -104,7 +104,7 @@ class CachedMethod extends Cache<any> {
         }, ...args);
       else
         c.ret = Promise.reject(error);
-      c.outdated.timestamp = UNDEFINED_TIMESTAMP;
+      c.invalidation.timestamp = UNDEFINED_TIMESTAMP;
     }
     finally {
       if (!error)
@@ -115,7 +115,7 @@ class CachedMethod extends Cache<any> {
 
   private reenter(c: CachedResult): Error | undefined {
     let error: Error | undefined = undefined;
-    const prev = c.outdated.recaching;
+    const prev = c.invalidation.recaching;
     const caller = Transaction.current;
     if (prev)
       switch (c.config.reentrant) {
@@ -124,11 +124,11 @@ class CachedMethod extends Cache<any> {
         case ReentrantCall.WaitAndRestart:
           error = new Error(`transaction t${caller.id} (${caller.hint}) will be restarted after t${prev.tran.id} (${prev.tran.hint})`);
           caller.cancel(error, prev.tran);
-          // TODO: "c.outdated.recaching = caller" in order serialize all the transactions
+          // TODO: "c.invalidation.recaching = caller" in order serialize all the transactions
           break;
         case ReentrantCall.CancelPrevious:
           prev.tran.cancel(new Error(`transaction t${prev.tran.id} (${prev.tran.hint}) is canceled by t${caller.id} (${caller.hint}) and will be silently ignored`), null);
-          c.outdated.recaching = undefined;
+          c.invalidation.recaching = undefined;
           break;
         case ReentrantCall.RunSideBySide:
           break; // do nothing
@@ -187,7 +187,7 @@ export class CachedResult implements ICachedResult {
   result: any;
   error: any;
   started: number;
-  readonly outdated: { timestamp: number, recaching: CachedResult | undefined };
+  readonly invalidation: { timestamp: number, recaching: CachedResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
@@ -209,7 +209,7 @@ export class CachedResult implements ICachedResult {
     // this.ret = undefined;
     // this.error = undefined;
     this.started = 0;
-    this.outdated = { timestamp: 0, recaching: undefined };
+    this.invalidation = { timestamp: 0, recaching: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
     this.hotObservables = new Map<PropertyKey, Set<Record>>();
   }
@@ -231,7 +231,7 @@ export class CachedResult implements ICachedResult {
   triggerRecache(timestamp: number, now: boolean): void {
     if (now || this.config.latency === Renew.Immediately) {
       if (!this.error && (this.config.latency === Renew.NoCache ||
-          (timestamp >= this.outdated.timestamp && !this.outdated.recaching))) {
+          (timestamp >= this.invalidation.timestamp && !this.invalidation.recaching))) {
         const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
         const trap: Function = Reflect.get(proxy, this.member, proxy);
         const cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
@@ -258,7 +258,7 @@ export class CachedResult implements ICachedResult {
     const oo = r.observers.get(prop);
     if (oo && oo.size > 0) { // real-time notifications (inside the same transaction)
       const effect: ICachedResult[] = [];
-      oo.forEach(c => c.markOutdated(r, prop, true, false, effect));
+      oo.forEach(c => c.invalidate(r, prop, true, false, effect));
       r.observers.delete(prop);
       if (effect.length > 0)
         Transaction.triggerRecacheAll(Hint.record(r), r.snapshot.timestamp,
@@ -307,21 +307,21 @@ export class CachedResult implements ICachedResult {
         CachedResult.acquireObserverSet(r, prop).add(this); // link
         if (Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (effect && r.outdated.has(prop))
-          this.markOutdated(r, prop, hot, false, effect);
+          this.invalidate(r, prop, hot, false, effect);
       });
     });
     if (Dbg.trace.subscriptions && subscriptions.length > 0) Dbg.log(hot ? "║  " : " ", "O", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
-  isOutdated(): boolean { // TODO: should depend on caller context
+  get isInvalid(): boolean { // TODO: should depend on caller context
     const ctx = Snapshot.current(false);
-    return this.outdated.timestamp <= ctx.timestamp;
+    return this.invalidation.timestamp <= ctx.timestamp;
   }
 
-  markOutdated(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void {
+  invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void {
     const stamp = cause.snapshot.timestamp;
-    if (this.outdated.timestamp === UNDEFINED_TIMESTAMP && (!cascade || this.config.latency !== Renew.WhenReady)) {
-      this.outdated.timestamp = stamp;
+    if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP && (!cascade || this.config.latency !== Renew.WhenReady)) {
+      this.invalidation.timestamp = stamp;
       // TODO: make cache readonly
       // Cascade invalidation
       const upper: Record = Snapshot.current(true).read(Utils.get(this.record.data, RT_HANDLE));
@@ -330,24 +330,24 @@ export class CachedResult implements ICachedResult {
         while (r !== Record.empty && !r.outdated.has(this.member)) {
           const oo = r.observers.get(this.member);
           if (oo)
-            oo.forEach(c => c.markOutdated(upper, this.member, false, true, effect));
+            oo.forEach(c => c.invalidate(upper, this.member, false, true, effect));
           r = r.prev.record;
         }
       }
       // Check if cache should be renewed
       if (this.config.latency >= Renew.Immediately && upper.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         effect.push(this);
-        if (Dbg.trace.outdating) Dbg.log(" ", "■", `${this.hint(false)} is outdated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
+        if (Dbg.trace.invalidations) Dbg.log(" ", "■", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
       }
       else
-        if (Dbg.trace.outdating) Dbg.log(" ", "□", `${this.hint(false)} is outdated by ${Hint.record(cause, false, false, causeProp)}`);
+        if (Dbg.trace.invalidations) Dbg.log(" ", "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}`);
     }
   }
 
-  static enforceMarkOutdated(c: CachedResult, cause: string, latency: number): boolean {
-    throw new Error("not implemented - Cache.enforceMarkOutdated");
+  static enforceInvalidation(c: CachedResult, cause: string, latency: number): boolean {
+    throw new Error("not implemented - Cache.enforceInvalidation");
     // let effect: Cache[] = [];
-    // c.markOutdated(cause, false, false, effect);
+    // c.invalidate(cause, false, false, effect);
     // if (latency === Renew.Immediately)
     //   Transaction.ensureAllUpToDate(cause, { effect });
     // else
@@ -362,7 +362,7 @@ export class CachedResult implements ICachedResult {
       r.outdated.add(prop);
       const oo = r.observers.get(prop);
       if (oo)
-        oo.forEach(c => c.markOutdated(cause, prop, false, false, effect));
+        oo.forEach(c => c.invalidate(cause, prop, false, false, effect));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
@@ -380,8 +380,8 @@ export class CachedResult implements ICachedResult {
     if (Dbg.trace.methods) Dbg.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
-    if (!prev.outdated.recaching)
-      prev.outdated.recaching = this;
+    if (!prev.invalidation.recaching)
+      prev.invalidation.recaching = this;
   }
 
   tryLeave(r: Record, prev: CachedResult, mon: Monitor | null): void {
@@ -406,8 +406,8 @@ export class CachedResult implements ICachedResult {
   }
 
   private leave(r: Record, prev: CachedResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
-    if (prev.outdated.recaching === this)
-      prev.outdated.recaching = undefined;
+    if (prev.invalidation.recaching === this)
+      prev.invalidation.recaching = undefined;
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;

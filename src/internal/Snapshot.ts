@@ -150,7 +150,7 @@ export class Snapshot implements ISnapshot {
         if (!existing)
           target.observers.set(prop, merged);
         oo.forEach((c: ICachedResult) => {
-          if (!c.isOutdated()) {
+          if (!c.isInvalid) {
             merged.add(c);
             if (Dbg.trace.subscriptions) Dbg.log(" ", "O", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
           }
