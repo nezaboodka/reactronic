@@ -32,7 +32,7 @@ class CachedMethod extends Cache<any> {
     let call: CachedCall = this.read(false, args);
     if (!call.ok) {
       const c: CachedResult = call.cache;
-      const hint: string = Dbg.trace.methods ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "recache";
+      const hint: string = Dbg.trace.transactions ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "recache";
       const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
       let call2 = call;
       const ret = Transaction.runAs<any>(hint, separate, c.config.trace, (argsx: any[] | undefined): any => {
@@ -51,7 +51,7 @@ class CachedMethod extends Cache<any> {
         call = call2;
     }
     else
-      if (Dbg.trace.methods) Dbg.log("║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
+      if (Dbg.trace.methods) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
     Record.markViewed(call.record, call.cache.member);
     return call;
   }
@@ -140,7 +140,7 @@ class CachedMethod extends Cache<any> {
     const call = this.read(false);
     const c: CachedResult = call.cache;
     const r: Record = call.record;
-    const hint: string = Dbg.trace.methods ? `${Hint.handle(this.handle)}.${this.empty.member.toString()}/configure` : /* istanbul ignore next */ "configure";
+    const hint: string = Dbg.trace.transactions ? `${Hint.handle(this.handle)}.${this.empty.member.toString()}/configure` : /* istanbul ignore next */ "configure";
     return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, undefined, (): Config => {
       const call2 = this.write();
       const c2: CachedResult = call2.cache;
@@ -270,14 +270,14 @@ export class CachedResult implements ICachedResult {
     changeset.forEach((r: Record, h: Handle) => {
       if (!r.changes.has(RT_UNMOUNT))
         r.changes.forEach(prop => {
-          CachedResult.markPrevAsOutdated(r, prop, effect);
+          CachedResult.markAllPrevRecordsAsOutdated(r, prop, effect);
           const value = r.data[prop];
           if (value instanceof CachedResult)
             value.subscribeToObservables(false, effect);
         });
       else
         for (const prop in r.prev.record.data)
-          CachedResult.markPrevAsOutdated(r, prop, effect);
+          CachedResult.markAllPrevRecordsAsOutdated(r, prop, effect);
     });
     changeset.forEach((r: Record, h: Handle) => {
       Snapshot.mergeObservers(r, r.prev.record);
@@ -322,8 +322,7 @@ export class CachedResult implements ICachedResult {
     const stamp = cause.snapshot.timestamp;
     if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP && (!cascade || this.config.latency !== Renew.WhenReady)) {
       this.invalidation.timestamp = stamp;
-      // TODO: make cache readonly
-      // Cascade invalidation
+      // Invalidation of childred (cascade)
       const upper: Record = Snapshot.current(true).read(Utils.get(this.record.data, RT_HANDLE));
       if (upper.data[this.member] === this) { // TODO: Consider better solution?
         let r: Record = upper;
@@ -355,9 +354,8 @@ export class CachedResult implements ICachedResult {
     // return true;
   }
 
-  static markPrevAsOutdated(r: Record, prop: PropertyKey, effect: ICachedResult[]): void {
-    const cause = r;
-    r = r.prev.record;
+  static markAllPrevRecordsAsOutdated(cause: Record, prop: PropertyKey, effect: ICachedResult[]): void {
+    let r = cause.prev.record;
     while (r !== Record.empty && !r.outdated.has(prop)) {
       r.outdated.set(prop, cause);
       const oo = r.observers.get(prop);
