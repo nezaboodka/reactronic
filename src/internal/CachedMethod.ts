@@ -487,8 +487,6 @@ function init(): void {
   Snapshot.applyDependencies = CachedResult.applyDependencies; // override
   Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
   Snapshot.current = Transaction._getActiveSnapshot; // override
-  Transaction._init();
-  // if (T.level >= 2) T.log("", "", "Reactronic is initialized", 0);
 }
 
 init();

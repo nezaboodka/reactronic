@@ -1,8 +1,15 @@
 import { Dbg, Utils, undef, Record, ICachedResult, F, Handle, Snapshot, Hint } from './internal/z.index';
 import { SeparateFrom, Trace } from './Config';
 
+class TransactionTraceDecor {
+  constructor(readonly tran: Transaction) {}
+  get color(): number { return 31 + (this.tran.id) % 6; }
+  get prefix(): string { return `t${this.tran.id}`; }
+  get margin(): number { return Dbg.trace.margin; }
+}
+
 export class Transaction {
-  static none: Transaction;
+  static readonly none: Transaction = new Transaction("none", SeparateFrom.All);
   static current: Transaction;
   private readonly separate: SeparateFrom;
   private readonly snapshot: Snapshot; // assigned in constructor
@@ -279,12 +286,10 @@ export class Transaction {
   }
 
   static _init(): void {
-    const none = new Transaction("none", SeparateFrom.All);
-    none.sealed = true; // semi-hack
-    none.snapshot.complete();
-    Transaction.none = none;
-    Transaction.current = none;
-    const empty = new Record(Record.empty, none.snapshot, {});
+    Transaction.none.sealed = true; // semi-hack
+    Transaction.none.snapshot.complete();
+    Transaction.current = Transaction.none;
+    const empty = new Record(Record.empty, Transaction.none.snapshot, {});
     empty.prev.record = empty; // loopback
     empty.freeze();
     Utils.freezeMap(empty.observers);
@@ -293,9 +298,4 @@ export class Transaction {
   }
 }
 
-class TransactionTraceDecor {
-  constructor(readonly tran: Transaction) {}
-  get color(): number { return 31 + (this.tran.id) % 6; }
-  get prefix(): string { return `t${this.tran.id}`; }
-  get margin(): number { return Dbg.trace.margin; }
-}
+Transaction._init();
