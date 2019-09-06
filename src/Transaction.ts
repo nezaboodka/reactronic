@@ -184,7 +184,7 @@ export class Transaction {
     }
     finally { // it's critical to have no exceptions in this block
       this.workers--;
-      if (this.isFinished()) {
+      if (this.sealed && this.workers === 0) {
         !this.error ? this.performCommit() : this.performCancel();
         Object.freeze(this);
       }
