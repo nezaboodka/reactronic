@@ -1,5 +1,5 @@
-﻿import { stateful, stateless, transaction, cache, behavior, Renew, trace } from "../src/z.index";
-import { Person } from "./common";
+﻿import { stateful, stateless, transaction, cache, behavior, Renew, trace } from '../src/z.index';
+import { Person } from './common';
 
 export const output: string[] = [];
 

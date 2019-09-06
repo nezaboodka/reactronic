@@ -1,5 +1,5 @@
-import { Binding, R, W } from "./Binding";
-export { Binding } from "./Binding";
+import { Binding, R, W } from './Binding';
+export { Binding } from './Binding';
 
 export abstract class CopyOnWriteMap<K, V> extends Map<K, V> {
   clear(): void { super.clear.call(W<Map<K, V>>(this)); }

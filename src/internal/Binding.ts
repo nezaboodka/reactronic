@@ -1,4 +1,4 @@
-import { Dbg } from "./Trace";
+import { Dbg } from './Dbg';
 
 export const RT_BINDING: unique symbol = Symbol("RT:BINDING");
 

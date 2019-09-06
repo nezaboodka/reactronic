@@ -1,8 +1,8 @@
-import { Trace } from "./internal/Trace";
-import { F } from "./internal/Record";
-import { Virt } from "./internal/Virtualization";
-import { Config, Renew, Latency, ReentrantCall, SeparateFrom } from "./Config";
-import { Monitor } from "./Monitor";
+import { Trace } from './Trace';
+import { F } from './internal/Record';
+import { Virt } from './internal/Virtualization';
+import { Config, Renew, Latency, ReentrantCall, SeparateFrom } from './Config';
+import { Monitor } from './Monitor';
 
 export function stateful(proto: object, prop?: PropertyKey): any {
   const config = { stateful: true };

@@ -1,5 +1,6 @@
-import { Trace } from "./internal/Trace";
-import { Monitor } from "./Monitor";
+import { Trace } from './Trace';
+export { Trace } from './Trace';
+import { Monitor } from './Monitor';
 
 export interface Config {
   readonly stateful: boolean;

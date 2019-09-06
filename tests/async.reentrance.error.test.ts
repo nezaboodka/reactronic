@@ -1,7 +1,7 @@
-﻿import test from "ava";
-import { Transaction, ReentrantCall, Cache, resultof, cacheof, sleep, Dbg } from "../src/z.index";
-import { trace } from "./common";
-import { DemoModel, DemoView, mon, output } from "./async";
+﻿import test from 'ava';
+import { Transaction, ReentrantCall, Cache, resultof, cacheof, sleep, Dbg } from '../src/z.index';
+import { trace } from './common';
+import { DemoModel, DemoView, mon, output } from './async';
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: "nezaboodka.com", delay: 500 },

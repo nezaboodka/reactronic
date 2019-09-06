@@ -1,7 +1,7 @@
-﻿import test from "ava";
-import { Transaction, Renew, Cache, cacheof } from "../src/z.index";
-import { Person, trace, nop } from "./common";
-import { DemoModel, DemoView, output } from "./basic";
+﻿import test from 'ava';
+import { Transaction, Renew, Cache, cacheof } from '../src/z.index';
+import { Person, trace, nop } from './common';
+import { DemoModel, DemoView, output } from './basic';
 
 const expected: string[] = [
   "Filter: Jo",

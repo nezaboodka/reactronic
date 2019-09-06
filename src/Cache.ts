@@ -1,6 +1,6 @@
-import { CachedResult, F, Handle } from "./internal/z.index";
-import { Transaction } from "./Transaction";
-import { Config } from "./Config";
+import { CachedResult, F, Handle } from './internal/z.index';
+import { Transaction } from './Transaction';
+import { Config } from './Config';
 
 export function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined {
   return (cacheof(method) as any).getResult(...args);

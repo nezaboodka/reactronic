@@ -1,5 +1,5 @@
-import { Utils } from "./Utils";
-import { Record } from "./Record";
+import { Utils } from './Utils';
+import { Record } from './Record';
 
 // Handle
 

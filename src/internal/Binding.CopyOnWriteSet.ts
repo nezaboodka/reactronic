@@ -1,5 +1,5 @@
-import { Binding, R, W } from "./Binding";
-export { Binding } from "./Binding";
+import { Binding, R, W } from './Binding';
+export { Binding } from './Binding';
 
 export abstract class CopyOnWriteSet<T> extends Set<T> {
   add(value: T): this { super.add.call(W<Set<T>>(this), value); return this; }

@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { stateful, Dbg, Trace } from "../src/z.index";
+import { stateful, Dbg, Trace } from '../src/z.index';
 
 // Person
 

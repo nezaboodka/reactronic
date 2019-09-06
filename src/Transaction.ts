@@ -1,5 +1,5 @@
-import { Dbg, Trace, Utils, undef, Record, ICachedResult, F, Handle, Snapshot, Hint } from "./internal/z.index";
-import { SeparateFrom } from "./Config";
+import { Dbg, Utils, undef, Record, ICachedResult, F, Handle, Snapshot, Hint } from './internal/z.index';
+import { SeparateFrom, Trace } from './Config';
 
 export class Transaction {
   static none: Transaction;

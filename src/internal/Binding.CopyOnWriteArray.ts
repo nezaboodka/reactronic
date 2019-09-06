@@ -1,5 +1,5 @@
-import { Binding, R, W } from "./Binding";
-export { Binding } from "./Binding";
+import { Binding, R, W } from './Binding';
+export { Binding } from './Binding';
 
 export abstract class CopyOnWriteArray<T> extends Array<T> {
   get length(): number { return super.length; }

@@ -1,7 +1,7 @@
-import { Handle } from "./internal/z.index";
-import { SeparateFrom } from "./Config";
-import { stateful } from "./Config.decorators";
-import { Transaction } from "./Transaction";
+import { Handle } from './internal/z.index';
+import { SeparateFrom } from './Config';
+import { stateful } from './Config.decorators';
+import { Transaction } from './Transaction';
 
 @stateful
 export class Monitor {

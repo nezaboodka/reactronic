@@ -1,4 +1,4 @@
-﻿import { stateful, transaction, cache, behavior, Renew, Monitor, monitor, all, sleep, Dbg } from "../src/z.index";
+﻿import { stateful, transaction, cache, behavior, Renew, Monitor, monitor, all, sleep, Dbg } from '../src/z.index';
 
 export const output: string[] = [];
 export const mon = Monitor.create("demo");

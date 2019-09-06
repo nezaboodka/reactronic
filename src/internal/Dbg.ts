@@ -1,17 +1,6 @@
+import { Trace } from '../Trace';
 
-// Trace
-
-export interface Trace {
-  readonly transactions: boolean;
-  readonly methods: boolean;
-  readonly reads: boolean;
-  readonly writes: boolean;
-  readonly changes: boolean;
-  readonly subscriptions: boolean;
-  readonly outdating: boolean;
-  readonly gc: boolean;
-  readonly silent: boolean;
-}
+// Dbg
 
 export interface TraceHighlight {
   readonly color: number;
@@ -33,7 +22,7 @@ export class Dbg implements Trace, TraceHighlight {
   readonly prefix: string;
   readonly margin: number;
 
-  constructor(existing: Trace, t: Partial<Trace>, color: number, prefix: string, margin: number) {
+  constructor(existing: Trace & TraceHighlight, t: Partial<Trace>, hl?: TraceHighlight) {
     this.transactions = t.transactions !== undefined ? t.transactions : existing.transactions;
     this.methods = t.methods !== undefined ? t.methods : existing.methods;
     this.reads = t.reads !== undefined ? t.reads : existing.reads;
@@ -43,21 +32,30 @@ export class Dbg implements Trace, TraceHighlight {
     this.outdating = t.outdating !== undefined ? t.outdating : existing.outdating;
     this.gc = t.gc !== undefined ? t.gc : existing.gc;
     this.silent = t.silent !== undefined ? t.silent : existing.silent;
-    this.color = color;
-    this.prefix = prefix;
-    this.margin = margin;
+    this.color = hl ? hl.color : existing.color;
+    this.prefix = hl ? hl.prefix : existing.prefix;
+    this.margin = hl ? hl.margin : existing.margin;
   }
 
   static trace: Dbg = new Dbg({
-    transactions: false, methods: false, reads: false, writes: false, changes: false,
-    subscriptions: false, outdating: false, gc: false, silent: false}, {}, 37, "", 0);
+    transactions: false,
+    methods: false,
+    reads: false,
+    writes: false,
+    changes: false,
+    subscriptions: false,
+    outdating: false,
+    gc: false,
+    silent: false,
+    color: 37,
+    prefix: "",
+    margin: 0},
+    {});
 
   static switch(enabled: boolean, trace: Partial<Trace> | undefined, hl?: TraceHighlight): Dbg {
     const existing = Dbg.trace;
-    if (enabled) {
-      hl = hl || existing;
-      Dbg.trace = new Dbg(existing, trace || existing, hl.color, hl.prefix, hl.margin);
-    }
+    if (enabled)
+      Dbg.trace = new Dbg(existing, trace || existing, hl);
     return existing;
   }
 
