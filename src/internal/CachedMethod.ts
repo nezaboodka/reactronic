@@ -310,12 +310,10 @@ export class CachedResult implements ICachedResult {
     if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP && (!cascade || this.config.latency !== Renew.WhenReady)) {
       this.invalidation.timestamp = stamp;
       // Check if cache should be renewed
-      if (this.config.latency >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT) {
+      const renew = this.config.latency >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      if (renew)
         effect.push(this);
-        if (Dbg.trace.invalidations) Dbg.log(" ", "■", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
-      }
-      else
-        if (Dbg.trace.invalidations) Dbg.log(" ", "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}`);
+      if (Dbg.trace.invalidations) Dbg.log(" ", renew ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${renew ? " and will run automatically" : ""}`);
       // Invalidation of children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
       let r: Record = h.head;
