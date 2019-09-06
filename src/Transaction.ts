@@ -109,7 +109,7 @@ export class Transaction {
         r.changes.forEach(prop => {
           if (r.prev.backup) {
             const prevValue: any = r.prev.backup.data[prop];
-            const t: Record = Snapshot.current(true).tryWrite(h, prop, prevValue);
+            const t: Record = Snapshot.writable().tryWrite(h, prop, prevValue);
             if (t !== Record.empty) {
               t.data[prop] = prevValue;
               const v: any = t.prev.record.data[prop];
@@ -283,13 +283,19 @@ export class Transaction {
     return transactional;
   }
 
-  static _getCurrentSnapshot(write: boolean): Snapshot {
-    if (write && Transaction._inspection)
+  private static readableSnapshot(): Snapshot {
+    return Transaction._current.snapshot;
+  }
+
+  private static writableSnapshot(): Snapshot {
+    if (Transaction._inspection)
       throw new Error("cannot make changes during inspection");
     return Transaction._current.snapshot;
   }
 
   static _init(): void {
+    Snapshot.readable = Transaction.readableSnapshot; // override
+    Snapshot.writable = Transaction.writableSnapshot; // override
     Transaction.none.sealed = true; // semi-hack
     Transaction.none.snapshot.complete();
     Transaction._current = Transaction.none;

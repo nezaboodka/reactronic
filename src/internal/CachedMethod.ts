@@ -57,7 +57,7 @@ class CachedMethod extends Cache<any> {
   }
 
   private read(markViewed: boolean, args?: any[]): CachedCall {
-    const ctx = Snapshot.current(false);
+    const ctx = Snapshot.readable();
     const member = this.empty.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CachedResult = r.data[member] || this.empty;
@@ -71,7 +71,7 @@ class CachedMethod extends Cache<any> {
   }
 
   private write(): CachedCall {
-    const ctx = Snapshot.current(true);
+    const ctx = Snapshot.writable();
     const member = this.empty.member;
     const r: Record = ctx.write(this.handle, member, RT_CACHE);
     let c: CachedResult = r.data[member] || this.empty;
@@ -301,7 +301,7 @@ export class CachedResult implements ICachedResult {
   }
 
   get isInvalid(): boolean { // TODO: should depend on caller context
-    const ctx = Snapshot.current(false);
+    const ctx = Snapshot.readable();
     return this.invalidation.timestamp <= ctx.timestamp;
   }
 
@@ -311,7 +311,7 @@ export class CachedResult implements ICachedResult {
       this.invalidation.timestamp = stamp;
       // Invalidation of children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
-      const upper: Record = Snapshot.current(true).read(h);
+      const upper: Record = Snapshot.writable().read(h);
       if (upper.data[this.member] === this) { // TODO: Consider better solution?
         let r: Record = upper;
         while (r !== Record.empty && !r.outdated.has(this.member)) {
@@ -485,7 +485,6 @@ function init(): void {
   Record.markChanged = CachedResult.markChanged; // override
   Snapshot.applyDependencies = CachedResult.applyDependencies; // override
   Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
-  Snapshot.current = Transaction._getCurrentSnapshot; // override
   Promise.prototype.then = promiseThenProxy; // override
 }
 
