@@ -464,6 +464,8 @@ function valueHint(value: any): string {
     result = `Map(${value.size})`;
   else if (value instanceof CachedResult)
     result = `<recache:${Hint.record(value.record.prev.record, false, true)}>`;
+  else if (value === RT_UNMOUNT)
+    result = "<unmount>";
   else if (value !== undefined && value !== null)
     result = value.toString().slice(0, 20);
   else
