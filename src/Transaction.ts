@@ -16,13 +16,13 @@ export class Transaction {
   private conflicts?: Record[] = undefined;
   private reaction: { tran?: Transaction, effect: ICachedResult[] } = { tran: undefined, effect: [] };
   private readonly trace?: Partial<Trace>; // assigned in constructor
-  private readonly highlight: TransactionTraceHighlight; // assigned in constructor
+  private readonly decor: TransactionTraceDecor; // assigned in constructor
 
   constructor(hint: string, separate: SeparateFrom = SeparateFrom.Reaction, trace?: Partial<Trace>) {
     this.separate = separate;
     this.snapshot = new Snapshot(hint);
     this.trace = trace;
-    this.highlight = new TransactionTraceHighlight(this);
+    this.decor = new TransactionTraceDecor(this);
   }
 
   get id(): number { return this.snapshot.id; }
@@ -164,7 +164,7 @@ export class Transaction {
   private _run<T>(func: F<T>, ...args: any[]): T {
     const outer = Transaction.current;
     const dbg = Dbg.trace.transactions === true || (this.trace !== undefined && this.trace.transactions === true);
-    const restore = Dbg.switch(dbg, this.trace, this.highlight);
+    const restore = Dbg.switch(dbg, this.trace, this.decor);
     let result: T;
     try {
       this.workers++;
@@ -293,7 +293,7 @@ export class Transaction {
   }
 }
 
-class TransactionTraceHighlight {
+class TransactionTraceDecor {
   constructor(readonly tran: Transaction) {}
   get color(): number { return 31 + (this.tran.id) % 6; }
   get prefix(): string { return `t${this.tran.id}`; }

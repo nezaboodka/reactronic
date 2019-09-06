@@ -2,13 +2,13 @@ import { Trace } from '../Trace';
 
 // Dbg
 
-export interface TraceHighlight {
+export interface TraceDecor {
   readonly color: number;
   readonly prefix: string;
   readonly margin: number;
 }
 
-export class Dbg implements Trace, TraceHighlight {
+export class Dbg implements Trace, TraceDecor {
   readonly transactions: boolean;
   readonly methods: boolean;
   readonly reads: boolean;
@@ -22,7 +22,7 @@ export class Dbg implements Trace, TraceHighlight {
   readonly prefix: string;
   readonly margin: number;
 
-  constructor(existing: Trace & TraceHighlight, t: Partial<Trace>, hl?: TraceHighlight) {
+  constructor(existing: Trace & TraceDecor, t: Partial<Trace>, decor?: TraceDecor) {
     this.transactions = t.transactions !== undefined ? t.transactions : existing.transactions;
     this.methods = t.methods !== undefined ? t.methods : existing.methods;
     this.reads = t.reads !== undefined ? t.reads : existing.reads;
@@ -32,9 +32,9 @@ export class Dbg implements Trace, TraceHighlight {
     this.outdating = t.outdating !== undefined ? t.outdating : existing.outdating;
     this.gc = t.gc !== undefined ? t.gc : existing.gc;
     this.silent = t.silent !== undefined ? t.silent : existing.silent;
-    this.color = hl ? hl.color : existing.color;
-    this.prefix = hl ? hl.prefix : existing.prefix;
-    this.margin = hl ? hl.margin : existing.margin;
+    this.color = decor ? decor.color : existing.color;
+    this.prefix = decor ? decor.prefix : existing.prefix;
+    this.margin = decor ? decor.margin : existing.margin;
   }
 
   static trace: Dbg = new Dbg({
@@ -52,10 +52,10 @@ export class Dbg implements Trace, TraceHighlight {
     margin: 0},
     {});
 
-  static switch(enabled: boolean, trace: Partial<Trace> | undefined, hl?: TraceHighlight): Dbg {
+  static switch(enabled: boolean, trace: Partial<Trace> | undefined, decor?: TraceDecor): Dbg {
     const existing = Dbg.trace;
     if (enabled)
-      Dbg.trace = new Dbg(existing, trace || existing, hl);
+      Dbg.trace = new Dbg(existing, trace || existing, decor);
     return existing;
   }
 
