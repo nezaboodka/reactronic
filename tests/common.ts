@@ -50,17 +50,17 @@ export class Person {
 }
 
 export function trace(): void {
-  const all = process.env.AVA_DEBUG === undefined;
+  const ifNotDebug = process.env.AVA_DEBUG === undefined;
   const trace: Partial<Trace> = {
     transactions: true,
     methods: true,
-    reads: all,
-    writes: all,
-    changes: all,
-    subscriptions: all,
-    outdating: all,
-    gc: all,
-    silent: all,
+    reads: ifNotDebug,
+    writes: ifNotDebug,
+    changes: ifNotDebug,
+    subscriptions: ifNotDebug,
+    outdating: ifNotDebug,
+    gc: ifNotDebug,
+    silent: ifNotDebug,
   };
   Dbg.switch(true, trace);
 }
