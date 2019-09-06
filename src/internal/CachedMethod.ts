@@ -318,15 +318,14 @@ export class CachedResult implements ICachedResult {
         if (Dbg.trace.invalidations) Dbg.log(" ", "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}`);
       // Invalidation of children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
-      const upper: Record = Snapshot.writable().read(h);
-      if (upper.data[this.member] === this) { // TODO: Consider better solution?
-        let r: Record = upper;
-        while (r !== Record.empty && !r.outdated.has(this.member)) {
+      let r: Record = h.head;
+      while (r !== Record.empty && !r.outdated.has(this.member)) {
+        if (r.data[this.member] === this) {
           const oo = r.observers.get(this.member);
           if (oo)
-            oo.forEach(c => c.invalidate(upper, this.member, true, effect));
-          r = r.prev.record;
+            oo.forEach(c => c.invalidate(r, this.member, true, effect));
         }
+        r = r.prev.record;
       }
     }
   }
