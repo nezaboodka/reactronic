@@ -359,7 +359,7 @@ export class CachedResult implements ICachedResult {
     const cause = r;
     r = r.prev.record;
     while (r !== Record.empty && !r.outdated.has(prop)) {
-      r.outdated.add(prop);
+      r.outdated.set(prop, cause);
       const oo = r.observers.get(prop);
       if (oo)
         oo.forEach(c => c.invalidate(cause, prop, false, false, effect));
