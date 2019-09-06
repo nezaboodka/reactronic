@@ -93,7 +93,7 @@ export class Transaction {
   }
 
   undo(): void {
-    const hint = Dbg.trace.transactions ? `Tran#${this.snapshot.hint}.undo` : /* instabul ignore next */ "noname";
+    const hint = Dbg.trace.transactions ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
     Transaction.runAs<void>(hint, SeparateFrom.Reaction, undefined, () => {
       this.snapshot.changeset.forEach((r: Record, h: Handle) => {
         r.changes.forEach(prop => {
