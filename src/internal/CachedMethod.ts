@@ -478,21 +478,9 @@ export class CachedResult implements ICachedResult {
   }
 }
 
-// Global Init
-
-function init(): void {
-  Utils.different = CachedResult.differentImpl; // override
-  Record.markViewed = CachedResult.markViewed; // override
-  Record.markChanged = CachedResult.markChanged; // override
-  Snapshot.applyDependencies = CachedResult.applyDependencies; // override
-  Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
-  Snapshot.current = Transaction._getActiveSnapshot; // override
-}
-
-init();
-
 const original_primise_then = Promise.prototype.then;
-Promise.prototype.then = function(
+
+function promiseThenProxy(
   this: any, onsuccess?: ((value: any) => any | PromiseLike<any>) | undefined | null,
   onfailure?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
@@ -507,4 +495,18 @@ Promise.prototype.then = function(
       onfailure = Transaction._wrap<any>(t, CachedResult.active, false, false, onfailure);
   }
   return original_primise_then.call(this, onsuccess, onfailure);
-};
+}
+
+// Global Init
+
+function init(): void {
+  Utils.different = CachedResult.differentImpl; // override
+  Record.markViewed = CachedResult.markViewed; // override
+  Record.markChanged = CachedResult.markChanged; // override
+  Snapshot.applyDependencies = CachedResult.applyDependencies; // override
+  Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
+  Snapshot.current = Transaction._getActiveSnapshot; // override
+  Promise.prototype.then = promiseThenProxy; // override
+}
+
+init();
