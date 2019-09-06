@@ -309,6 +309,13 @@ export class CachedResult implements ICachedResult {
     const stamp = cause.snapshot.timestamp;
     if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP && (!cascade || this.config.latency !== Renew.WhenReady)) {
       this.invalidation.timestamp = stamp;
+      // Check if cache should be renewed
+      if (this.config.latency >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT) {
+        effect.push(this);
+        if (Dbg.trace.invalidations) Dbg.log(" ", "■", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
+      }
+      else
+        if (Dbg.trace.invalidations) Dbg.log(" ", "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}`);
       // Invalidation of children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
       const upper: Record = Snapshot.writable().read(h);
@@ -321,13 +328,6 @@ export class CachedResult implements ICachedResult {
           r = r.prev.record;
         }
       }
-      // Check if cache should be renewed
-      if (this.config.latency >= Renew.Immediately && upper.data[RT_UNMOUNT] !== RT_UNMOUNT) {
-        effect.push(this);
-        if (Dbg.trace.invalidations) Dbg.log(" ", "■", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
-      }
-      else
-        if (Dbg.trace.invalidations) Dbg.log(" ", "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}`);
     }
   }
 
