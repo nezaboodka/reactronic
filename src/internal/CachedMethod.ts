@@ -175,9 +175,9 @@ class CachedMethod extends Cache<any> {
 
 export class CachedResult implements ICachedResult {
   static active?: CachedResult = undefined;
-  readonly margin: number;
   get color(): number { return Dbg.trace.color; }
   get prefix(): string { return Dbg.trace.prefix; }
+  readonly margin: number;
   readonly tran: Transaction;
   readonly record: Record;
   readonly member: PropertyKey;
@@ -322,8 +322,9 @@ export class CachedResult implements ICachedResult {
     const stamp = cause.snapshot.timestamp;
     if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP && (!cascade || this.config.latency !== Renew.WhenReady)) {
       this.invalidation.timestamp = stamp;
-      // Invalidation of childred (cascade)
-      const upper: Record = Snapshot.current(true).read(Utils.get(this.record.data, RT_HANDLE));
+      // Invalidation of children (cascade)
+      const h: Handle = Utils.get(this.record.data, RT_HANDLE);
+      const upper: Record = Snapshot.current(true).read(h);
       if (upper.data[this.member] === this) { // TODO: Consider better solution?
         let r: Record = upper;
         while (r !== Record.empty && !r.outdated.has(this.member)) {
