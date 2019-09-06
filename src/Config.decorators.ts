@@ -1,3 +1,4 @@
+import { Trace } from "./internal/Trace";
 import { F } from "./internal/Record";
 import { Virt } from "./internal/Virtualization";
 import { Config, Renew, Latency, ReentrantCall, SeparateFrom } from "./Config";
@@ -31,8 +32,8 @@ export function monitor(value: Monitor | null): F<any> {
   return config({monitor: value});
 }
 
-export function tracing(value: number): F<any> {
-  return config({tracing: value});
+export function trace(value: Partial<Trace>): F<any> {
+  return config({trace: value});
 }
 
 export function config(value: Partial<Config>): F<any> {

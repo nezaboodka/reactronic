@@ -7,6 +7,7 @@ import { Handle, RT_HANDLE } from "./Handle";
 import { Snapshot } from "./Snapshot";
 import { Config, Latency, Renew, ReentrantCall, SeparateFrom } from "../Config";
 import { Monitor } from "../Monitor";
+import { Trace } from "./Trace";
 
 // Config
 
@@ -20,7 +21,7 @@ const DEFAULT: Config = {
   reentrant: ReentrantCall.WaitAndRestart,
   separate: SeparateFrom.Reaction,
   monitor: null,
-  tracing: 0,
+  trace: undefined,
 };
 
 export class ConfigRecord implements Config {
@@ -30,7 +31,7 @@ export class ConfigRecord implements Config {
   readonly reentrant: ReentrantCall;
   readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
-  readonly tracing: number;
+  readonly trace?: Partial<Trace>;
   static default = new ConfigRecord(undef, {body: undef, ...DEFAULT}, {}, false);
 
   constructor(body: Function | undefined, existing: ConfigRecord, patch: Partial<ConfigRecord>, implicit: boolean) {
@@ -40,7 +41,7 @@ export class ConfigRecord implements Config {
     this.reentrant = merge(DEFAULT.reentrant, existing.reentrant, patch.reentrant, implicit);
     this.separate = merge(DEFAULT.separate, existing.separate, patch.separate, implicit);
     this.monitor = merge(DEFAULT.monitor, existing.monitor, patch.monitor, implicit);
-    this.tracing = merge(DEFAULT.tracing, existing.tracing, patch.tracing, implicit);
+    this.trace = merge(DEFAULT.trace, existing.trace, patch.trace, implicit);
     Object.freeze(this);
   }
 }

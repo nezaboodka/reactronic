@@ -1,6 +1,6 @@
 ﻿import test from "ava";
-import { Transaction, Renew, Cache, cacheof, Trace as T } from "../src/z.index";
-import { Person, nop } from "./common";
+import { Transaction, Renew, Cache, cacheof } from "../src/z.index";
+import { Person, trace, nop } from "./common";
 import { DemoModel, DemoView, output } from "./basic";
 
 const expected: string[] = [
@@ -14,8 +14,8 @@ const expected: string[] = [
 ];
 
 test("basic", t => {
-  T.level = process.env.AVA_DEBUG === undefined ? 6 : /* istanbul ignore next */ 3;
-  // Simple actions
+  trace();
+  // Simple transactions
   const app = Transaction.run(() => new DemoView(new DemoModel()));
   try {
     const rendering = cacheof(app.render);

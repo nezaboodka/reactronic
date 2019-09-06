@@ -1,4 +1,4 @@
-import { Utils, Trace as T, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
+import { Utils, Dbg, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from "./z.index";
 import { Cache } from "../Cache";
 export { Cache, resultof, cacheof } from "../Cache";
 import { Config, Renew, ReentrantCall, SeparateFrom } from "../Config";
@@ -32,10 +32,10 @@ class CachedMethod extends Cache<any> {
     let call: CachedCall = this.read(false, args);
     if (!call.ok) {
       const c: CachedResult = call.cache;
-      const hint: string = (c.config.tracing >= 2 || T.level >= 2) ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "recache";
+      const hint: string = Dbg.trace.methods ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "recache";
       const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
       let call2 = call;
-      const ret = Transaction.runAs<any>(hint, separate, c.config.tracing, (argsx: any[] | undefined): any => {
+      const ret = Transaction.runAs<any>(hint, separate, c.config.trace, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
@@ -51,7 +51,7 @@ class CachedMethod extends Cache<any> {
         call = call2;
     }
     else
-      if (T.level >= 2) T.log("║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
+      if (Dbg.trace.methods) Dbg.log("║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
     Record.markViewed(call.record, call.cache.member);
     return call;
   }
@@ -78,7 +78,7 @@ class CachedMethod extends Cache<any> {
     if (c.record !== r) {
       const c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
-      if (T.level >= 3) T.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.empty ? "empty" : c.hint(false)}`);
+      if (Dbg.trace.methods) Dbg.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.empty ? "empty" : c.hint(false)}`);
       Record.markChanged(r, c2.member, true, RT_CACHE);
       c = c2;
     }
@@ -140,12 +140,12 @@ class CachedMethod extends Cache<any> {
     const call = this.read(false);
     const c: CachedResult = call.cache;
     const r: Record = call.record;
-    const hint: string = T.level > 2 ? `${Hint.handle(this.handle)}.${this.empty.member.toString()}/configure` : /* istanbul ignore next */ "configure";
-    return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, 0, (): Config => {
+    const hint: string = Dbg.trace.methods ? `${Hint.handle(this.handle)}.${this.empty.member.toString()}/configure` : /* istanbul ignore next */ "configure";
+    return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, undefined, (): Config => {
       const call2 = this.write();
       const c2: CachedResult = call2.cache;
       c2.config = new ConfigRecord(c2.config.body, c2.config, config, false);
-      if (T.level >= 5) T.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
+      if (Dbg.trace.writes) Dbg.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
     });
   }
@@ -153,15 +153,13 @@ class CachedMethod extends Cache<any> {
   static run<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined;
     const outer = CachedResult.active;
-    const outerVerbosity = T.level;
-    const outerMargin = T.margin;
+    const restore = Dbg.trace;
+    if (c) {
+      const dbg = Dbg.trace.methods || (c.config.trace !== undefined && c.config.trace.methods === true);
+      Dbg.switch(dbg, c.config.trace, c);
+    }
     try {
       CachedResult.active = c;
-      if (c) {
-        if (c.config.tracing !== 0)
-          T.level = c.config.tracing;
-        T.margin = c.margin;
-      }
       result = func(...args);
     }
     catch (e) {
@@ -170,9 +168,8 @@ class CachedMethod extends Cache<any> {
       throw e;
     }
     finally {
-      T.margin = outerMargin;
-      T.level = outerVerbosity;
       CachedResult.active = outer;
+      Dbg.trace = restore;
     }
     return result;
   }
@@ -183,6 +180,8 @@ class CachedMethod extends Cache<any> {
 export class CachedResult implements ICachedResult {
   static active?: CachedResult = undefined;
   readonly margin: number;
+  get color(): number { return Dbg.trace.color; }
+  get prefix(): string { return Dbg.trace.prefix; }
   readonly tran: Transaction;
   readonly record: Record;
   readonly member: PropertyKey;
@@ -197,7 +196,7 @@ export class CachedResult implements ICachedResult {
   readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
   constructor(record: Record, member: PropertyKey, init: CachedResult | ConfigRecord) {
-    this.margin = T.margin + 1;
+    this.margin = Dbg.trace.margin + 1;
     this.tran = Transaction.current;
     this.record = record;
     this.member = member;
@@ -253,13 +252,13 @@ export class CachedResult implements ICachedResult {
     const c: CachedResult | undefined = CachedResult.active; // alias
     if (c && c.config.latency >= Renew.Manually && prop !== RT_HANDLE) {
       CachedResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
-      if (T.level >= 5) T.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
+      if (Dbg.trace.reads) Dbg.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
   }
 
   static markChanged(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
     changed ? r.changes.add(prop) : r.changes.delete(prop);
-    if (T.level >= 5) T.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
+    if (Dbg.trace.writes) Dbg.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
     const oo = r.observers.get(prop);
     if (oo && oo.size > 0) { // real-time notifications (inside the same transaction)
       const effect: ICachedResult[] = [];
@@ -310,12 +309,12 @@ export class CachedResult implements ICachedResult {
     o.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach(r => {
         CachedResult.acquireObserverSet(r, prop).add(this); // link
-        if (T.level >= 3) subscriptions.push(Hint.record(r, false, true, prop));
+        if (Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (effect && r.outdated.has(prop))
           this.markOutdated(r, prop, hot, false, effect);
       });
     });
-    if (T.level >= 3 && subscriptions.length > 0) T.log(hot ? "║  " : " ", "O", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if (Dbg.trace.subscriptions && subscriptions.length > 0) Dbg.log(hot ? "║  " : " ", "O", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
   isOutdated(): boolean { // TODO: should depend on caller context
@@ -342,10 +341,10 @@ export class CachedResult implements ICachedResult {
       // Check if cache should be renewed
       if (this.config.latency >= Renew.Immediately && upper.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         effect.push(this);
-        if (T.level >= 2) T.log(" ", "■", `${this.hint(false)} is outdated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
+        if (Dbg.trace.outdating) Dbg.log(" ", "■", `${this.hint(false)} is outdated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
       }
       else
-        if (T.level >= 2) T.log(" ", "□", `${this.hint(false)} is outdated by ${Hint.record(cause, false, false, causeProp)}`);
+        if (Dbg.trace.outdating) Dbg.log(" ", "□", `${this.hint(false)} is outdated by ${Hint.record(cause, false, false, causeProp)}`);
     }
   }
 
@@ -382,7 +381,7 @@ export class CachedResult implements ICachedResult {
   }
 
   enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
-    if (this.config.tracing >= 3 || (this.config.tracing === 0 && T.level >= 3)) T.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
+    if (Dbg.trace.methods) Dbg.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
     if (!prev.outdated.recaching)
@@ -402,8 +401,7 @@ export class CachedResult implements ICachedResult {
           this.leave(r, prev, mon, "▒▒", "- finished ", "ERROR ──┘");
           throw error;
         });
-      if (this.config.tracing >= 3 || (this.config.tracing === 0 && T.level >= 3))
-        T.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
+      if (Dbg.trace.methods) Dbg.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
     }
     else {
       this.result = this.ret;
@@ -417,7 +415,7 @@ export class CachedResult implements ICachedResult {
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
-    if (this.config.tracing >= 3 || (this.config.tracing === 0 && T.level >= 3)) T.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
+    if (Dbg.trace.methods) Dbg.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
     // TODO: handle errors
     this.subscribeToObservables(true);
     this.hotObservables.clear();
@@ -469,7 +467,7 @@ export class CachedResult implements ICachedResult {
 
   static unmount(...objects: any[]): Transaction {
     let t: Transaction = Transaction.current;
-    Transaction.runAs<void>("unmount", SeparateFrom.Reaction, 0, (): void => {
+    Transaction.runAs<void>("unmount", SeparateFrom.Reaction, undefined, (): void => {
       t = Transaction.current;
       for (const x of objects) {
         if (Utils.get(x, RT_HANDLE))
@@ -481,6 +479,19 @@ export class CachedResult implements ICachedResult {
 }
 
 // Global Init
+
+function init(): void {
+  Utils.different = CachedResult.differentImpl; // override
+  Record.markViewed = CachedResult.markViewed; // override
+  Record.markChanged = CachedResult.markChanged; // override
+  Snapshot.applyDependencies = CachedResult.applyDependencies; // override
+  Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
+  Snapshot.current = Transaction._getActiveSnapshot; // override
+  Transaction._init();
+  // if (T.level >= 2) T.log("", "", "Reactronic is initialized", 0);
+}
+
+init();
 
 const original_primise_then = Promise.prototype.then;
 Promise.prototype.then = function(
@@ -499,16 +510,3 @@ Promise.prototype.then = function(
   }
   return original_primise_then.call(this, onsuccess, onfailure);
 };
-
-function init(): void {
-  Utils.different = CachedResult.differentImpl; // override
-  Record.markViewed = CachedResult.markViewed; // override
-  Record.markChanged = CachedResult.markChanged; // override
-  Snapshot.applyDependencies = CachedResult.applyDependencies; // override
-  Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
-  Snapshot.current = Transaction._getActiveSnapshot; // override
-  Transaction._init();
-  // if (T.level >= 2) T.log("", "", "Reactronic is initialized", 0);
-}
-
-init();

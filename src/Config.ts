@@ -1,3 +1,4 @@
+import { Trace } from "./internal/Trace";
 import { Monitor } from "./Monitor";
 
 export interface Config {
@@ -6,7 +7,7 @@ export interface Config {
   readonly reentrant: ReentrantCall;
   readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
-  readonly tracing: number;
+  readonly trace?: Partial<Trace>;
 }
 
 export type Latency = number | Renew; // milliseconds

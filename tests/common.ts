@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { stateful } from "../src/z.index";
+import { stateful, Dbg, Trace } from "../src/z.index";
 
 // Person
 
@@ -47,6 +47,22 @@ export class Person {
       for (const x of children)
         x.setParent(this);
   }
+}
+
+export function trace(): void {
+  const all = process.env.AVA_DEBUG === undefined;
+  const trace: Partial<Trace> = {
+    transactions: true,
+    methods: true,
+    reads: all,
+    writes: all,
+    changes: all,
+    subscriptions: all,
+    outdating: all,
+    gc: all,
+    silent: all,
+  };
+  Dbg.switch(true, trace);
 }
 
 /* istanbul ignore next */

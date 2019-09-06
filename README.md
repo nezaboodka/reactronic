@@ -225,7 +225,7 @@ function behavior(latency: Latency, reentrant: ReentrantCall, separate: Separate
 function monitor(value: Monitor | null);
 function config(config: Partial<Config>);
 
-// Config: Latency, ReentrantCall, SeparateFrom, Monitor
+// Config, Latency, ReentrantCall, SeparateFrom, Monitor
 
 interface Config {
   readonly stateful: boolean;
@@ -233,7 +233,7 @@ interface Config {
   readonly reentrant: ReentrantCall;
   readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
-  readonly tracing: number;
+  readonly trace?: Partial<Trace>;
 }
 
 type Latency = number | Renew; // milliseconds
@@ -269,6 +269,18 @@ class Monitor {
   constructor(hint: string);
 }
 
+interface Trace {
+  readonly transactions: boolean;
+  readonly methods: boolean;
+  readonly reads: boolean;
+  readonly writes: boolean;
+  readonly changes: boolean;
+  readonly subscriptions: boolean;
+  readonly outdating: boolean;
+  readonly gc: boolean;
+  readonly silent: boolean;
+}
+
 // Transaction
 
 type F<T> = (...args: any[]) => T;
@@ -287,7 +299,7 @@ class Transaction {
   whenFinished(): Promise<void>;
   join<T>(p: Promise<T>): Promise<T>;
   static run<T>(func: F<T>, ...args: any[]): T;
-  static runAs<T>(hint: string, separate: SeparateFrom, tracing: number, func: F<T>, ...args: any[]): T;
+  static runAs<T>(hint: string, separate: SeparateFrom, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
   static readonly active: Transaction;
 }
 

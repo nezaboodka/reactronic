@@ -1,11 +1,11 @@
 import * as React from 'react';
 // import { stateful, transaction, cache, config, Renew, SeparateFrom,
-//   Transaction, ReactiveCache, Trace} from 'reactronic';
+//   Transaction, ReactiveCache, Dbg, Trace} from 'reactronic';
 import { stateful, transaction, cache, behavior, cacheof,
-  Renew, SeparateFrom, Transaction, Cache, Trace} from '../src/z.index';
+  Renew, SeparateFrom, Transaction, Cache, Dbg, Trace} from '../src/z.index';
 
-export function reactiveRender(render: (revision: number) => JSX.Element, tracing: number = 0, tran?: Transaction): JSX.Element {
-  const [jsx] = React.useState(() => tran ? tran.view(createJsx, tracing) : createJsx(tracing));
+export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
+  const [jsx] = React.useState(() => tran ? tran.view(createJsx, trace) : createJsx(trace));
   const [revision, refresh] = React.useState(0);
   React.useEffect(unmountEffect(jsx), []);
   return tran ? tran.view(() => jsx.render(revision, render, refresh)) : jsx.render(revision, render, refresh);
@@ -32,16 +32,16 @@ class Jsx {
   }
 }
 
-function createJsx(tracing: number): Jsx {
-  const dbg = tracing !== 0 || Trace.level >= 2;
-  const hint = dbg ? getComponentName() : undefined;
-  return Transaction.runAs<Jsx>(dbg ? `${hint}` : "new-jsx", SeparateFrom.Reaction, 0, () => {
+function createJsx(trace?: Partial<Trace>): Jsx {
+  const hint = Dbg.trace.transactions ? getComponentName() : undefined;
+  return Transaction.runAs<Jsx>(hint ? `${hint}` : "new-jsx", SeparateFrom.Reaction, undefined, () => {
     let jsx = new Jsx();
-    if (dbg) {
+    if (hint)
       Cache.setTraceHint(jsx, hint);
-      cacheof(jsx.render).configure({tracing});
-      cacheof(jsx.jsx).configure({tracing});
-      cacheof(jsx.trigger).configure({tracing});
+    if (trace) {
+      cacheof(jsx.render).configure({trace});
+      cacheof(jsx.jsx).configure({trace});
+      cacheof(jsx.trigger).configure({trace});
     }
     return jsx;
   });

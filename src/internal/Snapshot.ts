@@ -1,5 +1,5 @@
 import { Utils, undef } from "./Utils";
-import { Trace as T } from "./Trace";
+import { Dbg } from "./Trace";
 import { Record, ISnapshot, ICachedResult, RT_UNMOUNT } from "./Record";
 import { Handle, RT_HANDLE } from "./Handle";
 import { CopyOnWrite } from "./Virtualization";
@@ -86,7 +86,7 @@ export class Snapshot implements ISnapshot {
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this;
-      if (T.level >= 2) T.log("╔══", `v${this.timestamp}`, `${this.hint}`);
+      if (Dbg.trace.transactions) Dbg.log("╔══", `v${this.timestamp}`, `${this.hint}`);
     }
   }
 
@@ -101,7 +101,7 @@ export class Snapshot implements ISnapshot {
               conflicts = [];
             conflicts.push(r);
           }
-          if (T.level >= 3) T.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
+          if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
       this._timestamp = ++Snapshot.headTimestamp;
@@ -122,13 +122,13 @@ export class Snapshot implements ISnapshot {
         while (theirs !== Record.empty && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.changes.has(prop)) {
             const diff = Utils.different(theirs.data[prop], ours.data[prop]);
-            if (T.level >= 3) T.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
             if (diff)
               ours.conflicts.set(prop, theirs);
             break;
           }
           else if (prop === RT_UNMOUNT || unmountTheirs) {
-            if (T.level >= 3) T.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "!=" ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "!=" ${Hint.record(theirs, false)}.${prop.toString()}.`);
             ours.conflicts.set(prop, theirs);
             break;
           }
@@ -152,7 +152,7 @@ export class Snapshot implements ISnapshot {
         oo.forEach((c: ICachedResult) => {
           if (!c.isOutdated()) {
             merged.add(c);
-            if (T.level >= 3) T.log(" ", "O", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
+            if (Dbg.trace.subscriptions) Dbg.log(" ", "O", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
           }
         });
       }
@@ -169,15 +169,16 @@ export class Snapshot implements ISnapshot {
         h.changing = undefined;
       if (!error) {
         h.head = r;
-        if (T.level >= 3) {
+        if (Dbg.trace.changes) {
           const props: string[] = [];
           r.changes.forEach(prop => props.push(prop.toString()));
           const s = props.join(", ");
-          T.log("║", "•", r.prev.record !== Record.empty ? `${Hint.record(r.prev.record)}(${s}) is overwritten.` : `${Hint.record(r)}(${s}) is created.`);
+          Dbg.log("║", "•", r.prev.record !== Record.empty ? `${Hint.record(r.prev.record)}(${s}) is overwritten.` : `${Hint.record(r)}(${s}) is created.`);
         }
       }
     });
-    if (T.level >= 2) T.log(this.timestamp < MAX_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
+    if (Dbg.trace.transactions)
+      Dbg.log(this.timestamp < MAX_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
   /* istanbul ignore next */
@@ -211,9 +212,9 @@ export class Snapshot implements ISnapshot {
   }
 
   private static unlinkHistory(s: Snapshot): void {
-    if (T.level >= 5) T.log("", "  ", `snapshot t${s.id} (${s.hint}) is being collected`);
+    if (Dbg.trace.gc) Dbg.log("", "  ", `snapshot t${s.id} (${s.hint}) is being collected`);
     s.changeset.forEach((r: Record, h: Handle) => {
-      if (T.level >= 5 && r.prev.record !== Record.empty) T.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
+      if (Dbg.trace.gc && r.prev.record !== Record.empty) Dbg.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
       // Snapshot.mergeObservers(r, r.prev.record);
       r.prev.record = Record.empty; // unlink history
