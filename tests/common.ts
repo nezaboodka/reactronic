@@ -58,7 +58,7 @@ export function trace(): void {
     writes: ifNotDebug,
     changes: ifNotDebug,
     subscriptions: ifNotDebug,
-    invalidations: ifNotDebug,
+    invalidations: true,
     gc: ifNotDebug,
     silent: ifNotDebug,
   };
