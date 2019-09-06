@@ -78,8 +78,7 @@ class CachedMethod extends Cache<any> {
     if (c.record !== r) {
       const c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
-      if (Dbg.trace.methods) Dbg.log("║", " ", `${c2.hint(false)} is being recached over ${c === this.empty ? "empty" : c.hint(false)}`);
-      Record.markChanged(r, c2.member, true, RT_CACHE);
+      Record.markChanged(r, c2.member, true, c2);
       c = c2;
     }
     return { cache: c, record: r, ok: true };
@@ -145,7 +144,7 @@ class CachedMethod extends Cache<any> {
       const call2 = this.write();
       const c2: CachedResult = call2.cache;
       c2.config = new ConfigRecord(c2.config.body, c2.config, config, false);
-      if (Dbg.trace.writes) Dbg.log("║", "w", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
+      if (Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
     });
   }
@@ -246,13 +245,13 @@ export class CachedResult implements ICachedResult {
     const c: CachedResult | undefined = CachedResult.active; // alias
     if (c && c.config.latency >= Renew.Manually && prop !== RT_HANDLE) {
       CachedResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
-      if (Dbg.trace.reads) Dbg.log("║", "r", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
+      if (Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
   }
 
   static markChanged(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
     changed ? r.changes.add(prop) : r.changes.delete(prop);
-    if (Dbg.trace.writes) Dbg.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
+    if (Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, true)}.${prop.toString()} = ${valueHint(value)}`);
   }
 
   static applyDependencies(changeset: Map<Handle, Record>, effect: ICachedResult[]): void {
@@ -297,7 +296,7 @@ export class CachedResult implements ICachedResult {
           this.invalidate(r, prop, false, effect);
       });
     });
-    if (Dbg.trace.subscriptions && subscriptions.length > 0) Dbg.log(" ", "O", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if (Dbg.trace.subscriptions && subscriptions.length > 0) Dbg.log(" ", "o", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
   get isInvalid(): boolean { // TODO: should depend on caller context
@@ -453,6 +452,23 @@ export class CachedResult implements ICachedResult {
     });
     return t;
   }
+}
+
+function valueHint(value: any): string {
+  let result: string = "";
+  if (Array.isArray(value))
+    result = `Array(${value.length})`;
+  else if (value instanceof Set)
+    result = `Set(${value.size})`;
+  else if (value instanceof Map)
+    result = `Map(${value.size})`;
+  else if (value instanceof CachedResult)
+    result = `<recache:${Hint.record(value.record.prev.record, false, true)}>`;
+  else if (value !== undefined && value !== null)
+    result = value.toString().slice(0, 20);
+  else
+    result = "◌";
+  return result;
 }
 
 const original_primise_then = Promise.prototype.then;

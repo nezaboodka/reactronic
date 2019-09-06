@@ -127,13 +127,13 @@ export class Snapshot implements ISnapshot {
         while (theirs !== Record.empty && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.changes.has(prop)) {
             const diff = Utils.different(theirs.data[prop], ours.data[prop]);
-            if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "!=" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "<>" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
             if (diff)
               ours.conflicts.set(prop, theirs);
             break;
           }
           else if (prop === RT_UNMOUNT || unmountTheirs) {
-            if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "!=" ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "<>" ${Hint.record(theirs, false)}.${prop.toString()}.`);
             ours.conflicts.set(prop, theirs);
             break;
           }
@@ -217,9 +217,9 @@ export class Snapshot implements ISnapshot {
   }
 
   private static unlinkHistory(s: Snapshot): void {
-    if (Dbg.trace.gc) Dbg.log("", "  ", `snapshot t${s.id} (${s.hint}) is being collected`);
+    if (Dbg.trace.gc) Dbg.log("", "gc", `snapshot t${s.id} (${s.hint}) is being collected`);
     s.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.trace.gc && r.prev.record !== Record.empty) Dbg.log("", "gc", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
+      if (Dbg.trace.gc && r.prev.record !== Record.empty) Dbg.log("", "    ", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
       // Snapshot.mergeObservers(r, r.prev.record);
       r.prev.record = Record.empty; // unlink history
@@ -235,7 +235,7 @@ export class Hint {
   static record(r: Record, tranless?: boolean, nameless?: boolean, prop?: PropertyKey): string {
     const t: string = tranless ? "" : `t${r.snapshot.id}`;
     const h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
-    const name: string = h ? `${t}${Hint.handle(h, nameless)}` : /* istanbul ignore next */ "[new]";
+    const name: string = h ? `${t}${Hint.handle(h, nameless)}` : /* istanbul ignore next */ "t0#0";
     return prop !== undefined ? `${name}.${prop.toString()}` : `${name}`;
   }
 

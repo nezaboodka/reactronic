@@ -57,23 +57,6 @@ export class Utils {
     return !Utils.equal(oldValue, newValue); // to be redefined by Cache implementation
   };
 
-  static valueHint(value: any): string {
-    let result: string = "";
-    if (Array.isArray(value))
-      result = `Array(${value.length})`;
-    else if (value instanceof Set)
-      result = `Set(${value.size})`;
-    else if (value instanceof Map)
-      result = `Map(${value.size})`;
-    else if (value === RT_CACHE)
-      result = `<renew>`;
-    else if (value !== undefined && value !== null)
-      result = value.toString().slice(0, 20);
-    else
-      result = "◌";
-    return result;
-  }
-
   static hasAllFlags(flags: number, required: number): boolean {
     return (flags & required) === required;
   }

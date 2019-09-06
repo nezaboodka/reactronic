@@ -54,12 +54,12 @@ export function trace(): void {
   const trace: Partial<Trace> = {
     transactions: true,
     methods: true,
-    reads: ifNotDebug,
-    writes: ifNotDebug,
-    changes: ifNotDebug,
-    subscriptions: ifNotDebug,
+    reads: true,
+    writes: true,
+    changes: true,
+    subscriptions: true,
     invalidations: true,
-    gc: ifNotDebug,
+    gc: true,
     silent: ifNotDebug,
   };
   Dbg.switch(trace, undefined, true);
