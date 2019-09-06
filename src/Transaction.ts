@@ -11,6 +11,7 @@ class TransactionTraceDecor {
 export class Transaction {
   static readonly none: Transaction = new Transaction("none", SeparateFrom.All);
   static current: Transaction;
+  // private static isInspection: boolean = false;
   private readonly separate: SeparateFrom;
   private readonly snapshot: Snapshot; // assigned in constructor
   private workers: number = 0;
@@ -40,12 +41,12 @@ export class Transaction {
       throw this.error;
     if (this.sealed && Transaction.current !== this)
       throw new Error("cannot run transaction that is already sealed");
-    return this._run(func, ...args);
+    return this._run(false, func, ...args);
   }
 
   /* istanbul ignore next */
-  view<T>(func: F<T>, ...args: any[]): T {
-    return this._run(func, ...args);
+  inspect<T>(func: F<T>, ...args: any[]): T {
+    return this._run(true, func, ...args);
   }
 
   // wrap<T>(func: F<T>): F<T> {
@@ -67,7 +68,7 @@ export class Transaction {
   }
 
   cancel(error: Error, retryAfterOrIgnore?: Transaction | null): Transaction {
-    this._run(Transaction.seal, this, error,
+    this._run(false, Transaction.seal, this, error,
       retryAfterOrIgnore === null ? Transaction.none : retryAfterOrIgnore);
     return this;
   }
@@ -162,10 +163,9 @@ export class Transaction {
 
   // Internal
 
-  private _run<T>(func: F<T>, ...args: any[]): T {
+  private _run<T>(inspect: boolean, func: F<T>, ...args: any[]): T {
     const outer = Transaction.current;
-    const dbg = Dbg.trace.transactions && (this.trace === undefined || this.trace.transactions !== false);
-    const restore = Dbg.switch(dbg, this.trace, this.decor);
+    const restore = Dbg.switch(this.trace, this.decor, Dbg.trace.transactions && (this.trace === undefined || this.trace.transactions !== false));
     let result: T;
     try {
       this.workers++;
@@ -267,7 +267,7 @@ export class Transaction {
     if (inc)
       t.run<void>(() => t.workers++);
     const transactional: F<T> = (...args: any[]): T =>
-      t._run<T>(() => { // transaction context
+      t._run<T>(true, () => { // transaction context
         if (dec)
           t.workers--;
         return f(...args);

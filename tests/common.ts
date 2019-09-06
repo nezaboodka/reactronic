@@ -62,7 +62,7 @@ export function trace(): void {
     gc: ifNotDebug,
     silent: ifNotDebug,
   };
-  Dbg.switch(true, trace);
+  Dbg.switch(trace, undefined, true);
 }
 
 /* istanbul ignore next */

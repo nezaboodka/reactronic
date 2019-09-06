@@ -5,12 +5,12 @@ import { stateful, transaction, cache, behavior, cacheof,
   Renew, SeparateFrom, Transaction, Cache, Dbg, Trace} from '../src/z.index';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
-  const restore = Dbg.switch(trace !== undefined, trace);
+  const restore = Dbg.switch(trace, undefined, trace !== undefined);
   try {
-    const [jsx] = React.useState(() => tran ? tran.view(createJsx, trace) : createJsx(trace));
+    const [jsx] = React.useState(() => tran ? tran.inspect(createJsx, trace) : createJsx(trace));
     const [revision, refresh] = React.useState(0);
     React.useEffect(unmountEffect(jsx), []);
-    return tran ? tran.view(() => jsx.render(revision, render, refresh)) : jsx.render(revision, render, refresh);
+    return tran ? tran.inspect(() => jsx.render(revision, render, refresh)) : jsx.render(revision, render, refresh);
   }
   finally {
     Dbg.trace = restore;

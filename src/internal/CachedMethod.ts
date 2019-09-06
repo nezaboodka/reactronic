@@ -153,11 +153,7 @@ class CachedMethod extends Cache<any> {
   static run<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined;
     const outer = CachedResult.active;
-    const restore = Dbg.trace;
-    if (c) {
-      const dbg = Dbg.trace.methods && (c.config.trace === undefined || c.config.trace.methods !== false);
-      Dbg.switch(dbg, c.config.trace, c);
-    }
+    const restore = c ? Dbg.switch(c.config.trace, c, Dbg.trace.methods && (c.config.trace === undefined || c.config.trace.methods !== false)) : Dbg.trace;
     try {
       CachedResult.active = c;
       result = func(...args);
