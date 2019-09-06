@@ -155,7 +155,7 @@ class CachedMethod extends Cache<any> {
     const outer = CachedResult.active;
     const restore = Dbg.trace;
     if (c) {
-      const dbg = Dbg.trace.methods || (c.config.trace !== undefined && c.config.trace.methods === true);
+      const dbg = Dbg.trace.methods && (c.config.trace === undefined || c.config.trace.methods !== false);
       Dbg.switch(dbg, c.config.trace, c);
     }
     try {

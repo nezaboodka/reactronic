@@ -5,10 +5,16 @@ import { stateful, transaction, cache, behavior, cacheof,
   Renew, SeparateFrom, Transaction, Cache, Dbg, Trace} from '../src/z.index';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
-  const [jsx] = React.useState(() => tran ? tran.view(createJsx, trace) : createJsx(trace));
-  const [revision, refresh] = React.useState(0);
-  React.useEffect(unmountEffect(jsx), []);
-  return tran ? tran.view(() => jsx.render(revision, render, refresh)) : jsx.render(revision, render, refresh);
+  const restore = Dbg.switch(trace !== undefined, trace);
+  try {
+    const [jsx] = React.useState(() => tran ? tran.view(createJsx, trace) : createJsx(trace));
+    const [revision, refresh] = React.useState(0);
+    React.useEffect(unmountEffect(jsx), []);
+    return tran ? tran.view(() => jsx.render(revision, render, refresh)) : jsx.render(revision, render, refresh);
+  }
+  finally {
+    Dbg.trace = restore;
+  }
 }
 
 @stateful
@@ -33,8 +39,9 @@ class Jsx {
 }
 
 function createJsx(trace?: Partial<Trace>): Jsx {
-  const hint = Dbg.trace.transactions ? getComponentName() : undefined;
-  return Transaction.runAs<Jsx>(hint ? `${hint}` : "new-jsx", SeparateFrom.Reaction, undefined, () => {
+  const dbg = Dbg.trace.transactions && (trace === undefined || trace.transactions !== false);
+  const hint = dbg ? getComponentName() : undefined;
+  return Transaction.runAs<Jsx>(hint ? `${hint}` : 'new-jsx', SeparateFrom.Reaction, trace, () => {
     let jsx = new Jsx();
     if (hint)
       Cache.setTraceHint(jsx, hint);

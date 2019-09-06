@@ -170,7 +170,7 @@ export class Transaction {
 
   private _run<T>(func: F<T>, ...args: any[]): T {
     const outer = Transaction.current;
-    const dbg = Dbg.trace.transactions === true || (this.trace !== undefined && this.trace.transactions === true);
+    const dbg = Dbg.trace.transactions && (this.trace === undefined || this.trace.transactions !== false);
     const restore = Dbg.switch(dbg, this.trace, this.decor);
     let result: T;
     try {
