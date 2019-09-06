@@ -189,7 +189,6 @@ export class CachedResult implements ICachedResult {
   started: number;
   readonly invalidation: { timestamp: number, recaching: CachedResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
-  readonly hotObservables: Map<PropertyKey, Set<Record>>;
 
   constructor(record: Record, member: PropertyKey, init: CachedResult | ConfigRecord) {
     this.margin = Dbg.trace.margin + 1;
@@ -211,7 +210,6 @@ export class CachedResult implements ICachedResult {
     this.started = 0;
     this.invalidation = { timestamp: 0, recaching: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
-    this.hotObservables = new Map<PropertyKey, Set<Record>>();
   }
 
   hint(tranless?: boolean): string { return `${Hint.record(this.record, tranless, false, this.member)}`; }
@@ -255,15 +253,6 @@ export class CachedResult implements ICachedResult {
   static markChanged(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
     changed ? r.changes.add(prop) : r.changes.delete(prop);
     if (Dbg.trace.writes) Dbg.log("║", "w", `${Hint.record(r, true)}.${prop.toString()} = ${Utils.valueHint(value)}`);
-    const oo = r.observers.get(prop);
-    if (oo && oo.size > 0) { // real-time notifications (inside the same transaction)
-      const effect: ICachedResult[] = [];
-      oo.forEach(c => c.invalidate(r, prop, true, false, effect));
-      r.observers.delete(prop);
-      if (effect.length > 0)
-        Transaction.triggerRecacheAll(Hint.record(r), r.snapshot.timestamp,
-          { tran: Transaction.current, effect });
-    }
   }
 
   static applyDependencies(changeset: Map<Handle, Record>, effect: ICachedResult[]): void {
@@ -273,7 +262,7 @@ export class CachedResult implements ICachedResult {
           CachedResult.markAllPrevRecordsAsOutdated(r, prop, effect);
           const value = r.data[prop];
           if (value instanceof CachedResult)
-            value.subscribeToObservables(false, effect);
+            value.subscribeToObservables(effect);
         });
       else
         for (const prop in r.prev.record.data)
@@ -292,25 +281,23 @@ export class CachedResult implements ICachedResult {
   }
 
   static acquireObservableSet(c: CachedResult, prop: PropertyKey, hot: boolean): Set<Record> {
-    const o = hot ? c.hotObservables : c.observables;
-    let result: Set<Record> | undefined = o.get(prop);
+    let result: Set<Record> | undefined = c.observables.get(prop);
     if (!result)
-      o.set(prop, result = new Set<Record>());
+      c.observables.set(prop, result = new Set<Record>());
     return result;
   }
 
-  private subscribeToObservables(hot: boolean, effect?: ICachedResult[]): void {
+  private subscribeToObservables(effect?: ICachedResult[]): void {
     const subscriptions: string[] = [];
-    const o = hot ? this.hotObservables : this.observables;
-    o.forEach((observables: Set<Record>, prop: PropertyKey) => {
+    this.observables.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach(r => {
         CachedResult.acquireObserverSet(r, prop).add(this); // link
         if (Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (effect && r.outdated.has(prop))
-          this.invalidate(r, prop, hot, false, effect);
+          this.invalidate(r, prop, false, effect);
       });
     });
-    if (Dbg.trace.subscriptions && subscriptions.length > 0) Dbg.log(hot ? "║  " : " ", "O", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if (Dbg.trace.subscriptions && subscriptions.length > 0) Dbg.log(" ", "O", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
   get isInvalid(): boolean { // TODO: should depend on caller context
@@ -318,7 +305,7 @@ export class CachedResult implements ICachedResult {
     return this.invalidation.timestamp <= ctx.timestamp;
   }
 
-  invalidate(cause: Record, causeProp: PropertyKey, hot: boolean, cascade: boolean, effect: ICachedResult[]): void {
+  invalidate(cause: Record, causeProp: PropertyKey, cascade: boolean, effect: ICachedResult[]): void {
     const stamp = cause.snapshot.timestamp;
     if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP && (!cascade || this.config.latency !== Renew.WhenReady)) {
       this.invalidation.timestamp = stamp;
@@ -330,7 +317,7 @@ export class CachedResult implements ICachedResult {
         while (r !== Record.empty && !r.outdated.has(this.member)) {
           const oo = r.observers.get(this.member);
           if (oo)
-            oo.forEach(c => c.invalidate(upper, this.member, false, true, effect));
+            oo.forEach(c => c.invalidate(upper, this.member, true, effect));
           r = r.prev.record;
         }
       }
@@ -361,7 +348,7 @@ export class CachedResult implements ICachedResult {
       r.outdated.set(prop, cause);
       const oo = r.observers.get(prop);
       if (oo)
-        oo.forEach(c => c.invalidate(cause, prop, false, false, effect));
+        oo.forEach(c => c.invalidate(cause, prop, false, effect));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
@@ -412,8 +399,6 @@ export class CachedResult implements ICachedResult {
     this.started = 0;
     if (Dbg.trace.methods) Dbg.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
     // TODO: handle errors
-    this.subscribeToObservables(true);
-    this.hotObservables.clear();
     // Cache.freeze(this);
   }
 
