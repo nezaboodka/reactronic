@@ -57,7 +57,7 @@ class CachedMethod extends Cache<any> {
   }
 
   private read(markViewed: boolean, args?: any[]): CachedCall {
-    const ctx = Snapshot.current();
+    const ctx = Snapshot.current(false);
     const member = this.empty.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CachedResult = r.data[member] || this.empty;
@@ -71,7 +71,7 @@ class CachedMethod extends Cache<any> {
   }
 
   private write(): CachedCall {
-    const ctx = Snapshot.current();
+    const ctx = Snapshot.current(true);
     const member = this.empty.member;
     const r: Record = ctx.write(this.handle, member, RT_CACHE);
     let c: CachedResult = r.data[member] || this.empty;
@@ -314,7 +314,7 @@ export class CachedResult implements ICachedResult {
   }
 
   isOutdated(): boolean { // TODO: should depend on caller context
-    const ctx = Snapshot.current();
+    const ctx = Snapshot.current(false);
     return this.outdated.timestamp <= ctx.timestamp;
   }
 
@@ -324,7 +324,7 @@ export class CachedResult implements ICachedResult {
       this.outdated.timestamp = stamp;
       // TODO: make cache readonly
       // Cascade invalidation
-      const upper: Record = Snapshot.current().read(Utils.get(this.record.data, RT_HANDLE));
+      const upper: Record = Snapshot.current(true).read(Utils.get(this.record.data, RT_HANDLE));
       if (upper.data[this.member] === this) { // TODO: Consider better solution?
         let r: Record = upper;
         while (r !== Record.empty && !r.outdated.has(this.member)) {
@@ -429,7 +429,7 @@ export class CachedResult implements ICachedResult {
       if (mon.prolonged) {
         const outer = Transaction.current;
         try {
-          Transaction.current = Transaction.none; // Workaround?
+          Transaction._current = Transaction.none; // Workaround?
           const leave = () => {
             CachedMethod.run(undefined, Transaction.runAs, "Monitor.leave",
               mon.separate, 0, () => mon.leave(this));
@@ -437,7 +437,7 @@ export class CachedResult implements ICachedResult {
           this.tran.whenFinished(false).then(leave, leave);
         }
         finally {
-          Transaction.current = outer;
+          Transaction._current = outer;
         }
       }
       else
@@ -501,7 +501,7 @@ function init(): void {
   Record.markChanged = CachedResult.markChanged; // override
   Snapshot.applyDependencies = CachedResult.applyDependencies; // override
   Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
-  Snapshot.current = Transaction._getActiveSnapshot; // override
+  Snapshot.current = Transaction._getCurrentSnapshot; // override
   Promise.prototype.then = promiseThenProxy; // override
 }
 

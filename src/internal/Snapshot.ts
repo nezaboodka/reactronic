@@ -27,7 +27,7 @@ export class Snapshot implements ISnapshot {
   }
 
   /* istanbul ignore next */
-  static current = function(): Snapshot {
+  static current = function(write: boolean): Snapshot {
     return undef(); // to be redefined by Transaction implementation
   };
 
