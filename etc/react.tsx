@@ -7,10 +7,10 @@ import { stateful, transaction, cache, behavior, cacheof,
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
   const restore = Dbg.switch(trace, undefined, trace !== undefined);
   try {
-    const [jsx] = React.useState(() => tran ? tran.inspect(createJsx, trace) : createJsx(trace));
+    const [jsx] = React.useState(() => createJsx(trace));
     const [revision, refresh] = React.useState(0);
     React.useEffect(unmountEffect(jsx), []);
-    return tran ? tran.inspect(() => jsx.render(revision, render, refresh)) : jsx.render(revision, render, refresh);
+    return jsx.render(revision, render, refresh, tran);
   }
   finally {
     Dbg.trace = restore;
@@ -20,15 +20,15 @@ export function reactiveRender(render: (revision: number) => JSX.Element, trace?
 @stateful
 class Jsx {
   @transaction
-  render(revision: number, doRender: (revision: number) => JSX.Element, refresh: (nextRevision: number) => void): JSX.Element {
-    const jsx: JSX.Element = this.jsx(revision, doRender);
+  render(revision: number, doRender: (revision: number) => JSX.Element, refresh: (nextRevision: number) => void, tran: Transaction | undefined): JSX.Element {
+    const jsx: JSX.Element = this.jsx(revision, doRender, tran);
     this.trigger(revision + 1, refresh);
     return jsx;
   }
 
   @cache
-  jsx(revision: number, render: (revision: number) => JSX.Element): JSX.Element {
-    return render(revision);
+  jsx(revision: number, render: (revision: number) => JSX.Element, tran: Transaction | undefined): JSX.Element {
+    return !tran ? render(revision) : tran.inspect(render, revision);
   }
 
   @cache @behavior(Renew.Immediately)
