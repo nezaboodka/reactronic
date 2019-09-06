@@ -19,7 +19,7 @@ export interface TraceHighlight {
   readonly margin: number;
 }
 
-export class Dbg implements Trace {
+export class Dbg implements Trace, TraceHighlight {
   readonly transactions: boolean;
   readonly methods: boolean;
   readonly reads: boolean;
