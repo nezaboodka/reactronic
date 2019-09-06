@@ -107,6 +107,8 @@ test("basic", t => {
     t.is(Cache.getTraceHint(app), "DemoView");
     Cache.setTraceHint(app, "App");
     t.is(Cache.getTraceHint(app), "App");
+    const names = Object.getOwnPropertyNames(app.model);
+    t.deepEqual(names, ["shared", "title", "users"]);
   }
   finally { // cleanup
     Cache.unmount(app, app.model);
