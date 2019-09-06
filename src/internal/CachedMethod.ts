@@ -322,20 +322,12 @@ export class CachedResult implements ICachedResult {
     const stamp = cause.snapshot.timestamp;
     if (this.outdated.timestamp === UNDEFINED_TIMESTAMP && (!cascade || this.config.latency !== Renew.WhenReady)) {
       this.outdated.timestamp = stamp;
-      // TODO: make cache readonly
-      // Cascade invalidation
-      const upper: Record = Snapshot.current(true).read(Utils.get(this.record.data, RT_HANDLE));
-      if (upper.data[this.member] === this) { // TODO: Consider better solution?
-        let r: Record = upper;
-        while (r !== Record.empty && !r.outdated.has(this.member)) {
-          const oo = r.observers.get(this.member);
-          if (oo)
-            oo.forEach(c => c.markOutdated(upper, this.member, false, true, effect));
-          r = r.prev.record;
-        }
-      }
+      const r = this.record;
+      const oo = r.observers.get(this.member);
+      if (oo)
+        oo.forEach(c => c.markOutdated(r, this.member, false, true, effect)); // cascade
       // Check if cache should be renewed
-      if (this.config.latency >= Renew.Immediately && upper.data[RT_UNMOUNT] !== RT_UNMOUNT) {
+      if (this.config.latency >= Renew.Immediately && r.data[RT_UNMOUNT] !== RT_UNMOUNT) {
         effect.push(this);
         if (Dbg.trace.outdating) Dbg.log(" ", "■", `${this.hint(false)} is outdated by ${Hint.record(cause, false, false, causeProp)} and will run automatically`);
       }
