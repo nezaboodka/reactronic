@@ -43,6 +43,7 @@ export class Transaction {
     return this._run(func, ...args);
   }
 
+  /* istanbul ignore next */
   view<T>(func: F<T>, ...args: any[]): T {
     return this._run(func, ...args);
   }
@@ -118,26 +119,19 @@ export class Transaction {
   static runAs<T>(hint: string, separate: SeparateFrom, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
     const t: Transaction = Transaction.acquire(hint, separate, trace);
     const root = t !== Transaction.current;
-    let result: any;
-    try {
-      result = t.run<T>(func, ...args);
-      if (root) {
-        if (result instanceof Promise) {
-          const outer = Transaction.current;
-          try {
-            Transaction.current = Transaction.none;
-            result = t.autoretry(t.join(result), func, ...args);
-          }
-          finally {
-            Transaction.current = outer;
-          }
+    let result: any = t.run<T>(func, ...args);
+    if (root) {
+      if (result instanceof Promise) {
+        const outer = Transaction.current;
+        try {
+          Transaction.current = Transaction.none;
+          result = t.autoretry(t.join(result), func, ...args);
         }
-        t.seal();
+        finally {
+          Transaction.current = outer;
+        }
       }
-    }
-    catch (error) {
-      t.cancel(error);
-      throw error;
+      t.seal();
     }
     return result;
   }
