@@ -10,7 +10,7 @@ type CachedCall = { cache: CachedResult, record: Record, ok: boolean };
 
 class CachedMethod extends Cache<any> {
   private readonly handle: Handle;
-  private readonly empty: CachedResult;
+  private readonly blank: CachedResult;
 
   get config(): Config { return this.read(false).cache.config; }
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
@@ -23,8 +23,8 @@ class CachedMethod extends Cache<any> {
   constructor(handle: Handle, member: PropertyKey, config: ConfigRecord) {
     super();
     this.handle = handle;
-    this.empty = new CachedResult(Record.empty, member, config);
-    CachedResult.freeze(this.empty);
+    this.blank = new CachedResult(Record.blank, member, config);
+    CachedResult.freeze(this.blank);
     // TODO: mark cache readonly?
   }
 
@@ -58,9 +58,9 @@ class CachedMethod extends Cache<any> {
 
   private read(markViewed: boolean, args?: any[]): CachedCall {
     const ctx = Snapshot.readable();
-    const member = this.empty.member;
+    const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
-    const c: CachedResult = r.data[member] || this.empty;
+    const c: CachedResult = r.data[member] || this.blank;
     const ok = c.config.latency !== Renew.NoCache &&
       ctx.timestamp < c.invalidation.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
@@ -72,9 +72,9 @@ class CachedMethod extends Cache<any> {
 
   private write(): CachedCall {
     const ctx = Snapshot.writable();
-    const member = this.empty.member;
+    const member = this.blank.member;
     const r: Record = ctx.write(this.handle, member, RT_CACHE);
-    let c: CachedResult = r.data[member] || this.empty;
+    let c: CachedResult = r.data[member] || this.blank;
     if (c.record !== r) {
       const c2 = new CachedResult(r, c.member, c);
       r.data[c2.member] = c2;
@@ -139,7 +139,7 @@ class CachedMethod extends Cache<any> {
     const call = this.read(false);
     const c: CachedResult = call.cache;
     const r: Record = call.record;
-    const hint: string = Dbg.trace.transactions ? `${Hint.handle(this.handle)}.${this.empty.member.toString()}/configure` : /* istanbul ignore next */ "configure";
+    const hint: string = Dbg.trace.transactions ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
     return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, undefined, (): Config => {
       const call2 = this.write();
       const c2: CachedResult = call2.cache;
@@ -316,7 +316,7 @@ export class CachedResult implements ICachedResult {
       // Invalidation of children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
       let r: Record = h.head;
-      while (r !== Record.empty && !r.outdated.has(this.member)) {
+      while (r !== Record.blank && !r.outdated.has(this.member)) {
         if (r.data[this.member] === this) {
           const oo = r.observers.get(this.member);
           if (oo)
@@ -340,7 +340,7 @@ export class CachedResult implements ICachedResult {
 
   static markAllPrevRecordsAsOutdated(cause: Record, prop: PropertyKey, effect: ICachedResult[]): void {
     let r = cause.prev.record;
-    while (r !== Record.empty && !r.outdated.has(prop)) {
+    while (r !== Record.blank && !r.outdated.has(prop)) {
       r.outdated.set(prop, cause);
       const oo = r.observers.get(prop);
       if (oo)

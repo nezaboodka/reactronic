@@ -23,7 +23,7 @@ export class Record {
     this.outdated = new Map<PropertyKey, Record>();
   }
 
-  static empty: Record;
+  static blank: Record;
 
   static markChanged = function(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
     /* istanbul ignore next */ return undef(); // to be redefined by Cache implementation
@@ -41,7 +41,7 @@ export class Record {
   }
 
   static archive<T, C>(r: Record): void {
-    if (r !== Record.empty) {
+    if (r !== Record.blank) {
       // Utils.freezeSet(r.outdated);
       // Utils.freezeMap(r.observers);
     }

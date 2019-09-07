@@ -110,7 +110,7 @@ export class Transaction {
           if (r.prev.backup) {
             const prevValue: any = r.prev.backup.data[prop];
             const t: Record = Snapshot.writable().tryWrite(h, prop, prevValue);
-            if (t !== Record.empty) {
+            if (t !== Record.blank) {
               t.data[prop] = prevValue;
               const v: any = t.prev.record.data[prop];
               Record.markChanged(t, prop, !Utils.equal(v, prevValue) /* && value !== RT_HANDLE*/, prevValue);
@@ -299,12 +299,12 @@ export class Transaction {
     Transaction.none.sealed = true; // semi-hack
     Transaction.none.snapshot.complete();
     Transaction._current = Transaction.none;
-    const empty = new Record(Record.empty, Transaction.none.snapshot, {});
-    empty.prev.record = empty; // loopback
-    empty.freeze();
-    Utils.freezeMap(empty.observers);
-    Utils.freezeMap(empty.outdated);
-    Record.empty = empty;
+    const blank = new Record(Record.blank, Transaction.none.snapshot, {});
+    blank.prev.record = blank; // loopback
+    blank.freeze();
+    Utils.freezeMap(blank.observers);
+    Utils.freezeMap(blank.outdated);
+    Record.blank = blank;
   }
 }
 

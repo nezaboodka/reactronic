@@ -14,7 +14,7 @@ import { Trace } from '../Trace';
 export const RT_CONFIG: unique symbol = Symbol("RT:CONFIG");
 export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
 
-const EMPTY_CONFIG_TABLE = {};
+const BLANK_CONFIG_TABLE = {};
 const DEFAULT: Config = {
   stateful: false,
   latency: Renew.NoCache,
@@ -79,7 +79,7 @@ export class Virt implements ProxyHandler<Handle> {
     const config: ConfigRecord | undefined = Virt.getConfig(h.stateless, prop);
     if (!config || (config.body === decoratedfield && config.stateful)) { // versioned state
       const r: Record = Snapshot.writable().tryWrite(h, prop, value);
-      if (r !== Record.empty) { // empty when r.data[prop] === value, thus creation of changing record was skipped
+      if (r !== Record.blank) { // blank when r.data[prop] === value, thus creation of changing record was skipped
         r.data[prop] = value;
         const v: any = r.prev.record.data[prop];
         Record.markChanged(r, prop, !Utils.equal(v, value), value);
@@ -171,7 +171,7 @@ export class Virt implements ProxyHandler<Handle> {
   }
 
   static getConfigTable(target: any): any {
-    return target[RT_CONFIG] || /* istanbul ignore next */ EMPTY_CONFIG_TABLE;
+    return target[RT_CONFIG] || /* istanbul ignore next */ BLANK_CONFIG_TABLE;
   }
 
   static getConfig(target: any, prop: PropertyKey): ConfigRecord | undefined {

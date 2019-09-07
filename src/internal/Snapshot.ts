@@ -38,14 +38,14 @@ export class Snapshot implements ISnapshot {
 
   read(h: Handle): Record {
     const result = this.tryRead(h);
-    if (result === Record.empty) /* istanbul ignore next */
+    if (result === Record.blank) /* istanbul ignore next */
       throw new Error(`object being accessed doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 
   write(h: Handle, prop: PropertyKey, value: Symbol): Record {
     const result: Record = this.tryWrite(h, prop, value);
-    if (result === Record.empty) /* istanbul ignore next */
+    if (result === Record.blank) /* istanbul ignore next */
       throw new Error(`object being changed doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
@@ -59,7 +59,7 @@ export class Snapshot implements ISnapshot {
     }
     if (!r) {
       r = h.head;
-      while (r !== Record.empty && r.snapshot.timestamp > this.timestamp)
+      while (r !== Record.blank && r.snapshot.timestamp > this.timestamp)
         r = r.prev.record;
     }
     return r;
@@ -69,9 +69,9 @@ export class Snapshot implements ISnapshot {
     if (this.completed)
       throw new Error("stateful properties can only be modified inside transaction");
     let r: Record = this.tryRead(h);
-    if (r === Record.empty || !Utils.equal(r.data[prop], value)) {
+    if (r === Record.blank || !Utils.equal(r.data[prop], value)) {
       let data = r.data;
-      if (r === Record.empty || r.snapshot !== this) {
+      if (r === Record.blank || r.snapshot !== this) {
         data = Utils.copyAllProps(data, {});
         r = new Record(h.head, this, data);
         Reflect.set(r.data, RT_HANDLE, h);
@@ -81,7 +81,7 @@ export class Snapshot implements ISnapshot {
       }
     }
     else
-      r = Record.empty; // ignore if property is set to the same value
+      r = Record.blank; // ignore if property is set to the same value
     return r;
   }
 
@@ -116,7 +116,7 @@ export class Snapshot implements ISnapshot {
 
   static rebaseRecord(ours: Record, head: Record): number {
     let counter: number = -1;
-    if (head !== Record.empty && head.snapshot.timestamp > ours.snapshot.timestamp) {
+    if (head !== Record.blank && head.snapshot.timestamp > ours.snapshot.timestamp) {
       counter++;
       const unmountTheirs: boolean = head.changes.has(RT_UNMOUNT);
       const merged = Utils.copyAllProps(head.data, {}); // create merged copy
@@ -124,7 +124,7 @@ export class Snapshot implements ISnapshot {
         counter++;
         let theirs: Record = head;
         Utils.copyProp(ours.data, merged, prop);
-        while (theirs !== Record.empty && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
+        while (theirs !== Record.blank && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.changes.has(prop)) {
             const diff = Utils.different(theirs.data[prop], ours.data[prop]);
             if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "<>" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
@@ -178,7 +178,7 @@ export class Snapshot implements ISnapshot {
           const props: string[] = [];
           r.changes.forEach(prop => props.push(prop.toString()));
           const s = props.join(", ");
-          Dbg.log("║", "•", r.prev.record !== Record.empty ? `${Hint.record(r.prev.record)}(${s}) is overwritten.` : `${Hint.record(r)}(${s}) is created.`);
+          Dbg.log("║", "•", r.prev.record !== Record.blank ? `${Hint.record(r.prev.record)}(${s}) is overwritten.` : `${Hint.record(r)}(${s}) is created.`);
         }
       }
     });
@@ -219,10 +219,10 @@ export class Snapshot implements ISnapshot {
   private static unlinkHistory(s: Snapshot): void {
     if (Dbg.trace.gc) Dbg.log("", " g", `snapshot t${s.id} (${s.hint}) is being collected`);
     s.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.trace.gc && r.prev.record !== Record.empty) Dbg.log("", " ·", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
+      if (Dbg.trace.gc && r.prev.record !== Record.blank) Dbg.log("", " ·", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
       // Snapshot.mergeObservers(r, r.prev.record);
-      r.prev.record = Record.empty; // unlink history
+      r.prev.record = Record.blank; // unlink history
     });
   }
 }
