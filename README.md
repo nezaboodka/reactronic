@@ -200,7 +200,7 @@ Key Reactronic principles and differentiators:
   - Minimalism and zero boilerplating (it's not a framework bloating your code);
   - Asynchrony, patches, undo/redo, conflict resolving are provided out of the box;
   - Seamless integration with transactionally reactive object-oriented databases like [Nezaboodka](https://nezaboodka.com/#products);
-  - compact dependency-free implementation consisting of just about 1K lines of code.
+  - Compact dependency-free implementation consisting of just about 1K lines of code.
 
 Roadmap:
 
