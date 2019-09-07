@@ -110,7 +110,7 @@ export class Transaction {
             if (t !== Record.blank) {
               t.data[prop] = prevValue;
               const v: any = t.prev.record.data[prop];
-              Record.markChanged(t, prop, !Utils.equal(v, prevValue) /* && value !== RT_HANDLE*/, prevValue);
+              Record.markChanged(t, prop, v !== prevValue, prevValue);
             }
           }
         });

@@ -36,6 +36,11 @@ export class Snapshot implements ISnapshot {
     return undef(); // to be redefined by Transaction implementation
   };
 
+  /* istanbul ignore next */
+  static same = function(oldValue: any, newValue: any): boolean {
+    return oldValue === newValue; // to be redefined by Cache implementation
+  };
+
   read(h: Handle): Record {
     const result = this.tryRead(h);
     if (result === Record.blank) /* istanbul ignore next */
@@ -69,7 +74,7 @@ export class Snapshot implements ISnapshot {
     if (this.completed)
       throw new Error("stateful properties can only be modified inside transaction");
     let r: Record = this.tryRead(h);
-    if (r === Record.blank || !Utils.equal(r.data[prop], value)) {
+    if (r === Record.blank || r.data[prop] !== value) {
       if (r === Record.blank || r.snapshot !== this) {
         const data = Utils.copyAllProps(r.data, {});
         r = new Record(h.head, this, data);
@@ -125,9 +130,9 @@ export class Snapshot implements ISnapshot {
         Utils.copyProp(ours.data, merged, prop);
         while (theirs !== Record.blank && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.changes.has(prop)) {
-            const diff = Utils.different(theirs.data[prop], ours.data[prop]);
-            if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${diff ? "<>" : "=="} ${Hint.record(theirs, false)}.${prop.toString()}.`);
-            if (diff)
+            const same = Snapshot.same(theirs.data[prop], ours.data[prop]);
+            if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${same ? "==" : "<>"} ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (!same)
               ours.conflicts.set(prop, theirs);
             break;
           }

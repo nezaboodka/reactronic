@@ -48,15 +48,6 @@ export class Utils {
     return target[prop] = source[prop];
   }
 
-  static equal(oldValue: any, newValue: any): boolean {
-    return newValue === oldValue;
-  }
-
-  /* istanbul ignore next */
-  static different = function(oldValue: any, newValue: any): boolean {
-    return !Utils.equal(oldValue, newValue); // to be redefined by Cache implementation
-  };
-
   static hasAllFlags(flags: number, required: number): boolean {
     return (flags & required) === required;
   }

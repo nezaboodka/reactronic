@@ -432,12 +432,12 @@ export class CachedResult implements ICachedResult {
     }
   }
 
-  static differentImpl(oldValue: any, newValue: any): boolean {
+  static same(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CachedResult)
-      result = oldValue.config.latency !== Renew.NoCache;
+      result = oldValue.config.latency === Renew.NoCache;
     else
-      result = !Utils.equal(oldValue, newValue);
+      result = oldValue === newValue;
     return result;
   }
 
@@ -501,9 +501,9 @@ function promiseThenProxy(
 // Global Init
 
 function init(): void {
-  Utils.different = CachedResult.differentImpl; // override
   Record.markViewed = CachedResult.markViewed; // override
   Record.markChanged = CachedResult.markChanged; // override
+  Snapshot.same = CachedResult.same; // override
   Snapshot.applyDependencies = CachedResult.applyDependencies; // override
   Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
   Promise.prototype.then = promiseThenProxy; // override

@@ -82,7 +82,7 @@ export class Virt implements ProxyHandler<Handle> {
       if (r !== Record.blank) { // blank when r.data[prop] === value, thus creation of changing record was skipped
         r.data[prop] = value;
         const v: any = r.prev.record.data[prop];
-        Record.markChanged(r, prop, !Utils.equal(v, value), value);
+        Record.markChanged(r, prop, v !== value, value);
       }
     }
     else
