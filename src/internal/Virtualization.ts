@@ -92,7 +92,10 @@ export class Virt implements ProxyHandler<Handle> {
 
   getOwnPropertyDescriptor(h: Handle, prop: PropertyKey): PropertyDescriptor | undefined {
     const r: Record = Snapshot.readable().read(h);
-    return Reflect.getOwnPropertyDescriptor(r.data, prop);
+    const pd = Reflect.getOwnPropertyDescriptor(r.data, prop);
+    if (pd)
+      pd.configurable = pd.writable = true;
+    return pd;
   }
 
   ownKeys(h: Handle): PropertyKey[] {

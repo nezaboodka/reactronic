@@ -107,9 +107,8 @@ test("basic", t => {
     t.is(Cache.getTraceHint(app), "DemoView");
     Cache.setTraceHint(app, "App");
     t.is(Cache.getTraceHint(app), "App");
-    const names = Object.getOwnPropertyNames(app.model);
-    t.deepEqual(names, ["shared", "title", "users"]);
-    // t.not(Object.getOwnPropertyDescriptor(app.model, names[0]), undefined);
+    t.deepEqual(Object.getOwnPropertyNames(app.model), ["shared", "title", "users"]);
+    t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true);
   }
   finally { // cleanup
     Cache.unmount(app, app.model);
