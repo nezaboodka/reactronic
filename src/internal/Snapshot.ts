@@ -131,13 +131,13 @@ export class Snapshot implements ISnapshot {
         while (theirs !== Record.blank && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.changes.has(prop)) {
             const same = Snapshot.same(theirs.data[prop], ours.data[prop]);
-            if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${same ? "==" : "<>"} ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${same ? "==" : "<>"} ${Hint.record(theirs, false)}.${prop.toString()}.`);
             if (!same)
               ours.conflicts.set(prop, theirs);
             break;
           }
           else if (prop === RT_UNMOUNT || unmountTheirs) {
-            if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "<>" ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "<>" ${Hint.record(theirs, false)}.${prop.toString()}.`);
             ours.conflicts.set(prop, theirs);
             break;
           }
