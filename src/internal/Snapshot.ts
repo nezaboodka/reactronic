@@ -70,9 +70,8 @@ export class Snapshot implements ISnapshot {
       throw new Error("stateful properties can only be modified inside transaction");
     let r: Record = this.tryRead(h);
     if (r === Record.blank || !Utils.equal(r.data[prop], value)) {
-      let data = r.data;
       if (r === Record.blank || r.snapshot !== this) {
-        data = Utils.copyAllProps(data, {});
+        const data = Utils.copyAllProps(r.data, {});
         r = new Record(h.head, this, data);
         Reflect.set(r.data, RT_HANDLE, h);
         this.changeset.set(h, r);

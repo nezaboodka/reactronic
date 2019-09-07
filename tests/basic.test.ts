@@ -109,6 +109,7 @@ test("basic", t => {
     t.is(Cache.getTraceHint(app), "App");
     const names = Object.getOwnPropertyNames(app.model);
     t.deepEqual(names, ["shared", "title", "users"]);
+    // t.not(Object.getOwnPropertyDescriptor(app.model, names[0]), undefined);
   }
   finally { // cleanup
     Cache.unmount(app, app.model);
