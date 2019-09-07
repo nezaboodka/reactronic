@@ -302,7 +302,7 @@ export class CachedResult implements ICachedResult {
           this.invalidate(r, prop, false, effect);
       });
     });
-    if (Dbg.trace.subscriptions && subscriptions.length > 0) Dbg.log(" ", "o", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if ((Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, Transaction.current.decor, " ", "o", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
   get isInvalid(): boolean { // TODO: should depend on caller context
@@ -333,17 +333,6 @@ export class CachedResult implements ICachedResult {
     }
   }
 
-  static enforceInvalidation(c: CachedResult, cause: string, latency: number): boolean {
-    throw new Error("not implemented - Cache.enforceInvalidation");
-    // let effect: Cache[] = [];
-    // c.invalidate(cause, false, false, effect);
-    // if (latency === Renew.Immediately)
-    //   Transaction.ensureAllUpToDate(cause, { effect });
-    // else
-    //   sleep(latency).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
-    // return true;
-  }
-
   static markAllPrevRecordsAsOutdated(cause: Record, prop: PropertyKey, effect: ICachedResult[]): void {
     let r = cause.prev.record;
     while (r !== Record.blank && !r.outdated.has(prop)) {
@@ -354,6 +343,17 @@ export class CachedResult implements ICachedResult {
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
+  }
+
+  static enforceInvalidation(c: CachedResult, cause: string, latency: number): boolean {
+    throw new Error("not implemented - Cache.enforceInvalidation");
+    // let effect: Cache[] = [];
+    // c.invalidate(cause, false, false, effect);
+    // if (latency === Renew.Immediately)
+    //   Transaction.ensureAllUpToDate(cause, { effect });
+    // else
+    //   sleep(latency).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
+    // return true;
   }
 
   static createCachedMethodTrap(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
