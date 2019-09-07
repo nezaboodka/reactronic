@@ -25,12 +25,14 @@ export class Record {
 
   static blank: Record;
 
+  /* istanbul ignore next */
   static markChanged = function(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
-    /* istanbul ignore next */ return undef(); // to be redefined by Cache implementation
+     return undef(); // to be redefined by Cache implementation
   };
 
+  /* istanbul ignore next */
   static markViewed = function(r: Record, prop: PropertyKey): void {
-    /* istanbul ignore next */ return undef(); // to be redefined by Cache implementation
+    return undef(); // to be redefined by Cache implementation
   };
 
   freeze<T, C>(): void {
