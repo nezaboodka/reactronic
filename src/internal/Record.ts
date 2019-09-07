@@ -65,6 +65,6 @@ export interface ICachedResult {
   hint(tranless?: boolean): string;
   wrap<T>(func: F<T>): F<T>;
   readonly isInvalid: boolean;
-  invalidate(cause: Record, causeProp: PropertyKey, cascade: boolean, effect: ICachedResult[]): void;
+  invalidate(cause: Record, causeProp: PropertyKey, effect: ICachedResult[]): void;
   triggerRecache(timestamp: number, now: boolean): void;
 }

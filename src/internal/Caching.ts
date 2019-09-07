@@ -299,7 +299,7 @@ export class CachedResult implements ICachedResult {
         CachedResult.acquireObserverSet(r, prop).add(this); // link
         if (Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (effect && r.outdated.has(prop))
-          this.invalidate(r, prop, false, effect);
+          this.invalidate(r, prop, effect);
       });
     });
     if ((Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, Transaction.current.decor, " ", "o", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
@@ -310,9 +310,9 @@ export class CachedResult implements ICachedResult {
     return this.invalidation.timestamp <= ctx.timestamp;
   }
 
-  invalidate(cause: Record, causeProp: PropertyKey, cascade: boolean, effect: ICachedResult[]): void {
+  invalidate(cause: Record, causeProp: PropertyKey, effect: ICachedResult[]): void {
     const stamp = cause.snapshot.timestamp;
-    if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP && (!cascade || this.config.latency !== Renew.WhenReady)) {
+    if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP) {
       this.invalidation.timestamp = stamp;
       // Check if cache should be renewed
       const renew = this.config.latency >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
@@ -326,7 +326,7 @@ export class CachedResult implements ICachedResult {
         if (r.data[this.member] === this) {
           const oo = r.observers.get(this.member);
           if (oo)
-            oo.forEach(c => c.invalidate(r, this.member, true, effect));
+            oo.forEach(c => c.invalidate(r, this.member, effect));
         }
         r = r.prev.record;
       }
@@ -339,7 +339,7 @@ export class CachedResult implements ICachedResult {
       r.outdated.set(prop, cause);
       const oo = r.observers.get(prop);
       if (oo)
-        oo.forEach(c => c.invalidate(cause, prop, false, effect));
+        oo.forEach(c => c.invalidate(cause, prop, effect));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }

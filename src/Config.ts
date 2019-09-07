@@ -15,10 +15,9 @@ export type Latency = number | Renew; // milliseconds
 
 export enum Renew {
   Immediately = -1,
-  WhenReady = -2,
-  OnDemand = -3, // default for cache
-  Manually = -4,
-  NoCache = -5, // default for transaction
+  OnDemand = -2, // default for cache
+  Manually = -3,
+  NoCache = -4, // default for transaction
 }
 
 export enum ReentrantCall {
