@@ -2,10 +2,12 @@ import * as React from 'react';
 // import { stateful, transaction, cache, config, Renew, SeparateFrom,
 //   Transaction, ReactiveCache, Dbg, Trace} from 'reactronic';
 import { stateful, transaction, cache, behavior, cacheof,
-  Renew, SeparateFrom, Transaction, Cache, Dbg, Trace} from '../src/z.index';
+  Renew, SeparateFrom, Transaction, Cache, Trace} from '../src/z.index';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
-  const restore = Dbg.switch(trace, undefined, trace !== undefined);
+  const restore = Cache.trace;
+  if (trace)
+    Cache.setTrace(trace);
   try {
     const [jsx] = React.useState(() => createJsx(trace));
     const [revision, refresh] = React.useState(0);
@@ -13,7 +15,8 @@ export function reactiveRender(render: (revision: number) => JSX.Element, trace?
     return jsx.render(revision, render, refresh, tran);
   }
   finally {
-    Dbg.trace = restore;
+    if (trace)
+      Cache.setTrace(restore);
   }
 }
 
@@ -39,7 +42,7 @@ class Jsx {
 }
 
 function createJsx(trace?: Partial<Trace>): Jsx {
-  const dbg = Dbg.trace.transactions && (trace === undefined || trace.transactions !== false);
+  const dbg = Cache.trace.transactions && (trace === undefined || trace.transactions !== false);
   const hint = dbg ? getComponentName() : undefined;
   return Transaction.runAs<Jsx>(hint ? `${hint}` : 'new-jsx', SeparateFrom.Reaction, trace, () => {
     let jsx = new Jsx();
