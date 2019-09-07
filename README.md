@@ -316,8 +316,12 @@ abstract class Cache<T> {
   getResult(...args: any[]): T;
   readonly isInvalid: boolean;
   invalidate(cause: string | undefined): boolean;
-  static get<T>(method: F<Promise<T>>): ReactiveCache<T>;
+
   static get<T>(method: F<T>): ReactiveCache<T>;
   static unmount(...objects: any[]): Transaction;
+  static get trace(): Trace;
+  static setTrace(t: Partial<Trace>): Trace;
+  static setTraceHint<T extends object>(obj: T, name: string | undefined): void;
+  static getTraceHint<T extends object>(obj: T): string | undefined;
 }
 ```
