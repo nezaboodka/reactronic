@@ -196,11 +196,11 @@ export class Snapshot implements ISnapshot {
   };
 
   archive(): void {
-    Snapshot.gc(this);
+    Snapshot.grabageCollection(this);
     Utils.freezeMap(this.changeset);
   }
 
-  private static gc(s: Snapshot): void {
+  private static grabageCollection(s: Snapshot): void {
     if (s.timestamp !== 0) {
       if (s === Snapshot.oldest) {
         Snapshot.oldest = undefined;
