@@ -179,11 +179,17 @@ export class Transaction {
   // Internal
 
   private do<T>(trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
-    const outer = Transaction._current;
-    const dbg = Dbg.trace.transactions && (this.trace === undefined || this.trace.transactions !== false);
-    const restore = dbg ? Dbg.switch(this.trace, this.decor) : Dbg.trace;
     let result: T;
+    const outer = Transaction._current;
+    const restore = Dbg.trace.transactions
+      ? (this.trace === undefined || this.trace.transactions !== false
+        ? Dbg.switch(this.trace, this.decor)
+        : Dbg.trace)
+      : (this.trace !== undefined && this.trace.transactions === true
+        ? Dbg.switch(this.trace, this.decor)
+        : Dbg.trace);
     try {
+      if (trace) Dbg.switch(trace, undefined);
       this.workers++;
       Transaction._current = this;
       this.snapshot.acquire();

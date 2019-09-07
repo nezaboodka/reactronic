@@ -42,19 +42,24 @@ class Jsx {
 }
 
 function createJsx(trace?: Partial<Trace>): Jsx {
-  const dbg = Cache.trace.transactions && (trace === undefined || trace.transactions !== false);
-  const hint = dbg ? getComponentName() : undefined;
-  return Transaction.runAs<Jsx>(hint ? `${hint}` : 'new-jsx', SeparateFrom.Reaction, trace, () => {
-    let jsx = new Jsx();
-    if (hint)
-      Cache.setTraceHint(jsx, hint);
-    if (trace) {
-      cacheof(jsx.render).configure({trace});
-      cacheof(jsx.jsx).configure({trace});
-      cacheof(jsx.trigger).configure({trace});
-    }
-    return jsx;
-  });
+  const dbg = Cache.trace.hints
+    ? trace === undefined || trace.transactions !== false
+    : trace !== undefined && trace.transactions === true;
+  const hint = dbg ? getComponentName() : "Jsx.ctor";
+  return Transaction.runAs<Jsx>(hint, SeparateFrom.Reaction, trace,
+    runCreateJsx, hint, trace);
+}
+
+function runCreateJsx(hint: string | undefined, trace: Trace | undefined): Jsx {
+  let jsx = new Jsx();
+  if (hint)
+    Cache.setTraceHint(jsx, hint);
+  if (trace) {
+    cacheof(jsx.render).configure({trace});
+    cacheof(jsx.jsx).configure({trace});
+    cacheof(jsx.trigger).configure({trace});
+  }
+  return jsx;
 }
 
 function unmountEffect(jsx: Jsx): React.EffectCallback {
@@ -67,7 +72,7 @@ function unmountEffect(jsx: Jsx): React.EffectCallback {
   };
 }
 
-function getComponentName(): string | undefined {
+function getComponentName(): string {
   const error = new Error();
   const stack = error.stack || "";
   const lines = stack.split("\n");
