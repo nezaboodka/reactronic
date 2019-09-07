@@ -180,7 +180,8 @@ export class Transaction {
 
   private do<T>(trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
     const outer = Transaction._current;
-    const restore = Dbg.switch(this.trace, this.decor, Dbg.trace.transactions && (this.trace === undefined || this.trace.transactions !== false));
+    const dbg = Dbg.trace.transactions && (this.trace === undefined || this.trace.transactions !== false);
+    const restore = dbg ? Dbg.switch(this.trace, this.decor) : Dbg.trace;
     let result: T;
     try {
       this.workers++;

@@ -55,10 +55,9 @@ export class Dbg implements Trace, TraceDecor {
     margin: 0},
     {});
 
-  static switch(trace: Partial<Trace> | undefined, decor: TraceDecor | undefined, enabled: boolean): Dbg {
+  static switch(trace: Partial<Trace> | undefined, decor: TraceDecor | undefined): Dbg {
     const existing = Dbg.trace;
-    if (enabled)
-      Dbg.trace = new Dbg(existing, trace || existing, decor);
+    Dbg.trace = new Dbg(existing, trace || existing, decor);
     return existing;
   }
 

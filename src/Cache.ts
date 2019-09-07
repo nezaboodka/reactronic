@@ -21,8 +21,8 @@ export abstract class Cache<T> {
 
   static get<T>(method: F<T>): Cache<T> { return CachedResult.get(method); }
   static unmount(...objects: any[]): Transaction { return CachedResult.unmount(...objects); }
-  static get trace(): Trace { return Dbg.switch(undefined, undefined, false); }
-  static setTrace(t: Partial<Trace>): Trace { Dbg.switch(t, undefined, true); return Dbg.switch(undefined, undefined, false); }
+  static get trace(): Trace { return Dbg.trace; }
+  static setTrace(t: Partial<Trace>): Trace { Dbg.switch(t, undefined); return Dbg.trace; }
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name); }
   static getTraceHint<T extends object>(obj: T): string | undefined { return Handle.getHint(obj); }
 }
