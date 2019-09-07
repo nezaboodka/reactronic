@@ -1,7 +1,6 @@
 ﻿import test from 'ava';
-import { Transaction, ReentrantCall, Cache, cacheof, all, sleep, Dbg } from '../src/z.index';
-import { trace } from './common';
-import { DemoModel, DemoView, mon, output } from './async';
+import { Transaction, ReentrantCall, Cache, cacheof, all, sleep } from '../src/z.index';
+import { DemoModel, DemoView, mon, output, trace } from './async';
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: "google.com", delay: 300 },
@@ -19,7 +18,7 @@ const expected: string[] = [
 ];
 
 test("async", async t => {
-  trace();
+  Cache.setTrace(trace);
   const app = Transaction.run(() => new DemoView(new DemoModel()));
   cacheof(app.model.load).configure({reentrant: ReentrantCall.CancelPrevious});
   try {
@@ -32,7 +31,7 @@ test("async", async t => {
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()); /* istanbul ignore next */
-    if (!Dbg.trace.silent) console.log(error.toString());
+    if (!Cache.trace.silent) console.log(error.toString());
   }
   finally {
     t.is(mon.counter, 0);
@@ -40,7 +39,7 @@ test("async", async t => {
     await sleep(400);
     await Cache.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */
-  if (!Dbg.trace.silent) {
+  if (!Cache.trace.silent) {
     console.log("\nResults:\n");
     for (const x of output)
       console.log(x);
@@ -48,7 +47,7 @@ test("async", async t => {
   }
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (!Dbg.trace.silent) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
+    if (!Cache.trace.silent) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
     t.is(output[i], expected[i]);
   }
 });

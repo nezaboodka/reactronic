@@ -1,4 +1,5 @@
-﻿import { stateful, transaction, cache, behavior, Renew, Monitor, monitor, all, sleep, Dbg } from '../src/z.index';
+﻿import { stateful, transaction, cache, behavior, Renew, Cache, Monitor, monitor, all, sleep } from '../src/z.index';
+export { trace } from './common';
 
 export const output: string[] = [];
 export const mon = Monitor.create("demo");
@@ -34,7 +35,7 @@ export class DemoView {
     const lines: string[] = await this.render();
     for (const x of lines) {
       output.push(x); /* istanbul ignore next */
-      if (!Dbg.trace.silent) console.log(x);
+      if (!Cache.trace.silent) console.log(x);
     }
   }
 }

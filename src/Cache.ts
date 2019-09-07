@@ -1,6 +1,6 @@
-import { CachedResult, F, Handle } from './internal/z.index';
+import { CachedResult, F, Handle, Dbg } from './internal/z.index';
 import { Transaction } from './Transaction';
-import { Config } from './Config';
+import { Config, Trace } from './Config';
 
 export function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined {
   return (cacheof(method) as any).getResult(...args);
@@ -18,8 +18,11 @@ export abstract class Cache<T> {
   abstract getResult(...args: any[]): T | undefined;
   abstract readonly isInvalid: boolean;
   abstract invalidate(cause: string | undefined): boolean;
+
   static get<T>(method: F<T>): Cache<T> { return CachedResult.get(method); }
   static unmount(...objects: any[]): Transaction { return CachedResult.unmount(...objects); }
+  static get trace(): Trace { return Dbg.switch(undefined, undefined, false); }
+  static setTrace(t: Partial<Trace>): Trace { Dbg.switch(t, undefined, true); return Dbg.switch(undefined, undefined, false); }
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name); }
   static getTraceHint<T extends object>(obj: T): string | undefined { return Handle.getHint(obj); }
 }

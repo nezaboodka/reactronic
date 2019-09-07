@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { stateful, Dbg, Trace } from '../src/z.index';
+import { stateful, Trace } from '../src/z.index';
 
 // Person
 
@@ -49,21 +49,17 @@ export class Person {
   }
 }
 
-export function trace(): void {
-  const ifNotDebug = process.env.AVA_DEBUG === undefined;
-  const trace: Partial<Trace> = {
-    transactions: true,
-    methods: true,
-    reads: true,
-    writes: true,
-    changes: true,
-    subscriptions: true,
-    invalidations: true,
-    gc: true,
-    silent: ifNotDebug,
-  };
-  Dbg.switch(trace, undefined, true);
-}
+export const trace: Partial<Trace> = {
+  transactions: true,
+  methods: true,
+  reads: true,
+  writes: true,
+  changes: true,
+  subscriptions: true,
+  invalidations: true,
+  gc: true,
+  silent: process.env.AVA_DEBUG === undefined,
+};
 
 /* istanbul ignore next */
 export function nop(): void { /* do nothing */ }
