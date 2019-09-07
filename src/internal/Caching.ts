@@ -32,7 +32,7 @@ class CachedMethod extends Cache<any> {
     let call: CachedCall = this.read(false, args);
     if (!call.ok) {
       const c: CachedResult = call.cache;
-      const hint: string = Dbg.trace.transactions ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "recache";
+      const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "recache";
       const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
       let call2 = call;
       const ret = Transaction.runAs<any>(hint, separate, c.config.trace, (argsx: any[] | undefined): any => {
@@ -139,7 +139,7 @@ class CachedMethod extends Cache<any> {
     const call = this.read(false);
     const c: CachedResult = call.cache;
     const r: Record = call.record;
-    const hint: string = Dbg.trace.transactions ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
+    const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
     return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, undefined, (): Config => {
       const call2 = this.write();
       const c2: CachedResult = call2.cache;
@@ -312,7 +312,7 @@ export class CachedResult implements ICachedResult {
       const renew = this.config.latency >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (renew)
         effect.push(this);
-      if (Dbg.trace.invalidations) Dbg.log(" ", renew ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${renew ? " and will run automatically" : ""}`);
+      if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.log(" ", renew ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${renew ? " and will run automatically" : ""}`);
       // Invalidation of children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
       let r: Record = h.head;

@@ -22,7 +22,7 @@ const expected: string[] = [
 
 test("async", async t => {
   Cache.setTrace(trace);
-  const app = Transaction.run(() => new DemoView(new DemoModel()));
+  const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   cacheof(app.model.load).configure({reentrant: ReentrantCall.RunSideBySide});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; }, "stateful properties can only be modified inside transaction");

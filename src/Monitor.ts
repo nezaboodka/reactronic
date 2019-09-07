@@ -34,7 +34,7 @@ export class Monitor {
   }
 
   static create(hint?: string, prolonged: boolean = false, separate: SeparateFrom = SeparateFrom.All): Monitor {
-    return Transaction.run(() => Handle.setHint(new Monitor(prolonged, separate), hint));
+    return Transaction.run("Monitor.create", () => Handle.setHint(new Monitor(prolonged, separate), hint));
   }
 }
 

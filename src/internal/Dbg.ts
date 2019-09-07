@@ -9,6 +9,8 @@ export interface TraceDecor {
 }
 
 export class Dbg implements Trace, TraceDecor {
+  readonly silent: boolean;
+  readonly hints: boolean;
   readonly transactions: boolean;
   readonly methods: boolean;
   readonly reads: boolean;
@@ -17,12 +19,13 @@ export class Dbg implements Trace, TraceDecor {
   readonly subscriptions: boolean;
   readonly invalidations: boolean;
   readonly gc: boolean;
-  readonly silent: boolean;
   readonly color: number;
   readonly prefix: string;
   readonly margin: number;
 
   constructor(existing: Trace & TraceDecor, t: Partial<Trace>, decor?: TraceDecor) {
+    this.silent = t.silent !== undefined ? t.silent : existing.silent;
+    this.hints = t.hints !== undefined ? t.hints : existing.hints;
     this.transactions = t.transactions !== undefined ? t.transactions : existing.transactions;
     this.methods = t.methods !== undefined ? t.methods : existing.methods;
     this.reads = t.reads !== undefined ? t.reads : existing.reads;
@@ -31,13 +34,14 @@ export class Dbg implements Trace, TraceDecor {
     this.subscriptions = t.subscriptions !== undefined ? t.subscriptions : existing.subscriptions;
     this.invalidations = t.invalidations !== undefined ? t.invalidations : existing.invalidations;
     this.gc = t.gc !== undefined ? t.gc : existing.gc;
-    this.silent = t.silent !== undefined ? t.silent : existing.silent;
     this.color = decor ? decor.color : existing.color;
     this.prefix = decor ? decor.prefix : existing.prefix;
     this.margin = decor ? decor.margin : existing.margin;
   }
 
   static trace: Dbg = new Dbg({
+    silent: false,
+    hints: false,
     transactions: false,
     methods: false,
     reads: false,
@@ -46,7 +50,6 @@ export class Dbg implements Trace, TraceDecor {
     subscriptions: false,
     invalidations: false,
     gc: false,
-    silent: false,
     color: 37,
     prefix: "",
     margin: 0},

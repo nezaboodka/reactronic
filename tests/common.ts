@@ -49,7 +49,9 @@ export class Person {
   }
 }
 
-export const trace: Partial<Trace> = {
+export const trace: Trace = {
+  silent: process.env.AVA_DEBUG === undefined,
+  hints: true,
   transactions: true,
   methods: true,
   reads: true,
@@ -58,7 +60,6 @@ export const trace: Partial<Trace> = {
   subscriptions: true,
   invalidations: true,
   gc: true,
-  silent: process.env.AVA_DEBUG === undefined,
 };
 
 /* istanbul ignore next */

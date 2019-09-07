@@ -38,11 +38,8 @@ export class Transaction {
   get hint(): string { return this.snapshot.hint; }
 
   run<T>(func: F<T>, ...args: any[]): T {
-    if (this.error) // prevent from continuing canceled transaction
-      throw this.error;
-    if (this.sealed && Transaction._current !== this)
-      throw new Error("cannot run transaction that is already sealed");
-    return this._run(func, ...args);
+    this.guard();
+    return this.do(undefined, func, ...args);
   }
 
   inspect<T>(func: F<T>, ...args: any[]): T {
@@ -50,7 +47,7 @@ export class Transaction {
     try {
       Transaction._inspection = true;
       if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is being inspected by t${Transaction._current.id} (${Transaction._current.hint})`);
-      return this._run(func, ...args);
+      return this.do(undefined, func, ...args);
     }
     finally {
       Transaction._inspection = restore;
@@ -76,7 +73,7 @@ export class Transaction {
   }
 
   cancel(error: Error, retryAfterOrIgnore?: Transaction | null): Transaction {
-    this._run(Transaction.seal, this, error,
+    this.do(undefined, Transaction.seal, this, error,
       retryAfterOrIgnore === null ? Transaction.none : retryAfterOrIgnore);
     return this;
   }
@@ -103,7 +100,7 @@ export class Transaction {
   }
 
   undo(): void {
-    const hint = Dbg.trace.transactions ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
+    const hint = Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
     Transaction.runAs<void>(hint, SeparateFrom.Reaction, undefined, () => {
       this.snapshot.changeset.forEach((r: Record, h: Handle) => {
         r.changes.forEach(prop => {
@@ -121,14 +118,15 @@ export class Transaction {
     });
   }
 
-  static run<T>(func: F<T>, ...args: any[]): T {
-    return Transaction.runAs("noname", SeparateFrom.Reaction, undefined, func, ...args);
+  static run<T>(hint: string, func: F<T>, ...args: any[]): T {
+    return Transaction.runAs(hint, SeparateFrom.Reaction, undefined, func, ...args);
   }
 
   static runAs<T>(hint: string, separate: SeparateFrom, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
     const t: Transaction = Transaction.acquire(hint, separate, trace);
     const root = t !== Transaction._current;
-    let result: any = t.run<T>(func, ...args);
+    t.guard();
+    let result: any = t.do<T>(trace, func, ...args);
     if (root) {
       if (result instanceof Promise) {
         const outer = Transaction._current;
@@ -145,11 +143,20 @@ export class Transaction {
     return result;
   }
 
+  // Internal
+
   private static acquire(hint: string, separate: SeparateFrom, trace: Partial<Trace> | undefined): Transaction {
     const spawn = Utils.hasAllFlags(separate, SeparateFrom.Parent)
       || Utils.hasAllFlags(Transaction._current.separate, SeparateFrom.Children)
       || Transaction._current.isFinished();
     return spawn ? new Transaction(hint, separate, trace) : Transaction._current;
+  }
+
+  private guard(): void {
+    if (this.error) // prevent from continuing canceled transaction
+      throw this.error;
+    if (this.sealed && Transaction._current !== this)
+      throw new Error("cannot run transaction that is already sealed");
   }
 
   private async autoretry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
@@ -171,7 +178,7 @@ export class Transaction {
 
   // Internal
 
-  private _run<T>(func: F<T>, ...args: any[]): T {
+  private do<T>(trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
     const outer = Transaction._current;
     const restore = Dbg.switch(this.trace, this.decor, Dbg.trace.transactions && (this.trace === undefined || this.trace.transactions !== false));
     let result: T;
@@ -252,7 +259,7 @@ export class Transaction {
   }
 
   static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICachedResult[] }, trace?: Partial<Trace>): void {
-    const name = Dbg.trace.transactions ? `${hint} - REACTION(${reaction.effect.length})` : /* istanbul ignore next */ "noname";
+    const name = Dbg.trace.hints ? `${hint} - REACTION(${reaction.effect.length})` : /* istanbul ignore next */ "noname";
     const separate = reaction.tran ? SeparateFrom.Reaction : SeparateFrom.Reaction | SeparateFrom.Parent;
     Transaction.runAs<void>(name, separate, trace, () => {
       if (reaction.tran === undefined)
@@ -272,13 +279,14 @@ export class Transaction {
   }
 
   static _wrap<T>(t: Transaction, c: ICachedResult | undefined, inc: boolean, dec: boolean, func: F<T>): F<T> {
+    t.guard();
     const inspect = Transaction._inspection;
     const f = c ? c.wrap(func) : func; // caching context
     const enter = inc ? function() { t.workers++; } : function() { /* nop */ };
     const leave = dec ? function(...args: any[]): T { if (dec) t.workers--; return f(...args); } : f;
-    !inspect ? t.run(enter) : t.inspect(enter);
+    !inspect ? t.do(undefined, enter) : t.inspect(enter);
     const transactional: F<T> = (...args: any[]): T => {
-      return !inspect ? t._run<T>(leave, ...args) : t.inspect<T>(leave, ...args);
+      return !inspect ? t.do<T>(undefined, leave, ...args) : t.inspect<T>(leave, ...args);
     };
     return transactional;
   }

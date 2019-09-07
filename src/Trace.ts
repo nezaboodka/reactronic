@@ -1,5 +1,7 @@
 
 export interface Trace {
+  readonly silent: boolean;
+  readonly hints: boolean;
   readonly transactions: boolean;
   readonly methods: boolean;
   readonly reads: boolean;
@@ -8,5 +10,4 @@ export interface Trace {
   readonly subscriptions: boolean;
   readonly invalidations: boolean;
   readonly gc: boolean;
-  readonly silent: boolean;
 }

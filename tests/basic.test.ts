@@ -16,7 +16,7 @@ const expected: string[] = [
 test("basic", t => {
   Cache.setTrace(trace);
   // Simple transactions
-  const app = Transaction.run(() => new DemoView(new DemoModel()));
+  const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   try {
     const rendering = cacheof(app.render);
     t.is(rendering.isInvalid, true);
