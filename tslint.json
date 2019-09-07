@@ -3,13 +3,11 @@
     "tslint:latest"
   ],
   "rules": {
-    "indent": [
-      true,
-      "spaces"
-    ],
+    "indent": [true, "spaces"],
+    "align": [true, "statements", "members"],
     "quotemark": false,
     "curly": false,
-    "prefer-const": false,
+    "prefer-const": true,
     "one-line": false,
     "max-line-length": false,
     "max-classes-per-file": false,
@@ -26,14 +24,10 @@
     "ordered-imports": false,
     "member-access": false,
     "variable-name": false,
-    "member-ordering": [
-      false
-    ],
+    "member-ordering": false,
     "object-literal-sort-keys": false,
     "no-shadowed-variable": false,
-    "no-console": [
-      false
-    ],
+    "no-console": false,
     "no-implicit-dependencies": false,
     "no-bitwise": false
   }
