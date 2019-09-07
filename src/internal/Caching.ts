@@ -435,7 +435,7 @@ export class CachedResult implements ICachedResult {
   static differentImpl(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CachedResult)
-      result = !(newValue instanceof CachedResult);
+      result = oldValue.config.latency !== Renew.NoCache;
     else
       result = !Utils.equal(oldValue, newValue);
     return result;
