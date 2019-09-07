@@ -43,15 +43,15 @@ class Jsx {
 
 function createJsx(trace?: Partial<Trace>): Jsx {
   const dbg = Cache.trace.hints
-    ? trace === undefined || trace.transactions !== false
-    : trace !== undefined && trace.transactions === true;
+    ? trace === undefined || trace.hints !== false
+    : trace !== undefined && trace.hints === true;
   const hint = dbg ? getComponentName() : "Jsx.ctor";
   return Transaction.runAs<Jsx>(hint, SeparateFrom.Reaction, trace,
     runCreateJsx, hint, trace);
 }
 
 function runCreateJsx(hint: string | undefined, trace: Trace | undefined): Jsx {
-  let jsx = new Jsx();
+  const jsx = new Jsx();
   if (hint)
     Cache.setTraceHint(jsx, hint);
   if (trace) {
