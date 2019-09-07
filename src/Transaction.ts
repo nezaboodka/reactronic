@@ -23,8 +23,8 @@ export class Transaction {
   private resultReject: (reason: any) => void = undef;
   private conflicts?: Record[] = undefined;
   private reaction: { tran?: Transaction, effect: ICachedResult[] } = { tran: undefined, effect: [] };
-  private readonly trace?: Partial<Trace>; // assigned in constructor
-  private readonly decor: TransactionTraceDecor; // assigned in constructor
+  readonly trace?: Partial<Trace>; // assigned in constructor
+  readonly decor: TransactionTraceDecor; // assigned in constructor
 
   constructor(hint: string, separate: SeparateFrom = SeparateFrom.Reaction, trace?: Partial<Trace>) {
     this.separate = separate;
@@ -189,7 +189,11 @@ export class Transaction {
         ? Dbg.switch(this.trace, this.decor)
         : Dbg.trace);
     try {
-      if (trace) Dbg.switch(trace, undefined);
+      if (trace) {
+        const t = Dbg.switch(trace, this.decor);
+        if (!t.transactions && trace.transactions)
+          Dbg.log("║", "i", `transaction hint: ${this.hint}`);
+      }
       this.workers++;
       Transaction._current = this;
       this.snapshot.acquire();

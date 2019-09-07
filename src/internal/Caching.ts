@@ -318,7 +318,7 @@ export class CachedResult implements ICachedResult {
       const renew = this.config.latency >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (renew)
         effect.push(this);
-      if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.log(" ", renew ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${renew ? " and will run automatically" : ""}`);
+      if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, Transaction.current.decor, " ", renew ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${renew ? " and will run automatically" : ""}`);
       // Invalidation of children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
       let r: Record = h.head;

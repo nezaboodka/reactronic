@@ -70,4 +70,10 @@ export class Dbg implements Trace, TraceDecor {
         (highlight !== undefined ? `${highlight}` : ``) +
         (ms > 2 ? `    [ ${ms}ms ]` : ``));
   }
+
+  static logAs(trace: Partial<Trace> | undefined, decor: TraceDecor, operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
+    const restore = Dbg.switch(trace, decor);
+    Dbg.log(operation, marker, message, ms, highlight);
+    Dbg.trace = restore;
+  }
 }
