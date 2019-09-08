@@ -6,7 +6,7 @@ export function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefine
   return (cacheof(method) as any).getResult(...args);
 }
 
-export function cacheof<T>(method: F<T>, ...args: any[]): Cache<T> {
+export function cacheof<T>(method: F<T>): Cache<T> {
   return Cache.get<T>(method);
 }
 
@@ -21,6 +21,7 @@ export abstract class Cache<T> {
 
   static get<T>(method: F<T>): Cache<T> { return CachedResult.get(method); }
   static unmount(...objects: any[]): Transaction { return CachedResult.unmount(...objects); }
+
   static get trace(): Trace { return Dbg.trace; }
   static set trace(value: Trace) { Dbg.trace = value as any; }
   static pushTrace(t: Partial<Trace>): Trace { Dbg.push(t, undefined); return Dbg.trace; }

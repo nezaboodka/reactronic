@@ -306,7 +306,7 @@ class Transaction {
 // Cache
 
 function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
-function cacheof<T>(method: F<T>, ...args: any[]): Cache<T>;
+function cacheof<T>(method: F<T>): Cache<T>;
 
 abstract class Cache<T> {
   readonly config: Config;
