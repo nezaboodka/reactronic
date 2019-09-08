@@ -124,7 +124,7 @@ class MyView extends React.Component<MyModel> {
     );
   } // render is subscribed to m.url and m.content
 
-  @cache  @behavior(Renew.Instantly)
+  @cache  @behavior(Renew.Immediately)
   trigger(): void {
     if (cacheof(this.render).isInvalid)
       this.setState({}); // ask React to re-render
@@ -139,7 +139,7 @@ In turn, the `render` function is subscribed to the `url` and
 Once `url` or `content` values are changed, the `render` cache
 becomes invalid and causes the `trigger` cache to become
 invalid as well (cascaded). The `trigger` cache is marked for
-immediate renewal, thus its function is instantly called by
+immediate renewal, thus its function is immediately called by
 Reactronic to renew the cache. While executed, the `trigger`
 function enqueues re-rendering request to React, which calls
 `render` function and it renews its cache marked for on-demand
@@ -166,8 +166,8 @@ There are multiple options to fine tune transactional reactivity.
 invocation of the caching function to renew the cache:
 
   - `(ms)` - delay in milliseconds;
-  - `Renew.AsyncBatch` - renew asynchronously (with zero latency);
-  - `Renew.Instantly` - renew instantly (without latency);
+  - `Renew.InstantAsync` - renew instantly but async (with zero latency);
+  - `Renew.Immediately` - renew immediately (without latency);
   - `Renew.OnDemand` - renew on access if cache is invalid;
   - `Renew.Manually` - manual renew (explicit only);
   - `Renew.NoCache` - renew on every call of the function.
@@ -241,8 +241,8 @@ interface Config {
 type Latency = number | Renew; // milliseconds
 
 enum Renew {
-  AsyncBatch = 0,
-  Instantly = -1,
+  InstantAsync = 0,
+  Immediately = -1,
   OnDemand = -2, // default for cache
   Manually = -3,
   NoCache = -4, // default for transaction

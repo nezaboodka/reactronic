@@ -179,7 +179,7 @@ class CachedMethod extends Cache<any> {
 // CacheResult
 
 export class CachedResult implements ICachedResult {
-  static asyncBatch: CachedResult[] = [];
+  static asyncRecacheQueue: CachedResult[] = [];
   static active?: CachedResult = undefined;
   get color(): number { return Dbg.trace.color; }
   get prefix(): string { return Dbg.trace.prefix; }
@@ -250,21 +250,21 @@ export class CachedResult implements ICachedResult {
         }
       }
     }
-    else if (this.config.latency === Renew.AsyncBatch)
+    else if (this.config.latency === Renew.InstantAsync)
       CachedResult.enqueueAsyncRecache(this);
     else
       setTimeout(() => this.triggerRecache(UNDEFINED_TIMESTAMP, true, true), 0);
   }
 
   static enqueueAsyncRecache(c: CachedResult): void {
-    CachedResult.asyncBatch.push(c);
-    if (CachedResult.asyncBatch.length === 1)
+    CachedResult.asyncRecacheQueue.push(c);
+    if (CachedResult.asyncRecacheQueue.length === 1)
       setTimeout(CachedResult.handleAsyncRecacheQueue, 0);
   }
 
   static handleAsyncRecacheQueue(): void {
-    const batch = CachedResult.asyncBatch;
-    CachedResult.asyncBatch = []; // reset
+    const batch = CachedResult.asyncRecacheQueue;
+    CachedResult.asyncRecacheQueue = []; // reset
     for (const x of batch)
       x.triggerRecache(UNDEFINED_TIMESTAMP, true, true);
   }

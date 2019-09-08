@@ -14,7 +14,7 @@ export interface Config {
 export type Latency = number | Renew; // milliseconds
 
 export enum Renew {
-  AsyncBatch = 0,
+  InstantAsync = 0,
   Instantly = -1,
   OnDemand = -3, // default for cache
   Manually = -4,
