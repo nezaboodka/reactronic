@@ -19,22 +19,26 @@ export class Monitor {
     this.separate = separate;
   }
 
-  enter(worker: Worker): void {
-    if (this._counter === 0)
-      this._idle = false;
-    this._counter++;
-    this._workers.add(worker);
-  }
-
-  leave(worker: Worker): void {
-    this._workers.delete(worker);
-    this._counter--;
-    if (this._counter === 0)
-      this._idle = true;
-  }
-
   static create(hint?: string, prolonged: boolean = false, separate: SeparateFrom = SeparateFrom.All): Monitor {
-    return Transaction.run("Monitor.create", () => Handle.setHint(new Monitor(prolonged, separate), hint));
+    return Transaction.run("Monitor.create", Monitor.runCreate, hint, prolonged, separate);
+  }
+
+  static enter(m: Monitor, worker: Worker): void {
+    if (m._counter === 0)
+      m._idle = false;
+    m._counter++;
+    m._workers.add(worker);
+  }
+
+  static leave(m: Monitor, worker: Worker): void {
+    m._workers.delete(worker);
+    m._counter--;
+    if (m._counter === 0)
+      m._idle = true;
+  }
+
+  private static runCreate(hint: string | undefined, prolonged: boolean, separate: SeparateFrom): Monitor {
+    return Handle.setHint(new Monitor(prolonged, separate), hint);
   }
 }
 

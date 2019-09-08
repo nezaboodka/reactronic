@@ -429,7 +429,8 @@ export class CachedResult implements ICachedResult {
   monitorEnter(mon: Monitor | null): void {
     if (mon)
       CachedMethod.run(undefined, Transaction.runAs, "Monitor.enter",
-        mon.separate, Dbg.trace.monitors ? undefined : Dbg.off, () => mon.enter(this));
+        mon.separate, Dbg.trace.monitors ? undefined : Dbg.off,
+        Monitor.enter, mon, this);
   }
 
   monitorLeave(mon: Monitor | null): void {
@@ -440,7 +441,8 @@ export class CachedResult implements ICachedResult {
           Transaction._current = Transaction.none; // Workaround?
           const leave = () => {
             CachedMethod.run(undefined, Transaction.runAs, "Monitor.leave",
-              mon.separate, Dbg.trace.monitors ? undefined : Dbg.off, () => mon.leave(this));
+              mon.separate, Dbg.trace.monitors ? undefined : Dbg.off,
+              Monitor.leave, mon, this);
           };
           this.tran.whenFinished(false).then(leave, leave);
         }
@@ -449,8 +451,9 @@ export class CachedResult implements ICachedResult {
         }
       }
       else
-      CachedMethod.run(undefined, Transaction.runAs, "Monitor.leave",
-        mon.separate, Dbg.trace.monitors ? undefined : Dbg.off, () => mon.leave(this));
+        CachedMethod.run(undefined, Transaction.runAs, "Monitor.leave",
+          mon.separate, Dbg.trace.monitors ? undefined : Dbg.off,
+          Monitor.leave, mon, this);
     }
   }
 
