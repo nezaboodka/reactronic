@@ -6,7 +6,7 @@ import { Transaction } from '../Transaction';
 import { Monitor } from '../Monitor';
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER;
-type CachedCall = { cache: CachedResult, record: Record, ok: boolean };
+type CachedCall = { cache: CachedResult, record: Record, valid: boolean };
 
 class CachedMethod extends Cache<any> {
   private readonly handle: Handle;
@@ -30,7 +30,7 @@ class CachedMethod extends Cache<any> {
 
   call(recache: boolean, args?: any[]): CachedCall {
     let call: CachedCall = this.read(false, args);
-    if (!call.ok) {
+    if (!call.valid) {
       const c: CachedResult = call.cache;
       const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "recache";
       const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
@@ -39,7 +39,7 @@ class CachedMethod extends Cache<any> {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
-          if (!call2.ok)
+          if (!call2.valid)
             call2 = this.recache(call2.cache, argsx);
         }
         else
@@ -61,13 +61,13 @@ class CachedMethod extends Cache<any> {
     const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CachedResult = r.data[member] || this.blank;
-    const ok = c.config.latency !== Renew.NoCache &&
+    const valid = c.config.latency !== Renew.NoCache &&
       ctx.timestamp < c.invalidation.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (markViewed)
       Record.markViewed(r, c.member);
-    return { cache: c, record: r, ok };
+    return { cache: c, record: r, valid };
   }
 
   private write(): CachedCall {
@@ -81,7 +81,7 @@ class CachedMethod extends Cache<any> {
       Record.markChanged(r, c2.member, true, c2);
       c = c2;
     }
-    return { cache: c, record: r, ok: true };
+    return { cache: c, record: r, valid: true };
   }
 
   private recache(prev: CachedResult, args: any[] | undefined): CachedCall {
