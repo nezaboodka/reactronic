@@ -218,7 +218,7 @@ function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Re
 
 function initRecordProp(stateful: boolean, configTable: any, prop: PropertyKey, r: Record, stateless: any): void {
   if (stateful && configTable[prop] !== false) {
-    const value = Utils.copyProp(stateless, r.data, prop);
+    const value = r.data[prop] = stateless[prop];
     Record.markChanged(r, prop, true, value);
   }
 }

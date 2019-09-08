@@ -128,7 +128,7 @@ export class Snapshot implements ISnapshot {
       ours.changes.forEach(prop => {
         counter++;
         let theirs: Record = head;
-        Utils.copyProp(ours.data, merged, prop);
+        merged[prop] = ours.data[prop];
         while (theirs !== Record.blank && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.changes.has(prop)) {
             const equal = Snapshot.equal(theirs.data[prop], ours.data[prop]);

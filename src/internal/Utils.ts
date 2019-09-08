@@ -33,19 +33,10 @@ export class Utils {
 
   static copyAllProps(source: any, target: any): any {
     for (const prop of Object.getOwnPropertyNames(source))
-      Utils.copyProp(source, target, prop);
+      target[prop] = source[prop];
     for (const prop of Object.getOwnPropertySymbols(source))
-      Utils.copyProp(source, target, prop);
+      target[prop] = source[prop];
     return target;
-  }
-
-  static copyProp(source: any, target: any, prop: PropertyKey): any {
-    // let pd = Object.getOwnPropertyDescriptor(source, prop);
-    // if (pd) {
-    //   pd.writable = true;
-    //   Object.defineProperty(target, prop, pd);
-    // }
-    return target[prop] = source[prop];
   }
 
   static hasAllFlags(flags: number, required: number): boolean {
