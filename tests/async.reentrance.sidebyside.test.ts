@@ -21,7 +21,7 @@ const expected: string[] = [
 ];
 
 test("async", async t => {
-  Cache.setTrace(trace);
+  Cache.pushTrace(trace);
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   cacheof(app.model.load).configure({reentrant: ReentrantCall.RunSideBySide});
   try {

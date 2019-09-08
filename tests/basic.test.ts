@@ -14,7 +14,7 @@ const expected: string[] = [
 ];
 
 test("basic", t => {
-  Cache.setTrace(trace);
+  Cache.pushTrace(trace);
   // Simple transactions
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   try {

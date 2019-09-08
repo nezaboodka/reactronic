@@ -4,19 +4,20 @@ import * as React from 'react';
 import { stateful, transaction, cache, behavior, cacheof,
   Renew, SeparateFrom, Transaction, Cache, Trace} from '../src/z.index';
 
+let renderings: number = 0;
+
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
-  const restore = Cache.trace;
-  if (trace)
-    Cache.setTrace(trace);
+  const restore = trace ? Cache.pushTrace(trace) : Cache.trace;
   try {
+    renderings++;
     const [jsx] = React.useState(() => createJsx(trace));
     const [revision, refresh] = React.useState(0);
     React.useEffect(unmountEffect(jsx), []);
     return jsx.render(revision, render, refresh, tran);
   }
   finally {
-    if (trace)
-      Cache.setTrace(restore);
+    renderings--;
+    Cache.trace = restore;
   }
 }
 
@@ -36,8 +37,12 @@ class Jsx {
 
   @cache @behavior(Renew.Immediately)
   trigger(nextRevision: number, refresh: (nextRevision: number) => void): void {
-    if (cacheof(this.jsx).isInvalid)
-      setTimeout(() => refresh(nextRevision), 0);
+    if (cacheof(this.jsx).isInvalid) {
+      if (renderings < 1)
+        refresh(nextRevision);
+      else
+        setTimeout(refresh, 0, nextRevision);
+    }
   }
 }
 
