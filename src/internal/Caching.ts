@@ -371,7 +371,7 @@ export class CachedResult implements ICachedResult {
     throw new Error("not implemented - Cache.enforceInvalidation");
     // let effect: Cache[] = [];
     // c.invalidate(cause, false, false, effect);
-    // if (latency === Renew.Immediately)
+    // if (latency === Renew.Instantly)
     //   Transaction.ensureAllUpToDate(cause, { effect });
     // else
     //   sleep(latency).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
