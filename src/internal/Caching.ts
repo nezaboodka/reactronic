@@ -1,4 +1,4 @@
-import { Utils, Dbg, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './z.index';
+import { Utils, Dbg, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './z.index';
 import { Cache } from '../Cache';
 export { Cache, resultof, cacheof } from '../Cache';
 import { Config, Renew, ReentrantCall, SeparateFrom } from '../Config';
@@ -531,7 +531,7 @@ function init(): void {
   Record.markChanged = CachedResult.markChanged; // override
   Snapshot.same = CachedResult.same; // override
   Snapshot.applyDependencies = CachedResult.applyDependencies; // override
-  Virt.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
+  Hooks.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
   Promise.prototype.then = promiseThenProxy; // override
 }
 
