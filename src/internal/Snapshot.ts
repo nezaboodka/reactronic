@@ -38,7 +38,7 @@ export class Snapshot implements ISnapshot {
   };
 
   /* istanbul ignore next */
-  static same = function(oldValue: any, newValue: any): boolean {
+  static equal = function(oldValue: any, newValue: any): boolean {
     return oldValue === newValue; // to be redefined by Cache implementation
   };
 
@@ -131,9 +131,9 @@ export class Snapshot implements ISnapshot {
         Utils.copyProp(ours.data, merged, prop);
         while (theirs !== Record.blank && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.changes.has(prop)) {
-            const same = Snapshot.same(theirs.data[prop], ours.data[prop]);
-            if (Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${same ? "==" : "<>"} ${Hint.record(theirs, false)}.${prop.toString()}.`);
-            if (!same)
+            const equal = Snapshot.equal(theirs.data[prop], ours.data[prop]);
+            if (Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${equal ? "==" : "<>"} ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (!equal)
               ours.conflicts.set(prop, theirs);
             break;
           }

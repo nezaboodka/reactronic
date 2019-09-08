@@ -457,7 +457,7 @@ export class CachedResult implements ICachedResult {
     }
   }
 
-  static same(oldValue: any, newValue: any): boolean {
+  static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CachedResult)
       result = oldValue.config.latency === Renew.NoCache;
@@ -529,7 +529,7 @@ function promiseThenProxy(
 function init(): void {
   Record.markViewed = CachedResult.markViewed; // override
   Record.markChanged = CachedResult.markChanged; // override
-  Snapshot.same = CachedResult.same; // override
+  Snapshot.equal = CachedResult.equal; // override
   Snapshot.applyDependencies = CachedResult.applyDependencies; // override
   Hooks.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
   Promise.prototype.then = promiseThenProxy; // override
