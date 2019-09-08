@@ -13,11 +13,12 @@ export class Snapshot implements ISnapshot {
   static headTimestamp: number = 100;
   static pending: Snapshot[] = [];
   static oldest: Snapshot | undefined = undefined;
+
   readonly id: number = 0;
   readonly hint: string = "";
-  readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
   get timestamp(): number { return this._timestamp; }
   get completed(): boolean { return this._completed; }
+  readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
   private _timestamp = MAX_TIMESTAMP;
   private _completed = false;
 
@@ -191,13 +192,29 @@ export class Snapshot implements ISnapshot {
   }
 
   /* istanbul ignore next */
-  static applyDependencies = function(changeset: Map<Handle, Record>, effect: ICachedResult[]): void {
+  static applyDependencies = function(snapshot: Snapshot, effect: ICachedResult[]): void {
     undef(); // to be redefined by Cache implementation
   };
 
   archive(): void {
     Snapshot.grabageCollection(this);
     Utils.freezeMap(this.changeset);
+  }
+
+  static undo(s: Snapshot): void {
+    s.changeset.forEach((r: Record, h: Handle) => {
+      r.changes.forEach(prop => {
+        if (r.prev.backup) {
+          const prevValue: any = r.prev.backup.data[prop];
+          const t: Record = Snapshot.writable().tryWrite(h, prop, prevValue);
+          if (t !== Record.blank) {
+            t.data[prop] = prevValue;
+            const v: any = t.prev.record.data[prop];
+            Record.markChanged(t, prop, v !== prevValue, prevValue);
+          }
+        }
+      });
+    });
   }
 
   private static grabageCollection(s: Snapshot): void {

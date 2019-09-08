@@ -282,8 +282,8 @@ export class CachedResult implements ICachedResult {
     if (Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, true)}.${prop.toString()} = ${valueHint(value)}`);
   }
 
-  static applyDependencies(changeset: Map<Handle, Record>, effect: ICachedResult[]): void {
-    changeset.forEach((r: Record, h: Handle) => {
+  static applyDependencies(snapshot: Snapshot, effect: ICachedResult[]): void {
+    snapshot.changeset.forEach((r: Record, h: Handle) => {
       if (!r.changes.has(RT_UNMOUNT))
         r.changes.forEach(prop => {
           CachedResult.markAllPrevRecordsAsOutdated(r, prop, effect);
@@ -295,7 +295,7 @@ export class CachedResult implements ICachedResult {
         for (const prop in r.prev.record.data)
           CachedResult.markAllPrevRecordsAsOutdated(r, prop, effect);
     });
-    changeset.forEach((r: Record, h: Handle) => {
+    snapshot.changeset.forEach((r: Record, h: Handle) => {
       Snapshot.mergeObservers(r, r.prev.record);
     });
   }

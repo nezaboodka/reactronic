@@ -1,4 +1,4 @@
-import { Dbg, Utils, undef, Record, ICachedResult, F, Handle, Snapshot, Hint } from './internal/z.index';
+import { Dbg, Utils, undef, Record, ICachedResult, F, Snapshot, Hint } from './internal/z.index';
 import { SeparateFrom, Trace } from './Config';
 
 class TransactionTraceDecor {
@@ -102,23 +102,7 @@ export class Transaction {
   undo(): void {
     const hint = Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
     Transaction.runAs(hint, SeparateFrom.Reaction, undefined,
-      Transaction.runUndo, this);
-  }
-
-  private static runUndo(t: Transaction): void {
-    t.snapshot.changeset.forEach((r: Record, h: Handle) => {
-      r.changes.forEach(prop => {
-        if (r.prev.backup) {
-          const prevValue: any = r.prev.backup.data[prop];
-          const t: Record = Snapshot.writable().tryWrite(h, prop, prevValue);
-          if (t !== Record.blank) {
-            t.data[prop] = prevValue;
-            const v: any = t.prev.record.data[prop];
-            Record.markChanged(t, prop, v !== prevValue, prevValue);
-          }
-        }
-      });
-    });
+      Snapshot.undo, this.snapshot);
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
@@ -256,7 +240,7 @@ export class Transaction {
 
   private performCommit(): void {
     this.snapshot.complete();
-    Snapshot.applyDependencies(this.snapshot.changeset, this.reaction.effect);
+    Snapshot.applyDependencies(this.snapshot, this.reaction.effect);
     this.snapshot.archive();
     if (this.resultPromise)
       this.resultResolve();
