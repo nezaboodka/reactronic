@@ -1,6 +1,6 @@
 import { Trace } from './Trace';
 import { F } from './internal/Record';
-import { Hooks } from './internal/Virtualization';
+import { Hooks } from './internal/Hooks';
 import { Config, Renew, Latency, ReentrantCall, SeparateFrom } from './Config';
 import { Monitor } from './Monitor';
 

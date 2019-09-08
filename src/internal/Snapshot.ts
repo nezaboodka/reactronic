@@ -2,7 +2,7 @@ import { Utils, undef } from './Utils';
 import { Dbg } from './Dbg';
 import { Record, ISnapshot, ICachedResult, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
-import { CopyOnWrite } from './Virtualization';
+import { CopyOnWrite } from './Hooks';
 
 const MAX_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1;
 
