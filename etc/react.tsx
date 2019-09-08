@@ -42,7 +42,7 @@ function createJsx(trace?: Partial<Trace>): Jsx {
   const dbg = Cache.trace.hints
     ? trace === undefined || trace.hints !== false
     : trace !== undefined && trace.hints === true;
-  const hint = dbg ? getComponentName() : "Jsx.ctor";
+  const hint = dbg ? getComponentName() : "createJsx";
   return Transaction.runAs<Jsx>(hint, SeparateFrom.Reaction, trace,
     runCreateJsx, hint, trace);
 }
