@@ -166,8 +166,8 @@ There are multiple options to fine tune transactional reactivity.
 invocation of the caching function to renew the cache:
 
   - `(ms)` - delay in milliseconds;
-  - `Renew.InstantAsync` - renew instantly but async (with zero latency);
-  - `Renew.Immediately` - renew immediately (without latency);
+  - `Renew.InstantAsync` - renew instantly but async (zero latency);
+  - `Renew.Immediately` - renew immediately (right after commit);
   - `Renew.OnDemand` - renew on access if cache is invalid;
   - `Renew.Manually` - manual renew (explicit only);
   - `Renew.NoCache` - renew on every call of the function.
