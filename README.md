@@ -272,15 +272,16 @@ class Monitor {
 }
 
 interface Trace {
+  readonly silent: boolean;
   readonly transactions: boolean;
   readonly methods: boolean;
+  readonly monitors: boolean;
   readonly reads: boolean;
   readonly writes: boolean;
   readonly changes: boolean;
   readonly subscriptions: boolean;
   readonly invalidations: boolean;
   readonly gc: boolean;
-  readonly silent: boolean;
 }
 
 // Transaction
@@ -302,7 +303,7 @@ class Transaction {
   join<T>(p: Promise<T>): Promise<T>;
   static run<T>(func: F<T>, ...args: any[]): T;
   static runAs<T>(hint: string, separate: SeparateFrom, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
-  static readonly active: Transaction;
+  static readonly current: Transaction;
 }
 
 // Cache
@@ -320,6 +321,7 @@ abstract class Cache<T> {
 
   static get<T>(method: F<T>): ReactiveCache<T>;
   static unmount(...objects: any[]): Transaction;
+
   static get trace(): Trace;
   static setTrace(t: Partial<Trace>): Trace;
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void;
