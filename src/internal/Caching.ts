@@ -470,15 +470,16 @@ export class CachedResult implements ICachedResult {
   }
 
   static unmount(...objects: any[]): Transaction {
-    let t: Transaction = Transaction.current;
-    Transaction.runAs<void>("unmount", SeparateFrom.Reaction, undefined, (): void => {
-      t = Transaction.current;
-      for (const x of objects) {
-        if (Utils.get(x, RT_HANDLE))
-          x[RT_UNMOUNT] = RT_UNMOUNT;
-      }
-    });
-    return t;
+    return Transaction.runAs("unmount", SeparateFrom.Reaction, undefined,
+      CachedResult.runUnmount, ...objects);
+  }
+
+  private static runUnmount(...objects: any[]): Transaction {
+    for (const x of objects) {
+      if (Utils.get(x, RT_HANDLE))
+        x[RT_UNMOUNT] = RT_UNMOUNT;
+    }
+    return Transaction.current;
   }
 }
 
