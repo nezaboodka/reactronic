@@ -15,7 +15,7 @@ export type Latency = number | Renew; // milliseconds
 
 export enum Renew {
   InstantAsync = 0,
-  Instantly = -1,
+  Immediately = -1,
   OnDemand = -3, // default for cache
   Manually = -4,
   NoCache = -5, // default for transaction

@@ -70,7 +70,7 @@ export class DemoView {
     return r;
   }
 
-  @cache @behavior(Renew.Instantly)
+  @cache @behavior(Renew.Immediately)
   print(): void {
     this.render().forEach(x => output.push(x));
   }

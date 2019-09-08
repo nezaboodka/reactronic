@@ -233,7 +233,7 @@ export class CachedResult implements ICachedResult {
   }
 
   triggerRecache(timestamp: number, now: boolean, nothrow: boolean): void {
-    if (now || this.config.latency === Renew.Instantly) {
+    if (now || this.config.latency === Renew.Immediately) {
       if (!this.error && (this.config.latency === Renew.NoCache ||
           (timestamp >= this.invalidation.timestamp && !this.invalidation.recaching))) {
         try {
@@ -337,7 +337,7 @@ export class CachedResult implements ICachedResult {
     if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP) {
       this.invalidation.timestamp = stamp;
       // Check if cache should be renewed
-      const isEffect = this.config.latency >= Renew.Instantly && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      const isEffect = this.config.latency >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (isEffect)
         effect.push(this);
       if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, Transaction.current.decor, " ", isEffect ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isEffect ? " and will run automatically" : ""}`);
@@ -371,7 +371,7 @@ export class CachedResult implements ICachedResult {
     throw new Error("not implemented - Cache.enforceInvalidation");
     // let effect: Cache[] = [];
     // c.invalidate(cause, false, false, effect);
-    // if (latency === Renew.Instantly)
+    // if (latency === Renew.Immediately)
     //   Transaction.ensureAllUpToDate(cause, { effect });
     // else
     //   sleep(latency).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
