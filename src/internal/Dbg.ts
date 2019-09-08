@@ -13,6 +13,7 @@ export class Dbg implements Trace, TraceDecor {
   readonly hints: boolean;
   readonly transactions: boolean;
   readonly methods: boolean;
+  readonly monitors: boolean;
   readonly reads: boolean;
   readonly writes: boolean;
   readonly changes: boolean;
@@ -28,6 +29,7 @@ export class Dbg implements Trace, TraceDecor {
     this.hints = t.hints !== undefined ? t.hints : existing.hints;
     this.transactions = t.transactions !== undefined ? t.transactions : existing.transactions;
     this.methods = t.methods !== undefined ? t.methods : existing.methods;
+    this.monitors = t.monitors !== undefined ? t.monitors : existing.monitors;
     this.reads = t.reads !== undefined ? t.reads : existing.reads;
     this.writes = t.writes !== undefined ? t.writes : existing.writes;
     this.changes = t.changes !== undefined ? t.changes : existing.changes;
@@ -39,11 +41,12 @@ export class Dbg implements Trace, TraceDecor {
     this.margin = decor ? decor.margin : existing.margin;
   }
 
-  static trace: Dbg = new Dbg({
+  static off: Trace & TraceDecor = {
     silent: false,
     hints: false,
     transactions: false,
     methods: false,
+    monitors: false,
     reads: false,
     writes: false,
     changes: false,
@@ -53,7 +56,9 @@ export class Dbg implements Trace, TraceDecor {
     color: 37,
     prefix: "",
     margin: 0,
-  }, {});
+  };
+
+  static trace: Dbg = new Dbg(Dbg.off, {});
 
   static push(trace: Partial<Trace> | undefined, decor: TraceDecor | undefined): Dbg {
     const existing = Dbg.trace;

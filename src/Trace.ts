@@ -4,6 +4,7 @@ export interface Trace {
   readonly hints: boolean;
   readonly transactions: boolean;
   readonly methods: boolean;
+  readonly monitors: boolean;
   readonly reads: boolean;
   readonly writes: boolean;
   readonly changes: boolean;

@@ -54,6 +54,7 @@ export const trace: Trace = {
   hints: true,
   transactions: true,
   methods: true,
+  monitors: true,
   reads: true,
   writes: true,
   changes: true,
