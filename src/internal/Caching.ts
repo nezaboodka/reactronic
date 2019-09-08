@@ -1,4 +1,4 @@
-import { Utils, Dbg, sleep, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './z.index';
+import { Utils, Dbg, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Virt, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './z.index';
 import { Cache } from '../Cache';
 export { Cache, resultof, cacheof } from '../Cache';
 import { Config, Renew, ReentrantCall, SeparateFrom } from '../Config';
@@ -179,6 +179,7 @@ class CachedMethod extends Cache<any> {
 // CacheResult
 
 export class CachedResult implements ICachedResult {
+  static asyncBatch: CachedResult[] = [];
   static active?: CachedResult = undefined;
   get color(): number { return Dbg.trace.color; }
   get prefix(): string { return Dbg.trace.prefix; }
@@ -231,20 +232,41 @@ export class CachedResult implements ICachedResult {
     return caching;
   }
 
-  triggerRecache(timestamp: number, now: boolean): void {
-    if (now || this.config.latency === Renew.Immediately) {
+  triggerRecache(timestamp: number, now: boolean, nothrow: boolean): void {
+    if (now || this.config.latency === Renew.Instantly) {
       if (!this.error && (this.config.latency === Renew.NoCache ||
           (timestamp >= this.invalidation.timestamp && !this.invalidation.recaching))) {
-        const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
-        const trap: Function = Reflect.get(proxy, this.member, proxy);
-        const cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
-        const call: CachedCall = cachedMethod.call(true);
-        if (call.cache.ret instanceof Promise)
-          call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
+        try {
+          const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
+          const trap: Function = Reflect.get(proxy, this.member, proxy);
+          const cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
+          const call: CachedCall = cachedMethod.call(true);
+          if (call.cache.ret instanceof Promise)
+            call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
+        }
+        catch (e) {
+          if (!nothrow)
+            throw e;
+        }
       }
     }
+    else if (this.config.latency === Renew.AsyncBatch)
+      CachedResult.enqueueAsyncRecache(this);
     else
-      sleep(this.config.latency).then(() => this.triggerRecache(timestamp, true));
+      setTimeout(() => this.triggerRecache(UNDEFINED_TIMESTAMP, true, true), 0);
+  }
+
+  static enqueueAsyncRecache(c: CachedResult): void {
+    CachedResult.asyncBatch.push(c);
+    if (CachedResult.asyncBatch.length === 1)
+      setTimeout(CachedResult.handleAsyncRecacheQueue, 0);
+  }
+
+  static handleAsyncRecacheQueue(): void {
+    const batch = CachedResult.asyncBatch;
+    CachedResult.asyncBatch = []; // reset
+    for (const x of batch)
+      x.triggerRecache(UNDEFINED_TIMESTAMP, true, true);
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
@@ -315,10 +337,10 @@ export class CachedResult implements ICachedResult {
     if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP) {
       this.invalidation.timestamp = stamp;
       // Check if cache should be renewed
-      const renew = this.config.latency >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
-      if (renew)
+      const isEffect = this.config.latency >= Renew.Instantly && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      if (isEffect)
         effect.push(this);
-      if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, Transaction.current.decor, " ", renew ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${renew ? " and will run automatically" : ""}`);
+      if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, Transaction.current.decor, " ", isEffect ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isEffect ? " and will run automatically" : ""}`);
       // Invalidate children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
       let r: Record = h.head;

@@ -275,7 +275,7 @@ export class Transaction {
     Transaction.runAs<void>(name, separate, trace, () => {
       if (reaction.tran === undefined)
         reaction.tran = Transaction._current;
-      reaction.effect.map(r => r.triggerRecache(timestamp, false));
+      reaction.effect.map(r => r.triggerRecache(timestamp, false, false));
     });
   }
 

@@ -14,10 +14,11 @@ export interface Config {
 export type Latency = number | Renew; // milliseconds
 
 export enum Renew {
-  Immediately = -1,
-  OnDemand = -2, // default for cache
-  Manually = -3,
-  NoCache = -4, // default for transaction
+  AsyncBatch = 0,
+  Instantly = -1,
+  OnDemand = -3, // default for cache
+  Manually = -4,
+  NoCache = -5, // default for transaction
 }
 
 export enum ReentrantCall {

@@ -30,7 +30,7 @@ export class DemoView {
     return result;
   }
 
-  @cache @behavior(Renew.Immediately)
+  @cache @behavior(Renew.Instantly)
   async print(): Promise<void> {
     const lines: string[] = await this.render();
     for (const x of lines) {
