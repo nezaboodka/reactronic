@@ -35,7 +35,7 @@ class CachedMethod extends Cache<any> {
       const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "recache";
       const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
       let call2 = call;
-      const ret = Transaction.runAs<any>(hint, separate, c.config.trace, (argsx: any[] | undefined): any => {
+      const ret = Transaction.runAs(hint, separate, c.config.trace, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
@@ -140,7 +140,7 @@ class CachedMethod extends Cache<any> {
     const c: CachedResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
-    return Transaction.runAs<Config>(hint, SeparateFrom.Reaction, undefined, (): Config => {
+    return Transaction.runAs(hint, SeparateFrom.Reaction, undefined, (): Config => {
       const call2 = this.write();
       const c2: CachedResult = call2.cache;
       c2.config = new ConfigRecord(c2.config.body, c2.config, config, false);

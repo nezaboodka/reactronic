@@ -43,7 +43,7 @@ function createJsx(trace?: Partial<Trace>): Jsx {
     ? trace === undefined || trace.hints !== false
     : trace !== undefined && trace.hints === true;
   const hint = dbg ? getComponentName() : "createJsx";
-  return Transaction.runAs<Jsx>(hint, SeparateFrom.Reaction, trace,
+  return Transaction.runAs(hint, SeparateFrom.Reaction, trace,
     runCreateJsx, hint, trace);
 }
 
