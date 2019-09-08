@@ -183,14 +183,14 @@ export class Transaction {
     const outer = Transaction._current;
     const restore = Dbg.trace.transactions
       ? (this.trace === undefined || this.trace.transactions !== false
-        ? Dbg.switch(this.trace, this.decor)
+        ? Dbg.push(this.trace, this.decor)
         : Dbg.trace)
       : (this.trace !== undefined && this.trace.transactions === true
-        ? Dbg.switch(this.trace, this.decor)
+        ? Dbg.push(this.trace, this.decor)
         : Dbg.trace);
     try {
       if (trace) {
-        const t = Dbg.switch(trace, this.decor);
+        const t = Dbg.push(trace, this.decor);
         if (!t.transactions && trace.transactions)
           Dbg.log("║", "i", `transaction hint: ${this.hint}`);
       }

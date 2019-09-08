@@ -23,7 +23,7 @@ export abstract class Cache<T> {
   static unmount(...objects: any[]): Transaction { return CachedResult.unmount(...objects); }
   static get trace(): Trace { return Dbg.trace; }
   static set trace(value: Trace) { Dbg.trace = value as any; }
-  static pushTrace(t: Partial<Trace>): Trace { Dbg.switch(t, undefined); return Dbg.trace; }
+  static pushTrace(t: Partial<Trace>): Trace { Dbg.push(t, undefined); return Dbg.trace; }
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name); }
   static getTraceHint<T extends object>(obj: T): string | undefined { return Handle.getHint(obj); }
 }

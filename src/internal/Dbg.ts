@@ -55,7 +55,7 @@ export class Dbg implements Trace, TraceDecor {
     margin: 0,
   }, {});
 
-  static switch(trace: Partial<Trace> | undefined, decor: TraceDecor | undefined): Dbg {
+  static push(trace: Partial<Trace> | undefined, decor: TraceDecor | undefined): Dbg {
     const existing = Dbg.trace;
     Dbg.trace = new Dbg(existing, trace || existing, decor);
     return existing;
@@ -72,7 +72,7 @@ export class Dbg implements Trace, TraceDecor {
   }
 
   static logAs(trace: Partial<Trace> | undefined, decor: TraceDecor, operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
-    const restore = Dbg.switch(trace, decor);
+    const restore = Dbg.push(trace, decor);
     Dbg.log(operation, marker, message, ms, highlight);
     Dbg.trace = restore;
   }
