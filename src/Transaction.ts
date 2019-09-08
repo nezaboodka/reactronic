@@ -101,19 +101,22 @@ export class Transaction {
 
   undo(): void {
     const hint = Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
-    Transaction.runAs<void>(hint, SeparateFrom.Reaction, undefined, () => {
-      this.snapshot.changeset.forEach((r: Record, h: Handle) => {
-        r.changes.forEach(prop => {
-          if (r.prev.backup) {
-            const prevValue: any = r.prev.backup.data[prop];
-            const t: Record = Snapshot.writable().tryWrite(h, prop, prevValue);
-            if (t !== Record.blank) {
-              t.data[prop] = prevValue;
-              const v: any = t.prev.record.data[prop];
-              Record.markChanged(t, prop, v !== prevValue, prevValue);
-            }
+    Transaction.runAs(hint, SeparateFrom.Reaction, undefined,
+      Transaction.runUndo, this);
+  }
+
+  private static runUndo(t: Transaction): void {
+    t.snapshot.changeset.forEach((r: Record, h: Handle) => {
+      r.changes.forEach(prop => {
+        if (r.prev.backup) {
+          const prevValue: any = r.prev.backup.data[prop];
+          const t: Record = Snapshot.writable().tryWrite(h, prop, prevValue);
+          if (t !== Record.blank) {
+            t.data[prop] = prevValue;
+            const v: any = t.prev.record.data[prop];
+            Record.markChanged(t, prop, v !== prevValue, prevValue);
           }
-        });
+        }
       });
     });
   }
@@ -269,14 +272,16 @@ export class Transaction {
         this.resultResolve();
   }
 
-  static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICachedResult[] }, trace?: Partial<Trace>): void {
+  private static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICachedResult[] }, trace?: Partial<Trace>): void {
     const name = Dbg.trace.hints ? `${hint} - REACTION(${reaction.effect.length})` : /* istanbul ignore next */ "noname";
     const separate = reaction.tran ? SeparateFrom.Reaction : SeparateFrom.Reaction | SeparateFrom.Parent;
-    Transaction.runAs<void>(name, separate, trace, () => {
-      if (reaction.tran === undefined)
-        reaction.tran = Transaction._current;
-      reaction.effect.map(r => r.triggerRecache(timestamp, false, false));
-    });
+    reaction.tran = Transaction.runAs(name, separate, trace,
+      Transaction.runTriggerRecacheAll, timestamp, reaction.effect);
+  }
+
+  private static runTriggerRecacheAll(timestamp: number, effect: ICachedResult[]): Transaction {
+    effect.map(r => r.triggerRecache(timestamp, false, false));
+    return Transaction.current;
   }
 
   private acquirePromise(): Promise<void> {

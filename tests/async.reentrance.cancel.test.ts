@@ -22,7 +22,8 @@ test("async", async t => {
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   cacheof(app.model.load).configure({reentrant: ReentrantCall.CancelPrevious});
   try {
-    t.throws(() => { app.test = "testing @stateful for fields"; }, "stateful properties can only be modified inside transaction");
+    t.throws(() => { app.test = "testing @stateful for fields"; },
+      "stateful property #23 DemoView.test can only be modified inside transaction");
     await app.print(); // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay));
     t.is(mon.counter, 3);

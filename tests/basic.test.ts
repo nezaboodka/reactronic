@@ -83,24 +83,28 @@ test("basic", t => {
     t.throws(() => {
       if (daddy.emails)
         daddy.emails.push("dad@mail.com");
-    }, "stateful properties can only be modified inside transaction");
+    }, "stateful property #26 Person.emails can only be modified inside transaction");
     t.throws(() => tran1.run(/* istanbul ignore next */ () => { /* nope */ }), "cannot run transaction that is already sealed");
     // Undo transaction
     tran1.undo();
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     // Check protection and error handling
-    t.throws(() => { cacheof(daddy.setParent).configure({latency: 0}); }, "given method is not a reactronic cache");
-    t.throws(() => { console.log(cacheof(daddy.setParent).config.monitor); }, "given method is not a reactronic cache");
+    t.throws(() => { cacheof(daddy.setParent).configure({latency: 0}); },
+      "given method is not a reactronic cache");
+    t.throws(() => { console.log(cacheof(daddy.setParent).config.monitor); },
+      "given method is not a reactronic cache");
     const tran2 = new Transaction("tran2");
     t.throws(() => tran2.run(() => { throw new Error("test"); }), "test");
-    t.throws(() => tran2.commit(), "cannot commit transaction that is already canceled: Error: test");
+    t.throws(() => tran2.commit(),
+      "cannot commit transaction that is already canceled: Error: test");
     const tran3 = new Transaction("tran3");
     t.throws(() => tran3.run(() => {
       tran3.cancel(new Error("test"));
       tran3.run(nop);
     }), "test");
-    t.throws(() => tran3.commit(), "cannot commit transaction that is already canceled: Error: test");
+    t.throws(() => tran3.commit(),
+      "cannot commit transaction that is already canceled: Error: test");
     // Other
     t.is(rendering.config.latency, Renew.OnDemand);
     t.is(rendering.error, undefined);
