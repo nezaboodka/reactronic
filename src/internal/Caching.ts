@@ -1,7 +1,7 @@
 import { Utils, Dbg, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './z.index';
 import { Cache } from '../Cache';
 export { Cache, resultof, cacheof } from '../Cache';
-import { Config, Renew, ReentrantCall, SeparateFrom } from '../Config';
+import { Config, Renew, ReentrantCalls, SeparateFrom } from '../Config';
 import { Transaction } from '../Transaction';
 import { Monitor } from '../Monitor';
 
@@ -118,18 +118,18 @@ class CachedMethod extends Cache<any> {
     const caller = Transaction.current;
     if (prev)
       switch (c.config.reentrant) {
-        case ReentrantCall.ExitWithError:
+        case ReentrantCalls.ExitWithError:
           throw new Error(`${c.hint()} is configured as non-reentrant`);
-        case ReentrantCall.WaitAndRestart:
+        case ReentrantCalls.WaitAndRestart:
           error = new Error(`transaction t${caller.id} (${caller.hint}) will be restarted after t${prev.tran.id} (${prev.tran.hint})`);
           caller.cancel(error, prev.tran);
           // TODO: "c.invalidation.recaching = caller" in order serialize all the transactions
           break;
-        case ReentrantCall.CancelPrevious:
+        case ReentrantCalls.CancelPrevious:
           prev.tran.cancel(new Error(`transaction t${prev.tran.id} (${prev.tran.hint}) is canceled by t${caller.id} (${caller.hint}) and will be silently ignored`), null);
           c.invalidation.recaching = undefined;
           break;
-        case ReentrantCall.RunSideBySide:
+        case ReentrantCalls.RunSideBySide:
           break; // do nothing
       }
     return error;

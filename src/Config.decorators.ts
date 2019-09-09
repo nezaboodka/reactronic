@@ -1,7 +1,7 @@
 import { Trace } from './Trace';
 import { F } from './internal/Record';
 import { Hooks } from './internal/Hooks';
-import { Config, Renew, Latency, ReentrantCall, SeparateFrom } from './Config';
+import { Config, Renew, Latency, ReentrantCalls, SeparateFrom } from './Config';
 import { Monitor } from './Monitor';
 
 export function stateful(proto: object, prop?: PropertyKey): any {
@@ -24,7 +24,7 @@ export function cache(proto: object, prop: PropertyKey, pd: TypedPropertyDescrip
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
-export function behavior(latency?: Latency, reentrant?: ReentrantCall, separate?: SeparateFrom): F<any> {
+export function behavior(latency?: Latency, reentrant?: ReentrantCalls, separate?: SeparateFrom): F<any> {
   return config({latency, reentrant, separate});
 }
 

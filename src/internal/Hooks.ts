@@ -5,7 +5,7 @@ import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
 import { Record, F, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
-import { Config, Latency, Renew, ReentrantCall, SeparateFrom } from '../Config';
+import { Config, Latency, Renew, ReentrantCalls, SeparateFrom } from '../Config';
 import { Monitor } from '../Monitor';
 import { Trace } from '../Trace';
 
@@ -18,7 +18,7 @@ const BLANK_CONFIG_TABLE = {};
 const DEFAULT: Config = {
   stateful: false,
   latency: Renew.NoCache,
-  reentrant: ReentrantCall.WaitAndRestart,
+  reentrant: ReentrantCalls.WaitAndRestart,
   separate: SeparateFrom.Reaction,
   monitor: null,
   trace: undefined,
@@ -28,7 +28,7 @@ export class ConfigRecord implements Config {
   readonly body: Function;
   readonly stateful: boolean;
   readonly latency: Latency;
-  readonly reentrant: ReentrantCall;
+  readonly reentrant: ReentrantCalls;
   readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;

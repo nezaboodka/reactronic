@@ -179,12 +179,12 @@ invocation of the caching function to renew the cache:
   - `SeparateFrom.Children` - transaction is separated from children (callee) transactions;
   - `SeparateFrom.All` - transaction is separated from reactions, parents, and children.
 
-**ReentrantCall** option defines how to handle reentrant calls of the same transactional function:
+**ReentrantCalls** option defines how to handle reentrant calls of the same transactional function:
 
-  - `ReentrantCall.ExitWithError` - fail with error if there is an existing transaction in progress;
-  - `ReentrantCall.WaitAndRestart` - wait for previous transaction to finish and then restart current one;
-  - `ReentrantCall.CancelPrevious` - cancel previous transaction in favor of current one;
-  - `ReentrantCall.RunSideBySide` - multiple simultaneous transactions are allowed.
+  - `ReentrantCalls.ExitWithError` - fail with error if there is an existing transaction in progress;
+  - `ReentrantCalls.WaitAndRestart` - wait for previous transaction to finish and then restart current one;
+  - `ReentrantCalls.CancelPrevious` - cancel previous transaction in favor of current one;
+  - `ReentrantCalls.RunSideBySide` - multiple simultaneous transactions are allowed.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
@@ -223,16 +223,16 @@ function stateless(proto, prop); // field, method
 function transaction(proto, prop, pd); // method only
 function cache(proto, prop, pd); // method only
 
-function behavior(latency: Latency, reentrant: ReentrantCall, separate: SeparateFrom);
+function behavior(latency: Latency, reentrant: ReentrantCalls, separate: SeparateFrom);
 function monitor(value: Monitor | null);
 function config(config: Partial<Config>);
 
-// Config, Latency, ReentrantCall, SeparateFrom, Monitor
+// Config, Latency, ReentrantCalls, SeparateFrom, Monitor
 
 interface Config {
   readonly stateful: boolean;
   readonly latency: Latency;
-  readonly reentrant: ReentrantCall;
+  readonly reentrant: ReentrantCalls;
   readonly separate: SeparateFrom;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
@@ -248,7 +248,7 @@ enum Renew {
   NoCache = -4, // default for transaction
 }
 
-enum ReentrantCall {
+enum ReentrantCalls {
   ExitWithError = 1, // fail with error if there is an existing transaction in progress (default)
   WaitAndRestart = 0, // wait for existing transaction to finish and then restart reentrant one
   CancelPrevious = -1, // cancel previous transaction in favor of recent one

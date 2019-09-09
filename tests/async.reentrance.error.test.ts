@@ -1,5 +1,5 @@
 ﻿import test from 'ava';
-import { Transaction, ReentrantCall, Cache, resultof, cacheof, sleep } from '../src/z.index';
+import { Transaction, ReentrantCalls, Cache, resultof, cacheof, sleep } from '../src/z.index';
 import { DemoModel, DemoView, mon, output, trace } from './async';
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -22,7 +22,7 @@ const expected: string[] = [
 test("async", async t => {
   Cache.pushTrace(trace);
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
-  cacheof(app.model.load).configure({reentrant: ReentrantCall.ExitWithError});
+  cacheof(app.model.load).configure({reentrant: ReentrantCalls.ExitWithError});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; },
       "stateful property #23 DemoView.test can only be modified inside transaction");
