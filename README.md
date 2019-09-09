@@ -148,7 +148,7 @@ renew.
 In general case, cache is automatically and immediately marked
 as invalid when changes are made in those state object properties
 that were used by its function. And once marked, the function
-is automatically executed again to renew it, either instantly or
+is automatically executed again to renew it, either immediately or
 on demand.
 
 Reactronic **takes full care of tracking dependencies** between
@@ -166,7 +166,7 @@ There are multiple options to fine tune transactional reactivity.
 invocation of the caching function to renew the cache:
 
   - `(ms)` - delay in milliseconds;
-  - `Renew.InstantAsync` - renew instantly but async (zero latency);
+  - `Renew.ImmediatelyAsync` - renew immediately but async (zero latency);
   - `Renew.Immediately` - renew immediately (right after commit);
   - `Renew.OnDemand` - renew on access if cache is invalid;
   - `Renew.Manually` - manual renew (explicit only);
@@ -241,7 +241,7 @@ interface Config {
 type Latency = number | Renew; // milliseconds
 
 enum Renew {
-  InstantAsync = 0,
+  ImmediatelyAsync = 0,
   Immediately = -1,
   OnDemand = -2, // default for cache
   Manually = -3,

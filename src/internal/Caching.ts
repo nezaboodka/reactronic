@@ -250,7 +250,7 @@ export class CachedResult implements ICachedResult {
         }
       }
     }
-    else if (this.config.latency === Renew.InstantAsync)
+    else if (this.config.latency === Renew.ImmediatelyAsync)
       CachedResult.enqueueAsyncRecache(this);
     else
       setTimeout(() => this.triggerRecache(UNDEFINED_TIMESTAMP, true, true), 0);

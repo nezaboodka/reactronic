@@ -31,7 +31,7 @@ class Jsx {
     return !tran ? render(revision) : tran.inspect(render, revision);
   }
 
-  @cache @behavior(Renew.InstantAsync)
+  @cache @behavior(Renew.ImmediatelyAsync)
   trigger(nextRevision: number, refresh: (nextRevision: number) => void): void {
     if (cacheof(this.jsx).isInvalid)
         refresh(nextRevision);
