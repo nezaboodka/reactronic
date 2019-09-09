@@ -2,7 +2,7 @@ import * as React from 'react';
 // import { stateful, transaction, cache, config, Renew, SeparateFrom,
 //   Transaction, ReactiveCache, Dbg, Trace} from 'reactronic';
 import { stateful, transaction, cache, behavior, cacheof,
-  Renew, SeparateFrom, Transaction, Cache, Trace} from '../src/z.index';
+  Renew, SeparatedFrom, Transaction, Cache, Trace} from '../src/z.index';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
   const restore = trace ? Cache.pushTrace(trace) : Cache.trace;
@@ -43,7 +43,7 @@ function createJsx(trace?: Partial<Trace>): Jsx {
     ? trace === undefined || trace.hints !== false
     : trace !== undefined && trace.hints === true;
   const hint = dbg ? getComponentName() : "createJsx";
-  return Transaction.runAs(hint, SeparateFrom.Reaction, trace,
+  return Transaction.runAs(hint, SeparatedFrom.Reaction, trace,
     runCreateJsx, hint, trace);
 }
 

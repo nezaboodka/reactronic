@@ -158,11 +158,11 @@ in one set of objects, subscribe to these events in other objects,
 and manually maintain switching from the previous state to a new
 one.
 
-### Advanced Options
+### Behavior Options
 
-There are multiple options to fine tune transactional reactivity.
+There are multiple options to configure behavior of transactional reactivity.
 
-**Latency** option defines a delay between cache invalidation and
+**Renewal** option defines a delay between cache invalidation and
 invocation of the caching function to renew the cache:
 
   - `(ms)` - delay in milliseconds;
@@ -172,12 +172,12 @@ invocation of the caching function to renew the cache:
   - `Renew.Manually` - manual renew (explicit only);
   - `Renew.NoCache` - renew on every call of the function.
 
-**SeparateFrom** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
+**SeparatedFrom** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
 
-  - `SeparateFrom.Reaction` - transaction is separated from its reaction (default);
-  - `SeparateFrom.Parent` - transaction is separated from parent (caller) transactions;
-  - `SeparateFrom.Children` - transaction is separated from children (callee) transactions;
-  - `SeparateFrom.All` - transaction is separated from reactions, parents, and children.
+  - `SeparatedFrom.Reaction` - transaction is separated from its reaction (default);
+  - `SeparatedFrom.Parent` - transaction is separated from parent (caller) transactions;
+  - `SeparatedFrom.Children` - transaction is separated from children (callee) transactions;
+  - `SeparatedFrom.All` - transaction is separated from reactions, parents, and children.
 
 **ReentrantCalls** option defines how to handle reentrant calls of the same transactional function:
 
@@ -223,22 +223,22 @@ function stateless(proto, prop); // field, method
 function transaction(proto, prop, pd); // method only
 function cache(proto, prop, pd); // method only
 
-function behavior(latency: Latency, reentrant: ReentrantCalls, separate: SeparateFrom);
+function behavior(renewal: Renewal, reentrant: ReentrantCalls, separated: SeparatedFrom);
 function monitor(value: Monitor | null);
 function config(config: Partial<Config>);
 
-// Config, Latency, ReentrantCalls, SeparateFrom, Monitor
+// Config, Renewal, ReentrantCalls, SeparatedFrom, Monitor
 
 interface Config {
   readonly stateful: boolean;
-  readonly latency: Latency;
+  readonly renewal: Renewal;
   readonly reentrant: ReentrantCalls;
-  readonly separate: SeparateFrom;
+  readonly separated: SeparatedFrom;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
 
-type Latency = number | Renew; // milliseconds
+type Renewal = number | Renew; // milliseconds
 
 enum Renew {
   ImmediatelyAsync = 0,
@@ -255,7 +255,7 @@ enum ReentrantCalls {
   RunSideBySide = -2, // multiple simultaneous transactions are allowed
 }
 
-enum SeparateFrom {
+enum SeparatedFrom {
   None = 0,
   Reaction = 1,
   Parent = 2,
@@ -303,7 +303,7 @@ class Transaction {
   join<T>(p: Promise<T>): Promise<T>;
 
   static run<T>(func: F<T>, ...args: any[]): T;
-  static runAs<T>(hint: string, separate: SeparateFrom, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
+  static runAs<T>(hint: string, separated: SeparatedFrom, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
   static readonly current: Transaction;
 }
 

@@ -4,14 +4,14 @@ import { Monitor } from './Monitor';
 
 export interface Config {
   readonly stateful: boolean;
-  readonly latency: Latency;
+  readonly renewal: Renewal;
   readonly reentrant: ReentrantCalls;
-  readonly separate: SeparateFrom;
+  readonly separated: SeparatedFrom;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
 
-export type Latency = number | Renew; // milliseconds
+export type Renewal = number | Renew; // milliseconds
 
 export enum Renew {
   ImmediatelyAsync = 0,
@@ -28,7 +28,7 @@ export enum ReentrantCalls {
   RunSideBySide = -2, // multiple simultaneous transactions are allowed
 }
 
-export enum SeparateFrom {
+export enum SeparatedFrom {
   None = 0,
   Reaction = 1,
   Parent = 2,

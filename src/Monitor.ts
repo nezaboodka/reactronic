@@ -1,5 +1,5 @@
 import { Handle } from './internal/z.index';
-import { SeparateFrom } from './Config';
+import { SeparatedFrom } from './Config';
 import { stateful } from './Config.decorators';
 import { Transaction } from './Transaction';
 
@@ -9,18 +9,18 @@ export class Monitor {
   private _counter: number = 0;
   private _workers = new Set<Worker>();
   readonly prolonged: boolean;
-  readonly separate: SeparateFrom;
+  readonly separated: SeparatedFrom;
   get isIdle(): boolean { return this._idle; }
   get counter(): number { return this._counter; }
   get workers(): ReadonlySet<Worker> { return this._workers; }
 
-  constructor(prolonged: boolean = false, separate: SeparateFrom = SeparateFrom.All) {
+  constructor(prolonged: boolean = false, separated: SeparatedFrom = SeparatedFrom.All) {
     this.prolonged = prolonged;
-    this.separate = separate;
+    this.separated = separated;
   }
 
-  static create(hint?: string, prolonged: boolean = false, separate: SeparateFrom = SeparateFrom.All): Monitor {
-    return Transaction.run("Monitor.create", Monitor.runCreate, hint, prolonged, separate);
+  static create(hint?: string, prolonged: boolean = false, separated: SeparatedFrom = SeparatedFrom.All): Monitor {
+    return Transaction.run("Monitor.create", Monitor.runCreate, hint, prolonged, separated);
   }
 
   static enter(m: Monitor, worker: Worker): void {
@@ -37,8 +37,8 @@ export class Monitor {
       m._idle = true;
   }
 
-  private static runCreate(hint: string | undefined, prolonged: boolean, separate: SeparateFrom): Monitor {
-    return Handle.setHint(new Monitor(prolonged, separate), hint);
+  private static runCreate(hint: string | undefined, prolonged: boolean, separated: SeparatedFrom): Monitor {
+    return Handle.setHint(new Monitor(prolonged, separated), hint);
   }
 }
 

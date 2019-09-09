@@ -1,7 +1,7 @@
 import { Trace } from './Trace';
 import { F } from './internal/Record';
 import { Hooks } from './internal/Hooks';
-import { Config, Renew, Latency, ReentrantCalls, SeparateFrom } from './Config';
+import { Config, Renew, Renewal, ReentrantCalls, SeparatedFrom } from './Config';
 import { Monitor } from './Monitor';
 
 export function stateful(proto: object, prop?: PropertyKey): any {
@@ -20,12 +20,12 @@ export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyD
 }
 
 export function cache(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, latency: Renew.OnDemand };
+  const config = { stateful: true, renewal: Renew.OnDemand };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
-export function behavior(latency?: Latency, reentrant?: ReentrantCalls, separate?: SeparateFrom): F<any> {
-  return config({latency, reentrant, separate});
+export function behavior(renewal?: Renewal, reentrant?: ReentrantCalls, separated?: SeparatedFrom): F<any> {
+  return config({renewal, reentrant, separated});
 }
 
 export function monitor(value: Monitor | null): F<any> {

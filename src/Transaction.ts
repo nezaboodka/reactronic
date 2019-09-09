@@ -1,5 +1,5 @@
 import { Dbg, Utils, undef, Record, ICachedResult, F, Snapshot, Hint } from './internal/z.index';
-import { SeparateFrom, Trace } from './Config';
+import { SeparatedFrom, Trace } from './Config';
 
 class TransactionTraceDecor {
   constructor(readonly tran: Transaction) {}
@@ -9,10 +9,10 @@ class TransactionTraceDecor {
 }
 
 export class Transaction {
-  static readonly none: Transaction = new Transaction("none", SeparateFrom.All);
+  static readonly none: Transaction = new Transaction("none", SeparatedFrom.All);
   static _current: Transaction;
   static _inspection: boolean = false;
-  private readonly separate: SeparateFrom;
+  private readonly separated: SeparatedFrom;
   private readonly snapshot: Snapshot; // assigned in constructor
   private workers: number = 0;
   private sealed: boolean = false;
@@ -26,8 +26,8 @@ export class Transaction {
   readonly trace?: Partial<Trace>; // assigned in constructor
   readonly decor: TransactionTraceDecor; // assigned in constructor
 
-  constructor(hint: string, separate: SeparateFrom = SeparateFrom.Reaction, trace?: Partial<Trace>) {
-    this.separate = separate;
+  constructor(hint: string, separated: SeparatedFrom = SeparatedFrom.Reaction, trace?: Partial<Trace>) {
+    this.separated = separated;
     this.snapshot = new Snapshot(hint);
     this.trace = trace;
     this.decor = new TransactionTraceDecor(this);
@@ -101,16 +101,16 @@ export class Transaction {
 
   undo(): void {
     const hint = Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
-    Transaction.runAs(hint, SeparateFrom.Reaction, undefined,
+    Transaction.runAs(hint, SeparatedFrom.Reaction, undefined,
       Snapshot.undo, this.snapshot);
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
-    return Transaction.runAs(hint, SeparateFrom.Reaction, undefined, func, ...args);
+    return Transaction.runAs(hint, SeparatedFrom.Reaction, undefined, func, ...args);
   }
 
-  static runAs<T>(hint: string, separate: SeparateFrom, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
-    const t: Transaction = Transaction.acquire(hint, separate, trace);
+  static runAs<T>(hint: string, separated: SeparatedFrom, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
+    const t: Transaction = Transaction.acquire(hint, separated, trace);
     const root = t !== Transaction._current;
     t.guard();
     let result: any = t.do<T>(trace, func, ...args);
@@ -132,11 +132,11 @@ export class Transaction {
 
   // Internal
 
-  private static acquire(hint: string, separate: SeparateFrom, trace: Partial<Trace> | undefined): Transaction {
-    const spawn = Utils.hasAllFlags(separate, SeparateFrom.Parent)
-      || Utils.hasAllFlags(Transaction._current.separate, SeparateFrom.Children)
+  private static acquire(hint: string, separated: SeparatedFrom, trace: Partial<Trace> | undefined): Transaction {
+    const spawn = Utils.hasAllFlags(separated, SeparatedFrom.Parent)
+      || Utils.hasAllFlags(Transaction._current.separated, SeparatedFrom.Children)
       || Transaction._current.isFinished();
-    return spawn ? new Transaction(hint, separate, trace) : Transaction._current;
+    return spawn ? new Transaction(hint, separated, trace) : Transaction._current;
   }
 
   private guard(): void {
@@ -156,7 +156,7 @@ export class Transaction {
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
         await this.retryAfter.whenFinished(true);
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
-        return Transaction.runAs<T>(this.hint, SeparateFrom.Reaction | SeparateFrom.Parent, this.trace, func, ...args);
+        return Transaction.runAs<T>(this.hint, SeparatedFrom.Reaction | SeparatedFrom.Parent, this.trace, func, ...args);
       }
       else
         throw error;
@@ -258,8 +258,8 @@ export class Transaction {
 
   private static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICachedResult[] }, trace?: Partial<Trace>): void {
     const name = Dbg.trace.hints ? `${hint} - REACTION(${reaction.effect.length})` : /* istanbul ignore next */ "noname";
-    const separate = reaction.tran ? SeparateFrom.Reaction : SeparateFrom.Reaction | SeparateFrom.Parent;
-    reaction.tran = Transaction.runAs(name, separate, trace,
+    const separated = reaction.tran ? SeparatedFrom.Reaction : SeparatedFrom.Reaction | SeparatedFrom.Parent;
+    reaction.tran = Transaction.runAs(name, separated, trace,
       Transaction.runTriggerRecacheAll, timestamp, reaction.effect);
   }
 

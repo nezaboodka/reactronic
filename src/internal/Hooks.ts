@@ -5,7 +5,7 @@ import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
 import { Record, F, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
-import { Config, Latency, Renew, ReentrantCalls, SeparateFrom } from '../Config';
+import { Config, Renewal, Renew, ReentrantCalls, SeparatedFrom } from '../Config';
 import { Monitor } from '../Monitor';
 import { Trace } from '../Trace';
 
@@ -17,9 +17,9 @@ export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
 const BLANK_CONFIG_TABLE = {};
 const DEFAULT: Config = {
   stateful: false,
-  latency: Renew.NoCache,
+  renewal: Renew.NoCache,
   reentrant: ReentrantCalls.WaitAndRestart,
-  separate: SeparateFrom.Reaction,
+  separated: SeparatedFrom.Reaction,
   monitor: null,
   trace: undefined,
 };
@@ -27,9 +27,9 @@ const DEFAULT: Config = {
 export class ConfigRecord implements Config {
   readonly body: Function;
   readonly stateful: boolean;
-  readonly latency: Latency;
+  readonly renewal: Renewal;
   readonly reentrant: ReentrantCalls;
-  readonly separate: SeparateFrom;
+  readonly separated: SeparatedFrom;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
   static default = new ConfigRecord(undef, {body: undef, ...DEFAULT}, {}, false);
@@ -37,9 +37,9 @@ export class ConfigRecord implements Config {
   constructor(body: Function | undefined, existing: ConfigRecord, patch: Partial<ConfigRecord>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body;
     this.stateful = merge(DEFAULT.stateful, existing.stateful, patch.stateful, implicit);
-    this.latency = merge(DEFAULT.latency, existing.latency, patch.latency, implicit);
+    this.renewal = merge(DEFAULT.renewal, existing.renewal, patch.renewal, implicit);
     this.reentrant = merge(DEFAULT.reentrant, existing.reentrant, patch.reentrant, implicit);
-    this.separate = merge(DEFAULT.separate, existing.separate, patch.separate, implicit);
+    this.separated = merge(DEFAULT.separated, existing.separated, patch.separated, implicit);
     this.monitor = merge(DEFAULT.monitor, existing.monitor, patch.monitor, implicit);
     this.trace = merge(DEFAULT.trace, existing.trace, patch.trace, implicit);
     Object.freeze(this);

@@ -1,7 +1,7 @@
 import { Utils, Dbg, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './z.index';
 import { Cache } from '../Cache';
 export { Cache, resultof, cacheof } from '../Cache';
-import { Config, Renew, ReentrantCalls, SeparateFrom } from '../Config';
+import { Config, Renew, Renewal, ReentrantCalls, SeparatedFrom } from '../Config';
 import { Transaction } from '../Transaction';
 import { Monitor } from '../Monitor';
 
@@ -33,9 +33,9 @@ class CachedMethod extends Cache<any> {
     if (!call.valid) {
       const c: CachedResult = call.cache;
       const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "recache";
-      const separate = recache ? c.config.separate : (c.config.separate | SeparateFrom.Parent);
+      const separated = recache ? c.config.separated : (c.config.separated | SeparatedFrom.Parent);
       let call2 = call;
-      const ret = Transaction.runAs(hint, separate, c.config.trace, (argsx: any[] | undefined): any => {
+      const ret = Transaction.runAs(hint, separated, c.config.trace, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
@@ -61,7 +61,7 @@ class CachedMethod extends Cache<any> {
     const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CachedResult = r.data[member] || this.blank;
-    const valid = c.config.latency !== Renew.NoCache &&
+    const valid = c.config.renewal !== Renew.NoCache &&
       ctx.timestamp < c.invalidation.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
@@ -140,7 +140,7 @@ class CachedMethod extends Cache<any> {
     const c: CachedResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
-    return Transaction.runAs(hint, SeparateFrom.Reaction, undefined, (): Config => {
+    return Transaction.runAs(hint, SeparatedFrom.Reaction, undefined, (): Config => {
       const call2 = this.write();
       const c2: CachedResult = call2.cache;
       c2.config = new ConfigRecord(c2.config.body, c2.config, config, false);
@@ -233,8 +233,8 @@ export class CachedResult implements ICachedResult {
   }
 
   triggerRecache(timestamp: number, now: boolean, nothrow: boolean): void {
-    if (now || this.config.latency === Renew.Immediately) {
-      if (!this.error && (this.config.latency === Renew.NoCache ||
+    if (now || this.config.renewal === Renew.Immediately) {
+      if (!this.error && (this.config.renewal === Renew.NoCache ||
           (timestamp >= this.invalidation.timestamp && !this.invalidation.recaching))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
@@ -250,7 +250,7 @@ export class CachedResult implements ICachedResult {
         }
       }
     }
-    else if (this.config.latency === Renew.ImmediatelyAsync)
+    else if (this.config.renewal === Renew.ImmediatelyAsync)
       CachedResult.enqueueAsyncRecache(this);
     else
       setTimeout(() => this.triggerRecache(UNDEFINED_TIMESTAMP, true, true), 0);
@@ -271,7 +271,7 @@ export class CachedResult implements ICachedResult {
 
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: CachedResult | undefined = CachedResult.active; // alias
-    if (c && c.config.latency >= Renew.Manually && prop !== RT_HANDLE) {
+    if (c && c.config.renewal >= Renew.Manually && prop !== RT_HANDLE) {
       CachedResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
       if (Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
@@ -337,7 +337,7 @@ export class CachedResult implements ICachedResult {
     if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP) {
       this.invalidation.timestamp = stamp;
       // Check if cache should be renewed
-      const isEffect = this.config.latency >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      const isEffect = this.config.renewal >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (isEffect)
         effect.push(this);
       if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, Transaction.current.decor, " ", isEffect ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isEffect ? " and will run automatically" : ""}`);
@@ -367,14 +367,14 @@ export class CachedResult implements ICachedResult {
     }
   }
 
-  static enforceInvalidation(c: CachedResult, cause: string, latency: number): boolean {
+  static enforceInvalidation(c: CachedResult, cause: string, renewal: Renewal): boolean {
     throw new Error("not implemented - Cache.enforceInvalidation");
     // let effect: Cache[] = [];
     // c.invalidate(cause, false, false, effect);
-    // if (latency === Renew.Immediately)
+    // if (renewal === Renew.Immediately)
     //   Transaction.ensureAllUpToDate(cause, { effect });
     // else
-    //   sleep(latency).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
+    //   sleep(renewal).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
     // return true;
   }
 
@@ -429,7 +429,7 @@ export class CachedResult implements ICachedResult {
   monitorEnter(mon: Monitor | null): void {
     if (mon)
       CachedMethod.run(undefined, Transaction.runAs, "Monitor.enter",
-        mon.separate, Dbg.trace.monitors ? undefined : Dbg.off,
+        mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
         Monitor.enter, mon, this);
   }
 
@@ -441,7 +441,7 @@ export class CachedResult implements ICachedResult {
           Transaction._current = Transaction.none; // Workaround?
           const leave = () => {
             CachedMethod.run(undefined, Transaction.runAs, "Monitor.leave",
-              mon.separate, Dbg.trace.monitors ? undefined : Dbg.off,
+              mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
               Monitor.leave, mon, this);
           };
           this.tran.whenFinished(false).then(leave, leave);
@@ -452,7 +452,7 @@ export class CachedResult implements ICachedResult {
       }
       else
         CachedMethod.run(undefined, Transaction.runAs, "Monitor.leave",
-          mon.separate, Dbg.trace.monitors ? undefined : Dbg.off,
+          mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
           Monitor.leave, mon, this);
     }
   }
@@ -460,7 +460,7 @@ export class CachedResult implements ICachedResult {
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CachedResult)
-      result = oldValue.config.latency === Renew.NoCache;
+      result = oldValue.config.renewal === Renew.NoCache;
     else
       result = oldValue === newValue;
     return result;
@@ -473,7 +473,7 @@ export class CachedResult implements ICachedResult {
   }
 
   static unmount(...objects: any[]): Transaction {
-    return Transaction.runAs("unmount", SeparateFrom.Reaction, undefined,
+    return Transaction.runAs("unmount", SeparatedFrom.Reaction, undefined,
       CachedResult.runUnmount, ...objects);
   }
 
