@@ -3,9 +3,9 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-/* istanbul ignore file */
-
 import { stateful, Trace } from '../src/z.index';
+
+/* istanbul ignore file */
 
 // Person
 
