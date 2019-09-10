@@ -2,13 +2,13 @@ import { Trace } from '../Trace';
 
 // Dbg
 
-export interface TraceDecor {
+export interface PrettyTrace {
   readonly color: number;
   readonly prefix: string;
   readonly margin: number;
 }
 
-export class Dbg implements Trace, TraceDecor {
+export class Dbg implements Trace, PrettyTrace {
   readonly silent: boolean;
   readonly hints: boolean;
   readonly transactions: boolean;
@@ -24,7 +24,7 @@ export class Dbg implements Trace, TraceDecor {
   readonly prefix: string;
   readonly margin: number;
 
-  constructor(existing: Trace & TraceDecor, t: Partial<Trace>, decor?: TraceDecor) {
+  constructor(existing: Trace & PrettyTrace, t: Partial<Trace>, pretty?: PrettyTrace) {
     this.silent = t.silent !== undefined ? t.silent : existing.silent;
     this.hints = t.hints !== undefined ? t.hints : existing.hints;
     this.transactions = t.transactions !== undefined ? t.transactions : existing.transactions;
@@ -36,12 +36,12 @@ export class Dbg implements Trace, TraceDecor {
     this.subscriptions = t.subscriptions !== undefined ? t.subscriptions : existing.subscriptions;
     this.invalidations = t.invalidations !== undefined ? t.invalidations : existing.invalidations;
     this.gc = t.gc !== undefined ? t.gc : existing.gc;
-    this.color = decor ? decor.color : existing.color;
-    this.prefix = decor ? decor.prefix : existing.prefix;
-    this.margin = decor ? decor.margin : existing.margin;
+    this.color = pretty ? pretty.color : existing.color;
+    this.prefix = pretty ? pretty.prefix : existing.prefix;
+    this.margin = pretty ? pretty.margin : existing.margin;
   }
 
-  static off: Trace & TraceDecor = {
+  static off: Trace & PrettyTrace = {
     silent: false,
     hints: false,
     transactions: false,
@@ -60,9 +60,9 @@ export class Dbg implements Trace, TraceDecor {
 
   static trace: Dbg = new Dbg(Dbg.off, {});
 
-  static push(trace: Partial<Trace> | undefined, decor: TraceDecor | undefined): Dbg {
+  static push(trace: Partial<Trace> | undefined, pretty: PrettyTrace | undefined): Dbg {
     const existing = Dbg.trace;
-    Dbg.trace = new Dbg(existing, trace || existing, decor);
+    Dbg.trace = new Dbg(existing, trace || existing, pretty);
     return existing;
   }
 
@@ -76,8 +76,8 @@ export class Dbg implements Trace, TraceDecor {
         (ms > 2 ? `    [ ${ms}ms ]` : ``));
   }
 
-  static logAs(trace: Partial<Trace> | undefined, decor: TraceDecor, operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
-    const restore = Dbg.push(trace, decor);
+  static logAs(trace: Partial<Trace> | undefined, pretty: PrettyTrace, operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
+    const restore = Dbg.push(trace, pretty);
     Dbg.log(operation, marker, message, ms, highlight);
     Dbg.trace = restore;
   }

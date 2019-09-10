@@ -1,7 +1,7 @@
 import { Dbg, Utils, undef, Record, ICachedResult, F, Snapshot, Hint } from './internal/z.index';
 import { SeparatedFrom, Trace } from './Config';
 
-class TransactionTraceDecor {
+class TranPrettyTrace {
   constructor(readonly tran: Transaction) {}
   get color(): number { return 31 + (this.tran.id) % 6; }
   get prefix(): string { return `t${this.tran.id}`; }
@@ -24,13 +24,13 @@ export class Transaction {
   private conflicts?: Record[] = undefined;
   private reaction: { tran?: Transaction, effect: ICachedResult[] } = { tran: undefined, effect: [] };
   readonly trace?: Partial<Trace>; // assigned in constructor
-  readonly decor: TransactionTraceDecor; // assigned in constructor
+  readonly pretty: TranPrettyTrace; // assigned in constructor
 
   constructor(hint: string, separated: SeparatedFrom = SeparatedFrom.Reaction, trace?: Partial<Trace>) {
     this.separated = separated;
     this.snapshot = new Snapshot(hint);
     this.trace = trace;
-    this.decor = new TransactionTraceDecor(this);
+    this.pretty = new TranPrettyTrace(this);
   }
 
   static get current(): Transaction { return Transaction._current; }
@@ -170,14 +170,14 @@ export class Transaction {
     const outer = Transaction._current;
     const restore = Dbg.trace.transactions
       ? (this.trace === undefined || this.trace.transactions !== false
-        ? Dbg.push(this.trace, this.decor)
+        ? Dbg.push(this.trace, this.pretty)
         : Dbg.trace)
       : (this.trace !== undefined && this.trace.transactions === true
-        ? Dbg.push(this.trace, this.decor)
+        ? Dbg.push(this.trace, this.pretty)
         : Dbg.trace);
     try {
       if (trace) {
-        const t = Dbg.push(trace, this.decor);
+        const t = Dbg.push(trace, this.pretty);
         if (!t.transactions && trace.transactions)
           Dbg.log("║", "i", `transaction hint: ${this.hint}`);
       }
