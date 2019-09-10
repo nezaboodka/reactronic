@@ -5,8 +5,6 @@
 
 import { stateful, Trace } from '../src/z.index';
 
-/* istanbul ignore file */
-
 // Person
 
 @stateful
@@ -16,7 +14,7 @@ export class Person {
   age: number = 0;
   emails: string[] | null = null;
   attributes: Map<string, any> = new Map<string, any>();
-  get parent(): Person | null { return this._parent; }
+  get parent(): Person | null { return this._parent; } /* istanbul ignore next */
   set parent(value: Person | null) { this.setParent(value); }
   private _parent: Person | null = null;
   get children(): ReadonlyArray<Person> { return this._children; }
@@ -28,6 +26,7 @@ export class Person {
       Object.assign(this, init);
   }
 
+  /* istanbul ignore next */
   setParent(value: Person | null): void {
     if (this.parent !== value) {
       if (this.parent) { // remove from children of old parent
