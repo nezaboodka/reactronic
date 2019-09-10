@@ -1,4 +1,9 @@
-﻿import test from 'ava';
+﻿// The below copyright notice and the license permission notice
+// shall be included in all copies or substantial portions.
+
+// Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
+
+import test from 'ava';
 import { Transaction, ReentrantCalls, Cache, cacheof, all, sleep } from '../src/z.index';
 import { DemoModel, DemoView, mon, output, trace } from './async';
 

@@ -1,3 +1,8 @@
+// The below copyright notice and the license permission notice
+// shall be included in all copies or substantial portions.
+
+// Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
+
 import { Utils, Dbg, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './z.index';
 import { Cache } from '../Cache';
 export { Cache, resultof, cacheof } from '../Cache';

@@ -1,3 +1,8 @@
+// The below copyright notice and the license permission notice
+// shall be included in all copies or substantial portions.
+
+// Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
+
 import { CachedResult, F, Handle, Dbg } from './internal/z.index';
 import { Transaction } from './Transaction';
 import { Config, Trace } from './Config';

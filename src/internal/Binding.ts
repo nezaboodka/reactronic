@@ -1,3 +1,8 @@
+// The below copyright notice and the license permission notice
+// shall be included in all copies or substantial portions.
+
+// Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
+
 import { Dbg } from './Dbg';
 
 export const RT_BINDING: unique symbol = Symbol("RT:BINDING");
