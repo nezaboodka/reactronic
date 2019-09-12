@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-export { all, sleep } from './internal/z.index';
+export { all, sleep } from './internal/all';
 export { Config, Renew, ReentrantCalls, SeparatedFrom, Trace } from './public/Config';
 export { stateful, stateless, transaction, cache, behavior, monitor, trace, config } from './public/Config.decorators';
 export { Transaction } from './public/Transaction';

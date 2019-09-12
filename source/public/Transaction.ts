@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { Dbg, Utils, undef, Record, ICacheResult, F, Snapshot, Hint } from '../internal/z.index';
+import { Dbg, Utils, undef, Record, ICacheResult, F, Snapshot, Hint } from '../internal/all';
 import { SeparatedFrom, Trace } from './Config';
 
 class TranPrettyTrace {

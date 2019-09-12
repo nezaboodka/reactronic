@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { Utils, Dbg, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './z.index';
+import { Utils, Dbg, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Cache } from '../public/Cache';
 export { Cache, resultof, cacheof } from '../public/Cache';
 import { Config, Renew, Renewal, ReentrantCalls, SeparatedFrom } from '../public/Config';
