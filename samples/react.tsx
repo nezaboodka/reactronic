@@ -1,6 +1,5 @@
 // The below copyright notice and the license permission notice
 // shall be included in all copies or substantial portions.
-
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import * as React from 'react';
