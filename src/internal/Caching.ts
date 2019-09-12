@@ -13,7 +13,7 @@ import { Monitor } from '../Monitor';
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER;
 type CachedCall = { cache: CachedResult, record: Record, valid: boolean };
 
-class CachedMethod extends Cache<any> {
+export class MethodCache extends Cache<any> {
   private readonly handle: Handle;
   private readonly blank: CachedResult;
 
@@ -103,7 +103,7 @@ class CachedMethod extends Cache<any> {
       else
         args = c.args;
       if (!error)
-        c.ret = CachedMethod.run<any>(c, (...argsx: any[]): any => {
+        c.ret = MethodCache.run<any>(c, (...argsx: any[]): any => {
           return c.config.body.call(this.handle.proxy, ...argsx);
         }, ...args);
       else
@@ -179,11 +179,31 @@ class CachedMethod extends Cache<any> {
     }
     return result;
   }
+
+  static get(method: F<any>): Cache<any> {
+    const impl: Cache<any> | undefined = Utils.get(method, RT_CACHE);
+    if (!impl)
+      throw new Error("given method is not a reactronic cache");
+    return impl;
+  }
+
+  static unmount(...objects: any[]): Transaction {
+    return Transaction.runAs("unmount", SeparatedFrom.Reaction, undefined,
+      MethodCache.runUnmount, ...objects);
+  }
+
+  private static runUnmount(...objects: any[]): Transaction {
+    for (const x of objects) {
+      if (Utils.get(x, RT_HANDLE))
+        x[RT_UNMOUNT] = RT_UNMOUNT;
+    }
+    return Transaction.current;
+  }
 }
 
 // CacheResult
 
-export class CachedResult implements ICachedResult {
+class CachedResult implements ICachedResult {
   static asyncRecacheQueue: CachedResult[] = [];
   static active?: CachedResult = undefined;
   get color(): number { return Dbg.trace.color; }
@@ -225,15 +245,8 @@ export class CachedResult implements ICachedResult {
 
   hint(tranless?: boolean): string { return `${Hint.record(this.record, tranless, false, this.member)}`; }
 
-  static get(method: F<any>): Cache<any> {
-    const impl: Cache<any> | undefined = Utils.get(method, RT_CACHE);
-    if (!impl)
-      throw new Error("given method is not a reactronic cache");
-    return impl;
-  }
-
   wrap<T>(func: F<T>): F<T> {
-    const caching: F<T> = (...args: any[]): T => CachedMethod.run<T>(this, func, ...args);
+    const caching: F<T> = (...args: any[]): T => MethodCache.run<T>(this, func, ...args);
     return caching;
   }
 
@@ -244,8 +257,8 @@ export class CachedResult implements ICachedResult {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
-          const cachedMethod: CachedMethod = Utils.get(trap, RT_CACHE);
-          const call: CachedCall = cachedMethod.call(true);
+          const cache: MethodCache = Utils.get(trap, RT_CACHE);
+          const call: CachedCall = cache.call(true);
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
         }
@@ -384,11 +397,11 @@ export class CachedResult implements ICachedResult {
   }
 
   static createCachedMethodTrap(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
-    const cachedMethod = new CachedMethod(h, prop, config);
-    const cachedMethodTrap: F<any> = (...args: any[]): any =>
-      cachedMethod.call(true, args).cache.ret;
-    Utils.set(cachedMethodTrap, RT_CACHE, cachedMethod);
-    return cachedMethodTrap;
+    const cache = new MethodCache(h, prop, config);
+    const methodCacheTrap: F<any> = (...args: any[]): any =>
+      cache.call(true, args).cache.ret;
+    Utils.set(methodCacheTrap, RT_CACHE, cache);
+    return methodCacheTrap;
   }
 
   enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
@@ -433,7 +446,7 @@ export class CachedResult implements ICachedResult {
 
   monitorEnter(mon: Monitor | null): void {
     if (mon)
-      CachedMethod.run(undefined, Transaction.runAs, "Monitor.enter",
+      MethodCache.run(undefined, Transaction.runAs, "Monitor.enter",
         mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
         Monitor.enter, mon, this);
   }
@@ -445,7 +458,7 @@ export class CachedResult implements ICachedResult {
         try {
           Transaction._current = Transaction.none; // Workaround?
           const leave = () => {
-            CachedMethod.run(undefined, Transaction.runAs, "Monitor.leave",
+            MethodCache.run(undefined, Transaction.runAs, "Monitor.leave",
               mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
               Monitor.leave, mon, this);
           };
@@ -456,7 +469,7 @@ export class CachedResult implements ICachedResult {
         }
       }
       else
-        CachedMethod.run(undefined, Transaction.runAs, "Monitor.leave",
+        MethodCache.run(undefined, Transaction.runAs, "Monitor.leave",
           mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
           Monitor.leave, mon, this);
     }
@@ -475,19 +488,6 @@ export class CachedResult implements ICachedResult {
     // Utils.freezeMap(c.observables);
     // Utils.freezeSet(c.statusObservables);
     Object.freeze(c);
-  }
-
-  static unmount(...objects: any[]): Transaction {
-    return Transaction.runAs("unmount", SeparatedFrom.Reaction, undefined,
-      CachedResult.runUnmount, ...objects);
-  }
-
-  private static runUnmount(...objects: any[]): Transaction {
-    for (const x of objects) {
-      if (Utils.get(x, RT_HANDLE))
-        x[RT_UNMOUNT] = RT_UNMOUNT;
-    }
-    return Transaction.current;
   }
 }
 

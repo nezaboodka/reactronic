@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { CachedResult, F, Handle, Dbg } from './internal/z.index';
+import { MethodCache, F, Handle, Dbg } from './internal/z.index';
 import { Transaction } from './Transaction';
 import { Config, Trace } from './Config';
 
@@ -24,8 +24,8 @@ export abstract class Cache<T> {
   abstract readonly isInvalid: boolean;
   abstract invalidate(cause: string | undefined): boolean;
 
-  static get<T>(method: F<T>): Cache<T> { return CachedResult.get(method); }
-  static unmount(...objects: any[]): Transaction { return CachedResult.unmount(...objects); }
+  static get<T>(method: F<T>): Cache<T> { return MethodCache.get(method); }
+  static unmount(...objects: any[]): Transaction { return MethodCache.unmount(...objects); }
 
   static get trace(): Trace { return Dbg.trace; }
   static set trace(value: Trace) { Dbg.trace = value as any; }
