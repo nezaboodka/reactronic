@@ -180,6 +180,14 @@ export class MethodCache extends Cache<any> {
     return result;
   }
 
+  static createMethodCacheTrap(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
+    const cache = new MethodCache(h, prop, config);
+    const methodCacheTrap: F<any> = (...args: any[]): any =>
+      cache.call(true, args).cache.ret;
+    Utils.set(methodCacheTrap, RT_CACHE, cache);
+    return methodCacheTrap;
+  }
+
   static get(method: F<any>): Cache<any> {
     const impl: Cache<any> | undefined = Utils.get(method, RT_CACHE);
     if (!impl)
@@ -396,14 +404,6 @@ class CachedResult implements ICachedResult {
     // return true;
   }
 
-  static createCachedMethodTrap(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
-    const cache = new MethodCache(h, prop, config);
-    const methodCacheTrap: F<any> = (...args: any[]): any =>
-      cache.call(true, args).cache.ret;
-    Utils.set(methodCacheTrap, RT_CACHE, cache);
-    return methodCacheTrap;
-  }
-
   enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
     if (Dbg.trace.methods) Dbg.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
@@ -536,7 +536,7 @@ function init(): void {
   Record.markChanged = CachedResult.markChanged; // override
   Snapshot.equal = CachedResult.equal; // override
   Snapshot.applyDependencies = CachedResult.applyDependencies; // override
-  Hooks.createCachedMethodTrap = CachedResult.createCachedMethodTrap; // override
+  Hooks.createMethodCacheTrap = MethodCache.createMethodCacheTrap; // override
   Promise.prototype.then = promiseThenProxy; // override
 }
 
