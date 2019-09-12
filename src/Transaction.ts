@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { Dbg, Utils, undef, Record, ICachedResult, F, Snapshot, Hint } from './internal/z.index';
+import { Dbg, Utils, undef, Record, ICacheResult, F, Snapshot, Hint } from './internal/z.index';
 import { SeparatedFrom, Trace } from './Config';
 
 class TranPrettyTrace {
@@ -27,7 +27,7 @@ export class Transaction {
   private resultResolve: (value?: void) => void = undef;
   private resultReject: (reason: any) => void = undef;
   private conflicts?: Record[] = undefined;
-  private reaction: { tran?: Transaction, effect: ICachedResult[] } = { tran: undefined, effect: [] };
+  private reaction: { tran?: Transaction, effect: ICacheResult[] } = { tran: undefined, effect: [] };
   readonly trace?: Partial<Trace>; // assigned in constructor
   readonly pretty: TranPrettyTrace; // assigned in constructor
 
@@ -261,14 +261,14 @@ export class Transaction {
         this.resultResolve();
   }
 
-  private static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICachedResult[] }, trace?: Partial<Trace>): void {
+  private static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICacheResult[] }, trace?: Partial<Trace>): void {
     const name = Dbg.trace.hints ? `${hint} - REACTION(${reaction.effect.length})` : /* istanbul ignore next */ "noname";
     const separated = reaction.tran ? SeparatedFrom.Reaction : SeparatedFrom.Reaction | SeparatedFrom.Parent;
     reaction.tran = Transaction.runAs(name, separated, trace,
       Transaction.runTriggerRecacheAll, timestamp, reaction.effect);
   }
 
-  private static runTriggerRecacheAll(timestamp: number, effect: ICachedResult[]): Transaction {
+  private static runTriggerRecacheAll(timestamp: number, effect: ICacheResult[]): Transaction {
     effect.map(r => r.triggerRecache(timestamp, false, false));
     return Transaction.current;
   }
@@ -283,7 +283,7 @@ export class Transaction {
     return this.resultPromise;
   }
 
-  static _wrap<T>(t: Transaction, c: ICachedResult | undefined, inc: boolean, dec: boolean, func: F<T>): F<T> {
+  static _wrap<T>(t: Transaction, c: ICacheResult | undefined, inc: boolean, dec: boolean, func: F<T>): F<T> {
     t.guard();
     const inspect = Transaction._inspection;
     const f = c ? c.wrap(func) : func; // caching context

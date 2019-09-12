@@ -15,7 +15,7 @@ export class Record {
   readonly data: any;
   readonly changes: Set<PropertyKey>;
   readonly conflicts: Map<PropertyKey, Record>;
-  readonly observers: Map<PropertyKey, Set<ICachedResult>>;
+  readonly observers: Map<PropertyKey, Set<ICacheResult>>;
   readonly outdated: Map<PropertyKey, Record>;
 
   constructor(prev: Record, snapshot: ISnapshot, data: object) {
@@ -24,7 +24,7 @@ export class Record {
     this.data = data;
     this.changes = new Set<PropertyKey>();
     this.conflicts = new Map<PropertyKey, Record>();
-    this.observers = new Map<PropertyKey, Set<ICachedResult>>();
+    this.observers = new Map<PropertyKey, Set<ICacheResult>>();
     this.outdated = new Map<PropertyKey, Record>();
   }
 
@@ -66,10 +66,10 @@ export interface ISnapshot {
   readonly completed: boolean;
 }
 
-export interface ICachedResult {
+export interface ICacheResult {
   hint(tranless?: boolean): string;
   wrap<T>(func: F<T>): F<T>;
   readonly isInvalid: boolean;
-  invalidate(cause: Record, causeProp: PropertyKey, effect: ICachedResult[]): void;
+  invalidate(cause: Record, causeProp: PropertyKey, effect: ICacheResult[]): void;
   triggerRecache(timestamp: number, now: boolean, nothrow: boolean): void;
 }

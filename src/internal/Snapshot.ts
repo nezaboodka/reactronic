@@ -5,7 +5,7 @@
 
 import { Utils, undef } from './Utils';
 import { Dbg } from './Dbg';
-import { Record, ISnapshot, ICachedResult, RT_UNMOUNT } from './Record';
+import { Record, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { CopyOnWrite } from './Hooks';
 
@@ -158,13 +158,13 @@ export class Snapshot implements ISnapshot {
   }
 
   static mergeObservers(target: Record, source: Record): void {
-    source.observers.forEach((oo: Set<ICachedResult>, prop: PropertyKey) => {
+    source.observers.forEach((oo: Set<ICacheResult>, prop: PropertyKey) => {
       if (!target.changes.has(prop)) {
-        const existing: Set<ICachedResult> | undefined = target.observers.get(prop);
-        const merged = existing || new Set<ICachedResult>();
+        const existing: Set<ICacheResult> | undefined = target.observers.get(prop);
+        const merged = existing || new Set<ICacheResult>();
         if (!existing)
           target.observers.set(prop, merged);
-        oo.forEach((c: ICachedResult) => {
+        oo.forEach((c: ICacheResult) => {
           if (!c.isInvalid) {
             merged.add(c);
             if (Dbg.trace.subscriptions) Dbg.log(" ", "o", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
@@ -197,7 +197,7 @@ export class Snapshot implements ISnapshot {
   }
 
   /* istanbul ignore next */
-  static applyDependencies = function(snapshot: Snapshot, effect: ICachedResult[]): void {
+  static applyDependencies = function(snapshot: Snapshot, effect: ICacheResult[]): void {
     undef(); // to be redefined by Cache implementation
   };
 

@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { Utils, Dbg, rethrow, Record, ICachedResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './z.index';
+import { Utils, Dbg, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './z.index';
 import { Cache } from '../Cache';
 export { Cache, resultof, cacheof } from '../Cache';
 import { Config, Renew, Renewal, ReentrantCalls, SeparatedFrom } from '../Config';
@@ -11,11 +11,11 @@ import { Transaction } from '../Transaction';
 import { Monitor } from '../Monitor';
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER;
-type CachedCall = { cache: CachedResult, record: Record, valid: boolean };
+type CachedCall = { cache: CacheResult, record: Record, valid: boolean };
 
 export class MethodCache extends Cache<any> {
   private readonly handle: Handle;
-  private readonly blank: CachedResult;
+  private readonly blank: CacheResult;
 
   get config(): Config { return this.read(false).cache.config; }
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
@@ -23,20 +23,20 @@ export class MethodCache extends Cache<any> {
   get error(): boolean { return this.read(true).cache.error; }
   getResult(...args: any): any { return this.call(false, args).cache.result; }
   get isInvalid(): boolean { return this.read(true).cache.isInvalid; }
-  invalidate(cause: string | undefined): boolean { return cause ? CachedResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
+  invalidate(cause: string | undefined): boolean { return cause ? CacheResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigRecord) {
     super();
     this.handle = handle;
-    this.blank = new CachedResult(Record.blank, member, config);
-    CachedResult.freeze(this.blank);
+    this.blank = new CacheResult(Record.blank, member, config);
+    CacheResult.freeze(this.blank);
     // TODO: mark cache readonly?
   }
 
   call(recache: boolean, args?: any[]): CachedCall {
     let call: CachedCall = this.read(false, args);
     if (!call.valid) {
-      const c: CachedResult = call.cache;
+      const c: CacheResult = call.cache;
       const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "recache";
       const separated = recache ? c.config.separated : (c.config.separated | SeparatedFrom.Parent);
       let call2 = call;
@@ -65,7 +65,7 @@ export class MethodCache extends Cache<any> {
     const ctx = Snapshot.readable();
     const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
-    const c: CachedResult = r.data[member] || this.blank;
+    const c: CacheResult = r.data[member] || this.blank;
     const valid = c.config.renewal !== Renew.NoCache &&
       ctx.timestamp < c.invalidation.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
@@ -79,9 +79,9 @@ export class MethodCache extends Cache<any> {
     const ctx = Snapshot.writable();
     const member = this.blank.member;
     const r: Record = ctx.write(this.handle, member, RT_CACHE);
-    let c: CachedResult = r.data[member] || this.blank;
+    let c: CacheResult = r.data[member] || this.blank;
     if (c.record !== r) {
-      const c2 = new CachedResult(r, c.member, c);
+      const c2 = new CacheResult(r, c.member, c);
       r.data[c2.member] = c2;
       Record.markChanged(r, c2.member, true, c2);
       c = c2;
@@ -89,10 +89,10 @@ export class MethodCache extends Cache<any> {
     return { cache: c, record: r, valid: true };
   }
 
-  private recache(prev: CachedResult, args: any[] | undefined): CachedCall {
+  private recache(prev: CacheResult, args: any[] | undefined): CachedCall {
     const error = this.reenter(prev);
     const call: CachedCall = this.write();
-    const c: CachedResult = call.cache;
+    const c: CacheResult = call.cache;
     const mon: Monitor | null = prev.config.monitor;
     if (!error)
       c.enter(call.record, prev, mon);
@@ -117,7 +117,7 @@ export class MethodCache extends Cache<any> {
     return call;
   }
 
-  private reenter(c: CachedResult): Error | undefined {
+  private reenter(c: CacheResult): Error | undefined {
     let error: Error | undefined = undefined;
     const prev = c.invalidation.recaching;
     const caller = Transaction.current;
@@ -142,21 +142,21 @@ export class MethodCache extends Cache<any> {
 
   private reconfigure(config: Partial<Config>): Config {
     const call = this.read(false);
-    const c: CachedResult = call.cache;
+    const c: CacheResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
     return Transaction.runAs(hint, SeparatedFrom.Reaction, undefined, (): Config => {
       const call2 = this.write();
-      const c2: CachedResult = call2.cache;
+      const c2: CacheResult = call2.cache;
       c2.config = new ConfigRecord(c2.config.body, c2.config, config, false);
       if (Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
     });
   }
 
-  static run<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
+  static run<T>(c: CacheResult | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined;
-    const outer = CachedResult.active;
+    const outer = CacheResult.active;
     const restore = Dbg.trace.methods
       ? (this.trace === undefined || this.trace.methods !== false
         ? Dbg.push(this.trace, c)
@@ -165,7 +165,7 @@ export class MethodCache extends Cache<any> {
         ? Dbg.push(this.trace, c)
         : Dbg.trace);
     try {
-      CachedResult.active = c;
+      CacheResult.active = c;
       result = func(...args);
     }
     catch (e) {
@@ -174,7 +174,7 @@ export class MethodCache extends Cache<any> {
       throw e;
     }
     finally {
-      CachedResult.active = outer;
+      CacheResult.active = outer;
       Dbg.trace = restore;
     }
     return result;
@@ -211,9 +211,9 @@ export class MethodCache extends Cache<any> {
 
 // CacheResult
 
-class CachedResult implements ICachedResult {
-  static asyncRecacheQueue: CachedResult[] = [];
-  static active?: CachedResult = undefined;
+class CacheResult implements ICacheResult {
+  static asyncRecacheQueue: CacheResult[] = [];
+  static active?: CacheResult = undefined;
   get color(): number { return Dbg.trace.color; }
   get prefix(): string { return Dbg.trace.prefix; }
   readonly margin: number;
@@ -226,15 +226,15 @@ class CachedResult implements ICachedResult {
   result: any;
   error: any;
   started: number;
-  readonly invalidation: { timestamp: number, recaching: CachedResult | undefined };
+  readonly invalidation: { timestamp: number, recaching: CacheResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
 
-  constructor(record: Record, member: PropertyKey, init: CachedResult | ConfigRecord) {
+  constructor(record: Record, member: PropertyKey, init: CacheResult | ConfigRecord) {
     this.margin = Dbg.trace.margin + 1;
     this.tran = Transaction.current;
     this.record = record;
     this.member = member;
-    if (init instanceof CachedResult) {
+    if (init instanceof CacheResult) {
       this.config = init.config;
       this.args = init.args;
       this.result = init.result;
@@ -277,28 +277,28 @@ class CachedResult implements ICachedResult {
       }
     }
     else if (this.config.renewal === Renew.ImmediatelyAsync)
-      CachedResult.enqueueAsyncRecache(this);
+      CacheResult.enqueueAsyncRecache(this);
     else
       setTimeout(() => this.triggerRecache(UNDEFINED_TIMESTAMP, true, true), 0);
   }
 
-  static enqueueAsyncRecache(c: CachedResult): void {
-    CachedResult.asyncRecacheQueue.push(c);
-    if (CachedResult.asyncRecacheQueue.length === 1)
-      setTimeout(CachedResult.handleAsyncRecacheQueue, 0);
+  static enqueueAsyncRecache(c: CacheResult): void {
+    CacheResult.asyncRecacheQueue.push(c);
+    if (CacheResult.asyncRecacheQueue.length === 1)
+      setTimeout(CacheResult.handleAsyncRecacheQueue, 0);
   }
 
   static handleAsyncRecacheQueue(): void {
-    const batch = CachedResult.asyncRecacheQueue;
-    CachedResult.asyncRecacheQueue = []; // reset
+    const batch = CacheResult.asyncRecacheQueue;
+    CacheResult.asyncRecacheQueue = []; // reset
     for (const x of batch)
       x.triggerRecache(UNDEFINED_TIMESTAMP, true, true);
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
-    const c: CachedResult | undefined = CachedResult.active; // alias
+    const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.renewal >= Renew.Manually && prop !== RT_HANDLE) {
-      CachedResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
+      CacheResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
       if (Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
   }
@@ -308,43 +308,43 @@ class CachedResult implements ICachedResult {
     if (Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, true)}.${prop.toString()} = ${valueHint(value)}`);
   }
 
-  static applyDependencies(snapshot: Snapshot, effect: ICachedResult[]): void {
+  static applyDependencies(snapshot: Snapshot, effect: ICacheResult[]): void {
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       if (!r.changes.has(RT_UNMOUNT))
         r.changes.forEach(prop => {
-          CachedResult.markAllPrevRecordsAsOutdated(r, prop, effect);
+          CacheResult.markAllPrevRecordsAsOutdated(r, prop, effect);
           const value = r.data[prop];
-          if (value instanceof CachedResult)
+          if (value instanceof CacheResult)
             value.subscribeToObservables(effect);
         });
       else
         for (const prop in r.prev.record.data)
-          CachedResult.markAllPrevRecordsAsOutdated(r, prop, effect);
+          CacheResult.markAllPrevRecordsAsOutdated(r, prop, effect);
     });
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       Snapshot.mergeObservers(r, r.prev.record);
     });
   }
 
-  static acquireObserverSet(r: Record, prop: PropertyKey): Set<ICachedResult> {
+  static acquireObserverSet(r: Record, prop: PropertyKey): Set<ICacheResult> {
     let oo = r.observers.get(prop);
     if (!oo)
-      r.observers.set(prop, oo = new Set<CachedResult>());
+      r.observers.set(prop, oo = new Set<CacheResult>());
     return oo;
   }
 
-  static acquireObservableSet(c: CachedResult, prop: PropertyKey, hot: boolean): Set<Record> {
+  static acquireObservableSet(c: CacheResult, prop: PropertyKey, hot: boolean): Set<Record> {
     let result: Set<Record> | undefined = c.observables.get(prop);
     if (!result)
       c.observables.set(prop, result = new Set<Record>());
     return result;
   }
 
-  private subscribeToObservables(effect?: ICachedResult[]): void {
+  private subscribeToObservables(effect?: ICacheResult[]): void {
     const subscriptions: string[] = [];
     this.observables.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach(r => {
-        CachedResult.acquireObserverSet(r, prop).add(this); // link
+        CacheResult.acquireObserverSet(r, prop).add(this); // link
         if (Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (effect && r.outdated.has(prop))
           this.invalidate(r, prop, effect);
@@ -358,7 +358,7 @@ class CachedResult implements ICachedResult {
     return this.invalidation.timestamp <= ctx.timestamp;
   }
 
-  invalidate(cause: Record, causeProp: PropertyKey, effect: ICachedResult[]): void {
+  invalidate(cause: Record, causeProp: PropertyKey, effect: ICacheResult[]): void {
     const stamp = cause.snapshot.timestamp;
     if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP) {
       this.invalidation.timestamp = stamp;
@@ -381,7 +381,7 @@ class CachedResult implements ICachedResult {
     }
   }
 
-  static markAllPrevRecordsAsOutdated(cause: Record, prop: PropertyKey, effect: ICachedResult[]): void {
+  static markAllPrevRecordsAsOutdated(cause: Record, prop: PropertyKey, effect: ICacheResult[]): void {
     let r = cause.prev.record;
     while (r !== Record.blank && !r.outdated.has(prop)) {
       r.outdated.set(prop, cause);
@@ -393,7 +393,7 @@ class CachedResult implements ICachedResult {
     }
   }
 
-  static enforceInvalidation(c: CachedResult, cause: string, renewal: Renewal): boolean {
+  static enforceInvalidation(c: CacheResult, cause: string, renewal: Renewal): boolean {
     throw new Error("not implemented - Cache.enforceInvalidation");
     // let effect: Cache[] = [];
     // c.invalidate(cause, false, false, effect);
@@ -404,7 +404,7 @@ class CachedResult implements ICachedResult {
     // return true;
   }
 
-  enter(r: Record, prev: CachedResult, mon: Monitor | null): void {
+  enter(r: Record, prev: CacheResult, mon: Monitor | null): void {
     if (Dbg.trace.methods) Dbg.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
@@ -412,7 +412,7 @@ class CachedResult implements ICachedResult {
       prev.invalidation.recaching = this;
   }
 
-  tryLeave(r: Record, prev: CachedResult, mon: Monitor | null): void {
+  tryLeave(r: Record, prev: CacheResult, mon: Monitor | null): void {
     if (this.ret instanceof Promise) {
       this.ret = this.ret.then(
         result => {
@@ -433,7 +433,7 @@ class CachedResult implements ICachedResult {
     }
   }
 
-  private leave(r: Record, prev: CachedResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
+  private leave(r: Record, prev: CacheResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
     if (prev.invalidation.recaching === this)
       prev.invalidation.recaching = undefined;
     this.monitorLeave(mon);
@@ -477,14 +477,14 @@ class CachedResult implements ICachedResult {
 
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
-    if (oldValue instanceof CachedResult)
+    if (oldValue instanceof CacheResult)
       result = oldValue.config.renewal === Renew.NoCache;
     else
       result = oldValue === newValue;
     return result;
   }
 
-  static freeze(c: CachedResult): void {
+  static freeze(c: CacheResult): void {
     // Utils.freezeMap(c.observables);
     // Utils.freezeSet(c.statusObservables);
     Object.freeze(c);
@@ -499,7 +499,7 @@ function valueHint(value: any): string {
     result = `Set(${value.size})`;
   else if (value instanceof Map)
     result = `Map(${value.size})`;
-  else if (value instanceof CachedResult)
+  else if (value instanceof CacheResult)
     result = `<recache:${Hint.record(value.record.prev.record, false, true)}>`;
   else if (value === RT_UNMOUNT)
     result = "<unmount>";
@@ -520,11 +520,11 @@ function promiseThenProxy(
   if (!t.isFinished()) {
     if (onsuccess) {
       // if (Debug.verbosity >= 5) Debug.log("║", "", ` Promise.then (${(this as any)[RT_UNMOUNT]})`);
-      onsuccess = Transaction._wrap<any>(t, CachedResult.active, true, true, onsuccess);
-      onfailure = Transaction._wrap<any>(t, CachedResult.active, false, true, onfailure || rethrow);
+      onsuccess = Transaction._wrap<any>(t, CacheResult.active, true, true, onsuccess);
+      onfailure = Transaction._wrap<any>(t, CacheResult.active, false, true, onfailure || rethrow);
     }
     else if (onfailure)
-      onfailure = Transaction._wrap<any>(t, CachedResult.active, false, false, onfailure);
+      onfailure = Transaction._wrap<any>(t, CacheResult.active, false, false, onfailure);
   }
   return original_primise_then.call(this, onsuccess, onfailure);
 }
@@ -532,10 +532,10 @@ function promiseThenProxy(
 // Global Init
 
 function init(): void {
-  Record.markViewed = CachedResult.markViewed; // override
-  Record.markChanged = CachedResult.markChanged; // override
-  Snapshot.equal = CachedResult.equal; // override
-  Snapshot.applyDependencies = CachedResult.applyDependencies; // override
+  Record.markViewed = CacheResult.markViewed; // override
+  Record.markChanged = CacheResult.markChanged; // override
+  Snapshot.equal = CacheResult.equal; // override
+  Snapshot.applyDependencies = CacheResult.applyDependencies; // override
   Hooks.createMethodCacheTrap = MethodCache.createMethodCacheTrap; // override
   Promise.prototype.then = promiseThenProxy; // override
 }

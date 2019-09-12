@@ -109,7 +109,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const result = [];
     for (const prop of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[prop];
-      if (typeof(value) !== "object" || value.constructor.name !== "CachedResult")
+      if (typeof(value) !== "object" || value.constructor.name !== "CacheResult")
         result.push(prop);
     }
     return result;
