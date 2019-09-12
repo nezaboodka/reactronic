@@ -67,7 +67,7 @@ export class MethodCache extends Cache<any> {
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[member] || this.blank;
     const valid = c.config.renewal !== Renew.NoCache &&
-      ctx.timestamp < c.invalidation.timestamp &&
+      ctx.timestamp < c.invalid.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (markViewed)
@@ -108,7 +108,7 @@ export class MethodCache extends Cache<any> {
         }, ...args);
       else
         c.ret = Promise.reject(error);
-      c.invalidation.timestamp = UNDEFINED_TIMESTAMP;
+      c.invalid.timestamp = UNDEFINED_TIMESTAMP;
     }
     finally {
       if (!error)
@@ -119,7 +119,7 @@ export class MethodCache extends Cache<any> {
 
   private reenter(c: CacheResult): Error | undefined {
     let error: Error | undefined = undefined;
-    const prev = c.invalidation.recaching;
+    const prev = c.invalid.recaching;
     const caller = Transaction.current;
     if (prev)
       switch (c.config.reentrant) {
@@ -132,7 +132,7 @@ export class MethodCache extends Cache<any> {
           break;
         case ReentrantCalls.CancelPrevious:
           prev.tran.cancel(new Error(`transaction t${prev.tran.id} (${prev.tran.hint}) is canceled by t${caller.id} (${caller.hint}) and will be silently ignored`), null);
-          c.invalidation.recaching = undefined;
+          c.invalid.recaching = undefined;
           break;
         case ReentrantCalls.RunSideBySide:
           break; // do nothing
@@ -226,7 +226,7 @@ class CacheResult implements ICacheResult {
   result: any;
   error: any;
   started: number;
-  readonly invalidation: { timestamp: number, recaching: CacheResult | undefined };
+  readonly invalid: { timestamp: number, recaching: CacheResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
 
   constructor(record: Record, member: PropertyKey, init: CacheResult | ConfigRecord) {
@@ -247,7 +247,7 @@ class CacheResult implements ICacheResult {
     // this.ret = undefined;
     // this.error = undefined;
     this.started = 0;
-    this.invalidation = { timestamp: 0, recaching: undefined };
+    this.invalid = { timestamp: 0, recaching: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
   }
 
@@ -261,7 +261,7 @@ class CacheResult implements ICacheResult {
   triggerRecache(timestamp: number, now: boolean, nothrow: boolean): void {
     if (now || this.config.renewal === Renew.Immediately) {
       if (!this.error && (this.config.renewal === Renew.NoCache ||
-          (timestamp >= this.invalidation.timestamp && !this.invalidation.recaching))) {
+          (timestamp >= this.invalid.timestamp && !this.invalid.recaching))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
@@ -355,13 +355,13 @@ class CacheResult implements ICacheResult {
 
   get isInvalid(): boolean { // TODO: should depend on caller context
     const ctx = Snapshot.readable();
-    return this.invalidation.timestamp <= ctx.timestamp;
+    return this.invalid.timestamp <= ctx.timestamp;
   }
 
   invalidate(cause: Record, causeProp: PropertyKey, effect: ICacheResult[]): void {
     const stamp = cause.snapshot.timestamp;
-    if (this.invalidation.timestamp === UNDEFINED_TIMESTAMP) {
-      this.invalidation.timestamp = stamp;
+    if (this.invalid.timestamp === UNDEFINED_TIMESTAMP) {
+      this.invalid.timestamp = stamp;
       // Check if cache should be renewed
       const isEffect = this.config.renewal >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (isEffect)
@@ -408,8 +408,8 @@ class CacheResult implements ICacheResult {
     if (Dbg.trace.methods) Dbg.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
-    if (!prev.invalidation.recaching)
-      prev.invalidation.recaching = this;
+    if (!prev.invalid.recaching)
+      prev.invalid.recaching = this;
   }
 
   tryLeave(r: Record, prev: CacheResult, mon: Monitor | null): void {
@@ -434,8 +434,8 @@ class CacheResult implements ICacheResult {
   }
 
   private leave(r: Record, prev: CacheResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
-    if (prev.invalidation.recaching === this)
-      prev.invalidation.recaching = undefined;
+    if (prev.invalid.recaching === this)
+      prev.invalid.recaching = undefined;
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
