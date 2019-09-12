@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { Trace } from '../Trace';
+import { Trace } from '../public/Trace';
 
 // Dbg
 

@@ -13,8 +13,8 @@
     "lib": ["es2016", "dom"],
     "noEmit": false,
     "noLib": false,
-    "baseUrl": "src",
-    // "rootDir": "src",
+    "baseUrl": "source",
+    // "rootDir": "source",
     "outDir": "dist",
     "declarationDir": "dist",
     "declaration": true,
@@ -35,8 +35,8 @@
     "jsx": "react"
   },
   // "include": [
-  //   "src/**/*.ts",
-  //   "test/**/*.ts",
+  //   "source/**/*.ts",
+  //   "tests/**/*.ts",
   // ],
   "exclude": [
     "node_modules",

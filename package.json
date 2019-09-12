@@ -2,10 +2,10 @@
   "name": "reactronic",
   "version": "0.9.92",
   "description": "Reactronic - Transactionally Reactive State Management",
-  "main": "dist/src/reactronic.js",
-  "types": "dist/src/reactronic.d.ts",
+  "main": "dist/source/reactronic.js",
+  "types": "dist/source/reactronic.d.ts",
   "files": [
-    "dist/src/**/*.*"
+    "dist/source/**/*.*"
   ],
   "repository": {
     "type": "git",
@@ -40,7 +40,7 @@
     "nyc": "14.1.1"
   },
   "scripts": {
-    "build": "tsc && tslint -c tslint.json 'src/**/*.ts' 'tests/**/*.test.ts'",
+    "build": "tsc && tslint -c tslint.json 'source/**/*.ts' 'tests/**/*.test.ts'",
     "dist": "tsc --sourceMap false",
     "test": "nyc ava",
     "cover": "nyc ava && start coverage/index.html"

@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { MethodCache, F, Handle, Dbg } from './internal/z.index';
+import { MethodCache, F, Handle, Dbg } from '../internal/z.index';
 import { Transaction } from './Transaction';
 import { Config, Trace } from './Config';
 

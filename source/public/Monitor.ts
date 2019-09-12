@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { Handle } from './internal/z.index';
+import { Handle } from '../internal/z.index';
 import { SeparatedFrom } from './Config';
 import { stateful } from './Config.decorators';
 import { Transaction } from './Transaction';

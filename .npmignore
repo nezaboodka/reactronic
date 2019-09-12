@@ -2,8 +2,9 @@
 .vscode
 .editorconfig
 img
-src
 etc
+src
+source
 samples
 tests
 dist/etc

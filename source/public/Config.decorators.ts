@@ -4,8 +4,8 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import { Trace } from './Trace';
-import { F } from './internal/Record';
-import { Hooks } from './internal/Hooks';
+import { F } from '../internal/Record';
+import { Hooks } from '../internal/Hooks';
 import { Config, Renew, Renewal, ReentrantCalls, SeparatedFrom } from './Config';
 import { Monitor } from './Monitor';
 
