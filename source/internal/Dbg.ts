@@ -2,7 +2,7 @@
 // shall be included in all copies or substantial portions.
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { Trace } from '../public/Trace';
+import { Trace } from '../api/Trace';
 
 // Dbg
 

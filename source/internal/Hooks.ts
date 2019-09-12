@@ -9,9 +9,9 @@ import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
 import { Record, F, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
-import { Config, Renewal, Renew, ReentrantCalls, SeparatedFrom } from '../public/Config';
-import { Monitor } from '../public/Monitor';
-import { Trace } from '../public/Trace';
+import { Config, Renewal, Renew, ReentrantCalls, SeparatedFrom } from '../api/Config';
+import { Monitor } from '../api/Monitor';
+import { Trace } from '../api/Trace';
 
 // Config
 

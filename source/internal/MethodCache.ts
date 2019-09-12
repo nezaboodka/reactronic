@@ -3,11 +3,11 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import { Utils, Dbg, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
-import { Cache } from '../public/Cache';
-export { Cache, resultof, cacheof } from '../public/Cache';
-import { Config, Renew, Renewal, ReentrantCalls, SeparatedFrom } from '../public/Config';
-import { Transaction } from '../public/Transaction';
-import { Monitor } from '../public/Monitor';
+import { Cache } from '../api/Cache';
+export { Cache, resultof, cacheof } from '../api/Cache';
+import { Config, Renew, Renewal, ReentrantCalls, SeparatedFrom } from '../api/Config';
+import { Transaction } from '../api/Transaction';
+import { Monitor } from '../api/Monitor';
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER;
 type CachedCall = { cache: CacheResult, record: Record, valid: boolean };
