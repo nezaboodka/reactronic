@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { stateful, Trace } from '../src/z.index';
+import { stateful, Trace } from '../src/reactronic';
 
 // Person
 

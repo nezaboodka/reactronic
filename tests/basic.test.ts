@@ -4,7 +4,7 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import test from 'ava';
-import { Transaction, Renew, Cache, cacheof } from '../src/z.index';
+import { Transaction, Renew, Cache, cacheof } from '../src/reactronic';
 import { Person, trace, nop } from './common';
 import { DemoModel, DemoView, output } from './basic';
 

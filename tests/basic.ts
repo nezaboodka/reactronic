@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { stateful, stateless, transaction, cache, behavior, Renew, trace } from '../src/z.index';
+import { stateful, stateless, transaction, cache, behavior, Renew, trace } from '../src/reactronic';
 import { Person } from './common';
 
 export const output: string[] = [];

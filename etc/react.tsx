@@ -4,10 +4,8 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import * as React from 'react';
-// import { stateful, transaction, cache, config, Renew, SeparateFrom,
-//   Transaction, ReactiveCache, Dbg, Trace} from 'reactronic';
 import { stateful, transaction, cache, behavior, cacheof,
-  Renew, SeparatedFrom, Transaction, Cache, Trace} from '../src/z.index';
+  Renew, SeparatedFrom, Transaction, Cache, Trace} from 'reactronic';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
   const restore = trace ? Cache.pushTrace(trace) : Cache.trace;

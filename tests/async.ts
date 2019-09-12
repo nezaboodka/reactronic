@@ -3,7 +3,7 @@
 
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { stateful, transaction, cache, behavior, Renew, Cache, Monitor, monitor, all, sleep } from '../src/z.index';
+import { stateful, transaction, cache, behavior, Renew, Cache, Monitor, monitor, all, sleep } from '../src/reactronic';
 export { trace } from './common';
 
 export const output: string[] = [];
