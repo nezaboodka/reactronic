@@ -10,10 +10,10 @@ import { stateful, transaction, cache, behavior, cacheof,
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
   const restore = trace ? Cache.pushTrace(trace) : Cache.trace;
   try {
-    const [jsx] = React.useState(() => createJsx(trace));
+    const [rejsx] = React.useState(() => createRejsx(trace));
     const [revision, refresh] = React.useState(0);
-    React.useEffect(unmountEffect(jsx), []);
-    return jsx.render(revision, render, refresh, tran);
+    React.useEffect(unmountEffect(rejsx), []);
+    return rejsx.render(revision, render, refresh, tran);
   }
   finally {
     Cache.trace = restore;
@@ -21,7 +21,7 @@ export function reactiveRender(render: (revision: number) => JSX.Element, trace?
 }
 
 @stateful
-class Jsx {
+class Rejsx {
   @transaction
   render(revision: number, doRender: (revision: number) => JSX.Element, refresh: (nextRevision: number) => void, tran: Transaction | undefined): JSX.Element {
     const jsx: JSX.Element = this.jsx(revision, doRender, tran);
@@ -41,33 +41,33 @@ class Jsx {
   }
 }
 
-function createJsx(trace?: Partial<Trace>): Jsx {
+function createRejsx(trace?: Partial<Trace>): Rejsx {
   const dbg = Cache.trace.hints
     ? trace === undefined || trace.hints !== false
     : trace !== undefined && trace.hints === true;
-  const hint = dbg ? getComponentName() : "createJsx";
+  const hint = dbg ? getComponentName() : "createRejsx";
   return Transaction.runAs(hint, SeparatedFrom.Reaction, trace,
-    runCreateJsx, hint, trace);
+    runCreateRejsx, hint, trace);
 }
 
-function runCreateJsx(hint: string | undefined, trace: Trace | undefined): Jsx {
-  const jsx = new Jsx();
+function runCreateRejsx(hint: string | undefined, trace: Trace | undefined): Rejsx {
+  const rejsx = new Rejsx();
   if (hint)
-    Cache.setTraceHint(jsx, hint);
+    Cache.setTraceHint(rejsx, hint);
   if (trace) {
-    cacheof(jsx.render).configure({trace});
-    cacheof(jsx.jsx).configure({trace});
-    cacheof(jsx.trigger).configure({trace});
+    cacheof(rejsx.render).configure({trace});
+    cacheof(rejsx.jsx).configure({trace});
+    cacheof(rejsx.trigger).configure({trace});
   }
-  return jsx;
+  return rejsx;
 }
 
-function unmountEffect(jsx: Jsx): React.EffectCallback {
+function unmountEffect(rejsx: Rejsx): React.EffectCallback {
   return () => {
     // did mount
     return () => {
       // will unmount
-      Cache.unmount(jsx);
+      Cache.unmount(rejsx);
     };
   };
 }
