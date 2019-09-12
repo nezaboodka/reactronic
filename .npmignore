@@ -3,7 +3,11 @@
 .editorconfig
 img
 src
+etc
+samples
 tests
+dist/etc
+dist/samples
 dist/tests
 node_modules
 .nyc_output
