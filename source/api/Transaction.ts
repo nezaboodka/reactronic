@@ -70,13 +70,13 @@ export class Transaction {
     this.seal(); // commit immediately, because pending === 0
   }
 
-  seal(): Transaction { // t.seal().waitForEnd().then(onfulfilled, onrejected)
+  seal(): this { // t.seal().waitForEnd().then(onfulfilled, onrejected)
     if (!this.sealed)
       this.run(Transaction.seal, this);
     return this;
   }
 
-  cancel(error: Error, retryAfterOrIgnore?: Transaction | null): Transaction {
+  cancel(error: Error, retryAfterOrIgnore?: Transaction | null): this {
     this.do(undefined, Transaction.seal, this, error,
       retryAfterOrIgnore === null ? Transaction.none : retryAfterOrIgnore);
     return this;
