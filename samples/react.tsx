@@ -11,7 +11,7 @@ export function reactiveRender(render: (revision: number) => JSX.Element, trace?
   try {
     const [rejsx] = React.useState(() => createRejsx(trace));
     const [revision, refresh] = React.useState(0);
-    React.useEffect(unmountEffect(rejsx), []);
+    React.useEffect(Rejsx.unmountEffect(rejsx), []);
     return rejsx.render(revision, render, refresh, tran);
   }
   finally {
@@ -38,6 +38,16 @@ class Rejsx {
     if (statusof(this.jsx).isInvalid)
         refresh(nextRevision);
   }
+
+  static unmountEffect(rejsx: Rejsx): React.EffectCallback {
+    return () => {
+      // did mount
+      return () => {
+        // will unmount
+        Status.unmount(rejsx);
+      };
+    };
+  }
 }
 
 function createRejsx(trace?: Partial<Trace>): Rejsx {
@@ -59,16 +69,6 @@ function runCreateRejsx(hint: string | undefined, trace: Trace | undefined): Rej
     statusof(rejsx.refresh).configure({trace});
   }
   return rejsx;
-}
-
-function unmountEffect(rejsx: Rejsx): React.EffectCallback {
-  return () => {
-    // did mount
-    return () => {
-      // will unmount
-      Status.unmount(rejsx);
-    };
-  };
 }
 
 function getComponentName(): string {
