@@ -2,7 +2,7 @@
 // shall be included in all copies or substantial portions.
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { MethodCache, F, Handle, Dbg } from '../internal/all';
+import { Cache, F, Handle, Dbg } from '../internal/all';
 import { Transaction } from './Transaction';
 import { Config, Trace } from './Config';
 
@@ -23,8 +23,8 @@ export abstract class Status<T> {
   abstract readonly isInvalid: boolean;
   abstract invalidate(cause: string | undefined): boolean;
 
-  static get<T>(method: F<T>): Status<T> { return MethodCache.get(method); }
-  static unmount(...objects: any[]): Transaction { return MethodCache.unmount(...objects); }
+  static get<T>(method: F<T>): Status<T> { return Cache.get(method); }
+  static unmount(...objects: any[]): Transaction { return Cache.unmount(...objects); }
 
   static get trace(): Trace { return Dbg.trace; }
   static set trace(value: Trace) { Dbg.trace = value as any; }

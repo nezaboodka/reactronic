@@ -12,7 +12,7 @@ import { Monitor } from '../api/Monitor';
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER;
 type CachedCall = { cache: CacheResult, record: Record, valid: boolean };
 
-export class MethodCache extends Status<any> {
+export class Cache extends Status<any> {
   private readonly handle: Handle;
   private readonly blank: CacheResult;
 
@@ -102,7 +102,7 @@ export class MethodCache extends Status<any> {
       else
         args = c.args;
       if (!error)
-        c.ret = MethodCache.run<any>(c, (...argsx: any[]): any => {
+        c.ret = Cache.run<any>(c, (...argsx: any[]): any => {
           return c.config.body.call(this.handle.proxy, ...argsx);
         }, ...args);
       else
@@ -179,12 +179,12 @@ export class MethodCache extends Status<any> {
     return result;
   }
 
-  static createMethodCacheTrap(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
-    const cache = new MethodCache(h, prop, config);
-    const methodCacheTrap: F<any> = (...args: any[]): any =>
+  static createCacheTrap(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
+    const cache = new Cache(h, prop, config);
+    const cacheTrap: F<any> = (...args: any[]): any =>
       cache.call(true, args).cache.ret;
-    Utils.set(methodCacheTrap, RT_CACHE, cache);
-    return methodCacheTrap;
+    Utils.set(cacheTrap, RT_CACHE, cache);
+    return cacheTrap;
   }
 
   static get(method: F<any>): Status<any> {
@@ -196,7 +196,7 @@ export class MethodCache extends Status<any> {
 
   static unmount(...objects: any[]): Transaction {
     return Transaction.runAs("unmount", SeparatedFrom.Reaction, undefined,
-      MethodCache.runUnmount, ...objects);
+      Cache.runUnmount, ...objects);
   }
 
   private static runUnmount(...objects: any[]): Transaction {
@@ -253,7 +253,7 @@ class CacheResult implements ICacheResult {
   hint(tranless?: boolean): string { return `${Hint.record(this.record, tranless, false, this.member)}`; }
 
   wrap<T>(func: F<T>): F<T> {
-    const caching: F<T> = (...args: any[]): T => MethodCache.run<T>(this, func, ...args);
+    const caching: F<T> = (...args: any[]): T => Cache.run<T>(this, func, ...args);
     return caching;
   }
 
@@ -264,7 +264,7 @@ class CacheResult implements ICacheResult {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
-          const cache: MethodCache = Utils.get(trap, RT_CACHE);
+          const cache: Cache = Utils.get(trap, RT_CACHE);
           const call: CachedCall = cache.call(true);
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
@@ -445,7 +445,7 @@ class CacheResult implements ICacheResult {
 
   monitorEnter(mon: Monitor | null): void {
     if (mon)
-      MethodCache.run(undefined, Transaction.runAs, "Monitor.enter",
+      Cache.run(undefined, Transaction.runAs, "Monitor.enter",
         mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
         Monitor.enter, mon, this);
   }
@@ -457,7 +457,7 @@ class CacheResult implements ICacheResult {
         try {
           Transaction._current = Transaction.none; // Workaround?
           const leave = () => {
-            MethodCache.run(undefined, Transaction.runAs, "Monitor.leave",
+            Cache.run(undefined, Transaction.runAs, "Monitor.leave",
               mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
               Monitor.leave, mon, this);
           };
@@ -468,7 +468,7 @@ class CacheResult implements ICacheResult {
         }
       }
       else
-        MethodCache.run(undefined, Transaction.runAs, "Monitor.leave",
+        Cache.run(undefined, Transaction.runAs, "Monitor.leave",
           mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
           Monitor.leave, mon, this);
     }
@@ -535,7 +535,7 @@ function init(): void {
   Record.markChanged = CacheResult.markChanged; // override
   Snapshot.equal = CacheResult.equal; // override
   Snapshot.applyDependencies = CacheResult.applyDependencies; // override
-  Hooks.createMethodCacheTrap = MethodCache.createMethodCacheTrap; // override
+  Hooks.createCacheTrap = Cache.createCacheTrap; // override
   Promise.prototype.then = promiseThenProxy; // override
 }
 

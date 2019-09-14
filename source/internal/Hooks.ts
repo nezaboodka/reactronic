@@ -154,7 +154,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const get = function(this: any): any {
       const classConfig: ConfigRecord = Hooks.getConfig(Object.getPrototypeOf(this), RT_CLASS) || ConfigRecord.default;
       const h: Handle = classConfig.stateful ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
-      const value = Hooks.createMethodCacheTrap(h, method, methodConfig);
+      const value = Hooks.createCacheTrap(h, method, methodConfig);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
       return value;
     };
@@ -206,8 +206,8 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static createMethodCacheTrap = function(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
-     throw new Error("createMethodCacheTrap should never be called");
+  static createCacheTrap = function(h: Handle, prop: PropertyKey, config: ConfigRecord): F<any> {
+     throw new Error("createCacheTrap should never be called");
   };
 }
 
