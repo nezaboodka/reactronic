@@ -24,12 +24,12 @@ export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyD
 }
 
 export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, autorun: Rerun.ImmediatelyAsync };
+  const config = { stateful: true, autorun: Rerun.OnInvalidateAsync };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
 export function cache(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, autorun: Rerun.OnDemand };
+  const config = { stateful: true, autorun: Rerun.OnDemandAfterInvalidate };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 

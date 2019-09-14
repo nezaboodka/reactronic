@@ -258,7 +258,7 @@ class CacheResult implements ICacheResult {
   }
 
   triggerRecache(timestamp: number, now: boolean, nothrow: boolean): void {
-    if (now || this.config.autorun === Rerun.Immediately) {
+    if (now || this.config.autorun === Rerun.OnInvalidate) {
       if (!this.error && (this.config.autorun === Rerun.ManuallyNoTrack ||
           (timestamp >= this.invalid.timestamp && !this.invalid.recaching))) {
         try {
@@ -275,7 +275,7 @@ class CacheResult implements ICacheResult {
         }
       }
     }
-    else if (this.config.autorun === Rerun.ImmediatelyAsync)
+    else if (this.config.autorun === Rerun.OnInvalidateAsync)
       CacheResult.enqueueAsyncRecache(this);
     else
       setTimeout(() => this.triggerRecache(UNDEFINED_TIMESTAMP, true, true), 0);
@@ -362,7 +362,7 @@ class CacheResult implements ICacheResult {
     if (this.invalid.timestamp === UNDEFINED_TIMESTAMP) {
       this.invalid.timestamp = stamp;
       // Check if cache requires re-run
-      const isEffect = this.config.autorun >= Rerun.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      const isEffect = this.config.autorun >= Rerun.OnInvalidate && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (isEffect)
         effect.push(this);
       if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, Transaction.current.pretty, " ", isEffect ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isEffect ? " and will run automatically" : ""}`);

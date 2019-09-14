@@ -167,9 +167,9 @@ There are multiple options to configure behavior of transactional reactivity.
 invocation of the corresponding function:
 
   - `(ms)` - delay in milliseconds;
-  - `Rerun.ImmediatelyAsync` - rerun immediately but async (zero latency);
-  - `Rerun.Immediately` - rerun immediately (right after commit);
-  - `Rerun.OnDemand` - rerun on access if cache is invalid;
+  - `Rerun.OnInvalidateAsync` - rerun immediately but async (zero latency);
+  - `Rerun.OnInvalidate` - rerun immediately (right after commit);
+  - `Rerun.OnDemandAfterInvalidate` - rerun on access if cache is invalid;
   - `Rerun.Manually` - rerun manually (explicitly);
   - `Rerun.ManuallyNoTrack` - run manually without tracking dependencies.
 
@@ -243,9 +243,9 @@ interface Config {
 type Autorun = Rerun | number; // milliseconds
 
 enum Rerun {
-  ImmediatelyAsync = 0, // @trigger
-  Immediately = -1,
-  OnDemand = -2, // @cache
+  OnInvalidateAsync = 0, // @trigger
+  OnInvalidate = -1,
+  OnDemandAfterInvalidate = -2, // @cache
   Manually = -3,
   ManuallyNoTrack = -4, // @transaction
 }

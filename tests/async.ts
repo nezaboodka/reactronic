@@ -25,7 +25,7 @@ export class DemoView {
   @stateful test: any;
   constructor(readonly model: DemoModel) { }
 
-  @trigger @behavior(Rerun.Immediately)
+  @trigger @behavior(Rerun.OnInvalidate)
   async print(): Promise<void> {
     const lines: string[] = await this.render();
     for (const x of lines) {

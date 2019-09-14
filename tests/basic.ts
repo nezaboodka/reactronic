@@ -48,7 +48,7 @@ export class DemoView {
     this.model = model;
   }
 
-  @trigger @behavior(Rerun.Immediately)
+  @trigger @behavior(Rerun.OnInvalidate)
   print(): void {
     this.render().forEach(x => output.push(x));
   }

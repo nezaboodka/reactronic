@@ -110,7 +110,7 @@ test("basic", t => {
     t.throws(() => tran3.commit(),
       "cannot commit transaction that is already canceled: Error: test");
     // Other
-    t.is(rendering.config.autorun, Rerun.OnDemand);
+    t.is(rendering.config.autorun, Rerun.OnDemandAfterInvalidate);
     t.is(rendering.error, undefined);
     t.is(Status.getTraceHint(app), "DemoView");
     Status.setTraceHint(app, "App");
