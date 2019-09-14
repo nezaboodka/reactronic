@@ -18,11 +18,11 @@ export interface Config {
 export type Renewal = Renew | number; // milliseconds
 
 export enum Renew {
-  ImmediatelyAsync = 0,
+  ImmediatelyAsync = 0, // @trigger
   Immediately = -1,
-  OnDemand = -3, // default for cache
+  OnDemand = -3, // @cache
   Manually = -4,
-  NoCache = -5, // default for transaction
+  NoCache = -5, // @transaction
 }
 
 export enum ReentrantCalls {

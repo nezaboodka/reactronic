@@ -243,11 +243,11 @@ interface Config {
 type Renewal = Renew | number; // milliseconds
 
 enum Renew {
-  ImmediatelyAsync = 0,
+  ImmediatelyAsync = 0, // @trigger
   Immediately = -1,
-  OnDemand = -2, // default for cache
+  OnDemand = -2, // @cache
   Manually = -3,
-  NoCache = -4, // default for transaction
+  NoCache = -4, // @transaction
 }
 
 enum ReentrantCalls {
