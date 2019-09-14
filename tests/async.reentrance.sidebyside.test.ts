@@ -3,7 +3,7 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import test from 'ava';
-import { Transaction, ReentrantCalls, Cache, cacheof, all, sleep } from '../source/reactronic';
+import { Transaction, ReentrantCalls, Reactronic, statusof, all, sleep } from '../source/reactronic';
 import { DemoModel, DemoView, mon, output, trace } from './async';
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -25,9 +25,9 @@ const expected: string[] = [
 ];
 
 test("async", async t => {
-  Cache.pushTrace(trace);
+  Reactronic.pushTrace(trace);
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
-  cacheof(app.model.load).configure({reentrant: ReentrantCalls.RunSideBySide});
+  statusof(app.model.load).configure({reentrant: ReentrantCalls.RunSideBySide});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; },
       "stateful property #23 DemoView.test can only be modified inside transaction");
@@ -39,20 +39,20 @@ test("async", async t => {
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()); /* istanbul ignore next */
-    if (!Cache.trace.silent) console.log(error.toString());
+    if (!Reactronic.trace.silent) console.log(error.toString());
   }
   finally {
     t.is(mon.counter, 0);
     t.is(mon.workers.size, 0);
     await sleep(400);
-    await Cache.unmount(app, app.model).whenFinished(true);
+    await Reactronic.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */
-  if (!Cache.trace.silent)
+  if (!Reactronic.trace.silent)
     for (const x of output)
       console.log(x);
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (!Cache.trace.silent) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
+    if (!Reactronic.trace.silent) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
     t.is(output[i], expected[i]);
   }
 });

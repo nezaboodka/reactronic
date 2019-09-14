@@ -3,11 +3,11 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import * as React from 'react';
-import { stateful, transaction, trigger, cache, cacheof,
-  SeparatedFrom, Transaction, Cache, Trace} from 'reactronic';
+import { stateful, transaction, trigger, cache, statusof,
+  SeparatedFrom, Transaction, Reactronic, Trace} from 'reactronic';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
-  const restore = trace ? Cache.pushTrace(trace) : Cache.trace;
+  const restore = trace ? Reactronic.pushTrace(trace) : Reactronic.trace;
   try {
     const [rejsx] = React.useState(() => createRejsx(trace));
     const [revision, refresh] = React.useState(0);
@@ -15,7 +15,7 @@ export function reactiveRender(render: (revision: number) => JSX.Element, trace?
     return rejsx.render(revision, render, refresh, tran);
   }
   finally {
-    Cache.trace = restore;
+    Reactronic.trace = restore;
   }
 }
 
@@ -35,13 +35,13 @@ class Rejsx {
 
   @trigger
   autorefresh(nextRevision: number, refresh: (nextRevision: number) => void): void {
-    if (cacheof(this.jsx).isInvalid)
+    if (statusof(this.jsx).isInvalid)
         refresh(nextRevision);
   }
 }
 
 function createRejsx(trace?: Partial<Trace>): Rejsx {
-  const dbg = Cache.trace.hints
+  const dbg = Reactronic.trace.hints
     ? trace === undefined || trace.hints !== false
     : trace !== undefined && trace.hints === true;
   const hint = dbg ? getComponentName() : "createRejsx";
@@ -52,11 +52,11 @@ function createRejsx(trace?: Partial<Trace>): Rejsx {
 function runCreateRejsx(hint: string | undefined, trace: Trace | undefined): Rejsx {
   const rejsx = new Rejsx();
   if (hint)
-    Cache.setTraceHint(rejsx, hint);
+    Reactronic.setTraceHint(rejsx, hint);
   if (trace) {
-    cacheof(rejsx.render).configure({trace});
-    cacheof(rejsx.jsx).configure({trace});
-    cacheof(rejsx.autorefresh).configure({trace});
+    statusof(rejsx.render).configure({trace});
+    statusof(rejsx.jsx).configure({trace});
+    statusof(rejsx.autorefresh).configure({trace});
   }
   return rejsx;
 }
@@ -66,7 +66,7 @@ function unmountEffect(rejsx: Rejsx): React.EffectCallback {
     // did mount
     return () => {
       // will unmount
-      Cache.unmount(rejsx);
+      Reactronic.unmount(rejsx);
     };
   };
 }

@@ -3,7 +3,7 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import test from 'ava';
-import { Transaction, Renew, Cache, cacheof } from '../source/reactronic';
+import { Transaction, Renew, Reactronic, statusof } from '../source/reactronic';
 import { Person, trace, nop } from './common';
 import { DemoModel, DemoView, output } from './basic';
 
@@ -18,11 +18,11 @@ const expected: string[] = [
 ];
 
 test("basic", t => {
-  Cache.pushTrace(trace);
+  Reactronic.pushTrace(trace);
   // Simple transactions
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   try {
-    const rendering = cacheof(app.render);
+    const rendering = statusof(app.render);
     t.is(rendering.isInvalid, true);
     app.model.loadUsers();
     const daddy: Person = app.model.users[0];
@@ -94,9 +94,9 @@ test("basic", t => {
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     // Check protection and error handling
-    t.throws(() => { cacheof(daddy.setParent).configure({renewal: 0}); },
+    t.throws(() => { statusof(daddy.setParent).configure({renewal: 0}); },
       "given method is not a reactronic cache");
-    t.throws(() => { console.log(cacheof(daddy.setParent).config.monitor); },
+    t.throws(() => { console.log(statusof(daddy.setParent).config.monitor); },
       "given method is not a reactronic cache");
     const tran2 = new Transaction("tran2");
     t.throws(() => tran2.run(() => { throw new Error("test"); }), "test");
@@ -112,14 +112,14 @@ test("basic", t => {
     // Other
     t.is(rendering.config.renewal, Renew.OnDemand);
     t.is(rendering.error, undefined);
-    t.is(Cache.getTraceHint(app), "DemoView");
-    Cache.setTraceHint(app, "App");
-    t.is(Cache.getTraceHint(app), "App");
+    t.is(Reactronic.getTraceHint(app), "DemoView");
+    Reactronic.setTraceHint(app, "App");
+    t.is(Reactronic.getTraceHint(app), "App");
     t.deepEqual(Object.getOwnPropertyNames(app.model), ["shared", "title", "users"]);
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true);
   }
   finally { // cleanup
-    Cache.unmount(app, app.model);
+    Reactronic.unmount(app, app.model);
   }
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++)

@@ -2,7 +2,7 @@
 // shall be included in all copies or substantial portions.
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { stateful, transaction, cache, behavior, Renew, Cache, Monitor, monitor, all, sleep } from '../source/reactronic';
+import { stateful, transaction, cache, behavior, Renew, Reactronic, Monitor, monitor, all, sleep } from '../source/reactronic';
 export { trace } from './common';
 
 export const output: string[] = [];
@@ -39,7 +39,7 @@ export class DemoView {
     const lines: string[] = await this.render();
     for (const x of lines) {
       output.push(x); /* istanbul ignore next */
-      if (!Cache.trace.silent) console.log(x);
+      if (!Reactronic.trace.silent) console.log(x);
     }
   }
 }

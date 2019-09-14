@@ -3,8 +3,8 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import { Utils, Dbg, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
-import { Cache } from '../api/Cache';
-export { Cache, resultof, cacheof } from '../api/Cache';
+import { Reactronic } from '../api/Cache';
+export { Reactronic, resultof, statusof } from '../api/Cache';
 import { Config, Renew, Renewal, ReentrantCalls, SeparatedFrom } from '../api/Config';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
@@ -12,7 +12,7 @@ import { Monitor } from '../api/Monitor';
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER;
 type CachedCall = { cache: CacheResult, record: Record, valid: boolean };
 
-export class MethodCache extends Cache<any> {
+export class MethodCache extends Reactronic<any> {
   private readonly handle: Handle;
   private readonly blank: CacheResult;
 
@@ -187,8 +187,8 @@ export class MethodCache extends Cache<any> {
     return methodCacheTrap;
   }
 
-  static get(method: F<any>): Cache<any> {
-    const impl: Cache<any> | undefined = Utils.get(method, RT_CACHE);
+  static get(method: F<any>): Reactronic<any> {
+    const impl: Reactronic<any> | undefined = Utils.get(method, RT_CACHE);
     if (!impl)
       throw new Error("given method is not a reactronic cache");
     return impl;

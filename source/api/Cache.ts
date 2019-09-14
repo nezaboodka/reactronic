@@ -7,14 +7,14 @@ import { Transaction } from './Transaction';
 import { Config, Trace } from './Config';
 
 export function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined {
-  return (cacheof(method) as any).getResult(...args);
+  return (statusof(method) as any).getResult(...args);
 }
 
-export function cacheof<T>(method: F<T>): Cache<T> {
-  return Cache.get<T>(method);
+export function statusof<T>(method: F<T>): Reactronic<T> {
+  return Reactronic.get<T>(method);
 }
 
-export abstract class Cache<T> {
+export abstract class Reactronic<T> {
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
   abstract readonly stamp: number;
@@ -23,7 +23,7 @@ export abstract class Cache<T> {
   abstract readonly isInvalid: boolean;
   abstract invalidate(cause: string | undefined): boolean;
 
-  static get<T>(method: F<T>): Cache<T> { return MethodCache.get(method); }
+  static get<T>(method: F<T>): Reactronic<T> { return MethodCache.get(method); }
   static unmount(...objects: any[]): Transaction { return MethodCache.unmount(...objects); }
 
   static get trace(): Trace { return Dbg.trace; }
