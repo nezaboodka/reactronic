@@ -3,8 +3,8 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import { Utils, Dbg, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
-import { Status } from '../api/Reactronic';
-export { Status, resultof, statusof } from '../api/Reactronic';
+import { Status } from '../api/Status';
+export { Status, resultof, statusof } from '../api/Status';
 import { Config, Renew, Renewal, ReentrantCalls, SeparatedFrom } from '../api/Config';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
