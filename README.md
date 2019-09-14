@@ -309,12 +309,12 @@ class Transaction {
   static readonly current: Transaction;
 }
 
-// Cache
+// Status
 
 function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
-function statusof<T>(method: F<T>): Cache<T>;
+function statusof<T>(method: F<T>): Status<T>;
 
-abstract class Cache<T> {
+abstract class Status<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
   readonly error: any;
@@ -322,7 +322,7 @@ abstract class Cache<T> {
   readonly isInvalid: boolean;
   invalidate(cause: string | undefined): boolean;
 
-  static get<T>(method: F<T>): Cache<T>;
+  static get<T>(method: F<T>): Status<T>;
   static unmount(...objects: any[]): Transaction;
   static get trace(): Trace;
   static setTrace(t: Partial<Trace>): Trace;
