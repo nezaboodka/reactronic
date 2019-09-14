@@ -36,7 +36,7 @@ class Rejsx {
   @trigger
   refresh(nextRevision: number, refresh: (nextRevision: number) => void): void {
     if (statusof(this.jsx).isInvalid)
-        refresh(nextRevision);
+      refresh(nextRevision);
   }
 
   static unmountEffect(rejsx: Rejsx): React.EffectCallback {
