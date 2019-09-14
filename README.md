@@ -109,13 +109,13 @@ the whole chain of asynchronous operations is fully completed.
 ### Reactive Cache
 
 Reactive cache is a computed value having an associated function that
-is automatically called to renew the value in response to changes
-of state which it depends on. Renewal may happen reactively
-(immediately or asynchronously with some delay) or on-demand.
+is automatically called to renew the value in response to state
+changes. Renewal may happen immediately (for @reactive functions)
+or on-demand (for @cached functions).
 
-Each reactive cache function is instrumented with hooks to transparently
-subscribe it to those state object properties and other caches,
-which it uses during execution.
+Each reactive cache function is instrumented with hooks to seamlesly
+subscribe to those state objects and other caches, which are used
+during its execution.
 
 ``` tsx
 class MyView extends React.Component<MyModel> {
@@ -145,7 +145,7 @@ of a corresponding `MyModel` object. Once `url` or `content` values
 are changed, the `render` cache becomes invalid and causes invalidation
 and immediate re-execution of reactive function `refresh`. While
 executed, the `refresh` function enqueues re-rendering request to React,
-which calls `render` function and it renews its cache.
+which calls `render` function renewing its cache.
 
 In general case, all caches are automatically and immediately marked
 as invalid when changes are made in those state object properties
