@@ -120,7 +120,7 @@ and other caches, which it uses during execution.
 class MyView extends React.Component<MyModel> {
   @trigger
   refresh() {
-    if (cacheof(this.render).isInvalid)
+    if (statusof(this.render).isInvalid)
       this.setState({}); // ask React to re-render
   } // trigger is subscribed to render
 
@@ -312,7 +312,7 @@ class Transaction {
 // Cache
 
 function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
-function cacheof<T>(method: F<T>): Cache<T>;
+function statusof<T>(method: F<T>): Cache<T>;
 
 abstract class Cache<T> {
   readonly config: Config;
