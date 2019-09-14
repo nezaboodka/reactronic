@@ -118,6 +118,12 @@ and other caches, which it uses during execution.
 
 ``` tsx
 class MyView extends React.Component<MyModel> {
+  @trigger
+  refresh() {
+    if (cacheof(this.render).isInvalid)
+      this.setState({}); // ask React to re-render
+  } // trigger is subscribed to render
+
   @cache
   render() {
     const m: MyModel = this.props; // just a shortcut
@@ -128,12 +134,6 @@ class MyView extends React.Component<MyModel> {
       </div>
     );
   } // render is subscribed to m.url and m.content
-
-  @trigger
-  refresh() {
-    if (cacheof(this.render).isInvalid)
-      this.setState({}); // ask React to re-render
-  } // trigger is subscribed to render
 }
 ```
 
