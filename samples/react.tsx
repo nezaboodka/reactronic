@@ -24,7 +24,7 @@ class Rejsx {
   @transaction
   render(revision: number, doRender: (revision: number) => JSX.Element, refresh: (nextRevision: number) => void, tran: Transaction | undefined): JSX.Element {
     const jsx: JSX.Element = this.jsx(revision, doRender, tran);
-    this.autorefresh(revision + 1, refresh);
+    this.refresh(revision + 1, refresh);
     return jsx;
   }
 
@@ -34,7 +34,7 @@ class Rejsx {
   }
 
   @trigger
-  autorefresh(nextRevision: number, refresh: (nextRevision: number) => void): void {
+  refresh(nextRevision: number, refresh: (nextRevision: number) => void): void {
     if (statusof(this.jsx).isInvalid)
         refresh(nextRevision);
   }
@@ -56,7 +56,7 @@ function runCreateRejsx(hint: string | undefined, trace: Trace | undefined): Rej
   if (trace) {
     statusof(rejsx.render).configure({trace});
     statusof(rejsx.jsx).configure({trace});
-    statusof(rejsx.autorefresh).configure({trace});
+    statusof(rejsx.refresh).configure({trace});
   }
   return rejsx;
 }
