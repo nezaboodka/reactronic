@@ -3,7 +3,7 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import test from 'ava';
-import { Transaction, Renew, Reactronic, statusof } from '../source/reactronic';
+import { Transaction, Renew, Status, statusof } from '../source/reactronic';
 import { Person, trace, nop } from './common';
 import { DemoModel, DemoView, output } from './basic';
 
@@ -18,7 +18,7 @@ const expected: string[] = [
 ];
 
 test("basic", t => {
-  Reactronic.pushTrace(trace);
+  Status.pushTrace(trace);
   // Simple transactions
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   try {
@@ -112,14 +112,14 @@ test("basic", t => {
     // Other
     t.is(rendering.config.renewal, Renew.OnDemand);
     t.is(rendering.error, undefined);
-    t.is(Reactronic.getTraceHint(app), "DemoView");
-    Reactronic.setTraceHint(app, "App");
-    t.is(Reactronic.getTraceHint(app), "App");
+    t.is(Status.getTraceHint(app), "DemoView");
+    Status.setTraceHint(app, "App");
+    t.is(Status.getTraceHint(app), "App");
     t.deepEqual(Object.getOwnPropertyNames(app.model), ["shared", "title", "users"]);
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true);
   }
   finally { // cleanup
-    Reactronic.unmount(app, app.model);
+    Status.unmount(app, app.model);
   }
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++)

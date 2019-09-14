@@ -4,10 +4,10 @@
 
 import * as React from 'react';
 import { stateful, transaction, trigger, cache, statusof,
-  SeparatedFrom, Transaction, Reactronic, Trace} from 'reactronic';
+  SeparatedFrom, Transaction, Status, Trace} from 'reactronic';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
-  const restore = trace ? Reactronic.pushTrace(trace) : Reactronic.trace;
+  const restore = trace ? Status.pushTrace(trace) : Status.trace;
   try {
     const [rejsx] = React.useState(() => createRejsx(trace));
     const [revision, refresh] = React.useState(0);
@@ -15,7 +15,7 @@ export function reactiveRender(render: (revision: number) => JSX.Element, trace?
     return rejsx.render(revision, render, refresh, tran);
   }
   finally {
-    Reactronic.trace = restore;
+    Status.trace = restore;
   }
 }
 
@@ -41,7 +41,7 @@ class Rejsx {
 }
 
 function createRejsx(trace?: Partial<Trace>): Rejsx {
-  const dbg = Reactronic.trace.hints
+  const dbg = Status.trace.hints
     ? trace === undefined || trace.hints !== false
     : trace !== undefined && trace.hints === true;
   const hint = dbg ? getComponentName() : "createRejsx";
@@ -52,7 +52,7 @@ function createRejsx(trace?: Partial<Trace>): Rejsx {
 function runCreateRejsx(hint: string | undefined, trace: Trace | undefined): Rejsx {
   const rejsx = new Rejsx();
   if (hint)
-    Reactronic.setTraceHint(rejsx, hint);
+    Status.setTraceHint(rejsx, hint);
   if (trace) {
     statusof(rejsx.render).configure({trace});
     statusof(rejsx.jsx).configure({trace});
@@ -66,7 +66,7 @@ function unmountEffect(rejsx: Rejsx): React.EffectCallback {
     // did mount
     return () => {
       // will unmount
-      Reactronic.unmount(rejsx);
+      Status.unmount(rejsx);
     };
   };
 }

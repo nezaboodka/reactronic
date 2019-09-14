@@ -3,7 +3,7 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import test from 'ava';
-import { Transaction, ReentrantCalls, Reactronic, statusof, all, sleep } from '../source/reactronic';
+import { Transaction, ReentrantCalls, Status, statusof, all, sleep } from '../source/reactronic';
 import { DemoModel, DemoView, mon, output, trace } from './async';
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -32,7 +32,7 @@ const expected: string[] = [
 ];
 
 test("async", async t => {
-  Reactronic.pushTrace(trace);
+  Status.pushTrace(trace);
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   statusof(app.model.load).configure({reentrant: ReentrantCalls.WaitAndRestart});
   try {
@@ -46,15 +46,15 @@ test("async", async t => {
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()); /* istanbul ignore next */
-    if (!Reactronic.trace.silent) console.log(error.toString());
+    if (!Status.trace.silent) console.log(error.toString());
   }
   finally {
     t.is(mon.counter, 0);
     t.is(mon.workers.size, 0);
     await sleep(400);
-    await Reactronic.unmount(app, app.model).whenFinished(true);
+    await Status.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */
-  if (!Reactronic.trace.silent) {
+  if (!Status.trace.silent) {
     console.log("\nResults:\n");
     for (const x of output)
       console.log(x);
@@ -62,7 +62,7 @@ test("async", async t => {
   }
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (!Reactronic.trace.silent) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
+    if (!Status.trace.silent) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
     t.is(output[i], expected[i]);
   }
 });
