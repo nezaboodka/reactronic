@@ -15,7 +15,7 @@ export interface Config {
   readonly trace?: Partial<Trace>;
 }
 
-export type Renewal = number | Renew; // milliseconds
+export type Renewal = Renew | number; // milliseconds
 
 export enum Renew {
   ImmediatelyAsync = 0,

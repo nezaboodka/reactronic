@@ -29,7 +29,8 @@ Transactional reactivity is based on the three fundamental concepts:
 
   - **State** - a set of objects that store data of an application;
   - **Transaction** - a function that changes state objects in an atomic way;
-  - **Cache** - a computed value having associated function that is automatically called to renew the cache in response to state changes.
+  - **Trigger** - a function that is automatically called in response to state changes;
+  - **Cache** - a computed value having associated function that is automatically called to renew the value.
 
 The following picture illustrates relationships between the concepts
 in the source code:
@@ -105,17 +106,19 @@ completion of all of them. An asynchronous call may spawn other
 asynchronous calls, which prolong transaction execution until
 the whole chain of asynchronous operations is fully completed.
 
-### Cache
+### Trigger & Cache
 
-Cache is a computed value having an associated function that
-is automatically called to renew the cache in response to state
-changes. Each cache function is instrumented with hooks to
+Trigger is a function that is automatically called in response
+to state changes. Cache is a computed value having an associated
+function that is automatically called to renew the value.
+
+Each trigger and cache function is instrumented with hooks to
 transparently subscribe it to those state object properties
 and other caches, which it uses during execution.
 
 ``` tsx
 class MyView extends React.Component<MyModel> {
-  @cache  @behavior(Renew.OnDemand)
+  @cache
   render() {
     const m: MyModel = this.props; // just a shortcut
     return (
@@ -126,35 +129,31 @@ class MyView extends React.Component<MyModel> {
     );
   } // render is subscribed to m.url and m.content
 
-  @cache  @behavior(Renew.Immediately)
-  trigger(): void {
+  @trigger
+  refresh() {
     if (cacheof(this.render).isInvalid)
       this.setState({}); // ask React to re-render
   } // trigger is subscribed to render
 }
 ```
 
-In the example above, the cache of the `trigger` function is
-transparently subscribed to the cache of the `render` function.
-In turn, the `render` function is subscribed to the `url` and
-`content` properties of a corresponding `MyModel` object.
-Once `url` or `content` values are changed, the `render` cache
-becomes invalid and causes the `trigger` cache to become
-invalid as well (cascaded). The `trigger` cache is marked for
-immediate renewal, thus its function is immediately called by
-Reactronic to renew the cache. While executed, the `trigger`
-function enqueues re-rendering request to React, which calls
-`render` function and it renews its cache marked for on-demand
-renew.
+In the example above, trigger function `refresh` is transparently
+subscribed to the cache of the `render` function. In turn, the
+`render` function is subscribed to the `url` and `content` properties
+of a corresponding `MyModel` object. Once `url` or `content` values
+are changed, the `render` cache becomes invalid and causes execution
+of `refresh` trigger. While executed, the `trigger` function enqueues
+re-rendering request to React, which calls `render` function and it
+renews its cache.
 
-In general case, cache is automatically and immediately marked
-as invalid when changes are made in those state object properties
-that were used by its function. And once marked, the function
-is automatically executed again to renew it, either immediately or
-on demand.
+In general case, triggers and caches are automatically and immediately
+marked as invalid when changes are made in those state object properties
+that were used by their functions. And once marked, the functions
+are automatically executed again, either immediately (for triggers) or
+on demand (for caches).
 
 Reactronic takes full care of tracking dependencies between
-all the state objects and caches (observables and observers).
+all the state objects, triggers, and caches (observables and observers).
 With Reactronic, you no longer need to create data change events
 in one set of objects, subscribe to these events in other objects,
 and manually maintain switching from the previous state to a new
@@ -223,6 +222,7 @@ NPM: `npm install reactronic`
 function stateful(proto, prop?); // class, field, method
 function stateless(proto, prop); // field, method
 function transaction(proto, prop, pd); // method only
+function trigger(proto, prop, pd); // method only
 function cache(proto, prop, pd); // method only
 
 function behavior(renewal: Renewal, reentrant: ReentrantCalls, separated: SeparatedFrom);
@@ -240,7 +240,7 @@ interface Config {
   readonly trace?: Partial<Trace>;
 }
 
-type Renewal = number | Renew; // milliseconds
+type Renewal = Renew | number; // milliseconds
 
 enum Renew {
   ImmediatelyAsync = 0,
