@@ -49,14 +49,14 @@ export class Snapshot implements ISnapshot {
   read(h: Handle): Record {
     const result = this.tryRead(h);
     if (result === Record.blank) /* istanbul ignore next */
-      throw new Error(`object being accessed doesn't exist in snapshot v${this.timestamp}`);
+      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 
   write(h: Handle, prop: PropertyKey, value: Symbol): Record {
     const result: Record = this.tryWrite(h, prop, value);
     if (result === Record.blank) /* istanbul ignore next */
-      throw new Error(`object being changed doesn't exist in snapshot v${this.timestamp}`);
+      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 

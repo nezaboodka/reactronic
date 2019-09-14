@@ -19,7 +19,12 @@ export function stateless(proto: object, prop: PropertyKey): any {
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true };
+  const config = { stateful: true, renewal: Renew.NoCache };
+  return Hooks.decorateMethod(true, config, proto, prop, pd);
+}
+
+export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  const config = { stateful: true, renewal: Renew.Immediately };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
