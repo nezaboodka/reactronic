@@ -22,7 +22,7 @@ export enum Rerun {
   OnInvalidate = -1,
   OnDemandAfterInvalidate = -3, // @cached
   Manually = -4,
-  ManuallyNoTrack = -5, // @transaction
+  Off = -5, // @transaction
 }
 
 export enum ReentrantCalls {

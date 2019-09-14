@@ -19,7 +19,7 @@ export function stateless(proto: object, prop: PropertyKey): any {
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, autorun: Rerun.ManuallyNoTrack };
+  const config = { stateful: true, autorun: Rerun.Off };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 

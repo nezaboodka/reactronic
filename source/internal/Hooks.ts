@@ -21,7 +21,7 @@ export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
 const BLANK_CONFIG_TABLE = {};
 const DEFAULT: Config = {
   stateful: false,
-  autorun: Rerun.ManuallyNoTrack,
+  autorun: Rerun.Off,
   reentrant: ReentrantCalls.WaitAndRestart,
   separated: SeparatedFrom.Reaction,
   monitor: null,

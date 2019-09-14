@@ -65,7 +65,7 @@ export class Cache extends Status<any> {
     const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[member] || this.blank;
-    const valid = c.config.autorun !== Rerun.ManuallyNoTrack &&
+    const valid = c.config.autorun !== Rerun.Off &&
       ctx.timestamp < c.invalid.since &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
@@ -264,7 +264,7 @@ class CacheResult implements ICacheResult {
 
   refresh(timestamp: number, now: boolean, nothrow: boolean): void {
     if (now || this.config.autorun === Rerun.OnInvalidate) {
-      if (!this.error && (this.config.autorun === Rerun.ManuallyNoTrack ||
+      if (!this.error && (this.config.autorun === Rerun.Off ||
           (timestamp >= this.invalid.since && !this.invalid.refreshing))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
@@ -482,7 +482,7 @@ class CacheResult implements ICacheResult {
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CacheResult)
-      result = oldValue.config.autorun === Rerun.ManuallyNoTrack;
+      result = oldValue.config.autorun === Rerun.Off;
     else
       result = oldValue === newValue;
     return result;
