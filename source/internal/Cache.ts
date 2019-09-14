@@ -253,7 +253,12 @@ class CacheResult implements ICacheResult {
   hint(tranless?: boolean): string { return `${Hint.record(this.record, tranless, false, this.member)}`; }
 
   wrap<T>(func: F<T>): F<T> {
-    const caching: F<T> = (...args: any[]): T => Cache.run<T>(this, func, ...args);
+    const caching: F<T> = (...args: any[]): T => {
+      if (Dbg.trace.methods && this.ret) Dbg.logAs(undefined, this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} ‾\\         `, 0, "        │");
+      const result = Cache.run<T>(this, func, ...args);
+      if (Dbg.trace.methods && this.ret) Dbg.logAs(undefined, this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} _/         `, 0, "        │");
+      return result;
+    };
     return caching;
   }
 
