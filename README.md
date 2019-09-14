@@ -29,8 +29,8 @@ Transactional reactivity is based on the three fundamental concepts:
 
   - **State** - a set of objects that store data of an application;
   - **Transaction** - a function that changes state objects in an atomic way;
-  - **Trigger** - a function that is automatically called in response to state changes;
-  - **Cache** - a computed value having associated function that is automatically called to renew the value.
+  - **Reactive Cache** - a computed value having associated function that is
+  automatically called to renew the value in response to state changes.
 
 The following picture illustrates relationships between the concepts
 in the source code:
@@ -106,25 +106,26 @@ completion of all of them. An asynchronous call may spawn other
 asynchronous calls, which prolong transaction execution until
 the whole chain of asynchronous operations is fully completed.
 
-### Trigger & Cache
+### Reactive Cache
 
-Trigger is a function that is automatically called in response
-to state changes. Cache is a computed value having an associated
-function that is automatically called to renew the value.
+Reactive cache is a computed value having an associated function that
+is automatically called to renew the value in response to changes
+of state which it depends on. Renewal may happen reactively
+(immediately or asynchronously with some delay) or on-demand.
 
-Each trigger and cache function is instrumented with hooks to
-transparently subscribe it to those state object properties
-and other caches, which it uses during execution.
+Each reactive cache function is instrumented with hooks to transparently
+subscribe it to those state object properties and other caches,
+which it uses during execution.
 
 ``` tsx
 class MyView extends React.Component<MyModel> {
-  @trigger
+  @reactive
   refresh() {
     if (statusof(this.render).isInvalid)
       this.setState({}); // ask React to re-render
-  } // trigger is subscribed to render
+  } // refresh is subscribed to render
 
-  @cache
+  @cached
   render() {
     const m: MyModel = this.props; // just a shortcut
     return (
@@ -137,23 +138,23 @@ class MyView extends React.Component<MyModel> {
 }
 ```
 
-In the example above, trigger function `refresh` is transparently
-subscribed to the cache of the `render` function. In turn, the
-`render` function is subscribed to the `url` and `content` properties
+In the example above, reactive function `refresh` is transparently
+subscribed to the cached function `render`. In turn, the `render`
+function is subscribed to the `url` and `content` properties
 of a corresponding `MyModel` object. Once `url` or `content` values
-are changed, the `render` cache becomes invalid and causes execution
-of `refresh` trigger. While executed, the `trigger` function enqueues
-re-rendering request to React, which calls `render` function and it
-renews its cache.
+are changed, the `render` cache becomes invalid and causes invalidation
+and immediate re-execution of reactive function `refresh`. While
+executed, the `refresh` function enqueues re-rendering request to React,
+which calls `render` function and it renews its cache.
 
-In general case, triggers and caches are automatically and immediately
-marked as invalid when changes are made in those state object properties
+In general case, all caches are automatically and immediately marked
+as invalid when changes are made in those state object properties
 that were used by their functions. And once marked, the functions
-are automatically executed again, either immediately (for triggers) or
-on demand (for caches).
+are automatically executed again, either immediately (for @reactive
+functions) or on demand (for @cached functions).
 
 Reactronic takes full care of tracking dependencies between
-all the state objects, triggers, and caches (observables and observers).
+all the state objects and reactive caches (observables and observers).
 With Reactronic, you no longer need to create data change events
 in one set of objects, subscribe to these events in other objects,
 and manually maintain switching from the previous state to a new
@@ -163,7 +164,7 @@ one.
 
 There are multiple options to configure behavior of transactional reactivity.
 
-**Autorun** option defines a delay between trigger/cache invalidation and
+**Autorun** option defines a delay between reactive cache invalidation and
 invocation of the corresponding function:
 
   - `(ms)` - delay in milliseconds;
@@ -222,8 +223,8 @@ NPM: `npm install reactronic`
 function stateful(proto, prop?); // class, field, method
 function stateless(proto, prop); // field, method
 function transaction(proto, prop, pd); // method only
-function trigger(proto, prop, pd); // method only
-function cache(proto, prop, pd); // method only
+function reactive(proto, prop, pd); // method only
+function cached(proto, prop, pd); // method only
 
 function behavior(autorun: Autorun, reentrant: ReentrantCalls, separated: SeparatedFrom);
 function monitor(value: Monitor | null);
@@ -243,9 +244,9 @@ interface Config {
 type Autorun = Rerun | number; // milliseconds
 
 enum Rerun {
-  OnInvalidateAsync = 0, // @trigger
+  OnInvalidateAsync = 0, // @reactive
   OnInvalidate = -1,
-  OnDemandAfterInvalidate = -2, // @cache
+  OnDemandAfterInvalidate = -2, // @cached
   Manually = -3,
   ManuallyNoTrack = -4, // @transaction
 }

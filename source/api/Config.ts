@@ -18,9 +18,9 @@ export interface Config {
 export type Autorun = Rerun | number; // milliseconds
 
 export enum Rerun {
-  OnInvalidateAsync = 0, // @trigger
+  OnInvalidateAsync = 0, // @reactive
   OnInvalidate = -1,
-  OnDemandAfterInvalidate = -3, // @cache
+  OnDemandAfterInvalidate = -3, // @cached
   Manually = -4,
   ManuallyNoTrack = -5, // @transaction
 }

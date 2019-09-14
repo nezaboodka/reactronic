@@ -4,7 +4,7 @@
 
 export { all, sleep } from './internal/all';
 export { Config, Rerun, ReentrantCalls, SeparatedFrom, Trace } from './api/Config';
-export { stateful, stateless, transaction, trigger, cache, behavior, monitor, trace, config } from './api/Config.decorators';
+export { stateful, stateless, transaction, reactive, cached, behavior, monitor, trace, config } from './api/Config.decorators';
 export { Transaction } from './api/Transaction';
 export { Status, resultof, statusof } from './api/Status';
 export { Monitor, Worker } from './api/Monitor';
