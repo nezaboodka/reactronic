@@ -3,8 +3,8 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import * as React from 'react';
-import { stateful, transaction, cache, behavior, cacheof,
-  Renew, SeparatedFrom, Transaction, Cache, Trace} from 'reactronic';
+import { stateful, transaction, trigger, cache, cacheof,
+  SeparatedFrom, Transaction, Cache, Trace} from 'reactronic';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
   const restore = trace ? Cache.pushTrace(trace) : Cache.trace;
@@ -24,7 +24,7 @@ class Rejsx {
   @transaction
   render(revision: number, doRender: (revision: number) => JSX.Element, refresh: (nextRevision: number) => void, tran: Transaction | undefined): JSX.Element {
     const jsx: JSX.Element = this.jsx(revision, doRender, tran);
-    this.trigger(revision + 1, refresh);
+    this.autorefresh(revision + 1, refresh);
     return jsx;
   }
 
@@ -33,8 +33,8 @@ class Rejsx {
     return !tran ? render(revision) : tran.inspect(render, revision);
   }
 
-  @cache @behavior(Renew.ImmediatelyAsync)
-  trigger(nextRevision: number, refresh: (nextRevision: number) => void): void {
+  @trigger
+  autorefresh(nextRevision: number, refresh: (nextRevision: number) => void): void {
     if (cacheof(this.jsx).isInvalid)
         refresh(nextRevision);
   }
@@ -56,7 +56,7 @@ function runCreateRejsx(hint: string | undefined, trace: Trace | undefined): Rej
   if (trace) {
     cacheof(rejsx.render).configure({trace});
     cacheof(rejsx.jsx).configure({trace});
-    cacheof(rejsx.trigger).configure({trace});
+    cacheof(rejsx.autorefresh).configure({trace});
   }
   return rejsx;
 }
