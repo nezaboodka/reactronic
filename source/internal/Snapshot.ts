@@ -224,19 +224,15 @@ export class Snapshot implements ISnapshot {
   private static grabageCollection(s: Snapshot): void {
     if (s.timestamp !== 0) {
       if (s === Snapshot.oldest) {
-        Snapshot.oldest = undefined;
-        Snapshot.pending.sort((a, b) => a._timestamp - b._timestamp);
+        const p = Snapshot.pending;
+        p.sort((a, b) => a._timestamp - b._timestamp);
         let i: number = 0;
-        for (const x of Snapshot.pending) {
-          if (!x._sealed) {
-            Snapshot.oldest = x;
-            break;
-          }
-          else
-            Snapshot.unlinkHistory(x);
+        while (i < p.length && p[i]._sealed) {
+          Snapshot.unlinkHistory(p[i]);
           i++;
         }
-        Snapshot.pending = Snapshot.pending.slice(i);
+        Snapshot.pending = p.slice(i);
+        Snapshot.oldest = Snapshot.pending[0]; // undefined is OK
       }
     }
   }
