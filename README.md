@@ -172,7 +172,7 @@ invocation of the corresponding function:
   - `Rerun.OnInvalidate` - rerun immediately (right after commit);
   - `Rerun.OnDemandAfterInvalidate` - rerun on access if cache is invalid;
   - `Rerun.Manually` - rerun manually (explicitly);
-  - `Rerun.ManuallyNoTrack` - run manually without tracking dependencies.
+  - `Rerun.Off` - run manually without tracking dependencies.
 
 **SeparatedFrom** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
 
@@ -248,7 +248,7 @@ enum Rerun {
   OnInvalidate = -1,
   OnDemandAfterInvalidate = -2, // @cached
   Manually = -3,
-  ManuallyNoTrack = -4, // @transaction
+  Off = -4, // @transaction
 }
 
 enum ReentrantCalls {
