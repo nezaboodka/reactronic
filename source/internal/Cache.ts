@@ -5,7 +5,7 @@
 import { Utils, Dbg, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';
 export { Status, resultof, statusof } from '../api/Status';
-import { Config, Renew, Renewal, ReentrantCalls, SeparatedFrom } from '../api/Config';
+import { Config, Rerun, Autorun, ReentrantCalls, SeparatedFrom } from '../api/Config';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
@@ -65,7 +65,7 @@ export class Cache extends Status<any> {
     const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[member] || this.blank;
-    const valid = c.config.renewal !== Renew.NoCache &&
+    const valid = c.config.rerun !== Rerun.ManuallyNoTrack &&
       ctx.timestamp < c.invalid.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
@@ -258,8 +258,8 @@ class CacheResult implements ICacheResult {
   }
 
   triggerRecache(timestamp: number, now: boolean, nothrow: boolean): void {
-    if (now || this.config.renewal === Renew.Immediately) {
-      if (!this.error && (this.config.renewal === Renew.NoCache ||
+    if (now || this.config.rerun === Rerun.Immediately) {
+      if (!this.error && (this.config.rerun === Rerun.ManuallyNoTrack ||
           (timestamp >= this.invalid.timestamp && !this.invalid.recaching))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
@@ -275,7 +275,7 @@ class CacheResult implements ICacheResult {
         }
       }
     }
-    else if (this.config.renewal === Renew.ImmediatelyAsync)
+    else if (this.config.rerun === Rerun.ImmediatelyAsync)
       CacheResult.enqueueAsyncRecache(this);
     else
       setTimeout(() => this.triggerRecache(UNDEFINED_TIMESTAMP, true, true), 0);
@@ -296,7 +296,7 @@ class CacheResult implements ICacheResult {
 
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
-    if (c && c.config.renewal >= Renew.Manually && prop !== RT_HANDLE) {
+    if (c && c.config.rerun >= Rerun.Manually && prop !== RT_HANDLE) {
       CacheResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
       if (Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
@@ -361,8 +361,8 @@ class CacheResult implements ICacheResult {
     const stamp = cause.snapshot.timestamp;
     if (this.invalid.timestamp === UNDEFINED_TIMESTAMP) {
       this.invalid.timestamp = stamp;
-      // Check if cache should be renewed
-      const isEffect = this.config.renewal >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      // Check if cache requires re-run
+      const isEffect = this.config.rerun >= Rerun.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (isEffect)
         effect.push(this);
       if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, Transaction.current.pretty, " ", isEffect ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isEffect ? " and will run automatically" : ""}`);
@@ -392,14 +392,14 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  static enforceInvalidation(c: CacheResult, cause: string, renewal: Renewal): boolean {
+  static enforceInvalidation(c: CacheResult, cause: string, rerun: Autorun): boolean {
     throw new Error("not implemented - Cache.enforceInvalidation");
     // let effect: Cache[] = [];
     // c.invalidate(cause, false, false, effect);
-    // if (renewal === Renew.Immediately)
+    // if (rerun === Rerun.Immediately)
     //   Transaction.ensureAllUpToDate(cause, { effect });
     // else
-    //   sleep(renewal).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
+    //   sleep(rerun).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
     // return true;
   }
 
@@ -477,7 +477,7 @@ class CacheResult implements ICacheResult {
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CacheResult)
-      result = oldValue.config.renewal === Renew.NoCache;
+      result = oldValue.config.rerun === Rerun.ManuallyNoTrack;
     else
       result = oldValue === newValue;
     return result;

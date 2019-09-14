@@ -2,7 +2,7 @@
 // shall be included in all copies or substantial portions.
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { stateful, stateless, transaction, cache, behavior, Renew, trace } from '../source/reactronic';
+import { stateful, stateless, transaction, trigger, cache, behavior, Rerun, trace } from '../source/reactronic';
 import { Person } from './common';
 
 export const output: string[] = [];
@@ -48,6 +48,11 @@ export class DemoView {
     this.model = model;
   }
 
+  @trigger @behavior(Rerun.Immediately)
+  print(): void {
+    this.render().forEach(x => output.push(x));
+  }
+
   @cache
   filteredUsers(): Person[] {
     const m = this.model;
@@ -72,10 +77,5 @@ export class DemoView {
       r.push(`${x.name}'s children: ${childNames.join(", ")}`);
     }
     return r;
-  }
-
-  @cache @behavior(Renew.Immediately)
-  print(): void {
-    this.render().forEach(x => output.push(x));
   }
 }

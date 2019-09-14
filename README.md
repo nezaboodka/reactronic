@@ -163,15 +163,15 @@ one.
 
 There are multiple options to configure behavior of transactional reactivity.
 
-**Renewal** option defines a delay between cache invalidation and
-invocation of the caching function to renew the cache:
+**Autorun** option defines a delay between trigger/cache invalidation and
+invocation of the corresponding function:
 
   - `(ms)` - delay in milliseconds;
-  - `Renew.ImmediatelyAsync` - renew immediately but async (zero latency);
-  - `Renew.Immediately` - renew immediately (right after commit);
-  - `Renew.OnDemand` - renew on access if cache is invalid;
-  - `Renew.Manually` - manual renew (explicit only);
-  - `Renew.NoCache` - renew on every call of the function.
+  - `Rerun.ImmediatelyAsync` - rerun immediately but async (zero latency);
+  - `Rerun.Immediately` - rerun immediately (right after commit);
+  - `Rerun.OnDemand` - rerun on access if cache is invalid;
+  - `Rerun.Manually` - rerun manually (explicitly);
+  - `Rerun.ManuallyNoTrack` - run manually without tracking dependencies.
 
 **SeparatedFrom** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
 
@@ -225,29 +225,29 @@ function transaction(proto, prop, pd); // method only
 function trigger(proto, prop, pd); // method only
 function cache(proto, prop, pd); // method only
 
-function behavior(renewal: Renewal, reentrant: ReentrantCalls, separated: SeparatedFrom);
+function behavior(rerun: Autorun, reentrant: ReentrantCalls, separated: SeparatedFrom);
 function monitor(value: Monitor | null);
 function config(config: Partial<Config>);
 
-// Config, Renewal, ReentrantCalls, SeparatedFrom, Monitor
+// Config, Rerun, ReentrantCalls, SeparatedFrom, Monitor
 
 interface Config {
   readonly stateful: boolean;
-  readonly renewal: Renewal;
+  readonly rerun: Autorun;
   readonly reentrant: ReentrantCalls;
   readonly separated: SeparatedFrom;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
 
-type Renewal = Renew | number; // milliseconds
+type Autorun = Rerun | number; // milliseconds
 
-enum Renew {
+enum Rerun {
   ImmediatelyAsync = 0, // @trigger
   Immediately = -1,
   OnDemand = -2, // @cache
   Manually = -3,
-  NoCache = -4, // @transaction
+  ManuallyNoTrack = -4, // @transaction
 }
 
 enum ReentrantCalls {

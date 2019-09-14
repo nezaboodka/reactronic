@@ -2,7 +2,7 @@
 // shall be included in all copies or substantial portions.
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { stateful, transaction, cache, behavior, Renew, Status, Monitor, monitor, all, sleep } from '../source/reactronic';
+import { stateful, transaction, trigger, cache, behavior, Rerun, Status, Monitor, monitor, all, sleep } from '../source/reactronic';
 export { trace } from './common';
 
 export const output: string[] = [];
@@ -25,6 +25,15 @@ export class DemoView {
   @stateful test: any;
   constructor(readonly model: DemoModel) { }
 
+  @trigger @behavior(Rerun.Immediately)
+  async print(): Promise<void> {
+    const lines: string[] = await this.render();
+    for (const x of lines) {
+      output.push(x); /* istanbul ignore next */
+      if (!Status.trace.silent) console.log(x);
+    }
+  }
+
   @cache
   async render(): Promise<string[]> {
     const result: string[] = [];
@@ -32,14 +41,5 @@ export class DemoView {
     await sleep(10);
     result.push(`${mon.isIdle ? "" : "[...] "}Log: ${this.model.log.join(", ")}`);
     return result;
-  }
-
-  @cache @behavior(Renew.Immediately)
-  async print(): Promise<void> {
-    const lines: string[] = await this.render();
-    for (const x of lines) {
-      output.push(x); /* istanbul ignore next */
-      if (!Status.trace.silent) console.log(x);
-    }
   }
 }
