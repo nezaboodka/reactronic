@@ -196,7 +196,7 @@ export class Snapshot implements ISnapshot {
   }
 
   /* istanbul ignore next */
-  static applyDependencies = function(snapshot: Snapshot, effect: ICacheResult[]): void {
+  static applyDependencies = function(snapshot: Snapshot, reactives: ICacheResult[]): void {
     undef(); // to be redefined by Cache implementation
   };
 

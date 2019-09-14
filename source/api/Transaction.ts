@@ -26,7 +26,7 @@ export class Transaction {
   private resultResolve: (value?: void) => void = undef;
   private resultReject: (reason: any) => void = undef;
   private conflicts?: Record[] = undefined;
-  private reaction: { tran?: Transaction, effect: ICacheResult[] } = { tran: undefined, effect: [] };
+  private reaction: { tran?: Transaction, reactives: ICacheResult[] } = { tran: undefined, reactives: [] };
   readonly trace?: Partial<Trace>; // assigned in constructor
   readonly pretty: TranPrettyTrace; // assigned in constructor
 
@@ -210,14 +210,14 @@ export class Transaction {
       Transaction._current = outer;
       Dbg.trace = restore;
     }
-    if (this.reaction.effect.length > 0) {
+    if (this.reaction.reactives.length > 0) {
       try {
-        Transaction.triggerRecacheAll(this.snapshot.hint,
+        Transaction.refreshReactives(this.snapshot.hint,
           this.snapshot.timestamp, this.reaction, this.trace);
       }
       finally {
         if (!this.isFinished())
-          this.reaction.effect = [];
+          this.reaction.reactives = [];
       }
     }
     return result;
@@ -244,7 +244,7 @@ export class Transaction {
 
   private performCommit(): void {
     this.snapshot.seal();
-    Snapshot.applyDependencies(this.snapshot, this.reaction.effect);
+    Snapshot.applyDependencies(this.snapshot, this.reaction.reactives);
     this.snapshot.archive();
     if (this.resultPromise)
       this.resultResolve();
@@ -260,15 +260,15 @@ export class Transaction {
         this.resultResolve();
   }
 
-  private static triggerRecacheAll(hint: string, timestamp: number, reaction: { tran?: Transaction, effect: ICacheResult[] }, trace?: Partial<Trace>): void {
-    const name = Dbg.trace.hints ? `${hint} - REACTION(${reaction.effect.length})` : /* istanbul ignore next */ "noname";
+  private static refreshReactives(hint: string, timestamp: number, reaction: { tran?: Transaction, reactives: ICacheResult[] }, trace?: Partial<Trace>): void {
+    const name = Dbg.trace.hints ? `${hint} - REACTION(${reaction.reactives.length})` : /* istanbul ignore next */ "noname";
     const separated = reaction.tran ? SeparatedFrom.Reaction : SeparatedFrom.Reaction | SeparatedFrom.Parent;
     reaction.tran = Transaction.runAs(name, separated, trace,
-      Transaction.runTriggerRecacheAll, timestamp, reaction.effect);
+      Transaction.doRefreshReactives, timestamp, reaction.reactives);
   }
 
-  private static runTriggerRecacheAll(timestamp: number, effect: ICacheResult[]): Transaction {
-    effect.map(r => r.triggerRecache(timestamp, false, false));
+  private static doRefreshReactives(timestamp: number, reactives: ICacheResult[]): Transaction {
+    reactives.map(r => r.refresh(timestamp, false, false));
     return Transaction.current;
   }
 
