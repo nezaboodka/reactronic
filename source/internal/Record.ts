@@ -62,7 +62,7 @@ export interface ISnapshot {
   readonly id: number;
   readonly hint: string;
   readonly timestamp: number;
-  readonly completed: boolean;
+  readonly sealed: boolean;
 }
 
 export interface ICacheResult {

@@ -21,10 +21,10 @@ export class Snapshot implements ISnapshot {
   readonly id: number = 0;
   readonly hint: string = "";
   get timestamp(): number { return this._timestamp; }
-  get completed(): boolean { return this._completed; }
+  get sealed(): boolean { return this._sealed; }
   readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
   private _timestamp = MAX_TIMESTAMP;
-  private _completed = false;
+  private _sealed = false;
 
   constructor(hint: string) {
     this.id = ++Snapshot.lastUsedId;
@@ -76,7 +76,7 @@ export class Snapshot implements ISnapshot {
   }
 
   tryWrite(h: Handle, prop: PropertyKey, value: any): Record {
-    if (this.completed)
+    if (this._sealed)
       throw new Error(`stateful property ${Hint.handle(h)}.${prop.toString()} can only be modified inside transaction`);
     let r: Record = this.tryRead(h);
     if (r === Record.blank || r.data[prop] !== value) {
@@ -95,7 +95,7 @@ export class Snapshot implements ISnapshot {
   }
 
   acquire(): void {
-    if (!this.completed && this.timestamp === MAX_TIMESTAMP) {
+    if (!this._sealed && this._timestamp === MAX_TIMESTAMP) {
       this._timestamp = Snapshot.headTimestamp;
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
@@ -173,8 +173,8 @@ export class Snapshot implements ISnapshot {
     });
   }
 
-  complete(error?: any): void {
-    this._completed = true;
+  seal(error?: any): void {
+    this._sealed = true;
     this.changeset.forEach((r: Record, h: Handle) => {
       r.changes.forEach(prop => CopyOnWrite.seal(r.data, h.proxy, prop));
       r.freeze();
@@ -228,7 +228,7 @@ export class Snapshot implements ISnapshot {
         Snapshot.pending.sort((a, b) => a._timestamp - b._timestamp);
         let i: number = 0;
         for (const x of Snapshot.pending) {
-          if (!x.completed) {
+          if (!x._sealed) {
             Snapshot.oldest = x;
             break;
           }
