@@ -19,22 +19,22 @@ export function stateless(proto: object, prop: PropertyKey): any {
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, rerun: Rerun.ManuallyNoTrack };
+  const config = { stateful: true, autorun: Rerun.ManuallyNoTrack };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
 export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, rerun: Rerun.ImmediatelyAsync };
+  const config = { stateful: true, autorun: Rerun.ImmediatelyAsync };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
 export function cache(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, rerun: Rerun.OnDemand };
+  const config = { stateful: true, autorun: Rerun.OnDemand };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
-export function behavior(rerun?: Autorun, reentrant?: ReentrantCalls, separated?: SeparatedFrom): F<any> {
-  return config({rerun, reentrant, separated});
+export function behavior(autorun?: Autorun, reentrant?: ReentrantCalls, separated?: SeparatedFrom): F<any> {
+  return config({autorun, reentrant, separated});
 }
 
 export function monitor(value: Monitor | null): F<any> {

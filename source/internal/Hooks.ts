@@ -21,7 +21,7 @@ export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
 const BLANK_CONFIG_TABLE = {};
 const DEFAULT: Config = {
   stateful: false,
-  rerun: Rerun.ManuallyNoTrack,
+  autorun: Rerun.ManuallyNoTrack,
   reentrant: ReentrantCalls.WaitAndRestart,
   separated: SeparatedFrom.Reaction,
   monitor: null,
@@ -31,7 +31,7 @@ const DEFAULT: Config = {
 export class ConfigRecord implements Config {
   readonly body: Function;
   readonly stateful: boolean;
-  readonly rerun: Autorun;
+  readonly autorun: Autorun;
   readonly reentrant: ReentrantCalls;
   readonly separated: SeparatedFrom;
   readonly monitor: Monitor | null;
@@ -41,7 +41,7 @@ export class ConfigRecord implements Config {
   constructor(body: Function | undefined, existing: ConfigRecord, patch: Partial<ConfigRecord>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body;
     this.stateful = merge(DEFAULT.stateful, existing.stateful, patch.stateful, implicit);
-    this.rerun = merge(DEFAULT.rerun, existing.rerun, patch.rerun, implicit);
+    this.autorun = merge(DEFAULT.autorun, existing.autorun, patch.autorun, implicit);
     this.reentrant = merge(DEFAULT.reentrant, existing.reentrant, patch.reentrant, implicit);
     this.separated = merge(DEFAULT.separated, existing.separated, patch.separated, implicit);
     this.monitor = merge(DEFAULT.monitor, existing.monitor, patch.monitor, implicit);

@@ -8,7 +8,7 @@ import { Monitor } from './Monitor';
 
 export interface Config {
   readonly stateful: boolean;
-  readonly rerun: Autorun;
+  readonly autorun: Autorun;
   readonly reentrant: ReentrantCalls;
   readonly separated: SeparatedFrom;
   readonly monitor: Monitor | null;

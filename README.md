@@ -225,15 +225,15 @@ function transaction(proto, prop, pd); // method only
 function trigger(proto, prop, pd); // method only
 function cache(proto, prop, pd); // method only
 
-function behavior(rerun: Autorun, reentrant: ReentrantCalls, separated: SeparatedFrom);
+function behavior(autorun: Autorun, reentrant: ReentrantCalls, separated: SeparatedFrom);
 function monitor(value: Monitor | null);
 function config(config: Partial<Config>);
 
-// Config, Rerun, ReentrantCalls, SeparatedFrom, Monitor
+// Config, Autorun, ReentrantCalls, SeparatedFrom, Monitor
 
 interface Config {
   readonly stateful: boolean;
-  readonly rerun: Autorun;
+  readonly autorun: Autorun;
   readonly reentrant: ReentrantCalls;
   readonly separated: SeparatedFrom;
   readonly monitor: Monitor | null;

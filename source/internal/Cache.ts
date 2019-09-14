@@ -65,7 +65,7 @@ export class Cache extends Status<any> {
     const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[member] || this.blank;
-    const valid = c.config.rerun !== Rerun.ManuallyNoTrack &&
+    const valid = c.config.autorun !== Rerun.ManuallyNoTrack &&
       ctx.timestamp < c.invalid.timestamp &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
@@ -258,8 +258,8 @@ class CacheResult implements ICacheResult {
   }
 
   triggerRecache(timestamp: number, now: boolean, nothrow: boolean): void {
-    if (now || this.config.rerun === Rerun.Immediately) {
-      if (!this.error && (this.config.rerun === Rerun.ManuallyNoTrack ||
+    if (now || this.config.autorun === Rerun.Immediately) {
+      if (!this.error && (this.config.autorun === Rerun.ManuallyNoTrack ||
           (timestamp >= this.invalid.timestamp && !this.invalid.recaching))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
@@ -275,7 +275,7 @@ class CacheResult implements ICacheResult {
         }
       }
     }
-    else if (this.config.rerun === Rerun.ImmediatelyAsync)
+    else if (this.config.autorun === Rerun.ImmediatelyAsync)
       CacheResult.enqueueAsyncRecache(this);
     else
       setTimeout(() => this.triggerRecache(UNDEFINED_TIMESTAMP, true, true), 0);
@@ -296,7 +296,7 @@ class CacheResult implements ICacheResult {
 
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
-    if (c && c.config.rerun >= Rerun.Manually && prop !== RT_HANDLE) {
+    if (c && c.config.autorun >= Rerun.Manually && prop !== RT_HANDLE) {
       CacheResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
       if (Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
@@ -362,7 +362,7 @@ class CacheResult implements ICacheResult {
     if (this.invalid.timestamp === UNDEFINED_TIMESTAMP) {
       this.invalid.timestamp = stamp;
       // Check if cache requires re-run
-      const isEffect = this.config.rerun >= Rerun.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      const isEffect = this.config.autorun >= Rerun.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (isEffect)
         effect.push(this);
       if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, Transaction.current.pretty, " ", isEffect ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isEffect ? " and will run automatically" : ""}`);
@@ -392,14 +392,14 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  static enforceInvalidation(c: CacheResult, cause: string, rerun: Autorun): boolean {
+  static enforceInvalidation(c: CacheResult, cause: string, autorun: Autorun): boolean {
     throw new Error("not implemented - Cache.enforceInvalidation");
     // let effect: Cache[] = [];
     // c.invalidate(cause, false, false, effect);
-    // if (rerun === Rerun.Immediately)
+    // if (autorun === Rerun.Immediately)
     //   Transaction.ensureAllUpToDate(cause, { effect });
     // else
-    //   sleep(rerun).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
+    //   sleep(autorun).then(() => Transaction.ensureAllUpToDate(cause, { effect }));
     // return true;
   }
 
@@ -477,7 +477,7 @@ class CacheResult implements ICacheResult {
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CacheResult)
-      result = oldValue.config.rerun === Rerun.ManuallyNoTrack;
+      result = oldValue.config.autorun === Rerun.ManuallyNoTrack;
     else
       result = oldValue === newValue;
     return result;

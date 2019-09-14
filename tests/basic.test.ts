@@ -94,7 +94,7 @@ test("basic", t => {
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
     // Check protection and error handling
-    t.throws(() => { statusof(daddy.setParent).configure({rerun: 0}); },
+    t.throws(() => { statusof(daddy.setParent).configure({autorun: 0}); },
       "given method is not a reactronic cache");
     t.throws(() => { console.log(statusof(daddy.setParent).config.monitor); },
       "given method is not a reactronic cache");
@@ -110,7 +110,7 @@ test("basic", t => {
     t.throws(() => tran3.commit(),
       "cannot commit transaction that is already canceled: Error: test");
     // Other
-    t.is(rendering.config.rerun, Rerun.OnDemand);
+    t.is(rendering.config.autorun, Rerun.OnDemand);
     t.is(rendering.error, undefined);
     t.is(Status.getTraceHint(app), "DemoView");
     Status.setTraceHint(app, "App");
