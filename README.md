@@ -225,11 +225,11 @@ function transaction(proto, prop, pd); // method only
 function reactive(proto, prop, pd); // method only
 function cached(proto, prop, pd); // method only
 
-function behavior(autorun: Autorun, reentrant: ReentrantCalls, separated: SeparatedFrom);
+function behavior(renew: RenewMs, reentrance: Reentrance, start: Start);
 function monitor(value: Monitor | null);
 function config(config: Partial<Config>);
 
-// Config, Autorun, ReentrantCalls, SeparatedFrom, Monitor
+// Config, Renew, Reentrance, Start, Monitor
 
 interface Config {
   readonly stateful: boolean;
@@ -303,7 +303,7 @@ class Transaction {
   join<T>(p: Promise<T>): Promise<T>;
 
   static run<T>(func: F<T>, ...args: any[]): T;
-  static runAs<T>(hint: string, separated: SeparatedFrom, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
+  static runAs<T>(hint: string, start: Start, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
   static readonly current: Transaction;
 }
 
