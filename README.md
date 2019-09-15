@@ -302,7 +302,7 @@ class Transaction {
   whenFinished(): Promise<void>;
   join<T>(p: Promise<T>): Promise<T>;
 
-  static run<T>(func: F<T>, ...args: any[]): T;
+  static run<T>(hint: string, func: F<T>, ...args: any[]): T;
   static runAs<T>(hint: string, start: Start, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
   static readonly current: Transaction;
 }
