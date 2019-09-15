@@ -486,7 +486,7 @@ class CacheResult implements ICacheResult {
 
   static currentTrace(local: Partial<Trace> | undefined): Trace {
     const t = Transaction.current;
-    let res = Dbg.merge(t.trace, 31 + (t.id) % 6, `t${t.id}`, Dbg.global);
+    let res = Dbg.merge(t.trace, 31 + t.id % 6, `t${t.id}`, Dbg.global);
     if (CacheResult.active)
       res = Dbg.merge(CacheResult.active, undefined, undefined, res);
     if (local)
