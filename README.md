@@ -168,7 +168,7 @@ There are multiple options to configure behavior of transactional reactivity.
 invocation of the corresponding function:
 
   - `(ms)` - delay in milliseconds;
-  - `Renew.ImmediatelyAsync` - renew immediately but async with zero latency (`@reactive`);
+  - `Renew.ImmediatelyAsync` - renew immediately but async (`@reactive`);
   - `Renew.Immediately` - renew immediately (right after commit);
   - `Renew.OnDemand` - renew on access if cache is invalid (`@cached`);
   - `Renew.Manually` - renew manually (explicitly);
