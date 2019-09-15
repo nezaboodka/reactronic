@@ -5,7 +5,7 @@
 import { Trace } from './Trace';
 import { F } from '../internal/Record';
 import { Hooks } from '../internal/Hooks';
-import { Config, Rerun, Autorun, ReentrantCalls, SeparatedFrom } from './Config';
+import { Config, Renew, Renewal, Reentrance, Start } from './Config';
 import { Monitor } from './Monitor';
 
 export function stateful(proto: object, prop?: PropertyKey): any {
@@ -19,22 +19,22 @@ export function stateless(proto: object, prop: PropertyKey): any {
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, autorun: Rerun.Off };
+  const config = { stateful: true, renew: Renew.Off };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
 export function reactive(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, autorun: Rerun.OnInvalidateAsync };
+  const config = { stateful: true, renew: Renew.ImmediatelyAsync };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
 export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, autorun: Rerun.OnDemandAfterInvalidate };
+  const config = { stateful: true, renew: Renew.OnDemand };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
-export function behavior(autorun?: Autorun, reentrant?: ReentrantCalls, separated?: SeparatedFrom): F<any> {
-  return config({autorun, reentrant, separated});
+export function behavior(renew?: Renewal, reentrance?: Reentrance, start?: Start): F<any> {
+  return config({renew, reentrance, start});
 }
 
 export function monitor(value: Monitor | null): F<any> {

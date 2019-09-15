@@ -5,7 +5,7 @@
 import { Utils, Dbg, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';
 export { Status, resultof, statusof } from '../api/Status';
-import { Config, Rerun, Autorun, ReentrantCalls, SeparatedFrom } from '../api/Config';
+import { Config, Renew, Renewal, Reentrance, Start } from '../api/Config';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
@@ -37,9 +37,9 @@ export class Cache extends Status<any> {
     if (!call.valid) {
       const c: CacheResult = call.cache;
       const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "refresh";
-      const separated = noprev ? c.config.separated : (c.config.separated | SeparatedFrom.Parent);
+      const start = noprev ? c.config.start : Start.Standalone;
       let call2 = call;
-      const ret = Transaction.runAs(hint, separated, c.config.trace, (argsx: any[] | undefined): any => {
+      const ret = Transaction.runAs(hint, start, c.config.trace, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
@@ -65,7 +65,7 @@ export class Cache extends Status<any> {
     const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[member] || this.blank;
-    const valid = c.config.autorun !== Rerun.Off &&
+    const valid = c.config.renew !== Renew.Off &&
       ctx.timestamp < c.invalid.since &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
@@ -121,19 +121,19 @@ export class Cache extends Status<any> {
     const prev = c.invalid.refreshing;
     const caller = Transaction.current;
     if (prev)
-      switch (c.config.reentrant) {
-        case ReentrantCalls.ExitWithError:
+      switch (c.config.reentrance) {
+        case Reentrance.PreventWithError:
           throw new Error(`${c.hint()} is configured as non-reentrant`);
-        case ReentrantCalls.WaitAndRestart:
+        case Reentrance.WaitAndRestart:
           error = new Error(`transaction t${caller.id} (${caller.hint}) will be restarted after t${prev.tran.id} (${prev.tran.hint})`);
           caller.cancel(error, prev.tran);
           // TODO: "c.invalidation.recaching = caller" in order serialize all the transactions
           break;
-        case ReentrantCalls.CancelPrevious:
+        case Reentrance.CancelPrevious:
           prev.tran.cancel(new Error(`transaction t${prev.tran.id} (${prev.tran.hint}) is canceled by t${caller.id} (${caller.hint}) and will be silently ignored`), null);
           c.invalid.refreshing = undefined;
           break;
-        case ReentrantCalls.RunSideBySide:
+        case Reentrance.RunSideBySide:
           break; // do nothing
       }
     return error;
@@ -144,7 +144,7 @@ export class Cache extends Status<any> {
     const c: CacheResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
-    return Transaction.runAs(hint, SeparatedFrom.Reaction, undefined, (): Config => {
+    return Transaction.runAs(hint, Start.InsideParent, undefined, (): Config => {
       const call2 = this.write();
       const c2: CacheResult = call2.cache;
       c2.config = new ConfigRecord(c2.config.body, c2.config, config, false);
@@ -195,7 +195,7 @@ export class Cache extends Status<any> {
   }
 
   static unmount(...objects: any[]): Transaction {
-    return Transaction.runAs("unmount", SeparatedFrom.Reaction, undefined,
+    return Transaction.runAs("unmount", Start.InsideParent, undefined,
       Cache.runUnmount, ...objects);
   }
 
@@ -263,8 +263,8 @@ class CacheResult implements ICacheResult {
   }
 
   refresh(timestamp: number, now: boolean, nothrow: boolean): void {
-    if (now || this.config.autorun === Rerun.OnInvalidate) {
-      if (!this.error && (this.config.autorun === Rerun.Off ||
+    if (now || this.config.renew === Renew.Immediately) {
+      if (!this.error && (this.config.renew === Renew.Off ||
           (timestamp >= this.invalid.since && !this.invalid.refreshing))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
@@ -280,7 +280,7 @@ class CacheResult implements ICacheResult {
         }
       }
     }
-    else if (this.config.autorun === Rerun.OnInvalidateAsync)
+    else if (this.config.renew === Renew.ImmediatelyAsync)
       CacheResult.enqueueAsyncRefresh(this);
     else
       setTimeout(() => this.refresh(UNDEFINED_TIMESTAMP, true, true), 0);
@@ -301,7 +301,7 @@ class CacheResult implements ICacheResult {
 
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
-    if (c && c.config.autorun >= Rerun.Manually && prop !== RT_HANDLE) {
+    if (c && c.config.renew >= Renew.Manually && prop !== RT_HANDLE) {
       CacheResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
       if (Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
@@ -367,7 +367,7 @@ class CacheResult implements ICacheResult {
     if (this.invalid.since === UNDEFINED_TIMESTAMP) {
       this.invalid.since = stamp;
       // Check if cache requires re-run
-      const isReactive = this.config.autorun >= Rerun.OnInvalidate && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      const isReactive = this.config.renew >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (isReactive)
         reactives.push(this);
       if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, Transaction.current.pretty, " ", isReactive ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isReactive ? " and will run automatically" : ""}`);
@@ -397,7 +397,7 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  static enforceInvalidation(c: CacheResult, cause: string, autorun: Autorun): boolean {
+  static enforceInvalidation(c: CacheResult, cause: string, renew: Renewal): boolean {
     throw new Error("not implemented - Cache.enforceInvalidation");
     // let reactives: Cache[] = [];
     // c.invalidate(cause, false, false, reactives);
@@ -451,7 +451,7 @@ class CacheResult implements ICacheResult {
   monitorEnter(mon: Monitor | null): void {
     if (mon)
       Cache.run(undefined, Transaction.runAs, "Monitor.enter",
-        mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
+        mon.start, Dbg.trace.monitors ? undefined : Dbg.off,
         Monitor.enter, mon, this);
   }
 
@@ -463,7 +463,7 @@ class CacheResult implements ICacheResult {
           Transaction._current = Transaction.none; // Workaround?
           const leave = () => {
             Cache.run(undefined, Transaction.runAs, "Monitor.leave",
-              mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
+              mon.start, Dbg.trace.monitors ? undefined : Dbg.off,
               Monitor.leave, mon, this);
           };
           this.tran.whenFinished(false).then(leave, leave);
@@ -474,7 +474,7 @@ class CacheResult implements ICacheResult {
       }
       else
         Cache.run(undefined, Transaction.runAs, "Monitor.leave",
-          mon.separated, Dbg.trace.monitors ? undefined : Dbg.off,
+          mon.start, Dbg.trace.monitors ? undefined : Dbg.off,
           Monitor.leave, mon, this);
     }
   }
@@ -482,7 +482,7 @@ class CacheResult implements ICacheResult {
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CacheResult)
-      result = oldValue.config.autorun === Rerun.Off;
+      result = oldValue.config.renew === Renew.Off;
     else
       result = oldValue === newValue;
     return result;

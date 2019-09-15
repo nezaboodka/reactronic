@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { stateful, transaction, reactive, cached, statusof,
-  SeparatedFrom, Transaction, Status, Trace} from 'reactronic';
+  Start, Transaction, Status, Trace} from 'reactronic';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
   const restore = trace ? Status.pushTrace(trace) : Status.trace;
@@ -55,11 +55,11 @@ function createRejsx(trace?: Partial<Trace>): Rejsx {
     ? trace === undefined || trace.hints !== false
     : trace !== undefined && trace.hints === true;
   const hint = dbg ? getComponentName() : "createRejsx";
-  return Transaction.runAs(hint, SeparatedFrom.Reaction, trace,
-    runCreateRejsx, hint, trace);
+  return Transaction.runAs(hint, Start.InsideParent, trace,
+    doCreateRejsx, hint, trace);
 }
 
-function runCreateRejsx(hint: string | undefined, trace: Trace | undefined): Rejsx {
+function doCreateRejsx(hint: string | undefined, trace: Trace | undefined): Rejsx {
   const rejsx = new Rejsx();
   if (hint)
     Status.setTraceHint(rejsx, hint);

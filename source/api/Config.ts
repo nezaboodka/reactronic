@@ -8,34 +8,32 @@ import { Monitor } from './Monitor';
 
 export interface Config {
   readonly stateful: boolean;
-  readonly autorun: Autorun;
-  readonly reentrant: ReentrantCalls;
-  readonly separated: SeparatedFrom;
+  readonly renew: Renewal;
+  readonly reentrance: Reentrance;
+  readonly start: Start;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
 
-export type Autorun = Rerun | number; // milliseconds
+export type Renewal = Renew | number; // milliseconds
 
-export enum Rerun {
-  OnInvalidateAsync = 0, // @reactive
-  OnInvalidate = -1,
-  OnDemandAfterInvalidate = -3, // @cached
+export enum Renew {
+  ImmediatelyAsync = 0, // @reactive
+  Immediately = -1,
+  OnDemand = -3, // @cached
   Manually = -4,
   Off = -5, // @transaction
 }
 
-export enum ReentrantCalls {
-  ExitWithError = 1, // fail with error if there is an existing transaction in progress (default)
+export enum Reentrance {
+  PreventWithError = 1, // fail with error if there is an existing transaction in progress (default)
   WaitAndRestart = 0, // wait for existing transaction to finish and then restart reentrant one
   CancelPrevious = -1, // cancel previous transaction in favor of recent one
   RunSideBySide = -2, // multiple simultaneous transactions are allowed
 }
 
-export enum SeparatedFrom {
-  None = 0,
-  Reaction = 1,
-  Parent = 2,
-  Children = 4,
-  All = 1 | 2 | 4,
+export enum Start {
+  InsideParent = 0,
+  Standalone = 1,
+  AfterParent = 2,
 }

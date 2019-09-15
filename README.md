@@ -164,29 +164,28 @@ one.
 
 There are multiple options to configure behavior of transactional reactivity.
 
-**Autorun** option defines a delay between reactive cache invalidation and
+**Renewal** option defines a delay between reactive cache invalidation and
 invocation of the corresponding function:
 
   - `(ms)` - delay in milliseconds;
-  - `Rerun.OnInvalidateAsync` - rerun immediately but async (zero latency);
-  - `Rerun.OnInvalidate` - rerun immediately (right after commit);
-  - `Rerun.OnDemandAfterInvalidate` - rerun on access if cache is invalid;
-  - `Rerun.Manually` - rerun manually (explicitly);
-  - `Rerun.Off` - run manually without tracking dependencies.
+  - `Renew.ImmediatelyAsync` - renew immediately but async (zero latency);
+  - `Renew.Immediately` - renew immediately (right after commit);
+  - `Renew.OnDemand` - renew on access if cache is invalid;
+  - `Renew.Manually` - renew manually (explicitly);
+  - `Renew.Off` - renew manually and do not track dependencies.
 
-**SeparatedFrom** set of flags defines if transaction is executed separately from reaction, parent, and children transactions (flags can be combined with bitwise operator):
+**Start** option defines how transaction is related to parent transaction:
 
-  - `SeparatedFrom.Reaction` - transaction is separated from its reaction (default);
-  - `SeparatedFrom.Parent` - transaction is separated from parent (caller) transactions;
-  - `SeparatedFrom.Children` - transaction is separated from children (callee) transactions;
-  - `SeparatedFrom.All` - transaction is separated from reactions, parents, and children.
+  - `Start.InsideParent` - transaction is part of parent transaction (default);
+  - `Start.Standalone` - transaction is self-contained;
+  - `Start.AfterParent` - transaction is self-contained and starts after parent.
 
-**ReentrantCalls** option defines how to handle reentrant calls of the same transactional function:
+**Reentrance** option defines how to handle reentrant calls of the same transactional function:
 
-  - `ReentrantCalls.ExitWithError` - fail with error if there is an existing transaction in progress;
-  - `ReentrantCalls.WaitAndRestart` - wait for previous transaction to finish and then restart current one;
-  - `ReentrantCalls.CancelPrevious` - cancel previous transaction in favor of current one;
-  - `ReentrantCalls.RunSideBySide` - multiple simultaneous transactions are allowed.
+  - `Reentrance.PreventWithError` - fail with error if there is an existing transaction in progress;
+  - `Reentrance.WaitAndRestart` - wait for previous transaction to finish and then restart current one;
+  - `Reentrance.CancelPrevious` - cancel previous transaction in favor of current one;
+  - `Reentrance.RunSideBySide` - multiple simultaneous transactions are allowed.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
@@ -234,36 +233,34 @@ function config(config: Partial<Config>);
 
 interface Config {
   readonly stateful: boolean;
-  readonly autorun: Autorun;
-  readonly reentrant: ReentrantCalls;
-  readonly separated: SeparatedFrom;
+  readonly renew: Renewal;
+  readonly reentrance: Reentrance;
+  readonly start: Start;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
 
-type Autorun = Rerun | number; // milliseconds
+type Renewal = Renew | number; // milliseconds
 
-enum Rerun {
-  OnInvalidateAsync = 0, // @reactive
-  OnInvalidate = -1,
-  OnDemandAfterInvalidate = -2, // @cached
+enum Renew {
+  ImmediatelyAsync = 0, // @reactive
+  Immediately = -1,
+  OnDemand = -2, // @cached
   Manually = -3,
   Off = -4, // @transaction
 }
 
-enum ReentrantCalls {
-  ExitWithError = 1, // fail with error if there is an existing transaction in progress (default)
+enum Reentrance {
+  PreventWithError = 1, // fail with error if there is an existing transaction in progress (default)
   WaitAndRestart = 0, // wait for existing transaction to finish and then restart reentrant one
   CancelPrevious = -1, // cancel previous transaction in favor of recent one
   RunSideBySide = -2, // multiple simultaneous transactions are allowed
 }
 
-enum SeparatedFrom {
-  None = 0,
-  Reaction = 1,
-  Parent = 2,
-  Children = 4,
-  All = 1 | 2 | 4,
+enum Start {
+  InsideParent = 0,
+  Standalone = 1,
+  AfterParent = 2,
 }
 
 @stateful

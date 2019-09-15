@@ -3,7 +3,7 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import test from 'ava';
-import { Transaction, ReentrantCalls, Status, statusof, all, sleep } from '../source/reactronic';
+import { Transaction, Reentrance, Status, statusof, all, sleep } from '../source/reactronic';
 import { DemoModel, DemoView, mon, output, trace } from './async';
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -27,7 +27,7 @@ const expected: string[] = [
 test("async", async t => {
   Status.pushTrace(trace);
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
-  statusof(app.model.load).configure({reentrant: ReentrantCalls.RunSideBySide});
+  statusof(app.model.load).configure({reentrance: Reentrance.RunSideBySide});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; },
       "stateful property #23 DemoView.test can only be modified inside transaction");

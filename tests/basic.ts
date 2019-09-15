@@ -2,7 +2,7 @@
 // shall be included in all copies or substantial portions.
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { stateful, stateless, transaction, reactive, cached, behavior, Rerun, trace } from '../source/reactronic';
+import { stateful, stateless, transaction, reactive, cached, behavior, Renew, trace } from '../source/reactronic';
 import { Person } from './common';
 
 export const output: string[] = [];
@@ -48,7 +48,7 @@ export class DemoView {
     this.model = model;
   }
 
-  @reactive @behavior(Rerun.OnInvalidate)
+  @reactive @behavior(Renew.Immediately)
   print(): void {
     this.render().forEach(x => output.push(x));
   }
