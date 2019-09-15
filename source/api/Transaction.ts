@@ -117,16 +117,10 @@ export class Transaction {
     t.guard();
     let result: any = t.do<T>(trace, func, ...args);
     if (root) {
-      if (result instanceof Promise) {
-        const outer = Transaction._current;
-        try {
-          Transaction._current = Transaction.none;
-          result = t.autoretry(t.join(result), func, ...args);
-        }
-        finally {
-          Transaction._current = outer;
-        }
-      }
+      if (result instanceof Promise)
+        result = Transaction.tranfree(() => {
+          return t.autoretry(t.join(result), func, ...args);
+        });
       t.seal();
     }
     return result;
@@ -218,6 +212,17 @@ export class Transaction {
     }
     return result;
   }
+
+  private static tranfree<T>(func: F<T>, ...args: any[]): T {
+    const outer = Transaction._current;
+    try {
+      Transaction._current = Transaction.none;
+      return func(...args);
+    }
+    finally {
+      Transaction._current = outer;
+    }
+}
 
   private static seal(t: Transaction, error?: Error, retryAfter?: Transaction): void {
     if (!t.error && error) {
