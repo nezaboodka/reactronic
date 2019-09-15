@@ -92,23 +92,24 @@ export class Cache extends Status<any> {
     const error = this.reenter(prev);
     const call: CachedCall = this.write();
     const c: CacheResult = call.cache;
-    const mon: Monitor | null = prev.config.monitor;
-    if (!error)
+    if (!error) {
+      const mon: Monitor | null = prev.config.monitor;
       c.enter(call.record, prev, mon);
-    try
-    {
-      args ? c.args = args : args = c.args;
-      if (!error)
+      try
+      {
+        args ? c.args = args : args = c.args;
         c.ret = Cache.run<any>(c, (...argsx: any[]): any => {
           return c.config.body.call(this.handle.proxy, ...argsx);
         }, ...args);
-      else
-        c.ret = Promise.reject(error);
-      c.invalid.since = UNDEFINED_TIMESTAMP;
-    }
-    finally {
-      if (!error)
+        c.invalid.since = UNDEFINED_TIMESTAMP;
+      }
+      finally {
         c.tryLeave(call.record, prev, mon);
+      }
+    }
+    else {
+      c.ret = Promise.reject(error);
+      c.invalid.since = UNDEFINED_TIMESTAMP;
     }
     return call;
   }
