@@ -25,12 +25,12 @@ between visual components (observers) and state objects (observables).
 
 ## Conceptual Model
 
-Transactional reactivity is based on the three fundamental concepts:
+Transactional reactivity is based on four fundamental concepts:
 
   - **State** - a set of objects that store data of an application;
   - **Transaction** - a function that changes state objects in an atomic way;
-  - **Reactive Cache** - a computed value having associated function that is
-  automatically called to renew the value in response to state changes.
+  - **Trigger** - a function that is immediately called in response to state changes;
+  - **Cache** - a computed value having associated function that is automatically called to renew the value.
 
 The following picture illustrates relationships between the concepts
 in the source code:
@@ -106,26 +106,26 @@ completion of all of them. An asynchronous call may spawn other
 asynchronous calls, which prolong transaction execution until
 the whole chain of asynchronous operations is fully completed.
 
-### Reactive Cache
+### Trigger & Cache
 
-Reactive cache is a computed value having an associated function that
-is automatically called to renew the value in response to state
-changes. Renewal may happen immediately (for @reactive functions)
-or on-demand (for @cached functions).
+Trigger is a function that is immediately called in response to state changes.
+Cache is a computed value having an associated function that is
+automatically called to renew the value in case of changes of its
+dependencies.
 
-Each reactive cache function is instrumented with hooks to seamlesly
-subscribe to those state objects and other caches, which are used
-during its execution.
+Trigger and cached functions are instrumented with hooks to seamlesly
+subscribe to those state objects and other cached functions, which are
+used during their execution.
 
 ``` tsx
 class MyView extends React.Component<MyModel> {
-  @reactive  // renew immediately
+  @trigger  // called immediately in response to state changes
   refresh() {
     if (statusof(this.render).isInvalid)
       this.setState({}); // ask React to re-render
   } // refresh is subscribed to render
 
-  @cached  // renew on-demand
+  @cached  // renewed on-demand
   render() {
     const m: MyModel = this.props; // just a shortcut
     return (
@@ -138,23 +138,24 @@ class MyView extends React.Component<MyModel> {
 }
 ```
 
-In the example above, reactive function `refresh` is transparently
-subscribed to the cached function `render`. In turn, the `render`
-function is subscribed to the `url` and `content` properties
-of a corresponding `MyModel` object. Once `url` or `content` values
-are changed, the `render` cache becomes invalid and causes invalidation
-and immediate re-execution of reactive function `refresh`. While
-executed, the `refresh` function enqueues re-rendering request to React,
-which calls `render` function renewing its cache.
+In the example above, `refresh` trigger is transparently subscribed
+to the cached function `render`. In turn, the `render` function is
+subscribed to the `url` and `content` properties of a corresponding
+`MyModel` object. Once `url` or `content` values are changed, the
+`render` cache becomes invalid and causes invalidation and immediate
+re-execution of `refresh` trigger. While executed, the `refresh`
+trigger function enqueues re-rendering request to React, which calls
+`render` function causing it to renew its cached value.
 
-In general case, all caches are automatically and immediately marked
-as invalid when changes are made in those state object properties
-that were used by their functions. And once marked, the functions
-are automatically executed again, either immediately (for @reactive
-functions) or on demand (for @cached functions).
+In general case, all triggers and caches are automatically and
+immediately marked as invalid when changes are made in those state
+objects and cached functions that were used during their execution.
+And once marked, the functions are automatically executed again,
+either immediately (for @trigger functions) or on-demand
+(for @cached functions).
 
 Reactronic takes full care of tracking dependencies between
-all the state objects and reactive caches (observables and observers).
+all the state objects and triggers/caches (observables and observers).
 With Reactronic, you no longer need to create data change events
 in one set of objects, subscribe to these events in other objects,
 and manually maintain switching from the previous state to a new
@@ -164,15 +165,15 @@ one.
 
 There are multiple options to configure behavior of transactional reactivity.
 
-**Renew** option defines a delay between reactive cache invalidation and
+**Rerun** option defines a delay between trigger/cache invalidation and
 invocation of the corresponding function:
 
   - `(ms)` - delay in milliseconds;
-  - `Renew.ImmediatelyAsync` - renew immediately but async (`@reactive`);
-  - `Renew.Immediately` - renew immediately (right after commit);
-  - `Renew.OnDemand` - renew on access if cache is invalid (`@cached`);
-  - `Renew.Manually` - renew manually (explicitly);
-  - `Renew.Off` - renew manually and do not track dependencies (`@transaction`).
+  - `Rerun.ImmediatelyAsync` - rerun immediately but async (`@trigger`);
+  - `Rerun.Immediately` - rerun immediately (right after commit);
+  - `Rerun.OnDemand` - rerun on access if cache is invalid (`@cached`);
+  - `Rerun.Manually` - rerun manually (explicitly);
+  - `Rerun.Off` - rerun manually and do not track dependencies (`@transaction`).
 
 **Reentrance** option defines how to handle reentrant calls of the same transactional function:
 
@@ -222,28 +223,28 @@ NPM: `npm install reactronic`
 function stateful(proto, prop?); // class, field, method
 function stateless(proto, prop); // field, method
 function transaction(proto, prop, pd); // method only
-function reactive(proto, prop, pd); // method only
+function trigger(proto, prop, pd); // method only
 function cached(proto, prop, pd); // method only
 
-function behavior(renew: RenewMs, reentrance: Reentrance, start: Start);
+function behavior(rerun: RerunMs, reentrance: Reentrance, start: Start);
 function monitor(value: Monitor | null);
 function config(config: Partial<Config>);
 
-// Config, Renew, Reentrance, Start, Monitor
+// Config, Rerun, Reentrance, Start, Monitor
 
 interface Config {
   readonly stateful: boolean;
-  readonly renew: RenewMs;
+  readonly rerun: RerunMs;
   readonly reentrance: Reentrance;
   readonly start: Start;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
 
-type RenewMs = Renew | number; // milliseconds
+type RerunMs = Rerun | number; // milliseconds
 
-enum Renew {
-  ImmediatelyAsync = 0, // @reactive
+enum Rerun {
+  ImmediatelyAsync = 0, // @trigger
   Immediately = -1,
   OnDemand = -2, // @cached
   Manually = -3,

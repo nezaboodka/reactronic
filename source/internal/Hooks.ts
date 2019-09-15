@@ -9,7 +9,7 @@ import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
 import { Record, F, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
-import { Config, RenewMs, Renew, Reentrance, Start } from '../api/Config';
+import { Config, RerunMs, Rerun, Reentrance, Start } from '../api/Config';
 import { Monitor } from '../api/Monitor';
 import { Trace } from '../api/Trace';
 
@@ -21,7 +21,7 @@ export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
 const BLANK_CONFIG_TABLE = {};
 const DEFAULT: Config = {
   stateful: false,
-  renew: Renew.Off,
+  rerun: Rerun.Off,
   reentrance: Reentrance.WaitAndRestart,
   start: Start.InsideParentTransaction,
   monitor: null,
@@ -31,7 +31,7 @@ const DEFAULT: Config = {
 export class ConfigRecord implements Config {
   readonly body: Function;
   readonly stateful: boolean;
-  readonly renew: RenewMs;
+  readonly rerun: RerunMs;
   readonly reentrance: Reentrance;
   readonly start: Start;
   readonly monitor: Monitor | null;
@@ -41,7 +41,7 @@ export class ConfigRecord implements Config {
   constructor(body: Function | undefined, existing: ConfigRecord, patch: Partial<ConfigRecord>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body;
     this.stateful = merge(DEFAULT.stateful, existing.stateful, patch.stateful, implicit);
-    this.renew = merge(DEFAULT.renew, existing.renew, patch.renew, implicit);
+    this.rerun = merge(DEFAULT.rerun, existing.rerun, patch.rerun, implicit);
     this.reentrance = merge(DEFAULT.reentrance, existing.reentrance, patch.reentrance, implicit);
     this.start = merge(DEFAULT.start, existing.start, patch.start, implicit);
     this.monitor = merge(DEFAULT.monitor, existing.monitor, patch.monitor, implicit);

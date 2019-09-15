@@ -8,17 +8,17 @@ import { Monitor } from './Monitor';
 
 export interface Config {
   readonly stateful: boolean;
-  readonly renew: RenewMs;
+  readonly rerun: RerunMs;
   readonly reentrance: Reentrance;
   readonly start: Start;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
 
-export type RenewMs = Renew | number; // milliseconds
+export type RerunMs = Rerun | number; // milliseconds
 
-export enum Renew {
-  ImmediatelyAsync = 0, // @reactive
+export enum Rerun {
+  ImmediatelyAsync = 0, // @trigger
   Immediately = -1,
   OnDemand = -3, // @cached
   Manually = -4,

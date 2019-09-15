@@ -3,7 +3,7 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import * as React from 'react';
-import { stateful, transaction, reactive, cached, statusof,
+import { stateful, transaction, trigger, cached, statusof,
   Start, Transaction, Status, Trace} from 'reactronic';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
@@ -27,7 +27,7 @@ class Rejsx {
     return !tran ? render(revision) : tran.inspect(render, revision);
   }
 
-  @reactive
+  @trigger
   refresh(nextRevision: number, refresh: (nextRevision: number) => void): void {
     if (statusof(this.jsx).isInvalid)
       refresh(nextRevision);

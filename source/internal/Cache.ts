@@ -5,7 +5,7 @@
 import { Dbg, Utils, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';
 export { Status, resultof, statusof } from '../api/Status';
-import { Config, Renew, RenewMs, Reentrance, Start, Trace } from '../api/Config';
+import { Config, Rerun, RerunMs, Reentrance, Start, Trace } from '../api/Config';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
@@ -36,7 +36,7 @@ export class Cache extends Status<any> {
     let call: CachedCall = this.read(false, args);
     if (!call.valid) {
       const c: CacheResult = call.cache;
-      const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "renew";
+      const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "rerun";
       const start = noprev ? c.config.start : Start.AsStandaloneTransaction;
       let call2 = call;
       const ret = Transaction.runAs(hint, start, c.config.trace, (argsx: any[] | undefined): any => {
@@ -44,10 +44,10 @@ export class Cache extends Status<any> {
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
           if (!call2.valid)
-            call2 = this.renew(call2.cache, argsx);
+            call2 = this.rerun(call2.cache, argsx);
         }
         else
-          call2 = this.renew(call2.cache, argsx);
+          call2 = this.rerun(call2.cache, argsx);
         return call2.cache.ret;
       }, args);
       call2.cache.ret = ret;
@@ -65,7 +65,7 @@ export class Cache extends Status<any> {
     const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[member] || this.blank;
-    const valid = c.config.renew !== Renew.Off &&
+    const valid = c.config.rerun !== Rerun.Off &&
       ctx.timestamp < c.invalid.since &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
@@ -88,7 +88,7 @@ export class Cache extends Status<any> {
     return { cache: c, record: r, valid: true };
   }
 
-  private renew(prev: CacheResult, args: any[] | undefined): CachedCall {
+  private rerun(prev: CacheResult, args: any[] | undefined): CachedCall {
     const error = this.reenter(prev);
     const call: CachedCall = this.write();
     const c: CacheResult = call.cache;
@@ -116,7 +116,7 @@ export class Cache extends Status<any> {
 
   private reenter(c: CacheResult): Error | undefined {
     let error: Error | undefined = undefined;
-    const prev = c.invalid.renewing;
+    const prev = c.invalid.running;
     const caller = Transaction.current;
     if (prev)
       switch (c.config.reentrance) {
@@ -129,7 +129,7 @@ export class Cache extends Status<any> {
           break;
         case Reentrance.CancelPrevious:
           prev.tran.cancel(new Error(`transaction t${prev.tran.id} (${prev.tran.hint}) is canceled by t${caller.id} (${caller.hint}) and will be silently ignored`), null);
-          c.invalid.renewing = undefined;
+          c.invalid.running = undefined;
           break;
         case Reentrance.RunSideBySide:
           break; // do nothing
@@ -201,7 +201,7 @@ export class Cache extends Status<any> {
 // CacheResult
 
 class CacheResult implements ICacheResult {
-  static asyncRenewQueue: CacheResult[] = [];
+  static asyncRerunQueue: CacheResult[] = [];
   static active?: CacheResult = undefined;
   readonly margin: number;
   readonly tran: Transaction;
@@ -213,7 +213,7 @@ class CacheResult implements ICacheResult {
   result: any;
   error: any;
   started: number;
-  readonly invalid: { since: number, renewing: CacheResult | undefined };
+  readonly invalid: { since: number, running: CacheResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
 
   constructor(record: Record, member: PropertyKey, init: CacheResult | ConfigRecord) {
@@ -234,7 +234,7 @@ class CacheResult implements ICacheResult {
     // this.ret = undefined;
     // this.error = undefined;
     this.started = 0;
-    this.invalid = { since: 0, renewing: undefined };
+    this.invalid = { since: 0, running: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
   }
 
@@ -250,10 +250,10 @@ class CacheResult implements ICacheResult {
     return caching;
   }
 
-  renew(timestamp: number, now: boolean, nothrow: boolean): void {
-    if (now || this.config.renew === Renew.Immediately) {
-      if (!this.error && (this.config.renew === Renew.Off ||
-          (timestamp >= this.invalid.since && !this.invalid.renewing))) {
+  rerun(timestamp: number, now: boolean, nothrow: boolean): void {
+    if (now || this.config.rerun === Rerun.Immediately) {
+      if (!this.error && (this.config.rerun === Rerun.Off ||
+          (timestamp >= this.invalid.since && !this.invalid.running))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
@@ -268,28 +268,28 @@ class CacheResult implements ICacheResult {
         }
       }
     }
-    else if (this.config.renew === Renew.ImmediatelyAsync)
-      CacheResult.enqueueAsyncRenew(this);
+    else if (this.config.rerun === Rerun.ImmediatelyAsync)
+      CacheResult.enqueueAsyncRerun(this);
     else
-      setTimeout(() => this.renew(UNDEFINED_TIMESTAMP, true, true), 0);
+      setTimeout(() => this.rerun(UNDEFINED_TIMESTAMP, true, true), 0);
   }
 
-  static enqueueAsyncRenew(c: CacheResult): void {
-    CacheResult.asyncRenewQueue.push(c);
-    if (CacheResult.asyncRenewQueue.length === 1)
-      setTimeout(CacheResult.processAsyncRenewQueue, 0);
+  static enqueueAsyncRerun(c: CacheResult): void {
+    CacheResult.asyncRerunQueue.push(c);
+    if (CacheResult.asyncRerunQueue.length === 1)
+      setTimeout(CacheResult.processAsyncRerunQueue, 0);
   }
 
-  static processAsyncRenewQueue(): void {
-    const batch = CacheResult.asyncRenewQueue;
-    CacheResult.asyncRenewQueue = []; // reset
+  static processAsyncRerunQueue(): void {
+    const batch = CacheResult.asyncRerunQueue;
+    CacheResult.asyncRerunQueue = []; // reset
     for (const x of batch)
-      x.renew(UNDEFINED_TIMESTAMP, true, true);
+      x.rerun(UNDEFINED_TIMESTAMP, true, true);
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
-    if (c && c.config.renew >= Renew.Manually && prop !== RT_HANDLE) {
+    if (c && c.config.rerun >= Rerun.Manually && prop !== RT_HANDLE) {
       CacheResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
       if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
@@ -300,18 +300,18 @@ class CacheResult implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, true)}.${prop.toString()} = ${valueHint(value)}`);
   }
 
-  static applyDependencies(snapshot: Snapshot, reactives: ICacheResult[]): void {
+  static applyDependencies(snapshot: Snapshot, triggers: ICacheResult[]): void {
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       if (!r.changes.has(RT_UNMOUNT))
         r.changes.forEach(prop => {
-          CacheResult.markAllPrevRecordsAsOutdated(r, prop, reactives);
+          CacheResult.markAllPrevRecordsAsOutdated(r, prop, triggers);
           const value = r.data[prop];
           if (value instanceof CacheResult)
-            value.subscribeToObservables(reactives);
+            value.subscribeToObservables(triggers);
         });
       else
         for (const prop in r.prev.record.data)
-          CacheResult.markAllPrevRecordsAsOutdated(r, prop, reactives);
+          CacheResult.markAllPrevRecordsAsOutdated(r, prop, triggers);
     });
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       Snapshot.mergeObservers(r, r.prev.record);
@@ -332,14 +332,14 @@ class CacheResult implements ICacheResult {
     return result;
   }
 
-  private subscribeToObservables(reactives?: ICacheResult[]): void {
+  private subscribeToObservables(triggers?: ICacheResult[]): void {
     const subscriptions: string[] = [];
     this.observables.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach(r => {
         CacheResult.acquireObserverSet(r, prop).add(this); // link
         if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
-        if (reactives && r.outdated.has(prop))
-          this.invalidate(r, prop, reactives);
+        if (triggers && r.outdated.has(prop))
+          this.invalidate(r, prop, triggers);
       });
     });
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
@@ -350,15 +350,15 @@ class CacheResult implements ICacheResult {
     return this.invalid.since <= ctx.timestamp;
   }
 
-  invalidate(cause: Record, causeProp: PropertyKey, reactives: ICacheResult[]): void {
+  invalidate(cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): void {
     const stamp = cause.snapshot.timestamp;
     if (this.invalid.since === UNDEFINED_TIMESTAMP) {
       this.invalid.since = stamp;
       // Check if cache requires re-run
-      const isReactive = this.config.renew >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
-      if (isReactive)
-        reactives.push(this);
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isReactive ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isReactive ? " and will run automatically" : ""}`);
+      const isTrigger = this.config.rerun >= Rerun.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      if (isTrigger)
+        triggers.push(this);
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isTrigger ? " and will run automatically" : ""}`);
       // Invalidate children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
       let r: Record = h.head;
@@ -366,33 +366,33 @@ class CacheResult implements ICacheResult {
         if (r.data[this.member] === this) {
           const oo = r.observers.get(this.member);
           if (oo)
-            oo.forEach(c => c.invalidate(r, this.member, reactives));
+            oo.forEach(c => c.invalidate(r, this.member, triggers));
         }
         r = r.prev.record;
       }
     }
   }
 
-  static markAllPrevRecordsAsOutdated(cause: Record, prop: PropertyKey, reactives: ICacheResult[]): void {
+  static markAllPrevRecordsAsOutdated(cause: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
     let r = cause.prev.record;
     while (r !== Record.blank && !r.outdated.has(prop)) {
       r.outdated.set(prop, cause);
       const oo = r.observers.get(prop);
       if (oo)
-        oo.forEach(c => c.invalidate(cause, prop, reactives));
+        oo.forEach(c => c.invalidate(cause, prop, triggers));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
   }
 
-  static enforceInvalidation(c: CacheResult, cause: string, renew: RenewMs): boolean {
+  static enforceInvalidation(c: CacheResult, cause: string, rerun: RerunMs): boolean {
     throw new Error("not implemented - Cache.enforceInvalidation");
-    // let reactives: Cache[] = [];
-    // c.invalidate(cause, false, false, reactives);
+    // let triggers: Cache[] = [];
+    // c.invalidate(cause, false, false, triggers);
     // if (autorun === Rerun.Immediately)
-    //   Transaction.ensureAllUpToDate(cause, { reactives });
+    //   Transaction.ensureAllUpToDate(cause, { triggers });
     // else
-    //   sleep(autorun).then(() => Transaction.ensureAllUpToDate(cause, { reactives }));
+    //   sleep(autorun).then(() => Transaction.ensureAllUpToDate(cause, { triggers }));
     // return true;
   }
 
@@ -400,8 +400,8 @@ class CacheResult implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
-    if (!prev.invalid.renewing)
-      prev.invalid.renewing = this;
+    if (!prev.invalid.running)
+      prev.invalid.running = this;
   }
 
   tryLeave(r: Record, prev: CacheResult, mon: Monitor | null): void {
@@ -426,8 +426,8 @@ class CacheResult implements ICacheResult {
   }
 
   private leave(r: Record, prev: CacheResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
-    if (prev.invalid.renewing === this)
-      prev.invalid.renewing = undefined;
+    if (prev.invalid.running === this)
+      prev.invalid.running = undefined;
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
@@ -470,7 +470,7 @@ class CacheResult implements ICacheResult {
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CacheResult)
-      result = oldValue.config.renew === Renew.Off;
+      result = oldValue.config.rerun === Rerun.Off;
     else
       result = oldValue === newValue;
     return result;
@@ -502,7 +502,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`;
   else if (value instanceof CacheResult)
-    result = `<renew:${Hint.record(value.record.prev.record, false, true)}>`;
+    result = `<rerun:${Hint.record(value.record.prev.record, false, true)}>`;
   else if (value === RT_UNMOUNT)
     result = "<unmount>";
   else if (value !== undefined && value !== null)

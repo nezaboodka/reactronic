@@ -5,7 +5,7 @@
 import { Trace } from './Trace';
 import { F } from '../internal/Record';
 import { Hooks } from '../internal/Hooks';
-import { Config, Renew, RenewMs, Reentrance, Start } from './Config';
+import { Config, Rerun, RerunMs, Reentrance, Start } from './Config';
 import { Monitor } from './Monitor';
 
 export function stateful(proto: object, prop?: PropertyKey): any {
@@ -19,22 +19,22 @@ export function stateless(proto: object, prop: PropertyKey): any {
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, renew: Renew.Off };
+  const config = { stateful: true, rerun: Rerun.Off };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
-export function reactive(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, renew: Renew.ImmediatelyAsync };
+export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  const config = { stateful: true, rerun: Rerun.ImmediatelyAsync };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
 export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, renew: Renew.OnDemand };
+  const config = { stateful: true, rerun: Rerun.OnDemand };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
-export function behavior(renew?: RenewMs, reentrance?: Reentrance, start?: Start): F<any> {
-  return config({renew, reentrance, start});
+export function behavior(rerun?: RerunMs, reentrance?: Reentrance, start?: Start): F<any> {
+  return config({rerun, reentrance, start});
 }
 
 export function monitor(value: Monitor | null): F<any> {

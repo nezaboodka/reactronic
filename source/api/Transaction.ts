@@ -18,7 +18,7 @@ export class Transaction {
   private resultResolve: (value?: void) => void = undef;
   private resultReject: (reason: any) => void = undef;
   private conflicts?: Record[] = undefined;
-  private reaction: { tran?: Transaction, reactives: ICacheResult[] } = { tran: undefined, reactives: [] };
+  private reaction: { tran?: Transaction, triggers: ICacheResult[] } = { tran: undefined, triggers: [] };
   readonly trace?: Partial<Trace>; // assigned in constructor
 
   constructor(hint: string, trace?: Partial<Trace>) {
@@ -178,20 +178,28 @@ export class Transaction {
       }
       Transaction._current = outer;
     }
-    if (this.reaction.reactives.length > 0)
-      this.triggerReactions();
+    if (this.reaction.triggers.length > 0)
+      this.executeTriggers();
     return result;
   }
 
-  private triggerReactions(): void {
+  private executeTriggers(): void {
     try {
-      Transaction.renewReactiveCaches(this.snapshot.hint,
-        this.snapshot.timestamp, this.reaction, this.trace);
+      const name = Dbg.isOn && Dbg.trace.hints ? `${this.snapshot.hint} - REACTION(${this.reaction.triggers.length})` : /* istanbul ignore next */ "noname";
+      const start = this.reaction.tran ? Start.InsideParentTransaction : Start.AsStandaloneTransaction;
+      this.reaction.tran = Transaction.runAs(name, start, this.trace,
+        Transaction.doExecuteTriggers, this.snapshot.timestamp,
+        this.reaction.triggers);
     }
     finally {
       if (!this.isFinished())
-        this.reaction.reactives = [];
+        this.reaction.triggers = [];
     }
+  }
+
+  private static doExecuteTriggers(timestamp: number, triggers: ICacheResult[]): Transaction {
+    triggers.map(x => x.rerun(timestamp, false, false));
+    return Transaction.current;
   }
 
   private static tranfree<T>(func: F<T>, ...args: any[]): T {
@@ -226,7 +234,7 @@ export class Transaction {
 
   private performCommit(): void {
     this.snapshot.seal();
-    Snapshot.applyDependencies(this.snapshot, this.reaction.reactives);
+    Snapshot.applyDependencies(this.snapshot, this.reaction.triggers);
     this.snapshot.archive();
     if (this.resultPromise)
       this.resultResolve();
@@ -240,18 +248,6 @@ export class Transaction {
         this.resultReject(this.error);
       else
         this.resultResolve();
-  }
-
-  private static renewReactiveCaches(hint: string, timestamp: number, reaction: { tran?: Transaction, reactives: ICacheResult[] }, trace?: Partial<Trace>): void {
-    const name = Dbg.isOn && Dbg.trace.hints ? `${hint} - REACTION(${reaction.reactives.length})` : /* istanbul ignore next */ "noname";
-    const start = reaction.tran ? Start.InsideParentTransaction : Start.AsStandaloneTransaction;
-    reaction.tran = Transaction.runAs(name, start, trace,
-      Transaction.doRenewReactiveCaches, timestamp, reaction.reactives);
-  }
-
-  private static doRenewReactiveCaches(timestamp: number, reactives: ICacheResult[]): Transaction {
-    reactives.map(x => x.renew(timestamp, false, false));
-    return Transaction.current;
   }
 
   private acquirePromise(): Promise<void> {
