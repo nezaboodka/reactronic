@@ -97,10 +97,7 @@ export class Cache extends Status<any> {
       c.enter(call.record, prev, mon);
     try
     {
-      if (args)
-        c.args = args;
-      else
-        args = c.args;
+      args ? c.args = args : args = c.args;
       if (!error)
         c.ret = Cache.run<any>(c, (...argsx: any[]): any => {
           return c.config.body.call(this.handle.proxy, ...argsx);
