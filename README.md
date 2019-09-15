@@ -164,7 +164,7 @@ one.
 
 There are multiple options to configure behavior of transactional reactivity.
 
-**Renewal** option defines a delay between reactive cache invalidation and
+**Renew** option defines a delay between reactive cache invalidation and
 invocation of the corresponding function:
 
   - `(ms)` - delay in milliseconds;
