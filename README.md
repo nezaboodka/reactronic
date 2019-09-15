@@ -174,18 +174,18 @@ invocation of the corresponding function:
   - `Renew.Manually` - renew manually (explicitly);
   - `Renew.Off` - renew manually and do not track dependencies.
 
-**Start** option defines how transaction is related to parent transaction:
-
-  - `Start.InsideParent` - transaction is part of parent transaction (default);
-  - `Start.Standalone` - transaction is self-contained;
-  - `Start.AfterParent` - transaction is self-contained and starts after parent.
-
 **Reentrance** option defines how to handle reentrant calls of the same transactional function:
 
   - `Reentrance.PreventWithError` - fail with error if there is an existing transaction in progress;
   - `Reentrance.WaitAndRestart` - wait for previous transaction to finish and then restart current one;
   - `Reentrance.CancelPrevious` - cancel previous transaction in favor of current one;
   - `Reentrance.RunSideBySide` - multiple simultaneous transactions are allowed.
+
+**Start** option defines how transaction is related to parent transaction:
+
+  - `Start.InsideParent` - transaction is part of parent transaction (default);
+  - `Start.Standalone` - transaction is self-contained;
+  - `Start.AfterParent` - transaction is self-contained and starts after parent.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
