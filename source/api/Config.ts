@@ -10,7 +10,7 @@ export interface Config {
   readonly stateful: boolean;
   readonly renew: Renewal;
   readonly reentrance: Reentrance;
-  readonly start: Start;
+  readonly execution: Execution;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
@@ -32,7 +32,7 @@ export enum Reentrance {
   RunSideBySide = -2, // multiple simultaneous transactions are allowed
 }
 
-export enum Start {
+export enum Execution {
   InsideParent = 0,
   Standalone = 1,
   AfterParent = 2,

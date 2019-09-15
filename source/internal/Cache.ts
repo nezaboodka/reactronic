@@ -5,7 +5,7 @@
 import { Utils, Dbg, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';
 export { Status, resultof, statusof } from '../api/Status';
-import { Config, Renew, Renewal, Reentrance, Start } from '../api/Config';
+import { Config, Renew, Renewal, Reentrance, Execution } from '../api/Config';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
@@ -37,9 +37,9 @@ export class Cache extends Status<any> {
     if (!call.valid) {
       const c: CacheResult = call.cache;
       const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "refresh";
-      const start = noprev ? c.config.start : Start.Standalone;
+      const execution = noprev ? c.config.execution : Execution.Standalone;
       let call2 = call;
-      const ret = Transaction.runAs(hint, start, c.config.trace, (argsx: any[] | undefined): any => {
+      const ret = Transaction.runAs(hint, execution, c.config.trace, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
@@ -144,7 +144,7 @@ export class Cache extends Status<any> {
     const c: CacheResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
-    return Transaction.runAs(hint, Start.InsideParent, undefined, (): Config => {
+    return Transaction.runAs(hint, Execution.InsideParent, undefined, (): Config => {
       const call2 = this.write();
       const c2: CacheResult = call2.cache;
       c2.config = new ConfigRecord(c2.config.body, c2.config, config, false);
@@ -195,7 +195,7 @@ export class Cache extends Status<any> {
   }
 
   static unmount(...objects: any[]): Transaction {
-    return Transaction.runAs("unmount", Start.InsideParent, undefined,
+    return Transaction.runAs("unmount", Execution.InsideParent, undefined,
       Cache.runUnmount, ...objects);
   }
 
@@ -451,7 +451,7 @@ class CacheResult implements ICacheResult {
   monitorEnter(mon: Monitor | null): void {
     if (mon)
       Cache.run(undefined, Transaction.runAs, "Monitor.enter",
-        mon.start, Dbg.trace.monitors ? undefined : Dbg.off,
+        mon.execution, Dbg.trace.monitors ? undefined : Dbg.off,
         Monitor.enter, mon, this);
   }
 
@@ -463,7 +463,7 @@ class CacheResult implements ICacheResult {
           Transaction._current = Transaction.none; // Workaround?
           const leave = () => {
             Cache.run(undefined, Transaction.runAs, "Monitor.leave",
-              mon.start, Dbg.trace.monitors ? undefined : Dbg.off,
+              mon.execution, Dbg.trace.monitors ? undefined : Dbg.off,
               Monitor.leave, mon, this);
           };
           this.tran.whenFinished(false).then(leave, leave);
@@ -474,7 +474,7 @@ class CacheResult implements ICacheResult {
       }
       else
         Cache.run(undefined, Transaction.runAs, "Monitor.leave",
-          mon.start, Dbg.trace.monitors ? undefined : Dbg.off,
+          mon.execution, Dbg.trace.monitors ? undefined : Dbg.off,
           Monitor.leave, mon, this);
     }
   }

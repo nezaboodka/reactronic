@@ -3,7 +3,7 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import { Dbg, Utils, undef, Record, ICacheResult, F, Snapshot, Hint } from '../internal/all';
-import { Start, Trace } from './Config';
+import { Execution, Trace } from './Config';
 
 class TranPrettyTrace {
   constructor(readonly tran: Transaction) {}
@@ -103,15 +103,15 @@ export class Transaction {
 
   undo(): void {
     const hint = Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
-    Transaction.runAs(hint, Start.InsideParent, undefined,
+    Transaction.runAs(hint, Execution.InsideParent, undefined,
       Snapshot.undo, this.snapshot);
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
-    return Transaction.runAs(hint, Start.InsideParent, undefined, func, ...args);
+    return Transaction.runAs(hint, Execution.InsideParent, undefined, func, ...args);
   }
 
-  static runAs<T>(hint: string, run: Start, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
+  static runAs<T>(hint: string, run: Execution, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
     const t: Transaction = Transaction.acquire(hint, run, trace);
     const root = t !== Transaction._current;
     t.guard();
@@ -134,8 +134,8 @@ export class Transaction {
 
   // Internal
 
-  private static acquire(hint: string, run: Start, trace: Partial<Trace> | undefined): Transaction {
-    const spawn = run !== Start.InsideParent || Transaction._current.isFinished();
+  private static acquire(hint: string, run: Execution, trace: Partial<Trace> | undefined): Transaction {
+    const spawn = run !== Execution.InsideParent || Transaction._current.isFinished();
     return spawn ? new Transaction(hint, trace) : Transaction._current;
   }
 
@@ -156,7 +156,7 @@ export class Transaction {
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
         await this.retryAfter.whenFinished(true);
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
-        return Transaction.runAs<T>(this.hint, Start.Standalone, this.trace, func, ...args);
+        return Transaction.runAs<T>(this.hint, Execution.Standalone, this.trace, func, ...args);
       }
       else
         throw error;
@@ -258,8 +258,8 @@ export class Transaction {
 
   private static refreshReactives(hint: string, timestamp: number, reaction: { tran?: Transaction, reactives: ICacheResult[] }, trace?: Partial<Trace>): void {
     const name = Dbg.trace.hints ? `${hint} - REACTION(${reaction.reactives.length})` : /* istanbul ignore next */ "noname";
-    const start = reaction.tran ? Start.InsideParent : Start.Standalone;
-    reaction.tran = Transaction.runAs(name, start, trace,
+    const execution = reaction.tran ? Execution.InsideParent : Execution.Standalone;
+    reaction.tran = Transaction.runAs(name, execution, trace,
       Transaction.doRefreshReactives, timestamp, reaction.reactives);
   }
 

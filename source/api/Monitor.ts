@@ -3,7 +3,7 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import { Handle } from '../internal/all';
-import { Start } from './Config';
+import { Execution } from './Config';
 import { stateful } from './Config.decorators';
 import { Transaction } from './Transaction';
 
@@ -13,18 +13,18 @@ export class Monitor {
   private _counter: number = 0;
   private _workers = new Set<Worker>();
   readonly prolonged: boolean;
-  readonly start: Start;
+  readonly execution: Execution;
   get isIdle(): boolean { return this._idle; }
   get counter(): number { return this._counter; }
   get workers(): ReadonlySet<Worker> { return this._workers; }
 
-  constructor(prolonged: boolean = false, start: Start = Start.Standalone) {
+  constructor(prolonged: boolean = false, execution: Execution = Execution.Standalone) {
     this.prolonged = prolonged;
-    this.start = start;
+    this.execution = execution;
   }
 
-  static create(hint?: string, prolonged: boolean = false, start: Start = Start.Standalone): Monitor {
-    return Transaction.run("Monitor.create", Monitor.doCreate, hint, prolonged, start);
+  static create(hint?: string, prolonged: boolean = false, execution: Execution = Execution.Standalone): Monitor {
+    return Transaction.run("Monitor.create", Monitor.doCreate, hint, prolonged, execution);
   }
 
   static enter(m: Monitor, worker: Worker): void {
@@ -41,8 +41,8 @@ export class Monitor {
       m._idle = true;
   }
 
-  private static doCreate(hint: string | undefined, prolonged: boolean, start: Start): Monitor {
-    return Handle.setHint(new Monitor(prolonged, start), hint);
+  private static doCreate(hint: string | undefined, prolonged: boolean, execution: Execution): Monitor {
+    return Handle.setHint(new Monitor(prolonged, execution), hint);
   }
 }
 

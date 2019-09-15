@@ -9,7 +9,7 @@ import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
 import { Record, F, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
-import { Config, Renewal, Renew, Reentrance, Start } from '../api/Config';
+import { Config, Renewal, Renew, Reentrance, Execution } from '../api/Config';
 import { Monitor } from '../api/Monitor';
 import { Trace } from '../api/Trace';
 
@@ -23,7 +23,7 @@ const DEFAULT: Config = {
   stateful: false,
   renew: Renew.Off,
   reentrance: Reentrance.WaitAndRestart,
-  start: Start.InsideParent,
+  execution: Execution.InsideParent,
   monitor: null,
   trace: undefined,
 };
@@ -33,7 +33,7 @@ export class ConfigRecord implements Config {
   readonly stateful: boolean;
   readonly renew: Renewal;
   readonly reentrance: Reentrance;
-  readonly start: Start;
+  readonly execution: Execution;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
   static default = new ConfigRecord(undef, {body: undef, ...DEFAULT}, {}, false);
@@ -43,7 +43,7 @@ export class ConfigRecord implements Config {
     this.stateful = merge(DEFAULT.stateful, existing.stateful, patch.stateful, implicit);
     this.renew = merge(DEFAULT.renew, existing.renew, patch.renew, implicit);
     this.reentrance = merge(DEFAULT.reentrance, existing.reentrance, patch.reentrance, implicit);
-    this.start = merge(DEFAULT.start, existing.start, patch.start, implicit);
+    this.execution = merge(DEFAULT.execution, existing.execution, patch.execution, implicit);
     this.monitor = merge(DEFAULT.monitor, existing.monitor, patch.monitor, implicit);
     this.trace = merge(DEFAULT.trace, existing.trace, patch.trace, implicit);
     Object.freeze(this);
