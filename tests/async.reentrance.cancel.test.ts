@@ -22,7 +22,7 @@ const expected: string[] = [
 ];
 
 test("async", async t => {
-  Status.pushTrace(trace);
+  Status.setTrace(trace);
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   statusof(app.model.load).configure({reentrance: Reentrance.CancelPrevious});
   try {

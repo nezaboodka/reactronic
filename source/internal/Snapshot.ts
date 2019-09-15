@@ -100,7 +100,7 @@ export class Snapshot implements ISnapshot {
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this;
-      if (Dbg.trace.transactions) Dbg.log("╔══", `v${this.timestamp}`, `${this.hint}`);
+      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("╔══", `v${this.timestamp}`, `${this.hint}`);
     }
   }
 
@@ -115,7 +115,7 @@ export class Snapshot implements ISnapshot {
               conflicts = [];
             conflicts.push(r);
           }
-          if (Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
+          if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
       this._timestamp = ++Snapshot.headTimestamp;
@@ -136,13 +136,13 @@ export class Snapshot implements ISnapshot {
         while (theirs !== Record.blank && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
           if (theirs.changes.has(prop)) {
             const equal = Snapshot.equal(theirs.data[prop], ours.data[prop]);
-            if (Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${equal ? "==" : "<>"} ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${equal ? "==" : "<>"} ${Hint.record(theirs, false)}.${prop.toString()}.`);
             if (!equal)
               ours.conflicts.set(prop, theirs);
             break;
           }
           else if (prop === RT_UNMOUNT || unmountTheirs) {
-            if (Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "<>" ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "<>" ${Hint.record(theirs, false)}.${prop.toString()}.`);
             ours.conflicts.set(prop, theirs);
             break;
           }
@@ -166,7 +166,7 @@ export class Snapshot implements ISnapshot {
         oo.forEach((c: ICacheResult) => {
           if (!c.isInvalid) {
             merged.add(c);
-            if (Dbg.trace.subscriptions) Dbg.log(" ", "o", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
+            if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
           }
         });
       }
@@ -183,7 +183,7 @@ export class Snapshot implements ISnapshot {
         h.changing = undefined;
       if (!error) {
         h.head = r;
-        if (Dbg.trace.changes) {
+        if (Dbg.isOn && Dbg.trace.changes) {
           const props: string[] = [];
           r.changes.forEach(prop => props.push(prop.toString()));
           const s = props.join(", ");
@@ -191,7 +191,7 @@ export class Snapshot implements ISnapshot {
         }
       }
     });
-    if (Dbg.trace.transactions)
+    if (Dbg.isOn && Dbg.trace.transactions)
       Dbg.log(this.timestamp < MAX_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
@@ -238,9 +238,9 @@ export class Snapshot implements ISnapshot {
   }
 
   private static unlinkHistory(s: Snapshot): void {
-    if (Dbg.trace.gc) Dbg.log("", " g", `snapshot t${s.id} (${s.hint}) is being collected`);
+    if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", " g", `snapshot t${s.id} (${s.hint}) is being collected`);
     s.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.trace.gc && r.prev.record !== Record.blank) Dbg.log("", " ·", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== Record.blank) Dbg.log("", " ·", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
       // Snapshot.mergeObservers(r, r.prev.record);
       r.prev.record = Record.blank; // unlink history

@@ -2,10 +2,10 @@
 // shall be included in all copies or substantial portions.
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { Utils, Dbg, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
+import { Dbg, Utils, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';
 export { Status, resultof, statusof } from '../api/Status';
-import { Config, Renew, RenewMs, Reentrance, Start } from '../api/Config';
+import { Config, Renew, RenewMs, Reentrance, Start, Trace } from '../api/Config';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
@@ -36,7 +36,7 @@ export class Cache extends Status<any> {
     let call: CachedCall = this.read(false, args);
     if (!call.valid) {
       const c: CacheResult = call.cache;
-      const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "refresh";
+      const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "refresh";
       const start = noprev ? c.config.start : Start.AsStandaloneTransaction;
       let call2 = call;
       const ret = Transaction.runAs(hint, start, c.config.trace, (argsx: any[] | undefined): any => {
@@ -55,7 +55,7 @@ export class Cache extends Status<any> {
         call = call2;
     }
     else
-      if (Dbg.trace.methods) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
+      if (Dbg.isOn && Dbg.trace.methods) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
     Record.markViewed(call.record, call.cache.member);
     return call;
   }
@@ -143,12 +143,12 @@ export class Cache extends Status<any> {
     const call = this.read(false);
     const c: CacheResult = call.cache;
     const r: Record = call.record;
-    const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
+    const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
     return Transaction.runAs(hint, Start.InsideParentTransaction, undefined, (): Config => {
       const call2 = this.write();
       const c2: CacheResult = call2.cache;
       c2.config = new ConfigRecord(c2.config.body, c2.config, config, false);
-      if (Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
       return c2.config;
     });
   }
@@ -156,13 +156,6 @@ export class Cache extends Status<any> {
   static run<T>(c: CacheResult | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined;
     const outer = CacheResult.active;
-    const restore = Dbg.trace.methods
-      ? (this.trace === undefined || this.trace.methods !== false
-        ? Dbg.push(this.trace, c)
-        : Dbg.trace)
-      : (this.trace !== undefined && this.trace.methods === true
-        ? Dbg.push(this.trace, c)
-        : Dbg.trace);
     try {
       CacheResult.active = c;
       result = func(...args);
@@ -174,7 +167,6 @@ export class Cache extends Status<any> {
     }
     finally {
       CacheResult.active = outer;
-      Dbg.trace = restore;
     }
     return result;
   }
@@ -213,8 +205,6 @@ export class Cache extends Status<any> {
 class CacheResult implements ICacheResult {
   static asyncRefreshQueue: CacheResult[] = [];
   static active?: CacheResult = undefined;
-  get color(): number { return Dbg.trace.color; }
-  get prefix(): string { return Dbg.trace.prefix; }
   readonly margin: number;
   readonly tran: Transaction;
   readonly record: Record;
@@ -229,7 +219,7 @@ class CacheResult implements ICacheResult {
   readonly observables: Map<PropertyKey, Set<Record>>;
 
   constructor(record: Record, member: PropertyKey, init: CacheResult | ConfigRecord) {
-    this.margin = Dbg.trace.margin + 1;
+    this.margin = Dbg.isOn ? Dbg.trace.margin + 1 : 0;
     this.tran = Transaction.current;
     this.record = record;
     this.member = member;
@@ -254,9 +244,9 @@ class CacheResult implements ICacheResult {
 
   wrap<T>(func: F<T>): F<T> {
     const caching: F<T> = (...args: any[]): T => {
-      if (Dbg.trace.methods && this.ret) Dbg.logAs(undefined, this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} ‾\\         `, 0, "        │");
+      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} ‾\\         `, 0, "        │");
       const result = Cache.run<T>(this, func, ...args);
-      if (Dbg.trace.methods && this.ret) Dbg.logAs(undefined, this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} _/         `, 0, "        │");
+      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} _/         `, 0, "        │");
       return result;
     };
     return caching;
@@ -303,13 +293,13 @@ class CacheResult implements ICacheResult {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.renew >= Renew.Manually && prop !== RT_HANDLE) {
       CacheResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
-      if (Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
+      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
   }
 
   static markChanged(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
     changed ? r.changes.add(prop) : r.changes.delete(prop);
-    if (Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, true)}.${prop.toString()} = ${valueHint(value)}`);
+    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, true)}.${prop.toString()} = ${valueHint(value)}`);
   }
 
   static applyDependencies(snapshot: Snapshot, reactives: ICacheResult[]): void {
@@ -349,12 +339,12 @@ class CacheResult implements ICacheResult {
     this.observables.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach(r => {
         CacheResult.acquireObserverSet(r, prop).add(this); // link
-        if (Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
+        if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (reactives && r.outdated.has(prop))
           this.invalidate(r, prop, reactives);
       });
     });
-    if ((Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, Transaction.current.pretty, " ", "o", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
   get isInvalid(): boolean { // TODO: should depend on caller context
@@ -370,7 +360,7 @@ class CacheResult implements ICacheResult {
       const isReactive = this.config.renew >= Renew.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (isReactive)
         reactives.push(this);
-      if (Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, Transaction.current.pretty, " ", isReactive ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isReactive ? " and will run automatically" : ""}`);
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isReactive ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isReactive ? " and will run automatically" : ""}`);
       // Invalidate children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
       let r: Record = h.head;
@@ -409,7 +399,7 @@ class CacheResult implements ICacheResult {
   }
 
   enter(r: Record, prev: CacheResult, mon: Monitor | null): void {
-    if (Dbg.trace.methods) Dbg.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
     if (!prev.invalid.refreshing)
@@ -429,7 +419,7 @@ class CacheResult implements ICacheResult {
           this.leave(r, prev, mon, "▒▒", "- finished ", "ERROR ──┘");
           throw error;
         });
-      if (Dbg.trace.methods) Dbg.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
+      if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
     }
     else {
       this.result = this.ret;
@@ -443,7 +433,7 @@ class CacheResult implements ICacheResult {
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
-    if (Dbg.trace.methods) Dbg.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
     // TODO: handle errors
     // Cache.freeze(this);
   }
@@ -451,7 +441,7 @@ class CacheResult implements ICacheResult {
   monitorEnter(mon: Monitor | null): void {
     if (mon)
       Cache.run(undefined, Transaction.runAs, "Monitor.enter",
-        mon.start, Dbg.trace.monitors ? undefined : Dbg.off,
+        mon.start, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global,
         Monitor.enter, mon, this);
   }
 
@@ -463,7 +453,7 @@ class CacheResult implements ICacheResult {
           Transaction._current = Transaction.none; // Workaround?
           const leave = () => {
             Cache.run(undefined, Transaction.runAs, "Monitor.leave",
-              mon.start, Dbg.trace.monitors ? undefined : Dbg.off,
+              mon.start, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global,
               Monitor.leave, mon, this);
           };
           this.tran.whenFinished(false).then(leave, leave);
@@ -474,7 +464,7 @@ class CacheResult implements ICacheResult {
       }
       else
         Cache.run(undefined, Transaction.runAs, "Monitor.leave",
-          mon.start, Dbg.trace.monitors ? undefined : Dbg.off,
+          mon.start, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global,
           Monitor.leave, mon, this);
     }
   }
@@ -492,6 +482,16 @@ class CacheResult implements ICacheResult {
     // Utils.freezeMap(c.observables);
     // Utils.freezeSet(c.statusObservables);
     Object.freeze(c);
+  }
+
+  static currentTrace(local: Partial<Trace> | undefined): Trace {
+    const t = Transaction.current;
+    let res = Dbg.merge(t.trace, 31 + (t.id) % 6, `t${t.id}`, Dbg.global);
+    if (CacheResult.active)
+      res = Dbg.merge(CacheResult.active, undefined, undefined, res);
+    if (local)
+      res = Dbg.merge(local, undefined, undefined, res);
+    return res;
   }
 }
 
@@ -536,6 +536,7 @@ function promiseThenProxy(
 // Global Init
 
 function init(): void {
+  Dbg.getCurrentTrace = CacheResult.currentTrace;
   Record.markViewed = CacheResult.markViewed; // override
   Record.markChanged = CacheResult.markChanged; // override
   Snapshot.equal = CacheResult.equal; // override

@@ -5,13 +5,6 @@
 import { Dbg, Utils, undef, Record, ICacheResult, F, Snapshot, Hint } from '../internal/all';
 import { Start, Trace } from './Config';
 
-class TranPrettyTrace {
-  constructor(readonly tran: Transaction) {}
-  get color(): number { return 31 + (this.tran.id) % 6; }
-  get prefix(): string { return `t${this.tran.id}`; }
-  get margin(): number { return Dbg.trace.margin; }
-}
-
 export class Transaction {
   static readonly none: Transaction = new Transaction("none");
   static _current: Transaction;
@@ -27,12 +20,10 @@ export class Transaction {
   private conflicts?: Record[] = undefined;
   private reaction: { tran?: Transaction, reactives: ICacheResult[] } = { tran: undefined, reactives: [] };
   readonly trace?: Partial<Trace>; // assigned in constructor
-  readonly pretty: TranPrettyTrace; // assigned in constructor
 
   constructor(hint: string, trace?: Partial<Trace>) {
     this.snapshot = new Snapshot(hint);
     this.trace = trace;
-    this.pretty = new TranPrettyTrace(this);
   }
 
   static get current(): Transaction { return Transaction._current; }
@@ -48,7 +39,7 @@ export class Transaction {
     const restore = Transaction._inspection;
     try {
       Transaction._inspection = true;
-      if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is being inspected by t${Transaction._current.id} (${Transaction._current.hint})`);
+      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is being inspected by t${Transaction._current.id} (${Transaction._current.hint})`);
       return this.do(undefined, func, ...args);
     }
     finally {
@@ -102,7 +93,7 @@ export class Transaction {
   }
 
   undo(): void {
-    const hint = Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
+    const hint = Dbg.isOn && Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
     Transaction.runAs(hint, Start.InsideParentTransaction, undefined,
       Snapshot.undo, this.snapshot);
   }
@@ -162,19 +153,7 @@ export class Transaction {
   private do<T>(trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
     let result: T;
     const outer = Transaction._current;
-    const restore = Dbg.trace.transactions
-      ? (this.trace === undefined || this.trace.transactions !== false
-        ? Dbg.push(this.trace, this.pretty)
-        : Dbg.trace)
-      : (this.trace !== undefined && this.trace.transactions === true
-        ? Dbg.push(this.trace, this.pretty)
-        : Dbg.trace);
     try {
-      if (trace) {
-        const t = Dbg.push(trace, this.pretty);
-        if (!t.transactions && trace.transactions)
-          Dbg.log("║", "i", `transaction hint: ${this.hint}`);
-      }
       this.workers++;
       Transaction._current = this;
       this.snapshot.acquire();
@@ -198,7 +177,6 @@ export class Transaction {
         Object.freeze(this);
       }
       Transaction._current = outer;
-      Dbg.trace = restore;
     }
     if (this.reaction.reactives.length > 0) {
       try {
@@ -262,7 +240,7 @@ export class Transaction {
   }
 
   private static refreshReactives(hint: string, timestamp: number, reaction: { tran?: Transaction, reactives: ICacheResult[] }, trace?: Partial<Trace>): void {
-    const name = Dbg.trace.hints ? `${hint} - REACTION(${reaction.reactives.length})` : /* istanbul ignore next */ "noname";
+    const name = Dbg.isOn && Dbg.trace.hints ? `${hint} - REACTION(${reaction.reactives.length})` : /* istanbul ignore next */ "noname";
     const start = reaction.tran ? Start.InsideParentTransaction : Start.AsStandaloneTransaction;
     reaction.tran = Transaction.runAs(name, start, trace,
       Transaction.doRefreshReactives, timestamp, reaction.reactives);

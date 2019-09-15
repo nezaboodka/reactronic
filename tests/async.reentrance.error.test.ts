@@ -24,7 +24,7 @@ const expected: string[] = [
 ];
 
 test("async", async t => {
-  Status.pushTrace(trace);
+  Status.setTrace(trace);
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   statusof(app.model.load).configure({reentrance: Reentrance.PreventWithError});
   try {
@@ -39,7 +39,7 @@ test("async", async t => {
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()); /* istanbul ignore next */
-    if (!Status.trace.silent) console.log(error.toString());
+    if (Status.trace && !Status.trace.silent) console.log(error.toString());
   }
   finally {
     t.is(mon.counter, 0);

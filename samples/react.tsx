@@ -7,16 +7,10 @@ import { stateful, transaction, reactive, cached, statusof,
   Start, Transaction, Status, Trace} from 'reactronic';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
-  const restore = trace ? Status.pushTrace(trace) : Status.trace;
-  try {
-    const [rejsx] = React.useState(() => createRejsx(trace));
-    const [revision, refresh] = React.useState(0);
-    React.useEffect(Rejsx.unmountEffect(rejsx), []);
-    return rejsx.render(revision, render, refresh, tran);
-  }
-  finally {
-    Status.trace = restore;
-  }
+  const [rejsx] = React.useState(() => createRejsx(trace));
+  const [revision, refresh] = React.useState(0);
+  React.useEffect(Rejsx.unmountEffect(rejsx), []);
+  return rejsx.render(revision, render, refresh, tran);
 }
 
 @stateful
@@ -51,7 +45,7 @@ class Rejsx {
 }
 
 function createRejsx(trace?: Partial<Trace>): Rejsx {
-  const dbg = Status.trace.hints
+  const dbg = Status.isTraceOn && Status.trace.hints
     ? trace === undefined || trace.hints !== false
     : trace !== undefined && trace.hints === true;
   const hint = dbg ? getComponentName() : "createRejsx";

@@ -14,4 +14,7 @@ export interface Trace {
   readonly subscriptions: boolean;
   readonly invalidations: boolean;
   readonly gc: boolean;
+  readonly color: number;
+  readonly prefix: string;
+  readonly margin: number;
 }

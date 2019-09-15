@@ -64,6 +64,9 @@ export const trace: Trace = {
   subscriptions: true,
   invalidations: true,
   gc: true,
+  color: 37,
+  prefix: "",
+  margin: 0,
 };
 
 /* istanbul ignore next */
