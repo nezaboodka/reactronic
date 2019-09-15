@@ -119,13 +119,13 @@ during its execution.
 
 ``` tsx
 class MyView extends React.Component<MyModel> {
-  @reactive
+  @reactive  // renew immediately
   refresh() {
     if (statusof(this.render).isInvalid)
       this.setState({}); // ask React to re-render
   } // refresh is subscribed to render
 
-  @cached
+  @cached  // renew on-demand
   render() {
     const m: MyModel = this.props; // just a shortcut
     return (
@@ -233,14 +233,14 @@ function config(config: Partial<Config>);
 
 interface Config {
   readonly stateful: boolean;
-  readonly renew: Renewal;
+  readonly renew: RenewMs;
   readonly reentrance: Reentrance;
   readonly start: Start;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
 
-type Renewal = Renew | number; // milliseconds
+type RenewMs = Renew | number; // milliseconds
 
 enum Renew {
   ImmediatelyAsync = 0, // @reactive
