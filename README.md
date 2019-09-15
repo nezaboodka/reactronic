@@ -183,9 +183,9 @@ invocation of the corresponding function:
 
 **Start** option defines how transaction is related to a parent transaction (if any):
 
-  - `Start.InsideParent` - transaction is part of parent transaction (default);
-  - `Start.Standalone` - transaction is self-contained (separated from parent);
-  - `Start.AfterParent` - transaction is start after parent one as a self-contained transaction.
+  - `Start.InsideParentTransaction` - transaction is part of parent transaction (default);
+  - `Start.AsStandaloneTransaction` - transaction is self-contained (separated from parent);
+  - `Start.AfterParentTransaction` - transaction is start after parent one as a self-contained transaction.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
@@ -258,9 +258,9 @@ enum Reentrance {
 }
 
 enum Start {
-  InsideParent = 0,
-  Standalone = 1,
-  AfterParent = 2,
+  InsideParentTransaction = 0,
+  AsStandaloneTransaction = 1,
+  AfterParentTransaction = 2,
 }
 
 @stateful

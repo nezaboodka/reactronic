@@ -103,12 +103,12 @@ export class Transaction {
 
   undo(): void {
     const hint = Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
-    Transaction.runAs(hint, Start.InsideParent, undefined,
+    Transaction.runAs(hint, Start.InsideParentTransaction, undefined,
       Snapshot.undo, this.snapshot);
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
-    return Transaction.runAs(hint, Start.InsideParent, undefined, func, ...args);
+    return Transaction.runAs(hint, Start.InsideParentTransaction, undefined, func, ...args);
   }
 
   static runAs<T>(hint: string, execute: Start, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
@@ -135,7 +135,7 @@ export class Transaction {
   // Internal
 
   private static acquire(hint: string, execute: Start, trace: Partial<Trace> | undefined): Transaction {
-    const spawn = execute !== Start.InsideParent || Transaction._current.isFinished();
+    const spawn = execute !== Start.InsideParentTransaction || Transaction._current.isFinished();
     return spawn ? new Transaction(hint, trace) : Transaction._current;
   }
 
@@ -156,7 +156,7 @@ export class Transaction {
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
         await this.retryAfter.whenFinished(true);
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
-        return Transaction.runAs<T>(this.hint, Start.Standalone, this.trace, func, ...args);
+        return Transaction.runAs<T>(this.hint, Start.AsStandaloneTransaction, this.trace, func, ...args);
       }
       else
         throw error;
@@ -258,7 +258,7 @@ export class Transaction {
 
   private static refreshReactives(hint: string, timestamp: number, reaction: { tran?: Transaction, reactives: ICacheResult[] }, trace?: Partial<Trace>): void {
     const name = Dbg.trace.hints ? `${hint} - REACTION(${reaction.reactives.length})` : /* istanbul ignore next */ "noname";
-    const start = reaction.tran ? Start.InsideParent : Start.Standalone;
+    const start = reaction.tran ? Start.InsideParentTransaction : Start.AsStandaloneTransaction;
     reaction.tran = Transaction.runAs(name, start, trace,
       Transaction.doRefreshReactives, timestamp, reaction.reactives);
   }

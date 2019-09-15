@@ -33,7 +33,7 @@ export enum Reentrance {
 }
 
 export enum Start {
-  InsideParent = 0,
-  Standalone = 1,
-  AfterParent = 2,
+  InsideParentTransaction = 0,
+  AsStandaloneTransaction = 1,
+  AfterParentTransaction = 2,
 }

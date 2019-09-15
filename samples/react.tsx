@@ -55,7 +55,7 @@ function createRejsx(trace?: Partial<Trace>): Rejsx {
     ? trace === undefined || trace.hints !== false
     : trace !== undefined && trace.hints === true;
   const hint = dbg ? getComponentName() : "createRejsx";
-  return Transaction.runAs(hint, Start.InsideParent, trace,
+  return Transaction.runAs(hint, Start.InsideParentTransaction, trace,
     doCreateRejsx, hint, trace);
 }
 

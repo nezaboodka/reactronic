@@ -23,7 +23,7 @@ const DEFAULT: Config = {
   stateful: false,
   renew: Renew.Off,
   reentrance: Reentrance.WaitAndRestart,
-  start: Start.InsideParent,
+  start: Start.InsideParentTransaction,
   monitor: null,
   trace: undefined,
 };

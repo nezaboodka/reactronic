@@ -18,12 +18,12 @@ export class Monitor {
   get counter(): number { return this._counter; }
   get workers(): ReadonlySet<Worker> { return this._workers; }
 
-  constructor(prolonged: boolean = false, start: Start = Start.Standalone) {
+  constructor(prolonged: boolean = false, start: Start = Start.AsStandaloneTransaction) {
     this.prolonged = prolonged;
     this.start = start;
   }
 
-  static create(hint?: string, prolonged: boolean = false, execute: Start = Start.Standalone): Monitor {
+  static create(hint?: string, prolonged: boolean = false, execute: Start = Start.AsStandaloneTransaction): Monitor {
     return Transaction.run("Monitor.create", Monitor.doCreate, hint, prolonged, execute);
   }
 

@@ -37,7 +37,7 @@ export class Cache extends Status<any> {
     if (!call.valid) {
       const c: CacheResult = call.cache;
       const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "refresh";
-      const start = noprev ? c.config.start : Start.Standalone;
+      const start = noprev ? c.config.start : Start.AsStandaloneTransaction;
       let call2 = call;
       const ret = Transaction.runAs(hint, start, c.config.trace, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
@@ -144,7 +144,7 @@ export class Cache extends Status<any> {
     const c: CacheResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
-    return Transaction.runAs(hint, Start.InsideParent, undefined, (): Config => {
+    return Transaction.runAs(hint, Start.InsideParentTransaction, undefined, (): Config => {
       const call2 = this.write();
       const c2: CacheResult = call2.cache;
       c2.config = new ConfigRecord(c2.config.body, c2.config, config, false);
@@ -195,7 +195,7 @@ export class Cache extends Status<any> {
   }
 
   static unmount(...objects: any[]): Transaction {
-    return Transaction.runAs("unmount", Start.InsideParent, undefined,
+    return Transaction.runAs("unmount", Start.InsideParentTransaction, undefined,
       Cache.runUnmount, ...objects);
   }
 
