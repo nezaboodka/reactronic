@@ -184,8 +184,8 @@ invocation of the corresponding function:
 **Execution** option defines how transaction is executed if there is a parent transaction:
 
   - `Execution.InsideParent` - transaction is part of parent transaction (default);
-  - `Execution.Standalone` - transaction is self-contained;
-  - `Execution.AfterParent` - transaction is self-contained and starts after parent.
+  - `Execution.Standalone` - transaction is self-contained (separated from parent);
+  - `Execution.AfterParent` - transaction is executed after parent as a self-contained transaction.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
