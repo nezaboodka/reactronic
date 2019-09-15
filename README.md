@@ -181,7 +181,7 @@ invocation of the corresponding function:
   - `Reentrance.CancelPrevious` - cancel previous transaction in favor of current one;
   - `Reentrance.RunSideBySide` - multiple simultaneous transactions are allowed.
 
-**Start** option defines how transaction is executed if there is a parent transaction:
+**Start** option defines how transaction is related to a parent transaction (if any):
 
   - `Start.InsideParent` - transaction is part of parent transaction (default);
   - `Start.Standalone` - transaction is self-contained (separated from parent);
