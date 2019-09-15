@@ -70,5 +70,5 @@ export interface ICacheResult {
   wrap<T>(func: F<T>): F<T>;
   readonly isInvalid: boolean;
   invalidate(cause: Record, causeProp: PropertyKey, reactives: ICacheResult[]): void;
-  refresh(timestamp: number, now: boolean, nothrow: boolean): void;
+  renew(timestamp: number, now: boolean, nothrow: boolean): void;
 }

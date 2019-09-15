@@ -178,17 +178,20 @@ export class Transaction {
       }
       Transaction._current = outer;
     }
-    if (this.reaction.reactives.length > 0) {
-      try {
-        Transaction.refreshReactives(this.snapshot.hint,
-          this.snapshot.timestamp, this.reaction, this.trace);
-      }
-      finally {
-        if (!this.isFinished())
-          this.reaction.reactives = [];
-      }
-    }
+    if (this.reaction.reactives.length > 0)
+      this.triggerReactions();
     return result;
+  }
+
+  private triggerReactions(): void {
+    try {
+      Transaction.renewReactiveCaches(this.snapshot.hint,
+        this.snapshot.timestamp, this.reaction, this.trace);
+    }
+    finally {
+      if (!this.isFinished())
+        this.reaction.reactives = [];
+    }
   }
 
   private static tranfree<T>(func: F<T>, ...args: any[]): T {
@@ -239,15 +242,15 @@ export class Transaction {
         this.resultResolve();
   }
 
-  private static refreshReactives(hint: string, timestamp: number, reaction: { tran?: Transaction, reactives: ICacheResult[] }, trace?: Partial<Trace>): void {
+  private static renewReactiveCaches(hint: string, timestamp: number, reaction: { tran?: Transaction, reactives: ICacheResult[] }, trace?: Partial<Trace>): void {
     const name = Dbg.isOn && Dbg.trace.hints ? `${hint} - REACTION(${reaction.reactives.length})` : /* istanbul ignore next */ "noname";
     const start = reaction.tran ? Start.InsideParentTransaction : Start.AsStandaloneTransaction;
     reaction.tran = Transaction.runAs(name, start, trace,
-      Transaction.doRefreshReactives, timestamp, reaction.reactives);
+      Transaction.doRenewReactiveCaches, timestamp, reaction.reactives);
   }
 
-  private static doRefreshReactives(timestamp: number, reactives: ICacheResult[]): Transaction {
-    reactives.map(r => r.refresh(timestamp, false, false));
+  private static doRenewReactiveCaches(timestamp: number, reactives: ICacheResult[]): Transaction {
+    reactives.map(x => x.renew(timestamp, false, false));
     return Transaction.current;
   }
 

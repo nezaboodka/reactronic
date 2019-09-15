@@ -36,7 +36,7 @@ export class Cache extends Status<any> {
     let call: CachedCall = this.read(false, args);
     if (!call.valid) {
       const c: CacheResult = call.cache;
-      const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "refresh";
+      const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "renew";
       const start = noprev ? c.config.start : Start.AsStandaloneTransaction;
       let call2 = call;
       const ret = Transaction.runAs(hint, start, c.config.trace, (argsx: any[] | undefined): any => {
@@ -44,10 +44,10 @@ export class Cache extends Status<any> {
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
           if (!call2.valid)
-            call2 = this.refresh(call2.cache, argsx);
+            call2 = this.renew(call2.cache, argsx);
         }
         else
-          call2 = this.refresh(call2.cache, argsx);
+          call2 = this.renew(call2.cache, argsx);
         return call2.cache.ret;
       }, args);
       call2.cache.ret = ret;
@@ -88,7 +88,7 @@ export class Cache extends Status<any> {
     return { cache: c, record: r, valid: true };
   }
 
-  private refresh(prev: CacheResult, args: any[] | undefined): CachedCall {
+  private renew(prev: CacheResult, args: any[] | undefined): CachedCall {
     const error = this.reenter(prev);
     const call: CachedCall = this.write();
     const c: CacheResult = call.cache;
@@ -118,7 +118,7 @@ export class Cache extends Status<any> {
 
   private reenter(c: CacheResult): Error | undefined {
     let error: Error | undefined = undefined;
-    const prev = c.invalid.refreshing;
+    const prev = c.invalid.renewing;
     const caller = Transaction.current;
     if (prev)
       switch (c.config.reentrance) {
@@ -131,7 +131,7 @@ export class Cache extends Status<any> {
           break;
         case Reentrance.CancelPrevious:
           prev.tran.cancel(new Error(`transaction t${prev.tran.id} (${prev.tran.hint}) is canceled by t${caller.id} (${caller.hint}) and will be silently ignored`), null);
-          c.invalid.refreshing = undefined;
+          c.invalid.renewing = undefined;
           break;
         case Reentrance.RunSideBySide:
           break; // do nothing
@@ -203,7 +203,7 @@ export class Cache extends Status<any> {
 // CacheResult
 
 class CacheResult implements ICacheResult {
-  static asyncRefreshQueue: CacheResult[] = [];
+  static asyncRenewQueue: CacheResult[] = [];
   static active?: CacheResult = undefined;
   readonly margin: number;
   readonly tran: Transaction;
@@ -215,7 +215,7 @@ class CacheResult implements ICacheResult {
   result: any;
   error: any;
   started: number;
-  readonly invalid: { since: number, refreshing: CacheResult | undefined };
+  readonly invalid: { since: number, renewing: CacheResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
 
   constructor(record: Record, member: PropertyKey, init: CacheResult | ConfigRecord) {
@@ -236,7 +236,7 @@ class CacheResult implements ICacheResult {
     // this.ret = undefined;
     // this.error = undefined;
     this.started = 0;
-    this.invalid = { since: 0, refreshing: undefined };
+    this.invalid = { since: 0, renewing: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
   }
 
@@ -252,10 +252,10 @@ class CacheResult implements ICacheResult {
     return caching;
   }
 
-  refresh(timestamp: number, now: boolean, nothrow: boolean): void {
+  renew(timestamp: number, now: boolean, nothrow: boolean): void {
     if (now || this.config.renew === Renew.Immediately) {
       if (!this.error && (this.config.renew === Renew.Off ||
-          (timestamp >= this.invalid.since && !this.invalid.refreshing))) {
+          (timestamp >= this.invalid.since && !this.invalid.renewing))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
@@ -271,22 +271,22 @@ class CacheResult implements ICacheResult {
       }
     }
     else if (this.config.renew === Renew.ImmediatelyAsync)
-      CacheResult.enqueueAsyncRefresh(this);
+      CacheResult.enqueueAsyncRenew(this);
     else
-      setTimeout(() => this.refresh(UNDEFINED_TIMESTAMP, true, true), 0);
+      setTimeout(() => this.renew(UNDEFINED_TIMESTAMP, true, true), 0);
   }
 
-  static enqueueAsyncRefresh(c: CacheResult): void {
-    CacheResult.asyncRefreshQueue.push(c);
-    if (CacheResult.asyncRefreshQueue.length === 1)
-      setTimeout(CacheResult.processAsyncRefreshQueue, 0);
+  static enqueueAsyncRenew(c: CacheResult): void {
+    CacheResult.asyncRenewQueue.push(c);
+    if (CacheResult.asyncRenewQueue.length === 1)
+      setTimeout(CacheResult.processAsyncRenewQueue, 0);
   }
 
-  static processAsyncRefreshQueue(): void {
-    const batch = CacheResult.asyncRefreshQueue;
-    CacheResult.asyncRefreshQueue = []; // reset
+  static processAsyncRenewQueue(): void {
+    const batch = CacheResult.asyncRenewQueue;
+    CacheResult.asyncRenewQueue = []; // reset
     for (const x of batch)
-      x.refresh(UNDEFINED_TIMESTAMP, true, true);
+      x.renew(UNDEFINED_TIMESTAMP, true, true);
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
@@ -402,8 +402,8 @@ class CacheResult implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
-    if (!prev.invalid.refreshing)
-      prev.invalid.refreshing = this;
+    if (!prev.invalid.renewing)
+      prev.invalid.renewing = this;
   }
 
   tryLeave(r: Record, prev: CacheResult, mon: Monitor | null): void {
@@ -428,8 +428,8 @@ class CacheResult implements ICacheResult {
   }
 
   private leave(r: Record, prev: CacheResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
-    if (prev.invalid.refreshing === this)
-      prev.invalid.refreshing = undefined;
+    if (prev.invalid.renewing === this)
+      prev.invalid.renewing = undefined;
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
@@ -504,7 +504,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`;
   else if (value instanceof CacheResult)
-    result = `<refresh:${Hint.record(value.record.prev.record, false, true)}>`;
+    result = `<renew:${Hint.record(value.record.prev.record, false, true)}>`;
   else if (value === RT_UNMOUNT)
     result = "<unmount>";
   else if (value !== undefined && value !== null)
