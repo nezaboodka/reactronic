@@ -5,7 +5,7 @@
 import { Trace } from './Trace';
 import { F } from '../internal/Record';
 import { Hooks } from '../internal/Hooks';
-import { Config, Renew, Renewal, Reentrance, Execution } from './Config';
+import { Config, Renew, RenewMs, Reentrance, Start } from './Config';
 import { Monitor } from './Monitor';
 
 export function stateful(proto: object, prop?: PropertyKey): any {
@@ -33,8 +33,8 @@ export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescri
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
-export function behavior(renew?: Renewal, reentrance?: Reentrance, execution?: Execution): F<any> {
-  return config({renew, reentrance, execution});
+export function behavior(renew?: RenewMs, reentrance?: Reentrance, start?: Start): F<any> {
+  return config({renew, reentrance, start});
 }
 
 export function monitor(value: Monitor | null): F<any> {

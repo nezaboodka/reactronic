@@ -181,11 +181,11 @@ invocation of the corresponding function:
   - `Reentrance.CancelPrevious` - cancel previous transaction in favor of current one;
   - `Reentrance.RunSideBySide` - multiple simultaneous transactions are allowed.
 
-**Execution** option defines how transaction is executed if there is a parent transaction:
+**Start** option defines how transaction is executed if there is a parent transaction:
 
-  - `Execution.InsideParent` - transaction is part of parent transaction (default);
-  - `Execution.Standalone` - transaction is self-contained (separated from parent);
-  - `Execution.AfterParent` - transaction is executed after parent as a self-contained transaction.
+  - `Start.InsideParent` - transaction is part of parent transaction (default);
+  - `Start.Standalone` - transaction is self-contained (separated from parent);
+  - `Start.AfterParent` - transaction is start after parent one as a self-contained transaction.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
@@ -235,7 +235,7 @@ interface Config {
   readonly stateful: boolean;
   readonly renew: Renewal;
   readonly reentrance: Reentrance;
-  readonly execution: Execution;
+  readonly start: Start;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
@@ -257,7 +257,7 @@ enum Reentrance {
   RunSideBySide = -2, // multiple simultaneous transactions are allowed
 }
 
-enum Execution {
+enum Start {
   InsideParent = 0,
   Standalone = 1,
   AfterParent = 2,
