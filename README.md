@@ -185,7 +185,7 @@ invocation of the corresponding function:
 
   - `Start.InsideParentTransaction` - transaction is part of parent transaction (default);
   - `Start.AsStandaloneTransaction` - transaction is self-contained (separated from parent);
-  - `Start.AfterParentTransaction` - transaction is start after parent one as a self-contained transaction.
+  - `Start.AfterParentTransaction` - transaction starts after parent one as a self-contained transaction.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
