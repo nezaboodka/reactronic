@@ -244,9 +244,9 @@ class CacheResult implements ICacheResult {
 
   wrap<T>(func: F<T>): F<T> {
     const caching: F<T> = (...args: any[]): T => {
-      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} ‾\\         `, 0, "        │");
+      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} /‾         `, 0, "        │");
       const result = Cache.run<T>(this, func, ...args);
-      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} _/         `, 0, "        │");
+      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} \\_         `, 0, "        │");
       return result;
     };
     return caching;
@@ -472,8 +472,8 @@ class CacheResult implements ICacheResult {
 
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
-    if (oldValue instanceof CacheResult)
-      result = oldValue.config.kind === Kind.Transaction;
+    if (oldValue instanceof CacheResult && newValue instanceof CacheResult)
+      result = oldValue.result === newValue.result;
     else
       result = oldValue === newValue;
     return result;

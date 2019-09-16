@@ -125,7 +125,7 @@ export class Snapshot implements ISnapshot {
           if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
-      // if (this.token === undefined)
+      // if (this.cache === undefined)
       //   this._timestamp = ++Snapshot.headTimestamp;
       this._timestamp = ++Snapshot.headTimestamp;
     }
