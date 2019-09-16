@@ -101,9 +101,7 @@ export class Snapshot implements ISnapshot {
 
   acquire(timestamp: number): void {
     if (!this._sealed && this._timestamp === MAX_TIMESTAMP) {
-      this._timestamp = this.cache === undefined
-        ? Snapshot.headTimestamp
-        : Math.min(timestamp, Snapshot.headTimestamp);
+      this._timestamp = this.cache === undefined ? Snapshot.headTimestamp : timestamp;
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this;
