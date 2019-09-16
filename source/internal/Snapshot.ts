@@ -82,7 +82,7 @@ export class Snapshot implements ISnapshot {
     if (this._sealed)
       throw new Error(`stateful property ${Hint.handle(h)}.${prop.toString()} can only be modified inside transaction`);
     if (this.token !== undefined && token !== this.token)
-      throw new Error(`cache must have no side effects (${Hint.handle(h)}.${prop.toString()})`);
+      throw new Error(`cache must have no side effects (an attempt to change ${Hint.handle(h)}.${prop.toString()})`);
     let r: Record = this.tryRead(h);
     if (r === Record.blank || r.data[prop] !== token) {
       if (r.snapshot !== this) {
