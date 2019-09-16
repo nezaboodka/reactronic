@@ -25,7 +25,7 @@ const expected: string[] = [
 ];
 
 test("async", async t => {
-  Status.setTrace(trace);
+  Status.setTrace(trace.noisy);
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   statusof(app.model.load).configure({reentrance: Reentrance.RunSideBySide});
   try {

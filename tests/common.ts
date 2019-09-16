@@ -52,21 +52,39 @@ export class Person {
   }
 }
 
-export const trace: Trace = {
-  silent: process.env.AVA_DEBUG === undefined,
-  hints: true,
-  transactions: true,
-  methods: true,
-  monitors: true,
-  reads: true,
-  writes: true,
-  changes: true,
-  subscriptions: true,
-  invalidations: true,
-  gc: true,
-  color: 37,
-  prefix: "",
-  margin: 0,
+export const trace: { friendly: Trace, noisy: Trace } = {
+  friendly: {
+    silent: process.env.AVA_DEBUG === undefined,
+    hints: true,
+    transactions: true,
+    methods: true,
+    monitors: true,
+    reads: false,
+    writes: false,
+    changes: false,
+    subscriptions: false,
+    invalidations: true,
+    gc: false,
+    color: 37,
+    prefix: "",
+    margin: 0,
+  },
+  noisy: {
+    silent: process.env.AVA_DEBUG === undefined,
+    hints: true,
+    transactions: true,
+    methods: true,
+    monitors: true,
+    reads: true,
+    writes: true,
+    changes: true,
+    subscriptions: true,
+    invalidations: true,
+    gc: true,
+    color: 37,
+    prefix: "",
+    margin: 0,
+  },
 };
 
 /* istanbul ignore next */

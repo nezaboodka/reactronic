@@ -122,7 +122,7 @@ export class Snapshot implements ISnapshot {
               conflicts = [];
             conflicts.push(r);
           }
-          if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
       // if (this.token === undefined)
