@@ -9,20 +9,30 @@ export class Transaction {
   static readonly none: Transaction = new Transaction("none");
   static _current: Transaction;
   static _inspection: boolean = false;
+
   private readonly snapshot: Snapshot; // assigned in constructor
-  private workers: number = 0;
-  private sealed: boolean = false;
-  private error?: Error = undefined;
-  private retryAfter?: Transaction = undefined;
-  private resultPromise?: Promise<void> = undefined;
-  private resultResolve: (value?: void) => void = undef;
-  private resultReject: (reason: any) => void = undef;
-  private conflicts?: Record[] = undefined;
-  private reaction: { tran?: Transaction } = { tran: undefined };
+  private workers: number;
+  private sealed: boolean;
+  private error?: Error;
+  private retryAfter?: Transaction;
+  private resultPromise?: Promise<void>;
+  private resultResolve: (value?: void) => void;
+  private resultReject: (reason: any) => void;
+  private conflicts?: Record[];
+  private readonly reaction: { tran?: Transaction };
   readonly trace?: Partial<Trace>; // assigned in constructor
 
   constructor(hint: string, trace?: Partial<Trace>, token?: any) {
     this.snapshot = new Snapshot(hint, token);
+    this.workers = 0;
+    this.sealed = false;
+    this.error = undefined;
+    this.retryAfter = undefined;
+    this.resultPromise = undefined;
+    this.resultResolve = undef;
+    this.resultReject = undef;
+    this.conflicts = undefined;
+    this.reaction = { tran: undefined };
     this.trace = trace;
   }
 
