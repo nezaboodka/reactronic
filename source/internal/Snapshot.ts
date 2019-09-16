@@ -20,7 +20,7 @@ export class Snapshot implements ISnapshot {
 
   readonly id: number;
   readonly hint: string;
-  readonly token: any;
+  readonly cache: any;
   get timestamp(): number { return this._timestamp; }
   get sealed(): boolean { return this._sealed; }
   readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
@@ -28,10 +28,10 @@ export class Snapshot implements ISnapshot {
   private _timestamp = MAX_TIMESTAMP;
   private _sealed = false;
 
-  constructor(hint: string, token: any) {
+  constructor(hint: string, cache: any) {
     this.id = ++Snapshot.lastUsedId;
     this.hint = hint;
-    this.token = token;
+    this.cache = cache;
   }
 
   /* istanbul ignore next */
@@ -81,7 +81,7 @@ export class Snapshot implements ISnapshot {
   tryWrite(h: Handle, prop: PropertyKey, token: any): Record {
     if (this._sealed)
       throw new Error(`stateful property ${Hint.handle(h)}.${prop.toString()} can only be modified inside transaction`);
-    if (this.token !== undefined && token !== this.token)
+    if (this.cache !== undefined && token !== this.cache)
       throw new Error(`cache must have no side effects (an attempt to change ${Hint.handle(h)}.${prop.toString()})`);
     let r: Record = this.tryRead(h);
     if (r === Record.blank || r.data[prop] !== token) {
@@ -101,7 +101,7 @@ export class Snapshot implements ISnapshot {
 
   acquire(timestamp: number): void {
     if (!this._sealed && this._timestamp === MAX_TIMESTAMP) {
-      this._timestamp = this.token === undefined
+      this._timestamp = this.cache === undefined
         ? Snapshot.headTimestamp
         : Math.min(timestamp, Snapshot.headTimestamp);
       Snapshot.pending.push(this);

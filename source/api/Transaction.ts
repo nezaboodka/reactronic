@@ -151,7 +151,7 @@ export class Transaction {
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
         await this.retryAfter.whenFinished(true);
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
-        return Transaction.runAs<T>(this.hint, Start.AsStandaloneTransaction, this.trace, this.snapshot.token, func, ...args);
+        return Transaction.runAs<T>(this.hint, Start.AsStandaloneTransaction, this.trace, this.snapshot.cache, func, ...args);
       }
       else
         throw error;
