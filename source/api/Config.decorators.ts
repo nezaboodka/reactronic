@@ -24,7 +24,7 @@ export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyD
 }
 
 export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { kind: Kind.Trigger, latency: 0 };
+  const config = { kind: Kind.Trigger, latency: -1 }; // immediate trigger
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 

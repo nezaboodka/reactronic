@@ -2,7 +2,7 @@
 // shall be included in all copies or substantial portions.
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { stateful, transaction, trigger, cached, behavior, Status, Monitor, monitor, all, sleep } from '../source/reactronic';
+import { stateful, transaction, trigger, cached, Status, Monitor, monitor, all, sleep, behavior } from '../source/reactronic';
 export { trace } from './common';
 
 export const output: string[] = [];
