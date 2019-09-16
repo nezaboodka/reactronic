@@ -96,18 +96,18 @@ export class Cache extends Status<any> {
     const c: CacheResult = call.cache;
     if (!error) {
       const mon: Monitor | null = prev.config.monitor;
-      c.enter(call.record, prev, mon);
-      try
-      {
-        args ? c.args = args : args = c.args;
-        c.ret = Cache.run<any>(c, (...argsx: any[]): any => {
-          return c.config.body.call(this.handle.proxy, ...argsx);
-        }, ...args);
-        c.invalid.since = UNDEFINED_TIMESTAMP;
-      }
-      finally {
-        c.tryLeave(call.record, prev, mon);
-      }
+      args ? c.args = args : args = c.args;
+      Cache.run(c, (...argsx: any[]): void => {
+        c.enter(call.record, prev, mon);
+        try
+        {
+          c.ret = c.config.body.call(this.handle.proxy, ...argsx);
+        }
+        finally {
+          c.tryLeave(call.record, prev, mon);
+        }
+      }, ...args);
+      c.invalid.since = UNDEFINED_TIMESTAMP;
     }
     else {
       c.ret = Promise.reject(error);
@@ -244,9 +244,9 @@ class CacheResult implements ICacheResult {
 
   wrap<T>(func: F<T>): F<T> {
     const caching: F<T> = (...args: any[]): T => {
-      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} /‾         `, 0, "        │");
+      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "‾\\", `${Hint.record(this.record, true)}.${this.member.toString()} - step in  `, 0, "        │");
       const result = Cache.run<T>(this, func, ...args);
-      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "◦◦", `${Hint.record(this.record, true)}.${this.member.toString()} \\_         `, 0, "        │");
+      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "_/", `${Hint.record(this.record, true)}.${this.member.toString()} - step out `, 0, this.started > 0 ? "        │" : "");
       return result;
     };
     return caching;
@@ -400,7 +400,7 @@ class CacheResult implements ICacheResult {
   }
 
   enter(r: Record, prev: CacheResult, mon: Monitor | null): void {
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "  ‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
     if (!prev.invalid.running)
@@ -412,15 +412,15 @@ class CacheResult implements ICacheResult {
       this.ret = this.ret.then(
         result => {
           this.result = result;
-          this.leave(r, prev, mon, "▒▒", "- finished ", "   OK ──┘");
+          this.leave(r, prev, mon, "▒▒", "- finished ", " OK ──┘");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, prev, mon, "▒▒", "- finished ", "ERROR ──┘");
+          this.leave(r, prev, mon, "▒▒", "- finished ", "ERR ──┘");
           throw error;
         });
-      if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "  _/", `${Hint.record(r, true)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
+      if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(r, true)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
     }
     else {
       this.result = this.ret;
