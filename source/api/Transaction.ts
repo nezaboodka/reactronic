@@ -156,7 +156,7 @@ export class Transaction {
     try {
       this.workers++;
       Transaction._current = this;
-      this.snapshot.acquire();
+      this.snapshot.acquire(outer.snapshot.timestamp);
       result = func(...args);
       if (this.sealed && this.workers === 1) {
         if (!this.error)
@@ -185,10 +185,8 @@ export class Transaction {
 
   private executeTriggers(): void {
     const name = Dbg.isOn && Dbg.trace.hints ? `${this.snapshot.hint} - REACTION(${this.snapshot.triggers.length})` : /* istanbul ignore next */ "noname";
-    const start = this.reaction.tran ? Start.InsideParentTransaction : Start.AsStandaloneTransaction;
-    this.reaction.tran = Transaction.runAs(name, start, this.trace,
-      Transaction.doExecuteTriggers, this.snapshot.timestamp,
-      this.snapshot.triggers);
+    this.reaction.tran = Transaction.runAs(name, Start.AsStandaloneTransaction, this.trace,
+      Transaction.doExecuteTriggers, this.snapshot.timestamp, this.snapshot.triggers);
   }
 
   private static doExecuteTriggers(timestamp: number, triggers: ICacheResult[]): Transaction {
