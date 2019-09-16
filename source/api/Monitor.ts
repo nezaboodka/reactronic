@@ -23,8 +23,8 @@ export class Monitor {
     this.start = start;
   }
 
-  static create(hint?: string, prolonged: boolean = false, execute: Start = Start.AsStandaloneTransaction): Monitor {
-    return Transaction.run("Monitor.create", Monitor.doCreate, hint, prolonged, execute);
+  static create(hint?: string, prolonged: boolean = false, start: Start = Start.AsStandaloneTransaction): Monitor {
+    return Transaction.run("Monitor.create", Monitor.doCreate, hint, prolonged, start);
   }
 
   static enter(m: Monitor, worker: Worker): void {

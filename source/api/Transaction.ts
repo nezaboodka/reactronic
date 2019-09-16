@@ -102,8 +102,8 @@ export class Transaction {
     return Transaction.runAs(hint, Start.InsideParentTransaction, undefined, func, ...args);
   }
 
-  static runAs<T>(hint: string, execute: Start, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
-    const t: Transaction = Transaction.acquire(hint, execute, trace);
+  static runAs<T>(hint: string, start: Start, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
+    const t: Transaction = Transaction.acquire(hint, start, trace);
     const root = t !== Transaction._current;
     t.guard();
     let result: any = t.do<T>(trace, func, ...args);
@@ -119,8 +119,8 @@ export class Transaction {
 
   // Internal
 
-  private static acquire(hint: string, execute: Start, trace: Partial<Trace> | undefined): Transaction {
-    const spawn = execute !== Start.InsideParentTransaction || Transaction._current.isFinished();
+  private static acquire(hint: string, start: Start, trace: Partial<Trace> | undefined): Transaction {
+    const spawn = start !== Start.InsideParentTransaction || Transaction._current.isFinished();
     return spawn ? new Transaction(hint, trace) : Transaction._current;
   }
 
@@ -176,20 +176,20 @@ export class Transaction {
         !this.error ? this.performCommit() : this.performCancel();
         Object.freeze(this);
       }
+      if (this.snapshot.triggers.length > 0)
+        this.rerunTriggers();
       Transaction._current = outer;
     }
-    if (this.snapshot.triggers.length > 0)
-      this.executeTriggers();
     return result;
   }
 
-  private executeTriggers(): void {
+  private rerunTriggers(): void {
     const name = Dbg.isOn && Dbg.trace.hints ? `${this.snapshot.hint} - REACTION(${this.snapshot.triggers.length})` : /* istanbul ignore next */ "noname";
     this.reaction.tran = Transaction.runAs(name, Start.AsStandaloneTransaction, this.trace,
-      Transaction.doExecuteTriggers, this.snapshot.timestamp, this.snapshot.triggers);
+      Transaction.doRerunTriggers, this.snapshot.timestamp, this.snapshot.triggers);
   }
 
-  private static doExecuteTriggers(timestamp: number, triggers: ICacheResult[]): Transaction {
+  private static doRerunTriggers(timestamp: number, triggers: ICacheResult[]): Transaction {
     triggers.map(x => x.rerun(timestamp, false, false));
     return Transaction.current;
   }

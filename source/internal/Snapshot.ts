@@ -20,6 +20,7 @@ export class Snapshot implements ISnapshot {
 
   readonly id: number = 0;
   readonly hint: string = "";
+  readonly only: ICacheResult | undefined;
   get timestamp(): number { return this._timestamp; }
   get sealed(): boolean { return this._sealed; }
   readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
@@ -27,9 +28,10 @@ export class Snapshot implements ISnapshot {
   private _timestamp = MAX_TIMESTAMP;
   private _sealed = false;
 
-  constructor(hint: string) {
+  constructor(hint: string, only?: ICacheResult) {
     this.id = ++Snapshot.lastUsedId;
     this.hint = hint;
+    this.only = only;
   }
 
   /* istanbul ignore next */
@@ -97,8 +99,9 @@ export class Snapshot implements ISnapshot {
 
   acquire(timestamp: number): void {
     if (!this._sealed && this._timestamp === MAX_TIMESTAMP) {
-      this._timestamp = Snapshot.headTimestamp;
-      // this._timestamp = Math.min(timestamp, Snapshot.headTimestamp);
+      this._timestamp = this.only
+        ? Math.min(timestamp, Snapshot.headTimestamp)
+        : Snapshot.headTimestamp;
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this;
