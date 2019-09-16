@@ -5,36 +5,36 @@
 import { Trace } from './Trace';
 import { F } from '../internal/Record';
 import { Hooks } from '../internal/Hooks';
-import { Config, Rerun, RerunMs, Reentrance, Start } from './Config';
+import { Config, Reentrance, Start, Kind } from './Config';
 import { Monitor } from './Monitor';
 
 export function stateful(proto: object, prop?: PropertyKey): any {
-  const config = { stateful: true };
+  const config = { kind: Kind.Stateful };
   return prop ? Hooks.decorateField(true, config, proto, prop) : Hooks.decorateClass(true, config, proto);
 }
 
 export function stateless(proto: object, prop: PropertyKey): any {
-  const config = { stateful: false };
+  const config = { kind: Kind.Stateless };
   return Hooks.decorateField(true, config, proto, prop);
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, rerun: Rerun.Off };
+  const config = { kind: Kind.Transaction };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
 export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, rerun: Rerun.ImmediatelyAsync };
+  const config = { kind: Kind.Trigger, latency: 0 };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
 export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { stateful: true, rerun: Rerun.OnDemand };
+  const config = { kind: Kind.Cached };
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
-export function behavior(rerun?: RerunMs, reentrance?: Reentrance, start?: Start): F<any> {
-  return config({rerun, reentrance, start});
+export function behavior(latency?: number, reentrance?: Reentrance, start?: Start): F<any> {
+  return config({latency, reentrance, start});
 }
 
 export function monitor(value: Monitor | null): F<any> {

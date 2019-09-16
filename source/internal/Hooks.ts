@@ -9,7 +9,7 @@ import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
 import { Record, F, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
-import { Config, RerunMs, Rerun, Reentrance, Start } from '../api/Config';
+import { Config, Kind, Reentrance, Start } from '../api/Config';
 import { Monitor } from '../api/Monitor';
 import { Trace } from '../api/Trace';
 
@@ -20,8 +20,8 @@ export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
 
 const BLANK_CONFIG_TABLE = {};
 const DEFAULT: Config = {
-  stateful: false,
-  rerun: Rerun.Off,
+  kind: Kind.Stateless,
+  latency: -2, // never
   reentrance: Reentrance.WaitAndRestart,
   start: Start.InsideParentTransaction,
   monitor: null,
@@ -30,8 +30,8 @@ const DEFAULT: Config = {
 
 export class ConfigRecord implements Config {
   readonly body: Function;
-  readonly stateful: boolean;
-  readonly rerun: RerunMs;
+  readonly kind: Kind;
+  readonly latency: number;
   readonly reentrance: Reentrance;
   readonly start: Start;
   readonly monitor: Monitor | null;
@@ -40,8 +40,8 @@ export class ConfigRecord implements Config {
 
   constructor(body: Function | undefined, existing: ConfigRecord, patch: Partial<ConfigRecord>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body;
-    this.stateful = merge(DEFAULT.stateful, existing.stateful, patch.stateful, implicit);
-    this.rerun = merge(DEFAULT.rerun, existing.rerun, patch.rerun, implicit);
+    this.kind = merge(DEFAULT.kind, existing.kind, patch.kind, implicit);
+    this.latency = merge(DEFAULT.latency, existing.latency, patch.latency, implicit);
     this.reentrance = merge(DEFAULT.reentrance, existing.reentrance, patch.reentrance, implicit);
     this.start = merge(DEFAULT.start, existing.start, patch.start, implicit);
     this.monitor = merge(DEFAULT.monitor, existing.monitor, patch.monitor, implicit);
@@ -66,7 +66,7 @@ export class Hooks implements ProxyHandler<Handle> {
   get(h: Handle, prop: PropertyKey, receiver: any): any {
     let value: any;
     const config: ConfigRecord | undefined = Hooks.getConfig(h.stateless, prop);
-    if (!config || (config.body === decoratedfield && config.stateful)) { // versioned state
+    if (!config || (config.body === decoratedfield && config.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.readable().read(h);
       value = r.data[prop];
       if (value === undefined && !r.data.hasOwnProperty(prop))
@@ -81,7 +81,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
     const config: ConfigRecord | undefined = Hooks.getConfig(h.stateless, prop);
-    if (!config || (config.body === decoratedfield && config.stateful)) { // versioned state
+    if (!config || (config.body === decoratedfield && config.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.writable().tryWrite(h, prop, value);
       if (r !== Record.blank) { // blank when r.data[prop] === value, thus creation of changing record was skipped
         r.data[prop] = value;
@@ -116,7 +116,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static decorateClass(implicit: boolean, config: Partial<Config>, origCtor: any): any {
     let ctor: any = origCtor;
-    const stateful = config.stateful || false;
+    const stateful = config.kind !== undefined && config.kind !== Kind.Stateless;
     if (stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args);
@@ -132,7 +132,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static decorateField(implicit: boolean, config: Partial<Config>, target: any, prop: PropertyKey): any {
     config = Hooks.applyConfig(target, prop, decoratedfield, config, implicit);
-    if (config.stateful) {
+    if (config.kind !== Kind.Stateless) {
       const get = function(this: any): any {
         const h: Handle = Hooks.acquireHandle(this);
         return Hooks.proxy.get(h, prop, this);
@@ -153,7 +153,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const methodConfig = Hooks.applyConfig(type, method, pd.value, config, implicit);
     const get = function(this: any): any {
       const classConfig: ConfigRecord = Hooks.getConfig(Object.getPrototypeOf(this), RT_CLASS) || ConfigRecord.default;
-      const h: Handle = classConfig.stateful ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
+      const h: Handle = classConfig.kind !== Kind.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
       const value = Hooks.createCacheTrap(h, method, methodConfig);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
       return value;
@@ -192,7 +192,7 @@ export class Hooks implements ProxyHandler<Handle> {
     if (!h) {
       h = new Handle(obj, obj, Hooks.proxy);
       Utils.set(obj, RT_HANDLE, h);
-      Hooks.decorateField(false, {stateful: true}, obj, RT_UNMOUNT);
+      Hooks.decorateField(false, {kind: Kind.Stateful}, obj, RT_UNMOUNT);
     }
     return h;
   }

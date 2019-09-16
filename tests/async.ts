@@ -2,7 +2,7 @@
 // shall be included in all copies or substantial portions.
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { stateful, transaction, trigger, cached, behavior, Rerun, Status, Monitor, monitor, all, sleep } from '../source/reactronic';
+import { stateful, transaction, trigger, cached, behavior, Status, Monitor, monitor, all, sleep } from '../source/reactronic';
 export { trace } from './common';
 
 export const output: string[] = [];
@@ -25,7 +25,7 @@ export class DemoView {
   @stateful test: any;
   constructor(readonly model: DemoModel) { }
 
-  @trigger @behavior(Rerun.Immediately)
+  @trigger @behavior(-1)
   async print(): Promise<void> {
     const lines: string[] = await this.render();
     for (const x of lines) {

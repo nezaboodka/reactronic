@@ -5,7 +5,7 @@
 import { Dbg, Utils, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';
 export { Status, resultof, statusof } from '../api/Status';
-import { Config, Rerun, RerunMs, Reentrance, Start, Trace } from '../api/Config';
+import { Config, Kind, Reentrance, Start, Trace } from '../api/Config';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
@@ -36,18 +36,19 @@ export class Cache extends Status<any> {
     let call: CachedCall = this.read(false, args);
     if (!call.valid) {
       const c: CacheResult = call.cache;
-      const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "rerun";
+      const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
       const start = noprev ? c.config.start : Start.AsStandaloneTransaction;
+      const token = this.config.kind === Kind.Cached ? this : undefined;
       let call2 = call;
-      const ret = Transaction.runAs(hint, start, c.config.trace, (argsx: any[] | undefined): any => {
+      const ret = Transaction.runAs(hint, start, c.config.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
           if (!call2.valid)
-            call2 = this.rerun(call2.cache, argsx);
+            call2 = this.run(call2.cache, argsx);
         }
         else
-          call2 = this.rerun(call2.cache, argsx);
+          call2 = this.run(call2.cache, argsx);
         return call2.cache.ret;
       }, args);
       call2.cache.ret = ret;
@@ -65,7 +66,7 @@ export class Cache extends Status<any> {
     const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[member] || this.blank;
-    const valid = c.config.rerun !== Rerun.Off &&
+    const valid = c.config.kind !== Kind.Transaction &&
       ctx.timestamp < c.invalid.since &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
@@ -77,7 +78,7 @@ export class Cache extends Status<any> {
   private write(): CachedCall {
     const ctx = Snapshot.writable();
     const member = this.blank.member;
-    const r: Record = ctx.write(this.handle, member, RT_CACHE);
+    const r: Record = ctx.write(this.handle, member, this);
     let c: CacheResult = r.data[member] || this.blank;
     if (c.record !== r) {
       const c2 = new CacheResult(r, c.member, c);
@@ -88,7 +89,7 @@ export class Cache extends Status<any> {
     return { cache: c, record: r, valid: true };
   }
 
-  private rerun(prev: CacheResult, args: any[] | undefined): CachedCall {
+  private run(prev: CacheResult, args: any[] | undefined): CachedCall {
     const error = this.reenter(prev);
     const call: CachedCall = this.write();
     const c: CacheResult = call.cache;
@@ -142,7 +143,7 @@ export class Cache extends Status<any> {
     const c: CacheResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
-    return Transaction.runAs(hint, Start.InsideParentTransaction, undefined, (): Config => {
+    return Transaction.runAs(hint, Start.InsideParentTransaction, undefined, undefined, (): Config => {
       const call2 = this.write();
       const c2: CacheResult = call2.cache;
       c2.config = new ConfigRecord(c2.config.body, c2.config, config, false);
@@ -185,8 +186,8 @@ export class Cache extends Status<any> {
   }
 
   static unmount(...objects: any[]): Transaction {
-    return Transaction.runAs("unmount", Start.InsideParentTransaction, undefined,
-      Cache.runUnmount, ...objects);
+    return Transaction.runAs("unmount", Start.InsideParentTransaction,
+      undefined, undefined, Cache.runUnmount, ...objects);
   }
 
   private static runUnmount(...objects: any[]): Transaction {
@@ -201,7 +202,7 @@ export class Cache extends Status<any> {
 // CacheResult
 
 class CacheResult implements ICacheResult {
-  static asyncRerunQueue: CacheResult[] = [];
+  static asyncTriggerQueue: CacheResult[] = [];
   static active?: CacheResult = undefined;
   readonly margin: number;
   readonly tran: Transaction;
@@ -250,9 +251,9 @@ class CacheResult implements ICacheResult {
     return caching;
   }
 
-  rerun(timestamp: number, now: boolean, nothrow: boolean): void {
-    if (now || this.config.rerun === Rerun.Immediately) {
-      if (!this.error && (this.config.rerun === Rerun.Off ||
+  trig(timestamp: number, now: boolean, nothrow: boolean): void {
+    if (now || this.config.latency === -1) {
+      if (!this.error && (this.config.kind === Kind.Transaction ||
           (timestamp >= this.invalid.since && !this.invalid.running))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
@@ -268,28 +269,28 @@ class CacheResult implements ICacheResult {
         }
       }
     }
-    else if (this.config.rerun === Rerun.ImmediatelyAsync)
-      CacheResult.enqueueAsyncRerun(this);
+    else if (this.config.latency === 0)
+      CacheResult.enqueueAsyncTrigger(this);
     else
-      setTimeout(() => this.rerun(UNDEFINED_TIMESTAMP, true, true), 0);
+      setTimeout(() => this.trig(UNDEFINED_TIMESTAMP, true, true), 0);
   }
 
-  static enqueueAsyncRerun(c: CacheResult): void {
-    CacheResult.asyncRerunQueue.push(c);
-    if (CacheResult.asyncRerunQueue.length === 1)
-      setTimeout(CacheResult.processAsyncRerunQueue, 0);
+  static enqueueAsyncTrigger(c: CacheResult): void {
+    CacheResult.asyncTriggerQueue.push(c);
+    if (CacheResult.asyncTriggerQueue.length === 1)
+      setTimeout(CacheResult.processAsyncTriggerQueue, 0);
   }
 
-  static processAsyncRerunQueue(): void {
-    const batch = CacheResult.asyncRerunQueue;
-    CacheResult.asyncRerunQueue = []; // reset
+  static processAsyncTriggerQueue(): void {
+    const batch = CacheResult.asyncTriggerQueue;
+    CacheResult.asyncTriggerQueue = []; // reset
     for (const x of batch)
-      x.rerun(UNDEFINED_TIMESTAMP, true, true);
+      x.trig(UNDEFINED_TIMESTAMP, true, true);
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
-    if (c && c.config.rerun >= Rerun.Manually && prop !== RT_HANDLE) {
+    if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       CacheResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
       if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
@@ -356,7 +357,7 @@ class CacheResult implements ICacheResult {
     if (this.invalid.since === UNDEFINED_TIMESTAMP) {
       this.invalid.since = stamp;
       // Check if cache requires re-run
-      const isTrigger = this.config.rerun >= Rerun.Immediately && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      const isTrigger = this.config.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (isTrigger)
         triggers.push(this);
       if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isTrigger ? " and will run automatically" : ""}`);
@@ -386,7 +387,7 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  static enforceInvalidation(c: CacheResult, cause: string, rerun: RerunMs): boolean {
+  static enforceInvalidation(c: CacheResult, cause: string, latency: number): boolean {
     throw new Error("not implemented - Cache.enforceInvalidation");
     // let triggers: Cache[] = [];
     // c.invalidate(cause, false, false, triggers);
@@ -440,7 +441,7 @@ class CacheResult implements ICacheResult {
   monitorEnter(mon: Monitor | null): void {
     if (mon)
       Cache.run(undefined, Transaction.runAs, "Monitor.enter",
-        mon.start, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global,
+        mon.start, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
         Monitor.enter, mon, this);
   }
 
@@ -452,7 +453,7 @@ class CacheResult implements ICacheResult {
           Transaction._current = Transaction.none; // Workaround?
           const leave = () => {
             Cache.run(undefined, Transaction.runAs, "Monitor.leave",
-              mon.start, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global,
+              mon.start, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
               Monitor.leave, mon, this);
           };
           this.tran.whenFinished(false).then(leave, leave);
@@ -463,7 +464,7 @@ class CacheResult implements ICacheResult {
       }
       else
         Cache.run(undefined, Transaction.runAs, "Monitor.leave",
-          mon.start, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global,
+          mon.start, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           Monitor.leave, mon, this);
     }
   }
@@ -471,7 +472,7 @@ class CacheResult implements ICacheResult {
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CacheResult)
-      result = oldValue.config.rerun === Rerun.Off;
+      result = oldValue.config.kind === Kind.Transaction;
     else
       result = oldValue === newValue;
     return result;
@@ -503,7 +504,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`;
   else if (value instanceof CacheResult)
-    result = `<rerun:${Hint.record(value.record.prev.record, false, true)}>`;
+    result = `<refresh:${Hint.record(value.record.prev.record, false, true)}>`;
   else if (value === RT_UNMOUNT)
     result = "<unmount>";
   else if (value !== undefined && value !== null)

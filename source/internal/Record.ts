@@ -70,5 +70,5 @@ export interface ICacheResult {
   wrap<T>(func: F<T>): F<T>;
   readonly isInvalid: boolean;
   invalidate(cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): void;
-  rerun(timestamp: number, now: boolean, nothrow: boolean): void;
+  trig(timestamp: number, now: boolean, nothrow: boolean): void;
 }

@@ -21,8 +21,8 @@ export class Transaction {
   private reaction: { tran?: Transaction } = { tran: undefined };
   readonly trace?: Partial<Trace>; // assigned in constructor
 
-  constructor(hint: string, trace?: Partial<Trace>) {
-    this.snapshot = new Snapshot(hint);
+  constructor(hint: string, trace?: Partial<Trace>, token?: any) {
+    this.snapshot = new Snapshot(hint, token);
     this.trace = trace;
   }
 
@@ -94,16 +94,16 @@ export class Transaction {
 
   undo(): void {
     const hint = Dbg.isOn && Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
-    Transaction.runAs(hint, Start.InsideParentTransaction, undefined,
+    Transaction.runAs(hint, Start.InsideParentTransaction, undefined, undefined,
       Snapshot.undo, this.snapshot);
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
-    return Transaction.runAs(hint, Start.InsideParentTransaction, undefined, func, ...args);
+    return Transaction.runAs(hint, Start.InsideParentTransaction, undefined, undefined, func, ...args);
   }
 
-  static runAs<T>(hint: string, start: Start, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
-    const t: Transaction = Transaction.acquire(hint, start, trace);
+  static runAs<T>(hint: string, start: Start, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
+    const t: Transaction = Transaction.acquire(hint, start, trace, token);
     const root = t !== Transaction._current;
     t.guard();
     let result: any = t.do<T>(trace, func, ...args);
@@ -119,9 +119,9 @@ export class Transaction {
 
   // Internal
 
-  private static acquire(hint: string, start: Start, trace: Partial<Trace> | undefined): Transaction {
+  private static acquire(hint: string, start: Start, trace: Partial<Trace> | undefined, token: any): Transaction {
     const spawn = start !== Start.InsideParentTransaction || Transaction._current.isFinished();
-    return spawn ? new Transaction(hint, trace) : Transaction._current;
+    return spawn ? new Transaction(hint, trace, token) : Transaction._current;
   }
 
   private guard(): void {
@@ -141,7 +141,7 @@ export class Transaction {
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
         await this.retryAfter.whenFinished(true);
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
-        return Transaction.runAs<T>(this.hint, Start.AsStandaloneTransaction, this.trace, func, ...args);
+        return Transaction.runAs<T>(this.hint, Start.AsStandaloneTransaction, this.trace, this.snapshot.token, func, ...args);
       }
       else
         throw error;
@@ -177,20 +177,20 @@ export class Transaction {
         Object.freeze(this);
       }
       if (this.snapshot.triggers.length > 0)
-        this.rerunTriggers();
+        this.runTriggers();
       Transaction._current = outer;
     }
     return result;
   }
 
-  private rerunTriggers(): void {
+  private runTriggers(): void {
     const name = Dbg.isOn && Dbg.trace.hints ? `${this.snapshot.hint} - REACTION(${this.snapshot.triggers.length})` : /* istanbul ignore next */ "noname";
-    this.reaction.tran = Transaction.runAs(name, Start.AsStandaloneTransaction, this.trace,
-      Transaction.doRerunTriggers, this.snapshot.timestamp, this.snapshot.triggers);
+    this.reaction.tran = Transaction.runAs(name, Start.AsStandaloneTransaction, this.trace, undefined,
+      Transaction.doRunTriggers, this.snapshot.timestamp, this.snapshot.triggers);
   }
 
-  private static doRerunTriggers(timestamp: number, triggers: ICacheResult[]): Transaction {
-    triggers.map(x => x.rerun(timestamp, false, false));
+  private static doRunTriggers(timestamp: number, triggers: ICacheResult[]): Transaction {
+    triggers.map(x => x.trig(timestamp, false, false));
     return Transaction.current;
   }
 

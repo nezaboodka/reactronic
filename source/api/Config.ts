@@ -7,22 +7,20 @@ export { Trace } from './Trace';
 import { Monitor } from './Monitor';
 
 export interface Config {
-  readonly stateful: boolean;
-  readonly rerun: RerunMs;
+  readonly kind: Kind;
+  readonly latency: number; // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance;
   readonly start: Start;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
 
-export type RerunMs = Rerun | number; // milliseconds
-
-export enum Rerun {
-  ImmediatelyAsync = 0, // @trigger
-  Immediately = -1,
-  OnDemand = -3, // @cached
-  Manually = -4,
-  Off = -5, // @transaction
+export enum Kind {
+  Stateless = 0,
+  Stateful = 1,
+  Transaction = 2,
+  Trigger = 3,
+  Cached = 4,
 }
 
 export enum Reentrance {

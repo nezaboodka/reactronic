@@ -20,7 +20,7 @@ export class Snapshot implements ISnapshot {
 
   readonly id: number;
   readonly hint: string;
-  readonly cache: ICacheResult | undefined;
+  readonly token: any;
   get timestamp(): number { return this._timestamp; }
   get sealed(): boolean { return this._sealed; }
   readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
@@ -28,10 +28,10 @@ export class Snapshot implements ISnapshot {
   private _timestamp = MAX_TIMESTAMP;
   private _sealed = false;
 
-  constructor(hint: string, cache?: ICacheResult) {
+  constructor(hint: string, token: any) {
     this.id = ++Snapshot.lastUsedId;
     this.hint = hint;
-    this.cache = cache;
+    this.token = token;
   }
 
   /* istanbul ignore next */
@@ -56,8 +56,8 @@ export class Snapshot implements ISnapshot {
     return result;
   }
 
-  write(h: Handle, prop: PropertyKey, value: Symbol): Record {
-    const result: Record = this.tryWrite(h, prop, value);
+  write(h: Handle, prop: PropertyKey, token: any): Record {
+    const result: Record = this.tryWrite(h, prop, token);
     if (result === Record.blank) /* istanbul ignore next */
       throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
     return result;
@@ -78,11 +78,13 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  tryWrite(h: Handle, prop: PropertyKey, value: any): Record {
+  tryWrite(h: Handle, prop: PropertyKey, token: any): Record {
     if (this._sealed)
       throw new Error(`stateful property ${Hint.handle(h)}.${prop.toString()} can only be modified inside transaction`);
+    if (this.token !== undefined && token !== this.token)
+      throw new Error(`cache must have no side effects (${Hint.handle(h)}.${prop.toString()})`);
     let r: Record = this.tryRead(h);
-    if (r === Record.blank || r.data[prop] !== value) {
+    if (r === Record.blank || r.data[prop] !== token) {
       if (r.snapshot !== this) {
         const data = Utils.copyAllProps(r.data, {});
         r = new Record(h.head, this, data);
@@ -99,7 +101,7 @@ export class Snapshot implements ISnapshot {
 
   acquire(timestamp: number): void {
     if (!this._sealed && this._timestamp === MAX_TIMESTAMP) {
-      this._timestamp = this.cache
+      this._timestamp = this.token
         ? Math.min(timestamp, Snapshot.headTimestamp)
         : Snapshot.headTimestamp;
       Snapshot.pending.push(this);
