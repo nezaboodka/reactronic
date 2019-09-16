@@ -23,6 +23,7 @@ export class Snapshot implements ISnapshot {
   get timestamp(): number { return this._timestamp; }
   get sealed(): boolean { return this._sealed; }
   readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
+  readonly triggers: ICacheResult[] = [];
   private _timestamp = MAX_TIMESTAMP;
   private _sealed = false;
 
@@ -196,7 +197,7 @@ export class Snapshot implements ISnapshot {
   }
 
   /* istanbul ignore next */
-  static applyDependencies = function(snapshot: Snapshot, triggers: ICacheResult[]): void {
+  static applyDependencies = function(snapshot: Snapshot): void {
     undef(); // to be redefined by Cache implementation
   };
 

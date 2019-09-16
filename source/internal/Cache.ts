@@ -300,7 +300,8 @@ class CacheResult implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, true)}.${prop.toString()} = ${valueHint(value)}`);
   }
 
-  static applyDependencies(snapshot: Snapshot, triggers: ICacheResult[]): void {
+  static applyDependencies(snapshot: Snapshot): void {
+    const triggers = snapshot.triggers;
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       if (!r.changes.has(RT_UNMOUNT))
         r.changes.forEach(prop => {

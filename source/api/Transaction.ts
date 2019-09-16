@@ -18,7 +18,7 @@ export class Transaction {
   private resultResolve: (value?: void) => void = undef;
   private resultReject: (reason: any) => void = undef;
   private conflicts?: Record[] = undefined;
-  private reaction: { tran?: Transaction, triggers: ICacheResult[] } = { tran: undefined, triggers: [] };
+  private reaction: { tran?: Transaction } = { tran: undefined };
   readonly trace?: Partial<Trace>; // assigned in constructor
 
   constructor(hint: string, trace?: Partial<Trace>) {
@@ -79,10 +79,10 @@ export class Transaction {
     return this.sealed && this.workers === 0;
   }
 
-  async whenFinished(includingReactions: boolean): Promise<void> {
+  async whenFinished(includingReaction: boolean): Promise<void> {
     if (!this.isFinished())
       await this.acquirePromise();
-    if (includingReactions && this.reaction.tran)
+    if (includingReaction && this.reaction.tran)
       await this.reaction.tran.whenFinished(true);
   }
 
@@ -178,23 +178,17 @@ export class Transaction {
       }
       Transaction._current = outer;
     }
-    if (this.reaction.triggers.length > 0)
+    if (this.snapshot.triggers.length > 0)
       this.executeTriggers();
     return result;
   }
 
   private executeTriggers(): void {
-    try {
-      const name = Dbg.isOn && Dbg.trace.hints ? `${this.snapshot.hint} - REACTION(${this.reaction.triggers.length})` : /* istanbul ignore next */ "noname";
-      const start = this.reaction.tran ? Start.InsideParentTransaction : Start.AsStandaloneTransaction;
-      this.reaction.tran = Transaction.runAs(name, start, this.trace,
-        Transaction.doExecuteTriggers, this.snapshot.timestamp,
-        this.reaction.triggers);
-    }
-    finally {
-      if (!this.isFinished())
-        this.reaction.triggers = [];
-    }
+    const name = Dbg.isOn && Dbg.trace.hints ? `${this.snapshot.hint} - REACTION(${this.snapshot.triggers.length})` : /* istanbul ignore next */ "noname";
+    const start = this.reaction.tran ? Start.InsideParentTransaction : Start.AsStandaloneTransaction;
+    this.reaction.tran = Transaction.runAs(name, start, this.trace,
+      Transaction.doExecuteTriggers, this.snapshot.timestamp,
+      this.snapshot.triggers);
   }
 
   private static doExecuteTriggers(timestamp: number, triggers: ICacheResult[]): Transaction {
@@ -234,7 +228,7 @@ export class Transaction {
 
   private performCommit(): void {
     this.snapshot.seal();
-    Snapshot.applyDependencies(this.snapshot, this.reaction.triggers);
+    Snapshot.applyDependencies(this.snapshot);
     this.snapshot.archive();
     if (this.resultPromise)
       this.resultResolve();
