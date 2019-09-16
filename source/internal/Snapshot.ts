@@ -18,9 +18,9 @@ export class Snapshot implements ISnapshot {
   static pending: Snapshot[] = [];
   static oldest: Snapshot | undefined = undefined;
 
-  readonly id: number = 0;
-  readonly hint: string = "";
-  readonly only: ICacheResult | undefined;
+  readonly id: number;
+  readonly hint: string;
+  readonly cache: ICacheResult | undefined;
   get timestamp(): number { return this._timestamp; }
   get sealed(): boolean { return this._sealed; }
   readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
@@ -28,10 +28,10 @@ export class Snapshot implements ISnapshot {
   private _timestamp = MAX_TIMESTAMP;
   private _sealed = false;
 
-  constructor(hint: string, only?: ICacheResult) {
+  constructor(hint: string, cache?: ICacheResult) {
     this.id = ++Snapshot.lastUsedId;
     this.hint = hint;
-    this.only = only;
+    this.cache = cache;
   }
 
   /* istanbul ignore next */
@@ -83,7 +83,7 @@ export class Snapshot implements ISnapshot {
       throw new Error(`stateful property ${Hint.handle(h)}.${prop.toString()} can only be modified inside transaction`);
     let r: Record = this.tryRead(h);
     if (r === Record.blank || r.data[prop] !== value) {
-      if (r === Record.blank || r.snapshot !== this) {
+      if (r.snapshot !== this) {
         const data = Utils.copyAllProps(r.data, {});
         r = new Record(h.head, this, data);
         Reflect.set(r.data, RT_HANDLE, h);
@@ -99,7 +99,7 @@ export class Snapshot implements ISnapshot {
 
   acquire(timestamp: number): void {
     if (!this._sealed && this._timestamp === MAX_TIMESTAMP) {
-      this._timestamp = this.only
+      this._timestamp = this.cache
         ? Math.min(timestamp, Snapshot.headTimestamp)
         : Snapshot.headTimestamp;
       Snapshot.pending.push(this);
