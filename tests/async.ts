@@ -30,7 +30,7 @@ export class DemoView {
     const lines: string[] = await this.render();
     for (const x of lines) {
       output.push(x); /* istanbul ignore next */
-      if (!Status.trace.silent) console.log(x);
+      if (Status.isTraceOn && !Status.trace.silent) console.log(x);
     }
   }
 

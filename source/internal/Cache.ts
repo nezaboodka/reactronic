@@ -37,6 +37,7 @@ export class Cache extends Status<any> {
     if (!call.valid) {
       const c: CacheResult = call.cache;
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
+      // const start = noprev && c.config.kind !== Kind.Cached ? c.config.start : Start.AsStandaloneTransaction;
       const start = noprev ? c.config.start : Start.AsStandaloneTransaction;
       const token = this.config.kind === Kind.Cached ? this : undefined;
       let call2 = call;

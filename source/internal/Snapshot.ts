@@ -101,9 +101,9 @@ export class Snapshot implements ISnapshot {
 
   acquire(timestamp: number): void {
     if (!this._sealed && this._timestamp === MAX_TIMESTAMP) {
-      this._timestamp = this.token
-        ? Math.min(timestamp, Snapshot.headTimestamp)
-        : Snapshot.headTimestamp;
+      this._timestamp = this.token === undefined
+        ? Snapshot.headTimestamp
+        : Math.min(timestamp, Snapshot.headTimestamp);
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this;
@@ -125,6 +125,8 @@ export class Snapshot implements ISnapshot {
           if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
+      // if (this.token === undefined)
+      //   this._timestamp = ++Snapshot.headTimestamp;
       this._timestamp = ++Snapshot.headTimestamp;
     }
     return conflicts;
@@ -132,7 +134,7 @@ export class Snapshot implements ISnapshot {
 
   static rebaseRecord(ours: Record, head: Record): number {
     let counter: number = -1;
-    if (head !== Record.blank && head.snapshot.timestamp > ours.snapshot.timestamp) {
+    if (ours.prev.record !== head && head !== Record.blank) {
       counter++;
       const unmountTheirs: boolean = head.changes.has(RT_UNMOUNT);
       const merged = Utils.copyAllProps(head.data, {}); // create merged copy
@@ -140,7 +142,7 @@ export class Snapshot implements ISnapshot {
         counter++;
         let theirs: Record = head;
         merged[prop] = ours.data[prop];
-        while (theirs !== Record.blank && theirs.snapshot.timestamp > ours.snapshot.timestamp) {
+        while (theirs !== ours.prev.record && theirs !== Record.blank) {
           if (theirs.changes.has(prop)) {
             const equal = Snapshot.equal(theirs.data[prop], ours.data[prop]);
             if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${equal ? "==" : "<>"} ${Hint.record(theirs, false)}.${prop.toString()}.`);

@@ -36,7 +36,7 @@ test("async", async t => {
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()); /* istanbul ignore next */
-    if (!Status.trace.silent) console.log(error.toString());
+    if (Status.isTraceOn && !Status.trace.silent) console.log(error.toString());
   }
   finally {
     t.is(mon.counter, 0);
@@ -44,7 +44,7 @@ test("async", async t => {
     await sleep(400);
     await Status.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */
-  if (!Status.trace.silent) {
+  if (Status.isTraceOn && !Status.trace.silent) {
     console.log("\nResults:\n");
     for (const x of output)
       console.log(x);
@@ -52,7 +52,7 @@ test("async", async t => {
   }
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (!Status.trace.silent) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
+    if (Status.isTraceOn && !Status.trace.silent) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
     t.is(output[i], expected[i]);
   }
 });
