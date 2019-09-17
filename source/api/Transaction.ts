@@ -196,10 +196,11 @@ export class Transaction {
   private runTriggers(): void {
     const name = Dbg.isOn && Dbg.trace.hints ? `REACTION(${this.snapshot.triggers.length}): ${this.snapshot.hint}` : /* istanbul ignore next */ "noname";
     this.reaction.tran = Transaction.runAs(name, Start.AsStandaloneTransaction, this.trace, undefined,
-      Transaction.doRunTriggers, this.snapshot.timestamp, this.snapshot.triggers);
+      Transaction.doRunTriggers, this.snapshot.triggers);
   }
 
-  private static doRunTriggers(timestamp: number, triggers: ICacheResult[]): Transaction {
+  private static doRunTriggers(triggers: ICacheResult[]): Transaction {
+    const timestamp = Transaction.current.snapshot.timestamp;
     triggers.map(x => x.trig(timestamp, false, false));
     return Transaction.current;
   }
