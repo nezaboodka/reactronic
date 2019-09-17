@@ -315,7 +315,7 @@ class CacheResult implements ICacheResult {
       else
         for (const prop in r.prev.record.data)
           CacheResult.markAllPrevRecordsAsOutdated(r, prop, triggers);
-      Snapshot.mergeObservers(r, r.prev.record, triggers);
+      CacheResult.mergeObservers(r, r.prev.record, triggers);
     });
   }
 
@@ -344,6 +344,21 @@ class CacheResult implements ICacheResult {
       });
     });
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+  }
+
+  static mergeObservers(curr: Record, prev: Record, triggers: ICacheResult[]): void {
+    prev.observers.forEach((prevObservers: Set<ICacheResult>, prop: PropertyKey) => {
+      if (!curr.changes.has(prop)) {
+        const existing: Set<ICacheResult> | undefined = curr.observers.get(prop);
+        const mergedObservers = existing || new Set<ICacheResult>();
+        if (!existing)
+          curr.observers.set(prop, mergedObservers);
+        prevObservers.forEach((prevObserver: ICacheResult) => {
+          mergedObservers.add(prevObserver);
+          if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is subscribed to {${Hint.record(curr, false, true, prop)}} - inherited from ${Hint.record(prev, false, true, prop)}.`);
+        });
+      }
+    });
   }
 
   get isInvalid(): boolean { // TODO: should depend on caller context

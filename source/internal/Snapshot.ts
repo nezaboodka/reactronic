@@ -163,21 +163,6 @@ export class Snapshot implements ISnapshot {
     return counter;
   }
 
-  static mergeObservers(curr: Record, prev: Record, triggers: ICacheResult[]): void {
-    prev.observers.forEach((prevObservers: Set<ICacheResult>, prop: PropertyKey) => {
-      if (!curr.changes.has(prop)) {
-        const existing: Set<ICacheResult> | undefined = curr.observers.get(prop);
-        const mergedObservers = existing || new Set<ICacheResult>();
-        if (!existing)
-          curr.observers.set(prop, mergedObservers);
-        prevObservers.forEach((prevObserver: ICacheResult) => {
-          mergedObservers.add(prevObserver);
-          if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is subscribed to {${Hint.record(curr, false, true, prop)}(${curr.outdated.get(prop)})} - inherited from ${Hint.record(prev, false, true, prop)} (${prev.outdated.get(prop)}).`);
-        });
-      }
-    });
-  }
-
   seal(error?: any): void {
     this._sealed = true;
     this.changeset.forEach((r: Record, h: Handle) => {
