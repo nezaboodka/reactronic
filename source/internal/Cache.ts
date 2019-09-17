@@ -496,8 +496,8 @@ class CacheResult implements ICacheResult {
 
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
-    if (oldValue instanceof CacheResult && newValue instanceof CacheResult)
-      result = oldValue.result === newValue.result;
+    if (oldValue instanceof CacheResult)
+      result = oldValue.config.kind === Kind.Transaction;
     else
       result = oldValue === newValue;
     return result;
@@ -529,7 +529,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`;
   else if (value instanceof CacheResult)
-    result = `<refresh:${Hint.record(value.record.prev.record, false, true)}>`;
+    result = `<renew:${Hint.record(value.record.prev.record, false, true)}>`;
   else if (value === RT_UNMOUNT)
     result = "<unmount>";
   else if (value !== undefined && value !== null)
