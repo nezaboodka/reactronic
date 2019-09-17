@@ -4,11 +4,11 @@
 
 import * as React from 'react';
 import { stateful, transaction, trigger, cached, statusof,
-  Start, Transaction, Status, Trace} from 'reactronic';
+  Start, Transaction, Status, Trace, behavior} from 'reactronic';
 
 export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
-  const [rejsx] = React.useState(() => createRejsx(trace));
   const [revision, refresh] = React.useState(0);
+  const [rejsx] = React.useState(() => createRejsx(trace));
   React.useEffect(Rejsx.unmountEffect(rejsx), []);
   return rejsx.render(revision, render, refresh, tran);
 }
@@ -27,7 +27,7 @@ class Rejsx {
     return !tran ? render(revision) : tran.inspect(render, revision);
   }
 
-  @trigger
+  @trigger @behavior(0)
   refresh(nextRevision: number, refresh: (nextRevision: number) => void): void {
     if (statusof(this.jsx).isInvalid)
       refresh(nextRevision);
