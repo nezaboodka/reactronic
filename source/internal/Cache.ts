@@ -294,7 +294,7 @@ class CacheResult implements ICacheResult {
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
-      CacheResult.acquireObservableSet(c, prop, c.tran.id === r.snapshot.id).add(r);
+      CacheResult.acquireObservableSet(c, prop).add(r);
       if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
   }
@@ -330,7 +330,7 @@ class CacheResult implements ICacheResult {
     return propObservers;
   }
 
-  static acquireObservableSet(c: CacheResult, prop: PropertyKey, hot: boolean): Set<Record> {
+  static acquireObservableSet(c: CacheResult, prop: PropertyKey): Set<Record> {
     let result: Set<Record> | undefined = c.observables.get(prop);
     if (!result)
       c.observables.set(prop, result = new Set<Record>());
