@@ -320,10 +320,10 @@ class CacheResult implements ICacheResult {
   }
 
   static acquireObserverSet(r: Record, prop: PropertyKey): Set<ICacheResult> {
-    let oo = r.observers.get(prop);
-    if (!oo)
-      r.observers.set(prop, oo = new Set<CacheResult>());
-    return oo;
+    let propObservers = r.observers.get(prop);
+    if (!propObservers)
+      r.observers.set(prop, propObservers = new Set<CacheResult>());
+    return propObservers;
   }
 
   static acquireObservableSet(c: CacheResult, prop: PropertyKey, hot: boolean): Set<Record> {
@@ -380,9 +380,9 @@ class CacheResult implements ICacheResult {
       let r: Record = h.head;
       while (r !== Record.blank && !r.outdated.has(this.member)) {
         if (r.data[this.member] === this) {
-          const oo = r.observers.get(this.member);
-          if (oo)
-            oo.forEach(c => c.invalidate(r, this.member, triggers));
+          const propObservers = r.observers.get(this.member);
+          if (propObservers)
+            propObservers.forEach(c => c.invalidate(r, this.member, triggers));
         }
         r = r.prev.record;
       }
@@ -393,9 +393,9 @@ class CacheResult implements ICacheResult {
     let r = curr.prev.record;
     while (r !== Record.blank && !r.outdated.has(prop)) {
       r.outdated.set(prop, curr);
-      const oo = r.observers.get(prop);
-      if (oo)
-        oo.forEach(c => c.invalidate(curr, prop, triggers));
+      const propObservers = r.observers.get(prop);
+      if (propObservers)
+        propObservers.forEach(c => c.invalidate(curr, prop, triggers));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
