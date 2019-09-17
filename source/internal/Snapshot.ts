@@ -13,8 +13,8 @@ const MAX_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1;
 // Snapshot
 
 export class Snapshot implements ISnapshot {
-  static lastUsedId: number = 20;
-  static headTimestamp: number = 100;
+  static lastUsedId: number = -1;
+  static headTimestamp: number = 1;
   static pending: Snapshot[] = [];
   static oldest: Snapshot | undefined = undefined;
 

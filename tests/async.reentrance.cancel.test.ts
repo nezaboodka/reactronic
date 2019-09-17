@@ -17,6 +17,8 @@ const expected: string[] = [
   "Log: RTA",
   "[...] Url: reactronic",
   "[...] Log: RTA",
+  "Url: reactronic",
+  "Log: RTA",
   "Url: nezaboodka.com",
   "Log: RTA, nezaboodka.com/500",
 ];

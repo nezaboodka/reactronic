@@ -6,7 +6,8 @@ import { Dbg, Utils, undef, Record, ICacheResult, F, Snapshot, Hint } from '../i
 import { Start, Trace } from './Config';
 
 export class Transaction {
-  static readonly none: Transaction = new Transaction("none");
+  static readonly none: Transaction = new Transaction("<none>");
+  static readonly init: Transaction = new Transaction("<init>");
   static _current: Transaction;
   static _inspection: boolean = false;
 
@@ -291,13 +292,18 @@ export class Transaction {
     Snapshot.writable = Transaction.writableSnapshot; // override
     Transaction.none.sealed = true;
     Transaction.none.snapshot.seal();
+    Transaction.init.snapshot.acquire(Transaction.init.snapshot);
+    Transaction.init.sealed = true;
+    Transaction.init.snapshot.seal();
     Transaction._current = Transaction.none;
-    const blank = new Record(Record.blank, Transaction.none.snapshot, {});
+    const blank = new Record(Record.blank, Transaction.init.snapshot, {});
     blank.prev.record = blank; // loopback
     blank.freeze();
     Utils.freezeMap(blank.observers);
     Utils.freezeMap(blank.replaced);
     Record.blank = blank;
+    Snapshot.lastUsedId = 99;
+    Snapshot.headTimestamp = 100;
   }
 }
 

@@ -346,8 +346,9 @@ class CacheResult implements ICacheResult {
         if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (!r.replaced.has(prop)) {
           const v = r.data[prop];
-          const t = this.record.snapshot.timestamp;
-          if (v instanceof CacheResult && t >= v.invalidated.since)
+          // const t1 = this.record.prev.record.snapshot.timestamp;
+          const t2 = this.record.snapshot.timestamp;
+          if (v instanceof CacheResult && t2 >= v.invalidated.since /* && t1 < v.invalidated.since */)
               this.invalidateBy(r, prop, triggers);
         }
         else
