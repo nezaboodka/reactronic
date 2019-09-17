@@ -340,7 +340,7 @@ class CacheResult implements ICacheResult {
         CacheResult.acquireObserverSet(r, prop).add(this); // link
         if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (triggers && r.replaced.has(prop))
-          this.invalidate(r, prop, triggers);
+          this.invalidateBy(r, prop, triggers);
       });
     });
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
@@ -366,7 +366,7 @@ class CacheResult implements ICacheResult {
     return this.invalid.since <= ctx.timestamp;
   }
 
-  invalidate(cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): void {
+  invalidateBy(cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): void {
     const stamp = cause.snapshot.timestamp;
     if (this.invalid.since === UNDEFINED_TIMESTAMP) {
       this.invalid.since = stamp;
@@ -382,20 +382,20 @@ class CacheResult implements ICacheResult {
         if (r.data[this.member] === this) {
           const propObservers = r.observers.get(this.member);
           if (propObservers)
-            propObservers.forEach(c => c.invalidate(r, this.member, triggers));
+            propObservers.forEach(c => c.invalidateBy(r, this.member, triggers));
         }
         r = r.prev.record;
       }
     }
   }
 
-  static markAllPrevRecordsAsOutdated(curr: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
-    let r = curr.prev.record;
+  static markAllPrevRecordsAsOutdated(recent: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
+    let r = recent.prev.record;
     while (r !== Record.blank && !r.replaced.has(prop)) {
-      r.replaced.set(prop, curr);
+      r.replaced.set(prop, recent);
       const propObservers = r.observers.get(prop);
       if (propObservers)
-        propObservers.forEach(c => c.invalidate(curr, prop, triggers));
+        propObservers.forEach(c => c.invalidateBy(recent, prop, triggers));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
