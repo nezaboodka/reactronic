@@ -68,7 +68,7 @@ export interface ISnapshot {
 export interface ICacheResult {
   hint(tranless?: boolean): string;
   wrap<T>(func: F<T>): F<T>;
-  readonly isInvalid: boolean;
+  readonly invalid: { since: number };
   invalidateBy(cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): void;
   trig(timestamp: number, now: boolean, nothrow: boolean): void;
 }

@@ -21,7 +21,7 @@ export class Cache extends Status<any> {
   get stamp(): number { return this.read(true).record.snapshot.timestamp; }
   get error(): boolean { return this.read(true).cache.error; }
   getResult(...args: any): any { return this.call(false, args).cache.result; }
-  get isInvalid(): boolean { return this.read(true).cache.isInvalid; }
+  get isInvalid(): boolean { return Snapshot.readable().timestamp >= this.read(true).cache.invalid.since; }
   invalidate(cause: string | undefined): boolean { return cause ? CacheResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
 
   constructor(handle: Handle, member: PropertyKey, config: ConfigRecord) {
@@ -345,7 +345,8 @@ class CacheResult implements ICacheResult {
         if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (!r.replaced.has(prop)) {
           const v = r.data[prop];
-          if (v instanceof CacheResult && v.isInvalid)
+          const t = this.record.snapshot.timestamp;
+          if (v instanceof CacheResult && t >= v.invalid.since)
             this.invalidateBy(r, prop, triggers);
         }
         else
@@ -363,7 +364,7 @@ class CacheResult implements ICacheResult {
         if (!existing)
           curr.observers.set(prop, mergedObservers);
         prevObservers.forEach((prevObserver: ICacheResult) => {
-          if (!prevObserver.isInvalid) {
+          if (prevObserver.invalid.since === UNDEFINED_TIMESTAMP) {
             mergedObservers.add(prevObserver);
             if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is subscribed to {${Hint.record(curr, false, true, prop)}} - inherited from ${Hint.record(prev, false, true, prop)}.`);
           }
@@ -372,10 +373,10 @@ class CacheResult implements ICacheResult {
     });
   }
 
-  get isInvalid(): boolean { // TODO: should depend on caller context
-    const ctx = Snapshot.readable();
-    return this.invalid.since <= ctx.timestamp;
-  }
+  // get isInvalid(): boolean {
+  //   const ctx = Snapshot.readable();
+  //   return ctx.timestamp >= this.invalid.since;
+  // }
 
   invalidateBy(cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): void {
     const stamp = cause.snapshot.timestamp;
