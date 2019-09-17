@@ -452,7 +452,7 @@ class CacheResult implements ICacheResult {
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `  ${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
     // TODO: handle errors
     // Cache.freeze(this);
   }
