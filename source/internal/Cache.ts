@@ -339,8 +339,8 @@ class CacheResult implements ICacheResult {
 
   private subscribeToOwnObservables(triggers: ICacheResult[]): void {
     const subscriptions: string[] = [];
-    this.observables.forEach((observables: Set<Record>, prop: PropertyKey) => {
-      observables.forEach(r => {
+    this.observables.forEach((records: Set<Record>, prop: PropertyKey) => {
+      records.forEach(r => {
         CacheResult.acquireObserverSet(r, prop).add(this); // link
         if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (!r.replaced.has(prop)) {
