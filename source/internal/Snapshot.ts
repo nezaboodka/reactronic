@@ -23,15 +23,19 @@ export class Snapshot implements ISnapshot {
   readonly cache: any;
   get timestamp(): number { return this._timestamp; }
   get sealed(): boolean { return this._sealed; }
-  readonly changeset: Map<Handle, Record> = new Map<Handle, Record>();
-  readonly triggers: ICacheResult[] = [];
-  private _timestamp = MAX_TIMESTAMP;
-  private _sealed = false;
+  readonly changeset: Map<Handle, Record>;
+  readonly triggers: ICacheResult[];
+  private _timestamp: number;
+  private _sealed: boolean;
 
   constructor(hint: string, cache: any) {
     this.id = ++Snapshot.lastUsedId;
     this.hint = hint;
     this.cache = cache;
+    this.changeset = new Map<Handle, Record>();
+    this.triggers = [];
+    this._timestamp = MAX_TIMESTAMP;
+    this._sealed = false;
   }
 
   /* istanbul ignore next */
@@ -125,7 +129,6 @@ export class Snapshot implements ISnapshot {
       });
       if (this.cache === undefined)
         this._timestamp = ++Snapshot.headTimestamp;
-      // this._timestamp = ++Snapshot.headTimestamp;
     }
     return conflicts;
   }
