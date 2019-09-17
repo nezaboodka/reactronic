@@ -3,34 +3,29 @@
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
 import * as React from 'react';
-import { stateful, transaction, trigger, cached, statusof,
-  Start, Transaction, Status, Trace, behavior} from 'reactronic';
+import { stateful, trigger, cached, statusof,
+  Start, Transaction, Status, Trace } from 'reactronic';
 
-export function reactiveRender(render: (revision: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
-  const [revision, refresh] = React.useState(0);
+export function reactiveRender(render: (ordinal: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
+  const [ordinal, refresh] = React.useState(0);
   const [rejsx] = React.useState(() => createRejsx(trace));
   React.useEffect(Rejsx.unmountEffect(rejsx), []);
-  return rejsx.render(revision, render, refresh, tran);
+  const jsx: JSX.Element = rejsx.jsx(ordinal, render, tran);
+  rejsx.refresh(ordinal + 1, refresh);
+  return jsx;
 }
 
 @stateful
 class Rejsx {
-  @transaction
-  render(revision: number, doRender: (revision: number) => JSX.Element, refresh: (nextRevision: number) => void, tran: Transaction | undefined): JSX.Element {
-    const jsx: JSX.Element = this.jsx(revision, doRender, tran);
-    this.refresh(revision + 1, refresh);
-    return jsx;
-  }
-
   @cached
-  jsx(revision: number, render: (revision: number) => JSX.Element, tran: Transaction | undefined): JSX.Element {
-    return !tran ? render(revision) : tran.inspect(render, revision);
+  jsx(ordinal: number, render: (ordinal: number) => JSX.Element, tran: Transaction | undefined): JSX.Element {
+    return !tran ? render(ordinal) : tran.inspect(render, ordinal);
   }
 
-  @trigger @behavior(0)
-  refresh(nextRevision: number, refresh: (nextRevision: number) => void): void {
+  @trigger
+  refresh(next: number, refresh: (next: number) => void): void {
     if (statusof(this.jsx).isInvalid)
-      refresh(nextRevision);
+      refresh(next);
   }
 
   static unmountEffect(rejsx: Rejsx): React.EffectCallback {
@@ -58,7 +53,6 @@ function doCreateRejsx(hint: string | undefined, trace: Trace | undefined): Rejs
   if (hint)
     Status.setTraceHint(rejsx, hint);
   if (trace) {
-    statusof(rejsx.render).configure({trace});
     statusof(rejsx.jsx).configure({trace});
     statusof(rejsx.refresh).configure({trace});
   }
