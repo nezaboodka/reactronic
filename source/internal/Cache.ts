@@ -253,27 +253,29 @@ class CacheResult implements ICacheResult {
   }
 
   trig(timestamp: number, now: boolean, nothrow: boolean): void {
-    if (now || this.config.latency === -1) {
-      if (!this.error && (this.config.kind === Kind.Transaction ||
-          (timestamp >= this.invalid.since && !this.invalid.running))) {
-        try {
-          const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
-          const trap: Function = Reflect.get(proxy, this.member, proxy);
-          const cache: Cache = Utils.get(trap, RT_CACHE);
-          const call: CachedCall = cache.call(true);
-          if (call.cache.ret instanceof Promise)
-            call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
-        }
-        catch (e) {
-          if (!nothrow)
-            throw e;
+    Cache.run(undefined, () => {
+      if (now || this.config.latency === -1) {
+        if (!this.error && (this.config.kind === Kind.Transaction ||
+            (timestamp >= this.invalid.since && !this.invalid.running))) {
+          try {
+            const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
+            const trap: Function = Reflect.get(proxy, this.member, proxy);
+            const cache: Cache = Utils.get(trap, RT_CACHE);
+            const call: CachedCall = cache.call(true);
+            if (call.cache.ret instanceof Promise)
+              call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
+          }
+          catch (e) {
+            if (!nothrow)
+              throw e;
+          }
         }
       }
-    }
-    else if (this.config.latency === 0)
-      CacheResult.enqueueAsyncTrigger(this);
-    else
-      setTimeout(() => this.trig(UNDEFINED_TIMESTAMP, true, true), 0);
+      else if (this.config.latency === 0)
+        CacheResult.enqueueAsyncTrigger(this);
+      else
+        setTimeout(() => this.trig(UNDEFINED_TIMESTAMP, true, true), 0);
+    });
   }
 
   static enqueueAsyncTrigger(c: CacheResult): void {
