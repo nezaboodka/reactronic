@@ -35,7 +35,7 @@ export class Cache extends Status<any> {
   call(noprev: boolean, args?: any[]): CachedCall {
     let call: CachedCall = this.read(false, args);
     const c: CacheResult = call.cache;
-    if (!call.valid && (noprev || !c.invalid.running)) {
+    if (!call.valid && (noprev || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
       const start = noprev && c.config.kind !== Kind.Cached ? c.config.start : Start.AsStandaloneTransaction;
       // const start = noprev ? c.config.start : Start.AsStandaloneTransaction;
@@ -118,7 +118,7 @@ export class Cache extends Status<any> {
 
   private reenter(c: CacheResult): Error | undefined {
     let error: Error | undefined = undefined;
-    const prev = c.invalid.running;
+    const prev = c.invalid.renewing;
     const caller = Transaction.current;
     if (prev)
       switch (c.config.reentrance) {
@@ -131,7 +131,7 @@ export class Cache extends Status<any> {
           break;
         case Reentrance.CancelPrevious:
           prev.tran.cancel(new Error(`transaction t${prev.tran.id} (${prev.tran.hint}) is canceled by t${caller.id} (${caller.hint}) and will be silently ignored`), null);
-          c.invalid.running = undefined;
+          c.invalid.renewing = undefined;
           break;
         case Reentrance.RunSideBySide:
           break; // do nothing
@@ -215,7 +215,7 @@ class CacheResult implements ICacheResult {
   result: any;
   error: any;
   started: number;
-  readonly invalid: { since: number, running: CacheResult | undefined };
+  readonly invalid: { since: number, renewing: CacheResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
 
   constructor(record: Record, member: PropertyKey, init: CacheResult | ConfigRecord) {
@@ -236,7 +236,7 @@ class CacheResult implements ICacheResult {
     // this.ret = undefined;
     // this.error = undefined;
     this.started = 0;
-    this.invalid = { since: 0, running: undefined };
+    this.invalid = { since: 0, renewing: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
   }
 
@@ -256,7 +256,7 @@ class CacheResult implements ICacheResult {
     Cache.run(undefined, () => {
       if (now || this.config.latency === -1) {
         if (!this.error && (this.config.kind === Kind.Transaction ||
-            (timestamp >= this.invalid.since && !this.invalid.running))) {
+            (timestamp >= this.invalid.since && !this.invalid.renewing))) {
           try {
             const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
             const trap: Function = Reflect.get(proxy, this.member, proxy);
@@ -428,8 +428,8 @@ class CacheResult implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
-    if (!prev.invalid.running)
-      prev.invalid.running = this;
+    if (!prev.invalid.renewing)
+      prev.invalid.renewing = this;
   }
 
   tryLeave(r: Record, prev: CacheResult, mon: Monitor | null): void {
@@ -454,8 +454,8 @@ class CacheResult implements ICacheResult {
   }
 
   private leave(r: Record, prev: CacheResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
-    if (prev.invalid.running === this)
-      prev.invalid.running = undefined;
+    if (prev.invalid.renewing === this)
+      prev.invalid.renewing = undefined;
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
