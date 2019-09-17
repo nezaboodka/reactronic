@@ -295,7 +295,7 @@ export class Transaction {
     blank.prev.record = blank; // loopback
     blank.freeze();
     Utils.freezeMap(blank.observers);
-    Utils.freezeMap(blank.outdated);
+    Utils.freezeMap(blank.replaced);
     Record.blank = blank;
   }
 }

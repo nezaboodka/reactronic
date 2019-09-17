@@ -15,7 +15,7 @@ export class Record {
   readonly changes: Set<PropertyKey>;
   readonly conflicts: Map<PropertyKey, Record>;
   readonly observers: Map<PropertyKey, Set<ICacheResult>>;
-  readonly outdated: Map<PropertyKey, Record>;
+  readonly replaced: Map<PropertyKey, Record>;
 
   constructor(prev: Record, snapshot: ISnapshot, data: object) {
     this.prev = { record: prev, backup: prev };
@@ -24,7 +24,7 @@ export class Record {
     this.changes = new Set<PropertyKey>();
     this.conflicts = new Map<PropertyKey, Record>();
     this.observers = new Map<PropertyKey, Set<ICacheResult>>();
-    this.outdated = new Map<PropertyKey, Record>();
+    this.replaced = new Map<PropertyKey, Record>();
   }
 
   static blank: Record;

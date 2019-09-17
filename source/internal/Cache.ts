@@ -339,7 +339,7 @@ class CacheResult implements ICacheResult {
       observables.forEach(r => {
         CacheResult.acquireObserverSet(r, prop).add(this); // link
         if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
-        if (triggers && r.outdated.has(prop))
+        if (triggers && r.replaced.has(prop))
           this.invalidate(r, prop, triggers);
       });
     });
@@ -378,7 +378,7 @@ class CacheResult implements ICacheResult {
       // Invalidate children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
       let r: Record = h.head;
-      while (r !== Record.blank && !r.outdated.has(this.member)) {
+      while (r !== Record.blank && !r.replaced.has(this.member)) {
         if (r.data[this.member] === this) {
           const propObservers = r.observers.get(this.member);
           if (propObservers)
@@ -391,8 +391,8 @@ class CacheResult implements ICacheResult {
 
   static markAllPrevRecordsAsOutdated(curr: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
     let r = curr.prev.record;
-    while (r !== Record.blank && !r.outdated.has(prop)) {
-      r.outdated.set(prop, curr);
+    while (r !== Record.blank && !r.replaced.has(prop)) {
+      r.replaced.set(prop, curr);
       const propObservers = r.observers.get(prop);
       if (propObservers)
         propObservers.forEach(c => c.invalidate(curr, prop, triggers));
