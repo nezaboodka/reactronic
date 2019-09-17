@@ -439,12 +439,12 @@ class CacheResult implements ICacheResult {
       this.ret = this.ret.then(
         result => {
           this.result = result;
-          this.leave(r, prev, mon, "▒▒", "- finished ", " OK ──┘");
+          this.leave(r, prev, mon, "▒▒", "- finished ", "   OK ──┘");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, prev, mon, "▒▒", "- finished ", "ERR ──┘");
+          this.leave(r, prev, mon, "▒▒", "- finished ", "  ERR ──┘");
           throw error;
         });
       if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(r, true)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
