@@ -37,8 +37,8 @@ export class Cache extends Status<any> {
     if (!call.valid) {
       const c: CacheResult = call.cache;
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
-      // const start = noprev && c.config.kind !== Kind.Cached ? c.config.start : Start.AsStandaloneTransaction;
-      const start = noprev ? c.config.start : Start.AsStandaloneTransaction;
+      const start = noprev && c.config.kind !== Kind.Cached ? c.config.start : Start.AsStandaloneTransaction;
+      // const start = noprev ? c.config.start : Start.AsStandaloneTransaction;
       const token = this.config.kind === Kind.Cached ? this : undefined;
       let call2 = call;
       const ret = Transaction.runAs(hint, start, c.config.trace, token, (argsx: any[] | undefined): any => {
@@ -310,7 +310,7 @@ class CacheResult implements ICacheResult {
           CacheResult.markAllPrevRecordsAsOutdated(r, prop, triggers);
           const value = r.data[prop];
           if (value instanceof CacheResult)
-            value.subscribeToObservables(triggers);
+            value.subscribeToOwnObservables(triggers);
         });
       else
         for (const prop in r.prev.record.data)
@@ -333,13 +333,18 @@ class CacheResult implements ICacheResult {
     return result;
   }
 
-  private subscribeToObservables(triggers?: ICacheResult[]): void {
+  private subscribeToOwnObservables(triggers: ICacheResult[]): void {
     const subscriptions: string[] = [];
     this.observables.forEach((observables: Set<Record>, prop: PropertyKey) => {
       observables.forEach(r => {
         CacheResult.acquireObserverSet(r, prop).add(this); // link
         if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
-        if (triggers && r.replaced.has(prop))
+        if (!r.replaced.has(prop)) {
+          const v = r.data[prop];
+          if (v instanceof CacheResult && v.isInvalid)
+            this.invalidateBy(r, prop, triggers);
+        }
+        else
           this.invalidateBy(r, prop, triggers);
       });
     });
