@@ -361,8 +361,10 @@ class CacheResult implements ICacheResult {
         if (!existing)
           curr.observers.set(prop, mergedObservers);
         prevObservers.forEach((prevObserver: ICacheResult) => {
-          mergedObservers.add(prevObserver);
-          if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is subscribed to {${Hint.record(curr, false, true, prop)}} - inherited from ${Hint.record(prev, false, true, prop)}.`);
+          if (!prevObserver.isInvalid) {
+            mergedObservers.add(prevObserver);
+            if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is subscribed to {${Hint.record(curr, false, true, prop)}} - inherited from ${Hint.record(prev, false, true, prop)}.`);
+          }
         });
       }
     });
