@@ -163,18 +163,16 @@ export class Snapshot implements ISnapshot {
     return counter;
   }
 
-  static mergeObservers(target: Record, source: Record): void {
-    source.observers.forEach((oo: Set<ICacheResult>, prop: PropertyKey) => {
-      if (!target.changes.has(prop)) {
-        const existing: Set<ICacheResult> | undefined = target.observers.get(prop);
-        const merged = existing || new Set<ICacheResult>();
+  static mergeObservers(curr: Record, prev: Record, triggers: ICacheResult[]): void {
+    prev.observers.forEach((prevObservers: Set<ICacheResult>, prop: PropertyKey) => {
+      if (!curr.changes.has(prop)) {
+        const existing: Set<ICacheResult> | undefined = curr.observers.get(prop);
+        const mergedObservers = existing || new Set<ICacheResult>();
         if (!existing)
-          target.observers.set(prop, merged);
-        oo.forEach((c: ICacheResult) => {
-          if (!c.isInvalid) {
-            merged.add(c);
-            if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${c.hint(false)} is subscribed to {${Hint.record(target, false, true, prop)}} - inherited from ${Hint.record(source, false, true, prop)}.`);
-          }
+          curr.observers.set(prop, mergedObservers);
+        prevObservers.forEach((prevObserver: ICacheResult) => {
+          mergedObservers.add(prevObserver);
+          if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is subscribed to {${Hint.record(curr, false, true, prop)}(${curr.outdated.get(prop)})} - inherited from ${Hint.record(prev, false, true, prop)} (${prev.outdated.get(prop)}).`);
         });
       }
     });

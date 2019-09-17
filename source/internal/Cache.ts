@@ -315,9 +315,7 @@ class CacheResult implements ICacheResult {
       else
         for (const prop in r.prev.record.data)
           CacheResult.markAllPrevRecordsAsOutdated(r, prop, triggers);
-    });
-    snapshot.changeset.forEach((r: Record, h: Handle) => {
-      Snapshot.mergeObservers(r, r.prev.record);
+      Snapshot.mergeObservers(r, r.prev.record, triggers);
     });
   }
 
@@ -361,7 +359,7 @@ class CacheResult implements ICacheResult {
       const isTrigger = this.config.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (isTrigger)
         triggers.push(this);
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)}${isTrigger ? " and will run automatically" : ""}`);
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", `${this.hint(false)} is invalidated since v${stamp} by ${Hint.record(cause, false, false, causeProp)}${isTrigger ? " and will run automatically" : ""}`);
       // Invalidate children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
       let r: Record = h.head;

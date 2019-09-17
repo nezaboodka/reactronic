@@ -194,7 +194,7 @@ export class Transaction {
   }
 
   private runTriggers(): void {
-    const name = Dbg.isOn && Dbg.trace.hints ? `${this.snapshot.hint} - REACTION(${this.snapshot.triggers.length})` : /* istanbul ignore next */ "noname";
+    const name = Dbg.isOn && Dbg.trace.hints ? `REACTION(${this.snapshot.triggers.length}): ${this.snapshot.hint}` : /* istanbul ignore next */ "noname";
     this.reaction.tran = Transaction.runAs(name, Start.AsStandaloneTransaction, this.trace, undefined,
       Transaction.doRunTriggers, this.snapshot.timestamp, this.snapshot.triggers);
   }
