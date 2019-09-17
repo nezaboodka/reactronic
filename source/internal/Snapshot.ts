@@ -20,21 +20,23 @@ export class Snapshot implements ISnapshot {
 
   readonly id: number;
   readonly hint: string;
-  readonly cache: any;
+  readonly cache: ICacheResult | undefined;
   get timestamp(): number { return this._timestamp; }
   get sealed(): boolean { return this._sealed; }
   readonly changeset: Map<Handle, Record>;
   readonly triggers: ICacheResult[];
   private _timestamp: number;
+  private _viewedTimestamp: number;
   private _sealed: boolean;
 
-  constructor(hint: string, cache: any) {
+  constructor(hint: string, cache: ICacheResult | undefined) {
     this.id = ++Snapshot.lastUsedId;
     this.hint = hint;
     this.cache = cache;
     this.changeset = new Map<Handle, Record>();
     this.triggers = [];
     this._timestamp = MAX_TIMESTAMP;
+    this._viewedTimestamp = 0;
     this._sealed = false;
   }
 
@@ -103,9 +105,15 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  acquire(timestamp: number): void {
+  bumpViewedTimestamp(r: Record): void {
+    if (r.snapshot.timestamp > this._viewedTimestamp)
+      this._viewedTimestamp = r.snapshot.timestamp;
+  }
+
+  acquire(outer: Snapshot): void {
     if (!this._sealed && this._timestamp === MAX_TIMESTAMP) {
-      this._timestamp = this.cache === undefined ? Snapshot.headTimestamp : timestamp;
+      this._timestamp = this.cache === undefined || outer._timestamp === MAX_TIMESTAMP
+        ? Snapshot.headTimestamp : outer._timestamp;
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this;
@@ -127,8 +135,7 @@ export class Snapshot implements ISnapshot {
           if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
-      if (this.cache === undefined)
-        this._timestamp = ++Snapshot.headTimestamp;
+      this._timestamp = this.cache ? this._viewedTimestamp : ++Snapshot.headTimestamp;
     }
     return conflicts;
   }

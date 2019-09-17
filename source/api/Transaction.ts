@@ -166,7 +166,7 @@ export class Transaction {
     try {
       this.workers++;
       Transaction._current = this;
-      this.snapshot.acquire(outer.snapshot.timestamp);
+      this.snapshot.acquire(outer.snapshot);
       result = func(...args);
       if (this.sealed && this.workers === 1) {
         if (!this.error)
