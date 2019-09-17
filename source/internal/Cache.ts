@@ -389,13 +389,13 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  static markAllPrevRecordsAsOutdated(cause: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
-    let r = cause.prev.record;
+  static markAllPrevRecordsAsOutdated(curr: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
+    let r = curr.prev.record;
     while (r !== Record.blank && !r.outdated.has(prop)) {
-      r.outdated.set(prop, cause);
+      r.outdated.set(prop, curr);
       const oo = r.observers.get(prop);
       if (oo)
-        oo.forEach(c => c.invalidate(cause, prop, triggers));
+        oo.forEach(c => c.invalidate(curr, prop, triggers));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
