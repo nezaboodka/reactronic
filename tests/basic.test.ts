@@ -24,6 +24,8 @@ test("basic", t => {
   try {
     const rendering = statusof(app.render);
     t.is(rendering.isInvalid, true);
+    // app.render();
+    // t.is(rendering.isInvalid, false);
     app.model.loadUsers();
     const daddy: Person = app.model.users[0];
     t.is(daddy.name, "John");

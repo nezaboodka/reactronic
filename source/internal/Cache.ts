@@ -346,7 +346,7 @@ class CacheResult implements ICacheResult {
         if (!r.replaced.has(prop)) {
           const v = r.data[prop];
           const t = this.record.snapshot.timestamp;
-          if (v instanceof CacheResult && t >= v.invalidated.since)
+          if (v instanceof CacheResult && t >= v.invalidated.since && v.invalidated.since !== 0)
             this.invalidateBy(r, prop, triggers);
         }
         else
