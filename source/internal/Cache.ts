@@ -1,6 +1,7 @@
 // The below copyright notice and the license permission notice
 // shall be included in all copies or substantial portions.
-// Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
+// Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
+// License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Dbg, Utils, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';

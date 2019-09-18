@@ -1,6 +1,7 @@
 ﻿// The below copyright notice and the license permission notice
 // shall be included in all copies or substantial portions.
-// Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
+// Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
+// License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava';
 import { Transaction, Kind, Status, statusof } from '../source/reactronic';
