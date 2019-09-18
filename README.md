@@ -226,29 +226,27 @@ function transaction(proto, prop, pd); // method only
 function trigger(proto, prop, pd); // method only
 function cached(proto, prop, pd); // method only
 
-function behavior(rerun: RerunMs, reentrance: Reentrance, start: Start);
+function behavior(latency: number, reentrance: Reentrance, start: Start);
 function monitor(value: Monitor | null);
 function config(config: Partial<Config>);
 
-// Config, Rerun, Reentrance, Start, Monitor
+// Config, Kind, Reentrance, Start, Monitor
 
 interface Config {
-  readonly stateful: boolean;
-  readonly rerun: RerunMs;
+  readonly kind: Kind;
+  readonly latency: number; // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance;
   readonly start: Start;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
 
-type RerunMs = Rerun | number; // milliseconds
-
-enum Rerun {
-  ImmediatelyAsync = 0, // @trigger
-  Immediately = -1,
-  OnDemand = -2, // @cached
-  Manually = -3,
-  Off = -4, // @transaction
+enum Kind {
+  Stateless = 0,
+  Stateful = 1,
+  Transaction = 2,
+  Trigger = 3,
+  Cached = 4,
 }
 
 enum Reentrance {
@@ -274,8 +272,10 @@ class Monitor {
 
 interface Trace {
   readonly silent: boolean;
+  readonly hints: boolean;
   readonly transactions: boolean;
   readonly methods: boolean;
+  readonly steps: boolean;
   readonly monitors: boolean;
   readonly reads: boolean;
   readonly writes: boolean;
