@@ -4,7 +4,6 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Handle } from '../internal/all';
-import { Start } from './Config';
 import { stateful } from './Config.decorators';
 import { Transaction } from './Transaction';
 
@@ -14,18 +13,16 @@ export class Monitor {
   private _counter: number = 0;
   private _workers = new Set<Worker>();
   readonly prolonged: boolean;
-  readonly start: Start;
   get isIdle(): boolean { return this._idle; }
   get counter(): number { return this._counter; }
   get workers(): ReadonlySet<Worker> { return this._workers; }
 
-  constructor(prolonged: boolean = false, start: Start = Start.AsStandaloneTransaction) {
+  constructor(prolonged: boolean = false) {
     this.prolonged = prolonged;
-    this.start = start;
   }
 
-  static create(hint?: string, prolonged: boolean = false, start: Start = Start.AsStandaloneTransaction): Monitor {
-    return Transaction.run("Monitor.create", Monitor.doCreate, hint, prolonged, start);
+  static create(hint?: string, prolonged: boolean = false): Monitor {
+    return Transaction.run("Monitor.create", Monitor.doCreate, hint, prolonged);
   }
 
   static enter(m: Monitor, worker: Worker): void {
@@ -42,8 +39,8 @@ export class Monitor {
       m._idle = true;
   }
 
-  private static doCreate(hint: string | undefined, prolonged: boolean, start: Start): Monitor {
-    return Handle.setHint(new Monitor(prolonged, start), hint);
+  private static doCreate(hint: string | undefined, prolonged: boolean): Monitor {
+    return Handle.setHint(new Monitor(prolonged), hint);
   }
 }
 

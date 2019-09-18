@@ -179,12 +179,6 @@ invocation of the corresponding function:
   - `Reentrance.CancelPrevious` - cancel previous transaction in favor of current one;
   - `Reentrance.RunSideBySide` - multiple simultaneous transactions are allowed.
 
-**Start** option defines how transaction is related to a parent transaction (if any):
-
-  - `Start.InsideParentTransaction` - transaction is part of parent transaction (default);
-  - `Start.AsStandaloneTransaction` - transaction is self-contained (separated from parent);
-  - `Start.AfterParentTransaction` - transaction starts after parent one as a self-contained transaction.
-
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
 shared between multiple transaction and cache functions, thus
@@ -223,18 +217,17 @@ function transaction(proto, prop, pd); // method only
 function trigger(proto, prop, pd); // method only
 function cached(proto, prop, pd); // method only
 
-function behavior(latency: number, reentrance: Reentrance, start: Start);
+function behavior(latency: number, reentrance: Reentrance);
 function monitor(value: Monitor | null);
 function trace(trace: Partial<Trace>);
 function config(config: Partial<Config>);
 
-// Config, Kind, Reentrance, Start, Monitor
+// Config, Kind, Reentrance, Monitor
 
 interface Config {
   readonly kind: Kind;
   readonly latency: number; // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance;
-  readonly start: Start;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
@@ -252,12 +245,6 @@ enum Reentrance {
   WaitAndRestart = 0, // wait for existing transaction to finish and then restart reentrant one
   CancelPrevious = -1, // cancel previous transaction in favor of recent one
   RunSideBySide = -2, // multiple simultaneous transactions are allowed
-}
-
-enum Start {
-  InsideParentTransaction = 0,
-  AsStandaloneTransaction = 1,
-  AfterParentTransaction = 2,
 }
 
 @stateful
@@ -302,7 +289,7 @@ class Transaction {
   join<T>(p: Promise<T>): Promise<T>;
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T;
-  static runAs<T>(hint: string, start: Start, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
+  static runAs<T>(hint: string, separate: boolean, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
   static readonly current: Transaction;
 }
 

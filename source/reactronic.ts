@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 export { all, sleep } from './internal/all';
-export { Config, Kind, Reentrance, Start, Trace } from './api/Config';
+export { Config, Kind, Reentrance, Trace } from './api/Config';
 export { stateful, stateless, transaction, trigger, cached, behavior, monitor, trace, config } from './api/Config.decorators';
 export { Transaction } from './api/Transaction';
 export { Status, resultof, statusof } from './api/Status';

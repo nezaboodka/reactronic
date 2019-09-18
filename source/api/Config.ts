@@ -11,7 +11,6 @@ export interface Config {
   readonly kind: Kind;
   readonly latency: number; // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance;
-  readonly start: Start;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }
@@ -29,10 +28,4 @@ export enum Reentrance {
   WaitAndRestart = 0, // wait for existing transaction to finish and then restart reentrant one
   CancelPrevious = -1, // cancel previous transaction in favor of recent one
   RunSideBySide = -2, // multiple simultaneous transactions are allowed
-}
-
-export enum Start {
-  InsideParentTransaction = 0,
-  AsStandaloneTransaction = 1,
-  AfterParentTransaction = 2,
 }

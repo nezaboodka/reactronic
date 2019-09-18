@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Dbg, Utils, undef, Record, ICacheResult, F, Snapshot, Hint } from '../internal/all';
-import { Start, Trace } from './Config';
+import { Trace } from './Config';
 
 export class Transaction {
   static readonly none: Transaction = new Transaction("<none>");
@@ -106,16 +106,16 @@ export class Transaction {
 
   undo(): void {
     const hint = Dbg.isOn && Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
-    Transaction.runAs(hint, Start.InsideParentTransaction, undefined, undefined,
+    Transaction.runAs(hint, false, undefined, undefined,
       Snapshot.undo, this.snapshot);
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
-    return Transaction.runAs(hint, Start.InsideParentTransaction, undefined, undefined, func, ...args);
+    return Transaction.runAs(hint, false, undefined, undefined, func, ...args);
   }
 
-  static runAs<T>(hint: string, start: Start, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
-    const t: Transaction = Transaction.acquire(hint, start, trace, token);
+  static runAs<T>(hint: string, separate: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
+    const t: Transaction = Transaction.acquire(hint, separate, trace, token);
     const root = t !== Transaction._current;
     t.guard();
     let result: any = t.do<T>(trace, func, ...args);
@@ -131,8 +131,8 @@ export class Transaction {
 
   // Internal
 
-  private static acquire(hint: string, start: Start, trace: Partial<Trace> | undefined, token: any): Transaction {
-    const spawn = start !== Start.InsideParentTransaction || Transaction._current.isFinished();
+  private static acquire(hint: string, separate: boolean, trace: Partial<Trace> | undefined, token: any): Transaction {
+    const spawn = separate || Transaction._current.isFinished();
     return spawn ? new Transaction(hint, trace, token) : Transaction._current;
   }
 
@@ -153,7 +153,7 @@ export class Transaction {
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction T${this.id} (${this.hint}) is waiting for restart`);
         await this.retryAfter.whenFinished(true);
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction T${this.id} (${this.hint}) is ready for restart`);
-        return Transaction.runAs<T>(this.hint, Start.AsStandaloneTransaction, this.trace, this.snapshot.cache, func, ...args);
+        return Transaction.runAs<T>(this.hint, true, this.trace, this.snapshot.cache, func, ...args);
       }
       else
         throw error;
@@ -197,7 +197,7 @@ export class Transaction {
 
   private runTriggers(): void {
     const name = Dbg.isOn && Dbg.trace.hints ? `REACTION(${this.snapshot.triggers.length}): ${this.snapshot.hint}` : /* istanbul ignore next */ "noname";
-    this.reaction.tran = Transaction.runAs(name, Start.AsStandaloneTransaction, this.trace, undefined,
+    this.reaction.tran = Transaction.runAs(name, true, this.trace, undefined,
       Transaction.doRunTriggers, this.snapshot.triggers);
   }
 

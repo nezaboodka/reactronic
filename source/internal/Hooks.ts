@@ -10,7 +10,7 @@ import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
 import { Record, F, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
-import { Config, Kind, Reentrance, Start } from '../api/Config';
+import { Config, Kind, Reentrance } from '../api/Config';
 import { Monitor } from '../api/Monitor';
 import { Trace } from '../api/Trace';
 
@@ -24,7 +24,6 @@ const DEFAULT: Config = {
   kind: Kind.Stateless,
   latency: -2, // never
   reentrance: Reentrance.WaitAndRestart,
-  start: Start.InsideParentTransaction,
   monitor: null,
   trace: undefined,
 };
@@ -34,7 +33,6 @@ export class ConfigRecord implements Config {
   readonly kind: Kind;
   readonly latency: number;
   readonly reentrance: Reentrance;
-  readonly start: Start;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
   static default = new ConfigRecord(undef, {body: undef, ...DEFAULT}, {}, false);
@@ -44,7 +42,6 @@ export class ConfigRecord implements Config {
     this.kind = merge(DEFAULT.kind, existing.kind, patch.kind, implicit);
     this.latency = merge(DEFAULT.latency, existing.latency, patch.latency, implicit);
     this.reentrance = merge(DEFAULT.reentrance, existing.reentrance, patch.reentrance, implicit);
-    this.start = merge(DEFAULT.start, existing.start, patch.start, implicit);
     this.monitor = merge(DEFAULT.monitor, existing.monitor, patch.monitor, implicit);
     this.trace = merge(DEFAULT.trace, existing.trace, patch.trace, implicit);
     Object.freeze(this);
