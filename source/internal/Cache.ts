@@ -126,12 +126,12 @@ export class Cache extends Status<any> {
         case Reentrance.PreventWithError:
           throw new Error(`${c.hint()} is configured as non-reentrant`);
         case Reentrance.WaitAndRestart:
-          error = new Error(`transaction t${caller.id} (${caller.hint}) will be restarted after t${prev.tran.id} (${prev.tran.hint})`);
+          error = new Error(`transaction T${caller.id} (${caller.hint}) will be restarted after T${prev.tran.id} (${prev.tran.hint})`);
           caller.cancel(error, prev.tran);
           // TODO: "c.invalidation.recaching = caller" in order serialize all the transactions
           break;
         case Reentrance.CancelPrevious:
-          prev.tran.cancel(new Error(`transaction t${prev.tran.id} (${prev.tran.hint}) is canceled by t${caller.id} (${caller.hint}) and will be silently ignored`), null);
+          prev.tran.cancel(new Error(`transaction T${prev.tran.id} (${prev.tran.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null);
           c.invalidated.renewing = undefined;
           break;
         case Reentrance.RunSideBySide:
@@ -388,7 +388,7 @@ class CacheResult implements ICacheResult {
       const isTrigger = this.config.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (isTrigger)
         triggers.push(this);
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", `${this.hint(false)} is invalidated since v${stamp} by ${Hint.record(cause, false, false, causeProp)}${isTrigger ? " and will run automatically" : ""}`);
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", `${this.hint(false)} is invalidated since [${stamp}] by ${Hint.record(cause, false, false, causeProp)}${isTrigger ? " and will run automatically" : ""}`);
       // Invalidate children (cascade)
       const h: Handle = Utils.get(this.record.data, RT_HANDLE);
       let r: Record = h.head;
@@ -514,7 +514,7 @@ class CacheResult implements ICacheResult {
 
   static currentTrace(local: Partial<Trace> | undefined): Trace {
     const t = Transaction.current;
-    let res = Dbg.merge(t.trace, 31 + t.id % 6, `t${t.id}`, Dbg.global);
+    let res = Dbg.merge(t.trace, 31 + t.id % 6, `T${t.id}`, Dbg.global);
     if (CacheResult.active)
       res = Dbg.merge(CacheResult.active, undefined, undefined, res);
     if (local)

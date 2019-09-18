@@ -51,7 +51,7 @@ export class Transaction {
     const restore = Transaction._inspection;
     try {
       Transaction._inspection = true;
-      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is being inspected by t${Transaction._current.id} (${Transaction._current.hint})`);
+      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("", "  ", `transaction T${this.id} (${this.hint}) is being inspected by T${Transaction._current.id} (${Transaction._current.hint})`);
       return this.do(undefined, func, ...args);
     }
     finally {
@@ -150,9 +150,9 @@ export class Transaction {
     }
     catch (error) {
       if (this.retryAfter && this.retryAfter !== Transaction.none) {
-        // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is waiting for restart`);
+        // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction T${this.id} (${this.hint}) is waiting for restart`);
         await this.retryAfter.whenFinished(true);
-        // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction t${this.id} (${this.hint}) is ready for restart`);
+        // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction T${this.id} (${this.hint}) is ready for restart`);
         return Transaction.runAs<T>(this.hint, Start.AsStandaloneTransaction, this.trace, this.snapshot.cache, func, ...args);
       }
       else
@@ -233,7 +233,7 @@ export class Transaction {
   }
 
   private tryResolveConflicts(conflicts: Record[]): void {
-    this.error = this.error || new Error(`transaction t${this.id} (${this.hint}) conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
+    this.error = this.error || new Error(`transaction T${this.id} (${this.hint}) conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
     throw this.error;
   }
 

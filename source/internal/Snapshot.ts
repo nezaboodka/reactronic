@@ -59,14 +59,14 @@ export class Snapshot implements ISnapshot {
   read(h: Handle): Record {
     const result = this.tryRead(h);
     if (result === Record.blank) /* istanbul ignore next */
-      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
+      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot [${this.timestamp}]`);
     return result;
   }
 
   write(h: Handle, prop: PropertyKey, token: any): Record {
     const result: Record = this.tryWrite(h, prop, token);
     if (result === Record.blank) /* istanbul ignore next */
-      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
+      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot [${this.timestamp}]`);
     return result;
   }
 
@@ -118,7 +118,7 @@ export class Snapshot implements ISnapshot {
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this;
-      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("╔══", `v${this.timestamp}`, `${this.hint}`);
+      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("╔══", `[${this.timestamp}]`, `${this.hint}`);
     }
   }
 
@@ -193,7 +193,7 @@ export class Snapshot implements ISnapshot {
       }
     });
     if (Dbg.isOn && Dbg.trace.transactions)
-      Dbg.log(this.timestamp < MAX_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
+      Dbg.log(this.timestamp < MAX_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `[${this.timestamp}]`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
   /* istanbul ignore next */
@@ -239,7 +239,7 @@ export class Snapshot implements ISnapshot {
   }
 
   private static unlinkHistory(s: Snapshot): void {
-    if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", " g", `snapshot t${s.id} (${s.hint}) is being collected`);
+    if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", " g", `snapshot of T${s.id} (${s.hint}) is being collected`);
     s.changeset.forEach((r: Record, h: Handle) => {
       if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== Record.blank) Dbg.log("", " ·", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
@@ -255,7 +255,7 @@ export class Hint {
   }
 
   static record(r: Record, tranless?: boolean, nameless?: boolean, prop?: PropertyKey): string {
-    const t: string = tranless ? "" : `t${r.snapshot.id}`;
+    const t: string = tranless ? "" : `T${r.snapshot.id}`;
     const h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
     const name: string = h ? `${t}${Hint.handle(h, nameless)}` : /* istanbul ignore next */ "blank";
     return prop !== undefined ? `${name}.${prop.toString()}` : `${name}`;
