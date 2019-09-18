@@ -225,6 +225,7 @@ function cached(proto, prop, pd); // method only
 
 function behavior(latency: number, reentrance: Reentrance, start: Start);
 function monitor(value: Monitor | null);
+function trace(trace: Partial<Trace>);
 function config(config: Partial<Config>);
 
 // Config, Kind, Reentrance, Start, Monitor
