@@ -244,9 +244,9 @@ class CacheResult implements ICacheResult {
 
   wrap<T>(func: F<T>): F<T> {
     const caching: F<T> = (...args: any[]): T => {
-      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "‾\\", `${Hint.record(this.record, true)}.${this.member.toString()} - step in  `, 0, "        │");
+      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs(this, "║", "‾\\", `${Hint.record(this.record, true)}.${this.member.toString()} - step in  `, 0, "        │");
       const result = Cache.run<T>(this, func, ...args);
-      if (Dbg.isOn && Dbg.trace.methods && this.ret) Dbg.logAs(this, "║", "_/", `${Hint.record(this.record, true)}.${this.member.toString()} - step out `, 0, this.started > 0 ? "        │" : "");
+      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs(this, "║", "_/", `${Hint.record(this.record, true)}.${this.member.toString()} - step out `, 0, this.started > 0 ? "        │" : "");
       return result;
     };
     return caching;
@@ -346,10 +346,9 @@ class CacheResult implements ICacheResult {
         if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (!r.replaced.has(prop)) {
           const v = r.data[prop];
-          // const t1 = this.record.prev.record.snapshot.timestamp;
-          const t2 = this.record.snapshot.timestamp;
-          if (v instanceof CacheResult && t2 >= v.invalidated.since /* && t1 < v.invalidated.since */)
-              this.invalidateBy(r, prop, triggers);
+          const t = this.record.snapshot.timestamp;
+          if (v instanceof CacheResult && t >= v.invalidated.since)
+            this.invalidateBy(r, prop, triggers);
         }
         else
           this.invalidateBy(r, prop, triggers);
