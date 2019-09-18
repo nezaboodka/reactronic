@@ -109,13 +109,13 @@ the whole chain of asynchronous operations is fully completed.
 ### Trigger & Cache
 
 Trigger is a function that is immediately called in response to
-changes in its dependencies. Cache is a computed value having an
-associated function that is called on-demand to renew the value
-in case of changes in its dependencies.
+state changes. Cache is a computed value having an associated
+function that is called on-demand to renew the value after
+invalidation.
 
 Trigger and cached functions are instrumented with hooks to seamlesly
-subscribe to those state objects and other cached functions, which are
-used during their execution.
+subscribe to those state objects and other cached functions
+(dependencies), which are used during their execution.
 
 ``` tsx
 class MyView extends React.Component<MyModel> {
@@ -314,6 +314,7 @@ function statusof<T>(method: F<T>): Status<T>;
 abstract class Status<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
+  readonly stamp: number;
   readonly error: any;
   getResult(args?: any[]): T;
   readonly isInvalid: boolean;
