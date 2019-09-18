@@ -6,24 +6,24 @@ import * as React from 'react';
 import { stateful, trigger, cached, statusof,
   Start, Transaction, Status, Trace } from 'reactronic';
 
-export function reactiveRender(render: (ordinal: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
-  const [ordinal, refresh] = React.useState(0);
+export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
+  const [counter, refresh] = React.useState(0);
   const [rejsx] = React.useState(() => createRejsx(trace));
   React.useEffect(Rejsx.unmountEffect(rejsx), []);
-  const jsx: JSX.Element = rejsx.jsx(ordinal, render, tran);
-  rejsx.refresh(ordinal + 1, refresh);
+  const jsx: JSX.Element = rejsx.jsx(counter, render, tran);
+  rejsx.autorefresh(counter + 1, refresh);
   return jsx;
 }
 
 @stateful
 class Rejsx {
   @cached
-  jsx(ordinal: number, render: (ordinal: number) => JSX.Element, tran: Transaction | undefined): JSX.Element {
-    return !tran ? render(ordinal) : tran.inspect(render, ordinal);
+  jsx(counter: number, render: (counter: number) => JSX.Element, tran: Transaction | undefined): JSX.Element {
+    return !tran ? render(counter) : tran.inspect(render, counter);
   }
 
   @trigger
-  refresh(next: number, refresh: (next: number) => void): void {
+  autorefresh(next: number, refresh: (next: number) => void): void {
     if (statusof(this.jsx).isInvalid)
       refresh(next);
   }
@@ -54,7 +54,7 @@ function doCreateRejsx(hint: string | undefined, trace: Trace | undefined): Rejs
     Status.setTraceHint(rejsx, hint);
   if (trace) {
     statusof(rejsx.jsx).configure({trace});
-    statusof(rejsx.refresh).configure({trace});
+    statusof(rejsx.autorefresh).configure({trace});
   }
   return rejsx;
 }
