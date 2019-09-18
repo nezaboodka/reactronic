@@ -172,7 +172,7 @@ invocation of the corresponding function:
   - `-1` - rerun immediately (right after commit);
   - `-2` - never rerun (disabled trigger).
 
-**Reentrance** option defines how to handle reentrant calls of the same transactional function:
+**Reentrance** option defines how to handle reentrant calls of transactions and triggers:
 
   - `Reentrance.PreventWithError` - fail with error if there is an existing transaction in progress;
   - `Reentrance.WaitAndRestart` - wait for previous transaction to finish and then restart current one;
