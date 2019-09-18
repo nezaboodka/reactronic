@@ -315,7 +315,7 @@ abstract class Status<T> {
   readonly config: Config;
   configure(config: Partial<Config>): Config;
   readonly error: any;
-  getResult(...args: any[]): T;
+  getResult(args?: any[]): T;
   readonly isInvalid: boolean;
   invalidate(cause: string | undefined): boolean;
 

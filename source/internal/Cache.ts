@@ -21,7 +21,7 @@ export class Cache extends Status<any> {
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
   get stamp(): number { return this.read(true).record.snapshot.timestamp; }
   get error(): boolean { return this.read(true).cache.error; }
-  getResult(...args: any): any { return this.call(false, args).cache.result; }
+  getResult(args?: any): any { return this.call(false, args).cache.result; }
   get isInvalid(): boolean { return Snapshot.readable().timestamp >= this.read(true).cache.invalidated.since; }
   invalidate(cause: string | undefined): boolean { return cause ? CacheResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
 
@@ -347,8 +347,7 @@ class CacheResult implements ICacheResult {
         if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (!r.replaced.has(prop)) {
           const v = r.data[prop];
-          const t = this.record.snapshot.timestamp;
-          if (v instanceof CacheResult && t >= v.invalidated.since)
+          if (v instanceof CacheResult && this.record.snapshot.timestamp >= v.invalidated.since)
             this.invalidateBy(r, prop, triggers);
         }
         else
