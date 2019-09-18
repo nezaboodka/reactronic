@@ -165,12 +165,12 @@ one.
 
 There are multiple options to configure behavior of transactional reactivity.
 
-**Latency** option defines a delay between trigger/cache invalidation and
+**Latency** option defines a delay between trigger invalidation and
 invocation of the corresponding function:
 
   - `(ms)` - delay in milliseconds;
   - `-1` - rerun immediately (right after commit);
-  - `-2` - never rerun.
+  - `-2` - never rerun (disabled trigger).
 
 **Reentrance** option defines how to handle reentrant calls of the same transactional function:
 
