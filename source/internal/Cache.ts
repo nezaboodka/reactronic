@@ -2,7 +2,7 @@
 // shall be included in all copies or substantial portions.
 // Copyright (c) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 
-import { Dbg, Utils, rethrow, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
+import { Dbg, Utils, Record, ICacheResult, F, Handle, Snapshot, Hint, ConfigRecord, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';
 export { Status, resultof, statusof } from '../api/Status';
 import { Config, Kind, Reentrance, Start, Trace } from '../api/Config';
@@ -558,6 +558,11 @@ function promiseThenProxy(
       onfailure = Transaction._wrap<any>(t, CacheResult.active, false, false, onfailure);
   }
   return original_primise_then.call(this, onsuccess, onfailure);
+}
+
+/* istanbul ignore next */
+export function rethrow(error: any): never {
+  throw error;
 }
 
 // Global Init

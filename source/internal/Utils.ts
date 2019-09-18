@@ -41,20 +41,11 @@ export class Utils {
       target[prop] = source[prop];
     return target;
   }
-
-  static hasAllFlags(flags: number, required: number): boolean {
-    return (flags & required) === required;
-  }
 }
 
 /* istanbul ignore next */
 export function undef(...args: any[]): never {
   throw new Error("this method should never be called");
-}
-
-/* istanbul ignore next */
-export function rethrow(error: any): never {
-  throw error;
 }
 
 export async function all(promises: Array<Promise<any>>): Promise<any[]> {
