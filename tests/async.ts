@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { stateful, transaction, trigger, cached, Status, Monitor, monitor, all, sleep, behavior } from '../source/reactronic';
+import { stateful, transaction, trigger, cached, latency, Status, Monitor, monitor, all, sleep } from '../source/reactronic';
 export { trace } from './common';
 
 export const output: string[] = [];
@@ -26,7 +26,7 @@ export class DemoView {
   @stateful test: any;
   constructor(readonly model: DemoModel) { }
 
-  @trigger @behavior(-1)
+  @trigger @latency(-1)
   async print(): Promise<void> {
     const lines: string[] = await this.render();
     for (const x of lines) {

@@ -34,8 +34,12 @@ export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescri
   return Hooks.decorateMethod(true, config, proto, prop, pd);
 }
 
-export function behavior(latency?: number, reentrance?: Reentrance): F<any> {
-  return config({latency, reentrance});
+export function latency(latency: number): F<any> {
+  return config({latency});
+}
+
+export function reentrance(reentrance: Reentrance): F<any> {
+  return config({reentrance});
 }
 
 export function monitor(value: Monitor | null): F<any> {

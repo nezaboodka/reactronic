@@ -5,7 +5,7 @@
 
 import * as React from 'react';
 import { stateful, trigger, cached, statusof,
-  Start, Transaction, Status, Trace } from 'reactronic';
+  Transaction, Status, Trace } from 'reactronic';
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
   const [counter, refresh] = React.useState(0);
@@ -45,7 +45,7 @@ function createRejsx(trace?: Partial<Trace>): Rejsx {
     ? trace === undefined || trace.hints !== false
     : trace !== undefined && trace.hints === true;
   const hint = dbg ? getComponentName() : "createRejsx";
-  return Transaction.runAs(hint, Start.InsideParentTransaction, trace, undefined,
+  return Transaction.runAs(hint, false, trace, undefined,
     doCreateRejsx, hint, trace);
 }
 
