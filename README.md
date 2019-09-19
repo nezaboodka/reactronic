@@ -33,7 +33,7 @@ Transactional reactivity is based on four fundamental concepts:
   - **Cache** - a computed value having associated function that is called on-demand to renew the value after invalidation.
 
 The following picture illustrates relationships between the concepts
-in the source code (picture is outdated and will be updated soon):
+in the source code:
 
 ![Reactronic](https://blog.nezaboodka.com/img/reactronic.jpg)
 
