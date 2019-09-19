@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Handle } from '../internal/all';
-import { stateful } from './Config.decorators';
+import { stateful } from './Reactivity.decorators';
 import { Transaction } from './Transaction';
 
 @stateful

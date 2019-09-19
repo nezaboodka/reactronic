@@ -5,7 +5,7 @@
 
 import { Cache, F, Handle, Dbg } from '../internal/all';
 import { Transaction } from './Transaction';
-import { Reactivity, Trace } from './Config';
+import { Reactivity, Trace } from './Reactivity';
 
 export function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined {
   return (statusof(method) as any).getResult(args.length > 0 ? args : undefined);

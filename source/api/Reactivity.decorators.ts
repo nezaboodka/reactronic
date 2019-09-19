@@ -6,7 +6,7 @@
 import { Trace } from './Trace';
 import { F } from '../internal/Record';
 import { Hooks } from '../internal/Hooks';
-import { Reactivity, Reentrance, Kind } from './Config';
+import { Reactivity, Reentrance, Kind } from './Reactivity';
 import { Monitor } from './Monitor';
 
 export function stateful(proto: object, prop?: PropertyKey): any {
