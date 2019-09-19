@@ -249,12 +249,10 @@ enum Reentrance {
   RunSideBySide = -2, // multiple simultaneous transactions are allowed
 }
 
-@stateful
 class Monitor {
   readonly isIdle: boolean;
-  readonly volume: number;
-  readonly message: string;
-  constructor(hint: string);
+  readonly counter: number;
+  static create(hint?: string): Monitor;
 }
 
 interface Trace {
