@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, Utils, Record, ICacheResult, F, Handle, Snapshot, Hint, ReactivityConfig, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
+import { Dbg, Utils, Record, ICacheResult, F, Handle, Snapshot, Hint, Rx, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';
 export { Status, resultof, statusof } from '../api/Status';
 import { Reactivity, Kind, Reentrance, Trace } from '../api/Reactivity';
@@ -25,10 +25,10 @@ export class Cache extends Status<any> {
   get isInvalid(): boolean { return Snapshot.readable().timestamp >= this.read(true).cache.invalidated.since; }
   invalidate(cause: string | undefined): boolean { return cause ? CacheResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
 
-  constructor(handle: Handle, member: PropertyKey, reactivity: ReactivityConfig) {
+  constructor(handle: Handle, member: PropertyKey, rx: Rx) {
     super();
     this.handle = handle;
-    this.blank = new CacheResult(Record.blank, member, reactivity);
+    this.blank = new CacheResult(Record.blank, member, rx);
     CacheResult.freeze(this.blank);
     // TODO: mark cache readonly?
   }
@@ -139,7 +139,7 @@ export class Cache extends Status<any> {
     return error;
   }
 
-  private reconfigure(reactivity: Partial<Reactivity>): Reactivity {
+  private reconfigure(rx: Partial<Reactivity>): Reactivity {
     const call = this.read(false);
     const c: CacheResult = call.cache;
     const r: Record = call.record;
@@ -147,7 +147,7 @@ export class Cache extends Status<any> {
     return Transaction.runAs(hint, false, undefined, undefined, (): Reactivity => {
       const call2 = this.write();
       const c2: CacheResult = call2.cache;
-      c2.rx = new ReactivityConfig(c2.rx.body, c2.rx, reactivity, false);
+      c2.rx = new Rx(c2.rx.body, c2.rx, rx, false);
       if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.reactivity = ...`);
       return c2.rx;
     });
@@ -171,7 +171,7 @@ export class Cache extends Status<any> {
     return result;
   }
 
-  static createCacheTrap(h: Handle, prop: PropertyKey, rx: ReactivityConfig): F<any> {
+  static createCacheTrap(h: Handle, prop: PropertyKey, rx: Rx): F<any> {
     const cache = new Cache(h, prop, rx);
     const cacheTrap: F<any> = (...args: any[]): any =>
       cache.call(true, args).cache.ret;
@@ -209,7 +209,7 @@ class CacheResult implements ICacheResult {
   readonly tran: Transaction;
   readonly record: Record;
   readonly member: PropertyKey;
-  rx: ReactivityConfig;
+  rx: Rx;
   args: any[];
   ret: any;
   result: any;
@@ -218,7 +218,7 @@ class CacheResult implements ICacheResult {
   readonly invalidated: { since: number, renewing: CacheResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
 
-  constructor(record: Record, member: PropertyKey, init: CacheResult | ReactivityConfig) {
+  constructor(record: Record, member: PropertyKey, init: CacheResult | Rx) {
     this.margin = Dbg.isOn ? Dbg.trace.margin + 1 : 0;
     this.tran = Transaction.current;
     this.record = record;

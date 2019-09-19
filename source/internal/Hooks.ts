@@ -28,16 +28,16 @@ const DEFAULT: Reactivity = {
   trace: undefined,
 };
 
-export class ReactivityConfig implements Reactivity {
+export class Rx implements Reactivity {
   readonly body: Function;
   readonly kind: Kind;
   readonly latency: number;
   readonly reentrance: Reentrance;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
-  static default = new ReactivityConfig(undef, {body: undef, ...DEFAULT}, {}, false);
+  static default = new Rx(undef, {body: undef, ...DEFAULT}, {}, false);
 
-  constructor(body: Function | undefined, existing: ReactivityConfig, patch: Partial<ReactivityConfig>, implicit: boolean) {
+  constructor(body: Function | undefined, existing: Rx, patch: Partial<Rx>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body;
     this.kind = merge(DEFAULT.kind, existing.kind, patch.kind, implicit);
     this.latency = merge(DEFAULT.latency, existing.latency, patch.latency, implicit);
@@ -63,7 +63,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   get(h: Handle, prop: PropertyKey, receiver: any): any {
     let value: any;
-    const rx: ReactivityConfig | undefined = Hooks.getReactivity(h.stateless, prop);
+    const rx: Rx | undefined = Hooks.getReactivity(h.stateless, prop);
     if (!rx || (rx.body === decoratedfield && rx.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.readable().read(h);
       value = r.data[prop];
@@ -78,7 +78,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
-    const rx: ReactivityConfig | undefined = Hooks.getReactivity(h.stateless, prop);
+    const rx: Rx | undefined = Hooks.getReactivity(h.stateless, prop);
     if (!rx || (rx.body === decoratedfield && rx.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.writable().tryWrite(h, prop, value);
       if (r !== Record.blank) { // blank when r.data[prop] === value, thus creation of changing record was skipped
@@ -150,7 +150,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const configurable: boolean = true;
     const rxOfMethod = Hooks.applyReactivity(type, method, pd.value, rx, implicit);
     const get = function(this: any): any {
-      const rxOfClass: ReactivityConfig = Hooks.getReactivity(Object.getPrototypeOf(this), RT_CLASS) || ReactivityConfig.default;
+      const rxOfClass: Rx = Hooks.getReactivity(Object.getPrototypeOf(this), RT_CLASS) || Rx.default;
       const h: Handle = rxOfClass.kind !== Kind.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
       const value = Hooks.createCacheTrap(h, method, rxOfMethod);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
@@ -159,10 +159,10 @@ export class Hooks implements ProxyHandler<Handle> {
     return Object.defineProperty(type, method, { get, enumerable, configurable });
   }
 
-  private static applyReactivity(target: any, prop: PropertyKey, body: Function | undefined, rx: Partial<ReactivityConfig>, implicit: boolean): ReactivityConfig {
+  private static applyReactivity(target: any, prop: PropertyKey, body: Function | undefined, rx: Partial<Rx>, implicit: boolean): Rx {
     const rxTable: any = Hooks.acquireReactivityTable(target);
-    const existing: ReactivityConfig = rxTable[prop] || ReactivityConfig.default;
-    const result = rxTable[prop] = new ReactivityConfig(body, existing, rx, implicit);
+    const existing: Rx = rxTable[prop] || Rx.default;
+    const result = rxTable[prop] = new Rx(body, existing, rx, implicit);
     return result;
   }
 
@@ -179,7 +179,7 @@ export class Hooks implements ProxyHandler<Handle> {
     return target[RT_RX] || /* istanbul ignore next */ BLANK_REACTIVITY_TABLE;
   }
 
-  static getReactivity(target: any, prop: PropertyKey): ReactivityConfig | undefined {
+  static getReactivity(target: any, prop: PropertyKey): Rx | undefined {
     return Hooks.getReactivityTable(target)[prop];
   }
 
@@ -204,7 +204,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static createCacheTrap = function(h: Handle, prop: PropertyKey, rx: ReactivityConfig): F<any> {
+  static createCacheTrap = function(h: Handle, prop: PropertyKey, rx: Rx): F<any> {
      throw new Error("createCacheTrap should never be called");
   };
 }
