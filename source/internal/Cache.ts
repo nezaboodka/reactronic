@@ -236,7 +236,7 @@ class CacheResult implements ICacheResult {
       this.args = init.args;
       this.result = init.result;
     }
-    else { // init instanceof ConfigRecord
+    else { // init instanceof Rx
       this.rx = init;
       this.args = [];
       this.result = undefined;
