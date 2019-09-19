@@ -39,11 +39,11 @@ export class DemoModel {
   }
 }
 
-@trace({})
+@stateful @trace({})
 export class DemoView {
-  shared: string = "for testing purposes";
-  readonly model: DemoModel;
-  @stateful userFilter: string = "Jo";
+  @stateless shared: string = "for testing purposes";
+  @stateless readonly model: DemoModel;
+  userFilter: string = "Jo";
 
   constructor(model: DemoModel) {
     this.model = model;

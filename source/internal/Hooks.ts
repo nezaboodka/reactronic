@@ -16,8 +16,9 @@ import { Trace } from '../api/Trace';
 
 // Reactivity
 
-export const RT_RX: unique symbol = Symbol("RT:RX");
-export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
+const RT_RX: unique symbol = Symbol("RT:RX");
+const RT_RX_CLASS: unique symbol = Symbol("RT:RX:CLASS");
+// const RT_RX_TRIGGERS: unique symbol = Symbol("RT:RX:TRIG");
 
 const BLANK_RX_TABLE = Object.freeze({});
 const DEFAULT_RX: Reactivity = Object.freeze({
@@ -119,17 +120,22 @@ export class Hooks implements ProxyHandler<Handle> {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args);
         const h: Handle = Hooks.createHandle(stateful, stateless, undefined);
+        // const triggers: Map<PropertyKey, Rx> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
+        // if (triggers) {
+        //   // TODO: Add triggers to transaction for automatic first run
+        //   // console.log("remember triggers");
+        // }
         return h.proxy;
       };
       Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)); // preserve prototype
       Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)); // preserve static definitions
     }
-    Hooks.applyReactivity(ctor.prototype, RT_CLASS, decoratedclass, rx, implicit);
+    Hooks.configureReactivity(ctor.prototype, RT_RX_CLASS, decoratedclass, rx, implicit);
     return ctor;
   }
 
-  static decorateField(implicit: boolean, rx: Partial<Reactivity>, target: any, prop: PropertyKey): any {
-    rx = Hooks.applyReactivity(target, prop, decoratedfield, rx, implicit);
+  static decorateField(implicit: boolean, rx: Partial<Reactivity>, proto: any, prop: PropertyKey): any {
+    rx = Hooks.configureReactivity(proto, prop, decoratedfield, rx, implicit);
     if (rx.kind !== Kind.Stateless) {
       const get = function(this: any): any {
         const h: Handle = Hooks.acquireHandle(this);
@@ -141,46 +147,57 @@ export class Hooks implements ProxyHandler<Handle> {
       };
       const enumerable = true;
       const configurable = false;
-      return Object.defineProperty(target, prop, { get, set, enumerable, configurable });
+      return Object.defineProperty(proto, prop, { get, set, enumerable, configurable });
     }
   }
 
-  static decorateMethod(implicit: boolean, rx: Partial<Reactivity>, type: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  static decorateMethod(implicit: boolean, rx: Partial<Reactivity>, proto: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true;
     const configurable: boolean = true;
-    const rxOfMethod = Hooks.applyReactivity(type, method, pd.value, rx, implicit);
+    const rxOfMethod = Hooks.configureReactivity(proto, method, pd.value, rx, implicit);
     const get = function(this: any): any {
-      const rxOfClass: Rx = Hooks.getReactivity(Object.getPrototypeOf(this), RT_CLASS) || Rx.DEFAULT;
+      const rxOfClass: Rx = Hooks.getReactivity(Object.getPrototypeOf(this), RT_RX_CLASS) || Rx.DEFAULT;
       const h: Handle = rxOfClass.kind !== Kind.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
       const value = Hooks.createCacheTrap(h, method, rxOfMethod);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
       return value;
     };
-    return Object.defineProperty(type, method, { get, enumerable, configurable });
+    return Object.defineProperty(proto, method, { get, enumerable, configurable });
   }
 
-  private static applyReactivity(target: any, prop: PropertyKey, body: Function | undefined, rx: Partial<Rx>, implicit: boolean): Rx {
-    const rxTable: any = Hooks.acquireReactivityTable(target);
+  private static getReactivity(proto: any, prop: PropertyKey): Rx | undefined {
+    return Hooks.getReactivityTable(proto)[prop];
+  }
+
+  private static configureReactivity(proto: any, prop: PropertyKey, body: Function | undefined, rx: Partial<Rx>, implicit: boolean): Rx {
+    const rxTable: any = Hooks.acquireReactivityTable(proto);
     const existing: Rx = rxTable[prop] || Rx.DEFAULT;
     const result = rxTable[prop] = new Rx(body, existing, rx, implicit);
+    // if (result.kind === Kind.Trigger && result.latency > -2) {
+    //   let triggers: Map<PropertyKey, Rx> | undefined = rxTable[RT_RX_TRIGGERS];
+    //   if (!triggers)
+    //     triggers = rxTable[RT_RX_TRIGGERS] = new Map<PropertyKey, Rx>();
+    //   triggers.set(prop, result);
+    // }
+    // else if (existing.kind === Kind.Trigger && existing.latency > -2) {
+    //   const triggers: Map<PropertyKey, Rx> | undefined = rxTable[RT_RX_TRIGGERS];
+    //   if (triggers)
+    //     triggers.delete(prop);
+    // }
     return result;
   }
 
-  private static acquireReactivityTable(target: any): any {
-    let rxTable: any = target[RT_RX];
-    if (!target.hasOwnProperty(RT_RX)) {
+  private static acquireReactivityTable(proto: any): any {
+    let rxTable: any = proto[RT_RX];
+    if (!proto.hasOwnProperty(RT_RX)) {
       rxTable = Object.setPrototypeOf({}, rxTable || {});
-      Utils.set(target, RT_RX, rxTable);
+      Utils.set(proto, RT_RX, rxTable);
     }
     return rxTable;
   }
 
-  static getReactivityTable(target: any): any {
-    return target[RT_RX] || /* istanbul ignore next */ BLANK_RX_TABLE;
-  }
-
-  static getReactivity(target: any, prop: PropertyKey): Rx | undefined {
-    return Hooks.getReactivityTable(target)[prop];
+  static getReactivityTable(proto: any): any {
+    return proto[RT_RX] || /* istanbul ignore next */ BLANK_RX_TABLE;
   }
 
   static acquireHandle(obj: any): Handle {
