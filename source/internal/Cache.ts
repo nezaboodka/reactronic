@@ -212,6 +212,7 @@ export class Cache extends Status<any> {
 class CacheResult implements ICacheResult {
   static asyncTriggerQueue: CacheResult[] = [];
   static active?: CacheResult = undefined;
+
   readonly margin: number;
   readonly tran: Transaction;
   readonly record: Record;
