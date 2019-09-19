@@ -16,9 +16,9 @@ import { Trace } from '../api/Trace';
 
 // Reactivity
 
-const RT_RX: unique symbol = Symbol("RT:RX");
+const RT_RX_TABLE: unique symbol = Symbol("RT:RX:TABLE");
 const RT_RX_CLASS: unique symbol = Symbol("RT:RX:CLASS");
-// const RT_RX_TRIGGERS: unique symbol = Symbol("RT:RX:TRIG");
+const RT_RX_TRIGGERS: unique symbol = Symbol("RT:RX:TRIGGERS");
 
 const BLANK_RX_TABLE = Object.freeze({});
 const DEFAULT_RX: Reactivity = Object.freeze({
@@ -120,11 +120,11 @@ export class Hooks implements ProxyHandler<Handle> {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args);
         const h: Handle = Hooks.createHandle(stateful, stateless, undefined);
-        // const triggers: Map<PropertyKey, Rx> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
-        // if (triggers) {
-        //   // TODO: Add triggers to transaction for automatic first run
-        //   // console.log("remember triggers");
-        // }
+        const triggers: Map<PropertyKey, Rx> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
+        if (triggers) {
+          // TODO: Add triggers to transaction for automatic first run
+          // console.log("remember triggers");
+        }
         return h.proxy;
       };
       Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)); // preserve prototype
@@ -173,31 +173,31 @@ export class Hooks implements ProxyHandler<Handle> {
     const rxTable: any = Hooks.acquireReactivityTable(proto);
     const existing: Rx = rxTable[prop] || Rx.DEFAULT;
     const result = rxTable[prop] = new Rx(body, existing, rx, implicit);
-    // if (result.kind === Kind.Trigger && result.latency > -2) {
-    //   let triggers: Map<PropertyKey, Rx> | undefined = rxTable[RT_RX_TRIGGERS];
-    //   if (!triggers)
-    //     triggers = rxTable[RT_RX_TRIGGERS] = new Map<PropertyKey, Rx>();
-    //   triggers.set(prop, result);
-    // }
-    // else if (existing.kind === Kind.Trigger && existing.latency > -2) {
-    //   const triggers: Map<PropertyKey, Rx> | undefined = rxTable[RT_RX_TRIGGERS];
-    //   if (triggers)
-    //     triggers.delete(prop);
-    // }
+    if (result.kind === Kind.Trigger && result.latency > -2) {
+      let triggers: Map<PropertyKey, Rx> | undefined = rxTable[RT_RX_TRIGGERS];
+      if (!triggers)
+        triggers = rxTable[RT_RX_TRIGGERS] = new Map<PropertyKey, Rx>();
+      triggers.set(prop, result);
+    }
+    else if (existing.kind === Kind.Trigger && existing.latency > -2) {
+      const triggers: Map<PropertyKey, Rx> | undefined = rxTable[RT_RX_TRIGGERS];
+      if (triggers)
+        triggers.delete(prop);
+    }
     return result;
   }
 
   private static acquireReactivityTable(proto: any): any {
-    let rxTable: any = proto[RT_RX];
-    if (!proto.hasOwnProperty(RT_RX)) {
+    let rxTable: any = proto[RT_RX_TABLE];
+    if (!proto.hasOwnProperty(RT_RX_TABLE)) {
       rxTable = Object.setPrototypeOf({}, rxTable || {});
-      Utils.set(proto, RT_RX, rxTable);
+      Utils.set(proto, RT_RX_TABLE, rxTable);
     }
     return rxTable;
   }
 
   static getReactivityTable(proto: any): any {
-    return proto[RT_RX] || /* istanbul ignore next */ BLANK_RX_TABLE;
+    return proto[RT_RX_TABLE] || /* istanbul ignore next */ BLANK_RX_TABLE;
   }
 
   static acquireHandle(obj: any): Handle {
