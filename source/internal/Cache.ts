@@ -349,11 +349,13 @@ class CacheResult implements ICacheResult {
     const subscriptions: string[] = [];
     this.observables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
-        CacheResult.acquireObserverSet(r, prop).add(this); // now subscribed
-        if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
         if (!r.replaced.has(prop)) {
           const v = r.data[prop];
-          if (v instanceof CacheResult && this.record.snapshot.timestamp >= v.invalidated.since)
+          if (v instanceof CacheResult === false || this.record.snapshot.timestamp < v.invalidated.since) {
+            CacheResult.acquireObserverSet(r, prop).add(this); // now subscribed
+            if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
+          }
+          else
             this.invalidateBy(r, prop, triggers);
         }
         else
@@ -510,7 +512,7 @@ class CacheResult implements ICacheResult {
 
   static currentTrace(local: Partial<Trace> | undefined): Trace {
     const t = Transaction.current;
-    let res = Dbg.merge(t.trace, 31 + t.id % 6, `T${t.id}`, Dbg.global);
+    let res = Dbg.merge(t.trace, t.id > 0 ? 31 + t.id % 6 : 37, `T${t.id}`, Dbg.global);
     if (CacheResult.active)
       res = Dbg.merge(CacheResult.active, undefined, undefined, res);
     if (local)

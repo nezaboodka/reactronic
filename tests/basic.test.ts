@@ -87,7 +87,7 @@ test("basic", t => {
     t.throws(() => {
       if (daddy.emails)
         daddy.emails.push("dad@mail.com");
-    }, "stateful property #26 Person.emails can only be modified inside transaction");
+    }, "stateful property #26˙Person.emails can only be modified inside transaction");
     t.throws(() => tran1.run(/* istanbul ignore next */ () => { /* nope */ }), "cannot run transaction that is already sealed");
     // Undo transaction
     tran1.undo();

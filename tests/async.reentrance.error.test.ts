@@ -30,7 +30,7 @@ test("async", async t => {
   statusof(app.model.load).configure({reentrance: Reentrance.PreventWithError});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; },
-      "stateful property #23 DemoView.test can only be modified inside transaction");
+      "stateful property #23˙DemoView.test can only be modified inside transaction");
     await app.print(); // trigger first run
     const first = app.model.load(requests[0].url, requests[0].delay);
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)); });

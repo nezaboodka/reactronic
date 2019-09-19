@@ -251,11 +251,11 @@ export class Snapshot implements ISnapshot {
 
 export class Hint {
   static handle(h: Handle, nameless?: boolean): string {
-    return nameless ? `#${h.id}` : `#${h.id} ${h.hint}`;
+    return nameless ? `#${h.id}` : `#${h.id}˙${h.hint}`;
   }
 
   static record(r: Record, tranless?: boolean, nameless?: boolean, prop?: PropertyKey): string {
-    const t: string = tranless ? "" : `T${r.snapshot.id}`;
+    const t: string = tranless ? "" : `T${r.snapshot.id}˙`;
     const h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
     const name: string = h ? `${t}${Hint.handle(h, nameless)}` : /* istanbul ignore next */ "blank";
     return prop !== undefined ? `${name}.${prop.toString()}` : `${name}`;

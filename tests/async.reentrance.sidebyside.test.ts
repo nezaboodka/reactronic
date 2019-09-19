@@ -20,7 +20,7 @@ const expected: string[] = [
   "[...] Log: RTA",
   "[...] Url: nezaboodka.com",
   "[...] Log: RTA, nezaboodka.com/100",
-  "Error: transaction T111 (#22 DemoModel.load/microsoft.com) conflicts with other transactions on: T105#22 DemoModel.url, T105#22 DemoModel.log",
+  "Error: transaction T111 (#22˙DemoModel.load/microsoft.com) conflicts with other transactions on: T105˙#22˙DemoModel.url, T105˙#22˙DemoModel.log",
   "Url: nezaboodka.com",
   "Log: RTA, nezaboodka.com/100",
 ];
@@ -31,7 +31,7 @@ test("async", async t => {
   statusof(app.model.load).configure({reentrance: Reentrance.RunSideBySide});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; },
-      "stateful property #23 DemoView.test can only be modified inside transaction");
+      "stateful property #23˙DemoView.test can only be modified inside transaction");
     await app.print(); // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay));
     t.is(mon.counter, 3);
