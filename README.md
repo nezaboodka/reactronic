@@ -217,8 +217,8 @@ function transaction(proto, prop, pd); // method only
 function trigger(proto, prop, pd); // method only
 function cached(proto, prop, pd); // method only
 
-function latency(latency: number);
-function reentrance(reentrance: Reentrance);
+function latency(latency: number); // triggers only
+function reentrance(reentrance: Reentrance); // transactions & triggers
 function monitor(monitor: Monitor | null);
 function trace(trace: Partial<Trace>);
 
