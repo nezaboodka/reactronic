@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Utils, undef } from './Utils';
+import { Utils, undef, RT_CACHE } from './Utils';
 import { CopyOnWriteArray, Binding } from './Binding.CopyOnWriteArray';
 import { CopyOnWriteSet } from './Binding.CopyOnWriteSet';
 import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
@@ -12,6 +12,7 @@ import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
 import { Reactivity, Kind, Reentrance } from '../api/Reactivity';
 import { Monitor } from '../api/Monitor';
+import { Status } from '../api/Status';
 import { Trace } from '../api/Trace';
 
 // Reactivity
@@ -116,15 +117,16 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClass(implicit: boolean, rx: Partial<Reactivity>, origCtor: any): any {
     let ctor: any = origCtor;
     const stateful = rx.kind !== undefined && rx.kind !== Kind.Stateless;
+    const triggers: Map<PropertyKey, Rx> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
     if (stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args);
         const h: Handle = Hooks.createHandle(stateful, stateless, undefined);
-        const triggers: Map<PropertyKey, Rx> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
-        if (triggers) {
-          // TODO: Add triggers to transaction for automatic first run
-          // console.log("remember triggers");
-        }
+        if (triggers)
+          triggers.forEach((rx, prop) => {
+            const status: Status<any> = h.proxy[prop][RT_CACHE];
+            status.invalidate();
+          });
         return h.proxy;
       };
       Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)); // preserve prototype

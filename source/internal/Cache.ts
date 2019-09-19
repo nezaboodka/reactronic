@@ -23,7 +23,7 @@ export class Cache extends Status<any> {
   get error(): boolean { return this.read(true).cache.error; }
   getResult(args?: any): any { return this.call(false, args).cache.result; }
   get isInvalid(): boolean { return Snapshot.readable().timestamp >= this.read(true).cache.invalidated.since; }
-  invalidate(cause: string | undefined): boolean { return cause ? CacheResult.enforceInvalidation(this.read(false).cache, cause, 0) : false; }
+  invalidate(): void { Cache.invalidate(this); }
 
   constructor(handle: Handle, member: PropertyKey, rx: Rx) {
     super();
@@ -137,6 +137,13 @@ export class Cache extends Status<any> {
           break; // do nothing
       }
     return error;
+  }
+
+  static invalidate(self: Cache): void {
+    const call = self.write();
+    const c = call.cache;
+    CacheResult.acquireObservableSet(c, c.member).add(call.record);
+    // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
   }
 
   private reconfigure(rx: Partial<Reactivity>): Reactivity {
@@ -378,9 +385,10 @@ class CacheResult implements ICacheResult {
   //   return ctx.timestamp >= this.invalid.since;
   // }
 
-  invalidateBy(cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): void {
+  invalidateBy(cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): boolean {
+    const result = this.invalidated.since === UNDEFINED_TIMESTAMP || this.invalidated.since === 0;
     const stamp = cause.snapshot.timestamp;
-    if (this.invalidated.since === UNDEFINED_TIMESTAMP) {
+    if (result) {
       this.invalidated.since = stamp;
       // Check if cache requires re-run
       const isTrigger = this.rx.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
@@ -399,6 +407,7 @@ class CacheResult implements ICacheResult {
         r = r.prev.record;
       }
     }
+    return result;
   }
 
   static markAllPrevRecordsAsOutdated(recent: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
@@ -411,17 +420,6 @@ class CacheResult implements ICacheResult {
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
-  }
-
-  static enforceInvalidation(c: CacheResult, cause: string, latency: number): boolean {
-    throw new Error("not implemented - Cache.enforceInvalidation");
-    // let triggers: Cache[] = [];
-    // c.invalidate(cause, false, false, triggers);
-    // if (autorun === Rerun.Immediately)
-    //   Transaction.ensureAllUpToDate(cause, { triggers });
-    // else
-    //   sleep(autorun).then(() => Transaction.ensureAllUpToDate(cause, { triggers }));
-    // return true;
   }
 
   enter(r: Record, prev: CacheResult, mon: Monitor | null): void {

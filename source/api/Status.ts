@@ -22,7 +22,7 @@ export abstract class Status<T> {
   abstract readonly error: any;
   abstract getResult(args?: any[]): T | undefined;
   abstract readonly isInvalid: boolean;
-  abstract invalidate(cause: string | undefined): boolean;
+  abstract invalidate(): void;
 
   static get<T>(method: F<T>): Status<T> { return Cache.get(method); }
   static unmount(...objects: any[]): Transaction { return Cache.unmount(...objects); }

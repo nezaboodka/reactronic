@@ -10,6 +10,7 @@ import { DemoModel, DemoView, output } from './basic';
 
 const expected: string[] = [
   "Filter: Jo",
+  "Filter: Jo",
   "John's children: Billy, Barry, Steve",
   "Filter: ",
   "John Smith's children: Barry, William Smith, Steven Smith",
@@ -24,15 +25,11 @@ test("basic", t => {
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   try {
     const rendering = statusof(app.render);
-    t.is(rendering.isInvalid, true);
-    // app.render();
-    // t.is(rendering.isInvalid, false);
+    t.is(rendering.isInvalid, false);
     app.model.loadUsers();
     const daddy: Person = app.model.users[0];
     t.is(daddy.name, "John");
     t.is(daddy.age, 38);
-    t.is(rendering.isInvalid, true);
-    app.print(); // trigger first run
     t.is(rendering.isInvalid, false);
     const stamp = rendering.stamp;
     app.render();
