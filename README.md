@@ -305,7 +305,7 @@ abstract class Status<T> {
   configure(reactivity: Partial<Reactivity>): Reactivity;
   readonly stamp: number;
   readonly error: any;
-  getResult(args?: any[]): T;
+  getResult(args?: any[]): T | undefined;
   readonly isInvalid: boolean;
   invalidate(cause: string | undefined): boolean;
 
