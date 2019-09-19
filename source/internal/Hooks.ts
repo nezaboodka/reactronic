@@ -148,11 +148,11 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateMethod(implicit: boolean, rx: Partial<Reactivity>, type: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true;
     const configurable: boolean = true;
-    const methodReactivity = Hooks.applyReactivity(type, method, pd.value, rx, implicit);
+    const rxOfMethod = Hooks.applyReactivity(type, method, pd.value, rx, implicit);
     const get = function(this: any): any {
-      const classReactivity: ReactivityConfig = Hooks.getReactivity(Object.getPrototypeOf(this), RT_CLASS) || ReactivityConfig.default;
-      const h: Handle = classReactivity.kind !== Kind.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
-      const value = Hooks.createCacheTrap(h, method, methodReactivity);
+      const rxOfClass: ReactivityConfig = Hooks.getReactivity(Object.getPrototypeOf(this), RT_CLASS) || ReactivityConfig.default;
+      const h: Handle = rxOfClass.kind !== Kind.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
+      const value = Hooks.createCacheTrap(h, method, rxOfMethod);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
       return value;
     };
@@ -160,19 +160,19 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   private static applyReactivity(target: any, prop: PropertyKey, body: Function | undefined, rx: Partial<ReactivityConfig>, implicit: boolean): ReactivityConfig {
-    const table: any = Hooks.acquireReactivityTable(target);
-    const existing: ReactivityConfig = table[prop] || ReactivityConfig.default;
-    const result = table[prop] = new ReactivityConfig(body, existing, rx, implicit);
+    const rxTable: any = Hooks.acquireReactivityTable(target);
+    const existing: ReactivityConfig = rxTable[prop] || ReactivityConfig.default;
+    const result = rxTable[prop] = new ReactivityConfig(body, existing, rx, implicit);
     return result;
   }
 
   private static acquireReactivityTable(target: any): any {
-    let table: any = target[RT_RX];
+    let rxTable: any = target[RT_RX];
     if (!target.hasOwnProperty(RT_RX)) {
-      table = Object.setPrototypeOf({}, table || {});
-      Utils.set(target, RT_RX, table);
+      rxTable = Object.setPrototypeOf({}, rxTable || {});
+      Utils.set(target, RT_RX, rxTable);
     }
-    return table;
+    return rxTable;
   }
 
   static getReactivityTable(target: any): any {
