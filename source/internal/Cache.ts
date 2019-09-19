@@ -22,7 +22,7 @@ export class Cache extends Status<any> {
   get stamp(): number { return this.read(true).record.snapshot.timestamp; }
   get error(): boolean { return this.read(true).cache.error; }
   getResult(args?: any): any { return this.call(false, args).cache.result; }
-  get isInvalid(): boolean { return Snapshot.readable().timestamp >= this.read(true).cache.invalidated.since; }
+  get isInvalid(): boolean { return !this.read(true).valid; }
   invalidate(): void { Cache.invalidate(this); }
 
   constructor(handle: Handle, member: PropertyKey, rx: Rx) {
