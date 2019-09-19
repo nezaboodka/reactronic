@@ -42,12 +42,12 @@ export function reentrance(reentrance: Reentrance): F<any> {
   return reactivity({reentrance});
 }
 
-export function monitor(value: Monitor | null): F<any> {
-  return reactivity({monitor: value});
+export function monitor(monitor: Monitor | null): F<any> {
+  return reactivity({monitor});
 }
 
-export function trace(value: Partial<Trace>): F<any> {
-  return reactivity({trace: value});
+export function trace(trace: Partial<Trace>): F<any> {
+  return reactivity({trace});
 }
 
 export function reactivity(reactivity: Partial<Reactivity>): F<any> {

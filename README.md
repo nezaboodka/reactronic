@@ -219,7 +219,7 @@ function cached(proto, prop, pd); // method only
 
 function latency(latency: number);
 function reentrance(reentrance: Reentrance);
-function monitor(value: Monitor | null);
+function monitor(monitor: Monitor | null);
 function trace(trace: Partial<Trace>);
 
 function reactivity(reactivity: Partial<Reactivity>);
