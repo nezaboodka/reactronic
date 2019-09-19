@@ -19,14 +19,14 @@ import { Trace } from '../api/Trace';
 export const RT_RX: unique symbol = Symbol("RT:RX");
 export const RT_CLASS: unique symbol = Symbol("RT:CLASS");
 
-const BLANK_REACTIVITY_TABLE = {};
-const DEFAULT: Reactivity = {
+const BLANK_RX_TABLE = Object.freeze({});
+const DEFAULT_RX: Reactivity = Object.freeze({
   kind: Kind.Stateless,
   latency: -2, // never
   reentrance: Reentrance.PreventWithError,
   monitor: null,
   trace: undefined,
-};
+});
 
 export class Rx implements Reactivity {
   readonly body: Function;
@@ -35,15 +35,15 @@ export class Rx implements Reactivity {
   readonly reentrance: Reentrance;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
-  static default = new Rx(undef, {body: undef, ...DEFAULT}, {}, false);
+  static readonly DEFAULT = Object.freeze(new Rx(undef, {body: undef, ...DEFAULT_RX}, {}, false));
 
   constructor(body: Function | undefined, existing: Rx, patch: Partial<Rx>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body;
-    this.kind = merge(DEFAULT.kind, existing.kind, patch.kind, implicit);
-    this.latency = merge(DEFAULT.latency, existing.latency, patch.latency, implicit);
-    this.reentrance = merge(DEFAULT.reentrance, existing.reentrance, patch.reentrance, implicit);
-    this.monitor = merge(DEFAULT.monitor, existing.monitor, patch.monitor, implicit);
-    this.trace = merge(DEFAULT.trace, existing.trace, patch.trace, implicit);
+    this.kind = merge(DEFAULT_RX.kind, existing.kind, patch.kind, implicit);
+    this.latency = merge(DEFAULT_RX.latency, existing.latency, patch.latency, implicit);
+    this.reentrance = merge(DEFAULT_RX.reentrance, existing.reentrance, patch.reentrance, implicit);
+    this.monitor = merge(DEFAULT_RX.monitor, existing.monitor, patch.monitor, implicit);
+    this.trace = merge(DEFAULT_RX.trace, existing.trace, patch.trace, implicit);
     Object.freeze(this);
   }
 }
@@ -150,7 +150,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const configurable: boolean = true;
     const rxOfMethod = Hooks.applyReactivity(type, method, pd.value, rx, implicit);
     const get = function(this: any): any {
-      const rxOfClass: Rx = Hooks.getReactivity(Object.getPrototypeOf(this), RT_CLASS) || Rx.default;
+      const rxOfClass: Rx = Hooks.getReactivity(Object.getPrototypeOf(this), RT_CLASS) || Rx.DEFAULT;
       const h: Handle = rxOfClass.kind !== Kind.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
       const value = Hooks.createCacheTrap(h, method, rxOfMethod);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
@@ -161,7 +161,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   private static applyReactivity(target: any, prop: PropertyKey, body: Function | undefined, rx: Partial<Rx>, implicit: boolean): Rx {
     const rxTable: any = Hooks.acquireReactivityTable(target);
-    const existing: Rx = rxTable[prop] || Rx.default;
+    const existing: Rx = rxTable[prop] || Rx.DEFAULT;
     const result = rxTable[prop] = new Rx(body, existing, rx, implicit);
     return result;
   }
@@ -176,7 +176,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   static getReactivityTable(target: any): any {
-    return target[RT_RX] || /* istanbul ignore next */ BLANK_REACTIVITY_TABLE;
+    return target[RT_RX] || /* istanbul ignore next */ BLANK_RX_TABLE;
   }
 
   static getReactivity(target: any, prop: PropertyKey): Rx | undefined {
