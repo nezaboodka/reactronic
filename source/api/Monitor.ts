@@ -13,7 +13,7 @@ export class Monitor {
   private _counter: number = 0;
   private _workers = new Set<Worker>();
   readonly prolonged: boolean;
-  get isIdle(): boolean { return this._idle; }
+  get idle(): boolean { return this._idle; }
   get counter(): number { return this._counter; }
   get workers(): ReadonlySet<Worker> { return this._workers; }
 

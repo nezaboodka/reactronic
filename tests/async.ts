@@ -38,9 +38,9 @@ export class DemoView {
   @cached
   async render(): Promise<string[]> {
     const result: string[] = [];
-    result.push(`${mon.isIdle ? "" : "[...] "}Url: ${this.model.url}`);
+    result.push(`${mon.idle ? "" : "[...] "}Url: ${this.model.url}`);
     await sleep(10);
-    result.push(`${mon.isIdle ? "" : "[...] "}Log: ${this.model.log.join(", ")}`);
+    result.push(`${mon.idle ? "" : "[...] "}Log: ${this.model.log.join(", ")}`);
     return result;
   }
 }
