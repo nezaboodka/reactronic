@@ -6,57 +6,57 @@
 import { Trace } from './Trace';
 import { F } from '../internal/Record';
 import { Hooks } from '../internal/Hooks';
-import { Config, Reentrance, Kind } from './Config';
+import { Reactivity, Reentrance, Kind } from './Config';
 import { Monitor } from './Monitor';
 
 export function stateful(proto: object, prop?: PropertyKey): any {
-  const config = { kind: Kind.Stateful };
-  return prop ? Hooks.decorateField(true, config, proto, prop) : Hooks.decorateClass(true, config, proto);
+  const rx = { kind: Kind.Stateful };
+  return prop ? Hooks.decorateField(true, rx, proto, prop) : Hooks.decorateClass(true, rx, proto);
 }
 
 export function stateless(proto: object, prop: PropertyKey): any {
-  const config = { kind: Kind.Stateless };
-  return Hooks.decorateField(true, config, proto, prop);
+  const rx = { kind: Kind.Stateless };
+  return Hooks.decorateField(true, rx, proto, prop);
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { kind: Kind.Transaction };
-  return Hooks.decorateMethod(true, config, proto, prop, pd);
+  const rx = { kind: Kind.Transaction };
+  return Hooks.decorateMethod(true, rx, proto, prop, pd);
 }
 
 export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { kind: Kind.Trigger, latency: -1 }; // immediate trigger
-  return Hooks.decorateMethod(true, config, proto, prop, pd);
+  const rx = { kind: Kind.Trigger, latency: -1 }; // immediate trigger
+  return Hooks.decorateMethod(true, rx, proto, prop, pd);
 }
 
 export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const config = { kind: Kind.Cached };
-  return Hooks.decorateMethod(true, config, proto, prop, pd);
+  const rx = { kind: Kind.Cached };
+  return Hooks.decorateMethod(true, rx, proto, prop, pd);
 }
 
 export function latency(latency: number): F<any> {
-  return config({latency});
+  return reactivity({latency});
 }
 
 export function reentrance(reentrance: Reentrance): F<any> {
-  return config({reentrance});
+  return reactivity({reentrance});
 }
 
 export function monitor(value: Monitor | null): F<any> {
-  return config({monitor: value});
+  return reactivity({monitor: value});
 }
 
 export function trace(value: Partial<Trace>): F<any> {
-  return config({trace: value});
+  return reactivity({trace: value});
 }
 
-export function config(value: Partial<Config>): F<any> {
+export function reactivity(reactivity: Partial<Reactivity>): F<any> {
   return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
     if (prop && pd)
-      return Hooks.decorateMethod(false, value, proto, prop, pd);
+      return Hooks.decorateMethod(false, reactivity, proto, prop, pd);
     else if (prop) /* istanbul ignore next */
-      return Hooks.decorateField(false, value, proto, prop);
+      return Hooks.decorateField(false, reactivity, proto, prop);
     else
-      return Hooks.decorateClass(false, value, proto);
+      return Hooks.decorateClass(false, reactivity, proto);
   };
 }

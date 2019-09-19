@@ -222,11 +222,11 @@ function reentrance(reentrance: Reentrance);
 function monitor(value: Monitor | null);
 function trace(trace: Partial<Trace>);
 
-function config(config: Partial<Config>);
+function reactivity(reactivity: Partial<Reactivity>);
 
-// Config, Kind, Reentrance, Monitor
+// Reactivity, Kind, Reentrance, Monitor
 
-interface Config {
+interface Reactivity {
   readonly kind: Kind;
   readonly latency: number; // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance;
@@ -301,8 +301,8 @@ function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
 function statusof<T>(method: F<T>): Status<T>;
 
 abstract class Status<T> {
-  readonly config: Config;
-  configure(config: Partial<Config>): Config;
+  readonly reactivity: Reactivity;
+  configure(reactivity: Partial<Reactivity>): Reactivity;
   readonly stamp: number;
   readonly error: any;
   getResult(args?: any[]): T;

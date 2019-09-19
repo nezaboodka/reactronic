@@ -99,7 +99,7 @@ test("basic", t => {
     // Check protection and error handling
     t.throws(() => { statusof(daddy.setParent).configure({latency: 0}); },
       "given method is not a reactronic cache");
-    t.throws(() => { console.log(statusof(daddy.setParent).config.monitor); },
+    t.throws(() => { console.log(statusof(daddy.setParent).reactivity.monitor); },
       "given method is not a reactronic cache");
     const tran2 = new Transaction("tran2");
     t.throws(() => tran2.run(() => { throw new Error("test"); }), "test");
@@ -113,7 +113,7 @@ test("basic", t => {
     t.throws(() => tran3.commit(),
       "cannot commit transaction that is already canceled: Error: test");
     // Other
-    t.is(rendering.config.kind, Kind.Cached);
+    t.is(rendering.reactivity.kind, Kind.Cached);
     t.is(rendering.error, undefined);
     t.is(Status.getTraceHint(app), "DemoView");
     Status.setTraceHint(app, "App");

@@ -5,7 +5,7 @@
 
 import { Cache, F, Handle, Dbg } from '../internal/all';
 import { Transaction } from './Transaction';
-import { Config, Trace } from './Config';
+import { Reactivity, Trace } from './Config';
 
 export function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined {
   return (statusof(method) as any).getResult(args.length > 0 ? args : undefined);
@@ -16,8 +16,8 @@ export function statusof<T>(method: F<T>): Status<T> {
 }
 
 export abstract class Status<T> {
-  abstract readonly config: Config;
-  abstract configure(config: Partial<Config>): Config;
+  abstract readonly reactivity: Reactivity;
+  abstract configure(reactivity: Partial<Reactivity>): Reactivity;
   abstract readonly stamp: number;
   abstract readonly error: any;
   abstract getResult(args?: any[]): T | undefined;

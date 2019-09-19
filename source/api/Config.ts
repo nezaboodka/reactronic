@@ -7,7 +7,7 @@ import { Trace } from './Trace';
 export { Trace } from './Trace';
 import { Monitor } from './Monitor';
 
-export interface Config {
+export interface Reactivity {
   readonly kind: Kind;
   readonly latency: number; // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance;
