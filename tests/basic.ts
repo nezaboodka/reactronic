@@ -8,8 +8,22 @@ import { Person } from './common';
 
 export const output: string[] = [];
 
+// @stateful
+// export class StatefulDemoModelBase {
+//   @cached
+//   methodOfStatefulBase(): string {
+//     return 'methodOfStatefulBase';
+//   }
+// }
+
+export class StatelessDemoModelBase {
+  methodOfStatelessBase(): string {
+    return 'methodOfStatelessBase';
+  }
+}
+
 @stateful
-export class DemoModel {
+export class DemoModel extends StatelessDemoModelBase {
   @stateless shared: string = "for testing purposes";
   title: string = "Demo";
   users: Person[] = [];

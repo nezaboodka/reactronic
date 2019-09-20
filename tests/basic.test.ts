@@ -24,6 +24,8 @@ test("basic", t => {
   // Simple transactions
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   try {
+    // t.is(app.model.methodOfStatefulBase(), "methodOfStatefulBase");
+    t.is(app.model.methodOfStatelessBase(), "methodOfStatelessBase");
     const rendering = statusof(app.render);
     t.is(rendering.isInvalid, false);
     app.model.loadUsers();
