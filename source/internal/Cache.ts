@@ -393,22 +393,23 @@ class CacheResult implements ICacheResult {
     const stamp = cause.snapshot.timestamp;
     if (result) {
       this.invalidated.since = stamp;
-      // Check if cache requires re-run
       const isTrigger = this.rx.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
-      if (isTrigger)
-        triggers.push(this);
       if (Dbg.isOn && Dbg.trace.invalidations || (this.rx.trace && this.rx.trace.invalidations)) Dbg.logAs(this.rx.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint(false)} is a trigger and will run automatically` : `${this.hint(false)} is invalidated since [${stamp}] by ${Hint.record(cause, false, false, causeProp)}${isTrigger ? " and will run automatically" : ""}`);
-      // Invalidate children (cascade)
-      const h: Handle = Utils.get(this.record.data, RT_HANDLE);
-      let r: Record = h.head;
-      while (r !== Record.blank && !r.replaced.has(this.member)) {
-        if (r.data[this.member] === this) {
-          const propObservers = r.observers.get(this.member);
-          if (propObservers)
-            propObservers.forEach(c => c.invalidateBy(r, this.member, triggers));
+      if (!isTrigger) {
+        // Invalidate outer observers (cascade)
+        const h: Handle = Utils.get(this.record.data, RT_HANDLE);
+        let r: Record = h.head;
+        while (r !== Record.blank && !r.replaced.has(this.member)) {
+          if (r.data[this.member] === this) {
+            const propObservers = r.observers.get(this.member);
+            if (propObservers)
+              propObservers.forEach(c => c.invalidateBy(r, this.member, triggers));
+          }
+          r = r.prev.record;
         }
-        r = r.prev.record;
       }
+      else
+        triggers.push(this);
     }
     return result;
   }
