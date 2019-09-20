@@ -357,7 +357,7 @@ class CacheResult implements ICacheResult {
             if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
           }
           else
-            this.invalidateBy(r, prop, triggers);
+            this.invalidateBy(v.record, prop, triggers);
         }
         else
           this.invalidateBy(r, prop, triggers);

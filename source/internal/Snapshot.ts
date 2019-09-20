@@ -23,6 +23,7 @@ export class Snapshot implements ISnapshot {
   readonly hint: string;
   readonly cache: ICacheResult | undefined;
   get timestamp(): number { return this._timestamp; }
+  get viewstamp(): number { return this._viewstamp; }
   get sealed(): boolean { return this._sealed; }
   readonly changeset: Map<Handle, Record>;
   readonly triggers: ICacheResult[];
@@ -136,7 +137,12 @@ export class Snapshot implements ISnapshot {
           if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
-      this._timestamp = this.cache ? this._viewstamp : ++Snapshot.headTimestamp;
+      if (this.cache === undefined) {
+        this._viewstamp = this._timestamp;
+        this._timestamp = ++Snapshot.headTimestamp;
+      }
+      else
+        this._timestamp = this._viewstamp; // downgrade timestamp of renewed cache
     }
     return conflicts;
   }
