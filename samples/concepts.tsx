@@ -22,6 +22,12 @@ class Model {
 }
 
 class View extends React.Component<Model> {
+  @trigger
+  autorefresh() {
+    if (statusof(this.render).isInvalid)
+      this.setState({}); // ask React
+  }
+
   @cached
   render() {
     return (
@@ -29,12 +35,6 @@ class View extends React.Component<Model> {
         <div>{this.props.url}</div>
         <div>{this.props.content}</div>
       </div>);
-  }
-
-  @trigger
-  autorefresh() {
-    if (statusof(this.render).isInvalid)
-      this.setState({}); // ask React
   }
 }
 
