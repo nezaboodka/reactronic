@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { stateful, transaction, trigger, cached, latency, Status, Monitor, monitor, all, sleep } from '../source/reactronic';
+import { stateful, transaction, trigger, cached, latency, Status, Monitor, monitor, all, sleep, reentrance, Reentrance } from '../source/reactronic';
 export { trace } from './common';
 
 export const output: string[] = [];
@@ -14,7 +14,7 @@ export class DemoModel {
   url: string = "reactronic";
   log: string[] = ["RTA"];
 
-  @transaction @monitor(mon)
+  @transaction @monitor(mon) @reentrance(Reentrance.PreventWithError)
   async load(url: string, delay: number): Promise<void> {
     this.url = url;
     await all([sleep(delay)]);
