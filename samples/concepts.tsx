@@ -8,36 +8,34 @@ import { stateful, transaction, cached, trigger, statusof } from 'reactronic';
 
 @stateful
 class Model {
- // state
- url: string = "https://nezaboodka.com";
- content: string = "";
- timestamp: number = Date.now();
+  // state
+  url: string = "https://nezaboodka.com";
+  content: string = "";
+  timestamp: number = Date.now();
 
- @transaction
- async goto(url: string) {
-  this.url = url;
-  const response = await fetch(url);
-  this.content = await response.text();
-  this.timestamp = Date.now();
- }
+  @transaction
+  async goto(url: string) {
+    this.url = url;
+    this.content = await (await fetch(url)).text();
+    this.timestamp = Date.now();
+  }
 }
 
 class View extends React.Component<Model> {
- @trigger
- autorefresh() {
-  if (statusof(this.render).isInvalid)
-   this.setState({}); // refresh
- }
+  @cached
+  render() {
+    return (
+      <div>
+        <div>{this.props.url}</div>
+        <div>{this.props.content}</div>
+      </div>);
+  }
 
- @cached
- render() {
-  return (
-   <div>
-    <div>{this.props.url}</div>
-    <div>{this.props.content}</div>
-   </div>
-  );
- }
+  @trigger
+  autorefresh() {
+    if (statusof(this.render).isInvalid)
+      this.setState({}); // ask React
+  }
 }
 
 export const dummy = View;
