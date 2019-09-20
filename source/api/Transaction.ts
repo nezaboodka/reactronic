@@ -20,7 +20,6 @@ export class Transaction {
   private resultPromise?: Promise<void>;
   private resultResolve: (value?: void) => void;
   private resultReject: (reason: any) => void;
-  private conflicts?: Record[];
   private readonly reaction: { tran?: Transaction };
   readonly trace?: Partial<Trace>; // assigned in constructor
 
@@ -33,7 +32,6 @@ export class Transaction {
     this.resultPromise = undefined;
     this.resultResolve = undef;
     this.resultReject = undef;
-    this.conflicts = undefined;
     this.reaction = { tran: undefined };
     this.trace = trace;
   }
@@ -172,7 +170,7 @@ export class Transaction {
       result = func(...args);
       if (this.sealed && this.workers === 1) {
         if (!this.error)
-          this.checkForConflicts();
+          this.checkForConflicts(); // merge with concurrent transactions
         else if (!this.retryAfter)
           throw this.error;
       }
@@ -227,9 +225,9 @@ export class Transaction {
   }
 
   private checkForConflicts(): void {
-    this.conflicts = this.snapshot.rebase();
-    if (this.conflicts)
-      this.tryResolveConflicts(this.conflicts);
+    const conflicts = this.snapshot.rebase();
+    if (conflicts)
+      this.tryResolveConflicts(conflicts);
   }
 
   private tryResolveConflicts(conflicts: Record[]): void {
