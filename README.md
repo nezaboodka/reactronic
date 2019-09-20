@@ -35,7 +35,7 @@ Transactional reactivity is based on four fundamental concepts:
 The following picture illustrates relationships between the concepts
 in the source code:
 
-![Reactronic](https://blog.nezaboodka.com/img/reactronic.jpg)
+![Reactronic](https://github.com/nezaboodka/reactronic/raw/master/reactronic.jpg)
 
 Below is the detailed description of each concept.
 
