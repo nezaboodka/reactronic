@@ -57,7 +57,7 @@ export class Cache extends Status<any> {
         call = call2;
     }
     else
-      if (Dbg.isOn && Dbg.trace.methods) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
+      if (Dbg.isOn && Dbg.trace.methods && (c.rx.trace === undefined || c.rx.trace.methods === undefined || c.rx.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
     Record.markViewed(call.record, call.cache.member);
     return call;
   }
