@@ -110,31 +110,29 @@ the whole chain of asynchronous operations is fully completed.
 
 Trigger is a function that is immediately called in response to
 state changes. Cache is a computed value having an associated
-function that is called on-demand to renew the value after
-invalidation.
+function that is called on-demand to renew the value if it was
+invalidated.
 
-Trigger and cached functions are instrumented with hooks to seamlesly
-subscribe to those state objects and other cached functions
-(dependencies), which are used during their execution.
+Trigger and cached functions are instrumented with hooks to
+seamlesly subscribe to those state objects and other cached
+functions (dependencies), which are used during their execution.
 
 ``` tsx
 class MyView extends React.Component<MyModel> {
   @trigger // called immediately in response to state changes
   autorefresh() {
     if (statusof(this.render).isInvalid)
-      this.setState({}); // ask React to re-render
+      this.setState({}); // telling React to re-render
   } // autorefresh is subscribed to render
 
   @cached
   render() {
-    const m: MyModel = this.props; // just a shortcut
     return (
       <div>
-        <h1>{m.url}</h1>
-        <div>{m.content}</div>
-      </div>
-    );
-  } // render is subscribed to m.url and m.content
+        <h1>{this.props.url}</h1>
+        <div>{this.props.content}</div>
+      </div>);
+  } // render is subscribed to "url" and "content"
 }
 ```
 
