@@ -29,7 +29,7 @@ Transactional reactivity is based on four fundamental concepts:
 
   - **State** - a set of objects that store data of an application;
   - **Transaction** - a function that changes state objects in an atomic way;
-  - **Trigger** - a function that is called after a transaction in response to state changes;
+  - **Trigger** - a function that is called automatically in response to state changes made by a transaction;
   - **Cache** - a computed value having associated function that is called on-demand to renew the value if it was invalidated.
 
 The following picture illustrates relationships between the concepts
