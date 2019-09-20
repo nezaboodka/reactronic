@@ -383,11 +383,6 @@ class CacheResult implements ICacheResult {
     });
   }
 
-  // get isInvalid(): boolean {
-  //   const ctx = Snapshot.readable();
-  //   return ctx.timestamp >= this.invalid.since;
-  // }
-
   invalidateBy(cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): boolean {
     const result = this.invalidated.since === UNDEFINED_TIMESTAMP || this.invalidated.since === 0;
     const stamp = cause.snapshot.timestamp;
