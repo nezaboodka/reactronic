@@ -7,7 +7,7 @@ import * as React from 'react';
 import { stateful, transaction, cached, trigger, statusof } from 'reactronic';
 
 @stateful
-export class Model {
+class Model {
   // state
   url: string = "https://nezaboodka.com";
   content: string = "";
@@ -22,7 +22,7 @@ export class Model {
   }
 }
 
-export class View extends React.Component<Model> {
+class View extends React.Component<Model> {
   @trigger
   autorefresh() {
     if (statusof(this.render).isInvalid)
@@ -39,3 +39,5 @@ export class View extends React.Component<Model> {
     );
   }
 }
+
+export const dummy = View;
