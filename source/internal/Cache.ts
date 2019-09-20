@@ -302,7 +302,7 @@ class CacheResult implements ICacheResult {
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.rx.kind !== Kind.Transaction && prop !== RT_HANDLE) {
-      Snapshot.readable().bumpViewedTimestamp(r);
+      Snapshot.readable().bumpViewstamp(r);
       CacheResult.acquireObservableSet(c, prop).add(r);
       if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }

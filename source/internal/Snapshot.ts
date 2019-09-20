@@ -27,7 +27,7 @@ export class Snapshot implements ISnapshot {
   readonly changeset: Map<Handle, Record>;
   readonly triggers: ICacheResult[];
   private _timestamp: number;
-  private _viewedTimestamp: number;
+  private _viewstamp: number;
   private _sealed: boolean;
 
   constructor(hint: string, cache: ICacheResult | undefined) {
@@ -37,7 +37,7 @@ export class Snapshot implements ISnapshot {
     this.changeset = new Map<Handle, Record>();
     this.triggers = [];
     this._timestamp = MAX_TIMESTAMP;
-    this._viewedTimestamp = 0;
+    this._viewstamp = 0;
     this._sealed = false;
   }
 
@@ -106,9 +106,9 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  bumpViewedTimestamp(r: Record): void {
-    if (r.snapshot.timestamp > this._viewedTimestamp)
-      this._viewedTimestamp = r.snapshot.timestamp;
+  bumpViewstamp(r: Record): void {
+    if (r.snapshot.timestamp > this._viewstamp)
+      this._viewstamp = r.snapshot.timestamp;
   }
 
   acquire(outer: Snapshot): void {
@@ -136,7 +136,7 @@ export class Snapshot implements ISnapshot {
           if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
-      this._timestamp = this.cache ? this._viewedTimestamp : ++Snapshot.headTimestamp;
+      this._timestamp = this.cache ? this._viewstamp : ++Snapshot.headTimestamp;
     }
     return conflicts;
   }
