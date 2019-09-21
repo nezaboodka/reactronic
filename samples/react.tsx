@@ -32,7 +32,7 @@ class Rejsx {
     const dbg = Status.isTraceOn && Status.trace.hints
       ? trace === undefined || trace.hints !== false
       : trace !== undefined && trace.hints === true;
-    const hint = dbg ? getComponentName() : "createRejsx";
+    const hint = dbg ? getComponentName() : "<rejsx>";
     return Transaction.runAs(hint, false, trace, undefined,
      Rejsx.doCreate, hint, trace);
   }
