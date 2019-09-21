@@ -38,7 +38,7 @@ export class Snapshot implements ISnapshot {
     this.changeset = new Map<Handle, Record>();
     this.triggers = [];
     this._timestamp = MAX_TIMESTAMP;
-    this._readstamp = 0;
+    this._readstamp = 1;
     this._sealed = false;
   }
 
