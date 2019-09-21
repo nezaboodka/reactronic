@@ -57,7 +57,7 @@ export class Cache extends Status<any> {
         call = call2;
     }
     else
-      if (Dbg.isOn && Dbg.trace.methods && (c.rx.trace === undefined || c.rx.trace.methods === undefined || c.rx.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by ${call.cache.tran.hint})`);
+      if (Dbg.isOn && Dbg.trace.methods && (c.rx.trace === undefined || c.rx.trace.methods === undefined || c.rx.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`);
     Record.markViewed(call.record, call.cache.member);
     return call;
   }
@@ -390,7 +390,7 @@ class CacheResult implements ICacheResult {
     if (result) {
       this.invalidated.since = since;
       const isTrigger = this.rx.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.rx.trace && this.rx.trace.invalidations)) Dbg.logAs(this.rx.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint(false)} is a trigger and will run automatically` : `${this.hint(false)} is invalidated since [${since}] by ${Hint.record(cause, false, false, causeProp)}${isTrigger ? " and will run automatically" : ""}`);
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.rx.trace && this.rx.trace.invalidations)) Dbg.logAs(this.rx.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint(false)} is a trigger and will run automatically` : `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)} since [${since}]${isTrigger ? " and will run automatically" : ""}`);
       if (!isTrigger) {
         // Invalidate outer observers (cascade)
         const h: Handle = Utils.get(this.record.data, RT_HANDLE);
