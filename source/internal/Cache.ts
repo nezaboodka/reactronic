@@ -10,7 +10,7 @@ import { Reactivity, Kind, Reentrance, Trace } from '../api/Reactivity';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
-const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER;
+const SUPREME_TIMESTAMP = Number.MAX_SAFE_INTEGER;
 type CachedCall = { cache: CacheResult, record: Record, valid: boolean };
 
 export class Cache extends Status<any> {
@@ -107,11 +107,11 @@ export class Cache extends Status<any> {
           c.tryLeave(call.record, prev, mon);
         }
       }, ...args);
-      c.invalidated.since = UNDEFINED_TIMESTAMP;
+      c.invalidated.since = SUPREME_TIMESTAMP;
     }
     else {
       c.ret = Promise.reject(error);
-      c.invalidated.since = UNDEFINED_TIMESTAMP;
+      c.invalidated.since = SUPREME_TIMESTAMP;
     }
     return call;
   }
@@ -210,7 +210,7 @@ export class Cache extends Status<any> {
 // CacheResult
 
 class CacheResult implements ICacheResult {
-  static asyncTriggerQueue: CacheResult[] = [];
+  static asyncTriggerBatch: CacheResult[] = [];
   static active?: CacheResult = undefined;
 
   readonly margin: number;
@@ -260,7 +260,7 @@ class CacheResult implements ICacheResult {
     return caching;
   }
 
-  trig(timestamp: number, now: boolean, nothrow: boolean): void {
+  renew(timestamp: number, now: boolean, nothrow: boolean): void {
     Cache.run(undefined, () => {
       if (now || this.rx.latency === -1) {
         if (!this.error && (this.rx.kind === Kind.Transaction ||
@@ -280,23 +280,23 @@ class CacheResult implements ICacheResult {
         }
       }
       else if (this.rx.latency === 0)
-        CacheResult.enqueueAsyncTrigger(this);
+        CacheResult.addAsyncTriggerToBatch(this);
       else
-        setTimeout(() => this.trig(UNDEFINED_TIMESTAMP, true, true), 0);
+        setTimeout(() => this.renew(SUPREME_TIMESTAMP, true, true), 0);
     });
   }
 
-  static enqueueAsyncTrigger(c: CacheResult): void {
-    CacheResult.asyncTriggerQueue.push(c);
-    if (CacheResult.asyncTriggerQueue.length === 1)
-      setTimeout(CacheResult.processAsyncTriggerQueue, 0);
+  static addAsyncTriggerToBatch(c: CacheResult): void {
+    CacheResult.asyncTriggerBatch.push(c);
+    if (CacheResult.asyncTriggerBatch.length === 1)
+      setTimeout(CacheResult.processAsyncTriggerBatch, 0);
   }
 
-  static processAsyncTriggerQueue(): void {
-    const batch = CacheResult.asyncTriggerQueue;
-    CacheResult.asyncTriggerQueue = []; // reset
-    for (const x of batch)
-      x.trig(UNDEFINED_TIMESTAMP, true, true);
+  static processAsyncTriggerBatch(): void {
+    const triggers = CacheResult.asyncTriggerBatch;
+    CacheResult.asyncTriggerBatch = []; // reset
+    for (const t of triggers)
+      t.renew(SUPREME_TIMESTAMP, true, true);
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
@@ -315,17 +315,18 @@ class CacheResult implements ICacheResult {
 
   static applyDependencies(snapshot: Snapshot): void {
     const triggers = snapshot.triggers;
+    const timestamp = snapshot.timestamp;
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       if (!r.changes.has(RT_UNMOUNT))
         r.changes.forEach(prop => {
-          CacheResult.markAllPrevRecordsAsOutdated(r, prop, triggers);
+          CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
           const value = r.data[prop];
           if (value instanceof CacheResult)
-            value.subscribeToOwnObservables(triggers);
+            value.subscribeToOwnObservables(timestamp, triggers);
         });
       else
         for (const prop in r.prev.record.data)
-          CacheResult.markAllPrevRecordsAsOutdated(r, prop, triggers);
+          CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
     });
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       CacheResult.mergeObservers(r, r.prev.record);
@@ -346,7 +347,7 @@ class CacheResult implements ICacheResult {
     return result;
   }
 
-  private subscribeToOwnObservables(triggers: ICacheResult[]): void {
+  private subscribeToOwnObservables(timestamp: number, triggers: ICacheResult[]): void {
     const subscriptions: string[] = [];
     this.observables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
@@ -357,10 +358,10 @@ class CacheResult implements ICacheResult {
             if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
           }
           else
-            this.invalidateBy(v.record, prop, triggers);
+            this.invalidateBy(timestamp, v.record, prop, triggers);
         }
         else
-          this.invalidateBy(r, prop, triggers);
+          this.invalidateBy(timestamp, r, prop, triggers);
       });
     });
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.rx.trace && this.rx.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.rx.trace, " ", "o", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
@@ -374,7 +375,7 @@ class CacheResult implements ICacheResult {
         if (!existing)
           curr.observers.set(prop, mergedObservers);
         prevObservers.forEach((prevObserver: ICacheResult) => {
-          if (prevObserver.invalidated.since === UNDEFINED_TIMESTAMP) {
+          if (prevObserver.invalidated.since === SUPREME_TIMESTAMP) {
             mergedObservers.add(prevObserver);
             if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is subscribed to {${Hint.record(curr, false, true, prop)}} - inherited from ${Hint.record(prev, false, true, prop)}.`);
           }
@@ -383,13 +384,12 @@ class CacheResult implements ICacheResult {
     });
   }
 
-  invalidateBy(cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): boolean {
-    const result = this.invalidated.since === UNDEFINED_TIMESTAMP || this.invalidated.since === 0;
-    const stamp = cause.snapshot.timestamp;
+  invalidateBy(since: number, cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): boolean {
+    const result = this.invalidated.since === SUPREME_TIMESTAMP || this.invalidated.since === 0;
     if (result) {
-      this.invalidated.since = stamp;
+      this.invalidated.since = since;
       const isTrigger = this.rx.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.rx.trace && this.rx.trace.invalidations)) Dbg.logAs(this.rx.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint(false)} is a trigger and will run automatically` : `${this.hint(false)} is invalidated since [${stamp}] by ${Hint.record(cause, false, false, causeProp)}${isTrigger ? " and will run automatically" : ""}`);
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.rx.trace && this.rx.trace.invalidations)) Dbg.logAs(this.rx.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint(false)} is a trigger and will run automatically` : `${this.hint(false)} is invalidated since [${since}] by ${Hint.record(cause, false, false, causeProp)}${isTrigger ? " and will run automatically" : ""}`);
       if (!isTrigger) {
         // Invalidate outer observers (cascade)
         const h: Handle = Utils.get(this.record.data, RT_HANDLE);
@@ -398,7 +398,7 @@ class CacheResult implements ICacheResult {
           if (r.data[this.member] === this) {
             const propObservers = r.observers.get(this.member);
             if (propObservers)
-              propObservers.forEach(c => c.invalidateBy(r, this.member, triggers));
+              propObservers.forEach(c => c.invalidateBy(since, r, this.member, triggers));
           }
           r = r.prev.record;
         }
@@ -409,13 +409,13 @@ class CacheResult implements ICacheResult {
     return result;
   }
 
-  static markAllPrevRecordsAsOutdated(recent: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
+  static markAllPrevRecordsAsOutdated(since: number, recent: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
     let r = recent.prev.record;
     while (r !== Record.blank && !r.replaced.has(prop)) {
       r.replaced.set(prop, recent);
       const propObservers = r.observers.get(prop);
       if (propObservers)
-        propObservers.forEach(c => c.invalidateBy(recent, prop, triggers));
+        propObservers.forEach(c => c.invalidateBy(since, recent, prop, triggers));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
