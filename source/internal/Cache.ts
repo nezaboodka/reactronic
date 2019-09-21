@@ -62,7 +62,7 @@ export class Cache extends Status<any> {
     return call;
   }
 
-  private read(markViewedIfValid: boolean, args?: any[]): CachedCall {
+  private read(markViewed: boolean, args?: any[]): CachedCall {
     const ctx = Snapshot.readable();
     const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
@@ -71,7 +71,7 @@ export class Cache extends Status<any> {
       ctx.timestamp < c.invalidated.since &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
-    if (markViewedIfValid /*&& valid*/)
+    if (markViewed)
       Record.markViewed(r, c.member);
     return { cache: c, record: r, valid };
   }
