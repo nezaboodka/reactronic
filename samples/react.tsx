@@ -47,6 +47,7 @@ class Rejsx {
     }
     return rejsx;
   }
+
   static unmountEffect(rejsx: Rejsx): React.EffectCallback {
     return () => {
       // did mount
