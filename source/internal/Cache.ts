@@ -68,7 +68,7 @@ export class Cache extends Status<any> {
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[member] || this.blank;
     const valid = c.rx.kind !== Kind.Transaction &&
-      ctx.timestamp < c.invalidated.since &&
+      (ctx === c.record.snapshot || ctx.timestamp < c.invalidated.since) &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (markViewed)
