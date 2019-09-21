@@ -302,7 +302,7 @@ class CacheResult implements ICacheResult {
   static markViewed(r: Record, prop: PropertyKey): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.rx.kind !== Kind.Transaction && prop !== RT_HANDLE) {
-      Snapshot.readable().bumpViewstamp(r);
+      Snapshot.readable().bumpBasestamp(r);
       CacheResult.acquireObservableSet(c, prop).add(r);
       if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
     }
@@ -316,13 +316,14 @@ class CacheResult implements ICacheResult {
   static applyDependencies(snapshot: Snapshot): void {
     const triggers = snapshot.triggers;
     const timestamp = snapshot.timestamp;
+    const basestamp = snapshot.basestamp;
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       if (!r.changes.has(RT_UNMOUNT))
         r.changes.forEach(prop => {
           CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
           const value = r.data[prop];
           if (value instanceof CacheResult)
-            value.subscribeToOwnObservables(timestamp, triggers);
+            value.subscribeToOwnObservables(timestamp, basestamp, triggers);
         });
       else
         for (const prop in r.prev.record.data)
@@ -347,13 +348,13 @@ class CacheResult implements ICacheResult {
     return result;
   }
 
-  private subscribeToOwnObservables(timestamp: number, triggers: ICacheResult[]): void {
+  private subscribeToOwnObservables(timestamp: number, basestamp: number, triggers: ICacheResult[]): void {
     const subscriptions: string[] = [];
     this.observables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
         if (!r.replaced.has(prop)) {
           const v = r.data[prop];
-          if (v instanceof CacheResult === false || this.record.snapshot.timestamp < v.invalidated.since) {
+          if (v instanceof CacheResult === false || timestamp < v.invalidated.since) {
             CacheResult.acquireObserverSet(r, prop).add(this); // now subscribed
             if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
           }

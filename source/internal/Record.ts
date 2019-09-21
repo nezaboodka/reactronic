@@ -63,7 +63,7 @@ export interface ISnapshot {
   readonly id: number;
   readonly hint: string;
   readonly timestamp: number;
-  readonly viewstamp: number;
+  readonly basestamp: number;
   readonly sealed: boolean;
 }
 
