@@ -4,15 +4,14 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { stateful, trigger, cached, statusof,
-  Transaction, Status, Trace } from 'reactronic';
+import { stateful, trigger, cached, statusof, Transaction, Status, Trace } from 'reactronic';
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
   const [counter, refresh] = React.useState(0);
   const [rejsx] = React.useState(() => createRejsx(trace));
   React.useEffect(Rejsx.unmountEffect(rejsx), []);
   const jsx: JSX.Element = rejsx.jsx(counter, render, tran);
-  rejsx.autorefresh(counter + 1, refresh);
+  rejsx.autorefresh(counter, refresh);
   return jsx;
 }
 
@@ -24,9 +23,9 @@ class Rejsx {
   }
 
   @trigger
-  autorefresh(next: number, refresh: (next: number) => void): void {
-    if (statusof(this.jsx).isInvalid)
-      refresh(next);
+  autorefresh(counter?: number, refresh?: (next: number) => void): void {
+    if (counter !== undefined && refresh !== undefined && statusof(this.jsx).isInvalid)
+      refresh(counter + 1);
   }
 
   static unmountEffect(rejsx: Rejsx): React.EffectCallback {
