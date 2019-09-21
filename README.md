@@ -248,7 +248,7 @@ enum Reentrance {
 }
 
 class Monitor {
-  readonly idle: boolean;
+  readonly busy: boolean;
   readonly counter: number;
   static create(hint?: string): Monitor;
 }
