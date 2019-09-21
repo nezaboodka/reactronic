@@ -10,7 +10,7 @@ import { Reactivity, Kind, Reentrance, Trace } from '../api/Reactivity';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
-const SUPREME_TIMESTAMP = Number.MAX_SAFE_INTEGER;
+const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER;
 type CachedCall = { cache: CacheResult, record: Record, valid: boolean };
 
 export class Cache extends Status<any> {
@@ -107,11 +107,11 @@ export class Cache extends Status<any> {
           c.tryLeave(call.record, prev, mon);
         }
       }, ...args);
-      c.invalidated.since = SUPREME_TIMESTAMP;
+      c.invalidated.since = TOP_TIMESTAMP;
     }
     else {
       c.ret = Promise.reject(error);
-      c.invalidated.since = SUPREME_TIMESTAMP;
+      c.invalidated.since = TOP_TIMESTAMP;
     }
     return call;
   }
@@ -282,7 +282,7 @@ class CacheResult implements ICacheResult {
       else if (this.rx.latency === 0)
         CacheResult.addAsyncTriggerToBatch(this);
       else
-        setTimeout(() => this.renew(SUPREME_TIMESTAMP, true, true), 0);
+        setTimeout(() => this.renew(TOP_TIMESTAMP, true, true), 0);
     });
   }
 
@@ -296,7 +296,7 @@ class CacheResult implements ICacheResult {
     const triggers = CacheResult.asyncTriggerBatch;
     CacheResult.asyncTriggerBatch = []; // reset
     for (const t of triggers)
-      t.renew(SUPREME_TIMESTAMP, true, true);
+      t.renew(TOP_TIMESTAMP, true, true);
   }
 
   static markViewed(r: Record, prop: PropertyKey): void {
@@ -375,7 +375,7 @@ class CacheResult implements ICacheResult {
         if (!existing)
           curr.observers.set(prop, mergedObservers);
         prevObservers.forEach((prevObserver: ICacheResult) => {
-          if (prevObserver.invalidated.since === SUPREME_TIMESTAMP) {
+          if (prevObserver.invalidated.since === TOP_TIMESTAMP) {
             mergedObservers.add(prevObserver);
             if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is subscribed to {${Hint.record(curr, false, true, prop)}} - inherited from ${Hint.record(prev, false, true, prop)}.`);
           }
@@ -385,7 +385,7 @@ class CacheResult implements ICacheResult {
   }
 
   invalidateBy(since: number, cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): boolean {
-    const result = this.invalidated.since === SUPREME_TIMESTAMP || this.invalidated.since === 0;
+    const result = this.invalidated.since === TOP_TIMESTAMP || this.invalidated.since === 0;
     if (result) {
       this.invalidated.since = since;
       const isTrigger = this.rx.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
