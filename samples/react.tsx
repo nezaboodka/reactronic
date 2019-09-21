@@ -8,10 +8,10 @@ import { stateful, trigger, cached, statusof, Transaction, Status, Trace } from 
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
   const [counter, refresh] = React.useState(0);
-  const [rejsx] = React.useState(() => createRejsx(trace));
+  const [rejsx] = React.useState(() => Rejsx.create(trace));
   React.useEffect(Rejsx.unmountEffect(rejsx), []);
   const jsx: JSX.Element = rejsx.jsx(counter, render, tran);
-  rejsx.autorefresh(counter, refresh);
+  rejsx.keepfresh(counter, refresh);
   return jsx;
 }
 
@@ -23,11 +23,30 @@ class Rejsx {
   }
 
   @trigger
-  autorefresh(counter?: number, refresh?: (next: number) => void): void {
+  keepfresh(counter?: number, refresh?: (next: number) => void): void {
     if (counter !== undefined && refresh !== undefined && statusof(this.jsx).isInvalid)
       refresh(counter + 1);
   }
 
+  static create(trace?: Partial<Trace>): Rejsx {
+    const dbg = Status.isTraceOn && Status.trace.hints
+      ? trace === undefined || trace.hints !== false
+      : trace !== undefined && trace.hints === true;
+    const hint = dbg ? getComponentName() : "createRejsx";
+    return Transaction.runAs(hint, false, trace, undefined,
+     Rejsx.doCreate, hint, trace);
+  }
+
+  private static doCreate(hint: string | undefined, trace: Trace | undefined): Rejsx {
+    const rejsx = new Rejsx();
+    if (hint)
+      Status.setTraceHint(rejsx, hint);
+    if (trace) {
+      statusof(rejsx.jsx).configure({trace});
+      statusof(rejsx.keepfresh).configure({trace});
+    }
+    return rejsx;
+  }
   static unmountEffect(rejsx: Rejsx): React.EffectCallback {
     return () => {
       // did mount
@@ -37,26 +56,6 @@ class Rejsx {
       };
     };
   }
-}
-
-function createRejsx(trace?: Partial<Trace>): Rejsx {
-  const dbg = Status.isTraceOn && Status.trace.hints
-    ? trace === undefined || trace.hints !== false
-    : trace !== undefined && trace.hints === true;
-  const hint = dbg ? getComponentName() : "createRejsx";
-  return Transaction.runAs(hint, false, trace, undefined,
-    doCreateRejsx, hint, trace);
-}
-
-function doCreateRejsx(hint: string | undefined, trace: Trace | undefined): Rejsx {
-  const rejsx = new Rejsx();
-  if (hint)
-    Status.setTraceHint(rejsx, hint);
-  if (trace) {
-    statusof(rejsx.jsx).configure({trace});
-    statusof(rejsx.autorefresh).configure({trace});
-  }
-  return rejsx;
 }
 
 function getComponentName(): string {
