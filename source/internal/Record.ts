@@ -71,6 +71,6 @@ export interface ICacheResult {
   hint(tranless?: boolean): string;
   wrap<T>(func: F<T>): F<T>;
   readonly invalidated: { since: number };
-  invalidateBy(since: number, cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): void;
+  invalidateDueTo(since: number, cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): void;
   renew(timestamp: number, now: boolean, nothrow: boolean): void;
 }

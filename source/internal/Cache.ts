@@ -358,10 +358,10 @@ class CacheResult implements ICacheResult {
             if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, false, true, prop));
           }
           else
-            this.invalidateBy(timestamp, v.record, prop, triggers);
+            this.invalidateDueTo(timestamp, v.record, prop, triggers);
         }
         else
-          this.invalidateBy(timestamp, r, prop, triggers);
+          this.invalidateDueTo(timestamp, r, prop, triggers);
       });
     });
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.rx.trace && this.rx.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.rx.trace, " ", "o", `${Hint.record(this.record, false, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
@@ -384,12 +384,12 @@ class CacheResult implements ICacheResult {
     });
   }
 
-  invalidateBy(since: number, cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): boolean {
+  invalidateDueTo(since: number, cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): boolean {
     const result = this.invalidated.since === TOP_TIMESTAMP || this.invalidated.since === 0;
     if (result) {
       this.invalidated.since = since;
       const isTrigger = this.rx.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.rx.trace && this.rx.trace.invalidations)) Dbg.logAs(this.rx.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint(false)} is a trigger and will run automatically` : `${this.hint(false)} is invalidated by ${Hint.record(cause, false, false, causeProp)} since [${since}]${isTrigger ? " and will run automatically" : ""}`);
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.rx.trace && this.rx.trace.invalidations)) Dbg.logAs(this.rx.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint(false)} is a trigger and will run automatically` : `${this.hint(false)} is invalidated due to ${Hint.record(cause, false, false, causeProp)} since [${since}]${isTrigger ? " and will run automatically" : ""}`);
       if (!isTrigger) {
         // Invalidate outer observers (cascade)
         const h: Handle = Utils.get(this.record.data, RT_HANDLE);
@@ -398,7 +398,7 @@ class CacheResult implements ICacheResult {
           if (r.data[this.member] === this) {
             const propObservers = r.observers.get(this.member);
             if (propObservers)
-              propObservers.forEach(c => c.invalidateBy(since, r, this.member, triggers));
+              propObservers.forEach(c => c.invalidateDueTo(since, r, this.member, triggers));
           }
           r = r.prev.record;
         }
@@ -415,7 +415,7 @@ class CacheResult implements ICacheResult {
       r.replaced.set(prop, recent);
       const propObservers = r.observers.get(prop);
       if (propObservers)
-        propObservers.forEach(c => c.invalidateBy(since, recent, prop, triggers));
+        propObservers.forEach(c => c.invalidateDueTo(since, recent, prop, triggers));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
