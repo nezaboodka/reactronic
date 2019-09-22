@@ -4,46 +4,48 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { stateful, trigger, cached, statusof, offside, Transaction, Status, Trace } from 'reactronic';
+import { stateful, stateless, trigger, cached, statusof, resultof, offside, Transaction, Status, Trace } from 'reactronic';
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
-  const [args, refresh] = React.useState(() => Rejsx.create(trace));
-  args.refresh = refresh; // just in case React will change refresh on each rendering
-  React.useEffect(Rejsx.unmountEffect(args.rejsx), []);
-  return args.rejsx.jsx(args, render);
+  const [req, refresh] = React.useState(() => Rejsx.create(trace));
+  req.rejsx.counter = req.counter;
+  req.rejsx.refresh = refresh; // just in case React will change refresh on each rendering
+  React.useEffect(Rejsx.unmountEffect(req.rejsx), []);
+  return req.rejsx.jsx(render);
 }
 
-type RenderArgs = {
+type RenderRequest = {
   rejsx: Rejsx;
   counter: number;
-  refresh: (next: RenderArgs) => void;
 };
 
 @stateful
 class Rejsx {
+  @stateless counter: number = 0;
+  @stateless refresh: (next: RenderRequest) => void = undef;
+
   @cached
-  jsx(args: RenderArgs, render: (counter: number) => JSX.Element): JSX.Element {
-    return render(args.counter);
+  jsx(render: (counter: number) => JSX.Element): JSX.Element {
+    return render(this.counter);
   }
 
   @trigger
   keepfresh(): void {
     const status = statusof(this.jsx);
-    const args: RenderArgs | undefined = status.args ? status.args[0] : undefined;
-    if (args && status.isInvalid)
-      offside(args.refresh, {rejsx: this, counter: args.counter + 1, refresh: undef});
+    if (status.isInvalid && this.refresh !== undef)
+      offside(this.refresh, {rejsx: this, counter: this.counter + 1});
   }
 
-  static create(trace?: Partial<Trace>): RenderArgs {
+  static create(trace?: Partial<Trace>): RenderRequest {
     const dbg = Status.isTraceOn && Status.trace.hints
       ? trace === undefined || trace.hints !== false
       : trace !== undefined && trace.hints === true;
     const hint = dbg ? getComponentName() : "<rejsx>";
-    return Transaction.runAs<RenderArgs>(hint, false,
+    return Transaction.runAs<RenderRequest>(hint, false,
       trace, undefined, Rejsx.doCreate, hint, trace);
   }
 
-  private static doCreate(hint: string | undefined, trace: Trace | undefined): RenderArgs {
+  private static doCreate(hint: string | undefined, trace: Trace | undefined): RenderRequest {
     const rejsx = new Rejsx();
     if (hint)
       Status.setTraceHint(rejsx, hint);
@@ -51,7 +53,7 @@ class Rejsx {
       statusof(rejsx.jsx).configure({trace});
       statusof(rejsx.keepfresh).configure({trace});
     }
-    return {rejsx, counter: 0, refresh: undef};
+    return {rejsx, counter: 0};
   }
 
   static unmountEffect(rejsx: Rejsx): React.EffectCallback {
@@ -75,6 +77,6 @@ function getComponentName(): string {
   return `<${result}>`;
 }
 
-function undef(next: RenderArgs): void {
+function undef(next: RenderRequest): void {
   throw new Error("refresh callback is undefined");
 }
