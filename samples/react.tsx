@@ -28,9 +28,9 @@ class Rejsx {
 
   @trigger
   keepfresh(): void {
-    const s = statusof(this.jsx);
-    const args: RenderArgs | undefined = s.args ? s.args[0] : undefined;
-    if (args && s.isInvalid)
+    const status = statusof(this.jsx);
+    const args: RenderArgs | undefined = status.args ? status.args[0] : undefined;
+    if (args && status.isInvalid)
       offside(args.refresh, {rejsx: this, counter: args.counter + 1, refresh: undef});
   }
 
