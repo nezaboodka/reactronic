@@ -7,20 +7,21 @@ import * as React from 'react';
 import { stateful, stateless, trigger, cached, statusof, offside, Transaction, Status, Trace } from 'reactronic';
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
-  const [req, refresh] = React.useState(() => Rejsx.create(trace));
-  React.useEffect(Rejsx.unmountEffect(req.rejsx), []);
-  req.rejsx.counter = req.counter;
-  req.rejsx.refresh = refresh; // just in case React will change refresh on each rendering
-  return req.rejsx.jsx(render);
+  const [req, refresh] = React.useState(trace ? () => Rx.create(trace) : Rx.create);
+  const rx = req.rx;
+  React.useEffect(Rx.unmountEffect(rx), []);
+  rx.counter = req.counter;
+  rx.refresh = refresh; // just in case React will change refresh on each rendering
+  return rx.jsx(render);
 }
 
 type RenderRequest = {
-  rejsx: Rejsx;
+  rx: Rx;
   counter: number;
 };
 
 @stateful
-class Rejsx {
+class Rx {
   @stateless counter: number = 0;
   @stateless refresh: (next: RenderRequest) => void = undef;
 
@@ -33,35 +34,35 @@ class Rejsx {
   keepfresh(): void {
     const status = statusof(this.jsx);
     if (status.isInvalid && this.refresh !== undef)
-      offside(this.refresh, {rejsx: this, counter: this.counter + 1});
+      offside(this.refresh, {rx: this, counter: this.counter + 1});
   }
 
   static create(trace?: Partial<Trace>): RenderRequest {
     const dbg = Status.isTraceOn && Status.trace.hints
       ? trace === undefined || trace.hints !== false
       : trace !== undefined && trace.hints === true;
-    const hint = dbg ? getComponentName() : "<rejsx>";
+    const hint = dbg ? getComponentName() : "<rx>";
     return Transaction.runAs<RenderRequest>(hint, false,
-      trace, undefined, Rejsx.doCreate, hint, trace);
+      trace, undefined, Rx.doCreate, hint, trace);
   }
 
   private static doCreate(hint: string | undefined, trace: Trace | undefined): RenderRequest {
-    const rejsx = new Rejsx();
+    const rx = new Rx();
     if (hint)
-      Status.setTraceHint(rejsx, hint);
+      Status.setTraceHint(rx, hint);
     if (trace) {
-      statusof(rejsx.jsx).configure({trace});
-      statusof(rejsx.keepfresh).configure({trace});
+      statusof(rx.jsx).configure({trace});
+      statusof(rx.keepfresh).configure({trace});
     }
-    return {rejsx, counter: 0};
+    return {rx, counter: 0};
   }
 
-  static unmountEffect(rejsx: Rejsx): React.EffectCallback {
+  static unmountEffect(rx: Rx): React.EffectCallback {
     return () => {
       // did mount
       return () => {
         // will unmount
-        Status.unmount(rejsx);
+        Status.unmount(rx);
       };
     };
   }
