@@ -4,28 +4,36 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { stateful, trigger, cached, statusof, Transaction, Status, Trace } from 'reactronic';
+import { stateful, trigger, cached, statusof, offside, Transaction, Status, Trace } from 'reactronic';
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
   const [counter, refresh] = React.useState(0);
   const [rejsx] = React.useState(() => Rejsx.create(trace));
   React.useEffect(Rejsx.unmountEffect(rejsx), []);
-  const jsx: JSX.Element = rejsx.jsx(counter, render, tran);
-  rejsx.keepfresh(counter, refresh);
+  const jsx: JSX.Element = rejsx.jsx({counter, render, refresh, tran});
   return jsx;
 }
+
+type JsxArgs = {
+  counter: number;
+  render: (counter: number) => JSX.Element;
+  refresh: (counter: number) => void
+  tran?: Transaction;
+};
 
 @stateful
 class Rejsx {
   @cached
-  jsx(counter: number, render: (counter: number) => JSX.Element, tran: Transaction | undefined): JSX.Element {
-    return !tran ? render(counter) : tran.inspect(render, counter);
+  jsx(args: JsxArgs): JSX.Element {
+    return !args.tran ? args.render(args.counter) : args.tran.inspect(args.render, args.counter);
   }
 
   @trigger
-  keepfresh(counter?: number, refresh?: (next: number) => void): void {
-    if (counter !== undefined && refresh !== undefined && statusof(this.jsx).isInvalid)
-      refresh(counter + 1);
+  keepfresh(): void {
+    const s = statusof(this.jsx);
+    const args: JsxArgs | undefined = s.args ? s.args[0] : undefined;
+    if (args && s.isInvalid)
+      offside(args.refresh, args.counter + 1);
   }
 
   static create(trace?: Partial<Trace>): Rejsx {

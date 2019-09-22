@@ -7,5 +7,5 @@ export { all, sleep } from './internal/all';
 export { Reactivity, Kind, Reentrance, Trace } from './api/Reactivity';
 export { stateful, stateless, transaction, trigger, cached, latency, reentrance, monitor, trace, reactivity } from './api/Reactivity.decorators';
 export { Transaction } from './api/Transaction';
-export { Status, resultof, statusof } from './api/Status';
+export { Status, resultof, statusof, offside } from './api/Status';
 export { Monitor, Worker } from './api/Monitor';

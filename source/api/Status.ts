@@ -15,9 +15,14 @@ export function statusof<T>(method: F<T>): Status<T> {
   return Status.get<T>(method);
 }
 
+export function offside<T>(func: F<T>, ...args: any[]): T {
+  return Cache.run<T>(undefined, Transaction.offside, func, ...args);
+}
+
 export abstract class Status<T> {
   abstract readonly reactivity: Reactivity;
   abstract configure(reactivity: Partial<Reactivity>): Reactivity;
+  abstract readonly args: ReadonlyArray<any>;
   abstract readonly stamp: number;
   abstract readonly error: any;
   abstract getResult(args?: any[]): T | undefined;

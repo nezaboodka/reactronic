@@ -19,6 +19,7 @@ export class Cache extends Status<any> {
 
   get reactivity(): Reactivity { return this.read(false).cache.rx; }
   configure(reactivity: Partial<Reactivity>): Reactivity { return this.reconfigure(reactivity); }
+  get args(): ReadonlyArray<any> { return this.read(true).cache.args; }
   get stamp(): number { return this.read(true).record.snapshot.timestamp; }
   get error(): boolean { return this.read(true).cache.error; }
   getResult(args?: any): any { return this.call(false, args).cache.result; }
@@ -261,29 +262,27 @@ class CacheResult implements ICacheResult {
   }
 
   renew(timestamp: number, now: boolean, nothrow: boolean): void {
-    Cache.run(undefined, () => {
-      if (now || this.rx.latency === -1) {
-        if (!this.error && (this.rx.kind === Kind.Transaction ||
-            (timestamp >= this.invalidated.since && !this.invalidated.renewing))) {
-          try {
-            const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
-            const trap: Function = Reflect.get(proxy, this.member, proxy);
-            const cache: Cache = Utils.get(trap, RT_CACHE);
-            const call: CachedCall = cache.call(true);
-            if (call.cache.ret instanceof Promise)
-              call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
-          }
-          catch (e) {
-            if (!nothrow)
-              throw e;
-          }
+    if (now || this.rx.latency === -1) {
+      if (!this.error && (this.rx.kind === Kind.Transaction ||
+          (timestamp >= this.invalidated.since && !this.invalidated.renewing))) {
+        try {
+          const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
+          const trap: Function = Reflect.get(proxy, this.member, proxy);
+          const cache: Cache = Utils.get(trap, RT_CACHE);
+          const call: CachedCall = cache.call(true);
+          if (call.cache.ret instanceof Promise)
+            call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
+        }
+        catch (e) {
+          if (!nothrow)
+            throw e;
         }
       }
-      else if (this.rx.latency === 0)
-        CacheResult.addAsyncTriggerToBatch(this);
-      else
-        setTimeout(() => this.renew(TOP_TIMESTAMP, true, true), 0);
-    });
+    }
+    else if (this.rx.latency === 0)
+      CacheResult.addAsyncTriggerToBatch(this);
+    else
+      setTimeout(() => this.renew(TOP_TIMESTAMP, true, true), 0);
   }
 
   static addAsyncTriggerToBatch(c: CacheResult): void {

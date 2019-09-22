@@ -119,12 +119,23 @@ export class Transaction {
     let result: any = t.do<T>(trace, func, ...args);
     if (root) {
       if (result instanceof Promise)
-        result = Transaction.tranfree(() => {
+        result = Transaction.offside(() => {
           return t.autoretry(t.join(result), func, ...args);
         });
       t.seal();
     }
     return result;
+  }
+
+  static offside<T>(func: F<T>, ...args: any[]): T {
+    const outer = Transaction._current;
+    try {
+      Transaction._current = Transaction.none;
+      return func(...args);
+    }
+    finally {
+      Transaction._current = outer;
+    }
   }
 
   // Internal
@@ -204,17 +215,6 @@ export class Transaction {
     triggers.map(t => t.renew(timestamp, false, false));
     return Transaction.current;
   }
-
-  private static tranfree<T>(func: F<T>, ...args: any[]): T {
-    const outer = Transaction._current;
-    try {
-      Transaction._current = Transaction.none;
-      return func(...args);
-    }
-    finally {
-      Transaction._current = outer;
-    }
-}
 
   private static seal(t: Transaction, error?: Error, retryAfter?: Transaction): void {
     if (!t.error && error) {
