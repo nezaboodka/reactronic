@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { stateful, stateless, trigger, cached, statusof, resultof, offside, Transaction, Status, Trace } from 'reactronic';
+import { stateful, stateless, trigger, cached, statusof, offside, Transaction, Status, Trace } from 'reactronic';
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
   const [req, refresh] = React.useState(() => Rejsx.create(trace));
