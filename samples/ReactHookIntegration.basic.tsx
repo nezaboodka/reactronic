@@ -7,20 +7,20 @@ import * as React from 'react';
 import { stateful, stateless, trigger, cached, statusof, offstage, Transaction, Status } from 'reactronic';
 
 export function reactiveRender(render: () => JSX.Element): JSX.Element {
-  const [req, refresh] = React.useState(Rx.create);
-  const rx = req.rx;
-  React.useEffect(Rx.unmountEffect(rx), []);
+  const [state, refresh] = React.useState(Rx.create);
+  const rx = state.rx;
   rx.refresh = refresh; // just in case React will change refresh on each rendering
+  React.useEffect(Rx.unmountEffect(rx), []);
   return rx.jsx(render);
 }
 
-type RenderRequest = {
+type ReactState = {
   rx: Rx;
 };
 
 @stateful
 class Rx {
-  @stateless refresh?: (next: RenderRequest) => void = undefined;
+  @stateless refresh?: (next: ReactState) => void = undefined;
 
   @cached
   jsx(render: () => JSX.Element): JSX.Element {
@@ -33,15 +33,13 @@ class Rx {
       offstage(this.refresh, {rx: this});
   }
 
-  static create(): RenderRequest {
-    const hint = "<rx>";
-    return Transaction.runAs<RenderRequest>(hint, false,
+  static create(): ReactState {
+    return Transaction.runAs<ReactState>("<rx>", false,
       undefined, undefined, Rx.doCreate);
   }
 
-  private static doCreate(): RenderRequest {
-    const rx = new Rx();
-    return {rx};
+  private static doCreate(): ReactState {
+    return {rx: new Rx()};
   }
 
   static unmountEffect(rx: Rx): React.EffectCallback {

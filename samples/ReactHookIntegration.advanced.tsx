@@ -9,9 +9,9 @@ import { stateful, stateless, trigger, cached, statusof, offstage, Transaction, 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
   const [req, refresh] = React.useState(trace ? () => Rx.create(trace) : Rx.create);
   const rx = req.rx;
-  React.useEffect(Rx.unmountEffect(rx), []);
   rx.counter = req.counter;
   rx.refresh = refresh; // just in case React will change refresh on each rendering
+  React.useEffect(Rx.unmountEffect(rx), []);
   return rx.jsx(render);
 }
 
