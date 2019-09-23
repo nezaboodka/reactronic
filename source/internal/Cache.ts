@@ -251,7 +251,7 @@ class CacheResult implements ICacheResult {
 
   hint(tranless?: boolean): string { return `${Hint.record(this.record, tranless, false, this.member)}`; }
 
-  wrap<T>(func: F<T>): F<T> {
+  bind<T>(func: F<T>): F<T> {
     const Cache_run: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hint.record(this.record, true)}.${this.member.toString()} - step in  `, 0, "        │");
       const result = Cache.run<T>(this, func, ...args);
@@ -552,11 +552,11 @@ function reactronicThen(this: any,
       reject = reject_rethrow;
     const c = CacheResult.active;
     if (c) {
-      resolve = c.wrap(resolve);
-      reject = c.wrap(reject);
+      resolve = c.bind(resolve);
+      reject = c.bind(reject);
     }
-    resolve = t.wrap(resolve, false);
-    reject = t.wrap(reject, true);
+    resolve = t.bind(resolve, false);
+    reject = t.bind(reject, true);
   }
   return original_primise_then.call(this, resolve, reject);
 }

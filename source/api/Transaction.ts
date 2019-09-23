@@ -59,10 +59,6 @@ export class Transaction {
     }
   }
 
-  // wrap<T>(func: F<T>): F<T> {
-  //   return Transaction._wrap<T>(this, Ctx.reaction, true, true, func);
-  // }
-
   commit(): void {
     if (this.workers > 0)
       throw new Error("cannot commit transaction having active workers");
@@ -75,6 +71,25 @@ export class Transaction {
     if (!this.sealed)
       this.run(Transaction.seal, this);
     return this;
+  }
+
+  bind<T>(func: F<T>, secondary: boolean): F<T> {
+    this.guard();
+    const self = this;
+    const inspect = Transaction._inspection;
+    const enter = !secondary ? function() { self.workers++; } : function() { /* nop */ };
+    const leave = function(...args: any[]): T { self.workers--; return func(...args); };
+    !inspect ? self.do(undefined, enter) : self.inspect(enter);
+    const Transaction_do: F<T> = (...args: any[]): T => {
+      return !inspect ? self.do<T>(undefined, leave, ...args) : self.inspect<T>(leave, ...args);
+    };
+    return Transaction_do;
+  }
+
+  async postponed<T>(p: Promise<T>): Promise<T> {
+    const result = await p;
+    await this.whenFinished(false);
+    return result;
   }
 
   cancel(error: Error, retryAfterOrIgnore?: Transaction | null): this {
@@ -98,12 +113,6 @@ export class Transaction {
       await this.reaction.tran.whenFinished(true);
   }
 
-  async join<T>(p: Promise<T>): Promise<T> {
-    const result = await p;
-    await this.whenFinished(false);
-    return result;
-  }
-
   undo(): void {
     const hint = Dbg.isOn && Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
     Transaction.runAs(hint, false, undefined, undefined,
@@ -122,7 +131,7 @@ export class Transaction {
     if (root) {
       if (result instanceof Promise)
         result = Transaction.off(() => {
-          return t.autoretry(t.join(result), func, ...args);
+          return t.autoretry(t.postponed(result), func, ...args);
         });
       t.seal();
     }
@@ -264,19 +273,6 @@ export class Transaction {
       });
     }
     return this.resultPromise;
-  }
-
-  wrap<T>(func: F<T>, secondary: boolean): F<T> {
-    this.guard();
-    const self = this;
-    const inspect = Transaction._inspection;
-    const enter = !secondary ? function() { self.workers++; } : function() { /* nop */ };
-    const leave = function(...args: any[]): T { self.workers--; return func(...args); };
-    !inspect ? self.do(undefined, enter) : self.inspect(enter);
-    const Transaction_do: F<T> = (...args: any[]): T => {
-      return !inspect ? self.do<T>(undefined, leave, ...args) : self.inspect<T>(leave, ...args);
-    };
-    return Transaction_do;
   }
 
   private static readableSnapshot(): Snapshot {
