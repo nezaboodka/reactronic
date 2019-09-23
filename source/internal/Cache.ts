@@ -252,13 +252,13 @@ class CacheResult implements ICacheResult {
   hint(tranless?: boolean): string { return `${Hint.record(this.record, tranless, false, this.member)}`; }
 
   wrap<T>(func: F<T>): F<T> {
-    const caching: F<T> = (...args: any[]): T => {
+    const Cache_run: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hint.record(this.record, true)}.${this.member.toString()} - step in  `, 0, "        │");
       const result = Cache.run<T>(this, func, ...args);
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "_/", `${Hint.record(this.record, true)}.${this.member.toString()} - step out `, 0, this.started > 0 ? "        │" : "");
       return result;
     };
-    return caching;
+    return Cache_run;
   }
 
   renew(timestamp: number, now: boolean, nothrow: boolean): void {
@@ -546,8 +546,17 @@ function reactronicThen(this: any,
 {
   const t = Transaction.current;
   if (!t.isFinished()) {
-    resolve = Transaction._wrap<any>(t, CacheResult.active, true, true, resolve || resolve_return);
-    reject = Transaction._wrap<any>(t, CacheResult.active, false, true, reject || reject_rethrow);
+    if (!resolve)
+      resolve = resolve_return;
+    if (!reject)
+      reject = reject_rethrow;
+    const c = CacheResult.active;
+    if (c) {
+      resolve = c.wrap(resolve);
+      reject = c.wrap(reject);
+    }
+    resolve = t.wrap(true, resolve);
+    reject = t.wrap(false, reject);
   }
   return original_primise_then.call(this, resolve, reject);
 }

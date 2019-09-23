@@ -266,17 +266,17 @@ export class Transaction {
     return this.resultPromise;
   }
 
-  static _wrap<T>(t: Transaction, c: ICacheResult | undefined, inc: boolean, dec: boolean, func: F<T>): F<T> {
-    t.guard();
+  wrap<T>(inc: boolean, func: F<T>): F<T> {
+    this.guard();
+    const self = this;
     const inspect = Transaction._inspection;
-    const f = c ? c.wrap(func) : func; // caching context
-    const enter = inc ? function() { t.workers++; } : function() { /* nop */ };
-    const leave = dec ? function(...args: any[]): T { if (dec) t.workers--; return f(...args); } : f;
-    !inspect ? t.do(undefined, enter) : t.inspect(enter);
-    const transactional: F<T> = (...args: any[]): T => {
-      return !inspect ? t.do<T>(undefined, leave, ...args) : t.inspect<T>(leave, ...args);
+    const enter = inc ? function() { self.workers++; } : function() { /* nop */ };
+    const leave = function(...args: any[]): T { self.workers--; return func(...args); };
+    !inspect ? self.do(undefined, enter) : self.inspect(enter);
+    const Transaction_do: F<T> = (...args: any[]): T => {
+      return !inspect ? self.do<T>(undefined, leave, ...args) : self.inspect<T>(leave, ...args);
     };
-    return transactional;
+    return Transaction_do;
   }
 
   private static readableSnapshot(): Snapshot {
