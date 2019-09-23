@@ -32,8 +32,7 @@ class Rx {
   }
 
   static create(): ReactState {
-    return Transaction.runAs<ReactState>("<rx>", false,
-      undefined, undefined, Rx.doCreate);
+    return Transaction.runAs<ReactState>("<rx>", false, undefined, undefined, Rx.doCreate);
   }
 
   private static doCreate(): ReactState {
