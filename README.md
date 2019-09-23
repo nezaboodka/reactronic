@@ -293,7 +293,7 @@ class Transaction {
 
 // Status
 
-function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
+function resultof<T>(method: F<Promise<T>>, args?: any[]): T | undefined;
 function statusof<T>(method: F<T>): Status<T>;
 function offstage<T>(func: F<T>, ...args: any[]): T;
 

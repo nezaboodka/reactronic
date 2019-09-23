@@ -20,6 +20,7 @@ const expected: string[] = [
 ];
 
 test("basic", t => {
+  Status.setTrace(trace.off);
   Status.setTrace(trace.noisy);
   // Simple transactions
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));

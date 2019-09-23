@@ -53,7 +53,7 @@ export class Person {
   }
 }
 
-export const trace: { friendly: Trace, noisy: Trace } = {
+export const trace: { friendly: Trace, noisy: Trace, off: undefined } = {
   friendly: {
     silent: process.env.AVA_DEBUG === undefined,
     hints: true,
@@ -90,6 +90,7 @@ export const trace: { friendly: Trace, noisy: Trace } = {
     margin1: 0,
     margin2: 0,
   },
+  off: undefined,
 };
 
 /* istanbul ignore next */

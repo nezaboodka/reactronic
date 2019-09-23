@@ -45,7 +45,8 @@ test("async", async t => {
   finally {
     t.is(mon.counter, 0);
     t.is(mon.workers.size, 0);
-    t.is((resultof(app.render) || []).length, 2);
+    const r = resultof(app.render);
+    t.is(r && r.length, 2);
     await sleep(400);
     await Status.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */
