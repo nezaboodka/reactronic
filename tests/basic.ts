@@ -68,10 +68,10 @@ export class DemoView {
     this.render().forEach(x => output.push(x));
   }
 
-  @transaction
-  subprint(): void {
-    this.render().forEach(x => output.push(x));
-  }
+  // @transaction
+  // subprint(): void {
+  //   this.render().forEach(x => output.push(x));
+  // }
 
   @cached
   filteredUsers(): Person[] {
