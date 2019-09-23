@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { stateful, stateless, trigger, cached, statusof, offside, Transaction, Status, Trace } from 'reactronic';
+import { stateful, stateless, trigger, cached, statusof, offstage, Transaction, Status, Trace } from 'reactronic';
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
   const [req, refresh] = React.useState(trace ? () => Rx.create(trace) : Rx.create);
@@ -34,7 +34,7 @@ class Rx {
   keepfresh(): void {
     const status = statusof(this.jsx);
     if (status.isInvalid && this.refresh !== undef)
-      offside(this.refresh, {rx: this, counter: this.counter + 1});
+      offstage(this.refresh, {rx: this, counter: this.counter + 1});
   }
 
   static create(trace?: Partial<Trace>): RenderRequest {

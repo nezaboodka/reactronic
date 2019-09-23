@@ -290,14 +290,14 @@ class Transaction {
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T;
   static runAs<T>(hint: string, separate: boolean, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
-  static offside<T>(func: F<T>, ...args: any[]): T;
+  static out<T>(func: F<T>, ...args: any[]): T;
 }
 
 // Status
 
 function resultof<T>(method: F<Promise<T>>, ...args: any[]): T | undefined;
 function statusof<T>(method: F<T>): Status<T>;
-function offside<T>(func: F<T>, ...args: any[]): T;
+function offstage<T>(func: F<T>, ...args: any[]): T;
 
 abstract class Status<T> {
   readonly reactivity: Reactivity;
