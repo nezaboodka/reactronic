@@ -214,7 +214,6 @@ class CacheResult implements ICacheResult {
   static asyncTriggerBatch: CacheResult[] = [];
   static active?: CacheResult = undefined;
 
-  readonly margin: number;
   readonly tran: Transaction;
   readonly record: Record;
   readonly member: PropertyKey;
@@ -226,9 +225,9 @@ class CacheResult implements ICacheResult {
   started: number;
   readonly invalidated: { since: number, renewing: CacheResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
+  readonly margin: number;
 
   constructor(record: Record, member: PropertyKey, init: CacheResult | Rx) {
-    this.margin = Dbg.isOn ? Dbg.trace.margin + 1 : 0;
     this.tran = Transaction.current;
     this.record = record;
     this.member = member;
@@ -247,15 +246,16 @@ class CacheResult implements ICacheResult {
     this.started = 0;
     this.invalidated = { since: 0, renewing: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
+    this.margin = CacheResult.active ? CacheResult.active.margin + 1 : 1;
   }
 
   hint(tranless?: boolean): string { return `${Hint.record(this.record, tranless, false, this.member)}`; }
 
   wrap<T>(func: F<T>): F<T> {
     const caching: F<T> = (...args: any[]): T => {
-      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs(this, "║", "‾\\", `${Hint.record(this.record, true)}.${this.member.toString()} - step in  `, 0, "        │");
+      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hint.record(this.record, true)}.${this.member.toString()} - step in  `, 0, "        │");
       const result = Cache.run<T>(this, func, ...args);
-      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs(this, "║", "_/", `${Hint.record(this.record, true)}.${this.member.toString()} - step out `, 0, this.started > 0 ? "        │" : "");
+      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "_/", `${Hint.record(this.record, true)}.${this.member.toString()} - step out `, 0, this.started > 0 ? "        │" : "");
       return result;
     };
     return caching;
@@ -510,8 +510,9 @@ class CacheResult implements ICacheResult {
   static currentTrace(local: Partial<Trace> | undefined): Trace {
     const t = Transaction.current;
     let res = Dbg.merge(t.trace, t.id > 0 ? 31 + t.id % 6 : 37, `T${t.id}`, Dbg.global);
+    res = Dbg.merge({margin1: t.margin}, undefined, undefined, res);
     if (CacheResult.active)
-      res = Dbg.merge(CacheResult.active, undefined, undefined, res);
+      res = Dbg.merge({margin2: CacheResult.active.margin}, undefined, undefined, res);
     if (local)
       res = Dbg.merge(local, undefined, undefined, res);
     return res;

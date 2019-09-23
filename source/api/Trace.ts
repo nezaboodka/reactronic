@@ -18,5 +18,6 @@ export interface Trace {
   readonly gc: boolean;
   readonly color: number;
   readonly prefix: string;
-  readonly margin: number;
+  readonly margin1: number;
+  readonly margin2: number;
 }

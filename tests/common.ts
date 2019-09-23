@@ -69,7 +69,8 @@ export const trace: { friendly: Trace, noisy: Trace } = {
     gc: false,
     color: 37,
     prefix: "",
-    margin: 0,
+    margin1: 0,
+    margin2: 0,
   },
   noisy: {
     silent: process.env.AVA_DEBUG === undefined,
@@ -86,7 +87,8 @@ export const trace: { friendly: Trace, noisy: Trace } = {
     gc: true,
     color: 37,
     prefix: "",
-    margin: 0,
+    margin1: 0,
+    margin2: 0,
   },
 };
 

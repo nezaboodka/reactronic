@@ -23,7 +23,8 @@ export class Dbg {
     gc: false,
     color: 37,
     prefix: "",
-    margin: 0,
+    margin1: 0,
+    margin2: 0,
   };
 
   static isOn: boolean = false;
@@ -37,12 +38,13 @@ export class Dbg {
 
   static logAs(trace: Partial<Trace> | undefined, operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
     const t = Dbg.getCurrentTrace(trace);
-    const margin: string = "  ".repeat(t.margin);
+    const margin1: string = "  ".repeat(t.margin1);
+    const margin2: string = "  ".repeat(t.margin2);
     const silent = (trace && trace.silent !== undefined) ? trace.silent : t.silent;
     if (!silent) /* istanbul ignore next */
       console.log("\x1b[37m%s\x1b[0m \x1b[" + t.color +
-        "m%s %s\x1b[0m \x1b[" + t.color + "m%s%s\x1b[0m \x1b[" + t.color + "m%s\x1b[0m%s",
-        "#rt", t.prefix, operation, margin, marker, message,
+        "m%s %s%s\x1b[0m \x1b[" + t.color + "m%s%s\x1b[0m \x1b[" + t.color + "m%s\x1b[0m%s",
+        "#rt", t.prefix, margin1, operation, margin2, marker, message,
         (highlight !== undefined ? `${highlight}` : ``) +
         (ms > 2 ? `    [ ${ms}ms ]` : ``));
   }
@@ -63,7 +65,8 @@ export class Dbg {
       gc: t.gc !== undefined ? t.gc : existing.gc,
       color: t.color !== undefined ? t.color : existing.color,
       prefix: t.prefix !== undefined ? t.prefix : existing.prefix,
-      margin: t.margin !== undefined ? t.margin : existing.margin,
+      margin1: t.margin1 !== undefined ? t.margin1 : existing.margin1,
+      margin2: t.margin2 !== undefined ? t.margin2 : existing.margin2,
     };
     if (color !== undefined)
       result.color = color;

@@ -12,6 +12,7 @@ export class Transaction {
   static _current: Transaction;
   static _inspection: boolean = false;
 
+  readonly margin: number;
   private readonly snapshot: Snapshot; // assigned in constructor
   private workers: number;
   private sealed: boolean;
@@ -24,6 +25,7 @@ export class Transaction {
   readonly trace?: Partial<Trace>; // assigned in constructor
 
   constructor(hint: string, trace?: Partial<Trace>, token?: any) {
+    this.margin = Transaction._current ? Transaction._current.margin + 1 : -1;
     this.snapshot = new Snapshot(hint, token);
     this.workers = 0;
     this.sealed = false;
