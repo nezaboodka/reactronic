@@ -555,8 +555,8 @@ function reactronicThen(this: any,
       resolve = c.wrap(resolve);
       reject = c.wrap(reject);
     }
-    resolve = t.wrap(true, resolve);
-    reject = t.wrap(false, reject);
+    resolve = t.wrap(resolve, false);
+    reject = t.wrap(reject, true);
   }
   return original_primise_then.call(this, resolve, reject);
 }

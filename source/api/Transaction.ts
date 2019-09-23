@@ -266,11 +266,11 @@ export class Transaction {
     return this.resultPromise;
   }
 
-  wrap<T>(inc: boolean, func: F<T>): F<T> {
+  wrap<T>(func: F<T>, secondary: boolean): F<T> {
     this.guard();
     const self = this;
     const inspect = Transaction._inspection;
-    const enter = inc ? function() { self.workers++; } : function() { /* nop */ };
+    const enter = !secondary ? function() { self.workers++; } : function() { /* nop */ };
     const leave = function(...args: any[]): T { self.workers--; return func(...args); };
     !inspect ? self.do(undefined, enter) : self.inspect(enter);
     const Transaction_do: F<T> = (...args: any[]): T => {
