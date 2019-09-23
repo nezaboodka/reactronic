@@ -540,25 +540,25 @@ function valueHint(value: any): string {
 
 const original_primise_then = Promise.prototype.then;
 
-function promiseThenProxy(
-  this: any, onsuccess?: ((value: any) => any | PromiseLike<any>) | undefined | null,
-  onfailure?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
+function reactronicThen(this: any,
+  resolve?: ((value: any) => any | PromiseLike<any>) | undefined | null,
+  reject?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
   const t = Transaction.current;
   if (!t.isFinished()) {
-    if (onsuccess) {
-      // if (Debug.verbosity >= 5) Debug.log("║", "", ` Promise.then (${(this as any)[RT_UNMOUNT]})`);
-      onsuccess = Transaction._wrap<any>(t, CacheResult.active, true, true, onsuccess);
-      onfailure = Transaction._wrap<any>(t, CacheResult.active, false, true, onfailure || rethrow);
-    }
-    else if (onfailure)
-      onfailure = Transaction._wrap<any>(t, CacheResult.active, false, false, onfailure);
+    resolve = Transaction._wrap<any>(t, CacheResult.active, true, true, resolve || resolve_return);
+    reject = Transaction._wrap<any>(t, CacheResult.active, false, true, reject || reject_rethrow);
   }
-  return original_primise_then.call(this, onsuccess, onfailure);
+  return original_primise_then.call(this, resolve, reject);
 }
 
 /* istanbul ignore next */
-export function rethrow(error: any): never {
+export function resolve_return(value: any): any {
+  return value;
+}
+
+/* istanbul ignore next */
+export function reject_rethrow(error: any): never {
   throw error;
 }
 
@@ -571,7 +571,7 @@ function init(): void {
   Snapshot.equal = CacheResult.equal; // override
   Snapshot.applyDependencies = CacheResult.applyDependencies; // override
   Hooks.createCacheTrap = Cache.createCacheTrap; // override
-  Promise.prototype.then = promiseThenProxy; // override
+  Promise.prototype.then = reactronicThen; // override
 }
 
 init();
