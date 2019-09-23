@@ -23,7 +23,7 @@ type RenderRequest = {
 @stateful
 class Rx {
   @stateless counter: number = 0;
-  @stateless refresh: (next: RenderRequest) => void = undef;
+  @stateless refresh?: (next: RenderRequest) => void;
 
   @cached
   jsx(render: (counter: number) => JSX.Element): JSX.Element {
@@ -32,8 +32,7 @@ class Rx {
 
   @trigger
   keepfresh(): void {
-    const status = statusof(this.jsx);
-    if (status.isInvalid && this.refresh !== undef)
+    if (statusof(this.jsx) && this.refresh)
       offstage(this.refresh, {rx: this, counter: this.counter + 1});
   }
 
@@ -76,8 +75,4 @@ function getComponentName(): string {
   let result: string = lines[i + 1] || "";
   result = (result.match(/^\s*at\s*(\S+)/) || [])[1];
   return `<${result}>`;
-}
-
-function undef(next: RenderRequest): void {
-  throw new Error("refresh callback is undefined");
 }
