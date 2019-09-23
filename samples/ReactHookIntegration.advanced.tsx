@@ -15,10 +15,7 @@ export function reactiveRender(render: (counter: number) => JSX.Element, trace?:
   return rx.jsx(render);
 }
 
-type RenderRequest = {
-  rx: Rx;
-  counter: number;
-};
+type RenderRequest = { rx: Rx; counter: number; };
 
 @stateful
 class Rx {

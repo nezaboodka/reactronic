@@ -14,9 +14,7 @@ export function reactiveRender(render: () => JSX.Element): JSX.Element {
   return rx.jsx(render);
 }
 
-type ReactState = {
-  rx: Rx;
-};
+type ReactState = { rx: Rx; };
 
 @stateful
 class Rx {
