@@ -121,7 +121,7 @@ export class Transaction {
     let result: any = t.do<T>(trace, func, ...args);
     if (root) {
       if (result instanceof Promise)
-        result = Transaction.out(() => {
+        result = Transaction.off(() => {
           return t.autoretry(t.join(result), func, ...args);
         });
       t.seal();
@@ -129,7 +129,7 @@ export class Transaction {
     return result;
   }
 
-  static out<T>(func: F<T>, ...args: any[]): T {
+  static off<T>(func: F<T>, ...args: any[]): T {
     const outer = Transaction._current;
     try {
       Transaction._current = Transaction.none;

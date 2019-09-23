@@ -49,7 +49,7 @@ test("basic", t => {
       daddy.children[2].name = "Steven Smith"; // Steve
       t.is(daddy.name, "John Smith");
       t.is(daddy.age, 40);
-      t.is(Transaction.out(() => daddy.age), 38);
+      t.is(Transaction.off(() => daddy.age), 38);
       t.is(offstage(() => daddy.age), 38);
       t.is(daddy.children.length, 3);
       app.userFilter = "Jo"; // set to the same value

@@ -288,7 +288,7 @@ class Transaction {
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T;
   static runAs<T>(hint: string, separate: boolean, trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
-  static out<T>(func: F<T>, ...args: any[]): T;
+  static off<T>(func: F<T>, ...args: any[]): T;
 }
 
 // Status
