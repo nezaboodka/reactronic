@@ -220,8 +220,6 @@ function reentrance(reentrance: Reentrance); // transactions & triggers
 function monitor(monitor: Monitor | null);
 function trace(trace: Partial<Trace>);
 
-function reactivity(reactivity: Partial<Reactivity>);
-
 // Reactivity, Kind, Reentrance, Monitor
 
 interface Reactivity {

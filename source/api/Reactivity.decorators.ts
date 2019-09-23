@@ -50,7 +50,7 @@ export function trace(trace: Partial<Trace>): F<any> {
   return reactivity({trace});
 }
 
-export function reactivity(reactivity: Partial<Reactivity>): F<any> {
+function reactivity(reactivity: Partial<Reactivity>): F<any> {
   return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
     if (prop && pd)
       return Hooks.decorateMethod(false, reactivity, proto, prop, pd);
