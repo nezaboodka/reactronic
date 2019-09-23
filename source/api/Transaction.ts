@@ -73,7 +73,7 @@ export class Transaction {
     return this;
   }
 
-  bind<T>(func: F<T>, secondary: boolean): F<T> {
+  bind<T>(func: F<T>, secondary: boolean = false): F<T> {
     this.guard();
     const self = this;
     const inspect = Transaction._inspection;
@@ -84,12 +84,6 @@ export class Transaction {
       return !inspect ? self.do<T>(undefined, leave, ...args) : self.inspect<T>(leave, ...args);
     };
     return Transaction_do;
-  }
-
-  async postponed<T>(p: Promise<T>): Promise<T> {
-    const result = await p;
-    await this.whenFinished(false);
-    return result;
   }
 
   cancel(error: Error, retryAfterOrIgnore?: Transaction | null): this {
@@ -178,6 +172,12 @@ export class Transaction {
       else
         throw error;
     }
+  }
+
+  private async postponed<T>(p: Promise<T>): Promise<T> {
+    const result = await p;
+    await this.whenFinished(false);
+    return result;
   }
 
   // Internal
