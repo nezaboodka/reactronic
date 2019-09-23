@@ -65,7 +65,7 @@ export class DemoView {
 
   @trigger
   print(): void {
-    this.subprint();
+    this.render().forEach(x => output.push(x));
   }
 
   @transaction
