@@ -38,7 +38,7 @@ export class Dbg {
 
   static logAs(trace: Partial<Trace> | undefined, operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
     const t = Dbg.getCurrentTrace(trace);
-    const margin1: string = "  ".repeat(t.margin1);
+    const margin1: string = "  ".repeat(t.margin1 >= 0 ? t.margin1 : 0);
     const margin2: string = "  ".repeat(t.margin2);
     const silent = (trace && trace.silent !== undefined) ? trace.silent : t.silent;
     if (!silent) /* istanbul ignore next */
