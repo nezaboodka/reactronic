@@ -18,8 +18,6 @@ export function reactiveRender(render: () => JSX.Element): JSX.Element {
 
 @stateful
 class Rx {
-  @stateless refresh?: (next: ReactState) => void = undefined;
-
   @cached
   jsx(render: () => JSX.Element): JSX.Element {
     return render();
@@ -31,7 +29,8 @@ class Rx {
       offstage(this.refresh, {rx: this});
   }
 
-  readonly unmountEffect = (): (() => void) => { // React.EffectCallback
+  @stateless refresh?: (next: ReactState) => void = undefined;
+  @stateless readonly unmountEffect = (): (() => void) => { // React.EffectCallback
     /* did mount */
     return () => { /* will unmount */ Status.unmount(this); };
   }

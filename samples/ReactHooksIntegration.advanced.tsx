@@ -19,9 +19,6 @@ export function reactiveRender(render: (counter: number) => JSX.Element, trace?:
 
 @stateful
 class Rx {
-  @stateless counter: number = 0;
-  @stateless refresh?: (next: ReactState) => void = undefined;
-
   @cached
   jsx(render: (counter: number) => JSX.Element): JSX.Element {
     return render(this.counter);
@@ -33,7 +30,9 @@ class Rx {
       offstage(this.refresh, {rx: this, counter: this.counter + 1});
   }
 
-  readonly unmountEffect = (): (() => void) => { // React.EffectCallback
+  @stateless counter: number = 0;
+  @stateless refresh?: (next: ReactState) => void = undefined;
+  @stateless readonly unmountEffect = (): (() => void) => { // React.EffectCallback
     /* did mount */
     return () => { /* will unmount */ Status.unmount(this); };
   }
