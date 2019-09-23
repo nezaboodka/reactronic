@@ -9,11 +9,11 @@ import { stateful, stateless, trigger, cached, statusof, offstage, Transaction, 
 type ReactState = { rx: Rx; counter: number; };
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
-  const [state, refresh] = React.useState<ReactState>(trace ? () => Rx.create(trace) : Rx.create);
+  const [state, refresh] = React.useState<ReactState>(!trace ? createReactState : () => createReactState(trace));
   const rx = state.rx;
   rx.counter = state.counter;
   rx.refresh = refresh; // just in case React will change refresh on each rendering
-  React.useEffect(Rx.unmountEffect(rx), []);
+  React.useEffect(rx.unmountEffect, []);
   return rx.jsx(render);
 }
 
@@ -33,35 +33,29 @@ class Rx {
       offstage(this.refresh, {rx: this, counter: this.counter + 1});
   }
 
-  static create(trace?: Partial<Trace>): ReactState {
-    const dbg = Status.isTraceOn && Status.trace.hints
-      ? trace === undefined || trace.hints !== false
-      : trace !== undefined && trace.hints === true;
-    const hint = dbg ? getComponentName() : "<rx>";
-    return Transaction.runAs<ReactState>(hint, false,
-      trace, undefined, Rx.doCreate, hint, trace);
+  readonly unmountEffect = (): (() => void) => { // React.EffectCallback
+    /* did mount */
+    return () => { /* will unmount */ Status.unmount(this); };
   }
+}
 
-  private static doCreate(hint: string | undefined, trace: Trace | undefined): ReactState {
-    const rx = new Rx();
-    if (hint)
-      Status.setTraceHint(rx, hint);
-    if (trace) {
-      statusof(rx.jsx).configure({trace});
-      statusof(rx.keepfresh).configure({trace});
-    }
-    return {rx, counter: 0};
-  }
+function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
+  return new Rx();
+}
 
-  static unmountEffect(rx: Rx): React.EffectCallback {
-    return () => {
-      // did mount
-      return () => {
-        // will unmount
-        Status.unmount(rx);
-      };
-    };
+function createReactState(trace?: Partial<Trace>): ReactState {
+  const dbg = Status.isTraceOn && Status.trace.hints
+    ? trace === undefined || trace.hints !== false
+    : trace !== undefined && trace.hints === true;
+  const hint = dbg ? getComponentName() : "<rx>";
+  const rx = Transaction.runAs<Rx>(hint, false, trace, undefined, createRx, hint, trace);
+  if (hint)
+    Status.setTraceHint(rx, hint);
+  if (trace) {
+    statusof(rx.jsx).configure({trace});
+    statusof(rx.keepfresh).configure({trace});
   }
+  return {rx, counter: 0};
 }
 
 function getComponentName(): string {

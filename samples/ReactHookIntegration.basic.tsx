@@ -9,10 +9,10 @@ import { stateful, stateless, trigger, cached, statusof, offstage, Transaction, 
 type ReactState = { rx: Rx; };
 
 export function reactiveRender(render: () => JSX.Element): JSX.Element {
-  const [state, refresh] = React.useState<ReactState>(Rx.create);
+  const [state, refresh] = React.useState<ReactState>(createReactState);
   const rx = state.rx;
   rx.refresh = refresh; // just in case React will change refresh on each rendering
-  React.useEffect(Rx.unmountEffect(rx), []);
+  React.useEffect(rx.unmountEffect, []);
   return rx.jsx(render);
 }
 
@@ -31,21 +31,16 @@ class Rx {
       offstage(this.refresh, {rx: this});
   }
 
-  static create(): ReactState {
-    return Transaction.runAs<ReactState>("<rx>", false, undefined, undefined, Rx.doCreate);
+  readonly unmountEffect = (): (() => void) => { // React.EffectCallback
+    /* did mount */
+    return () => { /* will unmount */ Status.unmount(this); };
   }
+}
 
-  private static doCreate(): ReactState {
-    return {rx: new Rx()};
-  }
+function createRx(): Rx {
+  return new Rx();
+}
 
-  static unmountEffect(rx: Rx): React.EffectCallback {
-    return () => {
-      // did mount
-      return () => {
-        // will unmount
-        Status.unmount(rx);
-      };
-    };
-  }
+function createReactState(): ReactState {
+  return {rx: Transaction.run<Rx>("Rx.create", createRx)};
 }
