@@ -15,7 +15,7 @@ export function statusof<T>(method: F<T>): Status<T> {
   return Status.get<T>(method);
 }
 
-export function offstate<T>(func: F<T>, ...args: any[]): T {
+export function offstage<T>(func: F<T>, ...args: any[]): T {
   return Cache.run<T>(undefined, Transaction.out, func, ...args);
 }
 
