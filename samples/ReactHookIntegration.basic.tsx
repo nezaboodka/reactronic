@@ -27,7 +27,7 @@ class Rx {
 
   @trigger
   keepfresh(): void {
-    if (statusof(this.jsx) && this.refresh)
+    if (statusof(this.jsx).isInvalid && this.refresh)
       offstage(this.refresh, {rx: this});
   }
 
