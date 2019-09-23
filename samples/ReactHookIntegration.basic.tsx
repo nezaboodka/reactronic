@@ -6,15 +6,15 @@
 import * as React from 'react';
 import { stateful, stateless, trigger, cached, statusof, offstage, Transaction, Status } from 'reactronic';
 
+type ReactState = { rx: Rx; };
+
 export function reactiveRender(render: () => JSX.Element): JSX.Element {
-  const [state, refresh] = React.useState(Rx.create);
+  const [state, refresh] = React.useState<ReactState>(Rx.create);
   const rx = state.rx;
   rx.refresh = refresh; // just in case React will change refresh on each rendering
   React.useEffect(Rx.unmountEffect(rx), []);
   return rx.jsx(render);
 }
-
-type ReactState = { rx: Rx; };
 
 @stateful
 class Rx {
