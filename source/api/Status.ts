@@ -15,8 +15,8 @@ export function statusof<T>(method: F<T>): Status<T> {
   return Status.get<T>(method);
 }
 
-export function offstage<T>(func: F<T>, ...args: any[]): T {
-  return Cache.run<T>(undefined, Transaction.off, func, ...args);
+export function outside<T>(func: F<T>, ...args: any[]): T {
+  return Cache.run<T>(undefined, Transaction.outside, func, ...args);
 }
 
 export abstract class Status<T> {
