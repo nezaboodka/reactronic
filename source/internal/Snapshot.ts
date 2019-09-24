@@ -9,7 +9,7 @@ import { Record, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { CopyOnWrite } from './Hooks';
 
-const MAX_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1;
+const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1;
 
 // Snapshot
 
@@ -37,7 +37,7 @@ export class Snapshot implements ISnapshot {
     this.cache = cache;
     this.changeset = new Map<Handle, Record>();
     this.triggers = [];
-    this._timestamp = MAX_TIMESTAMP;
+    this._timestamp = UNDEFINED_TIMESTAMP;
     this._readstamp = 1;
     this._sealed = false;
   }
@@ -113,8 +113,8 @@ export class Snapshot implements ISnapshot {
   }
 
   acquire(outer: Snapshot): void {
-    if (!this._sealed && this._timestamp === MAX_TIMESTAMP) {
-      this._timestamp = this.cache === undefined || outer._timestamp === MAX_TIMESTAMP
+    if (!this._sealed && this._timestamp === UNDEFINED_TIMESTAMP) {
+      this._timestamp = this.cache === undefined || outer._timestamp === UNDEFINED_TIMESTAMP
         ? Snapshot.headTimestamp : outer._timestamp;
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
@@ -199,7 +199,7 @@ export class Snapshot implements ISnapshot {
       }
     });
     if (Dbg.isOn && Dbg.trace.transactions)
-      Dbg.log(this.timestamp < MAX_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `[${this.timestamp}]`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
+      Dbg.log(this.timestamp < UNDEFINED_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `[${this.timestamp}]`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
   /* istanbul ignore next */
