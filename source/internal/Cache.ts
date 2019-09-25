@@ -509,12 +509,8 @@ class CacheResult implements ICacheResult {
 
   complete(error?: any): void {
     const prev = this.record.prev.record.data[this.member];
-    if (prev instanceof CacheResult) {
-      if (error === undefined)
-        prev.invalidated.renewer = this;
-      else if (prev.invalidated.renewer === this)
-        prev.invalidated.renewer = undefined;
-    }
+    if (prev instanceof CacheResult && prev.invalidated.renewer === this)
+      prev.invalidated.renewer = undefined;
   }
 
   static equal(oldValue: any, newValue: any): boolean {
