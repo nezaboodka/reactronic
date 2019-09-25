@@ -425,8 +425,7 @@ class CacheResult implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
-    if (!prev.invalidated.renewing)
-      prev.invalidated.renewing = this;
+    prev.invalidated.renewing = this;
   }
 
   tryLeave(r: Record, prev: CacheResult, mon: Monitor | null): void {
@@ -451,8 +450,7 @@ class CacheResult implements ICacheResult {
   }
 
   private leave(r: Record, prev: CacheResult, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
-    if (prev.invalidated.renewing === this)
-      prev.invalidated.renewing = undefined;
+    prev.invalidated.renewing = undefined; // TODO: reset must be moved to the end of the transaction
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
