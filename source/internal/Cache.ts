@@ -312,25 +312,30 @@ class CacheResult implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, true)}.${prop.toString()} = ${valueHint(value)}`);
   }
 
-  static applyDependencies(snapshot: Snapshot): void {
-    const triggers = snapshot.triggers;
-    const timestamp = snapshot.timestamp;
-    const readstamp = snapshot.readstamp;
-    snapshot.changeset.forEach((r: Record, h: Handle) => {
-      if (!r.changes.has(RT_UNMOUNT))
-        r.changes.forEach(prop => {
-          CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
-          const value = r.data[prop];
-          if (value instanceof CacheResult)
-            value.subscribeToOwnObservables(timestamp, readstamp, triggers);
-        });
-      else
-        for (const prop in r.prev.record.data)
-          CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
-    });
-    snapshot.changeset.forEach((r: Record, h: Handle) => {
-      CacheResult.mergeObservers(r, r.prev.record);
-    });
+  static applyDependencies(snapshot: Snapshot, error?: any): void {
+    if (error === undefined) {
+      const triggers = snapshot.triggers;
+      const timestamp = snapshot.timestamp;
+      const readstamp = snapshot.readstamp;
+      snapshot.changeset.forEach((r: Record, h: Handle) => {
+        if (!r.changes.has(RT_UNMOUNT))
+          r.changes.forEach(prop => {
+            CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
+            const value = r.data[prop];
+            if (value instanceof CacheResult)
+              value.subscribeToOwnObservables(timestamp, readstamp, triggers);
+          });
+        else
+          for (const prop in r.prev.record.data)
+            CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
+      });
+      snapshot.changeset.forEach((r: Record, h: Handle) => {
+        CacheResult.mergeObservers(r, r.prev.record);
+      });
+    }
+    else {
+      // not implemented
+    }
   }
 
   static acquireObserverSet(r: Record, prop: PropertyKey): Set<ICacheResult> {

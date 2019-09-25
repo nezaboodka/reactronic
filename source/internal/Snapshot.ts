@@ -24,12 +24,12 @@ export class Snapshot implements ISnapshot {
   readonly cache: ICacheResult | undefined;
   get timestamp(): number { return this._timestamp; }
   get readstamp(): number { return this._readstamp; }
-  get sealed(): boolean { return this._sealed; }
+  get applied(): boolean { return this._applied; }
   readonly changeset: Map<Handle, Record>;
   readonly triggers: ICacheResult[];
   private _timestamp: number;
   private _readstamp: number;
-  private _sealed: boolean;
+  private _applied: boolean;
 
   constructor(hint: string, cache: ICacheResult | undefined) {
     this.id = ++Snapshot.lastUsedId;
@@ -39,7 +39,7 @@ export class Snapshot implements ISnapshot {
     this.triggers = [];
     this._timestamp = UNDEFINED_TIMESTAMP;
     this._readstamp = 1;
-    this._sealed = false;
+    this._applied = false;
   }
 
   /* istanbul ignore next */
@@ -87,7 +87,7 @@ export class Snapshot implements ISnapshot {
   }
 
   tryWrite(h: Handle, prop: PropertyKey, token: any): Record {
-    if (this._sealed)
+    if (this._applied)
       throw new Error(`stateful property ${Hint.handle(h)}.${prop.toString()} can only be modified inside transaction`);
     if (this.cache !== undefined && token !== this.cache && token !== RT_HANDLE)
       throw new Error(`cache must have no side effects (an attempt to change ${Hint.handle(h)}.${prop.toString()})`);
@@ -113,7 +113,7 @@ export class Snapshot implements ISnapshot {
   }
 
   acquire(outer: Snapshot): void {
-    if (!this._sealed && this._timestamp === UNDEFINED_TIMESTAMP) {
+    if (!this._applied && this._timestamp === UNDEFINED_TIMESTAMP) {
       this._timestamp = this.cache === undefined || outer._timestamp === UNDEFINED_TIMESTAMP
         ? Snapshot.headTimestamp : outer._timestamp;
       Snapshot.pending.push(this);
@@ -180,8 +180,8 @@ export class Snapshot implements ISnapshot {
     return counter;
   }
 
-  seal(error?: any): void {
-    this._sealed = true;
+  apply(error?: any): void {
+    this._applied = true;
     this.changeset.forEach((r: Record, h: Handle) => {
       r.changes.forEach(prop => CopyOnWrite.seal(r.data, h.proxy, prop));
       r.freeze();
@@ -200,11 +200,11 @@ export class Snapshot implements ISnapshot {
     });
     if (Dbg.isOn && Dbg.trace.transactions)
       Dbg.log(this.timestamp < UNDEFINED_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
+    Snapshot.applyDependencies(this, error);
   }
 
-  /* istanbul ignore next */
-  static applyDependencies = function(snapshot: Snapshot): void {
-    undef(); // to be redefined by Cache implementation
+  static applyDependencies = function(snapshot: Snapshot, error?: any): void {
+    // to be redefined by Cache implementation
   };
 
   archive(): void {
@@ -234,7 +234,7 @@ export class Snapshot implements ISnapshot {
         const p = Snapshot.pending;
         p.sort((a, b) => a._timestamp - b._timestamp);
         let i: number = 0;
-        while (i < p.length && p[i]._sealed) {
+        while (i < p.length && p[i]._applied) {
           Snapshot.unlinkHistory(p[i]);
           i++;
         }

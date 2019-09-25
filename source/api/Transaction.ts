@@ -247,15 +247,14 @@ export class Transaction {
   }
 
   private performCommit(): void {
-    this.snapshot.seal();
-    Snapshot.applyDependencies(this.snapshot);
+    this.snapshot.apply();
     this.snapshot.archive();
     if (this.resultPromise)
       this.resultResolve();
   }
 
   private performCancel(): void {
-    this.snapshot.seal(this.error);
+    this.snapshot.apply(this.error);
     this.snapshot.archive();
     if (this.resultPromise)
       if (!this.retryAfter)
@@ -288,10 +287,10 @@ export class Transaction {
     Snapshot.readable = Transaction.readableSnapshot; // override
     Snapshot.writable = Transaction.writableSnapshot; // override
     Transaction.none.sealed = true;
-    Transaction.none.snapshot.seal();
+    Transaction.none.snapshot.apply();
     Transaction.init.snapshot.acquire(Transaction.init.snapshot);
     Transaction.init.sealed = true;
-    Transaction.init.snapshot.seal();
+    Transaction.init.snapshot.apply();
     Transaction._current = Transaction.none;
     const blank = new Record(Record.blank, Transaction.init.snapshot, {});
     blank.prev.record = blank; // loopback
