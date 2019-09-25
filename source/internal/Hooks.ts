@@ -69,8 +69,11 @@ export class Hooks implements ProxyHandler<Handle> {
     if (!rx || (rx.body === decoratedfield && rx.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.readable().read(h);
       value = r.data[prop];
-      if (value === undefined && !r.data.hasOwnProperty(prop))
+      if (value === undefined && !r.data.hasOwnProperty(prop)) {
         value = Reflect.get(h.stateless, prop, receiver);
+        if (value === undefined) // treat unknown fields as stateful
+          Record.markViewed(r, prop);
+      }
       else
         Record.markViewed(r, prop);
     }
