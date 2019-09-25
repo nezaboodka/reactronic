@@ -34,9 +34,8 @@ class Rx {
 
   @stateless refresh: (next: ReactState) => void = nop;
 
-  @stateless readonly unmountEffect = (): (() => void) => { // React.EffectCallback
-    /* did mount */
-    return () => { /* will unmount */ Status.unmount(this); };
+  @stateless readonly unmountEffect = (): (() => void) => {
+    return () => Status.unmount(this);
   }
 }
 
