@@ -12,6 +12,7 @@ export class Transaction {
   static _current: Transaction;
   static _inspection: boolean = false;
 
+  readonly trace?: Partial<Trace>; // assigned in constructor
   readonly margin: number;
   private readonly snapshot: Snapshot; // assigned in constructor
   private workers: number;
@@ -22,9 +23,9 @@ export class Transaction {
   private resolve: (value?: void) => void;
   private reject: (reason: any) => void;
   private readonly reaction: { tran?: Transaction };
-  readonly trace?: Partial<Trace>; // assigned in constructor
 
   constructor(hint: string, trace?: Partial<Trace>, token?: any) {
+    this.trace = trace;
     this.margin = Transaction._current ? Transaction._current.margin + 1 : -1;
     this.snapshot = new Snapshot(hint, token);
     this.workers = 0;
@@ -35,7 +36,6 @@ export class Transaction {
     this.resolve = undef;
     this.reject = undef;
     this.reaction = { tran: undefined };
-    this.trace = trace;
   }
 
   static get current(): Transaction { return Transaction._current; }
