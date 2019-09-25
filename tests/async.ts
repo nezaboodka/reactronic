@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { stateful, transaction, trigger, cached, latency, Status, Monitor, monitor, all, sleep, reentrance, Reentrance } from '../source/reactronic';
-export { trace } from './common';
+export { tracing } from './common';
 
 export const output: string[] = [];
 export const mon = Monitor.create("demo");

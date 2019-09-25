@@ -5,7 +5,7 @@
 
 import test from 'ava';
 import { Transaction, Reentrance, Status, statusof, all, sleep } from '../source/reactronic';
-import { DemoModel, DemoView, mon, output, trace } from './async';
+import { DemoModel, DemoView, mon, output, tracing } from './async';
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: "nezaboodka.com", delay: 100 },
@@ -26,7 +26,7 @@ const expected: string[] = [
 ];
 
 test("async", async t => {
-  Status.setTrace(trace.noisy);
+  Status.setTrace(tracing.noisy);
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   statusof(app.model.load).configure({reentrance: Reentrance.RunSideBySide});
   try {

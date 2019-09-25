@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { stateful, stateless, transaction, trigger, cached, trace } from '../source/reactronic';
-import { Person } from './common';
+import { Person, tracing } from './common';
 
 export const output: string[] = [];
 
@@ -53,7 +53,7 @@ export class DemoModel extends StatelessDemoModelBase {
   }
 }
 
-@stateful @trace({})
+@stateful
 export class DemoView {
   @stateless shared: string = "for testing purposes";
   @stateless readonly model: DemoModel;
@@ -63,7 +63,7 @@ export class DemoView {
     this.model = model;
   }
 
-  @trigger
+  @trigger @trace(tracing.noisy)
   print(): void {
     this.render().forEach(x => output.push(x));
   }

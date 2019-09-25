@@ -5,7 +5,7 @@
 
 import test from 'ava';
 import { Transaction, Kind, Status, statusof, outside } from '../source/reactronic';
-import { Person, trace, nop } from './common';
+import { Person, tracing, nop } from './common';
 import { DemoModel, DemoView, output } from './basic';
 
 const expected: string[] = [
@@ -20,8 +20,8 @@ const expected: string[] = [
 ];
 
 test("basic", t => {
-  Status.setTrace(trace.off);
-  Status.setTrace(trace.noisy);
+  Status.setTrace(tracing.off);
+  Status.setTrace(tracing.noisy);
   // Simple transactions
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   try {

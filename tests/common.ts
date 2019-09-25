@@ -53,7 +53,7 @@ export class Person {
   }
 }
 
-export const trace: { friendly: Trace, noisy: Trace, off: undefined } = {
+export const tracing: { friendly: Trace, noisy: Trace, off: undefined } = {
   friendly: {
     silent: process.env.AVA_DEBUG === undefined,
     hints: true,
