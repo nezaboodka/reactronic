@@ -20,7 +20,7 @@ const expected: string[] = [
   "[...] Log: RTA",
   "[...] Url: nezaboodka.com",
   "[...] Log: RTA, nezaboodka.com/100",
-  "Error: transaction T111 (#22˙DemoModel.load/microsoft.com) conflicts with other transactions on: T105˙#22˙DemoModel.url, T105˙#22˙DemoModel.log",
+  "Error: transaction T111 (#22˙DemoModel.load/microsoft.com) conflicts with other transactions on: #22v110˙DemoModel.url, #22v110˙DemoModel.log",
   "Url: nezaboodka.com",
   "Log: RTA, nezaboodka.com/100",
 ];

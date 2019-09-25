@@ -60,14 +60,14 @@ export class Snapshot implements ISnapshot {
   read(h: Handle): Record {
     const result = this.tryRead(h);
     if (result === Record.blank) /* istanbul ignore next */
-      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot [${this.timestamp}]`);
+      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 
   write(h: Handle, prop: PropertyKey, token: any): Record {
     const result: Record = this.tryWrite(h, prop, token);
     if (result === Record.blank) /* istanbul ignore next */
-      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot [${this.timestamp}]`);
+      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 
@@ -119,7 +119,7 @@ export class Snapshot implements ISnapshot {
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this;
-      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("╔══", `[${this.timestamp}]`, `${this.hint}`);
+      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("╔══", `v${this.timestamp}`, `${this.hint}`);
     }
   }
 
@@ -199,7 +199,7 @@ export class Snapshot implements ISnapshot {
       }
     });
     if (Dbg.isOn && Dbg.trace.transactions)
-      Dbg.log(this.timestamp < UNDEFINED_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `[${this.timestamp}]`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
+      Dbg.log(this.timestamp < UNDEFINED_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
   }
 
   /* istanbul ignore next */
@@ -256,14 +256,16 @@ export class Snapshot implements ISnapshot {
 }
 
 export class Hint {
-  static handle(h: Handle, nameless?: boolean): string {
-    return nameless ? `#${h.id}` : `#${h.id}˙${h.hint}`;
+  static handle(h: Handle, stamp?: number, nameless?: boolean): string {
+    return nameless
+      ? (stamp === undefined ? `#${h.id}` : `#${h.id}v${stamp}`)
+      : (stamp === undefined ? `#${h.id}˙${h.hint}` : `#${h.id}v${stamp}˙${h.hint}`);
   }
 
-  static record(r: Record, tranless?: boolean, nameless?: boolean, prop?: PropertyKey): string {
-    const t: string = tranless ? "" : `T${r.snapshot.id}˙`;
+  static record(r: Record, stampless?: boolean, nameless?: boolean, prop?: PropertyKey): string {
+    const t: number | undefined = stampless ? undefined : r.snapshot.timestamp;
     const h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
-    const name: string = h ? `${t}${Hint.handle(h, nameless)}` : /* istanbul ignore next */ "blank";
+    const name: string = h ? Hint.handle(h, t, nameless) : /* istanbul ignore next */ "blank";
     return prop !== undefined ? `${name}.${prop.toString()}` : `${name}`;
   }
 
