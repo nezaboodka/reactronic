@@ -36,14 +36,14 @@ class Rx {
   }
 }
 
-function nop(...args: any[]): void {
-  // do nothing
+function createReactState(): ReactState {
+  return {rx: Transaction.run<Rx>("Rx.create", createRx)};
 }
 
 function createRx(): Rx {
   return new Rx();
 }
 
-function createReactState(): ReactState {
-  return {rx: Transaction.run<Rx>("Rx.create", createRx)};
+function nop(...args: any[]): void {
+  // do nothing
 }

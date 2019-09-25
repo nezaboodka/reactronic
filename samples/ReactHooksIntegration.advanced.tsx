@@ -39,14 +39,6 @@ class Rx {
   }
 }
 
-function nop(...args: any[]): void {
-  // do nothing
-}
-
-function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
-  return new Rx();
-}
-
 function createReactState(trace?: Partial<Trace>): ReactState {
   const dbg = Status.isTraceOn && Status.trace.hints
     ? trace === undefined || trace.hints !== false
@@ -60,6 +52,14 @@ function createReactState(trace?: Partial<Trace>): ReactState {
     statusof(rx.keepfresh).configure({trace});
   }
   return {rx, counter: 0};
+}
+
+function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
+  return new Rx();
+}
+
+function nop(...args: any[]): void {
+  // do nothing
 }
 
 function getComponentName(): string {
