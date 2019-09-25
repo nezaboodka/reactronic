@@ -37,7 +37,7 @@ class Rx {
 }
 
 function createReactState(): ReactState {
-  return {rx: Transaction.run<Rx>("Rx.create", createRx)};
+  return {rx: Transaction.run<Rx>("<rx>", createRx)};
 }
 
 function createRx(): Rx {
