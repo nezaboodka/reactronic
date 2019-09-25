@@ -262,7 +262,8 @@ class CacheResult implements ICacheResult {
   }
 
   renew(timestamp: number, now: boolean, nothrow: boolean): void {
-    if (now || this.rx.latency === -1) {
+    const latency = this.rx.latency;
+    if (now || latency === -1) {
       if (!this.error && (this.rx.kind === Kind.Transaction ||
           (timestamp >= this.invalidated.since && !this.invalidated.renewing))) {
         try {
@@ -279,10 +280,10 @@ class CacheResult implements ICacheResult {
         }
       }
     }
-    else if (this.rx.latency === 0)
+    else if (latency === 0)
       CacheResult.addAsyncTriggerToBatch(this);
     else
-      setTimeout(() => this.renew(TOP_TIMESTAMP, true, true), 0);
+      setTimeout(() => this.renew(TOP_TIMESTAMP, true, true), latency);
   }
 
   static addAsyncTriggerToBatch(c: CacheResult): void {
