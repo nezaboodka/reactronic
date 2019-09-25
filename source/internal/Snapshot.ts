@@ -134,7 +134,7 @@ export class Snapshot implements ISnapshot {
               conflicts = [];
             conflicts.push(r);
           }
-          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(r, true)} is merged with ${Hint.record(h.head, false)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(r)} is merged with ${Hint.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
       if (this.cache === undefined) {
@@ -160,13 +160,13 @@ export class Snapshot implements ISnapshot {
         while (theirs !== ours.prev.record && theirs !== Record.blank) {
           if (theirs.changes.has(prop)) {
             const equal = Snapshot.equal(theirs.data[prop], ours.data[prop]);
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} ${equal ? "==" : "<>"} ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours)}.${prop.toString()} ${equal ? "==" : "<>"} ${Hint.record(theirs)}.${prop.toString()}.`);
             if (!equal)
               ours.conflicts.set(prop, theirs);
             break;
           }
           else if (prop === RT_UNMOUNT || unmountTheirs) {
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, false)}.${prop.toString()} "<>" ${Hint.record(theirs, false)}.${prop.toString()}.`);
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours)}.${prop.toString()} "<>" ${Hint.record(theirs)}.${prop.toString()}.`);
             ours.conflicts.set(prop, theirs);
             break;
           }

@@ -157,7 +157,7 @@ export class Cache extends Status<any> {
       const call2 = this.write();
       const c2: CacheResult = call2.cache;
       c2.rx = new Rx(c2.rx.body, c2.rx, rx, false);
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.reactivity = ...`);
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.rx = ...`);
       return c2.rx;
     });
   }
@@ -254,9 +254,9 @@ class CacheResult implements ICacheResult {
 
   bind<T>(func: F<T>): F<T> {
     const Cache_run: F<T> = (...args: any[]): T => {
-      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hint.record(this.record, true)}.${this.member.toString()} - step in  `, 0, "        │");
+      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hint.record(this.record)}.${this.member.toString()} - step in  `, 0, "        │");
       const result = Cache.run<T>(this, func, ...args);
-      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "_/", `${Hint.record(this.record, true)}.${this.member.toString()} - step out `, 0, this.started > 0 ? "        │" : "");
+      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "_/", `${Hint.record(this.record)}.${this.member.toString()} - step out `, 0, this.started > 0 ? "        │" : "");
       return result;
     };
     return Cache_run;
@@ -305,13 +305,13 @@ class CacheResult implements ICacheResult {
     if (c && c.rx.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.readable().bumpReadStamp(r);
       CacheResult.acquireObservableSet(c, prop).add(r);
-      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
+      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint()} uses ${Hint.record(r)}.${prop.toString()}`);
     }
   }
 
   static markChanged(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
     changed ? r.changes.add(prop) : r.changes.delete(prop);
-    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, true)}.${prop.toString()} = ${valueHint(value)}`);
+    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${prop.toString()} = ${valueHint(value)}`);
   }
 
   static applyDependencies(snapshot: Snapshot, error?: any): void {
@@ -441,7 +441,7 @@ class CacheResult implements ICacheResult {
   }
 
   enter(r: Record, mon: Monitor | null): void {
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(r, true)}.${this.member.toString()} - enter`);
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(r)}.${this.member.toString()} - enter`);
     this.started = Date.now();
     this.monitorEnter(mon);
   }
@@ -459,7 +459,7 @@ class CacheResult implements ICacheResult {
           this.leave(r, mon, "▒▒", "- finished ", "  ERR ──┘");
           throw error;
         });
-      if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(r, true)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
+      if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(r)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
     }
     else {
       this.result = this.ret;
@@ -471,7 +471,7 @@ class CacheResult implements ICacheResult {
     this.monitorLeave(mon);
     const ms: number = Date.now() - this.started;
     this.started = 0;
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(r, true)}.${this.member.toString()} ${message}`, ms, highlight);
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(r)}.${this.member.toString()} ${message}`, ms, highlight);
     // TODO: handle errors
     // Cache.freeze(this);
   }
