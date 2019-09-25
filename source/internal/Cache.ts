@@ -122,7 +122,7 @@ export class Cache extends Status<any> {
     let error: Error | undefined = undefined;
     const prev = c.invalidated.renewer;
     const caller = Transaction.current;
-    if (prev)
+    if (prev && prev !== c)
       switch (c.rx.reentrance) {
         case Reentrance.PreventWithError:
           throw new Error(`${c.hint()} is configured as non-reentrant`);
