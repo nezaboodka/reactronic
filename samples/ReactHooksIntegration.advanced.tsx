@@ -26,16 +26,22 @@ class Rx {
 
   @trigger
   keepfresh(): void {
-    if (statusof(this.jsx).isInvalid && this.refresh)
+    if (statusof(this.jsx).isInvalid)
       outside(this.refresh, {rx: this, counter: this.counter + 1});
   }
 
   @stateless counter: number = 0;
-  @stateless refresh?: (next: ReactState) => void = undefined;
+
+  @stateless refresh: (next: ReactState) => void = nop;
+
   @stateless readonly unmountEffect = (): (() => void) => { // React.EffectCallback
     /* did mount */
     return () => { /* will unmount */ Status.unmount(this); };
   }
+}
+
+function nop(...args: any[]): void {
+  // do nothing
 }
 
 function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
