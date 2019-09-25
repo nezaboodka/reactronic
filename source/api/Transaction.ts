@@ -67,7 +67,7 @@ export class Transaction {
     this.seal(); // commit immediately, because pending === 0
   }
 
-  seal(): this { // t.seal().waitForEnd().then(onfulfilled, onrejected)
+  seal(): this { // t.seal().whenFinished().then(onfulfilled, onrejected)
     if (!this.sealed)
       this.run(Transaction.seal, this);
     return this;

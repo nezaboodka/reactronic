@@ -486,19 +486,14 @@ class CacheResult implements ICacheResult {
   private monitorLeave(mon: Monitor | null): void {
     if (mon) {
       if (mon.prolonged) {
-        const outer = Transaction.current;
-        try {
-          Transaction._current = Transaction.none; // Workaround?
+        Transaction.outside(() => {
           const leave = () => {
             Cache.run(undefined, Transaction.runAs, "Monitor.leave",
               true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
               Monitor.leave, mon, this);
           };
           this.tran.whenFinished(false).then(leave, leave);
-        }
-        finally {
-          Transaction._current = outer;
-        }
+        });
       }
       else
         Cache.run(undefined, Transaction.runAs, "Monitor.leave",
