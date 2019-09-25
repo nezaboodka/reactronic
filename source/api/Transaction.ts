@@ -18,9 +18,9 @@ export class Transaction {
   private sealed: boolean;
   private error?: Error;
   private retryAfter?: Transaction;
-  private resultPromise?: Promise<void>;
-  private resultResolve: (value?: void) => void;
-  private resultReject: (reason: any) => void;
+  private promise?: Promise<void>;
+  private resolve: (value?: void) => void;
+  private reject: (reason: any) => void;
   private readonly reaction: { tran?: Transaction };
   readonly trace?: Partial<Trace>; // assigned in constructor
 
@@ -31,9 +31,9 @@ export class Transaction {
     this.sealed = false;
     this.error = undefined;
     this.retryAfter = undefined;
-    this.resultPromise = undefined;
-    this.resultResolve = undef;
-    this.resultReject = undef;
+    this.promise = undefined;
+    this.resolve = undef;
+    this.reject = undef;
     this.reaction = { tran: undefined };
     this.trace = trace;
   }
@@ -249,28 +249,28 @@ export class Transaction {
   private performCommit(): void {
     this.snapshot.apply();
     this.snapshot.archive();
-    if (this.resultPromise)
-      this.resultResolve();
+    if (this.promise)
+      this.resolve();
   }
 
   private performCancel(): void {
     this.snapshot.apply(this.error);
     this.snapshot.archive();
-    if (this.resultPromise)
+    if (this.promise)
       if (!this.retryAfter)
-        this.resultReject(this.error);
+        this.reject(this.error);
       else
-        this.resultResolve();
+        this.resolve();
   }
 
   private acquirePromise(): Promise<void> {
-    if (!this.resultPromise) {
-      this.resultPromise = new Promise((resolve, reject) => {
-        this.resultResolve = resolve;
-        this.resultReject = reject;
+    if (!this.promise) {
+      this.promise = new Promise((resolve, reject) => {
+        this.resolve = resolve;
+        this.reject = reject;
       });
     }
-    return this.resultPromise;
+    return this.promise;
   }
 
   private static readableSnapshot(): Snapshot {
