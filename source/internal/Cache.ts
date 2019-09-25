@@ -234,12 +234,12 @@ class CacheResult implements ICacheResult {
     if (init instanceof CacheResult) {
       this.rx = init.rx;
       this.args = init.args;
-      this.result = init.result;
+      // this.result = init.result;
     }
     else { // init instanceof Rx
       this.rx = init;
       this.args = [];
-      this.result = undefined;
+      // this.result = undefined;
     }
     // this.ret = undefined;
     // this.error = undefined;
