@@ -63,12 +63,12 @@ export class DemoView {
     this.model = model;
   }
 
-  @trigger @trace(tracing.noisy)
+  @trigger
   print(): void {
     this.render().forEach(x => output.push(x));
   }
 
-  // @transaction
+  // @transaction @trace(tracing.noisy)
   // subprint(): void {
   //   this.render().forEach(x => output.push(x));
   // }
