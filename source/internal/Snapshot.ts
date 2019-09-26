@@ -88,9 +88,9 @@ export class Snapshot implements ISnapshot {
 
   tryWrite(h: Handle, prop: PropertyKey, token: any): Record {
     if (this._applied)
-      throw new Error(`stateful property ${Hint.handle(h)}.${prop.toString()} can only be modified inside transaction`);
+      throw new Error(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
     if (this.cache !== undefined && token !== this.cache && token !== RT_HANDLE)
-      throw new Error(`cache must have no side effects (an attempt to change ${Hint.handle(h)}.${prop.toString()})`);
+      throw new Error(`cache must have no side effects (an attempt to change ${Hint.handle(h, prop)})`);
     let r: Record = this.tryRead(h);
     if (r === Record.blank || r.data[prop] !== token) {
       if (r.snapshot !== this) {
@@ -256,16 +256,18 @@ export class Snapshot implements ISnapshot {
 }
 
 export class Hint {
-  static handle(h: Handle, stamp?: number, nameless?: boolean): string {
-    return nameless
-      ? (stamp === undefined ? `#${h.id}` : `#${h.id}v${stamp}`)
-      : (stamp === undefined ? `#${h.id}˙${h.hint}` : `#${h.id}v${stamp}˙${h.hint}`);
+  static handle(h: Handle | undefined, prop?: PropertyKey | undefined, stamp?: number, typeless?: boolean): string {
+    const obj = h !== undefined
+      ? (typeless
+        ? (stamp === undefined ? `#${h.id}` : `#${h.id}v${stamp}`)
+        : (stamp === undefined ? `#${h.id}˙${h.hint}` : `#${h.id}v${stamp}˙${h.hint}`))
+      : "<unknown>";
+    return prop !== undefined ? `${obj}.${prop.toString()}` : obj;
   }
 
-  static record(r: Record, prop?: PropertyKey, nameless?: boolean): string {
+  static record(r: Record, prop?: PropertyKey, typeless?: boolean): string {
     const h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
-    const name: string = h ? Hint.handle(h, r.snapshot.timestamp, nameless) : /* istanbul ignore next */ "blank";
-    return prop !== undefined ? `${name}.${prop.toString()}` : `${name}`;
+    return Hint.handle(h, prop, r.snapshot.timestamp, typeless);
   }
 
   static conflicts(conflicts: Record[]): string {
