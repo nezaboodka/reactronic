@@ -250,7 +250,7 @@ class CacheResult implements ICacheResult {
     this.margin = CacheResult.active ? CacheResult.active.margin + 1 : 1;
   }
 
-  hint(): string { return `${Hint.record(this.record, false, this.member)}`; }
+  hint(): string { return `${Hint.record(this.record, this.member)}`; }
 
   bind<T>(func: F<T>): F<T> {
     const Cache_run: F<T> = (...args: any[]): T => {
@@ -374,7 +374,7 @@ class CacheResult implements ICacheResult {
           const v = r.data[prop];
           if (v instanceof CacheResult === false || timestamp < v.invalidated.since || (readstamp > v.invalidated.since && v.invalidated.since !== 0)) {
             CacheResult.acquireObserverSet(r, prop).add(this); // now subscribed
-            if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, true, prop));
+            if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, prop, true));
           }
           else
             this.invalidateDueTo(timestamp, v.record, prop, triggers);
@@ -383,7 +383,7 @@ class CacheResult implements ICacheResult {
           this.invalidateDueTo(timestamp, r, prop, triggers);
       });
     });
-    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.rx.trace && this.rx.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.rx.trace, " ", "o", `${Hint.record(this.record, false, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.rx.trace && this.rx.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.rx.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
   static mergeObservers(curr: Record, prev: Record): void {
@@ -396,7 +396,7 @@ class CacheResult implements ICacheResult {
         prevObservers.forEach((prevObserver: ICacheResult) => {
           if (prevObserver.invalidated.since === TOP_TIMESTAMP) {
             mergedObservers.add(prevObserver);
-            if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is subscribed to {${Hint.record(curr, true, prop)}} - inherited from ${Hint.record(prev, true, prop)}.`);
+            if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is subscribed to {${Hint.record(curr, prop, true)}} - inherited from ${Hint.record(prev, prop, true)}.`);
           }
         });
       }
@@ -408,7 +408,7 @@ class CacheResult implements ICacheResult {
     if (result) {
       this.invalidated.since = since;
       const isTrigger = this.rx.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.rx.trace && this.rx.trace.invalidations)) Dbg.logAs(this.rx.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause, false, causeProp)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.rx.trace && this.rx.trace.invalidations)) Dbg.logAs(this.rx.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause, causeProp)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
       if (!isTrigger) {
         // Invalidate outer observers (cascade)
         const h: Handle = Utils.get(this.record.data, RT_HANDLE);
@@ -546,7 +546,7 @@ function valueHint(value: any): string {
   else if (value instanceof CacheResult) {
     const prevValue = value.record.prev.record.data[value.member];
     const prev = prevValue !== undefined ? prevValue.record : Record.blank;
-    result = `<renew:${Hint.record(prev, true)}>`;
+    result = `<renew:${Hint.record(prev, undefined, true)}>`;
   }
   else if (value === RT_UNMOUNT)
     result = "<unmount>";

@@ -262,7 +262,7 @@ export class Hint {
       : (stamp === undefined ? `#${h.id}˙${h.hint}` : `#${h.id}v${stamp}˙${h.hint}`);
   }
 
-  static record(r: Record, nameless?: boolean, prop?: PropertyKey): string {
+  static record(r: Record, prop?: PropertyKey, nameless?: boolean): string {
     const h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
     const name: string = h ? Hint.handle(h, r.snapshot.timestamp, nameless) : /* istanbul ignore next */ "blank";
     return prop !== undefined ? `${name}.${prop.toString()}` : `${name}`;
@@ -279,6 +279,6 @@ export class Hint {
   }
 
   static conflictProp(prop: PropertyKey, ours: Record, theirs: Record): string {
-    return Hint.record(theirs, false, prop);
+    return Hint.record(theirs, prop);
   }
 }
