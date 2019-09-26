@@ -53,10 +53,10 @@ export function trace(trace: Partial<Trace>): F<any> {
 function reactivity(reactivity: Partial<Reactivity>): F<any> {
   return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
     if (prop && pd)
-      return Hooks.decorateMethod(false, reactivity, proto, prop, pd);
+      return Hooks.decorateMethod(false, reactivity, proto, prop, pd); /* istanbul ignore next */
     else if (prop) /* istanbul ignore next */
       return Hooks.decorateField(false, reactivity, proto, prop);
-    else
+    else /* istanbul ignore next */
       return Hooks.decorateClass(false, reactivity, proto);
   };
 }
