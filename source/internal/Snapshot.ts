@@ -257,11 +257,11 @@ export class Snapshot implements ISnapshot {
 
 export class Hint {
   static handle(h: Handle | undefined, prop?: PropertyKey | undefined, stamp?: number, typeless?: boolean): string {
-    const obj = h !== undefined
-      ? (typeless
+    const obj = h === undefined
+      ? "init"
+      : (typeless
         ? (stamp === undefined ? `#${h.id}` : `#${h.id}v${stamp}`)
-        : (stamp === undefined ? `#${h.id}˙${h.hint}` : `#${h.id}v${stamp}˙${h.hint}`))
-      : "<unknown>";
+        : (stamp === undefined ? `#${h.id}˙${h.hint}` : `#${h.id}v${stamp}˙${h.hint}`));
     return prop !== undefined ? `${obj}.${prop.toString()}` : obj;
   }
 
