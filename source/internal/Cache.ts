@@ -145,7 +145,7 @@ export class Cache extends Status<any> {
     const call = self.write();
     const c = call.cache;
     CacheResult.acquireObservableSet(c, c.member).add(call.record);
-    // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r)}.${prop.toString()}`);
+    // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`);
   }
 
   private reconfigure(rx: Partial<Reactivity>): Reactivity {
@@ -305,13 +305,13 @@ class CacheResult implements ICacheResult {
     if (c && c.rx.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.readable().bumpReadStamp(r);
       CacheResult.acquireObservableSet(c, prop).add(r);
-      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint()} uses ${Hint.record(r)}.${prop.toString()}`);
+      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint()} uses ${Hint.record(r, prop)}`);
     }
   }
 
   static markChanged(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
     changed ? r.changes.add(prop) : r.changes.delete(prop);
-    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${prop.toString()} = ${valueHint(value)}`);
+    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, prop)} = ${valueHint(value)}`);
   }
 
   static applyDependencies(snapshot: Snapshot, error?: any): void {
