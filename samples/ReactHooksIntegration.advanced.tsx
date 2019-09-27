@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { stateful, stateless, trigger, cached, statusof, nonreactive, Transaction, Status, Trace } from 'reactronic';
+import { stateful, stateless, trigger, cached, statusof, outside, Transaction, Status, Trace } from 'reactronic';
 
 type ReactState = { rx: Rx; counter: number; };
 
@@ -27,7 +27,7 @@ class Rx {
   @trigger
   keepfresh(): void {
     if (statusof(this.jsx).isInvalid)
-      nonreactive(true, this.refresh, {rx: this, counter: this.counter + 1});
+      outside(this.refresh, {rx: this, counter: this.counter + 1});
   }
 
   @stateless counter: number = 0;

@@ -50,7 +50,7 @@ test("basic", t => {
       t.is(daddy.name, "John Smith");
       t.is(daddy.age, 40);
       t.is(Transaction.outside(() => daddy.age), 38);
-      t.is(nonreactive(true, () => daddy.age), 38);
+      t.is(nonreactive(() => daddy.age), 40);
       t.is(daddy.children.length, 3);
       app.userFilter = "Jo"; // set to the same value
     });

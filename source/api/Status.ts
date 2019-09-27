@@ -15,10 +15,12 @@ export function statusof<T>(method: F<T>): Status<T> {
   return Status.get<T>(method);
 }
 
-export function nonreactive<T>(outsideOfTransaction: boolean, func: F<T>, ...args: any[]): T {
-  return outsideOfTransaction
-    ? Cache.run<T>(undefined, Transaction.outside, func, ...args)
-    : Cache.run<T>(undefined, func, ...args);
+export function nonreactive<T>(func: F<T>, ...args: any[]): T {
+  return Cache.run<T>(undefined, func, ...args);
+}
+
+export function outside<T>(func: F<T>, ...args: any[]): T {
+  return Cache.run<T>(undefined, Transaction.outside, func, ...args);
 }
 
 export abstract class Status<T> {
