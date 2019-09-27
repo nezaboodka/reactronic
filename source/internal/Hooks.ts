@@ -122,9 +122,34 @@ export class Hooks implements ProxyHandler<Handle> {
     const stateful = rx.kind !== undefined && rx.kind !== Kind.Stateless;
     const triggers: Map<PropertyKey, Rx> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
     if (stateful) {
+      ctor = class extends origCtor {
+        constructor(...args: any[]) {
+          super(...args);
+          const self: any = this;
+          const h: Handle = self[RT_HANDLE] || Hooks.createHandle(stateful, self, undefined, origCtor.name);
+          if (self.constructor === ctor)
+            h.hint = origCtor.name;
+          if (triggers)
+            triggers.forEach((rx, prop) =>
+              (h.proxy[prop][RT_CACHE] as Status<any>).invalidate());
+          return h.proxy;
+        }
+      };
+      Hooks.configureReactivity(ctor.prototype, RT_RX_CLASS, decoratedclass, rx, implicit);
+    }
+    return ctor;
+  }
+
+  static decorateClassOld(implicit: boolean, rx: Partial<Reactivity>, origCtor: any): any {
+    let ctor: any = origCtor;
+    const stateful = rx.kind !== undefined && rx.kind !== Kind.Stateless;
+    const triggers: Map<PropertyKey, Rx> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
+    if (stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args);
-        const h: Handle = Hooks.createHandle(stateful, stateless, undefined);
+        const h: Handle = stateless instanceof Proxy
+          ? stateless[RT_HANDLE] || Hooks.createHandle(stateful, stateless, undefined, origCtor.name)
+          : Hooks.createHandle(stateful, stateless, undefined, origCtor.name);
         if (triggers)
           triggers.forEach((rx, prop) => {
             const status: Status<any> = h.proxy[prop][RT_CACHE];
@@ -210,15 +235,15 @@ export class Hooks implements ProxyHandler<Handle> {
       throw new Error("only objects can be reactive");
     let h: Handle = Utils.get(obj, RT_HANDLE);
     if (!h) {
-      h = new Handle(obj, obj, Hooks.proxy);
+      h = new Handle(obj, obj, obj.constructor.name, Hooks.proxy);
       Utils.set(obj, RT_HANDLE, h);
       Hooks.decorateField(false, {kind: Kind.Stateful}, obj, RT_UNMOUNT);
     }
     return h;
   }
 
-  static createHandle(stateful: boolean, stateless: any, proxy: any): Handle {
-    const h = new Handle(stateless, proxy, Hooks.proxy);
+  static createHandle(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
+    const h = new Handle(stateless, proxy, hint, Hooks.proxy);
     const r = Snapshot.writable().write(h, RT_HANDLE, RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
     initRecordData(h, stateful, stateless, r);

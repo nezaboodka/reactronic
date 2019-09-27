@@ -16,14 +16,14 @@ export const output: string[] = [];
 //   }
 // }
 
-export class StatelessDemoModelBase {
-  methodOfStatelessBase(): string {
-    return 'methodOfStatelessBase';
-  }
-}
+// export class StatelessDemoModelBase extends StatefulDemoModelBase {
+//   methodOfStatelessBase(): string {
+//     return 'methodOfStatelessBase';
+//   }
+// }
 
 @stateful
-export class DemoModel extends StatelessDemoModelBase {
+export class DemoModel /* extends StatefulDemoModelBase */ {
   @stateless shared: string = "for testing purposes";
   title: string = "Demo";
   users: Person[] = [];
@@ -97,5 +97,9 @@ export class DemoView {
       r.push(`${x.name}'s children: ${childNames.join(", ")}`);
     }
     return r;
+  }
+
+  static test(): void {
+    // do nothing
   }
 }

@@ -20,11 +20,11 @@ export class Handle {
   changing?: Record;
   writers: number;
 
-  constructor(stateless: any, proxy: any, virtualization: ProxyHandler<Handle>) {
+  constructor(stateless: any, proxy: any, hint: string, handler: ProxyHandler<Handle>) {
     this.stateless = stateless;
     this.id = ++Handle.id;
-    this.proxy = proxy || new Proxy<Handle>(this, virtualization);
-    this.hint = stateless.constructor.name;
+    this.proxy = proxy || new Proxy<Handle>(this, handler);
+    this.hint = hint;
     this.head = Record.blank;
     this.changing = undefined;
     this.writers = 0;
