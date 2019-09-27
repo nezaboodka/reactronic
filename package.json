@@ -1,6 +1,6 @@
 {
   "name": "reactronic",
-  "version": "0.19.39",
+  "version": "0.19.40",
   "description": "Reactronic - Transactionally Reactive State Management",
   "main": "dist/source/reactronic.js",
   "types": "dist/source/reactronic.d.ts",
