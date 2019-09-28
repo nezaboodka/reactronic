@@ -563,23 +563,23 @@ function valueHint(value: any): string {
 
 const original_primise_then = Promise.prototype.then;
 
-function reactronicThen(this: any,
+function reactronic_then(this: any,
   resolve?: ((value: any) => any | PromiseLike<any>) | undefined | null,
   reject?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
-  const t = Transaction.current;
-  if (!t.isFinished()) {
+  const tran = Transaction.current;
+  if (!tran.isFinished()) {
     if (!resolve)
       resolve = resolve_return;
     if (!reject)
       reject = reject_rethrow;
-    const c = CacheResult.active;
-    if (c) {
-      resolve = c.bind(resolve);
-      reject = c.bind(reject);
+    const cache = CacheResult.active;
+    if (cache) {
+      resolve = cache.bind(resolve);
+      reject = cache.bind(reject);
     }
-    resolve = t.bind(resolve, false);
-    reject = t.bind(reject, true);
+    resolve = tran.bind(resolve, false);
+    reject = tran.bind(reject, true);
   }
   return original_primise_then.call(this, resolve, reject);
 }
@@ -603,7 +603,7 @@ function init(): void {
   Snapshot.equal = CacheResult.equal; // override
   Snapshot.applyDependencies = CacheResult.applyDependencies; // override
   Hooks.createCacheTrap = Cache.createCacheTrap; // override
-  Promise.prototype.then = reactronicThen; // override
+  Promise.prototype.then = reactronic_then; // override
 }
 
 init();
