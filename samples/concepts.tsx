@@ -4,10 +4,9 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { stateful, transaction, cached, trigger, statusof } from 'reactronic';
+import { Stateful, transaction, cached, trigger, statusof } from 'reactronic';
 
-@stateful
-class Model {
+class Model extends Stateful {
   // state
   url: string = "https://nezaboodka.com";
   content: string = "";
