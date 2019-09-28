@@ -30,6 +30,17 @@ const DEFAULT_RX: Reactivity = Object.freeze({
   trace: undefined,
 });
 
+export class Stateful {
+  constructor() {
+    const h: Handle = Hooks.createHandle(true, this, undefined, new.target.name);
+    const triggers: Map<PropertyKey, Rx> | undefined = Hooks.getReactivityTable(new.target.prototype)[RT_RX_TRIGGERS];
+    if (triggers)
+      triggers.forEach((rx, prop) =>
+        (h.proxy[prop][RT_CACHE] as Status<any>).invalidate());
+    return h.proxy;
+  }
+}
+
 export class Rx implements Reactivity {
   readonly body: Function;
   readonly kind: Kind;

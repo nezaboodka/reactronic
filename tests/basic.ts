@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { stateful, stateless, transaction, trigger, cached } from '../source/reactronic';
+import { Stateful, stateless, transaction, trigger, cached } from '../source/reactronic';
 import { Person } from './common';
 
 export const output: string[] = [];
@@ -22,8 +22,7 @@ export const output: string[] = [];
 //   }
 // }
 
-@stateful
-export class DemoModel /* extends StatefulDemoModelBase */ {
+export class DemoModel extends Stateful {
   @stateless shared: string = "for testing purposes";
   title: string = "Demo";
   users: Person[] = [];
@@ -53,13 +52,13 @@ export class DemoModel /* extends StatefulDemoModelBase */ {
   }
 }
 
-@stateful
-export class DemoView {
+export class DemoView extends Stateful {
   @stateless shared: string = "for testing purposes";
   @stateless readonly model: DemoModel;
   userFilter: string = "Jo";
 
   constructor(model: DemoModel) {
+    super();
     this.model = model;
   }
 

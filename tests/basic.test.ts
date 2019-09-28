@@ -121,7 +121,7 @@ test("basic", t => {
     t.is(Status.getTraceHint(app), "DemoView");
     Status.setTraceHint(app, "App");
     t.is(Status.getTraceHint(app), "App");
-    t.deepEqual(Object.getOwnPropertyNames(app.model), ["shared", "title", "users"]);
+    t.deepEqual(Object.getOwnPropertyNames(app.model), [/*"shared",*/ "title", "users"]);
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true);
   }
   finally { // cleanup

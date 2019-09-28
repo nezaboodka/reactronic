@@ -3,12 +3,10 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Handle } from '../internal/all';
-import { stateful } from './Reactivity.decorators';
+import { Handle, Stateful } from '../internal/all';
 import { Transaction } from './Transaction';
 
-@stateful
-export class Monitor {
+export class Monitor extends Stateful {
   private _busy: boolean = false;
   private _counter: number = 0;
   private _workers = new Set<Worker>();
@@ -18,6 +16,7 @@ export class Monitor {
   get workers(): ReadonlySet<Worker> { return this._workers; }
 
   constructor(prolonged: boolean = false) {
+    super();
     this.prolonged = prolonged;
   }
 

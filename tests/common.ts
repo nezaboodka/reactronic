@@ -3,12 +3,11 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { stateful, Trace } from '../source/reactronic';
+import { Stateful, Trace } from '../source/reactronic';
 
 // Person
 
-@stateful
-export class Person {
+export class Person extends Stateful {
   id: string | null = null;
   name: string | null = null;
   age: number = 0;
@@ -22,6 +21,7 @@ export class Person {
   private _children: Person[] = [];
 
   constructor(init?: Partial<Person>) {
+    super();
     if (init)
       Object.assign(this, init);
   }
