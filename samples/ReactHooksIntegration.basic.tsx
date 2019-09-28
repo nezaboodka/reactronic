@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { stateful, stateless, trigger, cached, statusof, outside, Transaction, Status } from 'reactronic';
+import { Stateful, stateless, trigger, cached, statusof, outside, Transaction, Status } from 'reactronic';
 
 type ReactState = { rx: Rx; };
 
@@ -16,8 +16,7 @@ export function reactiveRender(render: () => JSX.Element): JSX.Element {
   return rx.jsx(render);
 }
 
-@stateful
-class Rx {
+class Rx extends Stateful {
   @cached
   jsx(render: () => JSX.Element): JSX.Element {
     return render();
