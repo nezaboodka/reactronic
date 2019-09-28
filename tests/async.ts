@@ -3,13 +3,15 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateful, transaction, trigger, cached, latency, Status, Monitor, monitor, all, sleep, reentrance, Reentrance } from '../source/reactronic';
+import { transaction, trigger, cached, latency, Status, Monitor, monitor, all, sleep, reentrance, Reentrance } from '../source/reactronic';
+import { stateful } from '../source/api/Reactivity.decorators';
 export { tracing } from './common';
 
 export const output: string[] = [];
 export const mon = Monitor.create("demo");
 
-export class DemoModel extends Stateful {
+@stateful
+export class DemoModel {
   url: string = "reactronic";
   log: string[] = ["RTA"];
 
