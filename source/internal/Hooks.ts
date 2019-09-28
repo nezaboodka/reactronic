@@ -34,8 +34,8 @@ const RT_TABLE: unique symbol = Symbol("RT:TABLE");
 const RT_CLASS: unique symbol = Symbol("RT:CLASS");
 const RT_TRIGGERS: unique symbol = Symbol("RT:TRIGGERS");
 
-const RT_TABLE_BLANK = Object.freeze({});
-const DEFAULT_RT: Reactivity = Object.freeze({
+const RT_BLANK_TABLE = Object.freeze({});
+const RT_DEFAULT: Reactivity = Object.freeze({
   kind: Kind.Stateless,
   latency: -2, // never
   reentrance: Reentrance.PreventWithError,
@@ -50,15 +50,15 @@ export class Rt implements Reactivity {
   readonly reentrance: Reentrance;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
-  static readonly DEFAULT = Object.freeze(new Rt(undef, {body: undef, ...DEFAULT_RT}, {}, false));
+  static readonly DEFAULT = Object.freeze(new Rt(undef, {body: undef, ...RT_DEFAULT}, {}, false));
 
   constructor(body: Function | undefined, existing: Rt, patch: Partial<Rt>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body;
-    this.kind = merge(DEFAULT_RT.kind, existing.kind, patch.kind, implicit);
-    this.latency = merge(DEFAULT_RT.latency, existing.latency, patch.latency, implicit);
-    this.reentrance = merge(DEFAULT_RT.reentrance, existing.reentrance, patch.reentrance, implicit);
-    this.monitor = merge(DEFAULT_RT.monitor, existing.monitor, patch.monitor, implicit);
-    this.trace = merge(DEFAULT_RT.trace, existing.trace, patch.trace, implicit);
+    this.kind = merge(RT_DEFAULT.kind, existing.kind, patch.kind, implicit);
+    this.latency = merge(RT_DEFAULT.latency, existing.latency, patch.latency, implicit);
+    this.reentrance = merge(RT_DEFAULT.reentrance, existing.reentrance, patch.reentrance, implicit);
+    this.monitor = merge(RT_DEFAULT.monitor, existing.monitor, patch.monitor, implicit);
+    this.trace = merge(RT_DEFAULT.trace, existing.trace, patch.trace, implicit);
     Object.freeze(this);
   }
 }
@@ -240,7 +240,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   static getReactivityTable(proto: any): any {
-    return proto[RT_TABLE] || /* istanbul ignore next */ RT_TABLE_BLANK;
+    return proto[RT_TABLE] || /* istanbul ignore next */ RT_BLANK_TABLE;
   }
 
   static acquireHandle(obj: any): Handle {
