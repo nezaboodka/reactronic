@@ -47,10 +47,10 @@ export class Cache extends Status<any> {
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry
           if (!call2.valid)
-            call2 = this.run(call2.cache, argsx);
+            call2 = this.run(argsx);
         }
         else
-          call2 = this.run(call2.cache, argsx);
+          call2 = this.run(argsx);
         return call2.cache.ret;
       }, args);
       call2.cache.ret = ret;
@@ -97,11 +97,11 @@ export class Cache extends Status<any> {
     return { cache: c, record: r, valid: true, error };
   }
 
-  private run(prev: CacheResult, args: any[] | undefined): CachedCall {
+  private run(args: any[] | undefined): CachedCall {
     const call: CachedCall = this.write();
     const c: CacheResult = call.cache;
     if (!call.error) {
-      const mon: Monitor | null = prev.rt.monitor;
+      const mon: Monitor | null = c.rt.monitor;
       args ? c.args = args : args = c.args;
       Cache.run(c, (...argsx: any[]): void => {
         c.enter(call.record, mon);
