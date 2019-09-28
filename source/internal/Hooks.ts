@@ -20,7 +20,7 @@ import { Trace } from '../api/Trace';
 export class Stateful {
   constructor() {
     const h: Handle = Hooks.createHandle(true, this, undefined, new.target.name);
-    const triggers: Map<PropertyKey, Rt> | undefined = Hooks.getReactivityTable(new.target.prototype)[RT_RX_TRIGGERS];
+    const triggers: Map<PropertyKey, Rt> | undefined = Hooks.getReactivityTable(new.target.prototype)[RT_TRIGGERS];
     if (triggers)
       triggers.forEach((rx, prop) =>
         (h.proxy[prop][RT_CACHE] as Status<any>).invalidate());
@@ -30,11 +30,11 @@ export class Stateful {
 
 // Reactivity
 
-const RT_RX_TABLE: unique symbol = Symbol("RT:TABLE");
-const RT_RX_CLASS: unique symbol = Symbol("RT:CLASS");
-const RT_RX_TRIGGERS: unique symbol = Symbol("RT:TRIGGERS");
+const RT_TABLE: unique symbol = Symbol("RT:TABLE");
+const RT_CLASS: unique symbol = Symbol("RT:CLASS");
+const RT_TRIGGERS: unique symbol = Symbol("RT:TRIGGERS");
 
-const BLANK_RX_TABLE = Object.freeze({});
+const RT_TABLE_BLANK = Object.freeze({});
 const DEFAULT_RT: Reactivity = Object.freeze({
   kind: Kind.Stateless,
   latency: -2, // never
@@ -133,7 +133,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClass(implicit: boolean, rt: Partial<Reactivity>, origCtor: any): any {
     let ctor: any = origCtor;
     const stateful = rt.kind !== undefined && rt.kind !== Kind.Stateless;
-    const triggers: Map<PropertyKey, Rt> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
+    const triggers: Map<PropertyKey, Rt> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_TRIGGERS];
     if (stateful) {
       ctor = class extends origCtor {
         constructor(...args: any[]) {
@@ -148,7 +148,7 @@ export class Hooks implements ProxyHandler<Handle> {
           return h.proxy;
         }
       };
-      Hooks.configureReactivity(ctor.prototype, RT_RX_CLASS, decoratedclass, rt, implicit);
+      Hooks.configureReactivity(ctor.prototype, RT_CLASS, decoratedclass, rt, implicit);
     }
     return ctor;
   }
@@ -156,7 +156,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClassOld(implicit: boolean, rt: Partial<Reactivity>, origCtor: any): any {
     let ctor: any = origCtor;
     const stateful = rt.kind !== undefined && rt.kind !== Kind.Stateless;
-    const triggers: Map<PropertyKey, Rt> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
+    const triggers: Map<PropertyKey, Rt> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_TRIGGERS];
     if (stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args);
@@ -173,7 +173,7 @@ export class Hooks implements ProxyHandler<Handle> {
       Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)); // preserve prototype
       Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)); // preserve static definitions
     }
-    Hooks.configureReactivity(ctor.prototype, RT_RX_CLASS, decoratedclass, rt, implicit);
+    Hooks.configureReactivity(ctor.prototype, RT_CLASS, decoratedclass, rt, implicit);
     return ctor;
   }
 
@@ -199,7 +199,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const configurable: boolean = true;
     const rtOfMethod = Hooks.configureReactivity(proto, method, pd.value, rt, implicit);
     const get = function(this: any): any {
-      const rtOfClass: Rt = Hooks.getReactivity(Object.getPrototypeOf(this), RT_RX_CLASS) || Rt.DEFAULT;
+      const rtOfClass: Rt = Hooks.getReactivity(Object.getPrototypeOf(this), RT_CLASS) || Rt.DEFAULT;
       const h: Handle = rtOfClass.kind !== Kind.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
       const value = Hooks.createCacheTrap(h, method, rtOfMethod);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
@@ -217,13 +217,13 @@ export class Hooks implements ProxyHandler<Handle> {
     const existing: Rt = rtTable[prop] || Rt.DEFAULT;
     const result = rtTable[prop] = new Rt(body, existing, rt, implicit);
     if (result.kind === Kind.Trigger && result.latency > -2) {
-      let triggers: Map<PropertyKey, Rt> | undefined = rtTable[RT_RX_TRIGGERS];
+      let triggers: Map<PropertyKey, Rt> | undefined = rtTable[RT_TRIGGERS];
       if (!triggers)
-        triggers = rtTable[RT_RX_TRIGGERS] = new Map<PropertyKey, Rt>();
+        triggers = rtTable[RT_TRIGGERS] = new Map<PropertyKey, Rt>();
       triggers.set(prop, result);
     }
     else if (existing.kind === Kind.Trigger && existing.latency > -2) {
-      const triggers: Map<PropertyKey, Rt> | undefined = rtTable[RT_RX_TRIGGERS];
+      const triggers: Map<PropertyKey, Rt> | undefined = rtTable[RT_TRIGGERS];
       if (triggers)
         triggers.delete(prop);
     }
@@ -231,16 +231,16 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   private static acquireReactivityTable(proto: any): any {
-    let rxTable: any = proto[RT_RX_TABLE];
-    if (!proto.hasOwnProperty(RT_RX_TABLE)) {
+    let rxTable: any = proto[RT_TABLE];
+    if (!proto.hasOwnProperty(RT_TABLE)) {
       rxTable = Object.setPrototypeOf({}, rxTable || {});
-      Utils.set(proto, RT_RX_TABLE, rxTable);
+      Utils.set(proto, RT_TABLE, rxTable);
     }
     return rxTable;
   }
 
   static getReactivityTable(proto: any): any {
-    return proto[RT_RX_TABLE] || /* istanbul ignore next */ BLANK_RX_TABLE;
+    return proto[RT_TABLE] || /* istanbul ignore next */ RT_TABLE_BLANK;
   }
 
   static acquireHandle(obj: any): Handle {
