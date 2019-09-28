@@ -15,6 +15,19 @@ import { Monitor } from '../api/Monitor';
 import { Status } from '../api/Status';
 import { Trace } from '../api/Trace';
 
+// Stateful
+
+export class Stateful {
+  constructor() {
+    const h: Handle = Hooks.createHandle(true, this, undefined, new.target.name);
+    const triggers: Map<PropertyKey, Rt> | undefined = Hooks.getReactivityTable(new.target.prototype)[RT_RX_TRIGGERS];
+    if (triggers)
+      triggers.forEach((rx, prop) =>
+        (h.proxy[prop][RT_CACHE] as Status<any>).invalidate());
+    return h.proxy;
+  }
+}
+
 // Reactivity
 
 const RT_RX_TABLE: unique symbol = Symbol("RT:TABLE");
@@ -29,17 +42,6 @@ const DEFAULT_RT: Reactivity = Object.freeze({
   monitor: null,
   trace: undefined,
 });
-
-export class Stateful {
-  constructor() {
-    const h: Handle = Hooks.createHandle(true, this, undefined, new.target.name);
-    const triggers: Map<PropertyKey, Rt> | undefined = Hooks.getReactivityTable(new.target.prototype)[RT_RX_TRIGGERS];
-    if (triggers)
-      triggers.forEach((rx, prop) =>
-        (h.proxy[prop][RT_CACHE] as Status<any>).invalidate());
-    return h.proxy;
-  }
-}
 
 export class Rt implements Reactivity {
   readonly body: Function;
