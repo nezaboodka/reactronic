@@ -17,12 +17,12 @@ import { Trace } from '../api/Trace';
 
 // Reactivity
 
-const RT_RX_TABLE: unique symbol = Symbol("RT:RX:TABLE");
-const RT_RX_CLASS: unique symbol = Symbol("RT:RX:CLASS");
-const RT_RX_TRIGGERS: unique symbol = Symbol("RT:RX:TRIGGERS");
+const RT_RX_TABLE: unique symbol = Symbol("RT:TABLE");
+const RT_RX_CLASS: unique symbol = Symbol("RT:CLASS");
+const RT_RX_TRIGGERS: unique symbol = Symbol("RT:TRIGGERS");
 
 const BLANK_RX_TABLE = Object.freeze({});
-const DEFAULT_RX: Reactivity = Object.freeze({
+const DEFAULT_RT: Reactivity = Object.freeze({
   kind: Kind.Stateless,
   latency: -2, // never
   reentrance: Reentrance.PreventWithError,
@@ -33,7 +33,7 @@ const DEFAULT_RX: Reactivity = Object.freeze({
 export class Stateful {
   constructor() {
     const h: Handle = Hooks.createHandle(true, this, undefined, new.target.name);
-    const triggers: Map<PropertyKey, Rx> | undefined = Hooks.getReactivityTable(new.target.prototype)[RT_RX_TRIGGERS];
+    const triggers: Map<PropertyKey, Rt> | undefined = Hooks.getReactivityTable(new.target.prototype)[RT_RX_TRIGGERS];
     if (triggers)
       triggers.forEach((rx, prop) =>
         (h.proxy[prop][RT_CACHE] as Status<any>).invalidate());
@@ -41,22 +41,22 @@ export class Stateful {
   }
 }
 
-export class Rx implements Reactivity {
+export class Rt implements Reactivity {
   readonly body: Function;
   readonly kind: Kind;
   readonly latency: number;
   readonly reentrance: Reentrance;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
-  static readonly DEFAULT = Object.freeze(new Rx(undef, {body: undef, ...DEFAULT_RX}, {}, false));
+  static readonly DEFAULT = Object.freeze(new Rt(undef, {body: undef, ...DEFAULT_RT}, {}, false));
 
-  constructor(body: Function | undefined, existing: Rx, patch: Partial<Rx>, implicit: boolean) {
+  constructor(body: Function | undefined, existing: Rt, patch: Partial<Rt>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body;
-    this.kind = merge(DEFAULT_RX.kind, existing.kind, patch.kind, implicit);
-    this.latency = merge(DEFAULT_RX.latency, existing.latency, patch.latency, implicit);
-    this.reentrance = merge(DEFAULT_RX.reentrance, existing.reentrance, patch.reentrance, implicit);
-    this.monitor = merge(DEFAULT_RX.monitor, existing.monitor, patch.monitor, implicit);
-    this.trace = merge(DEFAULT_RX.trace, existing.trace, patch.trace, implicit);
+    this.kind = merge(DEFAULT_RT.kind, existing.kind, patch.kind, implicit);
+    this.latency = merge(DEFAULT_RT.latency, existing.latency, patch.latency, implicit);
+    this.reentrance = merge(DEFAULT_RT.reentrance, existing.reentrance, patch.reentrance, implicit);
+    this.monitor = merge(DEFAULT_RT.monitor, existing.monitor, patch.monitor, implicit);
+    this.trace = merge(DEFAULT_RT.trace, existing.trace, patch.trace, implicit);
     Object.freeze(this);
   }
 }
@@ -76,8 +76,8 @@ export class Hooks implements ProxyHandler<Handle> {
 
   get(h: Handle, prop: PropertyKey, receiver: any): any {
     let value: any;
-    const rx: Rx | undefined = Hooks.getReactivity(h.stateless, prop);
-    if (!rx || (rx.body === decoratedfield && rx.kind !== Kind.Stateless)) { // versioned state
+    const rt: Rt | undefined = Hooks.getReactivity(h.stateless, prop);
+    if (!rt || (rt.body === decoratedfield && rt.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.readable().read(h);
       value = r.data[prop];
       if (value === undefined && !r.data.hasOwnProperty(prop)) {
@@ -94,8 +94,8 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
-    const rx: Rx | undefined = Hooks.getReactivity(h.stateless, prop);
-    if (!rx || (rx.body === decoratedfield && rx.kind !== Kind.Stateless)) { // versioned state
+    const rt: Rt | undefined = Hooks.getReactivity(h.stateless, prop);
+    if (!rt || (rt.body === decoratedfield && rt.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.writable().tryWrite(h, prop, value);
       if (r !== Record.blank) { // blank when r.data[prop] === value, thus creation of changing record was skipped
         r.data[prop] = value;
@@ -128,10 +128,10 @@ export class Hooks implements ProxyHandler<Handle> {
     return result;
   }
 
-  static decorateClass(implicit: boolean, rx: Partial<Reactivity>, origCtor: any): any {
+  static decorateClass(implicit: boolean, rt: Partial<Reactivity>, origCtor: any): any {
     let ctor: any = origCtor;
-    const stateful = rx.kind !== undefined && rx.kind !== Kind.Stateless;
-    const triggers: Map<PropertyKey, Rx> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
+    const stateful = rt.kind !== undefined && rt.kind !== Kind.Stateless;
+    const triggers: Map<PropertyKey, Rt> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
     if (stateful) {
       ctor = class extends origCtor {
         constructor(...args: any[]) {
@@ -146,15 +146,15 @@ export class Hooks implements ProxyHandler<Handle> {
           return h.proxy;
         }
       };
-      Hooks.configureReactivity(ctor.prototype, RT_RX_CLASS, decoratedclass, rx, implicit);
+      Hooks.configureReactivity(ctor.prototype, RT_RX_CLASS, decoratedclass, rt, implicit);
     }
     return ctor;
   }
 
-  static decorateClassOld(implicit: boolean, rx: Partial<Reactivity>, origCtor: any): any {
+  static decorateClassOld(implicit: boolean, rt: Partial<Reactivity>, origCtor: any): any {
     let ctor: any = origCtor;
-    const stateful = rx.kind !== undefined && rx.kind !== Kind.Stateless;
-    const triggers: Map<PropertyKey, Rx> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
+    const stateful = rt.kind !== undefined && rt.kind !== Kind.Stateless;
+    const triggers: Map<PropertyKey, Rt> | undefined = Hooks.getReactivityTable(ctor.prototype)[RT_RX_TRIGGERS];
     if (stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args);
@@ -171,13 +171,13 @@ export class Hooks implements ProxyHandler<Handle> {
       Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)); // preserve prototype
       Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)); // preserve static definitions
     }
-    Hooks.configureReactivity(ctor.prototype, RT_RX_CLASS, decoratedclass, rx, implicit);
+    Hooks.configureReactivity(ctor.prototype, RT_RX_CLASS, decoratedclass, rt, implicit);
     return ctor;
   }
 
-  static decorateField(implicit: boolean, rx: Partial<Reactivity>, proto: any, prop: PropertyKey): any {
-    rx = Hooks.configureReactivity(proto, prop, decoratedfield, rx, implicit);
-    if (rx.kind !== Kind.Stateless) {
+  static decorateField(implicit: boolean, rt: Partial<Reactivity>, proto: any, prop: PropertyKey): any {
+    rt = Hooks.configureReactivity(proto, prop, decoratedfield, rt, implicit);
+    if (rt.kind !== Kind.Stateless) {
       const get = function(this: any): any {
         const h: Handle = Hooks.acquireHandle(this);
         return Hooks.proxy.get(h, prop, this);
@@ -192,36 +192,36 @@ export class Hooks implements ProxyHandler<Handle> {
     }
   }
 
-  static decorateMethod(implicit: boolean, rx: Partial<Reactivity>, proto: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  static decorateMethod(implicit: boolean, rt: Partial<Reactivity>, proto: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true;
     const configurable: boolean = true;
-    const rxOfMethod = Hooks.configureReactivity(proto, method, pd.value, rx, implicit);
+    const rtOfMethod = Hooks.configureReactivity(proto, method, pd.value, rt, implicit);
     const get = function(this: any): any {
-      const rxOfClass: Rx = Hooks.getReactivity(Object.getPrototypeOf(this), RT_RX_CLASS) || Rx.DEFAULT;
-      const h: Handle = rxOfClass.kind !== Kind.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
-      const value = Hooks.createCacheTrap(h, method, rxOfMethod);
+      const rtOfClass: Rt = Hooks.getReactivity(Object.getPrototypeOf(this), RT_RX_CLASS) || Rt.DEFAULT;
+      const h: Handle = rtOfClass.kind !== Kind.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
+      const value = Hooks.createCacheTrap(h, method, rtOfMethod);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
       return value;
     };
     return Object.defineProperty(proto, method, { get, enumerable, configurable });
   }
 
-  private static getReactivity(proto: any, prop: PropertyKey): Rx | undefined {
+  private static getReactivity(proto: any, prop: PropertyKey): Rt | undefined {
     return Hooks.getReactivityTable(proto)[prop];
   }
 
-  private static configureReactivity(proto: any, prop: PropertyKey, body: Function | undefined, rx: Partial<Rx>, implicit: boolean): Rx {
-    const rxTable: any = Hooks.acquireReactivityTable(proto);
-    const existing: Rx = rxTable[prop] || Rx.DEFAULT;
-    const result = rxTable[prop] = new Rx(body, existing, rx, implicit);
+  private static configureReactivity(proto: any, prop: PropertyKey, body: Function | undefined, rt: Partial<Rt>, implicit: boolean): Rt {
+    const rtTable: any = Hooks.acquireReactivityTable(proto);
+    const existing: Rt = rtTable[prop] || Rt.DEFAULT;
+    const result = rtTable[prop] = new Rt(body, existing, rt, implicit);
     if (result.kind === Kind.Trigger && result.latency > -2) {
-      let triggers: Map<PropertyKey, Rx> | undefined = rxTable[RT_RX_TRIGGERS];
+      let triggers: Map<PropertyKey, Rt> | undefined = rtTable[RT_RX_TRIGGERS];
       if (!triggers)
-        triggers = rxTable[RT_RX_TRIGGERS] = new Map<PropertyKey, Rx>();
+        triggers = rtTable[RT_RX_TRIGGERS] = new Map<PropertyKey, Rt>();
       triggers.set(prop, result);
     }
     else if (existing.kind === Kind.Trigger && existing.latency > -2) {
-      const triggers: Map<PropertyKey, Rx> | undefined = rxTable[RT_RX_TRIGGERS];
+      const triggers: Map<PropertyKey, Rt> | undefined = rtTable[RT_RX_TRIGGERS];
       if (triggers)
         triggers.delete(prop);
     }
@@ -262,7 +262,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static createCacheTrap = function(h: Handle, prop: PropertyKey, rx: Rx): F<any> {
+  static createCacheTrap = function(h: Handle, prop: PropertyKey, rt: Rt): F<any> {
      throw new Error("createCacheTrap should never be called");
   };
 }
