@@ -11,7 +11,7 @@ import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER;
-type CachedCall = { cache: CacheResult, record: Record, valid: boolean };
+type CachedCall = { cache: CacheResult, record: Record, valid: boolean, error?: Error };
 
 export class Cache extends Status<any> {
   private readonly handle: Handle;
@@ -54,7 +54,8 @@ export class Cache extends Status<any> {
         return call2.cache.ret;
       }, args);
       call2.cache.ret = ret;
-      if (noprev)
+      // TODO: Get rid of noprev
+      if (noprev && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
         call = call2;
     }
     else
@@ -82,23 +83,26 @@ export class Cache extends Status<any> {
     const member = this.blank.member;
     const r: Record = ctx.write(this.handle, member, this);
     let c: CacheResult = r.data[member] || this.blank;
+    let error: Error | undefined = undefined;
     if (c.record !== r) {
-      const c2 = new CacheResult(r, c.member, c);
-      r.data[c2.member] = c2;
-      Record.markChanged(r, c2.member, true, c2);
-      c = c2;
+      error = Cache.checkForReentrance(c);
+      if (!error) {
+        const renew = new CacheResult(r, c.member, c);
+        r.data[renew.member] = renew;
+        Record.markChanged(r, renew.member, true, renew);
+        c.invalidated.renewer = renew;
+        c = renew;
+      }
     }
-    return { cache: c, record: r, valid: true };
+    return { cache: c, record: r, valid: true, error };
   }
 
   private run(prev: CacheResult, args: any[] | undefined): CachedCall {
-    const error = this.reenter(prev);
     const call: CachedCall = this.write();
     const c: CacheResult = call.cache;
-    if (!error) {
+    if (!call.error) {
       const mon: Monitor | null = prev.rt.monitor;
       args ? c.args = args : args = c.args;
-      prev.invalidated.renewer = c;
       Cache.run(c, (...argsx: any[]): void => {
         c.enter(call.record, mon);
         try
@@ -112,13 +116,13 @@ export class Cache extends Status<any> {
       c.invalidated.since = TOP_TIMESTAMP;
     }
     else {
-      c.ret = Promise.reject(error);
+      c.ret = Promise.reject(call.error);
       c.invalidated.since = TOP_TIMESTAMP;
     }
     return call;
   }
 
-  private reenter(c: CacheResult): Error | undefined {
+  private static checkForReentrance(c: CacheResult): Error | undefined {
     let error: Error | undefined = undefined;
     const prev = c.invalidated.renewer;
     const caller = Transaction.current;
