@@ -57,7 +57,7 @@ test("basic", t => {
     t.is(app.model.shared, tran1.hint);
     t.is(daddy.name, "John");
     t.is(tran1.inspect(() => daddy.name), "John Smith");
-    t.throws(() => tran1.inspect(() => { daddy.name = "Forbidden"; }), "cannot make changes during inspection");
+    t.throws(() => tran1.inspect(() => { daddy.name = "Forbidden"; }), "cannot make changes during transaction inspection");
     t.is(daddy.age, 38);
     t.is(daddy.children.length, 3);
     t.is(rendering.isInvalid, false);

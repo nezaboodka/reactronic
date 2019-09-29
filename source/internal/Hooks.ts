@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
+import { misuse } from './Dbg';
 import { Utils, undef, RT_CACHE } from './Utils';
 import { CopyOnWriteArray, Binding } from './Binding.CopyOnWriteArray';
 import { CopyOnWriteSet } from './Binding.CopyOnWriteSet';
@@ -245,7 +246,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static acquireHandle(obj: any): Handle {
     if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
-      throw new Error("only objects can be reactive");
+      throw misuse("only objects can be reactive");
     let h: Handle = Utils.get(obj, RT_HANDLE);
     if (!h) {
       h = new Handle(obj, obj, obj.constructor.name, Hooks.proxy);
@@ -265,7 +266,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   /* istanbul ignore next */
   static createCacheTrap = function(h: Handle, prop: PropertyKey, rt: Rt): F<any> {
-     throw new Error("createCacheTrap should never be called");
+     throw misuse("createCacheTrap should never be called");
   };
 }
 
@@ -287,12 +288,12 @@ function initRecordProp(stateful: boolean, rxTable: any, prop: PropertyKey, r: R
 
 /* istanbul ignore next */
 function decoratedfield(...args: any[]): never {
-   throw new Error("decoratedfield should never be called");
+   throw misuse("decoratedfield should never be called");
 }
 
 /* istanbul ignore next */
 function decoratedclass(...args: any[]): never {
-  throw new Error("decoratedclass should never be called");
+  throw misuse("decoratedclass should never be called");
 }
 
 export class CopyOnWrite implements ProxyHandler<Binding<any>> {

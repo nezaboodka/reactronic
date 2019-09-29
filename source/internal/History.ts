@@ -38,7 +38,7 @@
 //   }
 
 //   redo(count: number): void {
-//     throw new Error("not implemented");
+//     throw misuse("not implemented");
 //   }
 // }
 

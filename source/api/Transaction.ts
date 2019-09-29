@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, Utils, undef, Record, ICacheResult, F, Snapshot, Hint } from '../internal/all';
+import { Dbg, misuse, error, Utils, undef, Record, ICacheResult, F, Snapshot, Hint } from '../internal/all';
 import { Trace } from './Reactivity';
 
 export class Transaction {
@@ -61,9 +61,9 @@ export class Transaction {
 
   commit(): void {
     if (this.workers > 0)
-      throw new Error("cannot commit transaction having active workers");
+      throw misuse("cannot commit transaction having active workers");
     if (this.error)
-      throw new Error(`cannot commit transaction that is already canceled: ${this.error}`);
+      throw misuse(`cannot commit transaction that is already canceled: ${this.error}`);
     this.seal(); // commit immediately, because pending === 0
   }
 
@@ -154,7 +154,7 @@ export class Transaction {
     if (this.error) // prevent from continuing canceled transaction
       throw this.error;
     if (this.sealed && Transaction._current !== this)
-      throw new Error("cannot run transaction that is already sealed");
+      throw misuse("cannot run transaction that is already sealed");
   }
 
   private async autoretry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
@@ -242,7 +242,7 @@ export class Transaction {
   }
 
   private tryResolveConflicts(conflicts: Record[]): void {
-    this.error = this.error || new Error(`transaction T${this.id} (${this.hint}) conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
+    this.error = this.error || error(`transaction T${this.id} (${this.hint}) conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
     throw this.error;
   }
 
@@ -279,7 +279,7 @@ export class Transaction {
 
   private static writableSnapshot(): Snapshot {
     if (Transaction._inspection)
-      throw new Error("cannot make changes during inspection");
+      throw misuse("cannot make changes during transaction inspection");
     return Transaction._current.snapshot;
   }
 

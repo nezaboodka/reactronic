@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg } from './Dbg';
+import { Dbg, misuse } from './Dbg';
 
 export const RT_BINDING: unique symbol = Symbol("RT:BINDING");
 
@@ -33,7 +33,7 @@ export class Binding<T> {
 
   static seal<T>(owner: any, prop: PropertyKey, value: T, proto: object, clone: (v: T) => T): Binding<T> {
     if (Object.isFrozen(value)) /* istanbul ignore next */
-      throw new Error("copy-on-write collection cannot be referenced from multiple objects");
+      throw misuse("copy-on-write collection cannot be referenced from multiple objects");
     const self: any = value;
     if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "·", `${owner.constructor.name}.${prop.toString()} - sealing for copy-on-write`);
     const binding = new Binding<T>(owner, prop, value, clone);

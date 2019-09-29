@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, Utils, Record, ICacheResult, F, Handle, Snapshot, Hint, Rt, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
+import { Dbg, misuse, Utils, Record, ICacheResult, F, Handle, Snapshot, Hint, Rt, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';
 export { Status, resultof, statusof } from '../api/Status';
 import { Reactivity, Kind, Reentrance, Trace } from '../api/Reactivity';
@@ -122,16 +122,16 @@ export class Cache extends Status<any> {
   }
 
   private static checkForReentrance(c: CacheResult): Error | undefined {
-    let error: Error | undefined = undefined;
+    let result: Error | undefined = undefined;
     const prev = c.invalid.renewing;
     const caller = Transaction.current;
     if (prev && prev !== c)
       switch (c.rt.reentrance) {
         case Reentrance.PreventWithError:
-          throw new Error(`${c.hint()} is configured as non-reentrant`);
+          throw misuse(`${c.hint()} is configured as non-reentrant`);
         case Reentrance.WaitAndRestart:
-          error = new Error(`transaction T${caller.id} (${caller.hint}) will be restarted after T${prev.tran.id} (${prev.tran.hint})`);
-          caller.cancel(error, prev.tran);
+          result = new Error(`transaction T${caller.id} (${caller.hint}) will be restarted after T${prev.tran.id} (${prev.tran.hint})`);
+          caller.cancel(result, prev.tran);
           // TODO: "c.invalidation.recaching = caller" in order serialize all the transactions
           break;
         case Reentrance.CancelPrevious:
@@ -141,7 +141,7 @@ export class Cache extends Status<any> {
         case Reentrance.RunSideBySide:
           break; // do nothing
       }
-    return error;
+    return result;
   }
 
   static invalidate(self: Cache): void {
@@ -194,7 +194,7 @@ export class Cache extends Status<any> {
   static get(method: F<any>): Status<any> {
     const impl: Status<any> | undefined = Utils.get(method, RT_CACHE);
     if (!impl)
-      throw new Error("given method is not a reactronic cache");
+      throw misuse("given method is not a reactronic cache");
     return impl;
   }
 

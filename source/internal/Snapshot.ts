@@ -3,8 +3,8 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
+import { Dbg, misuse } from './Dbg';
 import { Utils, undef } from './Utils';
-import { Dbg } from './Dbg';
 import { Record, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { CopyOnWrite } from './Hooks';
@@ -60,14 +60,14 @@ export class Snapshot implements ISnapshot {
   read(h: Handle): Record {
     const result = this.tryRead(h);
     if (result === Record.blank) /* istanbul ignore next */
-      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
+      throw misuse(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 
   write(h: Handle, prop: PropertyKey, token: any): Record {
     const result: Record = this.tryWrite(h, prop, token);
     if (result === Record.blank) /* istanbul ignore next */
-      throw new Error(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
+      throw misuse(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
     return result;
   }
 
@@ -88,9 +88,9 @@ export class Snapshot implements ISnapshot {
 
   tryWrite(h: Handle, prop: PropertyKey, token: any): Record {
     if (this._applied)
-      throw new Error(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
+      throw misuse(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
     if (this.cache !== undefined && token !== this.cache && token !== RT_HANDLE)
-      throw new Error(`cache must have no side effects (an attempt to change ${Hint.handle(h, prop)})`);
+      throw misuse(`cache must have no side effects (an attempt to change ${Hint.handle(h, prop)})`);
     let r: Record = this.tryRead(h);
     if (r === Record.blank || r.data[prop] !== token) {
       if (r.snapshot !== this) {

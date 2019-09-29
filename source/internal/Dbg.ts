@@ -5,12 +5,24 @@
 
 import { Trace } from '../api/Trace';
 
+export function error(message: string): Error {
+  if (Dbg.isOn && Dbg.trace.errors) Dbg.log("X", "err", message, undefined, " <-- ERROR");
+  return new Error(message);
+}
+
+export function misuse(message: string): Error {
+  Dbg.log("X", "err", message, undefined, " *** ERROR ***");
+  return new Error(message);
+}
+
 // Dbg
 
 export class Dbg {
   static OFF: Trace = {
     silent: false,
     hints: false,
+    errors: false,
+    warnings: false,
     transactions: false,
     methods: false,
     steps: false,
@@ -62,6 +74,8 @@ export class Dbg {
       changes: t.changes !== undefined ? t.changes : existing.changes,
       subscriptions: t.subscriptions !== undefined ? t.subscriptions : existing.subscriptions,
       invalidations: t.invalidations !== undefined ? t.invalidations : existing.invalidations,
+      errors: t.errors !== undefined ? t.errors : existing.errors,
+      warnings: t.warnings !== undefined ? t.warnings : existing.warnings,
       gc: t.gc !== undefined ? t.gc : existing.gc,
       color: t.color !== undefined ? t.color : existing.color,
       prefix: t.prefix !== undefined ? t.prefix : existing.prefix,
