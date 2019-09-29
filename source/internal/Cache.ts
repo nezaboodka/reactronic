@@ -47,10 +47,10 @@ export class Cache extends Status<any> {
         if (call2.cache.tran.isCanceled()) {
           call2 = this.readable(false, argsx); // re-read on retry
           if (!call2.valid)
-            call2 = this.run(argsx);
+            call2 = this.compute(argsx);
         }
         else
-          call2 = this.run(argsx);
+          call2 = this.compute(argsx);
         return call2.cache.ret;
       }, args);
       call2.cache.ret = ret;
@@ -96,20 +96,21 @@ export class Cache extends Status<any> {
     return { cache: c, record: r, valid: true, error };
   }
 
-  private run(args: any[] | undefined): CachedCall {
+  private compute(args: any[] | undefined): CachedCall {
     const call: CachedCall = this.writable();
     const c: CacheResult = call.cache;
+    if (args)
+      c.args = args;
     if (!call.error) {
-      args ? c.args = args : args = c.args;
-      Cache.run(c, (...argsx: any[]): void => {
+      Cache.run(c, () => {
         c.enter(call.record);
         try {
-          c.ret = c.rt.body.call(this.handle.proxy, ...argsx);
+          c.ret = c.rt.body.call(this.handle.proxy, ...c.args);
         }
         finally {
           c.leaveOrAsync(call.record);
         }
-      }, ...args);
+      });
     }
     else
       c.ret = Promise.reject(call.error);
