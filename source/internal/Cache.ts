@@ -102,21 +102,11 @@ export class Cache extends Status<any> {
     if (args)
       c.args = args;
     if (!call.error)
-      Cache.run(c, Cache.doCompute, this.handle.proxy, c);
+      Cache.run(c, CacheResult.doCompute, this.handle.proxy, c);
     else
       c.ret = Promise.reject(call.error);
     c.invalid.since = TOP_TIMESTAMP;
     return call;
-  }
-
-  private static doCompute(proxy: any, c: CacheResult): void {
-    c.enter();
-    try {
-      c.ret = c.rt.body.call(proxy, ...c.args);
-    }
-    finally {
-      c.leaveOrAsync();
-    }
   }
 
   private static checkForReentrance(c: CacheResult): Error | undefined {
@@ -438,6 +428,16 @@ class CacheResult implements ICacheResult {
         propObservers.forEach(c => c.invalidateDueTo(head, prop, timestamp, triggers));
       // Utils.freezeSet(o);
       r = r.prev.record;
+    }
+  }
+
+  static doCompute(proxy: any, c: CacheResult): void {
+    c.enter();
+    try {
+      c.ret = c.rt.body.call(proxy, ...c.args);
+    }
+    finally {
+      c.leaveOrAsync();
     }
   }
 
