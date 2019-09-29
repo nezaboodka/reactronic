@@ -103,12 +103,12 @@ export class Cache extends Status<any> {
       c.args = args;
     if (!call.error) {
       Cache.run(c, () => {
-        c.enter(call.record);
+        c.enter();
         try {
           c.ret = c.rt.body.call(this.handle.proxy, ...c.args);
         }
         finally {
-          c.leaveOrAsync(call.record);
+          c.leaveOrAsync();
         }
       });
     }
@@ -440,38 +440,38 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  enter(r: Record): void {
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(r)}.${this.member.toString()} - enter`);
+  enter(): void {
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.member)} - enter`);
     this.started = Date.now();
     this.monitorEnter(this.rt.monitor);
   }
 
-  leaveOrAsync(r: Record): void {
+  leaveOrAsync(): void {
     if (this.ret instanceof Promise) {
       this.ret = this.ret.then(
         result => {
           this.result = result;
-          this.leave(r, " ▒", "- finished ", "   OK ──┘");
+          this.leave(" ▒", "- finished ", "   OK ──┘");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, " ▒", "- finished ", "  ERR ──┘");
+          this.leave(" ▒", "- finished ", "  ERR ──┘");
           throw error;
         });
-      if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(r)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
+      if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(this.record, this.member)} - leave... `, 0, "ASYNC ──┐");
     }
     else {
       this.result = this.ret;
-      this.leave(r, "_/", "- leave");
+      this.leave("_/", "- leave");
     }
   }
 
-  private leave(r: Record, op: string, message: string, highlight: string | undefined = undefined): void {
+  private leave(op: string, message: string, highlight: string | undefined = undefined): void {
     this.monitorLeave(this.rt.monitor);
     const ms: number = Date.now() - this.started;
     this.started = 0;
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(r)}.${this.member.toString()} ${message}`, ms, highlight);
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.member)} ${message}`, ms, highlight);
     // TODO: handle errors
     // Cache.freeze(this);
   }
