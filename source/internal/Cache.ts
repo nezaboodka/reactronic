@@ -179,10 +179,10 @@ export class Cache extends Status<any> {
 
   static unmount(...objects: any[]): Transaction {
     return Transaction.runAs("<unmount>", false,
-      undefined, undefined, Cache.runUnmount, ...objects);
+      undefined, undefined, Cache.unmountFunc, ...objects);
   }
 
-  private static runUnmount(...objects: any[]): Transaction {
+  private static unmountFunc(...objects: any[]): Transaction {
     for (const x of objects) {
       if (Utils.get(x, RT_HANDLE))
         x[RT_UNMOUNT] = RT_UNMOUNT;

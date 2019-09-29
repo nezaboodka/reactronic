@@ -21,7 +21,7 @@ export class Monitor extends Stateful {
   }
 
   static create(hint?: string, prolonged: boolean = false): Monitor {
-    return Transaction.run("Monitor.create", Monitor.doCreate, hint, prolonged);
+    return Transaction.run("Monitor.create", Monitor.createFunc, hint, prolonged);
   }
 
   static enter(m: Monitor, worker: Worker): void {
@@ -38,7 +38,7 @@ export class Monitor extends Stateful {
       m._busy = false;
   }
 
-  private static doCreate(hint: string | undefined, prolonged: boolean): Monitor {
+  private static createFunc(hint: string | undefined, prolonged: boolean): Monitor {
     return Handle.setHint(new Monitor(prolonged), hint);
   }
 }

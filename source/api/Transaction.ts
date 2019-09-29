@@ -219,10 +219,10 @@ export class Transaction {
   private runTriggers(): void {
     const name = Dbg.isOn && Dbg.trace.hints ? `■-■-■ TRIGGERS(${this.snapshot.triggers.length}) after T${this.id} (${this.snapshot.hint})` : /* istanbul ignore next */ "TRIGGERS";
     this.reaction.tran = Transaction.runAs(name, true, this.trace, undefined,
-      Transaction.doRunTriggers, this.snapshot.triggers);
+      Transaction.runTriggersFunc, this.snapshot.triggers);
   }
 
-  private static doRunTriggers(triggers: ICacheResult[]): Transaction {
+  private static runTriggersFunc(triggers: ICacheResult[]): Transaction {
     const timestamp = Transaction.current.snapshot.timestamp;
     triggers.map(t => t.renew(timestamp, false, false));
     return Transaction.current;
