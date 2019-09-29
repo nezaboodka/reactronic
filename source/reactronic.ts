@@ -6,7 +6,7 @@
 export { all, sleep } from './internal/all';
 export { Reactivity, Kind, Reentrance, Trace } from './api/Reactivity';
 export { Stateful } from './internal/Hooks';
-export { stateless, transaction, trigger, cached, latency, reentrance, monitor, trace } from './api/Reactivity.decorators';
+export { stateless, stateful, transaction, trigger, cached, latency, reentrance, monitor, trace } from './api/Reactivity.decorators';
 export { Transaction } from './api/Transaction';
 export { Status, resultof, statusof, nonreactive, outside } from './api/Status';
 export { Monitor, Worker } from './api/Monitor';

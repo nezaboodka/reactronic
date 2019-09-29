@@ -3,8 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { transaction, trigger, cached, latency, Status, Monitor, monitor, all, sleep, reentrance, Reentrance } from '../source/reactronic';
-import { stateful } from '../source/api/Reactivity.decorators';
+import { stateful, transaction, trigger, cached, latency, Status, Monitor, monitor, all, sleep, reentrance, Reentrance } from '../source/reactronic';
 export { tracing } from './common';
 
 export const output: string[] = [];
