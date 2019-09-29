@@ -101,21 +101,22 @@ export class Cache extends Status<any> {
     const c: CacheResult = call.cache;
     if (args)
       c.args = args;
-    if (!call.error) {
-      Cache.run(c, () => {
-        c.enter();
-        try {
-          c.ret = c.rt.body.call(this.handle.proxy, ...c.args);
-        }
-        finally {
-          c.leaveOrAsync();
-        }
-      });
-    }
+    if (!call.error)
+      Cache.run(c, Cache.doCompute, this.handle.proxy, c);
     else
       c.ret = Promise.reject(call.error);
     c.invalid.since = TOP_TIMESTAMP;
     return call;
+  }
+
+  private static doCompute(proxy: any, c: CacheResult): void {
+    c.enter();
+    try {
+      c.ret = c.rt.body.call(proxy, ...c.args);
+    }
+    finally {
+      c.leaveOrAsync();
+    }
   }
 
   private static checkForReentrance(c: CacheResult): Error | undefined {
