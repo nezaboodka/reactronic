@@ -375,7 +375,7 @@ class CacheResult implements ICacheResult {
       records.forEach(r => {
         if (!r.replaced.has(prop)) {
           const v = r.data[prop];
-          if (v instanceof CacheResult === false || timestamp < v.invalidated.since || (readstamp > v.invalidated.since && v.invalidated.since !== 0)) {
+          if (v instanceof CacheResult === false || timestamp < v.invalid.since || (readstamp > v.invalid.since && v.invalid.since !== 0)) {
             CacheResult.acquireObserverSet(r, prop).add(this); // now subscribed
             if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, prop, true));
           }
