@@ -37,7 +37,7 @@ export class Cache extends Status<any> {
   call(noprev: boolean, args?: any[]): CachedCall {
     let call: CachedCall = this.read(false, args);
     const c: CacheResult = call.cache;
-    if (!call.valid && (noprev || !c.invalidated.renewer)) {
+    if (!call.valid && (noprev || !c.invalidated.renewing)) {
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
       const separate = noprev && c.rt.kind === Kind.Transaction ? false : true;
       const token = this.reactivity.kind === Kind.Cached ? this : undefined;
@@ -66,9 +66,8 @@ export class Cache extends Status<any> {
 
   private read(markViewed: boolean, args?: any[]): CachedCall {
     const ctx = Snapshot.readable();
-    const member = this.blank.member;
     const r: Record = ctx.tryRead(this.handle);
-    const c: CacheResult = r.data[member] || this.blank;
+    const c: CacheResult = r.data[this.blank.member] || this.blank;
     const valid = c.rt.kind !== Kind.Transaction &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalidated.since) &&
       (args === undefined || c.args[0] === args[0]) ||
@@ -87,11 +86,11 @@ export class Cache extends Status<any> {
     if (c.record !== r) {
       error = Cache.checkForReentrance(c);
       if (!error) {
-        const renew = new CacheResult(r, c.member, c);
-        r.data[renew.member] = renew;
-        Record.markChanged(r, renew.member, true, renew);
-        c.invalidated.renewer = renew;
-        c = renew;
+        const renewing = new CacheResult(r, c.member, c);
+        r.data[renewing.member] = renewing;
+        Record.markChanged(r, renewing.member, true, renewing);
+        c.invalidated.renewing = renewing;
+        c = renewing;
       }
     }
     return { cache: c, record: r, valid: true, error };
@@ -124,7 +123,7 @@ export class Cache extends Status<any> {
 
   private static checkForReentrance(c: CacheResult): Error | undefined {
     let error: Error | undefined = undefined;
-    const prev = c.invalidated.renewer;
+    const prev = c.invalidated.renewing;
     const caller = Transaction.current;
     if (prev && prev !== c)
       switch (c.rt.reentrance) {
@@ -137,7 +136,7 @@ export class Cache extends Status<any> {
           break;
         case Reentrance.CancelPrevious:
           prev.tran.cancel(new Error(`transaction T${prev.tran.id} (${prev.tran.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null);
-          c.invalidated.renewer = undefined; // allow
+          c.invalidated.renewing = undefined; // allow
           break;
         case Reentrance.RunSideBySide:
           break; // do nothing
@@ -228,7 +227,7 @@ class CacheResult implements ICacheResult {
   result: any;
   error: any;
   started: number;
-  readonly invalidated: { since: number, renewer: CacheResult | undefined };
+  readonly invalidated: { since: number, renewing: CacheResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
   readonly margin: number;
 
@@ -249,7 +248,7 @@ class CacheResult implements ICacheResult {
     // this.ret = undefined;
     // this.error = undefined;
     this.started = 0;
-    this.invalidated = { since: 0, renewer: undefined };
+    this.invalidated = { since: 0, renewing: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
     this.margin = CacheResult.active ? CacheResult.active.margin + 1 : 1;
   }
@@ -270,7 +269,7 @@ class CacheResult implements ICacheResult {
     const latency = this.rt.latency;
     if (now || latency === -1) {
       if (!this.error && (this.rt.kind === Kind.Transaction ||
-          (timestamp >= this.invalidated.since && !this.invalidated.renewer))) {
+          (timestamp >= this.invalidated.since && !this.invalidated.renewing))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
@@ -508,8 +507,8 @@ class CacheResult implements ICacheResult {
 
   complete(error?: any): void {
     const prev = this.record.prev.record.data[this.member];
-    if (prev instanceof CacheResult && prev.invalidated.renewer === this)
-      prev.invalidated.renewer = undefined;
+    if (prev instanceof CacheResult && prev.invalidated.renewing === this)
+      prev.invalidated.renewing = undefined;
   }
 
   static equal(oldValue: any, newValue: any): boolean {
