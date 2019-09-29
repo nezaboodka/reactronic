@@ -450,12 +450,12 @@ class CacheResult implements ICacheResult {
       this.ret = this.ret.then(
         result => {
           this.result = result;
-          this.leave(r, "▒▒", "- finished ", "   OK ──┘");
+          this.leave(r, " ▒", "- finished ", "   OK ──┘");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, "▒▒", "- finished ", "  ERR ──┘");
+          this.leave(r, " ▒", "- finished ", "  ERR ──┘");
           throw error;
         });
       if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(r)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
