@@ -37,7 +37,7 @@ export class Cache extends Status<any> {
   call(noprev: boolean, args?: any[]): CachedCall {
     let call: CachedCall = this.read(false, args);
     const c: CacheResult = call.cache;
-    if (!call.valid && (noprev || !c.invalidated.renewing)) {
+    if (!call.valid && (noprev || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
       const separate = noprev && c.rt.kind === Kind.Transaction ? false : true;
       const token = this.reactivity.kind === Kind.Cached ? this : undefined;
@@ -69,7 +69,7 @@ export class Cache extends Status<any> {
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[this.blank.member] || this.blank;
     const valid = c.rt.kind !== Kind.Transaction &&
-      (ctx === c.record.snapshot || ctx.timestamp < c.invalidated.since) &&
+      (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (markViewed)
@@ -89,7 +89,7 @@ export class Cache extends Status<any> {
         const renewing = new CacheResult(r, c.member, c);
         r.data[renewing.member] = renewing;
         Record.markChanged(r, renewing.member, true, renewing);
-        c.invalidated.renewing = renewing;
+        c.invalid.renewing = renewing;
         c = renewing;
       }
     }
@@ -112,18 +112,18 @@ export class Cache extends Status<any> {
           c.leaveOrAsync(call.record, mon);
         }
       }, ...args);
-      c.invalidated.since = TOP_TIMESTAMP;
+      c.invalid.since = TOP_TIMESTAMP;
     }
     else {
       c.ret = Promise.reject(call.error);
-      c.invalidated.since = TOP_TIMESTAMP;
+      c.invalid.since = TOP_TIMESTAMP;
     }
     return call;
   }
 
   private static checkForReentrance(c: CacheResult): Error | undefined {
     let error: Error | undefined = undefined;
-    const prev = c.invalidated.renewing;
+    const prev = c.invalid.renewing;
     const caller = Transaction.current;
     if (prev && prev !== c)
       switch (c.rt.reentrance) {
@@ -136,7 +136,7 @@ export class Cache extends Status<any> {
           break;
         case Reentrance.CancelPrevious:
           prev.tran.cancel(new Error(`transaction T${prev.tran.id} (${prev.tran.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null);
-          c.invalidated.renewing = undefined; // allow
+          c.invalid.renewing = undefined; // allow
           break;
         case Reentrance.RunSideBySide:
           break; // do nothing
@@ -227,7 +227,7 @@ class CacheResult implements ICacheResult {
   result: any;
   error: any;
   started: number;
-  readonly invalidated: { since: number, renewing: CacheResult | undefined };
+  readonly invalid: { since: number, renewing: CacheResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
   readonly margin: number;
 
@@ -248,7 +248,7 @@ class CacheResult implements ICacheResult {
     // this.ret = undefined;
     // this.error = undefined;
     this.started = 0;
-    this.invalidated = { since: 0, renewing: undefined };
+    this.invalid = { since: 0, renewing: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
     this.margin = CacheResult.active ? CacheResult.active.margin + 1 : 1;
   }
@@ -269,7 +269,7 @@ class CacheResult implements ICacheResult {
     const latency = this.rt.latency;
     if (now || latency === -1) {
       if (!this.error && (this.rt.kind === Kind.Transaction ||
-          (timestamp >= this.invalidated.since && !this.invalidated.renewing))) {
+          (timestamp >= this.invalid.since && !this.invalid.renewing))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
@@ -397,7 +397,7 @@ class CacheResult implements ICacheResult {
         if (!existing)
           curr.observers.set(prop, mergedObservers);
         prevObservers.forEach((prevObserver: ICacheResult) => {
-          if (prevObserver.invalidated.since === TOP_TIMESTAMP) {
+          if (prevObserver.invalid.since === TOP_TIMESTAMP) {
             mergedObservers.add(prevObserver);
             if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is subscribed to {${Hint.record(curr, prop, true)}} - inherited from ${Hint.record(prev, prop, true)}.`);
           }
@@ -407,9 +407,9 @@ class CacheResult implements ICacheResult {
   }
 
   invalidateDueTo(since: number, cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): boolean {
-    const result = this.invalidated.since === TOP_TIMESTAMP || this.invalidated.since === 0;
+    const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
-      this.invalidated.since = since;
+      this.invalid.since = since;
       const isTrigger = this.rt.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (Dbg.isOn && Dbg.trace.invalidations || (this.rt.trace && this.rt.trace.invalidations)) Dbg.logAs(this.rt.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause, causeProp)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
       if (!isTrigger) {
@@ -507,8 +507,8 @@ class CacheResult implements ICacheResult {
 
   complete(error?: any): void {
     const prev = this.record.prev.record.data[this.member];
-    if (prev instanceof CacheResult && prev.invalidated.renewing === this)
-      prev.invalidated.renewing = undefined;
+    if (prev instanceof CacheResult && prev.invalid.renewing === this)
+      prev.invalid.renewing = undefined;
   }
 
   static equal(oldValue: any, newValue: any): boolean {
