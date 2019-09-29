@@ -17,13 +17,13 @@ export class Cache extends Status<any> {
   private readonly handle: Handle;
   private readonly blank: CacheResult;
 
-  get reactivity(): Reactivity { return this.read(false).cache.rt; }
+  get reactivity(): Reactivity { return this.readable(false).cache.rt; }
   configure(reactivity: Partial<Reactivity>): Reactivity { return this.reconfigure(reactivity); }
-  get args(): ReadonlyArray<any> { return this.read(true).cache.args; }
-  get stamp(): number { return this.read(true).record.snapshot.timestamp; }
-  get error(): boolean { return this.read(true).cache.error; }
+  get args(): ReadonlyArray<any> { return this.readable(true).cache.args; }
+  get stamp(): number { return this.readable(true).record.snapshot.timestamp; }
+  get error(): boolean { return this.readable(true).cache.error; }
   getResult(args?: any): any { return this.call(false, args).cache.result; }
-  get isInvalid(): boolean { return !this.read(true).valid; }
+  get isInvalid(): boolean { return !this.readable(true).valid; }
   invalidate(): void { Cache.invalidate(this); }
 
   constructor(handle: Handle, member: PropertyKey, rt: Rt) {
@@ -35,7 +35,7 @@ export class Cache extends Status<any> {
   }
 
   call(noprev: boolean, args?: any[]): CachedCall {
-    let call: CachedCall = this.read(false, args);
+    let call: CachedCall = this.readable(false, args);
     const c: CacheResult = call.cache;
     if (!call.valid && (noprev || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
@@ -45,7 +45,7 @@ export class Cache extends Status<any> {
       const ret = Transaction.runAs(hint, spawn, c.rt.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
-          call2 = this.read(false, argsx); // re-read on retry
+          call2 = this.readable(false, argsx); // re-read on retry
           if (!call2.valid)
             call2 = this.run(argsx);
         }
@@ -64,7 +64,7 @@ export class Cache extends Status<any> {
     return call;
   }
 
-  private read(markViewed: boolean, args?: any[]): CachedCall {
+  private readable(markViewed: boolean, args?: any[]): CachedCall {
     const ctx = Snapshot.readable();
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[this.blank.member] || this.blank;
@@ -77,10 +77,10 @@ export class Cache extends Status<any> {
     return { cache: c, record: r, valid };
   }
 
-  private write(): CachedCall {
+  private writable(): CachedCall {
     const ctx = Snapshot.writable();
     const member = this.blank.member;
-    const r: Record = ctx.write(this.handle, member, this);
+    const r: Record = ctx.writable(this.handle, member, this);
     let c: CacheResult = r.data[member] || this.blank;
     let error: Error | undefined = undefined;
     if (c.record !== r) {
@@ -97,7 +97,7 @@ export class Cache extends Status<any> {
   }
 
   private run(args: any[] | undefined): CachedCall {
-    const call: CachedCall = this.write();
+    const call: CachedCall = this.writable();
     const c: CacheResult = call.cache;
     if (!call.error) {
       args ? c.args = args : args = c.args;
@@ -141,19 +141,19 @@ export class Cache extends Status<any> {
   }
 
   static invalidate(self: Cache): void {
-    const call = self.write();
+    const call = self.writable();
     const c = call.cache;
     CacheResult.acquireObservableSet(c, c.member).add(call.record);
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`);
   }
 
   private reconfigure(rt: Partial<Reactivity>): Reactivity {
-    const call = this.read(false);
+    const call = this.readable(false);
     const c: CacheResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
     return Transaction.runAs(hint, false, undefined, undefined, (): Reactivity => {
-      const call2 = this.write();
+      const call2 = this.writable();
       const c2: CacheResult = call2.cache;
       c2.rt = new Rt(c2.rt.body, c2.rt, rt, false);
       if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.rt = ...`);
