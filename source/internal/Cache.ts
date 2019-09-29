@@ -380,10 +380,10 @@ class CacheResult implements ICacheResult {
             if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, prop, true));
           }
           else
-            this.invalidateDueTo(timestamp, v.record, prop, triggers);
+            this.invalidateDueTo(v.record, prop, timestamp, triggers);
         }
         else
-          this.invalidateDueTo(timestamp, r, prop, triggers);
+          this.invalidateDueTo(r, prop, timestamp, triggers);
       });
     });
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.rt.trace && this.rt.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.rt.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
@@ -406,7 +406,7 @@ class CacheResult implements ICacheResult {
     });
   }
 
-  invalidateDueTo(since: number, cause: Record, causeProp: PropertyKey, triggers: ICacheResult[]): boolean {
+  invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[]): boolean {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
@@ -420,7 +420,7 @@ class CacheResult implements ICacheResult {
           if (r.data[this.member] === this) {
             const propObservers = r.observers.get(this.member);
             if (propObservers)
-              propObservers.forEach(c => c.invalidateDueTo(since, r, this.member, triggers));
+              propObservers.forEach(c => c.invalidateDueTo(r, this.member, since, triggers));
           }
           r = r.prev.record;
         }
@@ -437,7 +437,7 @@ class CacheResult implements ICacheResult {
       r.replaced.set(prop, head);
       const propObservers = r.observers.get(prop);
       if (propObservers)
-        propObservers.forEach(c => c.invalidateDueTo(timestamp, head, prop, triggers));
+        propObservers.forEach(c => c.invalidateDueTo(head, prop, timestamp, triggers));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
