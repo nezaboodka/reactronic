@@ -39,10 +39,10 @@ export class Cache extends Status<any> {
     const c: CacheResult = call.cache;
     if (!call.valid && (noprev || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
-      const separate = noprev && c.rt.kind === Kind.Transaction ? false : true;
+      const spawn = noprev && c.rt.kind === Kind.Transaction ? false : true;
       const token = this.reactivity.kind === Kind.Cached ? this : undefined;
       let call2 = call;
-      const ret = Transaction.runAs(hint, separate, c.rt.trace, token, (argsx: any[] | undefined): any => {
+      const ret = Transaction.runAs(hint, spawn, c.rt.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(false, argsx); // re-read on retry

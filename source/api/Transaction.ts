@@ -117,8 +117,8 @@ export class Transaction {
     return Transaction.runAs(hint, false, undefined, undefined, func, ...args);
   }
 
-  static runAs<T>(hint: string, separate: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
-    const t: Transaction = Transaction.acquire(hint, separate, trace, token);
+  static runAs<T>(hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
+    const t: Transaction = Transaction.acquire(hint, spawn, trace, token);
     const root = t !== Transaction._current;
     t.guard();
     let result: any = t.do<T>(trace, func, ...args);
@@ -145,9 +145,10 @@ export class Transaction {
 
   // Internal
 
-  private static acquire(hint: string, separate: boolean, trace: Partial<Trace> | undefined, token: any): Transaction {
-    const spawn = separate || Transaction._current.isFinished();
-    return spawn ? new Transaction(hint, trace, token) : Transaction._current;
+  private static acquire(hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any): Transaction {
+    return spawn || Transaction._current.isFinished()
+      ? new Transaction(hint, trace, token)
+      : Transaction._current;
   }
 
   private guard(): void {
