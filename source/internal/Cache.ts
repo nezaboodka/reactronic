@@ -46,11 +46,15 @@ export class Cache extends Status<any> {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.readable(false, argsx); // re-read on retry
-          if (!call2.valid)
-            call2 = this.compute(argsx);
+          if (!call2.valid) {
+            call2 = this.writable();
+            call2.cache.compute(this.handle.proxy, call2.error, argsx);
+          }
         }
-        else
-          call2 = this.compute(argsx);
+        else {
+          call2 = this.writable();
+          call2.cache.compute(this.handle.proxy, call2.error, argsx);
+        }
         return call2.cache.ret;
       }, args);
       call2.cache.ret = ret;
@@ -94,19 +98,6 @@ export class Cache extends Status<any> {
       }
     }
     return { cache: c, record: r, valid: true, error };
-  }
-
-  private compute(args: any[] | undefined): CachedCall {
-    const call: CachedCall = this.writable();
-    const c: CacheResult = call.cache;
-    if (args)
-      c.args = args;
-    if (!call.error)
-      Cache.run(c, CacheResult.doCompute, this.handle.proxy, c);
-    else
-      c.ret = Promise.reject(call.error);
-    c.invalid.since = TOP_TIMESTAMP;
-    return call;
   }
 
   private static checkForReentrance(c: CacheResult): Error | undefined {
@@ -431,7 +422,17 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  static doCompute(proxy: any, c: CacheResult): void {
+  compute(proxy: any, error: Error | undefined, args: any[] | undefined): void {
+    if (args)
+      this.args = args;
+    if (!error)
+      Cache.run(this, CacheResult.computeFunc, proxy, this);
+    else
+      this.ret = Promise.reject(error);
+    this.invalid.since = TOP_TIMESTAMP;
+  }
+
+  static computeFunc(proxy: any, c: CacheResult): void {
     c.enter();
     try {
       c.ret = c.rt.body.call(proxy, ...c.args);
