@@ -86,9 +86,9 @@ export class Cache extends Status<any> {
     if (c.record !== r) {
       error = Cache.checkForReentrance(c);
       if (!error) {
-        const renewing = new CacheResult(r, c.member, c);
-        r.data[renewing.member] = renewing;
-        Record.markChanged(r, renewing.member, true, renewing);
+        const renewing = new CacheResult(r, member, c);
+        r.data[member] = renewing;
+        Record.markChanged(r, member, true, renewing);
         c.invalid.renewing = renewing;
         c = renewing;
       }
@@ -100,24 +100,20 @@ export class Cache extends Status<any> {
     const call: CachedCall = this.write();
     const c: CacheResult = call.cache;
     if (!call.error) {
-      const mon: Monitor | null = c.rt.monitor;
       args ? c.args = args : args = c.args;
       Cache.run(c, (...argsx: any[]): void => {
-        c.enter(call.record, mon);
-        try
-        {
+        c.enter(call.record);
+        try {
           c.ret = c.rt.body.call(this.handle.proxy, ...argsx);
         }
         finally {
-          c.leaveOrAsync(call.record, mon);
+          c.leaveOrAsync(call.record);
         }
       }, ...args);
-      c.invalid.since = TOP_TIMESTAMP;
     }
-    else {
+    else
       c.ret = Promise.reject(call.error);
-      c.invalid.since = TOP_TIMESTAMP;
-    }
+    c.invalid.since = TOP_TIMESTAMP;
     return call;
   }
 
@@ -199,7 +195,7 @@ export class Cache extends Status<any> {
   }
 
   static unmount(...objects: any[]): Transaction {
-    return Transaction.runAs("unmount", false,
+    return Transaction.runAs("<unmount>", false,
       undefined, undefined, Cache.runUnmount, ...objects);
   }
 
@@ -443,35 +439,35 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  enter(r: Record, mon: Monitor | null): void {
+  enter(r: Record): void {
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(r)}.${this.member.toString()} - enter`);
     this.started = Date.now();
-    this.monitorEnter(mon);
+    this.monitorEnter(this.rt.monitor);
   }
 
-  leaveOrAsync(r: Record, mon: Monitor | null): void {
+  leaveOrAsync(r: Record): void {
     if (this.ret instanceof Promise) {
       this.ret = this.ret.then(
         result => {
           this.result = result;
-          this.leave(r, mon, "▒▒", "- finished ", "   OK ──┘");
+          this.leave(r, "▒▒", "- finished ", "   OK ──┘");
           return result;
         },
         error => {
           this.error = error;
-          this.leave(r, mon, "▒▒", "- finished ", "  ERR ──┘");
+          this.leave(r, "▒▒", "- finished ", "  ERR ──┘");
           throw error;
         });
       if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(r)}.${this.member.toString()} - leave... `, 0, "ASYNC ──┐");
     }
     else {
       this.result = this.ret;
-      this.leave(r, mon, "_/", "- leave");
+      this.leave(r, "_/", "- leave");
     }
   }
 
-  private leave(r: Record, mon: Monitor | null, op: string, message: string, highlight: string | undefined = undefined): void {
-    this.monitorLeave(mon);
+  private leave(r: Record, op: string, message: string, highlight: string | undefined = undefined): void {
+    this.monitorLeave(this.rt.monitor);
     const ms: number = Date.now() - this.started;
     this.started = 0;
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(r)}.${this.member.toString()} ${message}`, ms, highlight);
