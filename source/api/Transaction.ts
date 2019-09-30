@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Dbg, misuse, error, Utils, undef, Record, ICacheResult, F, Snapshot, Hint } from '../internal/all';
-import { Trace } from './Reactivity';
+import { Trace } from './Config';
 
 export class Transaction {
   static readonly none: Transaction = new Transaction("<none>");

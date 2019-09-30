@@ -11,7 +11,7 @@ import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
 import { Record, F, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
-import { Config, Kind, Reentrance } from '../api/Reactivity';
+import { Config, Kind, Reentrance } from '../api/Config';
 import { Monitor } from '../api/Monitor';
 import { Status } from '../api/Status';
 import { Trace } from '../api/Trace';

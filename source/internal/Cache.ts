@@ -6,7 +6,7 @@
 import { Dbg, misuse, Utils, Record, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';
 export { Status, resultof, statusof } from '../api/Status';
-import { Config, Kind, Reentrance, Trace } from '../api/Reactivity';
+import { Config, Kind, Reentrance, Trace } from '../api/Config';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
