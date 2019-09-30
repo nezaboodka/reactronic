@@ -218,9 +218,9 @@ function reentrance(reentrance: Reentrance); // transactions & triggers
 function monitor(monitor: Monitor | null);
 function trace(trace: Partial<Trace>);
 
-// Reactivity, Kind, Reentrance, Monitor
+// Config, Kind, Reentrance, Monitor
 
-interface Reactivity {
+interface Config {
   readonly kind: Kind;
   readonly latency: number; // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance;
@@ -296,8 +296,8 @@ function statusof<T>(method: F<T>): Status<T>;
 function standalone<T>(func: F<T>, ...args: any[]): T;
 
 abstract class Status<T> {
-  readonly reactivity: Reactivity;
-  configure(reactivity: Partial<Reactivity>): Reactivity;
+  readonly config: config;
+  configure(config: Partial<Config>): Config;
   readonly args: ReadonlyArray<any>;
   readonly stamp: number;
   readonly error: any;

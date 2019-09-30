@@ -6,7 +6,7 @@
 import { Trace } from './Trace';
 import { F } from '../internal/Record';
 import { Hooks } from '../internal/Hooks';
-import { Reactivity, Reentrance, Kind } from './Reactivity';
+import { Config, Reentrance, Kind } from './Reactivity';
 import { Monitor } from './Monitor';
 
 export function stateful(proto: object, prop?: PropertyKey): any {
@@ -35,28 +35,28 @@ export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescri
 }
 
 export function latency(latency: number): F<any> {
-  return reactivity({latency});
+  return config({latency});
 }
 
 export function reentrance(reentrance: Reentrance): F<any> {
-  return reactivity({reentrance});
+  return config({reentrance});
 }
 
 export function monitor(monitor: Monitor | null): F<any> {
-  return reactivity({monitor});
+  return config({monitor});
 }
 
 export function trace(trace: Partial<Trace>): F<any> {
-  return reactivity({trace});
+  return config({trace});
 }
 
-function reactivity(reactivity: Partial<Reactivity>): F<any> {
+function config(config: Partial<Config>): F<any> {
   return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
     if (prop && pd)
-      return Hooks.decorateMethod(false, reactivity, proto, prop, pd); /* istanbul ignore next */
+      return Hooks.decorateMethod(false, config, proto, prop, pd); /* istanbul ignore next */
     else if (prop) /* istanbul ignore next */
-      return Hooks.decorateField(false, reactivity, proto, prop);
+      return Hooks.decorateField(false, config, proto, prop);
     else /* istanbul ignore next */
-      return Hooks.decorateClass(false, reactivity, proto);
+      return Hooks.decorateClass(false, config, proto);
   };
 }

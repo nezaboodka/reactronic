@@ -3,10 +3,10 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, Utils, Record, ICacheResult, F, Handle, Snapshot, Hint, Rt, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
+import { Dbg, misuse, Utils, Record, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Status } from '../api/Status';
 export { Status, resultof, statusof } from '../api/Status';
-import { Reactivity, Kind, Reentrance, Trace } from '../api/Reactivity';
+import { Config, Kind, Reentrance, Trace } from '../api/Reactivity';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
@@ -17,8 +17,8 @@ export class Cache extends Status<any> {
   private readonly handle: Handle;
   private readonly blank: CacheResult;
 
-  get reactivity(): Reactivity { return this.readable(true).cache.rt; }
-  configure(reactivity: Partial<Reactivity>): Reactivity { return this.reconfigure(reactivity); }
+  get config(): Config { return this.readable(true).cache.config; }
+  configure(config: Partial<Config>): Config { return this.reconfigure(config); }
   get args(): ReadonlyArray<any> { return this.readable(true).cache.args; }
   get stamp(): number { return this.readable(true).record.snapshot.timestamp; }
   get error(): boolean { return this.readable(true).cache.error; }
@@ -26,10 +26,10 @@ export class Cache extends Status<any> {
   get isInvalid(): boolean { return !this.readable(true).valid; }
   invalidate(): void { Cache.invalidate(this); }
 
-  constructor(handle: Handle, member: PropertyKey, rt: Rt) {
+  constructor(handle: Handle, member: PropertyKey, config: Cfg) {
     super();
     this.handle = handle;
-    this.blank = new CacheResult(Record.blank, member, rt);
+    this.blank = new CacheResult(Record.blank, member, config);
     CacheResult.freeze(this.blank);
     // TODO: mark cache readonly?
   }
@@ -39,10 +39,11 @@ export class Cache extends Status<any> {
     const c: CacheResult = call.cache;
     if (!call.valid && (!status || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
-      const spawn = !status && c.rt.kind === Kind.Transaction ? false : true;
-      const token = c.rt.kind === Kind.Cached ? this : undefined;
+      const cfg = c.config;
+      const spawn = !status && cfg.kind === Kind.Transaction ? false : true;
+      const token = cfg.kind === Kind.Cached ? this : undefined;
       let call2 = call;
-      const ret = Transaction.runAs(hint, spawn, c.rt.trace, token, (argsx: any[] | undefined): any => {
+      const ret = Transaction.runAs(hint, spawn, cfg.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.readable(false, argsx); // re-read on retry
@@ -63,7 +64,7 @@ export class Cache extends Status<any> {
         call = call2;
     }
     else
-      if (Dbg.isOn && Dbg.trace.methods && (c.rt.trace === undefined || c.rt.trace.methods === undefined || c.rt.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`);
+      if (Dbg.isOn && Dbg.trace.methods && (c.config.trace === undefined || c.config.trace.methods === undefined || c.config.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`);
     Record.markViewed(call.record, call.cache.member, status);
     return call;
   }
@@ -72,7 +73,7 @@ export class Cache extends Status<any> {
     const ctx = Snapshot.readable();
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[this.blank.member] || this.blank;
-    const valid = c.rt.kind !== Kind.Transaction &&
+    const valid = c.config.kind !== Kind.Transaction &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
@@ -105,7 +106,7 @@ export class Cache extends Status<any> {
     const prev = c.invalid.renewing;
     const caller = Transaction.current;
     if (prev && prev !== c)
-      switch (c.rt.reentrance) {
+      switch (c.config.reentrance) {
         case Reentrance.PreventWithError:
           throw misuse(`${c.hint()} is configured as non-reentrant`);
         case Reentrance.WaitAndRestart:
@@ -130,17 +131,17 @@ export class Cache extends Status<any> {
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`);
   }
 
-  private reconfigure(rt: Partial<Reactivity>): Reactivity {
+  private reconfigure(config: Partial<Config>): Config {
     const call = this.readable(false);
     const c: CacheResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
-    return Transaction.runAs(hint, false, undefined, undefined, (): Reactivity => {
+    return Transaction.runAs(hint, false, undefined, undefined, (): Config => {
       const call2 = this.writable();
       const c2: CacheResult = call2.cache;
-      c2.rt = new Rt(c2.rt.body, c2.rt, rt, false);
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.rt = ...`);
-      return c2.rt;
+      c2.config = new Cfg(c2.config.body, c2.config, config, false);
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
+      return c2.config;
     });
   }
 
@@ -162,8 +163,8 @@ export class Cache extends Status<any> {
     return result;
   }
 
-  static createCacheTrap(h: Handle, prop: PropertyKey, rt: Rt): F<any> {
-    const cache = new Cache(h, prop, rt);
+  static createCacheTrap(h: Handle, prop: PropertyKey, config: Cfg): F<any> {
+    const cache = new Cache(h, prop, config);
     const cacheTrap: F<any> = (...args: any[]): any =>
       cache.call(false, args).cache.ret;
     Utils.set(cacheTrap, RT_CACHE, cache);
@@ -200,7 +201,7 @@ class CacheResult implements ICacheResult {
   readonly tran: Transaction;
   readonly record: Record;
   readonly member: PropertyKey;
-  rt: Rt;
+  config: Cfg;
   args: any[];
   ret: any;
   value: any;
@@ -211,17 +212,17 @@ class CacheResult implements ICacheResult {
   readonly statusObservables: Map<PropertyKey, Set<Record>>;
   readonly margin: number;
 
-  constructor(record: Record, member: PropertyKey, init: CacheResult | Rt) {
+  constructor(record: Record, member: PropertyKey, init: CacheResult | Cfg) {
     this.tran = Transaction.current;
     this.record = record;
     this.member = member;
     if (init instanceof CacheResult) {
-      this.rt = init.rt;
+      this.config = init.config;
       this.args = init.args;
       // this.value = init.value;
     }
-    else { // init instanceof Rx
-      this.rt = init;
+    else { // init instanceof Config
+      this.config = init;
       this.args = [];
       // this.value = undefined;
     }
@@ -247,9 +248,9 @@ class CacheResult implements ICacheResult {
   }
 
   renew(timestamp: number, now: boolean, nothrow: boolean): void {
-    const latency = this.rt.latency;
+    const latency = this.config.latency;
     if (now || latency === -1) {
-      if (!this.error && (this.rt.kind === Kind.Transaction ||
+      if (!this.error && (this.config.kind === Kind.Transaction ||
           (timestamp >= this.invalid.since && !this.invalid.renewing))) {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
@@ -286,7 +287,7 @@ class CacheResult implements ICacheResult {
 
   static markViewed(r: Record, prop: PropertyKey, status: boolean): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
-    if (c && c.rt.kind !== Kind.Transaction && prop !== RT_HANDLE) {
+    if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.readable().bumpReadStamp(r);
       CacheResult.acquireObservableSet(c, prop, status).add(r);
       if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  ${status ? 's' : 'r'} `, `${c.hint()} ${status ? 'gets status of' : 'uses'} ${Hint.record(r, prop)}`);
@@ -381,7 +382,7 @@ class CacheResult implements ICacheResult {
           this.invalidateDueTo(r, prop, timestamp, triggers);
       });
     });
-    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.rt.trace && this.rt.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.rt.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
   static mergeObservers(curr: Record, prev: Record): void {
@@ -405,8 +406,9 @@ class CacheResult implements ICacheResult {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
-      const isTrigger = this.rt.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.rt.trace && this.rt.trace.invalidations)) Dbg.logAs(this.rt.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause, causeProp)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
+      const cfg = this.config;
+      const isTrigger = cfg.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      if (Dbg.isOn && Dbg.trace.invalidations || (cfg.trace && cfg.trace.invalidations)) Dbg.logAs(cfg.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause, causeProp)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
       if (!isTrigger) {
         // Invalidate outer observers (cascade)
         const h: Handle = Utils.get(this.record.data, RT_HANDLE);
@@ -451,7 +453,7 @@ class CacheResult implements ICacheResult {
   static computeFunc(proxy: any, c: CacheResult): void {
     c.enter();
     try {
-      c.ret = c.rt.body.call(proxy, ...c.args);
+      c.ret = c.config.body.call(proxy, ...c.args);
     }
     finally {
       c.leaveOrAsync();
@@ -461,8 +463,8 @@ class CacheResult implements ICacheResult {
   enter(): void {
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.member)} - enter`);
     this.started = Date.now();
-    if (this.rt.monitor)
-      this.monitorEnter(this.rt.monitor);
+    if (this.config.monitor)
+      this.monitorEnter(this.config.monitor);
   }
 
   leaveOrAsync(): void {
@@ -487,8 +489,8 @@ class CacheResult implements ICacheResult {
   }
 
   private leave(op: string, message: string, highlight: string | undefined = undefined): void {
-    if (this.rt.monitor)
-      this.monitorLeave(this.rt.monitor);
+    if (this.config.monitor)
+      this.monitorLeave(this.config.monitor);
     const ms: number = Date.now() - this.started;
     this.started = 0;
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.member)} ${message}`, ms, highlight);
@@ -522,7 +524,7 @@ class CacheResult implements ICacheResult {
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CacheResult)
-      result = oldValue.rt.kind === Kind.Transaction;
+      result = oldValue.config.kind === Kind.Transaction;
     else
       result = oldValue === newValue;
     return result;
