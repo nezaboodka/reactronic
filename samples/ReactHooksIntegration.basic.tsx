@@ -4,11 +4,15 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { Stateful, stateless, trigger, cached, statusof, outside, Transaction, Status } from 'reactronic';
+import { Stateful, stateless, trigger, cached, statusof, standalone, Transaction, Status } from 'reactronic';
 
 type ReactState = { rx: Rx; };
 
 export function reactiveRender(render: () => JSX.Element): JSX.Element {
+  return standalone(reactiveRenderFunc, render);
+}
+
+function reactiveRenderFunc(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState);
   const rx = state.rx;
   rx.refresh = refresh; // just in case React will change refresh on each rendering
@@ -25,7 +29,7 @@ class Rx extends Stateful {
   @trigger
   keepfresh(): void {
     if (statusof(this.jsx).isInvalid)
-      outside(this.refresh, {rx: this});
+      this.refresh({rx: this});
   }
 
   @stateless refresh: (next: ReactState) => void = nop;

@@ -19,7 +19,7 @@ export function nonreactive<T>(func: F<T>, ...args: any[]): T {
   return Cache.run<T>(undefined, func, ...args);
 }
 
-export function outside<T>(func: F<T>, ...args: any[]): T {
+export function standalone<T>(func: F<T>, ...args: any[]): T {
   return Cache.run<T>(undefined, Transaction.outside, func, ...args);
 }
 

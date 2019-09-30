@@ -293,7 +293,7 @@ class Transaction {
 
 function resultof<T>(method: F<Promise<T>>, args?: any[]): T | undefined;
 function statusof<T>(method: F<T>): Status<T>;
-function outside<T>(func: F<T>, ...args: any[]): T;
+function standalone<T>(func: F<T>, ...args: any[]): T;
 
 abstract class Status<T> {
   readonly reactivity: Reactivity;

@@ -4,11 +4,15 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { Stateful, stateless, trigger, cached, statusof, outside, Transaction, Status, Trace } from 'reactronic';
+import { Stateful, stateless, trigger, cached, statusof, standalone, Transaction, Status, Trace } from 'reactronic';
 
 type ReactState = { rx: Rx; counter: number; };
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
+  return standalone(reactiveRenderFunc, render, trace);
+}
+
+function reactiveRenderFunc(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(!trace ? createReactState : () => createReactState(trace));
   const rx = state.rx;
   rx.counter = state.counter;
@@ -26,7 +30,7 @@ class Rx extends Stateful {
   @trigger
   keepfresh(): void {
     if (statusof(this.jsx).isInvalid)
-      outside(this.refresh, {rx: this, counter: this.counter + 1});
+      this.refresh({rx: this, counter: this.counter + 1});
   }
 
   @stateless counter: number = 0;
