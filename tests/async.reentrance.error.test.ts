@@ -18,8 +18,8 @@ const expected: string[] = [
   "Log: RTA",
   "[...] Url: reactronic",
   "[...] Log: RTA",
-  "Url: reactronic",
-  "Log: RTA",
+  "[...] Url: nezaboodka.com",
+  "[...] Log: RTA, nezaboodka.com/500",
   "Url: nezaboodka.com",
   "Log: RTA, nezaboodka.com/500",
 ];
@@ -55,7 +55,7 @@ test("async", async t => {
       console.log(x);
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (Status.isTraceOn && !Status.trace.silent) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
+    if (Status.isTraceOn && !Status.trace.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`);
     t.is(output[i], expected[i]);
   }
 });

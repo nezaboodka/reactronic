@@ -20,7 +20,7 @@ const expected: string[] = [
   "[...] Log: RTA",
   "[...] Url: nezaboodka.com",
   "[...] Log: RTA, nezaboodka.com/100",
-  "Error: transaction T112 (#22˙DemoModel.load/microsoft.com) conflicts with other transactions on: #22v110˙DemoModel.url, #22v110˙DemoModel.log",
+  "Error: transaction T112 (#22˙DemoModel.load/microsoft.com) conflicts with other transactions on: #22v109˙DemoModel.url, #22v109˙DemoModel.log",
   "Url: nezaboodka.com",
   "Log: RTA, nezaboodka.com/100",
 ];
@@ -53,7 +53,7 @@ test("async", async t => {
       console.log(x);
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (Status.isTraceOn && !Status.trace.silent) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
+    if (Status.isTraceOn && !Status.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`);
     t.is(output[i], expected[i]);
   }
 });

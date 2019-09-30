@@ -17,12 +17,12 @@ export class Cache extends Status<any> {
   private readonly handle: Handle;
   private readonly blank: CacheResult;
 
-  get reactivity(): Reactivity { return this.readable(false).cache.rt; }
+  get reactivity(): Reactivity { return this.readable(true).cache.rt; }
   configure(reactivity: Partial<Reactivity>): Reactivity { return this.reconfigure(reactivity); }
   get args(): ReadonlyArray<any> { return this.readable(true).cache.args; }
   get stamp(): number { return this.readable(true).record.snapshot.timestamp; }
   get error(): boolean { return this.readable(true).cache.error; }
-  getResult(args?: any): any { return this.call(false, args).cache.result; }
+  getResult(args?: any): any { return this.call(true, args).cache.result; }
   get isInvalid(): boolean { return !this.readable(true).valid; }
   invalidate(): void { Cache.invalidate(this); }
 
@@ -34,13 +34,13 @@ export class Cache extends Status<any> {
     // TODO: mark cache readonly?
   }
 
-  call(noprev: boolean, args?: any[]): CachedCall {
+  call(status: boolean, args?: any[]): CachedCall {
     let call: CachedCall = this.readable(false, args);
     const c: CacheResult = call.cache;
-    if (!call.valid && (noprev || !c.invalid.renewing)) {
+    if (!call.valid && (!status || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
-      const spawn = noprev && c.rt.kind === Kind.Transaction ? false : true;
-      const token = this.reactivity.kind === Kind.Cached ? this : undefined;
+      const spawn = !status && c.rt.kind === Kind.Transaction ? false : true;
+      const token = c.rt.kind === Kind.Cached ? this : undefined;
       let call2 = call;
       const ret = Transaction.runAs(hint, spawn, c.rt.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
@@ -59,16 +59,16 @@ export class Cache extends Status<any> {
       }, args);
       call2.cache.ret = ret;
       // TODO: Get rid of noprev
-      if (noprev && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
+      if (!status && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
         call = call2;
     }
     else
       if (Dbg.isOn && Dbg.trace.methods && (c.rt.trace === undefined || c.rt.trace.methods === undefined || c.rt.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`);
-    Record.markViewed(call.record, call.cache.member);
+    Record.markViewed(call.record, call.cache.member, status);
     return call;
   }
 
-  private readable(markViewed: boolean, args?: any[]): CachedCall {
+  private readable(status: boolean, args?: any[]): CachedCall {
     const ctx = Snapshot.readable();
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[this.blank.member] || this.blank;
@@ -76,8 +76,8 @@ export class Cache extends Status<any> {
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
-    if (markViewed)
-      Record.markViewed(r, c.member);
+    if (status)
+      Record.markViewed(r, c.member, true);
     return { cache: c, record: r, valid };
   }
 
@@ -126,7 +126,7 @@ export class Cache extends Status<any> {
   static invalidate(self: Cache): void {
     const call = self.writable();
     const c = call.cache;
-    CacheResult.acquireObservableSet(c, c.member).add(call.record);
+    CacheResult.acquireObservableSet(c, c.member, false).add(call.record);
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`);
   }
 
@@ -165,7 +165,7 @@ export class Cache extends Status<any> {
   static createCacheTrap(h: Handle, prop: PropertyKey, rt: Rt): F<any> {
     const cache = new Cache(h, prop, rt);
     const cacheTrap: F<any> = (...args: any[]): any =>
-      cache.call(true, args).cache.ret;
+      cache.call(false, args).cache.ret;
     Utils.set(cacheTrap, RT_CACHE, cache);
     return cacheTrap;
   }
@@ -208,6 +208,7 @@ class CacheResult implements ICacheResult {
   started: number;
   readonly invalid: { since: number, renewing: CacheResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
+  readonly statusObservables: Map<PropertyKey, Set<Record>>;
   readonly margin: number;
 
   constructor(record: Record, member: PropertyKey, init: CacheResult | Rt) {
@@ -229,6 +230,7 @@ class CacheResult implements ICacheResult {
     this.started = 0;
     this.invalid = { since: 0, renewing: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
+    this.statusObservables = new Map<PropertyKey, Set<Record>>();
     this.margin = CacheResult.active ? CacheResult.active.margin + 1 : 1;
   }
 
@@ -253,7 +255,7 @@ class CacheResult implements ICacheResult {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
           const cache: Cache = Utils.get(trap, RT_CACHE);
-          const call: CachedCall = cache.call(true);
+          const call: CachedCall = cache.call(false);
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
         }
@@ -282,12 +284,12 @@ class CacheResult implements ICacheResult {
       t.renew(TOP_TIMESTAMP, true, true);
   }
 
-  static markViewed(r: Record, prop: PropertyKey): void {
+  static markViewed(r: Record, prop: PropertyKey, status: boolean): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.rt.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.readable().bumpReadStamp(r);
-      CacheResult.acquireObservableSet(c, prop).add(r);
-      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint()} uses ${Hint.record(r, prop)}`);
+      CacheResult.acquireObservableSet(c, prop, status).add(r);
+      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  ${status ? 's' : 'r'} `, `${c.hint()} ${status ? 'gets status of' : 'uses'} ${Hint.record(r, prop)}`);
     }
   }
 
@@ -341,10 +343,14 @@ class CacheResult implements ICacheResult {
     return propObservers;
   }
 
-  static acquireObservableSet(c: CacheResult, prop: PropertyKey): Set<Record> {
-    let result: Set<Record> | undefined = c.observables.get(prop);
-    if (!result)
-      c.observables.set(prop, result = new Set<Record>());
+  static acquireObservableSet(c: CacheResult, prop: PropertyKey, status: boolean): Set<Record> {
+    let result = status ? c.statusObservables.get(prop) : c.observables.get(prop);
+    if (!result) {
+      if (status)
+        c.statusObservables.set(prop, result = new Set<Record>());
+      else
+        c.observables.set(prop, result = new Set<Record>());
+    }
     return result;
   }
 
@@ -354,12 +360,22 @@ class CacheResult implements ICacheResult {
       records.forEach(r => {
         if (!r.replaced.has(prop)) {
           const v = r.data[prop];
-          if (v instanceof CacheResult === false || timestamp < v.invalid.since || (readstamp > v.invalid.since && v.invalid.since !== 0)) {
+          if (!(v instanceof CacheResult) || timestamp < v.invalid.since /*|| (readstamp > v.invalid.since && v.invalid.since !== 0)*/) {
             CacheResult.acquireObserverSet(r, prop).add(this); // now subscribed
             if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, prop, true));
           }
           else
             this.invalidateDueTo(v.record, prop, timestamp, triggers);
+        }
+        else
+          this.invalidateDueTo(r, prop, timestamp, triggers);
+      });
+    });
+    this.statusObservables.forEach((records: Set<Record>, prop: PropertyKey) => {
+      records.forEach(r => {
+        if (!r.replaced.has(prop)) {
+          CacheResult.acquireObserverSet(r, prop).add(this); // now subscribed
+          if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, prop, true));
         }
         else
           this.invalidateDueTo(r, prop, timestamp, triggers);

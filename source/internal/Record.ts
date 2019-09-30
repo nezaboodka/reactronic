@@ -36,7 +36,7 @@ export class Record {
   };
 
   /* istanbul ignore next */
-  static markViewed = function(r: Record, prop: PropertyKey): void {
+  static markViewed = function(r: Record, prop: PropertyKey, status: boolean): void {
     return undef(); // to be redefined by Cache implementation
   };
 

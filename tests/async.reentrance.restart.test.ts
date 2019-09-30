@@ -18,16 +18,20 @@ const expected: string[] = [
   "Log: RTA",
   "[...] Url: reactronic",
   "[...] Log: RTA",
-  "Url: reactronic",
-  "Log: RTA",
   "[...] Url: google.com",
   "[...] Log: RTA, google.com/300",
   "Url: google.com",
   "Log: RTA, google.com/300",
+  "[...] Url: google.com",
+  "[...] Log: RTA, google.com/300",
   "[...] Url: microsoft.com",
   "[...] Log: RTA, google.com/300, microsoft.com/200",
   "Url: microsoft.com",
   "Log: RTA, google.com/300, microsoft.com/200",
+  "[...] Url: microsoft.com",
+  "[...] Log: RTA, google.com/300, microsoft.com/200",
+  "[...] Url: nezaboodka.com",
+  "[...] Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500",
   "Url: nezaboodka.com",
   "Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500",
 ];
@@ -63,7 +67,7 @@ test("async", async t => {
   }
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (Status.isTraceOn && !Status.trace.silent) console.log(`actual[${i}] = ${output[i]}, expected[${i}] = ${expected[i]}`);
+    if (Status.isTraceOn && !Status.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`);
     t.is(output[i], expected[i]);
   }
 });
