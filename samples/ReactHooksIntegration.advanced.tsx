@@ -48,17 +48,18 @@ function createReactState(trace?: Partial<Trace>): ReactState {
     : trace !== undefined && trace.hints === true;
   const hint = dbg ? getComponentName() : "<rx>";
   const rx = Transaction.runAs<Rx>(hint, false, trace, undefined, createRx, hint, trace);
+  return {rx, counter: 0};
+}
+
+function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
+  const rx = new Rx();
   if (hint)
     Status.setTraceHint(rx, hint);
   if (trace) {
     statusof(rx.jsx).configure({trace});
     statusof(rx.keepfresh).configure({trace});
   }
-  return {rx, counter: 0};
-}
-
-function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
-  return new Rx();
+  return rx;
 }
 
 function nop(...args: any[]): void {
@@ -66,8 +67,10 @@ function nop(...args: any[]): void {
 }
 
 function getComponentName(): string {
+  const restore = Error.stackTraceLimit = 20;
   const error = new Error();
   const stack = error.stack || "";
+  Error.stackTraceLimit = restore;
   const lines = stack.split("\n");
   const i = lines.findIndex(x => x.indexOf(".reactiveRender") >= 0) || 6;
   let result: string = lines[i + 1] || "";
