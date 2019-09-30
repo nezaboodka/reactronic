@@ -11,7 +11,7 @@ import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER;
-type CachedCall = { cache: CacheResult, record: Record, valid: boolean, error?: Error };
+type CacheCall = { valid: boolean, cache: CacheResult, record: Record, error?: Error };
 
 export class Cache extends Status<any> {
   private readonly handle: Handle;
@@ -22,7 +22,7 @@ export class Cache extends Status<any> {
   get args(): ReadonlyArray<any> { return this.readable(true).cache.args; }
   get stamp(): number { return this.readable(true).record.snapshot.timestamp; }
   get error(): boolean { return this.readable(true).cache.error; }
-  getResult(args?: any): any { return this.call(true, args).cache.result; }
+  getResult(args?: any): any { return this.call(true, args).cache.value; }
   get isInvalid(): boolean { return !this.readable(true).valid; }
   invalidate(): void { Cache.invalidate(this); }
 
@@ -34,8 +34,8 @@ export class Cache extends Status<any> {
     // TODO: mark cache readonly?
   }
 
-  call(status: boolean, args?: any[]): CachedCall {
-    let call: CachedCall = this.readable(false, args);
+  call(status: boolean, args?: any[]): CacheCall {
+    let call: CacheCall = this.readable(false, args);
     const c: CacheResult = call.cache;
     if (!call.valid && (!status || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
@@ -68,7 +68,7 @@ export class Cache extends Status<any> {
     return call;
   }
 
-  private readable(status: boolean, args?: any[]): CachedCall {
+  private readable(status: boolean, args?: any[]): CacheCall {
     const ctx = Snapshot.readable();
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[this.blank.member] || this.blank;
@@ -78,10 +78,10 @@ export class Cache extends Status<any> {
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
     if (status)
       Record.markViewed(r, c.member, true);
-    return { cache: c, record: r, valid };
+    return { valid, cache: c, record: r };
   }
 
-  private writable(): CachedCall {
+  private writable(): CacheCall {
     const ctx = Snapshot.writable();
     const member = this.blank.member;
     const r: Record = ctx.writable(this.handle, member, this);
@@ -97,7 +97,7 @@ export class Cache extends Status<any> {
         c = renewing;
       }
     }
-    return { cache: c, record: r, valid: true, error };
+    return { valid: true, cache: c, record: r, error };
   }
 
   private static checkForReentrance(c: CacheResult): Error | undefined {
@@ -203,7 +203,7 @@ class CacheResult implements ICacheResult {
   rt: Rt;
   args: any[];
   ret: any;
-  result: any;
+  value: any;
   error: any;
   started: number;
   readonly invalid: { since: number, renewing: CacheResult | undefined };
@@ -218,12 +218,12 @@ class CacheResult implements ICacheResult {
     if (init instanceof CacheResult) {
       this.rt = init.rt;
       this.args = init.args;
-      // this.result = init.result;
+      // this.value = init.value;
     }
     else { // init instanceof Rx
       this.rt = init;
       this.args = [];
-      // this.result = undefined;
+      // this.value = undefined;
     }
     // this.ret = undefined;
     // this.error = undefined;
@@ -255,7 +255,7 @@ class CacheResult implements ICacheResult {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
           const cache: Cache = Utils.get(trap, RT_CACHE);
-          const call: CachedCall = cache.call(false);
+          const call: CacheCall = cache.call(false);
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
         }
@@ -468,10 +468,10 @@ class CacheResult implements ICacheResult {
   leaveOrAsync(): void {
     if (this.ret instanceof Promise) {
       this.ret = this.ret.then(
-        result => {
-          this.result = result;
+        value => {
+          this.value = value;
           this.leave(" ▒", "- finished ", "   OK ──┘");
-          return result;
+          return value;
         },
         error => {
           this.error = error;
@@ -481,7 +481,7 @@ class CacheResult implements ICacheResult {
       if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(this.record, this.member)} - leave... `, 0, "ASYNC ──┐");
     }
     else {
-      this.result = this.ret;
+      this.value = this.ret;
       this.leave("_/", "- leave");
     }
   }
