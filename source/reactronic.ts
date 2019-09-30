@@ -8,5 +8,5 @@ export { Config as Reactivity, Kind, Reentrance, Trace } from './api/Config';
 export { Stateful } from './internal/Hooks';
 export { stateless, stateful, transaction, trigger, cached, latency, reentrance, monitor, trace } from './api/Config.decorators';
 export { Transaction } from './api/Transaction';
-export { Cache, cacheof, resultof, nonreactive, standalone } from './api/Cache';
+export { Cache, cacheof, resolved, nonreactive, standalone } from './api/Cache';
 export { Monitor, Worker } from './api/Monitor';

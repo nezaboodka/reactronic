@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava';
-import { Transaction, Reentrance, Cache, resultof, cacheof, sleep } from '../source/reactronic';
+import { Transaction, Reentrance, Cache, resolved, cacheof, sleep } from '../source/reactronic';
 import { DemoModel, DemoView, mon, output, tracing } from './async';
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -45,7 +45,7 @@ test("async", async t => {
   finally {
     t.is(mon.counter, 0);
     t.is(mon.workers.size, 0);
-    const r = resultof(app.render);
+    const r = resolved(app.render);
     t.is(r && r.length, 2);
     await sleep(400);
     await Cache.unmount(app, app.model).whenFinished(true);

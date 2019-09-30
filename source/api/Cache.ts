@@ -11,7 +11,7 @@ export function cacheof<T>(method: F<T>): Cache<T> {
   return Cache.of<T>(method);
 }
 
-export function resultof<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
+export function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
   return (cacheof(method) as any).call(args);
 }
 
