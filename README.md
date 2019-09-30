@@ -306,7 +306,7 @@ abstract class Cache<T> {
   invalidate(cause: string | undefined): boolean;
   call(args?: any[]): T | undefined;
 
-  static get<T>(method: F<T>): Status<T>;
+  static of<T>(method: F<T>): Cache<T>;
   static unmount(...objects: any[]): Transaction;
 
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void;

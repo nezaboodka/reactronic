@@ -18,12 +18,12 @@ export class CacheImpl extends Cache<any> {
   private readonly blank: CacheResult;
 
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
-  get config(): Config { return this.status().cache.config; }
-  get stamp(): number { return this.status().record.snapshot.timestamp; }
-  get args(): ReadonlyArray<any> { return this.status().cache.args; }
+  get config(): Config { return this.weak().cache.config; }
+  get stamp(): number { return this.weak().record.snapshot.timestamp; }
+  get args(): ReadonlyArray<any> { return this.weak().cache.args; }
   get value(): any { return this._call(true).cache.value; }
-  get error(): boolean { return this.status().cache.error; }
-  get isInvalid(): boolean { return !this.status().valid; }
+  get error(): boolean { return this.weak().cache.error; }
+  get isInvalid(): boolean { return !this.weak().valid; }
   invalidate(): void { CacheImpl.invalidate(this); }
   call(args?: any): any { return this._call(true, args).cache.value; }
 
@@ -35,13 +35,13 @@ export class CacheImpl extends Cache<any> {
     // TODO: mark cache readonly?
   }
 
-  _call(status: boolean, args?: any[]): CacheCall {
+  _call(weak: boolean, args?: any[]): CacheCall {
     let call: CacheCall = this.readable(args);
     const c: CacheResult = call.cache;
-    if (!call.valid && (!status || !c.invalid.renewing)) {
+    if (!call.valid && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
       const cfg = c.config;
-      const spawn = status || cfg.kind !== Kind.Transaction;
+      const spawn = weak || cfg.kind !== Kind.Transaction;
       const token = cfg.kind === Kind.Cached ? this : undefined;
       let call2 = call;
       const ret = Transaction.runAs(hint, spawn, cfg.trace, token, (argsx: any[] | undefined): any => {
@@ -61,16 +61,16 @@ export class CacheImpl extends Cache<any> {
       }, args);
       call2.cache.ret = ret;
       // TODO: Get rid of noprev
-      if (!status && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
+      if (!weak && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
         call = call2;
     }
     else
       if (Dbg.isOn && Dbg.trace.methods && (c.config.trace === undefined || c.config.trace.methods === undefined || c.config.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`);
-    Record.markViewed(call.record, call.cache.member, status);
+    Record.markViewed(call.record, call.cache.member, weak);
     return call;
   }
 
-  private status(): CacheCall {
+  private weak(): CacheCall {
     const call = this.readable(undefined);
     Record.markViewed(call.record, call.cache.member, true);
     return call;
@@ -212,7 +212,7 @@ class CacheResult implements ICacheResult {
   started: number;
   readonly invalid: { since: number, renewing: CacheResult | undefined };
   readonly observables: Map<PropertyKey, Set<Record>>;
-  readonly statusObservables: Map<PropertyKey, Set<Record>>;
+  readonly weakObservables: Map<PropertyKey, Set<Record>>;
   readonly margin: number;
 
   constructor(record: Record, member: PropertyKey, init: CacheResult | Cfg) {
@@ -234,7 +234,7 @@ class CacheResult implements ICacheResult {
     this.started = 0;
     this.invalid = { since: 0, renewing: undefined };
     this.observables = new Map<PropertyKey, Set<Record>>();
-    this.statusObservables = new Map<PropertyKey, Set<Record>>();
+    this.weakObservables = new Map<PropertyKey, Set<Record>>();
     this.margin = CacheResult.active ? CacheResult.active.margin + 1 : 1;
   }
 
@@ -288,12 +288,12 @@ class CacheResult implements ICacheResult {
       t.renew(TOP_TIMESTAMP, true, true);
   }
 
-  static markViewed(r: Record, prop: PropertyKey, status: boolean): void {
+  static markViewed(r: Record, prop: PropertyKey, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.readable().bumpReadStamp(r);
-      CacheResult.acquireObservableSet(c, prop, status).add(r);
-      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  ${status ? 's' : 'r'} `, `${c.hint()} ${status ? 'gets status of' : 'uses'} ${Hint.record(r, prop)}`);
+      CacheResult.acquireObservableSet(c, prop, weak).add(r);
+      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  ${weak ? 's' : 'r'} `, `${c.hint()} ${weak ? 'weakly uses' : 'uses'} ${Hint.record(r, prop)}`);
     }
   }
 
@@ -347,11 +347,11 @@ class CacheResult implements ICacheResult {
     return propObservers;
   }
 
-  static acquireObservableSet(c: CacheResult, prop: PropertyKey, status: boolean): Set<Record> {
-    let result = status ? c.statusObservables.get(prop) : c.observables.get(prop);
+  static acquireObservableSet(c: CacheResult, prop: PropertyKey, weak: boolean): Set<Record> {
+    let result = weak ? c.weakObservables.get(prop) : c.observables.get(prop);
     if (!result) {
-      if (status)
-        c.statusObservables.set(prop, result = new Set<Record>());
+      if (weak)
+        c.weakObservables.set(prop, result = new Set<Record>());
       else
         c.observables.set(prop, result = new Set<Record>());
     }
@@ -375,7 +375,7 @@ class CacheResult implements ICacheResult {
           this.invalidateDueTo(r, prop, timestamp, triggers);
       });
     });
-    this.statusObservables.forEach((records: Set<Record>, prop: PropertyKey) => {
+    this.weakObservables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
         if (!r.replaced.has(prop)) {
           CacheResult.acquireObserverSet(r, prop).add(this); // now subscribed
@@ -535,7 +535,7 @@ class CacheResult implements ICacheResult {
 
   static freeze(c: CacheResult): void {
     // Utils.freezeMap(c.observables);
-    // Utils.freezeSet(c.statusObservables);
+    // Utils.freezeSet(c.weakObservables);
     Object.freeze(c);
   }
 
