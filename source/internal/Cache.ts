@@ -17,13 +17,13 @@ export class Cache extends Status<any> {
   private readonly handle: Handle;
   private readonly blank: CacheResult;
 
-  get config(): Config { return this.readable(true).cache.config; }
+  get config(): Config { return this.status().cache.config; }
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
-  get args(): ReadonlyArray<any> { return this.readable(true).cache.args; }
-  get stamp(): number { return this.readable(true).record.snapshot.timestamp; }
-  get error(): boolean { return this.readable(true).cache.error; }
+  get args(): ReadonlyArray<any> { return this.status().cache.args; }
+  get stamp(): number { return this.status().record.snapshot.timestamp; }
+  get error(): boolean { return this.status().cache.error; }
   getResult(args?: any): any { return this.call(true, args).cache.value; }
-  get isInvalid(): boolean { return !this.readable(true).valid; }
+  get isInvalid(): boolean { return !this.status().valid; }
   invalidate(): void { Cache.invalidate(this); }
 
   constructor(handle: Handle, member: PropertyKey, config: Cfg) {
@@ -35,7 +35,7 @@ export class Cache extends Status<any> {
   }
 
   call(status: boolean, args?: any[]): CacheCall {
-    let call: CacheCall = this.readable(false, args);
+    let call: CacheCall = this.readable(args);
     const c: CacheResult = call.cache;
     if (!call.valid && (!status || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
@@ -46,7 +46,7 @@ export class Cache extends Status<any> {
       const ret = Transaction.runAs(hint, spawn, cfg.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
-          call2 = this.readable(false, argsx); // re-read on retry
+          call2 = this.readable(argsx); // re-read on retry
           if (!call2.valid) {
             call2 = this.writable();
             call2.cache.compute(this.handle.proxy, call2.error, argsx);
@@ -69,7 +69,13 @@ export class Cache extends Status<any> {
     return call;
   }
 
-  private readable(status: boolean, args?: any[]): CacheCall {
+  private status(): CacheCall {
+    const call = this.readable(undefined);
+    Record.markViewed(call.record, call.cache.member, true);
+    return call;
+  }
+
+  private readable(args?: any[]): CacheCall {
     const ctx = Snapshot.readable();
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[this.blank.member] || this.blank;
@@ -77,8 +83,6 @@ export class Cache extends Status<any> {
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (args === undefined || c.args[0] === args[0]) ||
       r.data[RT_UNMOUNT] === RT_UNMOUNT;
-    if (status)
-      Record.markViewed(r, c.member, true);
     return { valid, cache: c, record: r };
   }
 
@@ -132,7 +136,7 @@ export class Cache extends Status<any> {
   }
 
   private reconfigure(config: Partial<Config>): Config {
-    const call = this.readable(false);
+    const call = this.readable();
     const c: CacheResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
