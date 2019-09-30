@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava';
-import { Transaction, Kind, Status, statusof, nonreactive } from '../source/reactronic';
+import { Transaction, Kind, Status, statusof, nonreactive, standalone } from '../source/reactronic';
 import { Person, tracing, nop } from './common';
 import { DemoModel, DemoView, output } from './basic';
 
@@ -50,6 +50,7 @@ test("basic", t => {
       t.is(daddy.name, "John Smith");
       t.is(daddy.age, 40);
       t.is(Transaction.outside(() => daddy.age), 38);
+      t.is(standalone(() => daddy.age), 38);
       t.is(nonreactive(() => daddy.age), 40);
       t.is(daddy.children.length, 3);
       app.userFilter = "Jo"; // set to the same value

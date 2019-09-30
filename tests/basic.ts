@@ -3,13 +3,13 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, transaction, trigger, cached } from '../source/reactronic';
+import { Stateful, stateless, transaction, trigger, cached, trace } from '../source/reactronic';
 import { Person } from './common';
 
 export const output: string[] = [];
 
 export class StatefulDemoModelBase extends Stateful {
-  @cached
+  @cached @trace({})
   methodOfStatefulBase(): string {
     return 'methodOfStatefulBase';
   }
