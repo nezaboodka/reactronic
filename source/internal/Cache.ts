@@ -461,7 +461,8 @@ class CacheResult implements ICacheResult {
   enter(): void {
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.member)} - enter`);
     this.started = Date.now();
-    this.monitorEnter(this.rt.monitor);
+    if (this.rt.monitor)
+      this.monitorEnter(this.rt.monitor);
   }
 
   leaveOrAsync(): void {
@@ -486,7 +487,8 @@ class CacheResult implements ICacheResult {
   }
 
   private leave(op: string, message: string, highlight: string | undefined = undefined): void {
-    this.monitorLeave(this.rt.monitor);
+    if (this.rt.monitor)
+      this.monitorLeave(this.rt.monitor);
     const ms: number = Date.now() - this.started;
     this.started = 0;
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.member)} ${message}`, ms, highlight);
@@ -494,23 +496,21 @@ class CacheResult implements ICacheResult {
     // Cache.freeze(this);
   }
 
-  private monitorEnter(mon: Monitor | null): void {
-    if (mon)
-      Cache.run(undefined, Transaction.runAs, "Monitor.enter",
-        true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
-        Monitor.enter, mon, this);
+  private monitorEnter(mon: Monitor): void {
+    Cache.run(undefined, Transaction.runAs, "Monitor.enter",
+      true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+      Monitor.enter, mon, this);
   }
 
-  private monitorLeave(mon: Monitor | null): void {
-    if (mon)
-      Transaction.outside(() => {
-        const leave = () => {
-          Cache.run(undefined, Transaction.runAs, "Monitor.leave",
-            true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
-            Monitor.leave, mon, this);
-        };
-        this.tran.whenFinished(false).then(leave, leave);
-      });
+  private monitorLeave(mon: Monitor): void {
+    Transaction.outside(() => {
+      const leave = () => {
+        Cache.run(undefined, Transaction.runAs, "Monitor.leave",
+          true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+          Monitor.leave, mon, this);
+      };
+      this.tran.whenFinished(false).then(leave, leave);
+    });
   }
 
   complete(error?: any): void {
