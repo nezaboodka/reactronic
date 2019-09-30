@@ -11,7 +11,7 @@ import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER;
-type CacheCall = { valid: boolean, cache: CacheResult, record: Record, error?: Error };
+type CacheCall = { valid: boolean, cache: CacheResult, record: Record };
 
 export class Cache extends Status<any> {
   private readonly handle: Handle;
@@ -49,12 +49,12 @@ export class Cache extends Status<any> {
           call2 = this.readable(argsx); // re-read on retry
           if (!call2.valid) {
             call2 = this.writable();
-            call2.cache.compute(this.handle.proxy, call2.error, argsx);
+            call2.cache.compute(this.handle.proxy, argsx);
           }
         }
         else {
           call2 = this.writable();
-          call2.cache.compute(this.handle.proxy, call2.error, argsx);
+          call2.cache.compute(this.handle.proxy, argsx);
         }
         return call2.cache.ret;
       }, args);
@@ -91,18 +91,16 @@ export class Cache extends Status<any> {
     const member = this.blank.member;
     const r: Record = ctx.writable(this.handle, member, this);
     let c: CacheResult = r.data[member] || this.blank;
-    let error: Error | undefined = undefined;
     if (c.record !== r) {
-      error = Cache.checkForReentrance(c);
-      if (!error) {
-        const renewing = new CacheResult(r, member, c);
-        r.data[member] = renewing;
-        Record.markChanged(r, member, true, renewing);
+      const renewing = new CacheResult(r, member, c);
+      r.data[member] = renewing;
+      Record.markChanged(r, member, true, renewing);
+      renewing.error = Cache.checkForReentrance(c);
+      if (!renewing.error)
         c.invalid.renewing = renewing;
-        c = renewing;
-      }
+      c = renewing;
     }
-    return { valid: true, cache: c, record: r, error };
+    return { valid: true, cache: c, record: r };
   }
 
   private static checkForReentrance(c: CacheResult): Error | undefined {
@@ -444,13 +442,13 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  compute(proxy: any, error: Error | undefined, args: any[] | undefined): void {
+  compute(proxy: any, args: any[] | undefined): void {
     if (args)
       this.args = args;
-    if (!error)
+    if (!this.error)
       Cache.run(this, CacheResult.computeFunc, proxy, this);
     else
-      this.ret = Promise.reject(error);
+      this.ret = Promise.reject(this.error);
     this.invalid.since = TOP_TIMESTAMP;
   }
 
