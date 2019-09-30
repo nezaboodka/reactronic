@@ -40,7 +40,7 @@ export class Cache extends Status<any> {
     if (!call.valid && (!status || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
       const cfg = c.config;
-      const spawn = !status && cfg.kind === Kind.Transaction ? false : true;
+      const spawn = status || cfg.kind !== Kind.Transaction;
       const token = cfg.kind === Kind.Cached ? this : undefined;
       let call2 = call;
       const ret = Transaction.runAs(hint, spawn, cfg.trace, token, (argsx: any[] | undefined): any => {
