@@ -13,7 +13,7 @@ import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
 import { Config, Kind, Reentrance } from '../api/Config';
 import { Monitor } from '../api/Monitor';
-import { Cache } from '../api/Status';
+import { Cache } from '../api/Cache';
 import { Trace } from '../api/Trace';
 
 // Stateful
