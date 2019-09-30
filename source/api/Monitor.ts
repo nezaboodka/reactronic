@@ -10,18 +10,12 @@ export class Monitor extends Stateful {
   private _busy: boolean = false;
   private _counter: number = 0;
   private _workers = new Set<Worker>();
-  readonly prolonged: boolean;
   get busy(): boolean { return this._busy; }
   get counter(): number { return this._counter; }
   get workers(): ReadonlySet<Worker> { return this._workers; }
 
-  constructor(prolonged: boolean = false) {
-    super();
-    this.prolonged = prolonged;
-  }
-
-  static create(hint?: string, prolonged: boolean = false): Monitor {
-    return Transaction.run("Monitor.create", Monitor.createFunc, hint, prolonged);
+  static create(hint?: string): Monitor {
+    return Transaction.run("Monitor.create", Monitor.createFunc, hint);
   }
 
   static enter(m: Monitor, worker: Worker): void {
@@ -38,8 +32,8 @@ export class Monitor extends Stateful {
       m._busy = false;
   }
 
-  private static createFunc(hint: string | undefined, prolonged: boolean): Monitor {
-    return Handle.setHint(new Monitor(prolonged), hint);
+  private static createFunc(hint: string | undefined): Monitor {
+    return Handle.setHint(new Monitor(), hint);
   }
 }
 
