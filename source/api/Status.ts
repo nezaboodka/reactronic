@@ -24,10 +24,10 @@ export function standalone<T>(func: F<T>, ...args: any[]): T {
 }
 
 export abstract class Status<T> {
+  abstract readonly stamp: number;
   abstract readonly config: Config;
   abstract configure(config: Partial<Config>): Config;
   abstract readonly args: ReadonlyArray<any>;
-  abstract readonly stamp: number;
   abstract readonly error: any;
   abstract getResult(args?: any[]): T | undefined;
   abstract readonly isInvalid: boolean;
