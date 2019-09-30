@@ -296,9 +296,9 @@ function statusof<T>(method: F<T>): Status<T>;
 function standalone<T>(func: F<T>, ...args: any[]): T;
 
 abstract class Status<T> {
-  readonly stamp: number;
-  readonly config: config;
   configure(config: Partial<Config>): Config;
+  readonly config: config;
+  readonly stamp: number;
   readonly args: ReadonlyArray<any>;
   readonly error: any;
   getResult(args?: any[]): T | undefined;

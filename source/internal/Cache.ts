@@ -17,9 +17,9 @@ export class Cache extends Status<any> {
   private readonly handle: Handle;
   private readonly blank: CacheResult;
 
-  get stamp(): number { return this.status().record.snapshot.timestamp; }
-  get config(): Config { return this.status().cache.config; }
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
+  get config(): Config { return this.status().cache.config; }
+  get stamp(): number { return this.status().record.snapshot.timestamp; }
   get args(): ReadonlyArray<any> { return this.status().cache.args; }
   get error(): boolean { return this.status().cache.error; }
   getResult(args?: any): any { return this.call(true, args).cache.value; }
