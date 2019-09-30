@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava';
-import { Transaction, Reentrance, Status, statusof, all, sleep } from '../source/reactronic';
+import { Transaction, Reentrance, Cache, cacheof, all, sleep } from '../source/reactronic';
 import { DemoModel, DemoView, mon, output, tracing } from './async';
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -25,9 +25,9 @@ const expected: string[] = [
 ];
 
 test("async", async t => {
-  Status.setTrace(tracing.noisy);
+  Cache.setTrace(tracing.noisy);
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
-  statusof(app.model.load).configure({reentrance: Reentrance.CancelPrevious});
+  cacheof(app.model.load).configure({reentrance: Reentrance.CancelPrevious});
   try {
     t.throws(() => { app.test = "testing @stateful for fields"; },
       "stateful property #23˙DemoView.test can only be modified inside transaction");
@@ -39,15 +39,15 @@ test("async", async t => {
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()); /* istanbul ignore next */
-    if (Status.isTraceOn && !Status.trace.silent) console.log(error.toString());
+    if (Cache.isTraceOn && !Cache.trace.silent) console.log(error.toString());
   }
   finally {
     t.is(mon.counter, 0);
     t.is(mon.workers.size, 0);
     await sleep(400);
-    await Status.unmount(app, app.model).whenFinished(true);
+    await Cache.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */
-  if (Status.isTraceOn && !Status.trace.silent) {
+  if (Cache.isTraceOn && !Cache.trace.silent) {
     console.log("\nResults:\n");
     for (const x of output)
       console.log(x);
@@ -55,7 +55,7 @@ test("async", async t => {
   }
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (Status.isTraceOn && !Status.trace.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`);
+    if (Cache.isTraceOn && !Cache.trace.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`);
     t.is(output[i], expected[i]);
   }
 });

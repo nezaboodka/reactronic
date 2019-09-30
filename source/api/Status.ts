@@ -3,38 +3,39 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Cache, F, Handle, Dbg } from '../internal/all';
+import { CacheImpl, F, Handle, Dbg } from '../internal/all';
 import { Transaction } from './Transaction';
 import { Config, Trace } from './Config';
 
-export function resultof<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return (statusof(method) as any).getResult(args);
+export function cacheof<T>(method: F<T>): Cache<T> {
+  return Cache.of<T>(method);
 }
 
-export function statusof<T>(method: F<T>): Status<T> {
-  return Status.get<T>(method);
+export function resultof<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
+  return (cacheof(method) as any).call(args);
 }
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return Cache.run<T>(undefined, func, ...args);
+  return CacheImpl.run<T>(undefined, func, ...args);
 }
 
 export function standalone<T>(func: F<T>, ...args: any[]): T {
-  return Cache.run<T>(undefined, Transaction.outside, func, ...args);
+  return CacheImpl.run<T>(undefined, Transaction.outside, func, ...args);
 }
 
-export abstract class Status<T> {
+export abstract class Cache<T> {
   abstract configure(config: Partial<Config>): Config;
   abstract readonly config: Config;
   abstract readonly stamp: number;
   abstract readonly args: ReadonlyArray<any>;
+  abstract readonly value: T;
   abstract readonly error: any;
-  abstract getResult(args?: any[]): T | undefined;
   abstract readonly isInvalid: boolean;
   abstract invalidate(): void;
+  abstract call(args?: any[]): T | undefined;
 
-  static get<T>(method: F<T>): Status<T> { return Cache.get(method); }
-  static unmount(...objects: any[]): Transaction { return Cache.unmount(...objects); }
+  static of<T>(method: F<T>): Cache<T> { return CacheImpl.get(method); }
+  static unmount(...objects: any[]): Transaction { return CacheImpl.unmount(...objects); }
 
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name); }
   static getTraceHint<T extends object>(obj: T): string | undefined { return Handle.getHint(obj); }

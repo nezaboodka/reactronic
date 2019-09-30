@@ -289,10 +289,10 @@ class Transaction {
   static outside<T>(func: F<T>, ...args: any[]): T;
 }
 
-// Status
+// Cache
 
+function cacheof<T>(method: F<T>): Status<T>;
 function resultof<T>(method: F<Promise<T>>, args?: any[]): T | undefined;
-function statusof<T>(method: F<T>): Status<T>;
 function standalone<T>(func: F<T>, ...args: any[]): T;
 
 abstract class Status<T> {
@@ -300,10 +300,11 @@ abstract class Status<T> {
   readonly config: config;
   readonly stamp: number;
   readonly args: ReadonlyArray<any>;
+  readonly value: T;
   readonly error: any;
-  getResult(args?: any[]): T | undefined;
   readonly isInvalid: boolean;
   invalidate(cause: string | undefined): boolean;
+  call(args?: any[]): T | undefined;
 
   static get<T>(method: F<T>): Status<T>;
   static unmount(...objects: any[]): Transaction;

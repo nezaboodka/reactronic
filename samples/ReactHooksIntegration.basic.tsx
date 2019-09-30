@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { Stateful, stateless, trigger, cached, statusof, standalone, Transaction, Status } from 'reactronic';
+import { Stateful, stateless, trigger, cached, cacheof, standalone, Transaction, Cache } from 'reactronic';
 
 type ReactState = { rx: Rx; };
 
@@ -28,14 +28,14 @@ class Rx extends Stateful {
 
   @trigger
   keepfresh(): void {
-    if (statusof(this.jsx).isInvalid)
+    if (cacheof(this.jsx).isInvalid)
       this.refresh({rx: this});
   }
 
   @stateless refresh: (next: ReactState) => void = nop;
 
   @stateless readonly unmountEffect = (): (() => void) => {
-    return () => Status.unmount(this);
+    return () => Cache.unmount(this);
   }
 }
 

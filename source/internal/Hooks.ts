@@ -13,7 +13,7 @@ import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
 import { Config, Kind, Reentrance } from '../api/Config';
 import { Monitor } from '../api/Monitor';
-import { Status } from '../api/Status';
+import { Cache } from '../api/Status';
 import { Trace } from '../api/Trace';
 
 // Stateful
@@ -24,7 +24,7 @@ export class Stateful {
     const triggers: Map<PropertyKey, Cfg> | undefined = Hooks.getConfigTable(new.target.prototype)[RT_TRIGGERS];
     if (triggers)
       triggers.forEach((rx, prop) =>
-        (h.proxy[prop][RT_CACHE] as Status<any>).invalidate());
+        (h.proxy[prop][RT_CACHE] as Cache<any>).invalidate());
     return h.proxy;
   }
 }
@@ -145,7 +145,7 @@ export class Hooks implements ProxyHandler<Handle> {
             h.hint = origCtor.name;
           if (triggers)
             triggers.forEach((rx, prop) =>
-              (h.proxy[prop][RT_CACHE] as Status<any>).invalidate());
+              (h.proxy[prop][RT_CACHE] as Cache<any>).invalidate());
           return h.proxy;
         }
       };
@@ -166,8 +166,8 @@ export class Hooks implements ProxyHandler<Handle> {
           : Hooks.createHandle(stateful, stateless, undefined, origCtor.name);
         if (triggers)
           triggers.forEach((rx, prop) => {
-            const status: Status<any> = h.proxy[prop][RT_CACHE];
-            status.invalidate();
+            const cache: Cache<any> = h.proxy[prop][RT_CACHE];
+            cache.invalidate();
           });
         return h.proxy;
       };

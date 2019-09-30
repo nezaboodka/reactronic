@@ -4,8 +4,8 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Dbg, misuse, Utils, Record, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
-import { Status } from '../api/Status';
-export { Status, resultof, statusof } from '../api/Status';
+import { Cache } from '../api/Status';
+export { Cache, cacheof, resultof } from '../api/Status';
 import { Config, Kind, Reentrance, Trace } from '../api/Config';
 import { Transaction } from '../api/Transaction';
 import { Monitor } from '../api/Monitor';
@@ -13,7 +13,7 @@ import { Monitor } from '../api/Monitor';
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER;
 type CacheCall = { valid: boolean, cache: CacheResult, record: Record };
 
-export class Cache extends Status<any> {
+export class CacheImpl extends Cache<any> {
   private readonly handle: Handle;
   private readonly blank: CacheResult;
 
@@ -21,10 +21,11 @@ export class Cache extends Status<any> {
   get config(): Config { return this.status().cache.config; }
   get stamp(): number { return this.status().record.snapshot.timestamp; }
   get args(): ReadonlyArray<any> { return this.status().cache.args; }
+  get value(): any { return this._call(true).cache.value; }
   get error(): boolean { return this.status().cache.error; }
-  getResult(args?: any): any { return this.call(true, args).cache.value; }
   get isInvalid(): boolean { return !this.status().valid; }
-  invalidate(): void { Cache.invalidate(this); }
+  invalidate(): void { CacheImpl.invalidate(this); }
+  call(args?: any): any { return this._call(true, args).cache.value; }
 
   constructor(handle: Handle, member: PropertyKey, config: Cfg) {
     super();
@@ -34,7 +35,7 @@ export class Cache extends Status<any> {
     // TODO: mark cache readonly?
   }
 
-  call(status: boolean, args?: any[]): CacheCall {
+  _call(status: boolean, args?: any[]): CacheCall {
     let call: CacheCall = this.readable(args);
     const c: CacheResult = call.cache;
     if (!call.valid && (!status || !c.invalid.renewing)) {
@@ -95,7 +96,7 @@ export class Cache extends Status<any> {
       const renewing = new CacheResult(r, member, c);
       r.data[member] = renewing;
       Record.markChanged(r, member, true, renewing);
-      renewing.error = Cache.checkForReentrance(c);
+      renewing.error = CacheImpl.checkForReentrance(c);
       if (!renewing.error)
         c.invalid.renewing = renewing;
       c = renewing;
@@ -126,7 +127,7 @@ export class Cache extends Status<any> {
     return result;
   }
 
-  static invalidate(self: Cache): void {
+  static invalidate(self: CacheImpl): void {
     const call = self.writable();
     const c = call.cache;
     CacheResult.acquireObservableSet(c, c.member, false).add(call.record);
@@ -166,15 +167,15 @@ export class Cache extends Status<any> {
   }
 
   static createCacheTrap(h: Handle, prop: PropertyKey, config: Cfg): F<any> {
-    const cache = new Cache(h, prop, config);
+    const cache = new CacheImpl(h, prop, config);
     const cacheTrap: F<any> = (...args: any[]): any =>
-      cache.call(false, args).cache.ret;
+      cache._call(false, args).cache.ret;
     Utils.set(cacheTrap, RT_CACHE, cache);
     return cacheTrap;
   }
 
-  static get(method: F<any>): Status<any> {
-    const impl: Status<any> | undefined = Utils.get(method, RT_CACHE);
+  static get(method: F<any>): Cache<any> {
+    const impl: Cache<any> | undefined = Utils.get(method, RT_CACHE);
     if (!impl)
       throw misuse("given method is not a reactronic cache");
     return impl;
@@ -182,7 +183,7 @@ export class Cache extends Status<any> {
 
   static unmount(...objects: any[]): Transaction {
     return Transaction.runAs("<unmount>", false,
-      undefined, undefined, Cache.unmountFunc, ...objects);
+      undefined, undefined, CacheImpl.unmountFunc, ...objects);
   }
 
   private static unmountFunc(...objects: any[]): Transaction {
@@ -242,7 +243,7 @@ class CacheResult implements ICacheResult {
   bind<T>(func: F<T>): F<T> {
     const Cache_run: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hint.record(this.record)}.${this.member.toString()} - step in  `, 0, "        │");
-      const result = Cache.run<T>(this, func, ...args);
+      const result = CacheImpl.run<T>(this, func, ...args);
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "_/", `${Hint.record(this.record)}.${this.member.toString()} - step out `, 0, this.started > 0 ? "        │" : "");
       return result;
     };
@@ -257,8 +258,8 @@ class CacheResult implements ICacheResult {
         try {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
-          const cache: Cache = Utils.get(trap, RT_CACHE);
-          const call: CacheCall = cache.call(false);
+          const cache: CacheImpl = Utils.get(trap, RT_CACHE);
+          const call: CacheCall = cache._call(false);
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
         }
@@ -446,7 +447,7 @@ class CacheResult implements ICacheResult {
     if (args)
       this.args = args;
     if (!this.error)
-      Cache.run(this, CacheResult.computeFunc, proxy, this);
+      CacheImpl.run(this, CacheResult.computeFunc, proxy, this);
     else
       this.ret = Promise.reject(this.error);
     this.invalid.since = TOP_TIMESTAMP;
@@ -501,7 +502,7 @@ class CacheResult implements ICacheResult {
   }
 
   private monitorEnter(mon: Monitor): void {
-    Cache.run(undefined, Transaction.runAs, "Monitor.enter",
+    CacheImpl.run(undefined, Transaction.runAs, "Monitor.enter",
       true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
       Monitor.enter, mon, this);
   }
@@ -509,7 +510,7 @@ class CacheResult implements ICacheResult {
   private monitorLeave(mon: Monitor): void {
     Transaction.outside(() => {
       const leave = () => {
-        Cache.run(undefined, Transaction.runAs, "Monitor.leave",
+        CacheImpl.run(undefined, Transaction.runAs, "Monitor.leave",
           true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           Monitor.leave, mon, this);
       };
@@ -613,7 +614,7 @@ function init(): void {
   Record.markChanged = CacheResult.markChanged; // override
   Snapshot.equal = CacheResult.equal; // override
   Snapshot.applyDependencies = CacheResult.applyDependencies; // override
-  Hooks.createCacheTrap = Cache.createCacheTrap; // override
+  Hooks.createCacheTrap = CacheImpl.createCacheTrap; // override
   Promise.prototype.then = reactronic_then; // override
 }
 

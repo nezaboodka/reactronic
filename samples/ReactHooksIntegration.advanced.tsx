@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { Stateful, stateless, trigger, cached, statusof, standalone, Transaction, Status, Trace } from 'reactronic';
+import { Stateful, stateless, trigger, cached, cacheof, standalone, Transaction, Cache, Trace } from 'reactronic';
 
 type ReactState = { rx: Rx; counter: number; };
 
@@ -29,7 +29,7 @@ class Rx extends Stateful {
 
   @trigger
   keepfresh(): void {
-    if (statusof(this.jsx).isInvalid)
+    if (cacheof(this.jsx).isInvalid)
       this.refresh({rx: this, counter: this.counter + 1});
   }
 
@@ -38,12 +38,12 @@ class Rx extends Stateful {
   @stateless refresh: (next: ReactState) => void = nop;
 
   @stateless readonly unmountEffect = (): (() => void) => {
-    return () => Status.unmount(this);
+    return () => Cache.unmount(this);
   }
 }
 
 function createReactState(trace?: Partial<Trace>): ReactState {
-  const dbg = Status.isTraceOn && Status.trace.hints
+  const dbg = Cache.isTraceOn && Cache.trace.hints
     ? trace === undefined || trace.hints !== false
     : trace !== undefined && trace.hints === true;
   const hint = dbg ? getComponentName() : "<rx>";
@@ -54,10 +54,10 @@ function createReactState(trace?: Partial<Trace>): ReactState {
 function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
   const rx = new Rx();
   if (hint)
-    Status.setTraceHint(rx, hint);
+    Cache.setTraceHint(rx, hint);
   if (trace) {
-    statusof(rx.jsx).configure({trace});
-    statusof(rx.keepfresh).configure({trace});
+    cacheof(rx.jsx).configure({trace});
+    cacheof(rx.keepfresh).configure({trace});
   }
   return rx;
 }

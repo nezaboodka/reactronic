@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { Stateful, transaction, cached, trigger, statusof } from 'reactronic';
+import { Stateful, transaction, cached, trigger, cacheof } from 'reactronic';
 
 class Model extends Stateful {
   // state
@@ -23,7 +23,7 @@ class Model extends Stateful {
 class View extends React.Component<Model> {
   @trigger
   autorefresh() {
-    if (statusof(this.render).isInvalid)
+    if (cacheof(this.render).isInvalid)
       this.setState({}); // ask React
   }
 
