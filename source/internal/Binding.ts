@@ -31,11 +31,11 @@ export class Binding<T> {
     return v;
   }
 
-  static seal<T>(owner: any, prop: PropertyKey, value: T, proto: object, clone: (v: T) => T): Binding<T> {
+  static seal<T>(owner: any, prop: PropertyKey, value: T, size: number, proto: object, clone: (v: T) => T): Binding<T> {
     if (Object.isFrozen(value)) /* istanbul ignore next */
       throw misuse("copy-on-write collection cannot be referenced from multiple objects");
     const self: any = value;
-    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "·", `${owner.constructor.name}.${prop.toString()} - sealing for copy-on-write`);
+    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "·", `${owner.constructor.name}.${prop.toString()} - sealing for copy-on-write - ${size} item(s)`);
     const binding = new Binding<T>(owner, prop, value, clone);
     self[RT_BINDING] = binding;
     Object.setPrototypeOf(value, proto);

@@ -36,7 +36,7 @@ export abstract class CopyOnWriteArray<T> extends Array<T> {
   // reduceRight<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U { return super.reduceRight.call(R<T[]>(this), callbackfn, initialValue); }
 
   static seal<T>(owner: any, prop: PropertyKey, array: T[]): Binding<T[]> {
-    return Binding.seal(owner, prop, array, CopyOnWriteArray.prototype, CopyOnWriteArray.clone);
+    return Binding.seal(owner, prop, array, array.length, CopyOnWriteArray.prototype, CopyOnWriteArray.clone);
   }
 
   static clone<T>(array: T[]): T[] {

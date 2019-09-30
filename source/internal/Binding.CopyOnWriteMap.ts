@@ -19,7 +19,7 @@ export abstract class CopyOnWriteMap<K, V> extends Map<K, V> {
   values(): IterableIterator<V> { return super.values.call(R<Map<K, V>>(this)); }
 
   static seal<K, V>(owner: any, prop: PropertyKey, map: Map<K, V>): Binding<Map<K, V>> {
-    return Binding.seal(owner, prop, map, CopyOnWriteMap.prototype, CopyOnWriteMap.clone);
+    return Binding.seal(owner, prop, map, map.size, CopyOnWriteMap.prototype, CopyOnWriteMap.clone);
   }
 
   static clone<K, V>(map: Map<K, V>): Map<K, V> {

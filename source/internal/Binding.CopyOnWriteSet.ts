@@ -18,7 +18,7 @@ export abstract class CopyOnWriteSet<T> extends Set<T> {
   values(): IterableIterator<T> { return super.values.call(R<Set<T>>(this)); }
 
   static seal<T>(owner: any, prop: PropertyKey, set: Set<T>): Binding<Set<T>> {
-    return Binding.seal(owner, prop, set, CopyOnWriteSet.prototype, CopyOnWriteSet.clone);
+    return Binding.seal(owner, prop, set, set.size, CopyOnWriteSet.prototype, CopyOnWriteSet.clone);
   }
 
   static clone<T>(set: Set<T>): Set<T> {
