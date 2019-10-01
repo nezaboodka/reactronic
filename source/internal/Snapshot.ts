@@ -166,12 +166,14 @@ export class Snapshot implements ISnapshot {
             break;
           }
           else if (prop === RT_UNMOUNT || unmountTheirs) {
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} "<>" ${Hint.record(theirs, prop)}.`);
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} <> ${Hint.record(theirs, prop)}.`);
             ours.conflicts.set(prop, theirs);
             break;
           }
-          else
+          else {
             theirs = theirs.prev.record;
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} OURS.`);
+          }
         }
       });
       Utils.copyAllProps(merged, ours.data); // overwrite with merged copy
@@ -256,18 +258,18 @@ export class Snapshot implements ISnapshot {
 }
 
 export class Hint {
-  static handle(h: Handle | undefined, prop?: PropertyKey | undefined, stamp?: number, typeless?: boolean): string {
+  static handle(h: Handle | undefined, prop?: PropertyKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const obj = h === undefined
       ? "init"
       : (typeless
-        ? (stamp === undefined ? `#${h.id}` : `#${h.id}v${stamp}`)
-        : (stamp === undefined ? `#${h.id}˙${h.hint}` : `#${h.id}v${stamp}˙${h.hint}`));
+        ? (stamp === undefined ? `#${h.id}` : `#${h.id}v${stamp}t${tran}`)
+        : (stamp === undefined ? `#${h.id}˙${h.hint}` : `#${h.id}v${stamp}t${tran}˙${h.hint}`));
     return prop !== undefined ? `${obj}.${prop.toString()}` : obj;
   }
 
   static record(r: Record, prop?: PropertyKey, typeless?: boolean): string {
     const h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
-    return Hint.handle(h, prop, r.snapshot.timestamp, typeless);
+    return Hint.handle(h, prop, r.snapshot.timestamp, r.snapshot.id, typeless);
   }
 
   static conflicts(conflicts: Record[]): string {

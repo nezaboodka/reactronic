@@ -326,7 +326,7 @@ class CacheResult implements ICacheResult {
           }
       });
       snapshot.changeset.forEach((r: Record, h: Handle) => {
-        CacheResult.mergeObservers(r, r.prev.record);
+        CacheResult.resubscribePrevObservers(r);
       });
     }
     else {
@@ -385,7 +385,7 @@ class CacheResult implements ICacheResult {
           this.invalidateDueTo(r, prop, timestamp, triggers, true);
       });
     });
-    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to ${subscriptions.join(", ")}.`);
+    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
   }
 
   private unsubscribeFromOwnObservables(): void {
@@ -413,7 +413,8 @@ class CacheResult implements ICacheResult {
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${subscriptions.join(", ")}}.`);
   }
 
-  static mergeObservers(curr: Record, prev: Record): void {
+  static resubscribePrevObservers(curr: Record): void {
+    const prev = curr.prev.record;
     prev.observers.forEach((prevObservers: Set<ICacheResult>, prop: PropertyKey) => {
       if (!curr.changes.has(prop)) {
         const existing: Set<ICacheResult> | undefined = curr.observers.get(prop);
@@ -434,11 +435,11 @@ class CacheResult implements ICacheResult {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
-      if (!self)
-        this.unsubscribeFromOwnObservables(); // now unsubscribed
       const cfg = this.config;
       const isTrigger = cfg.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (Dbg.isOn && Dbg.trace.invalidations || (cfg.trace && cfg.trace.invalidations)) Dbg.logAs(cfg.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause, causeProp)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
+      if (!self)
+        this.unsubscribeFromOwnObservables(); // now unsubscribed
       if (!isTrigger) {
         // Invalidate outer observers (cascade)
         const h: Handle = Utils.get(this.record.data, RT_HANDLE);
