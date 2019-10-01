@@ -389,7 +389,10 @@ class CacheResult implements ICacheResult {
   }
 
   private static subscribe(observer: CacheResult, record: Record, prop: PropertyKey, log: string[]): void {
-    CacheResult.acquireObserverSet(record, prop).add(observer); // now subscribed
+    let propObservers = record.observers.get(prop);
+    if (!propObservers)
+      record.observers.set(prop, propObservers = new Set<CacheResult>());
+    propObservers.add(observer); // now subscribed
     if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(record, prop, true));
   }
 
@@ -416,13 +419,6 @@ class CacheResult implements ICacheResult {
     }
     else
       curr.observers.set(prop, new Set<ICacheResult>()); // clear
-  }
-
-  private static acquireObserverSet(r: Record, prop: PropertyKey): Set<ICacheResult> {
-    let propObservers = r.observers.get(prop);
-    if (!propObservers)
-      r.observers.set(prop, propObservers = new Set<CacheResult>());
-    return propObservers;
   }
 
   static acquireObservableSet(c: CacheResult, prop: PropertyKey, weak: boolean): Set<Record> {
