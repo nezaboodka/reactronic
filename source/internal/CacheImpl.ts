@@ -421,7 +421,7 @@ class CacheResult implements ICacheResult {
       const currObservers = curr.observers.get(prop);
       if (currObservers)
         currObservers.forEach(c => prevObservers.add(c));
-      curr.observers.set(prop, prevObservers);
+      curr.observers.set(prop, prevObservers); // share observers set with previous record
       if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${Hint.record(curr, prop)} retains observers from ${Hint.record(curr.prev.record, prop)} (had ${currObservers ? currObservers.size : 0}, now ${prevObservers.size}).`);
     }
     else
