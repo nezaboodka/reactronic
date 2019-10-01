@@ -10,7 +10,7 @@ export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 // Record
 
 export class Record {
-  readonly prev: { record: Record, backup?: Record };
+  readonly prev: { record: Record };
   readonly snapshot: ISnapshot;
   readonly data: any;
   readonly changes: Set<PropertyKey>;
@@ -19,7 +19,7 @@ export class Record {
   readonly replaced: Map<PropertyKey, Record>;
 
   constructor(prev: Record, snapshot: ISnapshot, data: object) {
-    this.prev = { record: prev, backup: prev };
+    this.prev = { record: prev };
     this.snapshot = snapshot;
     this.data = data;
     this.changes = new Set<PropertyKey>();

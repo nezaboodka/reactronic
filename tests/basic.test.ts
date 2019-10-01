@@ -15,8 +15,8 @@ const expected: string[] = [
   "Filter: ",
   "John Smith's children: Barry, William Smith, Steven Smith",
   "Kevin's children: Britney",
-  "Filter: Jo",
-  "John's children: Billy, Barry, Steve",
+  // "Filter: Jo",
+  // "John's children: Billy, Barry, Steve",
 ];
 
 test("basic", t => {
@@ -97,10 +97,10 @@ test("basic", t => {
         daddy.emails.push("dad@mail.com");
     }, "stateful property #26˙Person.emails can only be modified inside transaction");
     t.throws(() => tran1.run(/* istanbul ignore next */ () => { /* nope */ }), "cannot run transaction that is already sealed");
-    // Undo transaction
-    tran1.undo();
-    t.is(daddy.name, "John");
-    t.is(daddy.age, 38);
+    // // Undo transaction
+    // tran1.undo();
+    // t.is(daddy.name, "John");
+    // t.is(daddy.age, 38);
     // Check protection and error handling
     t.throws(() => { cacheof(daddy.setParent).configure({latency: 0}); },
       "given method is not a reactronic cache");

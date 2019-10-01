@@ -107,11 +107,11 @@ export class Transaction {
       await this.reaction.tran.whenFinished(true);
   }
 
-  undo(): void {
-    const hint = Dbg.isOn ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
-    Transaction.runAs(hint, false, undefined, undefined,
-      Snapshot.undo, this.snapshot);
-  }
+  // undo(): void {
+  //   const hint = Dbg.isOn ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
+  //   Transaction.runAs(hint, false, undefined, undefined,
+  //     Snapshot.undo, this.snapshot);
+  // }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
     return Transaction.runAs(hint, false, undefined, undefined, func, ...args);

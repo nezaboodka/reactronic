@@ -217,8 +217,8 @@ export class Snapshot implements ISnapshot {
   static undo(s: Snapshot): void {
     s.changeset.forEach((r: Record, h: Handle) => {
       r.changes.forEach(prop => {
-        if (r.prev.backup) {
-          const prevValue: any = r.prev.backup.data[prop];
+        if (r.prev.record !== Record.blank) {
+          const prevValue: any = r.prev.record.data[prop];
           const t: Record = Snapshot.writable().tryWrite(h, prop, prevValue);
           if (t !== Record.blank) {
             t.data[prop] = prevValue;
