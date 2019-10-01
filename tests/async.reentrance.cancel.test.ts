@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava';
-import { Transaction, Reentrance, Cache, cacheof, all, sleep } from '../source/reactronic';
+import { Transaction, Cache, Reactronic as R, Reentrance, cacheof, all, sleep } from '../source/reactronic';
 import { DemoModel, DemoView, mon, output, tracing } from './async';
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -25,7 +25,7 @@ const expected: string[] = [
 ];
 
 test("async", async t => {
-  Cache.setTrace(tracing.noisy);
+  R.setTrace(tracing.noisy);
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   cacheof(app.model.load).configure({reentrance: Reentrance.CancelPrevious});
   try {
@@ -39,7 +39,7 @@ test("async", async t => {
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()); /* istanbul ignore next */
-    if (Cache.isTraceOn && !Cache.trace.silent) console.log(error.toString());
+    if (R.isTraceOn && !R.trace.silent) console.log(error.toString());
   }
   finally {
     t.is(mon.counter, 0);
@@ -47,7 +47,7 @@ test("async", async t => {
     await sleep(400);
     await Cache.unmount(app, app.model).whenFinished(true);
   } /* istanbul ignore next */
-  if (Cache.isTraceOn && !Cache.trace.silent) {
+  if (R.isTraceOn && !R.trace.silent) {
     console.log("\nResults:\n");
     for (const x of output)
       console.log(x);
@@ -55,7 +55,7 @@ test("async", async t => {
   }
   const n: number = Math.max(output.length, expected.length);
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (Cache.isTraceOn && !Cache.trace.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`);
+    if (R.isTraceOn && !R.trace.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`);
     t.is(output[i], expected[i]);
   }
 });

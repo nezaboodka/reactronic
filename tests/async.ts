@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { stateful, transaction, trigger, cached, latency, Cache, Monitor, monitor, all, sleep, reentrance, Reentrance } from '../source/reactronic';
+import { stateful, transaction, trigger, cached, latency, Reactronic as R, Monitor, monitor, all, sleep, reentrance, Reentrance } from '../source/reactronic';
 export { tracing } from './common';
 
 export const output: string[] = [];
@@ -31,7 +31,7 @@ export class DemoView {
     const lines: string[] = await this.render();
     for (const x of lines) {
       output.push(x); /* istanbul ignore next */
-      if (Cache.isTraceOn && !Cache.trace.silent) console.log(x);
+      if (R.isTraceOn && !R.trace.silent) console.log(x);
     }
   }
 

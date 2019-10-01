@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava';
-import { Transaction, Kind, Cache, cacheof, nonreactive, standalone } from '../source/reactronic';
+import { Transaction, Cache, Reactronic as R, Kind, cacheof, nonreactive, standalone } from '../source/reactronic';
 import { Person, tracing, nop } from './common';
 import { DemoModel, DemoView, output } from './basic';
 
@@ -20,10 +20,10 @@ const expected: string[] = [
 ];
 
 test("basic", t => {
-  Cache.triggersAutoStartDisabled = true;
-  Cache.triggersAutoStartDisabled = false;
-  Cache.setTrace(tracing.off);
-  Cache.setTrace(tracing.noisy);
+  R.triggersAutoStartDisabled = true;
+  R.triggersAutoStartDisabled = false;
+  R.setTrace(tracing.off);
+  R.setTrace(tracing.noisy);
   // Simple transactions
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   try {
@@ -120,9 +120,9 @@ test("basic", t => {
     // Other
     t.is(rendering.config.kind, Kind.Cached);
     t.is(rendering.error, undefined);
-    t.is(Cache.getTraceHint(app), "DemoView");
-    Cache.setTraceHint(app, "App");
-    t.is(Cache.getTraceHint(app), "App");
+    t.is(R.getTraceHint(app), "DemoView");
+    R.setTraceHint(app, "App");
+    t.is(R.getTraceHint(app), "App");
     t.deepEqual(Object.getOwnPropertyNames(app.model), [/*"shared",*/ "title", "users"]);
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true);
   }

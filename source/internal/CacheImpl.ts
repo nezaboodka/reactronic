@@ -354,7 +354,7 @@ class CacheResult implements ICacheResult {
     }
     else if (latency === 0)
       CacheResult.addAsyncTriggerToBatch(this);
-    else
+    else if (latency > 0)
       setTimeout(() => this.renew(TOP_TIMESTAMP, true, true), latency);
   }
 

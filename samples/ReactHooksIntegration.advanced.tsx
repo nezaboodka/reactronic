@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react';
-import { Stateful, stateless, trigger, cached, cacheof, standalone, Transaction, Cache, Trace } from 'reactronic';
+import { Stateful, stateless, trigger, cached, cacheof, standalone, Transaction, Cache, Reactronic, Trace } from 'reactronic';
 
 type ReactState = { rx: Rx; counter: number; };
 
@@ -42,7 +42,7 @@ class Rx extends Stateful {
 }
 
 function createReactState(trace?: Partial<Trace>): ReactState {
-  const hint = Cache.isTraceOn ? getComponentName() : "<rx>";
+  const hint = Reactronic.isTraceOn ? getComponentName() : "<rx>";
   const rx = Transaction.runAs<Rx>(hint, false, trace, undefined, createRx, hint, trace);
   return {rx, counter: 0};
 }
@@ -50,7 +50,7 @@ function createReactState(trace?: Partial<Trace>): ReactState {
 function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
   const rx = new Rx();
   if (hint)
-    Cache.setTraceHint(rx, hint);
+    Reactronic.setTraceHint(rx, hint);
   if (trace) {
     cacheof(rx.jsx).configure({trace});
     cacheof(rx.keepfresh).configure({trace});

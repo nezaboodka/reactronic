@@ -3,9 +3,9 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { CacheImpl, F, Handle, Dbg } from '../internal/all';
 import { Transaction } from './Transaction';
-import { Config, Trace } from './Config';
+import { Config } from './Config';
+import { CacheImpl, F } from '../internal/all';
 
 export function cacheof<T>(method: F<T>): Cache<T> {
   return Cache.of<T>(method);
@@ -34,14 +34,6 @@ export abstract class Cache<T> {
   abstract invalidate(): void;
   abstract call(args?: any[]): T | undefined;
 
-  static get triggersAutoStartDisabled(): boolean { return CacheImpl.triggersAutoStartDisabled; }
-  static set triggersAutoStartDisabled(value: boolean) { CacheImpl.triggersAutoStartDisabled = value; }
   static of<T>(method: F<T>): Cache<T> { return CacheImpl.of(method); }
   static unmount(...objects: any[]): Transaction { return CacheImpl.unmount(...objects); }
-
-  static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name); }
-  static getTraceHint<T extends object>(obj: T): string | undefined { return Handle.getHint(obj); }
-  static setTrace(t: Trace | undefined) { Dbg.global = t || Dbg.OFF; Dbg.isOn = t !== undefined; }
-  static get trace(): Trace { return Dbg.trace; }
-  static get isTraceOn(): boolean { return Dbg.isOn; }
 }
