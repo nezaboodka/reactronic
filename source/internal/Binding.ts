@@ -25,7 +25,7 @@ export class Binding<T> {
   writable(receiver: any): T {
     let v: T = this.owner[this.prop];
     if (v === receiver) { // check if it's first write and clone then
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  · ", `${this.owner.constructor.name}.${this.prop.toString()} - copy-on-write`);
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "     ·", `${this.owner.constructor.name}.${this.prop.toString()} - copy-on-write - cloned`);
       v = this.owner[this.prop] = this.clone(this.value);
     }
     return v;
@@ -35,7 +35,7 @@ export class Binding<T> {
     if (Object.isFrozen(value)) /* istanbul ignore next */
       throw misuse("copy-on-write collection cannot be referenced from multiple objects");
     const self: any = value;
-    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "·", `${owner.constructor.name}.${prop.toString()} - sealing for copy-on-write - ${size} item(s)`);
+    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "     ·", `${owner.constructor.name}.${prop.toString()} - copy-on-write - sealed ${size} item(s)`);
     const binding = new Binding<T>(owner, prop, value, clone);
     self[RT_BINDING] = binding;
     Object.setPrototypeOf(value, proto);

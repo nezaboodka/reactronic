@@ -300,8 +300,8 @@ export class Transaction {
     Utils.freezeMap(blank.observers);
     Utils.freezeMap(blank.replaced);
     Record.blank = blank;
-    Snapshot.lastUsedId = 99;
-    Snapshot.headTimestamp = 100;
+    Snapshot.lastUsedId = 100;
+    Snapshot.headTimestamp = 101;
     Snapshot.oldest = undefined;
   }
 }
