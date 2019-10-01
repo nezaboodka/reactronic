@@ -312,19 +312,19 @@ class CacheResult implements ICacheResult {
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(RT_UNMOUNT))
           r.changes.forEach(prop => {
-            CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
-            const value = r.data[prop];
-            if (value instanceof CacheResult) {
-              value.subscribeToOwnObservables(timestamp, readstamp, triggers);
-              value.complete();
+            CacheResult.markPrevRecordAsOutdated(timestamp, r, prop, triggers);
+            const cache = r.data[prop];
+            if (cache instanceof CacheResult) {
+              cache.subscribeToOwnObservables(timestamp, readstamp, triggers);
+              cache.complete();
             }
           });
         else
           for (const prop in r.prev.record.data) {
-            CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
-            const value = r.data[prop];
-            if (value instanceof CacheResult && value.record === r)
-              value.complete();
+            CacheResult.markPrevRecordAsOutdated(timestamp, r, prop, triggers);
+            const cache = r.data[prop];
+            if (cache instanceof CacheResult && cache.record === r)
+              cache.complete();
           }
       });
       snapshot.changeset.forEach((r: Record, h: Handle) => {
@@ -335,23 +335,22 @@ class CacheResult implements ICacheResult {
     else {
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         r.changes.forEach(prop => {
-          const value = r.data[prop];
-          if (value instanceof CacheResult)
-            value.complete(error);
+          const cache = r.data[prop];
+          if (cache instanceof CacheResult)
+            cache.complete(error);
         });
       });
     }
   }
 
-  private static markAllPrevRecordsAsOutdated(timestamp: number, head: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
-    let r = head.prev.record;
-    while (r !== Record.blank && !r.replaced.has(prop)) {
+  private static markPrevRecordAsOutdated(timestamp: number, head: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
+    const r = head.prev.record;
+    if (r !== Record.blank) {
       r.replaced.set(prop, head);
       const propObservers = r.observers.get(prop);
       if (propObservers)
         propObservers.forEach(c => c.invalidateDueTo(head, prop, timestamp, triggers, false));
       // Utils.freezeSet(o);
-      r = r.prev.record;
     }
   }
 
