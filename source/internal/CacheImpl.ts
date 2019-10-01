@@ -327,8 +327,10 @@ class CacheResult implements ICacheResult {
               value.complete();
           }
       });
-      snapshot.changeset.forEach((r: Record, h: Handle) =>
-        CacheResult.retainPrevObservers(r));
+      snapshot.changeset.forEach((r: Record, h: Handle) => {
+        r.prev.record.observers.forEach((prevObservers: Set<ICacheResult>, prop: PropertyKey) =>
+          CacheResult.retainPrevObservers(r, prop, prevObservers));
+      });
     }
     else {
       snapshot.changeset.forEach((r: Record, h: Handle) => {
@@ -414,19 +416,16 @@ class CacheResult implements ICacheResult {
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${subscriptions.join(", ")}}.`);
   }
 
-  static retainPrevObservers(curr: Record): void {
-    const prev = curr.prev.record;
-    prev.observers.forEach((prevObservers: Set<ICacheResult>, prop: PropertyKey) => {
-      if (!curr.changes.has(prop)) {
-        const currObservers = curr.observers.get(prop);
-        if (currObservers)
-          currObservers.forEach(c => prevObservers.add(c));
-        curr.observers.set(prop, prevObservers);
-        if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${Hint.record(curr, prop)} inherits observers from ${Hint.record(prev, prop)} (had ${currObservers ? currObservers.size : 0}, now ${prevObservers.size}).`);
-      }
-      else
-        curr.observers.set(prop, new Set<ICacheResult>()); // clear
-    });
+  static retainPrevObservers(curr: Record, prop: PropertyKey, prevObservers: Set<ICacheResult>): void {
+    if (!curr.changes.has(prop)) {
+      const currObservers = curr.observers.get(prop);
+      if (currObservers)
+        currObservers.forEach(c => prevObservers.add(c));
+      curr.observers.set(prop, prevObservers);
+      if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${Hint.record(curr, prop)} retains observers from ${Hint.record(curr.prev.record, prop)} (had ${currObservers ? currObservers.size : 0}, now ${prevObservers.size}).`);
+    }
+    else
+      curr.observers.set(prop, new Set<ICacheResult>()); // clear
   }
 
   invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], selfInvalidation: boolean): boolean {
