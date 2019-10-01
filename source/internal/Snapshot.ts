@@ -247,7 +247,7 @@ export class Snapshot implements ISnapshot {
   }
 
   private static unlinkHistory(s: Snapshot): void {
-    if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", " g", `snapshot of T${s.id} (${s.hint}) is being collected`);
+    if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", " g", `snapshot v${s.timestamp}t${s.id} (${s.hint}) is the oldest one now`);
     s.changeset.forEach((r: Record, h: Handle) => {
       if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== Record.blank) Dbg.log("", " ·", `${Hint.record(r.prev.record)} is ready for GC (overwritten by ${Hint.record(r)}}`);
       Record.archive(r.prev.record);
