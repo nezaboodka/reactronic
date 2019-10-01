@@ -312,7 +312,7 @@ class CacheResult implements ICacheResult {
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(RT_UNMOUNT))
           r.changes.forEach(prop => {
-            CacheResult.markPrevRecordAsOutdated(timestamp, r, prop, triggers);
+            CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
             const cache = r.data[prop];
             if (cache instanceof CacheResult) {
               cache.subscribeToOwnObservables(timestamp, readstamp, triggers);
@@ -321,7 +321,7 @@ class CacheResult implements ICacheResult {
           });
         else
           for (const prop in r.prev.record.data) {
-            CacheResult.markPrevRecordAsOutdated(timestamp, r, prop, triggers);
+            CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
             const cache = r.data[prop];
             if (cache instanceof CacheResult && cache.record === r)
               cache.complete();
@@ -343,14 +343,15 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  private static markPrevRecordAsOutdated(timestamp: number, head: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
-    const r = head.prev.record;
-    if (r !== Record.blank) {
+  private static markAllPrevRecordsAsOutdated(timestamp: number, head: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
+    let r = head.prev.record;
+    while (r !== Record.blank && !r.replaced.has(prop)) {
       r.replaced.set(prop, head);
       const propObservers = r.observers.get(prop);
       if (propObservers)
         propObservers.forEach(c => c.invalidateDueTo(head, prop, timestamp, triggers, false));
       // Utils.freezeSet(o);
+      r = r.prev.record;
     }
   }
 
