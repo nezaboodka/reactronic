@@ -325,9 +325,8 @@ class CacheResult implements ICacheResult {
               value.complete();
           }
       });
-      snapshot.changeset.forEach((r: Record, h: Handle) => {
-        CacheResult.resubscribePrevObservers(r);
-      });
+      snapshot.changeset.forEach((r: Record, h: Handle) =>
+        CacheResult.retainPrevObservers(r));
     }
     else {
       snapshot.changeset.forEach((r: Record, h: Handle) => {
@@ -413,21 +412,18 @@ class CacheResult implements ICacheResult {
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${subscriptions.join(", ")}}.`);
   }
 
-  static resubscribePrevObservers(curr: Record): void {
+  static retainPrevObservers(curr: Record): void {
     const prev = curr.prev.record;
     prev.observers.forEach((prevObservers: Set<ICacheResult>, prop: PropertyKey) => {
       if (!curr.changes.has(prop)) {
-        const existing: Set<ICacheResult> | undefined = curr.observers.get(prop);
-        const mergedObservers = existing || new Set<ICacheResult>();
-        if (!existing)
-          curr.observers.set(prop, mergedObservers);
-        prevObservers.forEach((prevObserver: ICacheResult) => {
-          if (prevObserver.invalid.since === TOP_TIMESTAMP) {
-            mergedObservers.add(prevObserver);
-            if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${prevObserver.hint(false)} is resubscribed to ${Hint.record(curr, prop, true)} from ${Hint.record(prev, prop, true)}.`);
-          }
-        });
+        const currObservers = curr.observers.get(prop);
+        if (currObservers)
+          currObservers.forEach(c => prevObservers.add(c));
+        curr.observers.set(prop, prevObservers);
+        if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${Hint.record(curr, prop)} inherits observers from ${Hint.record(prev, prop)} (had ${currObservers ? currObservers.size : 0}, now ${prevObservers.size}).`);
       }
+      else
+        curr.observers.set(prop, new Set<ICacheResult>()); // clear
     });
   }
 
