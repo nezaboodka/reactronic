@@ -273,10 +273,10 @@ class CacheResult implements ICacheResult {
   }
 
   enter(): void {
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.member)} - enter`);
-    this.started = Date.now();
     if (this.config.monitor)
       this.monitorEnter(this.config.monitor);
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.member)} - enter`);
+    this.started = Date.now();
   }
 
   leaveOrAsync(): void {
@@ -301,11 +301,11 @@ class CacheResult implements ICacheResult {
   }
 
   private leave(op: string, message: string, highlight: string | undefined = undefined): void {
-    if (this.config.monitor)
-      this.monitorLeave(this.config.monitor);
     const ms: number = Date.now() - this.started;
     this.started = 0;
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.member)} ${message}`, ms, highlight);
+    if (this.config.monitor)
+      this.monitorLeave(this.config.monitor);
     // TODO: handle errors
     // Cache.freeze(this);
   }
