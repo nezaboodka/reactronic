@@ -277,13 +277,13 @@ class CacheResult implements ICacheResult {
       setTimeout(() => this.renew(TOP_TIMESTAMP, true, true), latency);
   }
 
-  static addAsyncTriggerToBatch(c: CacheResult): void {
+  private static addAsyncTriggerToBatch(c: CacheResult): void {
     CacheResult.asyncTriggerBatch.push(c);
     if (CacheResult.asyncTriggerBatch.length === 1)
       setTimeout(CacheResult.processAsyncTriggerBatch, 0);
   }
 
-  static processAsyncTriggerBatch(): void {
+  private static processAsyncTriggerBatch(): void {
     const triggers = CacheResult.asyncTriggerBatch;
     CacheResult.asyncTriggerBatch = []; // reset
     for (const t of triggers)
@@ -343,22 +343,16 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  static acquireObserverSet(r: Record, prop: PropertyKey): Set<ICacheResult> {
-    let propObservers = r.observers.get(prop);
-    if (!propObservers)
-      r.observers.set(prop, propObservers = new Set<CacheResult>());
-    return propObservers;
-  }
-
-  static acquireObservableSet(c: CacheResult, prop: PropertyKey, weak: boolean): Set<Record> {
-    let result = weak ? c.weakObservables.get(prop) : c.observables.get(prop);
-    if (!result) {
-      if (weak)
-        c.weakObservables.set(prop, result = new Set<Record>());
-      else
-        c.observables.set(prop, result = new Set<Record>());
+  private static markAllPrevRecordsAsOutdated(timestamp: number, head: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
+    let r = head.prev.record;
+    while (r !== Record.blank && !r.replaced.has(prop)) {
+      r.replaced.set(prop, head);
+      const propObservers = r.observers.get(prop);
+      if (propObservers)
+        propObservers.forEach(c => c.invalidateDueTo(head, prop, timestamp, triggers, false));
+      // Utils.freezeSet(o);
+      r = r.prev.record;
     }
-    return result;
   }
 
   private subscribeToOwnObservables(timestamp: number, readstamp: number, triggers: ICacheResult[]): void {
@@ -412,7 +406,7 @@ class CacheResult implements ICacheResult {
     });
   }
 
-  static retainPrevObservers(curr: Record, prop: PropertyKey, prevObservers: Set<ICacheResult>): void {
+  private static retainPrevObservers(curr: Record, prop: PropertyKey, prevObservers: Set<ICacheResult>): void {
     if (!curr.changes.has(prop)) {
       const currObservers = curr.observers.get(prop);
       if (currObservers)
@@ -422,6 +416,24 @@ class CacheResult implements ICacheResult {
     }
     else
       curr.observers.set(prop, new Set<ICacheResult>()); // clear
+  }
+
+  private static acquireObserverSet(r: Record, prop: PropertyKey): Set<ICacheResult> {
+    let propObservers = r.observers.get(prop);
+    if (!propObservers)
+      r.observers.set(prop, propObservers = new Set<CacheResult>());
+    return propObservers;
+  }
+
+  static acquireObservableSet(c: CacheResult, prop: PropertyKey, weak: boolean): Set<Record> {
+    let result = weak ? c.weakObservables.get(prop) : c.observables.get(prop);
+    if (!result) {
+      if (weak)
+        c.weakObservables.set(prop, result = new Set<Record>());
+      else
+        c.observables.set(prop, result = new Set<Record>());
+    }
+    return result;
   }
 
   invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], selfInvalidation: boolean): boolean {
@@ -450,18 +462,6 @@ class CacheResult implements ICacheResult {
         triggers.push(this);
     }
     return result;
-  }
-
-  static markAllPrevRecordsAsOutdated(timestamp: number, head: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
-    let r = head.prev.record;
-    while (r !== Record.blank && !r.replaced.has(prop)) {
-      r.replaced.set(prop, head);
-      const propObservers = r.observers.get(prop);
-      if (propObservers)
-        propObservers.forEach(c => c.invalidateDueTo(head, prop, timestamp, triggers, false));
-      // Utils.freezeSet(o);
-      r = r.prev.record;
-    }
   }
 
   compute(proxy: any, args: any[] | undefined): void {
@@ -559,17 +559,6 @@ class CacheResult implements ICacheResult {
     // Utils.freezeSet(c.weakObservables);
     Object.freeze(c);
   }
-
-  static currentTrace(local: Partial<Trace> | undefined): Trace {
-    const t = Transaction.current;
-    let res = Dbg.merge(t.trace, t.id > 0 ? 31 + t.id % 6 : 37, `T${t.id}`, Dbg.global);
-    res = Dbg.merge({margin1: t.margin}, undefined, undefined, res);
-    if (CacheResult.active)
-      res = Dbg.merge({margin2: CacheResult.active.margin}, undefined, undefined, res);
-    if (local)
-      res = Dbg.merge(local, undefined, undefined, res);
-    return res;
-  }
 }
 
 function valueHint(value: any): string {
@@ -627,10 +616,21 @@ export function reject_rethrow(error: any): never {
   throw error;
 }
 
+function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
+  const t = Transaction.current;
+  let res = Dbg.merge(t.trace, t.id > 0 ? 31 + t.id % 6 : 37, `T${t.id}`, Dbg.global);
+  res = Dbg.merge({margin1: t.margin}, undefined, undefined, res);
+  if (CacheResult.active)
+    res = Dbg.merge({margin2: CacheResult.active.margin}, undefined, undefined, res);
+  if (local)
+    res = Dbg.merge(local, undefined, undefined, res);
+  return res;
+}
+
 // Global Init
 
 function init(): void {
-  Dbg.getCurrentTrace = CacheResult.currentTrace;
+  Dbg.getCurrentTrace = getCurrentTrace;
   Record.markViewed = CacheResult.markViewed; // override
   Record.markChanged = CacheResult.markChanged; // override
   Snapshot.equal = CacheResult.equal; // override
