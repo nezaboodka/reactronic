@@ -63,7 +63,6 @@ export interface ISnapshot {
   readonly id: number;
   readonly hint: string;
   readonly timestamp: number;
-  readonly readstamp: number;
   readonly applied: boolean;
 }
 
@@ -71,6 +70,6 @@ export interface ICacheResult {
   hint(tranless?: boolean): string;
   bind<T>(func: F<T>): F<T>;
   readonly invalid: { since: number };
-  invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], selfInvalidation: boolean): void;
+  invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], invalidationOnApply: boolean): void;
   renew(timestamp: number, now: boolean, nothrow: boolean): void;
 }

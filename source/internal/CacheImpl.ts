@@ -308,14 +308,13 @@ class CacheResult implements ICacheResult {
     if (error === undefined) {
       const triggers = snapshot.triggers;
       const timestamp = snapshot.timestamp;
-      const readstamp = snapshot.readstamp;
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(RT_UNMOUNT))
           r.changes.forEach(prop => {
             CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
             const cache = r.data[prop];
             if (cache instanceof CacheResult) {
-              cache.subscribeToOwnObservables(timestamp, readstamp, triggers);
+              cache.subscribeToOwnObservables(timestamp, triggers);
               cache.complete();
             }
           });
@@ -355,14 +354,14 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  private subscribeToOwnObservables(timestamp: number, readstamp: number, triggers: ICacheResult[]): void {
+  private subscribeToOwnObservables(timestamp: number, triggers: ICacheResult[]): void {
     const log: string[] = [];
     this.observables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
         if (!r.replaced.has(prop)) {
           const v = r.data[prop];
           if (!(v instanceof CacheResult) || timestamp < v.invalid.since)
-            CacheResult.subscribe(this, r, prop, log);
+            this.subscribeTo(r, prop, log);
           else
             this.invalidateDueTo(v.record, prop, timestamp, triggers, true);
         }
@@ -373,7 +372,7 @@ class CacheResult implements ICacheResult {
     this.weakObservables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
         if (!r.replaced.has(prop))
-          CacheResult.subscribe(this, r, prop, log);
+          this.subscribeTo(r, prop, log);
         else
           this.invalidateDueTo(r, prop, timestamp, triggers, true);
       });
@@ -383,25 +382,25 @@ class CacheResult implements ICacheResult {
 
   private unsubscribeFromOwnObservables(): void {
     const log: string[] = [];
-    CacheResult.unsubscribe(this, this.observables, log);
-    CacheResult.unsubscribe(this, this.weakObservables, log);
+    this.unsubscribeFrom(this.observables, log);
+    this.unsubscribeFrom(this.weakObservables, log);
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${log.join(", ")}}.`);
   }
 
-  private static subscribe(observer: CacheResult, record: Record, prop: PropertyKey, log: string[]): void {
+  private subscribeTo(record: Record, prop: PropertyKey, log: string[]): void {
     let propObservers = record.observers.get(prop);
     if (!propObservers)
       record.observers.set(prop, propObservers = new Set<CacheResult>());
-    propObservers.add(observer); // now subscribed
+    propObservers.add(this); // now subscribed
     if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(record, prop, true));
   }
 
-  private static unsubscribe(observer: CacheResult, observables: Map<PropertyKey, Set<Record>>, log: string[]): void {
+  private unsubscribeFrom(observables: Map<PropertyKey, Set<Record>>, log: string[]): void {
     observables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
         const propObservers = r.observers.get(prop);
         if (propObservers)
-          propObservers.delete(observer); // now unsubscribed
+          propObservers.delete(this); // now unsubscribed
         else
           throw misuse("invariant is broken, please restart the application");
         if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(r, prop, true));
@@ -432,14 +431,14 @@ class CacheResult implements ICacheResult {
     return result;
   }
 
-  invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], selfInvalidation: boolean): boolean {
+  invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], invalidationOnApply: boolean): boolean {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
       const cfg = this.config;
       const isTrigger = cfg.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (Dbg.isOn && Dbg.trace.invalidations || (cfg.trace && cfg.trace.invalidations)) Dbg.logAs(cfg.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause, causeProp)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
-      if (!selfInvalidation)
+      if (!invalidationOnApply)
         this.unsubscribeFromOwnObservables(); // now unsubscribed
       if (!isTrigger) {
         // Invalidate outer observers (cascade)
