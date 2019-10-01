@@ -41,7 +41,7 @@ export class CacheImpl extends Cache<any> {
     let call: CacheCall = this.readable(args);
     const c: CacheResult = call.cache;
     if (!call.valid && (!weak || !c.invalid.renewing)) {
-      const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
+      const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
       const cfg = c.config;
       const spawn = weak || cfg.kind !== Kind.Transaction;
       const token = cfg.kind === Kind.Cached ? this : undefined;
@@ -140,7 +140,7 @@ export class CacheImpl extends Cache<any> {
     const call = this.readable();
     const c: CacheResult = call.cache;
     const r: Record = call.record;
-    const hint: string = Dbg.isOn && Dbg.trace.hints ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
+    const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
     return Transaction.runAs(hint, false, undefined, undefined, (): Config => {
       const call2 = this.writable();
       const c2: CacheResult = call2.cache;

@@ -44,10 +44,7 @@ class Rx extends Stateful {
 }
 
 function createReactState(trace?: Partial<Trace>): ReactState {
-  const dbg = Cache.isTraceOn && Cache.trace.hints
-    ? trace === undefined || trace.hints !== false
-    : trace !== undefined && trace.hints === true;
-  const hint = dbg ? getComponentName() : "<rx>";
+  const hint = Cache.isTraceOn ? getComponentName() : "<rx>";
   const rx = Transaction.runAs<Rx>(hint, false, trace, undefined, createRx, hint, trace);
   return {rx, counter: 0};
 }

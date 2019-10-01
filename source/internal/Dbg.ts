@@ -20,7 +20,6 @@ export function misuse(message: string): Error {
 export class Dbg {
   static OFF: Trace = {
     silent: false,
-    hints: false,
     errors: false,
     warnings: false,
     transactions: false,
@@ -64,7 +63,6 @@ export class Dbg {
   static merge(t: Partial<Trace> | undefined, color: number | undefined, prefix: string | undefined, existing: Trace): Trace {
     const result = !t ? { ...existing } : {
       silent: t.silent !== undefined ? t.silent : existing.silent,
-      hints: t.hints !== undefined ? t.hints : existing.hints,
       transactions: t.transactions !== undefined ? t.transactions : existing.transactions,
       methods: t.methods !== undefined ? t.methods : existing.methods,
       steps: t.steps !== undefined ? t.steps : existing.steps,

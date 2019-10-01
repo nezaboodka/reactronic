@@ -108,7 +108,7 @@ export class Transaction {
   }
 
   undo(): void {
-    const hint = Dbg.isOn && Dbg.trace.hints ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
+    const hint = Dbg.isOn ? `Tran#${this.snapshot.hint}.undo` : /* istanbul ignore next */ "noname";
     Transaction.runAs(hint, false, undefined, undefined,
       Snapshot.undo, this.snapshot);
   }
@@ -217,8 +217,8 @@ export class Transaction {
   }
 
   private runTriggers(): void {
-    const name = Dbg.isOn && Dbg.trace.hints ? `■-■-■ TRIGGERS(${this.snapshot.triggers.length}) after T${this.id} (${this.snapshot.hint})` : /* istanbul ignore next */ "TRIGGERS";
-    this.reaction.tran = Transaction.runAs(name, true, this.trace, undefined,
+    const hint = Dbg.isOn ? `■-■-■ TRIGGERS(${this.snapshot.triggers.length}) after T${this.id} (${this.snapshot.hint})` : /* istanbul ignore next */ "TRIGGERS";
+    this.reaction.tran = Transaction.runAs(hint, true, this.trace, undefined,
       Transaction.runTriggersFunc, this.snapshot.triggers);
   }
 
