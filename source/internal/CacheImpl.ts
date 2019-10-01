@@ -290,7 +290,7 @@ class CacheResult implements ICacheResult {
       t.renew(TOP_TIMESTAMP, true, true);
   }
 
-  static markViewed(r: Record, prop: PropertyKey, weak: boolean): void {
+  private static markViewed(r: Record, prop: PropertyKey, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.readable().bumpReadStamp(r);
@@ -299,12 +299,12 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  static markChanged(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
+  private static markChanged(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
     changed ? r.changes.add(prop) : r.changes.delete(prop);
     if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, prop)} = ${valueHint(value)}`);
   }
 
-  static applyDependencies(snapshot: Snapshot, error?: any): void {
+  private static applyDependencies(snapshot: Snapshot, error?: any): void {
     if (error === undefined) {
       const triggers = snapshot.triggers;
       const timestamp = snapshot.timestamp;
@@ -559,6 +559,16 @@ class CacheResult implements ICacheResult {
     // Utils.freezeSet(c.weakObservables);
     Object.freeze(c);
   }
+
+  static init(): void {
+    Dbg.getCurrentTrace = getCurrentTrace;
+    Record.markViewed = CacheResult.markViewed; // override
+    Record.markChanged = CacheResult.markChanged; // override
+    Snapshot.equal = CacheResult.equal; // override
+    Snapshot.applyDependencies = CacheResult.applyDependencies; // override
+    Hooks.createCacheTrap = CacheImpl.createCacheTrap; // override
+    Promise.prototype.then = reactronic_then; // override
+  }
 }
 
 function valueHint(value: any): string {
@@ -581,6 +591,17 @@ function valueHint(value: any): string {
   else
     result = "◌";
   return result;
+}
+
+function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
+  const t = Transaction.current;
+  let res = Dbg.merge(t.trace, t.id > 0 ? 31 + t.id % 6 : 37, `T${t.id}`, Dbg.global);
+  res = Dbg.merge({margin1: t.margin}, undefined, undefined, res);
+  if (CacheResult.active)
+    res = Dbg.merge({margin2: CacheResult.active.margin}, undefined, undefined, res);
+  if (local)
+    res = Dbg.merge(local, undefined, undefined, res);
+  return res;
 }
 
 const original_primise_then = Promise.prototype.then;
@@ -616,27 +637,4 @@ export function reject_rethrow(error: any): never {
   throw error;
 }
 
-function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
-  const t = Transaction.current;
-  let res = Dbg.merge(t.trace, t.id > 0 ? 31 + t.id % 6 : 37, `T${t.id}`, Dbg.global);
-  res = Dbg.merge({margin1: t.margin}, undefined, undefined, res);
-  if (CacheResult.active)
-    res = Dbg.merge({margin2: CacheResult.active.margin}, undefined, undefined, res);
-  if (local)
-    res = Dbg.merge(local, undefined, undefined, res);
-  return res;
-}
-
-// Global Init
-
-function init(): void {
-  Dbg.getCurrentTrace = getCurrentTrace;
-  Record.markViewed = CacheResult.markViewed; // override
-  Record.markChanged = CacheResult.markChanged; // override
-  Snapshot.equal = CacheResult.equal; // override
-  Snapshot.applyDependencies = CacheResult.applyDependencies; // override
-  Hooks.createCacheTrap = CacheImpl.createCacheTrap; // override
-  Promise.prototype.then = reactronic_then; // override
-}
-
-init();
+CacheResult.init();
