@@ -362,15 +362,13 @@ class CacheResult implements ICacheResult {
   }
 
   private subscribeToOwnObservables(timestamp: number, readstamp: number, triggers: ICacheResult[]): void {
-    const subscriptions: string[] = [];
+    const log: string[] = [];
     this.observables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
         if (!r.replaced.has(prop)) {
           const v = r.data[prop];
-          if (!(v instanceof CacheResult) || timestamp < v.invalid.since /*|| (readstamp > v.invalid.since && v.invalid.since !== 0)*/) {
-            CacheResult.acquireObserverSet(r, prop).add(this); // now subscribed
-            if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, prop, true));
-          }
+          if (!(v instanceof CacheResult) || timestamp < v.invalid.since)
+            CacheResult.subscribe(this, r, prop, log);
           else
             this.invalidateDueTo(v.record, prop, timestamp, triggers, true);
         }
@@ -380,15 +378,13 @@ class CacheResult implements ICacheResult {
     });
     this.weakObservables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
-        if (!r.replaced.has(prop)) {
-          CacheResult.acquireObserverSet(r, prop).add(this); // now subscribed
-          if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, prop, true));
-        }
+        if (!r.replaced.has(prop))
+          CacheResult.subscribe(this, r, prop, log);
         else
           this.invalidateDueTo(r, prop, timestamp, triggers, true);
       });
     });
-    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to {${subscriptions.join(", ")}}.`);
+    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to {${log.join(", ")}}.`);
   }
 
   private unsubscribeFromOwnObservables(): void {
@@ -396,6 +392,11 @@ class CacheResult implements ICacheResult {
     CacheResult.unsubscribe(this, this.observables, log);
     CacheResult.unsubscribe(this, this.weakObservables, log);
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${log.join(", ")}}.`);
+  }
+
+  private static subscribe(observer: CacheResult, record: Record, prop: PropertyKey, log: string[]): void {
+    CacheResult.acquireObserverSet(record, prop).add(observer); // now subscribed
+    if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(record, prop, true));
   }
 
   private static unsubscribe(observer: CacheResult, observables: Map<PropertyKey, Set<Record>>, log: string[]): void {
