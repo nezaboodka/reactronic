@@ -353,13 +353,13 @@ class CacheResult implements ICacheResult {
       }
     }
     else if (latency === 0)
-      CacheResult.addAsyncTriggerToBatch(this);
+      this.addToAsyncTriggerBatch();
     else if (latency > 0)
       setTimeout(() => this.renew(TOP_TIMESTAMP, true, true), latency);
   }
 
-  private static addAsyncTriggerToBatch(c: CacheResult): void {
-    CacheResult.asyncTriggerBatch.push(c);
+  private addToAsyncTriggerBatch(): void {
+    CacheResult.asyncTriggerBatch.push(this);
     if (CacheResult.asyncTriggerBatch.length === 1)
       setTimeout(CacheResult.processAsyncTriggerBatch, 0);
   }
