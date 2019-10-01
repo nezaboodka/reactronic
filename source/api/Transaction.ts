@@ -302,6 +302,7 @@ export class Transaction {
     Record.blank = blank;
     Snapshot.lastUsedId = 99;
     Snapshot.headTimestamp = 100;
+    // Snapshot.oldest = undefined;
   }
 }
 
