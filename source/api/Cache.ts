@@ -34,6 +34,7 @@ export abstract class Cache<T> {
   abstract invalidate(): void;
   abstract call(args?: any[]): T | undefined;
 
+  static triggersAutoStartDisabled: boolean;
   static of<T>(method: F<T>): Cache<T> { return CacheImpl.get(method); }
   static unmount(...objects: any[]): Transaction { return CacheImpl.unmount(...objects); }
 

@@ -20,6 +20,8 @@ const expected: string[] = [
 ];
 
 test("basic", t => {
+  Cache.triggersAutoStartDisabled = true;
+  Cache.triggersAutoStartDisabled = false;
   Cache.setTrace(tracing.off);
   Cache.setTrace(tracing.noisy);
   // Simple transactions

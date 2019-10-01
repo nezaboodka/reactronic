@@ -14,6 +14,8 @@ const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER;
 type CacheCall = { valid: boolean, cache: CacheResult, record: Record };
 
 export class CacheImpl extends Cache<any> {
+  static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled; }
+  static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = true; }
   private readonly handle: Handle;
   private readonly blank: CacheResult;
 

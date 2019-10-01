@@ -22,7 +22,7 @@ export class Stateful {
   constructor() {
     const h: Handle = Hooks.createHandle(true, this, undefined, new.target.name);
     const triggers: Map<PropertyKey, Cfg> | undefined = Hooks.getConfigTable(new.target.prototype)[RT_TRIGGERS];
-    if (triggers)
+    if (triggers && !Hooks.triggersAutoStartDisabled)
       triggers.forEach((rx, prop) =>
         (h.proxy[prop][RT_CACHE] as Cache<any>).invalidate());
     return h.proxy;
@@ -71,6 +71,7 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 // Hooks
 
 export class Hooks implements ProxyHandler<Handle> {
+  static triggersAutoStartDisabled: boolean = false;
   static readonly proxy: Hooks = new Hooks();
 
   getPrototypeOf(h: Handle): object | null {
