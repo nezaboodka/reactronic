@@ -252,6 +252,87 @@ class CacheResult implements ICacheResult {
     return Cache_run;
   }
 
+  compute(proxy: any, args: any[] | undefined): void {
+    if (args)
+      this.args = args;
+    if (!this.error)
+      CacheImpl.run(this, CacheResult.computeFunc, proxy, this);
+    else
+      this.ret = Promise.reject(this.error);
+    this.invalid.since = TOP_TIMESTAMP;
+  }
+
+  static computeFunc(proxy: any, c: CacheResult): void {
+    c.enter();
+    try {
+      c.ret = c.config.body.call(proxy, ...c.args);
+    }
+    finally {
+      c.leaveOrAsync();
+    }
+  }
+
+  enter(): void {
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.member)} - enter`);
+    this.started = Date.now();
+    if (this.config.monitor)
+      this.monitorEnter(this.config.monitor);
+  }
+
+  leaveOrAsync(): void {
+    if (this.ret instanceof Promise) {
+      this.ret = this.ret.then(
+        value => {
+          this.value = value;
+          this.leave(" ▒", "- finished ", "   OK ──┘");
+          return value;
+        },
+        error => {
+          this.error = error;
+          this.leave(" ▒", "- finished ", "  ERR ──┘");
+          throw error;
+        });
+      if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(this.record, this.member)} - leave... `, 0, "ASYNC ──┐");
+    }
+    else {
+      this.value = this.ret;
+      this.leave("_/", "- leave");
+    }
+  }
+
+  private leave(op: string, message: string, highlight: string | undefined = undefined): void {
+    if (this.config.monitor)
+      this.monitorLeave(this.config.monitor);
+    const ms: number = Date.now() - this.started;
+    this.started = 0;
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.member)} ${message}`, ms, highlight);
+    // TODO: handle errors
+    // Cache.freeze(this);
+  }
+
+  private monitorEnter(mon: Monitor): void {
+    CacheImpl.run(undefined, Transaction.runAs, "Monitor.enter",
+      true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+      Monitor.enter, mon, this);
+  }
+
+  private monitorLeave(mon: Monitor): void {
+    Transaction.outside(() => {
+      const leave = () => {
+        CacheImpl.run(undefined, Transaction.runAs, "Monitor.leave",
+          true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+          Monitor.leave, mon, this);
+      };
+      this.tran.whenFinished(false).then(leave, leave);
+    });
+  }
+
+  complete(error?: any): void {
+    const prev = this.record.prev.record.data[this.member];
+    if (prev instanceof CacheResult && prev.invalid.renewing === this)
+      prev.invalid.renewing = undefined;
+  }
+
   renew(timestamp: number, now: boolean, nothrow: boolean): void {
     const latency = this.config.latency;
     if (now || latency === -1) {
@@ -457,87 +538,6 @@ class CacheResult implements ICacheResult {
         triggers.push(this);
     }
     return result;
-  }
-
-  compute(proxy: any, args: any[] | undefined): void {
-    if (args)
-      this.args = args;
-    if (!this.error)
-      CacheImpl.run(this, CacheResult.computeFunc, proxy, this);
-    else
-      this.ret = Promise.reject(this.error);
-    this.invalid.since = TOP_TIMESTAMP;
-  }
-
-  static computeFunc(proxy: any, c: CacheResult): void {
-    c.enter();
-    try {
-      c.ret = c.config.body.call(proxy, ...c.args);
-    }
-    finally {
-      c.leaveOrAsync();
-    }
-  }
-
-  enter(): void {
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.member)} - enter`);
-    this.started = Date.now();
-    if (this.config.monitor)
-      this.monitorEnter(this.config.monitor);
-  }
-
-  leaveOrAsync(): void {
-    if (this.ret instanceof Promise) {
-      this.ret = this.ret.then(
-        value => {
-          this.value = value;
-          this.leave(" ▒", "- finished ", "   OK ──┘");
-          return value;
-        },
-        error => {
-          this.error = error;
-          this.leave(" ▒", "- finished ", "  ERR ──┘");
-          throw error;
-        });
-      if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(this.record, this.member)} - leave... `, 0, "ASYNC ──┐");
-    }
-    else {
-      this.value = this.ret;
-      this.leave("_/", "- leave");
-    }
-  }
-
-  private leave(op: string, message: string, highlight: string | undefined = undefined): void {
-    if (this.config.monitor)
-      this.monitorLeave(this.config.monitor);
-    const ms: number = Date.now() - this.started;
-    this.started = 0;
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.member)} ${message}`, ms, highlight);
-    // TODO: handle errors
-    // Cache.freeze(this);
-  }
-
-  private monitorEnter(mon: Monitor): void {
-    CacheImpl.run(undefined, Transaction.runAs, "Monitor.enter",
-      true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
-      Monitor.enter, mon, this);
-  }
-
-  private monitorLeave(mon: Monitor): void {
-    Transaction.outside(() => {
-      const leave = () => {
-        CacheImpl.run(undefined, Transaction.runAs, "Monitor.leave",
-          true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
-          Monitor.leave, mon, this);
-      };
-      this.tran.whenFinished(false).then(leave, leave);
-    });
-  }
-
-  complete(error?: any): void {
-    const prev = this.record.prev.record.data[this.member];
-    if (prev instanceof CacheResult && prev.invalid.renewing === this)
-      prev.invalid.renewing = undefined;
   }
 
   static equal(oldValue: any, newValue: any): boolean {
