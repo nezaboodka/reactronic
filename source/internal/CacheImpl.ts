@@ -392,28 +392,23 @@ class CacheResult implements ICacheResult {
   }
 
   private unsubscribeFromOwnObservables(): void {
-    const subscriptions: string[] = [];
-    this.observables.forEach((records: Set<Record>, prop: PropertyKey) => {
+    const log: string[] = [];
+    CacheResult.unsubscribe(this, this.observables, log);
+    CacheResult.unsubscribe(this, this.weakObservables, log);
+    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${log.join(", ")}}.`);
+  }
+
+  private static unsubscribe(observer: CacheResult, observables: Map<PropertyKey, Set<Record>>, log: string[]): void {
+    observables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
         const propObservers = r.observers.get(prop);
         if (propObservers)
-          propObservers.delete(this); // now unsubscribed
+          propObservers.delete(observer); // now unsubscribed
         else
           throw misuse("invariant is broken, please restart the application");
-        if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, prop, true));
+        if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(r, prop, true));
       });
     });
-    this.weakObservables.forEach((records: Set<Record>, prop: PropertyKey) => {
-      records.forEach(r => {
-        const propObservers = r.observers.get(prop);
-        if (propObservers)
-          propObservers.delete(this); // now unsubscribed
-        else
-          throw misuse("invariant is broken, please restart the application");
-        if (Dbg.isOn && Dbg.trace.subscriptions) subscriptions.push(Hint.record(r, prop, true));
-      });
-    });
-    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && subscriptions.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${subscriptions.join(", ")}}.`);
   }
 
   static retainPrevObservers(curr: Record, prop: PropertyKey, prevObservers: Set<ICacheResult>): void {
