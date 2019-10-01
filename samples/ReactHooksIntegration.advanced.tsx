@@ -35,9 +35,7 @@ class Rx extends Stateful {
   }
 
   @stateless counter: number = 0;
-
   @stateless refresh: (next: ReactState) => void = nop;
-
   @stateless readonly unmountEffect = (): (() => void) => {
     return () => Cache.unmount(this);
   }
