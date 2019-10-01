@@ -26,17 +26,17 @@ export function standalone<T>(func: F<T>, ...args: any[]): T {
 export abstract class Cache<T> {
   abstract configure(config: Partial<Config>): Config;
   abstract readonly config: Config;
-  abstract readonly stamp: number;
   abstract readonly args: ReadonlyArray<any>;
   abstract readonly value: T;
   abstract readonly error: any;
+  abstract readonly stamp: number;
   abstract readonly isInvalid: boolean;
   abstract invalidate(): void;
   abstract call(args?: any[]): T | undefined;
 
   static get triggersAutoStartDisabled(): boolean { return CacheImpl.triggersAutoStartDisabled; }
   static set triggersAutoStartDisabled(value: boolean) { CacheImpl.triggersAutoStartDisabled = value; }
-  static of<T>(method: F<T>): Cache<T> { return CacheImpl.get(method); }
+  static of<T>(method: F<T>): Cache<T> { return CacheImpl.of(method); }
   static unmount(...objects: any[]): Transaction { return CacheImpl.unmount(...objects); }
 
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name); }

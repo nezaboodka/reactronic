@@ -21,10 +21,10 @@ export class CacheImpl extends Cache<any> {
 
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
   get config(): Config { return this.weak().cache.config; }
-  get stamp(): number { return this.weak().record.snapshot.timestamp; }
   get args(): ReadonlyArray<any> { return this.weak().cache.args; }
   get value(): any { return this._call(true).cache.value; }
   get error(): boolean { return this.weak().cache.error; }
+  get stamp(): number { return this.weak().record.snapshot.timestamp; }
   get isInvalid(): boolean { return !this.weak().valid; }
   invalidate(): void { CacheImpl.invalidate(this); }
   call(args?: any): any { return this._call(true, args).cache.value; }
@@ -176,7 +176,7 @@ export class CacheImpl extends Cache<any> {
     return cacheTrap;
   }
 
-  static get(method: F<any>): Cache<any> {
+  static of(method: F<any>): Cache<any> {
     const impl: Cache<any> | undefined = Utils.get(method, RT_CACHE);
     if (!impl)
       throw misuse("given method is not a reactronic cache");
