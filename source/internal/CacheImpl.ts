@@ -15,7 +15,7 @@ type CacheCall = { valid: boolean, cache: CacheResult, record: Record };
 
 export class CacheImpl extends Cache<any> {
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled; }
-  static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = true; }
+  static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value; }
   private readonly handle: Handle;
   private readonly blank: CacheResult;
 

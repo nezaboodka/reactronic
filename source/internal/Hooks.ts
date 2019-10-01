@@ -144,7 +144,7 @@ export class Hooks implements ProxyHandler<Handle> {
           const h: Handle = self[RT_HANDLE] || Hooks.createHandle(stateful, self, undefined, origCtor.name);
           if (self.constructor === ctor)
             h.hint = origCtor.name;
-          if (triggers)
+          if (triggers && !Hooks.triggersAutoStartDisabled)
             triggers.forEach((rx, prop) =>
               (h.proxy[prop][RT_CACHE] as Cache<any>).invalidate());
           return h.proxy;
