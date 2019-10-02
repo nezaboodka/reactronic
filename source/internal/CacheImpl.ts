@@ -506,9 +506,8 @@ class CacheResult implements ICacheResult {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
-      const cfg = this.config;
-      const isTrigger = cfg.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
-      if (Dbg.isOn && Dbg.trace.invalidations || (cfg.trace && cfg.trace.invalidations)) Dbg.logAs(cfg.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause, causeProp)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
+      const isTrigger = this.config.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause, causeProp)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
       if (unsubscribe)
         this.unsubscribeFromAllObservables(); // now unsubscribed
       if (!isTrigger) {
