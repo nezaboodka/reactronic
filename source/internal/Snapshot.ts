@@ -86,7 +86,7 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  tryWrite(h: Handle, prop: PropertyKey, token: any): Record {
+  private tryWrite(h: Handle, prop: PropertyKey, token: any): Record {
     if (this._applied)
       throw misuse(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
     if (this.cache !== undefined && token !== this.cache && token !== RT_HANDLE)
@@ -102,8 +102,6 @@ export class Snapshot implements ISnapshot {
         h.writers++;
       }
     }
-    else
-      r = Record.blank; // ignore if property is set to the same value
     return r;
   }
 
@@ -219,8 +217,9 @@ export class Snapshot implements ISnapshot {
       r.changes.forEach(prop => {
         if (r.prev.record !== Record.blank) {
           const prevValue: any = r.prev.record.data[prop];
-          const t: Record = Snapshot.writable().tryWrite(h, prop, prevValue);
-          if (t !== Record.blank) {
+          const ctx = Snapshot.writable();
+          const t: Record = ctx.writable(h, prop, prevValue);
+          if (t.snapshot === ctx) {
             t.data[prop] = prevValue;
             const v: any = t.prev.record.data[prop];
             Record.markChanged(t, prop, v !== prevValue, prevValue);
