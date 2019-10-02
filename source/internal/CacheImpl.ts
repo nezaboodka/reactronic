@@ -520,7 +520,7 @@ class CacheResult implements ICacheResult {
         const h: Handle = Utils.get(this.record.data, RT_HANDLE);
         let r: Record = h.head;
         while (r !== Record.blank && !r.replaced.has(this.member)) {
-          if (r.data[this.member] === this) {
+          if (r.data[this.member] === this) { // TODO: more clarity and reliability is needed here
             const propObservers = r.observers.get(this.member);
             if (propObservers)
               propObservers.forEach(c => c.invalidateDueTo(r, this.member, since, triggers, true));
