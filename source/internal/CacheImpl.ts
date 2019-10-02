@@ -352,7 +352,7 @@ class CacheResult implements ICacheResult {
     }
     else if (latency === 0)
       this.addToAsyncTriggerBatch();
-    else if (latency > 0)
+    else if (latency > 0) // ignore disabled triggers (latency -2)
       setTimeout(() => this.renew(TOP_TIMESTAMP, true, true), latency);
   }
 
