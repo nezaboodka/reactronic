@@ -132,7 +132,7 @@ export class CacheImpl extends Cache<any> {
   static invalidate(self: CacheImpl): void {
     const call = self.writable();
     const c = call.cache;
-    CacheResult.acquireObservableSet(c, c.member, false).add(call.record);
+    c.acquireObservableSet(c.member, false).add(call.record);
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`);
   }
 
@@ -375,7 +375,7 @@ class CacheResult implements ICacheResult {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.readable().bumpReadStamp(r);
-      CacheResult.acquireObservableSet(c, prop, weak).add(r);
+      c.acquireObservableSet(prop, weak).add(r);
       if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  ${weak ? 's' : 'r'} `, `${c.hint()} ${weak ? 'weakly uses' : 'uses'} ${Hint.record(r, prop)}`);
     }
   }
@@ -451,12 +451,11 @@ class CacheResult implements ICacheResult {
 
   private subscribeToAll(weak: boolean, observables: Map<PropertyKey, Set<Record>>, timestamp: number, triggers: ICacheResult[], log: string[]): void {
     const t = weak ? -1 : timestamp;
-    observables.forEach((records: Set<Record>, prop: PropertyKey) => {
+    observables.forEach((records: Set<Record>, prop: PropertyKey) =>
       records.forEach(r => {
         if (!this.subscribeTo(r, prop, t, log))
           this.invalidateDueTo(r, prop, timestamp, triggers, false);
-      });
-    });
+      }));
   }
 
   private unsubscribeFromAll(observables: Map<PropertyKey, Set<Record>>, log: string[]): void {
@@ -501,14 +500,11 @@ class CacheResult implements ICacheResult {
       curr.observers.set(prop, new Set<ICacheResult>()); // clear
   }
 
-  static acquireObservableSet(c: CacheResult, prop: PropertyKey, weak: boolean): Set<Record> {
-    let result = weak ? c.weakObservables.get(prop) : c.observables.get(prop);
-    if (!result) {
-      if (weak)
-        c.weakObservables.set(prop, result = new Set<Record>());
-      else
-        c.observables.set(prop, result = new Set<Record>());
-    }
+  acquireObservableSet(prop: PropertyKey, weak: boolean): Set<Record> {
+    const observables = weak ? this.weakObservables : this.observables;
+    let result = observables.get(prop);
+    if (!result)
+        observables.set(prop, result = new Set<Record>());
     return result;
   }
 
