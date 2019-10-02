@@ -90,7 +90,7 @@ export class CacheImpl extends Cache<any> {
   private writable(): CacheCall {
     const ctx = Snapshot.writable();
     const member = this.blank.member;
-    const r: Record = ctx.writable(this.handle, member, this);
+    const r: Record = ctx.write(this.handle, member, this);
     let c: CacheResult = r.data[member] || this.blank;
     if (c.record !== r) {
       const renewing = new CacheResult(r, member, c);

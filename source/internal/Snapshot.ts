@@ -57,18 +57,18 @@ export class Snapshot implements ISnapshot {
     return oldValue === newValue; // to be redefined by Cache implementation
   };
 
-  readable(h: Handle): Record {
-    const result = this.tryRead(h);
-    if (result === Record.blank) /* istanbul ignore next */
+  read(h: Handle): Record {
+    const r = this.tryRead(h);
+    if (r === Record.blank) /* istanbul ignore next */
       throw misuse(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
-    return result;
+    return r;
   }
 
-  writable(h: Handle, prop: PropertyKey, token: any): Record {
-    const result: Record = this.tryWrite(h, prop, token);
-    if (result === Record.blank) /* istanbul ignore next */
+  write(h: Handle, prop: PropertyKey, token: any): Record {
+    const r: Record = this.tryWrite(h, prop, token);
+    if (r === Record.blank) /* istanbul ignore next */
       throw misuse(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
-    return result;
+    return r;
   }
 
   tryRead(h: Handle): Record {
@@ -218,7 +218,7 @@ export class Snapshot implements ISnapshot {
         if (r.prev.record !== Record.blank) {
           const prevValue: any = r.prev.record.data[prop];
           const ctx = Snapshot.writable();
-          const t: Record = ctx.writable(h, prop, prevValue);
+          const t: Record = ctx.write(h, prop, prevValue);
           if (t.snapshot === ctx) {
             t.data[prop] = prevValue;
             const v: any = t.prev.record.data[prop];

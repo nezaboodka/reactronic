@@ -82,7 +82,7 @@ export class Hooks implements ProxyHandler<Handle> {
     let value: any;
     const rt: Cfg | undefined = Hooks.getConfig(h.stateless, prop);
     if (!rt || (rt.body === decoratedfield && rt.kind !== Kind.Stateless)) { // versioned state
-      const r: Record = Snapshot.readable().readable(h);
+      const r: Record = Snapshot.readable().read(h);
       value = r.data[prop];
       if (value === undefined && !r.data.hasOwnProperty(prop)) {
         value = Reflect.get(h.stateless, prop, receiver);
@@ -101,7 +101,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const rt: Cfg | undefined = Hooks.getConfig(h.stateless, prop);
     if (!rt || (rt.body === decoratedfield && rt.kind !== Kind.Stateless)) { // versioned state
       const ctx = Snapshot.writable();
-      const r: Record = ctx.writable(h, prop, value);
+      const r: Record = ctx.write(h, prop, value);
       if (r.snapshot === ctx) { // this condition is false when new value is equal to the old one
         r.data[prop] = value;
         const v: any = r.prev.record.data[prop];
@@ -114,7 +114,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   getOwnPropertyDescriptor(h: Handle, prop: PropertyKey): PropertyDescriptor | undefined {
-    const r: Record = Snapshot.readable().readable(h);
+    const r: Record = Snapshot.readable().read(h);
     const pd = Reflect.getOwnPropertyDescriptor(r.data, prop);
     if (pd)
       pd.configurable = pd.writable = true;
@@ -123,7 +123,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   ownKeys(h: Handle): PropertyKey[] {
     // TODO: Better implementation to avoid filtering
-    const r: Record = Snapshot.readable().readable(h);
+    const r: Record = Snapshot.readable().read(h);
     const result = [];
     for (const prop of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[prop];
@@ -260,14 +260,14 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static createHandle(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
     const h = new Handle(stateless, proxy, hint, Hooks.proxy);
-    const r = Snapshot.writable().writable(h, "<RT:HANDLE>", RT_HANDLE);
+    const r = Snapshot.writable().write(h, "<RT:HANDLE>", RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
     return h;
   }
 
   static createHandleByDecoratedClass(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
     const h = new Handle(stateless, proxy, hint, Hooks.proxy);
-    const r = Snapshot.writable().writable(h, "<RT:HANDLE>", RT_HANDLE);
+    const r = Snapshot.writable().write(h, "<RT:HANDLE>", RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
     initRecordData(h, stateful, stateless, r);
     return h;
@@ -281,7 +281,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
 function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Record): void {
   const rxTable = Hooks.getConfigTable(Object.getPrototypeOf(stateless));
-  const r = Snapshot.writable().writable(h, RT_HANDLE, RT_HANDLE);
+  const r = Snapshot.writable().write(h, RT_HANDLE, RT_HANDLE);
   for (const prop of Object.getOwnPropertyNames(stateless))
     initRecordProp(stateful, rxTable, prop, r, stateless);
   for (const prop of Object.getOwnPropertySymbols(stateless)) /* istanbul ignore next */
