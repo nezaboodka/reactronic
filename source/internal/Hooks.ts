@@ -20,9 +20,7 @@ import { Trace } from '../api/Trace';
 
 export class Stateful {
   constructor() {
-    const h = new Handle(this, undefined, new.target.name, Hooks.proxy);
-    const r = Snapshot.writable().writable(h, RT_HANDLE, RT_HANDLE);
-    Utils.set(r.data, RT_HANDLE, h);
+    const h = Hooks.createHandle(true, this, undefined, new.target.name);
     const triggers: Map<PropertyKey, Cfg> | undefined = Hooks.getConfigTable(new.target.prototype)[RT_TRIGGERS];
     if (triggers && !Hooks.triggersAutoStartDisabled)
       triggers.forEach((rx, prop) =>
@@ -143,7 +141,7 @@ export class Hooks implements ProxyHandler<Handle> {
         constructor(...args: any[]) {
           super(...args);
           const self: any = this;
-          const h: Handle = self[RT_HANDLE] || Hooks.createHandle(stateful, self, undefined, origCtor.name);
+          const h: Handle = self[RT_HANDLE] || Hooks.createHandleByDecoratedClass(stateful, self, undefined, origCtor.name);
           if (self.constructor === ctor)
             h.hint = origCtor.name;
           if (triggers && !Hooks.triggersAutoStartDisabled)
@@ -165,8 +163,8 @@ export class Hooks implements ProxyHandler<Handle> {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args);
         const h: Handle = stateless instanceof Proxy
-          ? stateless[RT_HANDLE] || Hooks.createHandle(stateful, stateless, undefined, origCtor.name)
-          : Hooks.createHandle(stateful, stateless, undefined, origCtor.name);
+          ? stateless[RT_HANDLE] || Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
+          : Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name);
         if (triggers)
           triggers.forEach((rx, prop) => {
             const cache: Cache<any> = h.proxy[prop][RT_CACHE];
@@ -260,6 +258,13 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   static createHandle(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
+    const h = new Handle(stateless, proxy, hint, Hooks.proxy);
+    const r = Snapshot.writable().writable(h, RT_HANDLE, RT_HANDLE);
+    Utils.set(r.data, RT_HANDLE, h);
+    return h;
+  }
+
+  static createHandleByDecoratedClass(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
     const h = new Handle(stateless, proxy, hint, Hooks.proxy);
     const r = Snapshot.writable().writable(h, RT_HANDLE, RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
