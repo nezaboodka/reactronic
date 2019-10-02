@@ -383,7 +383,7 @@ class CacheResult implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, prop)} = ${valueHint(value)}`);
   }
 
-  private static applyDependencies(snapshot: Snapshot, error?: any): void {
+  private static applyAllDependencies(snapshot: Snapshot, error?: any): void {
     if (error === undefined) {
       const triggers = snapshot.triggers;
       const timestamp = snapshot.timestamp;
@@ -554,7 +554,7 @@ class CacheResult implements ICacheResult {
     Record.markViewed = CacheResult.markViewed; // override
     Record.markChanged = CacheResult.markChanged; // override
     Snapshot.equal = CacheResult.equal; // override
-    Snapshot.applyDependencies = CacheResult.applyDependencies; // override
+    Snapshot.applyAllDependencies = CacheResult.applyAllDependencies; // override
     Hooks.createCacheTrap = CacheImpl.createCacheTrap; // override
     Promise.prototype.then = reactronic_then; // override
   }

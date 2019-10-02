@@ -202,10 +202,10 @@ export class Snapshot implements ISnapshot {
     });
     if (Dbg.isOn && Dbg.trace.transactions)
       Dbg.log(this.timestamp < UNDEFINED_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
-    Snapshot.applyDependencies(this, error);
+    Snapshot.applyAllDependencies(this, error);
   }
 
-  static applyDependencies = function(snapshot: Snapshot, error?: any): void {
+  static applyAllDependencies = function(snapshot: Snapshot, error?: any): void {
     // to be redefined by Cache implementation
   };
 
