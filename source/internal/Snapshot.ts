@@ -43,12 +43,12 @@ export class Snapshot implements ISnapshot {
   }
 
   /* istanbul ignore next */
-  static readable = function(): Snapshot {
+  static read = function(): Snapshot {
     return undef(); // to be redefined by Transaction implementation
   };
 
   /* istanbul ignore next */
-  static writable = function(): Snapshot {
+  static write = function(): Snapshot {
     return undef(); // to be redefined by Transaction implementation
   };
 
@@ -103,9 +103,9 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  bumpReadStamp(r: Record): void {
-    if (r.snapshot.timestamp > this._readstamp)
-      this._readstamp = r.snapshot.timestamp;
+  bumpBy(timestamp: number): void {
+    if (timestamp > this._readstamp)
+      this._readstamp = timestamp;
   }
 
   acquire(outer: Snapshot): void {
@@ -215,7 +215,7 @@ export class Snapshot implements ISnapshot {
       r.changes.forEach(prop => {
         if (r.prev.record !== Record.blank) {
           const prevValue: any = r.prev.record.data[prop];
-          const ctx = Snapshot.writable();
+          const ctx = Snapshot.write();
           const t: Record = ctx.write(h, prop, prevValue);
           if (t.snapshot === ctx) {
             t.data[prop] = prevValue;

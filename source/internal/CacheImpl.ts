@@ -36,7 +36,7 @@ export class CacheImpl extends Cache<any> {
   }
 
   recall(weak: boolean, args?: any[]): CacheCall {
-    let call: CacheCall = this.readable(args);
+    let call: CacheCall = this.read(args);
     const c: CacheResult = call.cache;
     if (!call.valid && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
@@ -47,21 +47,21 @@ export class CacheImpl extends Cache<any> {
       const ret = Transaction.runAs(hint, spawn, cfg.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
-          call2 = this.readable(argsx); // re-read on retry
+          call2 = this.read(argsx); // re-read on retry
           if (!call2.valid) {
-            call2 = this.writable();
+            call2 = this.write();
             call2.cache.compute(this.handle.proxy, argsx);
           }
         }
         else {
-          call2 = this.writable();
+          call2 = this.write();
           call2.cache.compute(this.handle.proxy, argsx);
         }
         return call2.cache.ret;
       }, args);
       call2.cache.ret = ret;
       // TODO: Get rid of weak?
-      if (!weak && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
+      if (!weak && Snapshot.read().timestamp >= call2.cache.record.snapshot.timestamp)
         call = call2;
     }
     else
@@ -71,13 +71,13 @@ export class CacheImpl extends Cache<any> {
   }
 
   private weak(): CacheCall {
-    const call = this.readable(undefined);
+    const call = this.read(undefined);
     Record.markViewed(call.record, call.cache.member, true);
     return call;
   }
 
-  private readable(args?: any[]): CacheCall {
-    const ctx = Snapshot.readable();
+  private read(args?: any[]): CacheCall {
+    const ctx = Snapshot.read();
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[this.blank.member] || this.blank;
     const valid = c.config.kind !== Kind.Transaction &&
@@ -87,8 +87,8 @@ export class CacheImpl extends Cache<any> {
     return { valid, cache: c, record: r };
   }
 
-  private writable(): CacheCall {
-    const ctx = Snapshot.writable();
+  private write(): CacheCall {
+    const ctx = Snapshot.write();
     const member = this.blank.member;
     const r: Record = ctx.write(this.handle, member, this);
     let c: CacheResult = r.data[member] || this.blank;
@@ -128,19 +128,19 @@ export class CacheImpl extends Cache<any> {
   }
 
   static invalidate(self: CacheImpl): void {
-    const call = self.writable();
+    const call = self.write();
     const c = call.cache;
     c.acquireObservableSet(c.member, false).add(call.record);
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`);
   }
 
   private reconfigure(config: Partial<Config>): Config {
-    const call = this.readable();
+    const call = this.read();
     const c: CacheResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
     return Transaction.runAs(hint, false, undefined, undefined, (): Config => {
-      const call2 = this.writable();
+      const call2 = this.write();
       const c2: CacheResult = call2.cache;
       c2.config = new Cfg(c2.config.body, c2.config, config, false);
       if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.config = ...`);
@@ -372,7 +372,7 @@ class CacheResult implements ICacheResult {
   private static markViewed(r: Record, prop: PropertyKey, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
-      Snapshot.readable().bumpReadStamp(r);
+      Snapshot.read().bumpBy(r.snapshot.timestamp);
       c.acquireObservableSet(prop, weak).add(r);
       if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  ${weak ? 's' : 'r'} `, `${c.hint()} ${weak ? 'weakly uses' : 'uses'} ${Hint.record(r, prop)}`);
     }
