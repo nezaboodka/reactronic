@@ -20,7 +20,9 @@ import { Trace } from '../api/Trace';
 
 export class Stateful {
   constructor() {
-    const h: Handle = Hooks.createHandle(true, this, undefined, new.target.name);
+    const h = new Handle(this, undefined, new.target.name, Hooks.proxy);
+    const r = Snapshot.writable().writable(h, RT_HANDLE, RT_HANDLE);
+    Utils.set(r.data, RT_HANDLE, h);
     const triggers: Map<PropertyKey, Cfg> | undefined = Hooks.getConfigTable(new.target.prototype)[RT_TRIGGERS];
     if (triggers && !Hooks.triggersAutoStartDisabled)
       triggers.forEach((rx, prop) =>
