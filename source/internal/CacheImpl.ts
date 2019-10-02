@@ -14,20 +14,18 @@ const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER;
 type CacheCall = { valid: boolean, cache: CacheResult, record: Record };
 
 export class CacheImpl extends Cache<any> {
-  static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled; }
-  static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value; }
   private readonly handle: Handle;
   private readonly blank: CacheResult;
 
   configure(config: Partial<Config>): Config { return this.reconfigure(config); }
   get config(): Config { return this.weak().cache.config; }
   get args(): ReadonlyArray<any> { return this.weak().cache.args; }
-  get value(): any { return this._call(true).cache.value; }
+  get value(): any { return this.recall(true).cache.value; }
   get error(): boolean { return this.weak().cache.error; }
   get stamp(): number { return this.weak().record.snapshot.timestamp; }
   get isInvalid(): boolean { return !this.weak().valid; }
   invalidate(): void { CacheImpl.invalidate(this); }
-  call(args?: any): any { return this._call(true, args).cache.value; }
+  call(args?: any): any { return this.recall(true, args).cache.value; }
 
   constructor(handle: Handle, member: PropertyKey, config: Cfg) {
     super();
@@ -37,7 +35,7 @@ export class CacheImpl extends Cache<any> {
     // TODO: mark cache readonly?
   }
 
-  _call(weak: boolean, args?: any[]): CacheCall {
+  recall(weak: boolean, args?: any[]): CacheCall {
     let call: CacheCall = this.readable(args);
     const c: CacheResult = call.cache;
     if (!call.valid && (!weak || !c.invalid.renewing)) {
@@ -171,7 +169,7 @@ export class CacheImpl extends Cache<any> {
   static createCacheTrap(h: Handle, prop: PropertyKey, config: Cfg): F<any> {
     const cache = new CacheImpl(h, prop, config);
     const cacheTrap: F<any> = (...args: any[]): any =>
-      cache._call(false, args).cache.ret;
+      cache.recall(false, args).cache.ret;
     Utils.set(cacheTrap, RT_CACHE, cache);
     return cacheTrap;
   }
@@ -342,7 +340,7 @@ class CacheResult implements ICacheResult {
           const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
           const cache: CacheImpl = Utils.get(trap, RT_CACHE);
-          const call: CacheCall = cache._call(false);
+          const call: CacheCall = cache.recall(false);
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
         }
