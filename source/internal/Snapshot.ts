@@ -92,15 +92,13 @@ export class Snapshot implements ISnapshot {
     if (this.cache !== undefined && token !== this.cache && token !== RT_HANDLE)
       throw misuse(`cache must have no side effects (an attempt to change ${Hint.handle(h, prop)})`);
     let r: Record = this.tryRead(h);
-    if (r === Record.blank || r.data[prop] !== token) {
-      if (r.snapshot !== this) {
-        const data = Utils.copyAllProps(r.data, {});
-        r = new Record(h.head, this, data);
-        Reflect.set(r.data, RT_HANDLE, h);
-        this.changeset.set(h, r);
-        h.changing = r;
-        h.writers++;
-      }
+    if (r.snapshot !== this && r.data[prop] !== token) {
+      const data = Utils.copyAllProps(r.data, {});
+      r = new Record(h.head, this, data);
+      Reflect.set(r.data, RT_HANDLE, h);
+      this.changeset.set(h, r);
+      h.changing = r;
+      h.writers++;
     }
     return r;
   }
