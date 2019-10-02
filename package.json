@@ -1,6 +1,6 @@
 {
   "name": "reactronic",
-  "version": "0.19.59",
+  "version": "0.19.60",
   "description": "Reactronic - Transactionally Reactive State Management",
   "main": "dist/source/reactronic.js",
   "types": "dist/source/reactronic.d.ts",
@@ -30,13 +30,13 @@
   "homepage": "https://github.com/nezaboodka/reactronic/blob/master/README.md#readme",
   "dependencies": {},
   "devDependencies": {
-    "@types/node": "12.7.7",
-    "@types/react": "16.9.3",
-    "react": "16.9.0",
+    "@types/node": "12.7.9",
+    "@types/react": "16.9.4",
+    "react": "16.10.1",
     "ava": "2.4.0",
     "ts-node": "8.4.1",
     "tslint": "5.20.0",
-    "typescript": "3.6.2",
+    "typescript": "3.6.3",
     "nyc": "14.1.1"
   },
   "scripts": {
