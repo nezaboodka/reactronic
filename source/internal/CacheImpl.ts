@@ -399,10 +399,9 @@ class CacheResult implements ICacheResult {
             CacheResult.completePropertyChange(timestamp, r, prop);
           }
       });
-      snapshot.changeset.forEach((r: Record, h: Handle) => {
+      snapshot.changeset.forEach((r: Record, h: Handle) =>
         r.prev.record.observers.forEach((prevObservers: Set<ICacheResult>, prop: PropertyKey) =>
-          CacheResult.retainPrevObservers(r, prop, prevObservers));
-      });
+          CacheResult.retainPrevObservers(r, prop, prevObservers)));
     }
     else
       snapshot.changeset.forEach((r: Record, h: Handle) =>
