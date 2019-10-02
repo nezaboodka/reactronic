@@ -9,6 +9,8 @@ export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 
 // Record
 
+export type Prop = number | string;
+
 export class Record {
   readonly prev: { record: Record };
   readonly snapshot: ISnapshot;

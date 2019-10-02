@@ -260,14 +260,14 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static createHandle(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
     const h = new Handle(stateless, proxy, hint, Hooks.proxy);
-    const r = Snapshot.writable().writable(h, RT_HANDLE, RT_HANDLE);
+    const r = Snapshot.writable().writable(h, "<RT:HANDLE>", RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
     return h;
   }
 
   static createHandleByDecoratedClass(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
     const h = new Handle(stateless, proxy, hint, Hooks.proxy);
-    const r = Snapshot.writable().writable(h, RT_HANDLE, RT_HANDLE);
+    const r = Snapshot.writable().writable(h, "<RT:HANDLE>", RT_HANDLE);
     Utils.set(r.data, RT_HANDLE, h);
     initRecordData(h, stateful, stateless, r);
     return h;
