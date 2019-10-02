@@ -93,7 +93,7 @@ export class Snapshot implements ISnapshot {
       throw misuse(`cache must have no side effects (an attempt to change ${Hint.handle(h, prop)})`);
     let r: Record = this.tryRead(h);
     if (r.snapshot !== this && r.data[prop] !== token) {
-      const data = Utils.copyAllProps(r.data, {});
+      const data = {...r.data};
       r = new Record(h.head, this, data);
       Reflect.set(r.data, RT_HANDLE, h);
       this.changeset.set(h, r);
