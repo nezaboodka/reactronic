@@ -49,7 +49,7 @@ export class Record {
 
   static archive<T, C>(r: Record): void {
     if (r !== Record.blank) {
-      // Utils.freezeSet(r.outdated);
+      // Utils.freezeSet(r.replaced);
       // Utils.freezeMap(r.observers);
     }
   }

@@ -390,7 +390,7 @@ class CacheResult implements ICacheResult {
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(RT_UNMOUNT))
           r.changes.forEach(prop => {
-            CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
+            CacheResult.markAllPrevRecordsAsReplaced(timestamp, r, prop, triggers);
             const cache = r.data[prop];
             if (cache instanceof CacheResult) {
               cache.subscribeToAllOwnObservables(timestamp, triggers);
@@ -399,7 +399,7 @@ class CacheResult implements ICacheResult {
           });
         else
           for (const prop in r.prev.record.data) {
-            CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
+            CacheResult.markAllPrevRecordsAsReplaced(timestamp, r, prop, triggers);
             const cache = r.data[prop];
             if (cache instanceof CacheResult && cache.record === r)
               cache.complete();
@@ -421,7 +421,7 @@ class CacheResult implements ICacheResult {
     }
   }
 
-  private static markAllPrevRecordsAsOutdated(timestamp: number, head: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
+  private static markAllPrevRecordsAsReplaced(timestamp: number, head: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
     let r = head.prev.record;
     while (r !== Record.blank && !r.replaced.has(prop)) {
       r.replaced.set(prop, head);
