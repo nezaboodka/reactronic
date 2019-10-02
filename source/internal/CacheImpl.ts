@@ -437,18 +437,8 @@ class CacheResult implements ICacheResult {
 
   private subscribeToAllOwnObservables(timestamp: number, triggers: ICacheResult[]): void {
     const log: string[] = [];
-    this.observables.forEach((records: Set<Record>, prop: PropertyKey) => {
-      records.forEach(r => {
-        if (!this.subscribeTo(r, prop, timestamp, log))
-          this.invalidateDueTo(r, prop, timestamp, triggers, false);
-      });
-    });
-    this.weakObservables.forEach((records: Set<Record>, prop: PropertyKey) => {
-      records.forEach(r => {
-        if (!this.subscribeTo(r, prop, -1, log))
-          this.invalidateDueTo(r, prop, timestamp, triggers, false);
-      });
-    });
+    this.subscribeToAll(false, this.observables, timestamp, triggers, log);
+    this.subscribeToAll(true, this.weakObservables, timestamp, triggers, log);
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to {${log.join(", ")}}.`);
   }
 
@@ -457,6 +447,21 @@ class CacheResult implements ICacheResult {
     this.unsubscribeFromAll(this.observables, log);
     this.unsubscribeFromAll(this.weakObservables, log);
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${log.join(", ")}}.`);
+  }
+
+  private subscribeToAll(weak: boolean, observables: Map<PropertyKey, Set<Record>>, timestamp: number, triggers: ICacheResult[], log: string[]): void {
+    const t = weak ? -1 : timestamp;
+    observables.forEach((records: Set<Record>, prop: PropertyKey) => {
+      records.forEach(r => {
+        if (!this.subscribeTo(r, prop, t, log))
+          this.invalidateDueTo(r, prop, timestamp, triggers, false);
+      });
+    });
+  }
+
+  private unsubscribeFromAll(observables: Map<PropertyKey, Set<Record>>, log: string[]): void {
+    observables.forEach((records: Set<Record>, prop: PropertyKey) =>
+      records.forEach(r => this.unsubscribeFrom(r, prop, log)));
   }
 
   private subscribeTo(record: Record, prop: PropertyKey, timestamp: number, log: string[]): boolean {
@@ -475,17 +480,13 @@ class CacheResult implements ICacheResult {
     return result;
   }
 
-  private unsubscribeFromAll(observables: Map<PropertyKey, Set<Record>>, log: string[]): void {
-    observables.forEach((records: Set<Record>, prop: PropertyKey) => {
-      records.forEach(r => {
-        const propObservers = r.observers.get(prop);
-        if (propObservers)
-          propObservers.delete(this); // now unsubscribed
-        else
-          throw misuse("invariant is broken, please restart the application");
-        if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(r, prop, true));
-      });
-    });
+  private unsubscribeFrom(record: Record, prop: PropertyKey, log: string[]): void {
+    const propObservers = record.observers.get(prop);
+    if (propObservers)
+      propObservers.delete(this); // now unsubscribed
+    else
+      throw misuse("invariant is broken, please restart the application");
+    if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(record, prop, true));
   }
 
   private static retainPrevObservers(curr: Record, prop: PropertyKey, prevObservers: Set<ICacheResult>): void {
