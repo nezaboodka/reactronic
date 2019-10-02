@@ -70,6 +70,6 @@ export interface ICacheResult {
   hint(tranless?: boolean): string;
   bind<T>(func: F<T>): F<T>;
   readonly invalid: { since: number };
-  invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], invalidationOnApply: boolean): void;
+  invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], unsubscribe: boolean): void;
   renew(timestamp: number, now: boolean, nothrow: boolean): void;
 }

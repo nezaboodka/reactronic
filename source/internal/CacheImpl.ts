@@ -395,7 +395,7 @@ class CacheResult implements ICacheResult {
             CacheResult.markAllPrevRecordsAsOutdated(timestamp, r, prop, triggers);
             const cache = r.data[prop];
             if (cache instanceof CacheResult) {
-              cache.subscribeToOwnObservables(timestamp, triggers);
+              cache.subscribeToAllOwnObservables(timestamp, triggers);
               cache.complete();
             }
           });
@@ -429,54 +429,53 @@ class CacheResult implements ICacheResult {
       r.replaced.set(prop, head);
       const propObservers = r.observers.get(prop);
       if (propObservers)
-        propObservers.forEach(c => c.invalidateDueTo(head, prop, timestamp, triggers, false));
+        propObservers.forEach(c => c.invalidateDueTo(head, prop, timestamp, triggers, true));
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
   }
 
-  private subscribeToOwnObservables(timestamp: number, triggers: ICacheResult[]): void {
+  private subscribeToAllOwnObservables(timestamp: number, triggers: ICacheResult[]): void {
     const log: string[] = [];
     this.observables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
-        if (!r.replaced.has(prop)) {
-          const v = r.data[prop];
-          if (!(v instanceof CacheResult) || timestamp < v.invalid.since)
-            this.subscribeTo(r, prop, log);
-          else
-            this.invalidateDueTo(v.record, prop, timestamp, triggers, true);
-        }
-        else
-          this.invalidateDueTo(r, prop, timestamp, triggers, true);
+        if (!this.subscribeTo(r, prop, timestamp, log))
+          this.invalidateDueTo(r, prop, timestamp, triggers, false);
       });
     });
     this.weakObservables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
-        if (!r.replaced.has(prop))
-          this.subscribeTo(r, prop, log);
-        else
-          this.invalidateDueTo(r, prop, timestamp, triggers, true);
+        if (!this.subscribeTo(r, prop, -1, log))
+          this.invalidateDueTo(r, prop, timestamp, triggers, false);
       });
     });
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to {${log.join(", ")}}.`);
   }
 
-  private unsubscribeFromOwnObservables(): void {
+  private unsubscribeFromAllOwnObservables(): void {
     const log: string[] = [];
-    this.unsubscribeFrom(this.observables, log);
-    this.unsubscribeFrom(this.weakObservables, log);
+    this.unsubscribeFromAll(this.observables, log);
+    this.unsubscribeFromAll(this.weakObservables, log);
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${log.join(", ")}}.`);
   }
 
-  private subscribeTo(record: Record, prop: PropertyKey, log: string[]): void {
-    let propObservers = record.observers.get(prop);
-    if (!propObservers)
-      record.observers.set(prop, propObservers = new Set<CacheResult>());
-    propObservers.add(this); // now subscribed
-    if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(record, prop, true));
+  private subscribeTo(record: Record, prop: PropertyKey, timestamp: number, log: string[]): boolean {
+    let result = !record.replaced.has(prop);
+    if (result && timestamp !== -1) {
+      const v = record.data[prop];
+      result = !(v instanceof CacheResult) || timestamp < v.invalid.since;
+    }
+    if (result) {
+      let propObservers = record.observers.get(prop);
+      if (!propObservers)
+        record.observers.set(prop, propObservers = new Set<CacheResult>());
+      propObservers.add(this); // now subscribed
+      if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(record, prop, true));
+    }
+    return result;
   }
 
-  private unsubscribeFrom(observables: Map<PropertyKey, Set<Record>>, log: string[]): void {
+  private unsubscribeFromAll(observables: Map<PropertyKey, Set<Record>>, log: string[]): void {
     observables.forEach((records: Set<Record>, prop: PropertyKey) => {
       records.forEach(r => {
         const propObservers = r.observers.get(prop);
@@ -512,15 +511,15 @@ class CacheResult implements ICacheResult {
     return result;
   }
 
-  invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], invalidationOnApply: boolean): boolean {
+  invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], unsubscribe: boolean): boolean {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
       const cfg = this.config;
       const isTrigger = cfg.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
       if (Dbg.isOn && Dbg.trace.invalidations || (cfg.trace && cfg.trace.invalidations)) Dbg.logAs(cfg.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause, causeProp)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
-      if (!invalidationOnApply)
-        this.unsubscribeFromOwnObservables(); // now unsubscribed
+      if (unsubscribe)
+        this.unsubscribeFromAllOwnObservables(); // now unsubscribed
       if (!isTrigger) {
         // Invalidate outer observers (cascade)
         const h: Handle = Utils.get(this.record.data, RT_HANDLE);
@@ -529,7 +528,7 @@ class CacheResult implements ICacheResult {
           if (r.data[this.member] === this) {
             const propObservers = r.observers.get(this.member);
             if (propObservers)
-              propObservers.forEach(c => c.invalidateDueTo(r, this.member, since, triggers, false));
+              propObservers.forEach(c => c.invalidateDueTo(r, this.member, since, triggers, true));
           }
           r = r.prev.record;
         }
