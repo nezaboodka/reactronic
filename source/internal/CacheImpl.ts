@@ -384,25 +384,19 @@ class CacheResult implements ICacheResult {
   }
 
   private static applyAllDependencies(snapshot: Snapshot, error?: any): void {
+    const timestamp = snapshot.timestamp;
     if (error === undefined) {
       const triggers = snapshot.triggers;
-      const timestamp = snapshot.timestamp;
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(RT_UNMOUNT))
           r.changes.forEach(prop => {
             CacheResult.markAllPrevRecordsAsReplaced(timestamp, r, prop, triggers);
-            const cache = r.data[prop];
-            if (cache instanceof CacheResult) {
-              cache.subscribeToAllOwnObservables(timestamp, triggers);
-              cache.complete();
-            }
+            CacheResult.completePropertyChange(timestamp, r, prop, triggers);
           });
         else
           for (const prop in r.prev.record.data) {
             CacheResult.markAllPrevRecordsAsReplaced(timestamp, r, prop, triggers);
-            const cache = r.data[prop];
-            if (cache instanceof CacheResult && cache.record === r)
-              cache.complete();
+            CacheResult.completePropertyChange(timestamp, r, prop);
           }
       });
       snapshot.changeset.forEach((r: Record, h: Handle) => {
@@ -410,16 +404,19 @@ class CacheResult implements ICacheResult {
           CacheResult.retainPrevObservers(r, prop, prevObservers));
       });
     }
-    else {
-      snapshot.changeset.forEach((r: Record, h: Handle) => {
-        r.changes.forEach(prop => {
-          const cache = r.data[prop];
-          if (cache instanceof CacheResult)
-            cache.complete(error);
-        });
-      });
-    }
+    else
+      snapshot.changeset.forEach((r: Record, h: Handle) =>
+        r.changes.forEach(prop => CacheResult.completePropertyChange(timestamp, r, prop)));
   }
+
+  private static completePropertyChange(timestamp: number, record: Record, prop: PropertyKey, triggers?: ICacheResult[]): void {
+    const cache = record.data[prop];
+    if (cache instanceof CacheResult && cache.record === record) {
+      if (triggers)
+        cache.subscribeToAllOwnObservables(timestamp, triggers);
+      cache.complete();
+    }
+}
 
   private static markAllPrevRecordsAsReplaced(timestamp: number, head: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
     let r = head.prev.record;
