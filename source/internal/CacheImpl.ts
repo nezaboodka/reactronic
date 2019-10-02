@@ -465,7 +465,7 @@ class CacheResult implements ICacheResult {
     let result = !record.replaced.has(prop);
     if (result && timestamp !== -1) {
       const v = record.data[prop];
-      result = !(v instanceof CacheResult) || timestamp < v.invalid.since;
+      result = !(v instanceof CacheResult && timestamp >= v.invalid.since);
     }
     if (result) {
       let propObservers = record.observers.get(prop);
