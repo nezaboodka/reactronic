@@ -35,6 +35,18 @@ export class CacheImpl extends Cache<any> {
     // TODO: mark cache readonly?
   }
 
+  initialize(): void {
+    const call: CacheCall = this.read(undefined);
+    const c: CacheResult = call.cache;
+    const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${c.member.toString()}/init` : /* istanbul ignore next */ "Cache.init";
+    Transaction.runAs(hint, true, c.config.trace, this, () => {
+      const call2 = this.write();
+      call2.cache.ret = undefined;
+      call2.cache.value = undefined;
+    });
+    call.cache.invalid.renewing = undefined;
+  }
+
   recall(weak: boolean, args?: any[]): CacheCall {
     let call: CacheCall = this.read(args);
     const c: CacheResult = call.cache;
@@ -168,6 +180,7 @@ export class CacheImpl extends Cache<any> {
 
   static createCacheTrap(h: Handle, prop: PropKey, config: Cfg): F<any> {
     const cache = new CacheImpl(h, prop, config);
+    cache.initialize();
     const cacheTrap: F<any> = (...args: any[]): any =>
       cache.recall(false, args).cache.ret;
     Utils.set(cacheTrap, RT_CACHE, cache);
@@ -510,7 +523,7 @@ class CacheResult extends PropValue implements ICacheResult {
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CacheResult)
-      result = oldValue.config.kind === Kind.Transaction;
+      result = oldValue.config.kind === Kind.Transaction || oldValue.value === newValue.value;
     else
       result = oldValue === newValue;
     return result;

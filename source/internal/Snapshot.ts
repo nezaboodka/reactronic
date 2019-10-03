@@ -102,8 +102,8 @@ export class Snapshot implements ISnapshot {
         h.changing = r;
         h.writers++;
       }
-      // else
-      //   r = r.prev.record; // use previous record if no changes made
+      else if (r.snapshot === this)
+        r = r.prev.record; // use previous record if no changes made
     }
     return r;
   }
