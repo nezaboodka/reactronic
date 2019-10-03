@@ -8,7 +8,7 @@ import { Utils, undef, RT_CACHE } from './Utils';
 import { CopyOnWriteArray, Binding } from './Binding.CopyOnWriteArray';
 import { CopyOnWriteSet } from './Binding.CopyOnWriteSet';
 import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
-import { Record, ObsVal, F, RT_UNMOUNT } from './Record';
+import { Record, PropValue, F, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
 import { Config, Kind, Reentrance } from '../api/Config';
@@ -92,7 +92,7 @@ export class Hooks implements ProxyHandler<Handle> {
     if (!rt || (rt.body === decoratedfield && rt.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.read().read(h);
       result = r.data[prop];
-      if (result instanceof ObsVal) {
+      if (result instanceof PropValue) {
         result = result.value;
         Record.markViewed(r, prop, false);
       }
@@ -115,8 +115,8 @@ export class Hooks implements ProxyHandler<Handle> {
       const ctx = Snapshot.write();
       const r: Record = ctx.write(h, prop, value);
       if (r.snapshot === ctx) { // this condition is false when new value is equal to the old one
-        r.data[prop] = new ObsVal(value);
-        const prevOv = r.prev.record.data[prop] as ObsVal;
+        r.data[prop] = new PropValue(value);
+        const prevOv = r.prev.record.data[prop] as PropValue;
         const v: any = prevOv !== undefined ? prevOv.value : undefined;
         Record.markChanged(r, prop, v !== value, value);
       }
@@ -305,7 +305,7 @@ function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Re
 function initRecordProp(stateful: boolean, rxTable: any, prop: PropertyKey, r: Record, stateless: any): void {
   if (stateful && rxTable[prop] !== false) {
     const value = stateless[prop];
-    r.data[prop] = new ObsVal(value);
+    r.data[prop] = new PropValue(value);
     Record.markChanged(r, prop, true, value);
   }
 }
@@ -333,28 +333,28 @@ export class CopyOnWrite implements ProxyHandler<Binding<any>> {
     return a[prop] = value;
   }
 
-  static seal(ov: ObsVal, proxy: any, prop: PropertyKey): void {
-    const v = ov.value;
+  static seal(pv: PropValue, proxy: any, prop: PropertyKey): void {
+    const v = pv.value;
     if (Array.isArray(v)) {
       if (!Object.isFrozen(v)) {
-        if (ov.isCopiedOnWrite)
-          ov.value = new Proxy(CopyOnWriteArray.seal(proxy, prop, v), CopyOnWrite.global);
+        if (pv.isCopiedOnWrite)
+          pv.value = new Proxy(CopyOnWriteArray.seal(proxy, prop, v), CopyOnWrite.global);
         else
           Object.freeze(v); // just freeze without copy-on-write hooks
       }
     }
     else if (v instanceof Set) {
       if (!Object.isFrozen(v)) {
-        if (ov.isCopiedOnWrite)
-          ov.value = new Proxy(CopyOnWriteSet.seal(proxy, prop, v), CopyOnWrite.global);
+        if (pv.isCopiedOnWrite)
+          pv.value = new Proxy(CopyOnWriteSet.seal(proxy, prop, v), CopyOnWrite.global);
         else
           Utils.freezeSet(v); // just freeze without copy-on-write hooks
       }
     }
     else if (v instanceof Map) {
       if (!Object.isFrozen(v)) {
-        if (ov.isCopiedOnWrite)
-          ov.value = new Proxy(CopyOnWriteMap.seal(proxy, prop, v), CopyOnWrite.global);
+        if (pv.isCopiedOnWrite)
+          pv.value = new Proxy(CopyOnWriteMap.seal(proxy, prop, v), CopyOnWrite.global);
         else
           Utils.freezeMap(v); // just freeze without copy-on-write hooks
       }

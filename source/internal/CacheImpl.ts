@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, Utils, Record, ObsVal, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
+import { Dbg, misuse, Utils, Record, PropValue, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Cache } from '../api/Cache';
 export { Cache, cacheof, resolved } from '../api/Cache';
 import { Config, Kind, Reentrance, Trace } from '../api/Config';
@@ -197,7 +197,7 @@ export class CacheImpl extends Cache<any> {
 
 // CacheResult
 
-class CacheResult extends ObsVal implements ICacheResult {
+class CacheResult extends PropValue implements ICacheResult {
   static asyncTriggerBatch: CacheResult[] = [];
   static active?: CacheResult = undefined;
 
@@ -420,9 +420,9 @@ class CacheResult extends ObsVal implements ICacheResult {
     let r = head.prev.record;
     while (r !== Record.blank && !r.replaced.has(prop)) {
       r.replaced.set(prop, head);
-      const ov = r.data[prop] as ObsVal;
-      if (ov !== undefined) {
-        const observers = ov.observers;
+      const pv = r.data[prop] as PropValue;
+      if (pv !== undefined) {
+        const observers = pv.observers;
         if (observers)
           observers.forEach(c => c.invalidateDueTo(head, prop, timestamp, triggers, true));
       }
@@ -466,17 +466,17 @@ class CacheResult extends ObsVal implements ICacheResult {
       result = !(cache instanceof CacheResult && timestamp >= cache.invalid.since);
     }
     if (result) {
-      const ov = record.data[prop] as ObsVal;
-      if (!ov.observers)
-        ov.observers = new Set<CacheResult>();
-      ov.observers.add(this); // now subscribed
+      const pv = record.data[prop] as PropValue;
+      if (!pv.observers)
+        pv.observers = new Set<CacheResult>();
+      pv.observers.add(this); // now subscribed
       if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(record, prop, true));
     }
     return result;
   }
 
   private unsubscribeFromRecordProp(record: Record, prop: PropertyKey, log: string[]): void {
-    const observers = (record.data[prop] as ObsVal).observers;
+    const observers = (record.data[prop] as PropValue).observers;
     if (observers)
       observers.delete(this); // now unsubscribed
     else
@@ -506,7 +506,7 @@ class CacheResult extends ObsVal implements ICacheResult {
         let r: Record = h.head;
         while (r !== Record.blank && !r.replaced.has(this.member)) {
           if (r.data[this.member] === this) { // TODO: more clarity and reliability is needed here
-            const observers = (r.data[this.member] as ObsVal).observers;
+            const observers = (r.data[this.member] as PropValue).observers;
             if (observers)
               observers.forEach(c => c.invalidateDueTo(r, this.member, since, triggers, true));
           }

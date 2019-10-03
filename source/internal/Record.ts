@@ -7,9 +7,9 @@ import { Utils, undef } from './Utils';
 
 export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 
-// ObservableValue
+// PropValue
 
-export class ObsVal {
+export class PropValue {
   constructor(
     public value: any,
     public observers?: Set<ICacheResult>) {

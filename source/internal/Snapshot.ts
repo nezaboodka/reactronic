@@ -5,7 +5,7 @@
 
 import { Dbg, misuse } from './Dbg';
 import { Utils, undef } from './Utils';
-import { Record, ObsVal, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
+import { Record, PropValue, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { CopyOnWrite } from './Hooks';
 
@@ -93,8 +93,8 @@ export class Snapshot implements ISnapshot {
       throw misuse(`cache must have no side effects (an attempt to change ${Hint.handle(h, prop)})`);
     let r: Record = this.tryRead(h);
     if (r.snapshot !== this) {
-      const ov = r.data[prop] as ObsVal;
-      if (ov !== undefined ? ov.value !== value : value !== undefined) {
+      const pv = r.data[prop] as PropValue;
+      if (pv !== undefined ? pv.value !== value : value !== undefined) {
         const data = {...r.data};
         Reflect.set(data, RT_HANDLE, h);
         r = new Record(h.head, this, data);
