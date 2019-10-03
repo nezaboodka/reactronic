@@ -8,7 +8,7 @@ import { Utils, undef, RT_CACHE } from './Utils';
 import { CopyOnWriteArray, Binding } from './Binding.CopyOnWriteArray';
 import { CopyOnWriteSet } from './Binding.CopyOnWriteSet';
 import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
-import { Record, PropValue, F, RT_UNMOUNT } from './Record';
+import { Record, PropKey, PropValue, F, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
 import { Config, Kind, Reentrance } from '../api/Config';
@@ -21,7 +21,7 @@ import { Trace } from '../api/Trace';
 export class Stateful {
   constructor() {
     const h = Hooks.createHandle(true, this, undefined, new.target.name);
-    const triggers: Map<PropertyKey, Cfg> | undefined = Hooks.getConfigTable(new.target.prototype)[RT_TRIGGERS];
+    const triggers: Map<PropKey, Cfg> | undefined = Hooks.getConfigTable(new.target.prototype)[RT_TRIGGERS];
     if (triggers && !Hooks.triggersAutoStartDisabled)
       triggers.forEach((rx, prop) =>
         (h.proxy[prop][RT_CACHE] as Cache<any>).invalidate());
@@ -86,7 +86,7 @@ export class Hooks implements ProxyHandler<Handle> {
     return Reflect.getPrototypeOf(h.stateless);
   }
 
-  get(h: Handle, prop: PropertyKey, receiver: any): any {
+  get(h: Handle, prop: PropKey, receiver: any): any {
     let result: any;
     const rt: Cfg | undefined = Hooks.getConfig(h.stateless, prop);
     if (!rt || (rt.body === decoratedfield && rt.kind !== Kind.Stateless)) { // versioned state
@@ -109,7 +109,7 @@ export class Hooks implements ProxyHandler<Handle> {
     return result;
   }
 
-  set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
+  set(h: Handle, prop: PropKey, value: any, receiver: any): boolean {
     const rt: Cfg | undefined = Hooks.getConfig(h.stateless, prop);
     if (!rt || (rt.body === decoratedfield && rt.kind !== Kind.Stateless)) { // versioned state
       const ctx = Snapshot.write();
@@ -126,7 +126,7 @@ export class Hooks implements ProxyHandler<Handle> {
     return true;
   }
 
-  getOwnPropertyDescriptor(h: Handle, prop: PropertyKey): PropertyDescriptor | undefined {
+  getOwnPropertyDescriptor(h: Handle, prop: PropKey): PropertyDescriptor | undefined {
     const r: Record = Snapshot.read().read(h);
     const pd = Reflect.getOwnPropertyDescriptor(r.data, prop);
     if (pd)
@@ -134,7 +134,7 @@ export class Hooks implements ProxyHandler<Handle> {
     return pd;
   }
 
-  ownKeys(h: Handle): PropertyKey[] {
+  ownKeys(h: Handle): PropKey[] {
     // TODO: Better implementation to avoid filtering
     const r: Record = Snapshot.read().read(h);
     const result = [];
@@ -149,7 +149,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClass(implicit: boolean, rt: Partial<Config>, origCtor: any): any {
     let ctor: any = origCtor;
     const stateful = rt.kind !== undefined && rt.kind !== Kind.Stateless;
-    const triggers: Map<PropertyKey, Cfg> | undefined = Hooks.getConfigTable(ctor.prototype)[RT_TRIGGERS];
+    const triggers: Map<PropKey, Cfg> | undefined = Hooks.getConfigTable(ctor.prototype)[RT_TRIGGERS];
     if (stateful) {
       ctor = class extends origCtor {
         constructor(...args: any[]) {
@@ -172,7 +172,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClassOld(implicit: boolean, rt: Partial<Config>, origCtor: any): any {
     let ctor: any = origCtor;
     const stateful = rt.kind !== undefined && rt.kind !== Kind.Stateless;
-    const triggers: Map<PropertyKey, Cfg> | undefined = Hooks.getConfigTable(ctor.prototype)[RT_TRIGGERS];
+    const triggers: Map<PropKey, Cfg> | undefined = Hooks.getConfigTable(ctor.prototype)[RT_TRIGGERS];
     if (stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args);
@@ -193,7 +193,7 @@ export class Hooks implements ProxyHandler<Handle> {
     return ctor;
   }
 
-  static decorateField(implicit: boolean, rt: Partial<Config>, proto: any, prop: PropertyKey): any {
+  static decorateField(implicit: boolean, rt: Partial<Config>, proto: any, prop: PropKey): any {
     rt = Hooks.configure(proto, prop, decoratedfield, rt, implicit);
     if (rt.kind !== Kind.Stateless) {
       const get = function(this: any): any {
@@ -210,7 +210,7 @@ export class Hooks implements ProxyHandler<Handle> {
     }
   }
 
-  static decorateMethod(implicit: boolean, rt: Partial<Config>, proto: any, method: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  static decorateMethod(implicit: boolean, rt: Partial<Config>, proto: any, method: PropKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true;
     const configurable: boolean = true;
     const methodConfig = Hooks.configure(proto, method, pd.value, rt, implicit);
@@ -225,22 +225,22 @@ export class Hooks implements ProxyHandler<Handle> {
     return Object.defineProperty(proto, method, { get, enumerable, configurable });
   }
 
-  private static getConfig(proto: any, prop: PropertyKey): Cfg | undefined {
+  private static getConfig(proto: any, prop: PropKey): Cfg | undefined {
     return Hooks.getConfigTable(proto)[prop];
   }
 
-  private static configure(proto: any, prop: PropertyKey, body: Function | undefined, rt: Partial<Cfg>, implicit: boolean): Cfg {
+  private static configure(proto: any, prop: PropKey, body: Function | undefined, rt: Partial<Cfg>, implicit: boolean): Cfg {
     const configTable: any = Hooks.acquireConfigTable(proto);
     const existing: Cfg = configTable[prop] || Cfg.STATELESS;
     const result = configTable[prop] = new Cfg(body, existing, rt, implicit);
     if (result.kind === Kind.Trigger && result.latency > -2) {
-      let triggers: Map<PropertyKey, Cfg> | undefined = configTable[RT_TRIGGERS];
+      let triggers: Map<PropKey, Cfg> | undefined = configTable[RT_TRIGGERS];
       if (!triggers)
-        triggers = configTable[RT_TRIGGERS] = new Map<PropertyKey, Cfg>();
+        triggers = configTable[RT_TRIGGERS] = new Map<PropKey, Cfg>();
       triggers.set(prop, result);
     }
     else if (existing.kind === Kind.Trigger && existing.latency > -2) {
-      const triggers: Map<PropertyKey, Cfg> | undefined = configTable[RT_TRIGGERS];
+      const triggers: Map<PropKey, Cfg> | undefined = configTable[RT_TRIGGERS];
       if (triggers)
         triggers.delete(prop);
     }
@@ -288,7 +288,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static createCacheTrap = function(h: Handle, prop: PropertyKey, rt: Cfg): F<any> {
+  static createCacheTrap = function(h: Handle, prop: PropKey, rt: Cfg): F<any> {
      throw misuse("createCacheTrap should never be called");
   };
 }
@@ -302,7 +302,7 @@ function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Re
     initRecordProp(stateful, rxTable, prop, r, stateless);
 }
 
-function initRecordProp(stateful: boolean, rxTable: any, prop: PropertyKey, r: Record, stateless: any): void {
+function initRecordProp(stateful: boolean, rxTable: any, prop: PropKey, r: Record, stateless: any): void {
   if (stateful && rxTable[prop] !== false) {
     const value = stateless[prop];
     r.data[prop] = new PropValue(value);
@@ -323,17 +323,17 @@ function decoratedclass(...args: any[]): never {
 export class CopyOnWrite implements ProxyHandler<Binding<any>> {
   static readonly global: CopyOnWrite = new CopyOnWrite();
 
-  get(binding: Binding<any>, prop: PropertyKey, receiver: any): any {
+  get(binding: Binding<any>, prop: PropKey, receiver: any): any {
     const a: any = binding.readable(receiver);
     return a[prop];
   }
 
-  set(binding: Binding<any>, prop: PropertyKey, value: any, receiver: any): boolean {
+  set(binding: Binding<any>, prop: PropKey, value: any, receiver: any): boolean {
     const a: any = binding.writable(receiver);
     return a[prop] = value;
   }
 
-  static seal(pv: PropValue, proxy: any, prop: PropertyKey): void {
+  static seal(pv: PropValue, proxy: any, prop: PropKey): void {
     const v = pv.value;
     if (Array.isArray(v)) {
       if (!Object.isFrozen(v)) {

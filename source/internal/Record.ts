@@ -7,7 +7,9 @@ import { Utils, undef } from './Utils';
 
 export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 
-// PropValue
+// Property
+
+export type PropKey = PropertyKey;
 
 export class PropValue {
   constructor(
@@ -18,36 +20,44 @@ export class PropValue {
   get isCopiedOnWrite(): boolean { return true; }
 }
 
-// Record
+// Observable
 
-export type Prop = number | string;
+export class Observable {
+  constructor(
+    readonly record: Record,
+    readonly prop: PropKey,
+    readonly value: PropValue) {
+  }
+}
+
+// Record
 
 export class Record {
   readonly prev: { record: Record };
   readonly snapshot: ISnapshot;
   readonly data: any;
-  readonly changes: Set<PropertyKey>;
-  readonly conflicts: Map<PropertyKey, Record>;
-  readonly replaced: Map<PropertyKey, Record>;
+  readonly changes: Set<PropKey>;
+  readonly conflicts: Map<PropKey, Record>;
+  readonly replaced: Map<PropKey, Record>;
 
   constructor(prev: Record, snapshot: ISnapshot, data: object) {
     this.prev = { record: prev };
     this.snapshot = snapshot;
     this.data = data;
-    this.changes = new Set<PropertyKey>();
-    this.conflicts = new Map<PropertyKey, Record>();
-    this.replaced = new Map<PropertyKey, Record>();
+    this.changes = new Set<PropKey>();
+    this.conflicts = new Map<PropKey, Record>();
+    this.replaced = new Map<PropKey, Record>();
   }
 
   static blank: Record;
 
   /* istanbul ignore next */
-  static markChanged = function(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
+  static markChanged = function(r: Record, prop: PropKey, changed: boolean, value: any): void {
      return undef(); // to be redefined by Cache implementation
   };
 
   /* istanbul ignore next */
-  static markViewed = function(r: Record, prop: PropertyKey, weak: boolean): void {
+  static markViewed = function(r: Record, prop: PropKey, weak: boolean): void {
     return undef(); // to be redefined by Cache implementation
   };
 
@@ -81,6 +91,6 @@ export interface ICacheResult {
   hint(tranless?: boolean): string;
   bind<T>(func: F<T>): F<T>;
   readonly invalid: { since: number };
-  invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], unsubscribe: boolean): void;
+  invalidateDueTo(cause: Record, causeProp: PropKey, since: number, triggers: ICacheResult[], unsubscribe: boolean): void;
   renew(timestamp: number, now: boolean, nothrow: boolean): void;
 }

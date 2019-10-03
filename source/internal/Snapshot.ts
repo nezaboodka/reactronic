@@ -5,7 +5,7 @@
 
 import { Dbg, misuse } from './Dbg';
 import { Utils, undef } from './Utils';
-import { Record, PropValue, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
+import { Record, PropKey, PropValue, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { CopyOnWrite } from './Hooks';
 
@@ -64,7 +64,7 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  write(h: Handle, prop: PropertyKey, token: any): Record {
+  write(h: Handle, prop: PropKey, token: any): Record {
     const r: Record = this.tryWrite(h, prop, token);
     if (r === Record.blank) /* istanbul ignore next */
       throw misuse(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
@@ -86,7 +86,7 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  private tryWrite(h: Handle, prop: PropertyKey, value: any): Record {
+  private tryWrite(h: Handle, prop: PropKey, value: any): Record {
     if (this._applied)
       throw misuse(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
     if (this.cache !== undefined && value !== this.cache && value !== RT_HANDLE)
@@ -258,7 +258,7 @@ export class Snapshot implements ISnapshot {
 }
 
 export class Hint {
-  static handle(h: Handle | undefined, prop?: PropertyKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
+  static handle(h: Handle | undefined, prop?: PropKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const obj = h === undefined
       ? "init"
       : (typeless
@@ -267,7 +267,7 @@ export class Hint {
     return prop !== undefined ? `${obj}.${prop.toString()}` : obj;
   }
 
-  static record(r: Record, prop?: PropertyKey, typeless?: boolean): string {
+  static record(r: Record, prop?: PropKey, typeless?: boolean): string {
     const h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
     return Hint.handle(h, prop, r.snapshot.timestamp, r.snapshot.id, typeless);
   }
@@ -275,14 +275,14 @@ export class Hint {
   static conflicts(conflicts: Record[]): string {
     return conflicts.map(ours => {
       const items: string[] = [];
-      ours.conflicts.forEach((theirs: Record, prop: PropertyKey) => {
+      ours.conflicts.forEach((theirs: Record, prop: PropKey) => {
         items.push(Hint.conflictProp(prop, ours, theirs));
       });
       return items.join(", ");
     }).join(", ");
   }
 
-  static conflictProp(prop: PropertyKey, ours: Record, theirs: Record): string {
+  static conflictProp(prop: PropKey, ours: Record, theirs: Record): string {
     return Hint.record(theirs, prop);
   }
 }

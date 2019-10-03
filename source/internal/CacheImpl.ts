@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, Utils, Record, PropValue, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
+import { Dbg, misuse, Utils, Record, PropKey, PropValue, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Cache } from '../api/Cache';
 export { Cache, cacheof, resolved } from '../api/Cache';
 import { Config, Kind, Reentrance, Trace } from '../api/Config';
@@ -27,7 +27,7 @@ export class CacheImpl extends Cache<any> {
   invalidate(): void { CacheImpl.invalidate(this); }
   call(args?: any): any { return this.recall(true, args).cache.value; }
 
-  constructor(handle: Handle, member: PropertyKey, config: Cfg) {
+  constructor(handle: Handle, member: PropKey, config: Cfg) {
     super();
     this.handle = handle;
     this.blank = new CacheResult(Record.blank, member, config);
@@ -166,7 +166,7 @@ export class CacheImpl extends Cache<any> {
     return result;
   }
 
-  static createCacheTrap(h: Handle, prop: PropertyKey, config: Cfg): F<any> {
+  static createCacheTrap(h: Handle, prop: PropKey, config: Cfg): F<any> {
     const cache = new CacheImpl(h, prop, config);
     const cacheTrap: F<any> = (...args: any[]): any =>
       cache.recall(false, args).cache.ret;
@@ -203,18 +203,18 @@ class CacheResult extends PropValue implements ICacheResult {
 
   readonly tran: Transaction;
   readonly record: Record;
-  readonly member: PropertyKey;
+  readonly member: PropKey;
   config: Cfg;
   args: any[];
   ret: any;
   error: any;
   started: number;
   readonly invalid: { since: number, renewing: CacheResult | undefined };
-  readonly observables: Map<PropertyKey, Set<Record>>;
-  readonly weakObservables: Map<PropertyKey, Set<Record>>;
+  readonly observables: Map<PropKey, Set<Record>>;
+  readonly weakObservables: Map<PropKey, Set<Record>>;
   readonly margin: number;
 
-  constructor(record: Record, member: PropertyKey, init: CacheResult | Cfg) {
+  constructor(record: Record, member: PropKey, init: CacheResult | Cfg) {
     super(undefined);
     this.tran = Transaction.current;
     this.record = record;
@@ -233,8 +233,8 @@ class CacheResult extends PropValue implements ICacheResult {
     // this.error = undefined;
     this.started = 0;
     this.invalid = { since: 0, renewing: undefined };
-    this.observables = new Map<PropertyKey, Set<Record>>();
-    this.weakObservables = new Map<PropertyKey, Set<Record>>();
+    this.observables = new Map<PropKey, Set<Record>>();
+    this.weakObservables = new Map<PropKey, Set<Record>>();
     this.margin = CacheResult.active ? CacheResult.active.margin + 1 : 1;
   }
 
@@ -371,7 +371,7 @@ class CacheResult extends PropValue implements ICacheResult {
       t.renew(TOP_TIMESTAMP, true, true);
   }
 
-  private static markViewed(r: Record, prop: PropertyKey, weak: boolean): void {
+  private static markViewed(r: Record, prop: PropKey, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.read().bumpBy(r.snapshot.timestamp);
@@ -380,7 +380,7 @@ class CacheResult extends PropValue implements ICacheResult {
     }
   }
 
-  private static markChanged(r: Record, prop: PropertyKey, changed: boolean, value: any): void {
+  private static markChanged(r: Record, prop: PropKey, changed: boolean, value: any): void {
     changed ? r.changes.add(prop) : r.changes.delete(prop);
     if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, prop)} = ${valueHint(value)}`);
   }
@@ -407,7 +407,7 @@ class CacheResult extends PropValue implements ICacheResult {
         r.changes.forEach(prop => CacheResult.completePropertyChange(timestamp, r, prop)));
   }
 
-  private static completePropertyChange(timestamp: number, record: Record, prop: PropertyKey, triggers?: ICacheResult[]): void {
+  private static completePropertyChange(timestamp: number, record: Record, prop: PropKey, triggers?: ICacheResult[]): void {
     const cache = record.data[prop];
     if (cache instanceof CacheResult && cache.record === record) {
       if (triggers)
@@ -416,7 +416,7 @@ class CacheResult extends PropValue implements ICacheResult {
     }
 }
 
-  private static markAllPrevRecordsAsReplaced(timestamp: number, head: Record, prop: PropertyKey, triggers: ICacheResult[]): void {
+  private static markAllPrevRecordsAsReplaced(timestamp: number, head: Record, prop: PropKey, triggers: ICacheResult[]): void {
     let r = head.prev.record;
     while (r !== Record.blank && !r.replaced.has(prop)) {
       r.replaced.set(prop, head);
@@ -445,21 +445,21 @@ class CacheResult extends PropValue implements ICacheResult {
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${log.join(", ")}}.`);
   }
 
-  private subscribeTo(weak: boolean, observables: Map<PropertyKey, Set<Record>>, timestamp: number, triggers: ICacheResult[], log: string[]): void {
+  private subscribeTo(weak: boolean, observables: Map<PropKey, Set<Record>>, timestamp: number, triggers: ICacheResult[], log: string[]): void {
     const t = weak ? -1 : timestamp;
-    observables.forEach((records: Set<Record>, prop: PropertyKey) =>
+    observables.forEach((records: Set<Record>, prop: PropKey) =>
       records.forEach(r => {
         if (!this.subscribeToRecordProp(r, prop, t, log))
           this.invalidateDueTo(r, prop, timestamp, triggers, false);
       }));
   }
 
-  private unsubscribeFrom(observables: Map<PropertyKey, Set<Record>>, log: string[]): void {
-    observables.forEach((records: Set<Record>, prop: PropertyKey) =>
+  private unsubscribeFrom(observables: Map<PropKey, Set<Record>>, log: string[]): void {
+    observables.forEach((records: Set<Record>, prop: PropKey) =>
       records.forEach(r => this.unsubscribeFromRecordProp(r, prop, log)));
   }
 
-  private subscribeToRecordProp(record: Record, prop: PropertyKey, timestamp: number, log: string[]): boolean {
+  private subscribeToRecordProp(record: Record, prop: PropKey, timestamp: number, log: string[]): boolean {
     let result = !record.replaced.has(prop);
     if (result && timestamp !== -1) {
       const cache = record.data[prop];
@@ -475,7 +475,7 @@ class CacheResult extends PropValue implements ICacheResult {
     return result;
   }
 
-  private unsubscribeFromRecordProp(record: Record, prop: PropertyKey, log: string[]): void {
+  private unsubscribeFromRecordProp(record: Record, prop: PropKey, log: string[]): void {
     const observers = (record.data[prop] as PropValue).observers;
     if (observers)
       observers.delete(this); // now unsubscribed
@@ -484,7 +484,7 @@ class CacheResult extends PropValue implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(record, prop, true));
   }
 
-  acquireObservableSet(prop: PropertyKey, weak: boolean): Set<Record> {
+  acquireObservableSet(prop: PropKey, weak: boolean): Set<Record> {
     const observables = weak ? this.weakObservables : this.observables;
     let result = observables.get(prop);
     if (!result)
@@ -492,7 +492,7 @@ class CacheResult extends PropValue implements ICacheResult {
     return result;
   }
 
-  invalidateDueTo(cause: Record, causeProp: PropertyKey, since: number, triggers: ICacheResult[], unsubscribe: boolean): boolean {
+  invalidateDueTo(cause: Record, causeProp: PropKey, since: number, triggers: ICacheResult[], unsubscribe: boolean): boolean {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
