@@ -35,16 +35,17 @@ export class CacheImpl extends Cache<any> {
     // TODO: mark cache readonly?
   }
 
-  initialize(): void {
-    const call: CacheCall = this.read(undefined);
-    const c: CacheResult = call.cache;
-    const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${c.member.toString()}/init` : /* istanbul ignore next */ "Cache.init";
-    Transaction.runAs(hint, true, c.config.trace, this, () => {
-      const call2 = this.write();
-      call2.cache.ret = undefined;
-      call2.cache.value = undefined;
+  private initialize(): CacheResult {
+    const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/init` : /* istanbul ignore next */ "Cache.init";
+    const result = Transaction.runAs(hint, true, this.blank.config.trace, this, (): CacheResult => {
+      const c = this.write().cache;
+      c.ret = undefined;
+      c.value = undefined;
+      c.invalid.since = 0;
+      return c;
     });
-    call.cache.invalid.renewing = undefined;
+    this.blank.invalid.renewing = undefined;
+    return result;
   }
 
   recall(weak: boolean, args?: any[]): CacheCall {
@@ -88,10 +89,10 @@ export class CacheImpl extends Cache<any> {
     return call;
   }
 
-  private read(args?: any[]): CacheCall {
+  private read(args: any[] | undefined): CacheCall {
     const ctx = Snapshot.read();
     const r: Record = ctx.tryRead(this.handle);
-    const c: CacheResult = r.data[this.blank.member] || this.blank;
+    const c: CacheResult = r.data[this.blank.member] || this.initialize();
     const valid = c.config.kind !== Kind.Transaction &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (args === undefined || c.args[0] === args[0]) ||
@@ -147,7 +148,7 @@ export class CacheImpl extends Cache<any> {
   }
 
   private reconfigure(config: Partial<Config>): Config {
-    const call = this.read();
+    const call = this.read(undefined);
     const c: CacheResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
@@ -180,7 +181,6 @@ export class CacheImpl extends Cache<any> {
 
   static createCacheTrap(h: Handle, prop: PropKey, config: Cfg): F<any> {
     const cache = new CacheImpl(h, prop, config);
-    cache.initialize();
     const cacheTrap: F<any> = (...args: any[]): any =>
       cache.recall(false, args).cache.ret;
     Utils.set(cacheTrap, RT_CACHE, cache);
