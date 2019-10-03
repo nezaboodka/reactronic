@@ -55,7 +55,7 @@ export class Record {
   };
 
   /* istanbul ignore next */
-  static markViewed = function(r: Record, prop: PropKey, weak: boolean): void {
+  static markViewed = function(r: Record, prop: PropKey, value: PropValue, weak: boolean): void {
     return undef(); // to be redefined by Cache implementation
   };
 
@@ -89,6 +89,6 @@ export interface ICacheResult {
   hint(tranless?: boolean): string;
   bind<T>(func: F<T>): F<T>;
   readonly invalid: { since: number };
-  invalidateDueTo(cause: Record, causeProp: PropKey, since: number, triggers: ICacheResult[], unsubscribe: boolean): void;
+  invalidateDueTo(cause: PropRef, since: number, triggers: ICacheResult[], unsubscribe: boolean): void;
   renew(timestamp: number, now: boolean, nothrow: boolean): void;
 }
