@@ -28,7 +28,6 @@ export class Record {
   readonly data: any;
   readonly changes: Set<PropertyKey>;
   readonly conflicts: Map<PropertyKey, Record>;
-  readonly observers: Map<PropertyKey, Set<ICacheResult>>;
   readonly replaced: Map<PropertyKey, Record>;
 
   constructor(prev: Record, snapshot: ISnapshot, data: object) {
@@ -37,7 +36,6 @@ export class Record {
     this.data = data;
     this.changes = new Set<PropertyKey>();
     this.conflicts = new Map<PropertyKey, Record>();
-    this.observers = new Map<PropertyKey, Set<ICacheResult>>();
     this.replaced = new Map<PropertyKey, Record>();
   }
 

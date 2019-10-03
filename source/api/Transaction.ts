@@ -297,7 +297,6 @@ export class Transaction {
     const blank = new Record(Record.blank, Transaction.init.snapshot, {});
     blank.prev.record = blank; // loopback
     blank.freeze();
-    Utils.freezeMap(blank.observers);
     Utils.freezeMap(blank.replaced);
     Record.blank = blank;
     Snapshot.lastUsedId = 100;

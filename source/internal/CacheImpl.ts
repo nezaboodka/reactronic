@@ -401,9 +401,6 @@ class CacheResult extends ObsVal implements ICacheResult {
             CacheResult.completePropertyChange(timestamp, r, prop);
           }
       });
-      snapshot.changeset.forEach((r: Record, h: Handle) =>
-        r.prev.record.observers.forEach((prevObservers: Set<ICacheResult>, prop: PropertyKey) =>
-          CacheResult.retainPrevObservers(r, prop, prevObservers)));
     }
     else
       snapshot.changeset.forEach((r: Record, h: Handle) =>
@@ -423,9 +420,12 @@ class CacheResult extends ObsVal implements ICacheResult {
     let r = head.prev.record;
     while (r !== Record.blank && !r.replaced.has(prop)) {
       r.replaced.set(prop, head);
-      const propObservers = r.observers.get(prop);
-      if (propObservers)
-        propObservers.forEach(c => c.invalidateDueTo(head, prop, timestamp, triggers, true));
+      const ov = r.data[prop] as ObsVal;
+      if (ov !== undefined) {
+        const observers = ov.observers;
+        if (observers)
+          observers.forEach(c => c.invalidateDueTo(head, prop, timestamp, triggers, true));
+      }
       // Utils.freezeSet(o);
       r = r.prev.record;
     }
@@ -466,34 +466,22 @@ class CacheResult extends ObsVal implements ICacheResult {
       result = !(cache instanceof CacheResult && timestamp >= cache.invalid.since);
     }
     if (result) {
-      let propObservers = record.observers.get(prop);
-      if (!propObservers)
-        record.observers.set(prop, propObservers = new Set<CacheResult>());
-      propObservers.add(this); // now subscribed
+      const ov = record.data[prop] as ObsVal;
+      if (!ov.observers)
+        ov.observers = new Set<CacheResult>();
+      ov.observers.add(this); // now subscribed
       if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(record, prop, true));
     }
     return result;
   }
 
   private unsubscribeFromRecordProp(record: Record, prop: PropertyKey, log: string[]): void {
-    const propObservers = record.observers.get(prop);
-    if (propObservers)
-      propObservers.delete(this); // now unsubscribed
+    const observers = (record.data[prop] as ObsVal).observers;
+    if (observers)
+      observers.delete(this); // now unsubscribed
     else
       throw misuse("invariant is broken, please restart the application");
     if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(record, prop, true));
-  }
-
-  private static retainPrevObservers(curr: Record, prop: PropertyKey, prevObservers: Set<ICacheResult>): void {
-    if (!curr.changes.has(prop)) {
-      const currObservers = curr.observers.get(prop);
-      if (currObservers)
-        currObservers.forEach(c => prevObservers.add(c));
-      curr.observers.set(prop, prevObservers); // share observers set with previous record
-      if (Dbg.isOn && Dbg.trace.subscriptions) Dbg.log(" ", "o", `${Hint.record(curr, prop)} retains observers from ${Hint.record(curr.prev.record, prop)} (had ${currObservers ? currObservers.size : 0}, now ${prevObservers.size}).`);
-    }
-    else
-      curr.observers.set(prop, new Set<ICacheResult>()); // clear
   }
 
   acquireObservableSet(prop: PropertyKey, weak: boolean): Set<Record> {
@@ -518,9 +506,9 @@ class CacheResult extends ObsVal implements ICacheResult {
         let r: Record = h.head;
         while (r !== Record.blank && !r.replaced.has(this.member)) {
           if (r.data[this.member] === this) { // TODO: more clarity and reliability is needed here
-            const propObservers = r.observers.get(this.member);
-            if (propObservers)
-              propObservers.forEach(c => c.invalidateDueTo(r, this.member, since, triggers, true));
+            const observers = (r.data[this.member] as ObsVal).observers;
+            if (observers)
+              observers.forEach(c => c.invalidateDueTo(r, this.member, since, triggers, true));
           }
           r = r.prev.record;
         }
