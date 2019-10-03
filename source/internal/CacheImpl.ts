@@ -541,11 +541,8 @@ function valueHint(value: any): string {
     result = `Set(${value.size})`;
   else if (value instanceof Map)
     result = `Map(${value.size})`;
-  else if (value instanceof CacheResult) {
-    const prevValue = value.record.prev.record.data[value.member];
-    const prev = prevValue !== undefined ? prevValue.record : Record.blank;
-    result = `<renew:${Hint.record(prev, undefined, true)}>`;
-  }
+  else if (value instanceof CacheResult)
+    result = `<renew:${Hint.record(value.record.prev.record, undefined, true)}>`;
   else if (value === RT_UNMOUNT)
     result = "<unmount>";
   else if (value !== undefined && value !== null)
