@@ -20,9 +20,7 @@ export class PropValue {
   get isCopiedOnWrite(): boolean { return true; }
 }
 
-// Observable
-
-export class Observable {
+export class PropRef {
   constructor(
     readonly record: Record,
     readonly prop: PropKey,
