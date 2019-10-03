@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, Utils, Record, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
+import { Dbg, misuse, Utils, Record, ObsVal, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
 import { Cache } from '../api/Cache';
 export { Cache, cacheof, resolved } from '../api/Cache';
 import { Config, Kind, Reentrance, Trace } from '../api/Config';
@@ -83,7 +83,7 @@ export class CacheImpl extends Cache<any> {
     const valid = c.config.kind !== Kind.Transaction &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (args === undefined || c.args[0] === args[0]) ||
-      r.data[RT_UNMOUNT] === RT_UNMOUNT;
+      r.data[RT_UNMOUNT] !== undefined;
     return { valid, cache: c, record: r };
   }
 
@@ -197,7 +197,7 @@ export class CacheImpl extends Cache<any> {
 
 // CacheResult
 
-class CacheResult implements ICacheResult {
+class CacheResult extends ObsVal implements ICacheResult {
   static asyncTriggerBatch: CacheResult[] = [];
   static active?: CacheResult = undefined;
 
@@ -207,7 +207,6 @@ class CacheResult implements ICacheResult {
   config: Cfg;
   args: any[];
   ret: any;
-  value: any;
   error: any;
   started: number;
   readonly invalid: { since: number, renewing: CacheResult | undefined };
@@ -216,6 +215,7 @@ class CacheResult implements ICacheResult {
   readonly margin: number;
 
   constructor(record: Record, member: PropertyKey, init: CacheResult | Cfg) {
+    super(undefined);
     this.tran = Transaction.current;
     this.record = record;
     this.member = member;
@@ -239,6 +239,8 @@ class CacheResult implements ICacheResult {
   }
 
   hint(): string { return `${Hint.record(this.record, this.member)}`; }
+
+  get isCopiedOnWrite(): boolean { return false; }
 
   bind<T>(func: F<T>): F<T> {
     const Cache_run: F<T> = (...args: any[]): T => {
@@ -460,8 +462,8 @@ class CacheResult implements ICacheResult {
   private subscribeToRecordProp(record: Record, prop: PropertyKey, timestamp: number, log: string[]): boolean {
     let result = !record.replaced.has(prop);
     if (result && timestamp !== -1) {
-      const v = record.data[prop];
-      result = !(v instanceof CacheResult && timestamp >= v.invalid.since);
+      const cache = record.data[prop];
+      result = !(cache instanceof CacheResult && timestamp >= cache.invalid.since);
     }
     if (result) {
       let propObservers = record.observers.get(prop);
@@ -506,7 +508,7 @@ class CacheResult implements ICacheResult {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
-      const isTrigger = this.config.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] !== RT_UNMOUNT;
+      const isTrigger = this.config.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] === undefined;
       if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", isTrigger && cause === this.record && causeProp === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause, causeProp)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
       if (unsubscribe)
         this.unsubscribeFromAllObservables(); // now unsubscribed

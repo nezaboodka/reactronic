@@ -8,7 +8,7 @@ import { Utils, undef, RT_CACHE } from './Utils';
 import { CopyOnWriteArray, Binding } from './Binding.CopyOnWriteArray';
 import { CopyOnWriteSet } from './Binding.CopyOnWriteSet';
 import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
-import { Record, F, RT_UNMOUNT } from './Record';
+import { Record, ObsVal, F, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { Snapshot } from './Snapshot';
 import { Config, Kind, Reentrance } from '../api/Config';
@@ -36,8 +36,15 @@ const RT_CLASS: unique symbol = Symbol("RT:CLASS");
 const RT_TRIGGERS: unique symbol = Symbol("RT:TRIGGERS");
 
 const RT_BLANK_TABLE = Object.freeze({});
-const RT_DEFAULT_CONFIG: Config = Object.freeze({
+const RT_DEFAULT_STATELESS_CONFIG: Config = Object.freeze({
   kind: Kind.Stateless,
+  latency: -2, // never
+  reentrance: Reentrance.PreventWithError,
+  monitor: null,
+  trace: undefined,
+});
+const RT_DEFAULT_STATEFUL_CONFIG: Config = Object.freeze({
+  kind: Kind.Stateful,
   latency: -2, // never
   reentrance: Reentrance.PreventWithError,
   monitor: null,
@@ -51,15 +58,16 @@ export class Cfg implements Config {
   readonly reentrance: Reentrance;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
-  static readonly DEFAULT = Object.freeze(new Cfg(undef, {body: undef, ...RT_DEFAULT_CONFIG}, {}, false));
+  static readonly STATEFUL = Object.freeze(new Cfg(undef, {body: undef, ...RT_DEFAULT_STATEFUL_CONFIG}, {}, false));
+  static readonly STATELESS = Object.freeze(new Cfg(undef, {body: undef, ...RT_DEFAULT_STATELESS_CONFIG}, {}, false));
 
   constructor(body: Function | undefined, existing: Cfg, patch: Partial<Cfg>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body;
-    this.kind = merge(RT_DEFAULT_CONFIG.kind, existing.kind, patch.kind, implicit);
-    this.latency = merge(RT_DEFAULT_CONFIG.latency, existing.latency, patch.latency, implicit);
-    this.reentrance = merge(RT_DEFAULT_CONFIG.reentrance, existing.reentrance, patch.reentrance, implicit);
-    this.monitor = merge(RT_DEFAULT_CONFIG.monitor, existing.monitor, patch.monitor, implicit);
-    this.trace = merge(RT_DEFAULT_CONFIG.trace, existing.trace, patch.trace, implicit);
+    this.kind = merge(RT_DEFAULT_STATELESS_CONFIG.kind, existing.kind, patch.kind, implicit);
+    this.latency = merge(RT_DEFAULT_STATELESS_CONFIG.latency, existing.latency, patch.latency, implicit);
+    this.reentrance = merge(RT_DEFAULT_STATELESS_CONFIG.reentrance, existing.reentrance, patch.reentrance, implicit);
+    this.monitor = merge(RT_DEFAULT_STATELESS_CONFIG.monitor, existing.monitor, patch.monitor, implicit);
+    this.trace = merge(RT_DEFAULT_STATELESS_CONFIG.trace, existing.trace, patch.trace, implicit);
     Object.freeze(this);
   }
 }
@@ -79,22 +87,26 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   get(h: Handle, prop: PropertyKey, receiver: any): any {
-    let value: any;
+    let result: any;
     const rt: Cfg | undefined = Hooks.getConfig(h.stateless, prop);
     if (!rt || (rt.body === decoratedfield && rt.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.read().read(h);
-      value = r.data[prop];
-      if (value === undefined && !r.data.hasOwnProperty(prop)) {
-        value = Reflect.get(h.stateless, prop, receiver);
-        if (value === undefined) // treat undefined fields as stateful
-          Record.markViewed(r, prop, false);
-      }
-      else
+      result = r.data[prop];
+      if (result instanceof ObsVal) {
+        result = result.value;
         Record.markViewed(r, prop, false);
+      }
+      else {
+        if (prop !== RT_HANDLE) {
+          result = Reflect.get(h.stateless, prop, receiver);
+          if (result === undefined) // treat undefined fields as stateful
+            Record.markViewed(r, prop, false);
+        }
+      }
     }
     else
-      value = Reflect.get(h.stateless, prop, receiver);
-    return value;
+      result = Reflect.get(h.stateless, prop, receiver);
+    return result;
   }
 
   set(h: Handle, prop: PropertyKey, value: any, receiver: any): boolean {
@@ -103,8 +115,9 @@ export class Hooks implements ProxyHandler<Handle> {
       const ctx = Snapshot.write();
       const r: Record = ctx.write(h, prop, value);
       if (r.snapshot === ctx) { // this condition is false when new value is equal to the old one
-        r.data[prop] = value;
-        const v: any = r.prev.record.data[prop];
+        r.data[prop] = new ObsVal(value);
+        const prevOv = r.prev.record.data[prop] as ObsVal;
+        const v: any = prevOv !== undefined ? prevOv.value : undefined;
         Record.markChanged(r, prop, v !== value, value);
       }
     }
@@ -202,7 +215,8 @@ export class Hooks implements ProxyHandler<Handle> {
     const configurable: boolean = true;
     const methodConfig = Hooks.configure(proto, method, pd.value, rt, implicit);
     const get = function(this: any): any {
-      const classConfig: Cfg = Hooks.getConfig(Object.getPrototypeOf(this), RT_CLASS) || Cfg.DEFAULT;
+      const p = Object.getPrototypeOf(this);
+      const classConfig: Cfg = Hooks.getConfig(p, RT_CLASS) || (this instanceof Stateful ? Cfg.STATEFUL : Cfg.STATELESS);
       const h: Handle = classConfig.kind !== Kind.Stateless ? Utils.get(this, RT_HANDLE) : Hooks.acquireHandle(this);
       const value = Hooks.createCacheTrap(h, method, methodConfig);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
@@ -217,7 +231,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   private static configure(proto: any, prop: PropertyKey, body: Function | undefined, rt: Partial<Cfg>, implicit: boolean): Cfg {
     const configTable: any = Hooks.acquireConfigTable(proto);
-    const existing: Cfg = configTable[prop] || Cfg.DEFAULT;
+    const existing: Cfg = configTable[prop] || Cfg.STATELESS;
     const result = configTable[prop] = new Cfg(body, existing, rt, implicit);
     if (result.kind === Kind.Trigger && result.latency > -2) {
       let triggers: Map<PropertyKey, Cfg> | undefined = configTable[RT_TRIGGERS];
@@ -290,7 +304,8 @@ function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Re
 
 function initRecordProp(stateful: boolean, rxTable: any, prop: PropertyKey, r: Record, stateless: any): void {
   if (stateful && rxTable[prop] !== false) {
-    const value = r.data[prop] = stateless[prop];
+    const value = stateless[prop];
+    r.data[prop] = new ObsVal(value);
     Record.markChanged(r, prop, true, value);
   }
 }
@@ -318,19 +333,31 @@ export class CopyOnWrite implements ProxyHandler<Binding<any>> {
     return a[prop] = value;
   }
 
-  static seal(data: any, proxy: any, prop: PropertyKey): void {
-    const value = data[prop];
-    if (Array.isArray(value)) {
-      if (!Object.isFrozen(value))
-        data[prop] = new Proxy(CopyOnWriteArray.seal(proxy, prop, value), CopyOnWrite.global);
+  static seal(ov: ObsVal, proxy: any, prop: PropertyKey): void {
+    const v = ov.value;
+    if (Array.isArray(v)) {
+      if (!Object.isFrozen(v)) {
+        if (ov.isCopiedOnWrite)
+          ov.value = new Proxy(CopyOnWriteArray.seal(proxy, prop, v), CopyOnWrite.global);
+        else
+          Object.freeze(v); // just freeze without copy-on-write hooks
+      }
     }
-    else if (value instanceof Set) {
-      if (!Object.isFrozen(value))
-        data[prop] = new Proxy(CopyOnWriteSet.seal(proxy, prop, value), CopyOnWrite.global);
+    else if (v instanceof Set) {
+      if (!Object.isFrozen(v)) {
+        if (ov.isCopiedOnWrite)
+          ov.value = new Proxy(CopyOnWriteSet.seal(proxy, prop, v), CopyOnWrite.global);
+        else
+          Utils.freezeSet(v); // just freeze without copy-on-write hooks
+      }
     }
-    else if (value instanceof Map) {
-      if (!Object.isFrozen(value))
-        data[prop] = new Proxy(CopyOnWriteMap.seal(proxy, prop, value), CopyOnWrite.global);
+    else if (v instanceof Map) {
+      if (!Object.isFrozen(v)) {
+        if (ov.isCopiedOnWrite)
+          ov.value = new Proxy(CopyOnWriteMap.seal(proxy, prop, v), CopyOnWrite.global);
+        else
+          Utils.freezeMap(v); // just freeze without copy-on-write hooks
+      }
     }
   }
 }

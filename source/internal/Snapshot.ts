@@ -5,7 +5,7 @@
 
 import { Dbg, misuse } from './Dbg';
 import { Utils, undef } from './Utils';
-import { Record, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
+import { Record, ObsVal, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { CopyOnWrite } from './Hooks';
 
@@ -86,19 +86,22 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  private tryWrite(h: Handle, prop: PropertyKey, token: any): Record {
+  private tryWrite(h: Handle, prop: PropertyKey, value: any): Record {
     if (this._applied)
       throw misuse(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
-    if (this.cache !== undefined && token !== this.cache && token !== RT_HANDLE)
+    if (this.cache !== undefined && value !== this.cache && value !== RT_HANDLE)
       throw misuse(`cache must have no side effects (an attempt to change ${Hint.handle(h, prop)})`);
     let r: Record = this.tryRead(h);
-    if (r.snapshot !== this && r.data[prop] !== token) {
-      const data = {...r.data};
-      r = new Record(h.head, this, data);
-      Reflect.set(r.data, RT_HANDLE, h);
-      this.changeset.set(h, r);
-      h.changing = r;
-      h.writers++;
+    if (r.snapshot !== this) {
+      const ov = r.data[prop] as ObsVal;
+      if (ov !== undefined ? ov.value !== value : value !== undefined) {
+        const data = {...r.data};
+        Reflect.set(data, RT_HANDLE, h);
+        r = new Record(h.head, this, data);
+        this.changeset.set(h, r);
+        h.changing = r;
+        h.writers++;
+      }
     }
     return r;
   }
@@ -181,7 +184,7 @@ export class Snapshot implements ISnapshot {
   apply(error?: any): void {
     this._applied = true;
     this.changeset.forEach((r: Record, h: Handle) => {
-      r.changes.forEach(prop => CopyOnWrite.seal(r.data, h.proxy, prop));
+      r.changes.forEach(prop => CopyOnWrite.seal(r.data[prop], h.proxy, prop));
       r.freeze();
       h.writers--;
       if (h.writers === 0)
@@ -210,22 +213,22 @@ export class Snapshot implements ISnapshot {
     Utils.freezeMap(this.changeset);
   }
 
-  static undo(s: Snapshot): void {
-    s.changeset.forEach((r: Record, h: Handle) => {
-      r.changes.forEach(prop => {
-        if (r.prev.record !== Record.blank) {
-          const prevValue: any = r.prev.record.data[prop];
-          const ctx = Snapshot.write();
-          const t: Record = ctx.write(h, prop, prevValue);
-          if (t.snapshot === ctx) {
-            t.data[prop] = prevValue;
-            const v: any = t.prev.record.data[prop];
-            Record.markChanged(t, prop, v !== prevValue, prevValue);
-          }
-        }
-      });
-    });
-  }
+  // static undo(s: Snapshot): void {
+  //   s.changeset.forEach((r: Record, h: Handle) => {
+  //     r.changes.forEach(prop => {
+  //       if (r.prev.record !== Record.blank) {
+  //         const prevValue: any = r.prev.record.data[prop];
+  //         const ctx = Snapshot.write();
+  //         const t: Record = ctx.write(h, prop, prevValue);
+  //         if (t.snapshot === ctx) {
+  //           t.data[prop] = prevValue;
+  //           const v: any = t.prev.record.data[prop];
+  //           Record.markChanged(t, prop, v !== prevValue, prevValue);
+  //         }
+  //       }
+  //     });
+  //   });
+  // }
 
   private static grabageCollection(s: Snapshot): void {
     if (s.timestamp !== 0) {

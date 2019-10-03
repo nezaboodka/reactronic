@@ -130,6 +130,8 @@ test("basic", t => {
     Cache.unmount(app, app.model);
   }
   const n: number = Math.max(output.length, expected.length);
-  for (let i = 0; i < n; i++)
+  for (let i = 0; i < n; i++) {
+    if (R.isTraceOn && !R.trace.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`);
     t.is(output[i], expected[i]);
+  }
 });

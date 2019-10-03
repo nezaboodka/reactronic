@@ -7,6 +7,17 @@ import { Utils, undef } from './Utils';
 
 export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 
+// ObservableValue
+
+export class ObsVal {
+  constructor(
+    public value: any,
+    public observers?: Set<ICacheResult>) {
+  }
+
+  get isCopiedOnWrite(): boolean { return true; }
+}
+
 // Record
 
 export type Prop = number | string;
