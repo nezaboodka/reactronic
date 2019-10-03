@@ -406,21 +406,21 @@ class CacheResult extends PropValue implements ICacheResult {
         if (!r.changes.has(RT_UNMOUNT))
           r.changes.forEach(prop => {
             CacheResult.markAllPrevRecordsAsReplaced(timestamp, r, prop, triggers);
-            CacheResult.completePropertyChange(timestamp, r, prop, triggers);
+            CacheResult.completePropChange(timestamp, r, prop, triggers);
           });
         else
           for (const prop in r.prev.record.data) {
             CacheResult.markAllPrevRecordsAsReplaced(timestamp, r, prop, triggers);
-            CacheResult.completePropertyChange(timestamp, r, prop);
+            CacheResult.completePropChange(timestamp, r, prop);
           }
       });
     }
     else
       snapshot.changeset.forEach((r: Record, h: Handle) =>
-        r.changes.forEach(prop => CacheResult.completePropertyChange(timestamp, r, prop)));
+        r.changes.forEach(prop => CacheResult.completePropChange(timestamp, r, prop)));
   }
 
-  private static completePropertyChange(timestamp: number, record: Record, prop: PropKey, triggers?: ICacheResult[]): void {
+  private static completePropChange(timestamp: number, record: Record, prop: PropKey, triggers?: ICacheResult[]): void {
     const cache = record.data[prop];
     if (cache instanceof CacheResult && cache.record === record) {
       if (triggers)
