@@ -64,8 +64,8 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  write(h: Handle, prop: PropKey, token: any): Record {
-    const r: Record = this.tryWrite(h, prop, token);
+  write(h: Handle, prop: PropKey, value: any): Record {
+    const r: Record = this.tryWrite(h, prop, value);
     if (r === Record.blank) /* istanbul ignore next */
       throw misuse(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
     return r;
@@ -93,8 +93,8 @@ export class Snapshot implements ISnapshot {
       throw misuse(`cache must have no side effects (an attempt to change ${Hint.handle(h, prop)})`);
     let r: Record = this.tryRead(h);
     if (r.snapshot !== this) {
-      const pv = r.data[prop] as PropValue;
-      if (pv !== undefined ? pv.value !== value : value !== undefined) {
+      const existing = r.data[prop] as PropValue;
+      if (existing !== undefined ? existing.value !== value : value !== undefined) {
         const data = {...r.data};
         Reflect.set(data, RT_HANDLE, h);
         r = new Record(h.head, this, data);
@@ -102,6 +102,8 @@ export class Snapshot implements ISnapshot {
         h.changing = r;
         h.writers++;
       }
+      // else
+      //   r = r.prev.record; // use previous record if no changes made
     }
     return r;
   }

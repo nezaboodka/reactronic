@@ -116,9 +116,7 @@ export class Hooks implements ProxyHandler<Handle> {
       const r: Record = ctx.write(h, prop, value);
       if (r.snapshot === ctx) { // this condition is false when new value is equal to the old one
         r.data[prop] = new PropValue(value);
-        const prevOv = r.prev.record.data[prop] as PropValue;
-        const v: any = prevOv !== undefined ? prevOv.value : undefined;
-        Record.markChanged(r, prop, v !== value, value);
+        Record.markChanged(r, prop, true, value);
       }
     }
     else
