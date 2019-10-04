@@ -12,10 +12,12 @@ export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 export type PropKey = PropertyKey;
 
 export class PropValue {
-  public replacedBy?: Record = undefined;
-  constructor(
-    public value: any,
-    public observers?: Set<ICacheResult>) {
+  value: any;
+  replacedBy?: Record;
+  observers?: Set<ICacheResult>;
+
+  constructor(value: any) {
+    this.value = value;
   }
 
   get isCopiedOnWrite(): boolean { return true; }
