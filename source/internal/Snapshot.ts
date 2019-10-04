@@ -5,7 +5,7 @@
 
 import { Dbg, misuse } from './Dbg';
 import { Utils, undef } from './Utils';
-import { Record, PropKey, PropValue, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
+import { Record, PropKey, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
 import { Handle, RT_HANDLE } from './Handle';
 import { CopyOnWrite } from './Hooks';
 
@@ -64,13 +64,6 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  write(h: Handle, prop: PropKey, value: any): Record {
-    const r: Record = this.tryWrite(h, prop, value);
-    if (r === Record.blank) /* istanbul ignore next */
-      throw misuse(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
-    return r;
-  }
-
   tryRead(h: Handle): Record {
     let r: Record | undefined = h.changing;
     if (r && r.snapshot !== this) {
@@ -86,26 +79,27 @@ export class Snapshot implements ISnapshot {
     return r;
   }
 
-  private tryWrite(h: Handle, prop: PropKey, value: any): Record {
-    if (this._applied)
-      throw misuse(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
-    if (this.cache !== undefined && value !== this.cache && value !== RT_HANDLE)
-      throw misuse(`cache must have no side effects (an attempt to change ${Hint.handle(h, prop)})`);
+  write(h: Handle, prop: PropKey, value: any, token?: any): Record {
     let r: Record = this.tryRead(h);
+    this.guard(h, r, prop, value, token);
     if (r.snapshot !== this) {
-      const existing = r.data[prop] as PropValue;
-      if (existing !== undefined ? existing.value !== value : value !== undefined) {
-        const data = {...r.data};
-        Reflect.set(data, RT_HANDLE, h);
-        r = new Record(h.head, this, data);
-        this.changeset.set(h, r);
-        h.changing = r;
-        h.writers++;
-      }
-      else if (r.snapshot === this)
-        r = r.prev.record; // use previous record if no changes made
+      const data = {...r.data};
+      Reflect.set(data, RT_HANDLE, h);
+      r = new Record(h.head, this, data);
+      this.changeset.set(h, r);
+      h.changing = r;
+      h.writers++;
     }
     return r;
+  }
+
+  private guard(h: Handle, r: Record, prop: PropKey, value: any, token: any): void {
+    if (this._applied)
+      throw misuse(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
+    if (this.cache !== undefined && token !== this.cache && value !== RT_HANDLE)
+      throw misuse(`cache must have no side effects (an attempt to change ${Hint.record(r, prop)})`);
+    if (r === Record.blank && value !== RT_HANDLE) /* istanbul ignore next */
+      throw misuse(`object ${Hint.record(r, prop)} doesn't exist in snapshot v${this.timestamp}`);
   }
 
   bumpBy(timestamp: number): void {

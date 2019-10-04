@@ -103,16 +103,16 @@ export class CacheImpl extends Cache<any> {
   private write(): CacheCall {
     const ctx = Snapshot.write();
     const member = this.blank.member;
-    const r: Record = ctx.write(this.handle, member, this);
+    const r: Record = ctx.write(this.handle, member, RT_HANDLE, this);
     let c: CacheResult = r.data[member] || this.blank;
     if (c.record !== r) {
       const renewing = new CacheResult(r, member, c);
       r.data[member] = renewing;
-      Record.markChanged(r, member, true, renewing);
       renewing.error = CacheImpl.checkForReentrance(c);
       if (!renewing.error)
         c.invalid.renewing = renewing;
       c = renewing;
+      Record.markChanged(r, member, true, renewing);
     }
     return { valid: true, cache: c, record: r };
   }
@@ -395,8 +395,12 @@ class CacheResult extends PropValue implements ICacheResult {
 
   private static markChanged(r: Record, prop: PropKey, changed: boolean, value: any): void {
     changed ? r.changes.add(prop) : r.changes.delete(prop);
-    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r, prop)} = ${valueHint(value)}`);
-  }
+    if (Dbg.isOn && Dbg.trace.writes)
+      if (changed)
+        Dbg.log("║", "  w ", `${Hint.record(r, prop)} = ${valueHint(value)}`);
+      else
+        Dbg.log("║", "  w ", `${Hint.record(r, prop)} = ${valueHint(value)}`, undefined, " (same as previous)");
+    }
 
   private static applyAllDependencies(snapshot: Snapshot, error?: any): void {
     const timestamp = snapshot.timestamp;
