@@ -167,7 +167,7 @@ export class Snapshot implements ISnapshot {
           }
           else {
             theirs = theirs.prev.record;
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} is taken from ours.`);
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} has no competing changes in ${Hint.record(theirs, prop)}.`);
           }
         }
       });

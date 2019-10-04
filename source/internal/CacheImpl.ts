@@ -526,8 +526,9 @@ class CacheResult extends PropValue implements ICacheResult {
 
   static equal(oldValue: any, newValue: any): boolean {
     let result: boolean;
-    if (oldValue instanceof CacheResult)
-      result = oldValue.config.kind === Kind.Transaction || oldValue.value === newValue.value;
+    if (oldValue instanceof CacheResult && newValue instanceof CacheResult)
+      result = oldValue.config.reentrance === Reentrance.RunSideBySide &&
+        newValue.config.reentrance === Reentrance.RunSideBySide;
     else
       result = oldValue === newValue;
     return result;
