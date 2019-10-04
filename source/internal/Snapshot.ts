@@ -191,7 +191,7 @@ export class Snapshot implements ISnapshot {
           const props: string[] = [];
           r.changes.forEach(prop => props.push(prop.toString()));
           const s = props.join(", ");
-          Dbg.log("║", "•", `${Hint.record(r)}(${s}) is applied over ${Hint.record(r.prev.record)}.`);
+          Dbg.log("║", "•", `${Hint.record(r)}(${s}) is applied on top of ${Hint.record(r.prev.record)}.`);
         }
       }
     });
