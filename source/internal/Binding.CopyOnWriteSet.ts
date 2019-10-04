@@ -12,13 +12,17 @@ export abstract class CopyOnWriteSet<T> extends Set<T> {
   delete(value: T): boolean { return super.delete.call(W<Set<T>>(this), value); }
   forEach(callbackfn: (value: T, value2: T, set: Set<T>) => void, thisArg?: any): void { super.forEach.call(R<Set<T>>(this), callbackfn, thisArg); }
   has(value: T): boolean { return super.has.call(R<Set<T>>(this), value); }
-  get size(): number { return super.size; }
+  get size(): number { return super.size; /* S<Set<T>>(this);*/ }
   entries(): IterableIterator<[T, T]> { return super.entries.call(R<Set<T>>(this)); }
   keys(): IterableIterator<T> { return super.keys.call(R<Set<T>>(this)); }
   values(): IterableIterator<T> { return super.values.call(R<Set<T>>(this)); }
 
   static seal<T>(owner: any, prop: PropertyKey, set: Set<T>): Binding<Set<T>> {
-    return Binding.seal(owner, prop, set, set.size, CopyOnWriteSet.prototype, CopyOnWriteSet.clone);
+    return Binding.seal(owner, prop, set, set.size, CopyOnWriteSet.prototype, CopyOnWriteSet.getsize, CopyOnWriteSet.clone);
+  }
+
+  static getsize<T>(set: Set<T>): number {
+    return set.size;
   }
 
   static clone<T>(set: Set<T>): Set<T> {

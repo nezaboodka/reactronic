@@ -12,7 +12,14 @@ export class Binding<T> {
     readonly owner: any,
     readonly prop: PropertyKey,
     readonly value: T,
+    readonly size: number,
+    readonly getsize: (value: T) => number,
     readonly clone: (value: T) => T) {
+  }
+
+  sizing(receiver: any): number {
+    const v: T = this.owner[this.prop];
+    return v === receiver ? this.size : this.getsize(v);
   }
 
   readable(receiver: any): T {
@@ -31,12 +38,12 @@ export class Binding<T> {
     return v;
   }
 
-  static seal<T>(owner: any, prop: PropertyKey, value: T, size: number, proto: object, clone: (v: T) => T): Binding<T> {
+  static seal<T>(owner: any, prop: PropertyKey, value: T, size: number, proto: object, getsize: (v: T) => number, clone: (v: T) => T): Binding<T> {
     if (Object.isFrozen(value)) /* istanbul ignore next */
       throw misuse("copy-on-write collection cannot be referenced from multiple objects");
     const self: any = value;
     if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "     ·", `${owner.constructor.name}.${prop.toString()} - copy-on-write - sealed ${size} item(s)`);
-    const binding = new Binding<T>(owner, prop, value, clone);
+    const binding = new Binding<T>(owner, prop, value, size, getsize, clone);
     self[RT_COPY_ON_WRITE] = binding;
     Object.setPrototypeOf(value, proto);
     Object.freeze(value);
@@ -52,4 +59,9 @@ export function R<T>(self: any): T {
 export function W<T>(self: any): T {
   const binding: Binding<T> = self[RT_COPY_ON_WRITE];
   return binding !== undefined ? binding.writable(self) : self;
+}
+
+export function S<T>(self: any): number {
+  const binding: Binding<T> = self[RT_COPY_ON_WRITE];
+  return binding !== undefined ? binding.sizing(self) : -1;
 }

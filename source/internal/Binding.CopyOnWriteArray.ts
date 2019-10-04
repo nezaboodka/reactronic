@@ -7,7 +7,7 @@ import { Binding, R, W } from './Binding';
 export { Binding } from './Binding';
 
 export abstract class CopyOnWriteArray<T> extends Array<T> {
-  get length(): number { return super.length; }
+  get length(): number { return super.length; /* S<T[]>(this);*/ }
   toString(): string { return super.toString.call(R<T[]>(this)); }
   toLocaleString(): string { return super.toLocaleString.call(R<T[]>(this)); }
   pop(): T | undefined { return super.pop.call(W<T[]>(this)); }
@@ -36,7 +36,11 @@ export abstract class CopyOnWriteArray<T> extends Array<T> {
   // reduceRight<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U { return super.reduceRight.call(R<T[]>(this), callbackfn, initialValue); }
 
   static seal<T>(owner: any, prop: PropertyKey, array: T[]): Binding<T[]> {
-    return Binding.seal(owner, prop, array, array.length, CopyOnWriteArray.prototype, CopyOnWriteArray.clone);
+    return Binding.seal(owner, prop, array, array.length, CopyOnWriteArray.prototype, CopyOnWriteArray.getsize, CopyOnWriteArray.clone);
+  }
+
+  static getsize<T>(set: T[]): number {
+    return set.length;
   }
 
   static clone<T>(array: T[]): T[] {
