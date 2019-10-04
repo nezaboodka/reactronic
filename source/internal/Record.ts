@@ -15,12 +15,11 @@ export class PropValue {
   value: any;
   replacedBy?: Record;
   observers?: Set<ICacheResult>;
+  get isCopiedOnWrite(): boolean { return true; }
 
   constructor(value: any) {
     this.value = value;
   }
-
-  get isCopiedOnWrite(): boolean { return true; }
 }
 
 export class PropRef {
