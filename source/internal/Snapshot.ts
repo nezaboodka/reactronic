@@ -167,7 +167,7 @@ export class Snapshot implements ISnapshot {
           }
           else {
             theirs = theirs.prev.record;
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} OURS.`);
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} is taken from ours.`);
           }
         }
       });
@@ -191,7 +191,7 @@ export class Snapshot implements ISnapshot {
           const props: string[] = [];
           r.changes.forEach(prop => props.push(prop.toString()));
           const s = props.join(", ");
-          Dbg.log("║", "•", r.prev.record !== Record.blank ? `${Hint.record(r.prev.record)}(${s}) is overwritten.` : `${Hint.record(r)}(${s}) is created.`);
+          Dbg.log("║", "•", `${Hint.record(r)}(${s}) is applied over ${Hint.record(r.prev.record)}.`);
         }
       }
     });
