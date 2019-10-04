@@ -146,28 +146,23 @@ export class Snapshot implements ISnapshot {
     let counter: number = -1;
     if (ours.prev.record !== head && head !== Record.blank) {
       counter++;
-      const unmountTheirs: boolean = head.changes.has(RT_UNMOUNT);
+      const unmounted: boolean = head.changes.has(RT_UNMOUNT);
       const merged = Utils.copyAllProps(head.data, {}); // create merged copy
       ours.changes.forEach(prop => {
         counter++;
-        let theirs: Record = head;
         merged[prop] = ours.data[prop];
-        while (theirs !== ours.prev.record && theirs !== Record.blank) {
-          if (theirs.changes.has(prop)) {
-            const conflict = Snapshot.isConflicting(theirs.data[prop], ours.data[prop]);
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} ${conflict ? "<>" : "=="} ${Hint.record(theirs, prop)}.`);
-            if (conflict)
-              ours.conflicts.set(prop, theirs);
-            break;
-          }
-          else if (prop === RT_UNMOUNT || unmountTheirs) {
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} <> ${Hint.record(theirs, prop)}.`);
-            ours.conflicts.set(prop, theirs);
-            break;
+        if (head !== ours.prev.record) {
+          if (unmounted || prop === RT_UNMOUNT) {
+            if (unmounted !== (prop === RT_UNMOUNT)) {
+              if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} <> ${Hint.record(head, prop)}.`);
+              ours.conflicts.set(prop, head);
+            }
           }
           else {
-            theirs = theirs.prev.record;
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} has no competing changes in ${Hint.record(theirs)}.`);
+            const conflict = Snapshot.isConflicting(head.data[prop], ours.prev.record.data[prop]);
+            if (conflict)
+              ours.conflicts.set(prop, head);
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} ${conflict ? "<>" : "=="} ${Hint.record(head, prop)}.`);
           }
         }
       });
