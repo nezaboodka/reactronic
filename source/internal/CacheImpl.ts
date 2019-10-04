@@ -32,7 +32,6 @@ export class CacheImpl extends Cache<any> {
     this.handle = handle;
     this.blank = new CacheResult(Record.blank, member, config);
     CacheResult.freeze(this.blank);
-    // TODO: mark cache readonly?
   }
 
   private initialize(): CacheResult {
@@ -321,8 +320,7 @@ class CacheResult extends PropValue implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.member)} ${message}`, ms, highlight);
     if (this.config.monitor)
       this.monitorLeave(this.config.monitor);
-    // TODO: handle errors
-    // Cache.freeze(this);
+    // CacheResult.freeze(this);
   }
 
   private monitorEnter(mon: Monitor): void {
@@ -505,12 +503,10 @@ class CacheResult extends PropValue implements ICacheResult {
       if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", isTrigger && cause.record === this.record && cause.prop === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(cause.record, cause.prop)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
       if (unsubscribe)
         this.unsubscribeFromAllObservables(); // now unsubscribed
-      if (!isTrigger) {
-        if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo({record: this.record, prop: this.member}, this, since, triggers, true));
-      }
-      else
+      if (isTrigger)
         triggers.push(this);
+      else if (this.observers) // cascade invalidation
+          this.observers.forEach(c => c.invalidateDueTo({record: this.record, prop: this.member}, this, since, triggers, true));
     }
     return result;
   }
@@ -519,16 +515,12 @@ class CacheResult extends PropValue implements ICacheResult {
     let result = oldValue !== newValue;
     if (result)
       result = oldValue instanceof CacheResult && oldValue.invalid.since !== -1;
-    // if (result)
-    //   result = oldValue instanceof CacheResult && newValue instanceof CacheResult &&
-    //     (oldValue.config.kind !== Kind.Transaction ||
-    //     newValue.config.kind !== Kind.Transaction);
     return result;
   }
 
   static freeze(c: CacheResult): void {
-    // Utils.freezeMap(c.observables);
-    // Utils.freezeSet(c.weakObservables);
+    Utils.freezeMap(c.observables);
+    Utils.freezeMap(c.weakObservables);
     Object.freeze(c);
   }
 
