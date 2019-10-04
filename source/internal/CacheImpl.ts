@@ -527,7 +527,7 @@ class CacheResult extends PropValue implements ICacheResult {
   static isConflicting(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CacheResult && newValue instanceof CacheResult)
-      result = oldValue.record !== Record.blank && (
+      result = oldValue.record.snapshot.timestamp > 1 && (
         oldValue.config.reentrance !== Reentrance.RunSideBySide ||
         newValue.config.reentrance !== Reentrance.RunSideBySide);
     else
