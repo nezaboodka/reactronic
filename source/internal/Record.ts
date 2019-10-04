@@ -23,8 +23,7 @@ export class PropValue {
 export class PropRef {
   constructor(
     readonly record: Record,
-    readonly prop: PropKey,
-    readonly value: PropValue) {
+    readonly prop: PropKey) {
   }
 }
 
@@ -89,6 +88,6 @@ export interface ICacheResult {
   hint(tranless?: boolean): string;
   bind<T>(func: F<T>): F<T>;
   readonly invalid: { since: number };
-  invalidateDueTo(cause: PropRef, since: number, triggers: ICacheResult[], unsubscribe: boolean): void;
+  invalidateDueTo(cause: PropRef, value: PropValue, since: number, triggers: ICacheResult[], unsubscribe: boolean): void;
   renew(timestamp: number, now: boolean, nothrow: boolean): void;
 }

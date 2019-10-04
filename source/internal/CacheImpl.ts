@@ -146,7 +146,7 @@ export class CacheImpl extends Cache<any> {
   static invalidate(self: CacheImpl): void {
     const call = self.write();
     const c = call.cache;
-    c.getObservableSet(false).add({record: call.record, prop: c.member, value: c}); // c.member
+    c.getObservableSet(false).set(c, {record: call.record, prop: c.member}); // c.member
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`);
   }
 
@@ -226,8 +226,8 @@ class CacheResult extends PropValue implements ICacheResult {
   error: any;
   started: number;
   readonly invalid: { since: number, renewing: CacheResult | undefined };
-  readonly observables: Set<PropRef>;
-  readonly weakObservables: Set<PropRef>;
+  readonly observables: Map<PropValue, PropRef>;
+  readonly weakObservables: Map<PropValue, PropRef>;
   readonly margin: number;
 
   constructor(record: Record, member: PropKey, init: CacheResult | Cfg) {
@@ -249,8 +249,8 @@ class CacheResult extends PropValue implements ICacheResult {
     // this.error = undefined;
     this.started = 0;
     this.invalid = { since: 0, renewing: undefined };
-    this.observables = new Set<PropRef>();
-    this.weakObservables = new Set<PropRef>();
+    this.observables = new Map<PropValue, PropRef>();
+    this.weakObservables = new Map<PropValue, PropRef>();
     this.margin = CacheResult.active ? CacheResult.active.margin + 1 : 1;
   }
 
@@ -391,7 +391,7 @@ class CacheResult extends PropValue implements ICacheResult {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.read().bumpBy(record.snapshot.timestamp);
-      c.getObservableSet(weak).add({record, prop, value});
+      c.getObservableSet(weak).set(value, {record, prop});
       if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  ${weak ? 's' : 'r'} `, `${c.hint()} ${weak ? 'weakly uses' : 'uses'} ${Hint.record(record, prop)}`);
     }
   }
@@ -442,7 +442,7 @@ class CacheResult extends PropValue implements ICacheResult {
       r.replaced.set(prop, head);
       const value = r.data[prop] as PropValue;
       if (value !== undefined && value.observers)
-        value.observers.forEach(c => c.invalidateDueTo({ record: head, prop, value}, timestamp, triggers, true));
+        value.observers.forEach(c => c.invalidateDueTo({ record: head, prop }, value, timestamp, triggers, true));
       r = r.prev.record;
     }
   }
@@ -461,20 +461,19 @@ class CacheResult extends PropValue implements ICacheResult {
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${log.join(", ")}}.`);
   }
 
-  private subscribeTo(weak: boolean, observables: Set<PropRef>, timestamp: number, triggers: ICacheResult[], log: string[]): void {
+  private subscribeTo(weak: boolean, observables: Map<PropValue, PropRef>, timestamp: number, triggers: ICacheResult[], log: string[]): void {
     const t = weak ? -1 : timestamp;
-    observables.forEach(ref => {
-        if (!this.subscribeToProp(ref, t, log))
-          this.invalidateDueTo(ref, timestamp, triggers, false);
+    observables.forEach((ref, val) => {
+        if (!this.subscribeToPropValue(ref, val, t, log))
+          this.invalidateDueTo(ref, val, timestamp, triggers, false);
     });
   }
 
-  private unsubscribeFrom(observables: Set<PropRef>, log: string[]): void {
-    observables.forEach(ref => this.unsubscribeFromProp(ref, log));
+  private unsubscribeFrom(observables: Map<PropValue, PropRef>, log: string[]): void {
+    observables.forEach((ref, val) => this.unsubscribeFromProp(ref, val, log));
   }
 
-  private subscribeToProp(ref: PropRef, timestamp: number, log: string[]): boolean {
-    const value = ref.value;
+  private subscribeToPropValue(ref: PropRef, value: PropValue, timestamp: number, log: string[]): boolean {
     let result = !ref.record.replaced.has(ref.prop);
     if (result && timestamp !== -1)
       result = !(value instanceof CacheResult && timestamp >= value.invalid.since);
@@ -487,8 +486,8 @@ class CacheResult extends PropValue implements ICacheResult {
     return result;
   }
 
-  private unsubscribeFromProp(ref: PropRef, log: string[]): void {
-    const observers = ref.value.observers;
+  private unsubscribeFromProp(ref: PropRef, value: PropValue, log: string[]): void {
+    const observers = value.observers;
     if (observers)
       observers.delete(this); // now unsubscribed
     else
@@ -496,11 +495,11 @@ class CacheResult extends PropValue implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(ref.record, ref.prop, true));
   }
 
-  getObservableSet(weak: boolean): Set<PropRef> {
+  getObservableSet(weak: boolean): Map<PropValue, PropRef> {
     return weak ? this.weakObservables : this.observables;
   }
 
-  invalidateDueTo(cause: PropRef, since: number, triggers: ICacheResult[], unsubscribe: boolean): boolean {
+  invalidateDueTo(cause: PropRef, value: PropValue, since: number, triggers: ICacheResult[], unsubscribe: boolean): boolean {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
@@ -514,9 +513,9 @@ class CacheResult extends PropValue implements ICacheResult {
         let r: Record = h.head;
         while (r !== Record.blank && !r.replaced.has(this.member)) {
           if (r.data[this.member] === this) { // TODO: more clarity and reliability is needed here
-            const value = r.data[this.member] as PropValue;
-            if (value.observers)
-              value.observers.forEach(c => c.invalidateDueTo({record: r, prop: this.member, value}, since, triggers, true));
+            const pv = r.data[this.member] as PropValue;
+            if (pv.observers)
+              pv.observers.forEach(c => c.invalidateDueTo({record: r, prop: this.member}, pv, since, triggers, true));
           }
           r = r.prev.record;
         }
