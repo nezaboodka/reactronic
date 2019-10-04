@@ -258,8 +258,8 @@ export class Hint {
     const obj = h === undefined
       ? "blank"
       : (typeless
-        ? (stamp === undefined ? `#${h.id}` : `#${h.id}v${stamp}t${tran}`)
-        : (stamp === undefined ? `#${h.id}˙${h.hint}` : `#${h.id}v${stamp}t${tran}˙${h.hint}`));
+        ? (stamp === undefined ? `#${h.id}` : `v${stamp}t${tran}#${h.id}`)
+        : (stamp === undefined ? `#${h.id} ${h.hint}` : `v${stamp}t${tran}#${h.id} ${h.hint}`));
     return prop !== undefined ? `${obj}.${prop.toString()}` : obj;
   }
 
