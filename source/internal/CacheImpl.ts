@@ -75,7 +75,6 @@ export class CacheImpl extends Cache<any> {
         return call2.cache.ret;
       }, args);
       call2.cache.ret = ret;
-      // TODO: Get rid of weak?
       if (!weak && Snapshot.read().timestamp >= call2.cache.record.snapshot.timestamp)
         call = call2;
     }
