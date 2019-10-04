@@ -12,6 +12,7 @@ export const RT_UNMOUNT: unique symbol = Symbol("RT:UNMOUNT");
 export type PropKey = PropertyKey;
 
 export class PropValue {
+  public replacedBy?: Record = undefined;
   constructor(
     public value: any,
     public observers?: Set<ICacheResult>) {
@@ -35,7 +36,6 @@ export class Record {
   readonly data: any;
   readonly changes: Set<PropKey>;
   readonly conflicts: Map<PropKey, Record>;
-  readonly replaced: Map<PropKey, Record>;
 
   constructor(prev: Record, snapshot: ISnapshot, data: object) {
     this.prev = { record: prev };
@@ -43,7 +43,6 @@ export class Record {
     this.data = data;
     this.changes = new Set<PropKey>();
     this.conflicts = new Map<PropKey, Record>();
-    this.replaced = new Map<PropKey, Record>();
   }
 
   static blank: Record;

@@ -411,12 +411,12 @@ class CacheResult extends PropValue implements ICacheResult {
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(RT_UNMOUNT))
           r.changes.forEach(prop => {
-            CacheResult.markAllPrevRecordsAsReplaced(timestamp, r, prop, triggers);
+            CacheResult.markPrevValueAsReplaced(timestamp, r, prop, triggers);
             CacheResult.completePropChange(timestamp, r, prop, triggers);
           });
         else
           for (const prop in r.prev.record.data) {
-            CacheResult.markAllPrevRecordsAsReplaced(timestamp, r, prop, triggers);
+            CacheResult.markPrevValueAsReplaced(timestamp, r, prop, triggers);
             CacheResult.completePropChange(timestamp, r, prop);
           }
       });
@@ -435,14 +435,13 @@ class CacheResult extends PropValue implements ICacheResult {
     }
 }
 
-  private static markAllPrevRecordsAsReplaced(timestamp: number, head: Record, prop: PropKey, triggers: ICacheResult[]): void {
-    let r = head.prev.record;
-    while (r !== Record.blank && !r.replaced.has(prop)) {
-      r.replaced.set(prop, head);
-      const value = r.data[prop] as PropValue;
-      if (value !== undefined && value.observers)
+  private static markPrevValueAsReplaced(timestamp: number, head: Record, prop: PropKey, triggers: ICacheResult[]): void {
+    const r = head.prev.record;
+    const value = r.data[prop] as PropValue;
+    if (value !== undefined && value.replacedBy === undefined) {
+      value.replacedBy = head;
+      if (value.observers)
         value.observers.forEach(c => c.invalidateDueTo({ record: head, prop }, value, timestamp, triggers, true));
-      r = r.prev.record;
     }
   }
 
@@ -473,7 +472,7 @@ class CacheResult extends PropValue implements ICacheResult {
   }
 
   private subscribeToPropValue(ref: PropRef, value: PropValue, timestamp: number, log: string[]): boolean {
-    let result = !ref.record.replaced.has(ref.prop);
+    let result = value.replacedBy === undefined;
     if (result && timestamp !== -1)
       result = !(value instanceof CacheResult && timestamp >= value.invalid.since);
     if (result) {
@@ -509,15 +508,10 @@ class CacheResult extends PropValue implements ICacheResult {
       if (!isTrigger) {
         // Invalidate outer observers (cascade)
         const h: Handle = Utils.get(this.record.data, RT_HANDLE);
-        let r: Record = h.head;
-        while (r !== Record.blank && !r.replaced.has(this.member)) {
-          if (r.data[this.member] === this) { // TODO: more clarity and reliability is needed here
-            const pv = r.data[this.member] as PropValue;
-            if (pv.observers)
-              pv.observers.forEach(c => c.invalidateDueTo({record: r, prop: this.member}, pv, since, triggers, true));
-          }
-          r = r.prev.record;
-        }
+        const r: Record = h.head;
+        const pv = r.data[this.member] as PropValue;
+        if (pv.observers)
+          pv.observers.forEach(c => c.invalidateDueTo({record: r, prop: this.member}, pv, since, triggers, true));
       }
       else
         triggers.push(this);

@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, error, Utils, undef, Record, ICacheResult, F, Snapshot, Hint } from '../internal/all';
+import { Dbg, misuse, error, undef, Record, ICacheResult, F, Snapshot, Hint } from '../internal/all';
 import { Trace } from './Config';
 
 export class Transaction {
@@ -301,7 +301,6 @@ export class Transaction {
     const blank = new Record(Record.blank, Transaction.init.snapshot, {});
     blank.prev.record = blank; // loopback
     blank.freeze();
-    Utils.freezeMap(blank.replaced);
     Record.blank = blank;
     Snapshot.lastUsedId = 100;
     Snapshot.headTimestamp = 101;

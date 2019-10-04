@@ -43,7 +43,7 @@ class Rx extends Stateful {
 
 function createReactState(trace?: Partial<Trace>): ReactState {
   const hint = Reactronic.isTraceOn ? getComponentName() : "<rx>";
-  const rx = Transaction.runAs<Rx>(hint, false, trace, undefined, createRx, hint, trace);
+  const rx = Transaction.runAs<Rx>(hint, false, false, trace, undefined, createRx, hint, trace);
   return {rx, counter: 0};
 }
 
