@@ -506,12 +506,8 @@ class CacheResult extends PropValue implements ICacheResult {
       if (unsubscribe)
         this.unsubscribeFromAllObservables(); // now unsubscribed
       if (!isTrigger) {
-        // Invalidate outer observers (cascade)
-        const h: Handle = Utils.get(this.record.data, RT_HANDLE);
-        const r: Record = h.head;
-        const pv = r.data[this.member] as PropValue;
-        if (pv.observers)
-          pv.observers.forEach(c => c.invalidateDueTo({record: r, prop: this.member}, pv, since, triggers, true));
+        if (this.observers) // cascade invalidation
+          this.observers.forEach(c => c.invalidateDueTo({record: this.record, prop: this.member}, this, since, triggers, true));
       }
       else
         triggers.push(this);
