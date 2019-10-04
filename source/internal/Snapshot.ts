@@ -256,7 +256,7 @@ export class Snapshot implements ISnapshot {
 export class Hint {
   static handle(h: Handle | undefined, prop?: PropKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const obj = h === undefined
-      ? "init"
+      ? "blank"
       : (typeless
         ? (stamp === undefined ? `#${h.id}` : `#${h.id}v${stamp}t${tran}`)
         : (stamp === undefined ? `#${h.id}˙${h.hint}` : `#${h.id}v${stamp}t${tran}˙${h.hint}`));
