@@ -42,7 +42,7 @@ export class CacheImpl extends Cache<any> {
       const c = this.write().cache;
       c.ret = undefined;
       c.value = undefined;
-      c.invalid.since = 0;
+      c.invalid.since = -1;
       return c;
     });
     this.blank.invalid.renewing = undefined;
@@ -528,7 +528,9 @@ class CacheResult extends PropValue implements ICacheResult {
   }
 
   static isConflicting(oldValue: any, newValue: any): boolean {
-    const result = oldValue !== newValue;
+    let result = oldValue !== newValue;
+    if (result)
+      result = oldValue instanceof CacheResult && oldValue.invalid.since !== -1;
     // if (result)
     //   result = oldValue instanceof CacheResult && newValue instanceof CacheResult &&
     //     (oldValue.config.kind !== Kind.Transaction ||
