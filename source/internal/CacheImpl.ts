@@ -37,7 +37,8 @@ export class CacheImpl extends Cache<any> {
 
   private initialize(): CacheResult {
     const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/init` : /* istanbul ignore next */ "Cache.init";
-    const result = Transaction.runAs(hint, true, this.blank.config.trace, this, (): CacheResult => {
+    const sidebyside = this.blank.config.reentrance === Reentrance.RunSideBySide;
+    const result = Transaction.runAs(hint, true, sidebyside, this.blank.config.trace, this, (): CacheResult => {
       const c = this.write().cache;
       c.ret = undefined;
       c.value = undefined;
@@ -55,9 +56,10 @@ export class CacheImpl extends Cache<any> {
       const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run";
       const cfg = c.config;
       const spawn = weak || cfg.kind !== Kind.Transaction;
+      const sidebyside = cfg.reentrance === Reentrance.RunSideBySide;
       const token = cfg.kind === Kind.Cached ? this : undefined;
       let call2 = call;
-      const ret = Transaction.runAs(hint, spawn, cfg.trace, token, (argsx: any[] | undefined): any => {
+      const ret = Transaction.runAs(hint, spawn, sidebyside, cfg.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(argsx); // re-read on retry
@@ -153,7 +155,7 @@ export class CacheImpl extends Cache<any> {
     const c: CacheResult = call.cache;
     const r: Record = call.record;
     const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure";
-    return Transaction.runAs(hint, false, undefined, undefined, (): Config => {
+    return Transaction.runAs(hint, false, false, undefined, undefined, (): Config => {
       const call2 = this.write();
       const c2: CacheResult = call2.cache;
       c2.config = new Cfg(c2.config.body, c2.config, config, false);
@@ -196,7 +198,7 @@ export class CacheImpl extends Cache<any> {
   }
 
   static unmount(...objects: any[]): Transaction {
-    return Transaction.runAs("<unmount>", false,
+    return Transaction.runAs("<unmount>", false, false,
       undefined, undefined, CacheImpl.unmountFunc, ...objects);
   }
 
@@ -326,7 +328,7 @@ class CacheResult extends PropValue implements ICacheResult {
 
   private monitorEnter(mon: Monitor): void {
     CacheImpl.run(undefined, Transaction.runAs, "Monitor.enter",
-      true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+      true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
       Monitor.enter, mon, this);
   }
 
@@ -334,7 +336,7 @@ class CacheResult extends PropValue implements ICacheResult {
     Transaction.outside(() => {
       const leave = () => {
         CacheImpl.run(undefined, Transaction.runAs, "Monitor.leave",
-          true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+          true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           Monitor.leave, mon, this);
       };
       this.tran.whenFinished(false).then(leave, leave);
@@ -526,11 +528,11 @@ class CacheResult extends PropValue implements ICacheResult {
   }
 
   static isConflicting(oldValue: any, newValue: any): boolean {
-    let result = oldValue !== newValue;
-    if (result)
-      result = oldValue instanceof CacheResult && newValue instanceof CacheResult &&
-        (oldValue.config.reentrance !== Reentrance.RunSideBySide ||
-        newValue.config.reentrance !== Reentrance.RunSideBySide);
+    const result = oldValue !== newValue;
+    // if (result)
+    //   result = oldValue instanceof CacheResult && newValue instanceof CacheResult &&
+    //     (oldValue.config.kind !== Kind.Transaction ||
+    //     newValue.config.kind !== Kind.Transaction);
     return result;
   }
 

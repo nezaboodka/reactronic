@@ -20,9 +20,12 @@ const expected: string[] = [
   "[...] Log: RTA",
   "[...] Url: nezaboodka.com",
   "[...] Log: RTA, nezaboodka.com/100",
-  "Error: transaction T116 (#22 DemoModel.load/microsoft.com) conflicts with: v110t109#22 DemoModel.load, v110t109#22 DemoModel.url, v110t109#22 DemoModel.log",
-  "Url: nezaboodka.com",
-  "Log: RTA, nezaboodka.com/100",
+  "[...] Url: microsoft.com",
+  "[...] Log: RTA, microsoft.com/200",
+  "[...] Url: google.com",
+  "[...] Log: RTA, google.com/300",
+  "Url: google.com",
+  "Log: RTA, google.com/300",
 ];
 
 test("async", async t => {

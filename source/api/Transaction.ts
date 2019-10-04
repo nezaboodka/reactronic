@@ -15,6 +15,7 @@ export class Transaction {
   readonly trace?: Partial<Trace>; // assigned in constructor
   readonly margin: number;
   private readonly snapshot: Snapshot; // assigned in constructor
+  private readonly sidebyside: boolean;
   private workers: number;
   private sealed: boolean;
   private error?: Error;
@@ -24,10 +25,11 @@ export class Transaction {
   private reject: (reason: any) => void;
   private readonly reaction: { tran?: Transaction };
 
-  constructor(hint: string, trace?: Partial<Trace>, token?: any) {
+  constructor(hint: string, sidebyside: boolean = false, trace?: Partial<Trace>, token?: any) {
     this.trace = trace;
     this.margin = Transaction._current ? Transaction._current.margin + 1 : -1;
     this.snapshot = new Snapshot(hint, token);
+    this.sidebyside = sidebyside;
     this.workers = 0;
     this.sealed = false;
     this.error = undefined;
@@ -114,11 +116,11 @@ export class Transaction {
   // }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
-    return Transaction.runAs(hint, false, undefined, undefined, func, ...args);
+    return Transaction.runAs(hint, false, false, undefined, undefined, func, ...args);
   }
 
-  static runAs<T>(hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
-    const t: Transaction = Transaction.acquire(hint, spawn, trace, token);
+  static runAs<T>(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
+    const t: Transaction = Transaction.acquire(hint, spawn, sidebyside, trace, token);
     const root = t !== Transaction._current;
     t.guard();
     let result: any = t.do<T>(trace, func, ...args);
@@ -145,9 +147,9 @@ export class Transaction {
 
   // Internal
 
-  private static acquire(hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any): Transaction {
+  private static acquire(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any): Transaction {
     return spawn || Transaction._current.isFinished()
-      ? new Transaction(hint, trace, token)
+      ? new Transaction(hint, sidebyside, trace, token)
       : Transaction._current;
   }
 
@@ -168,7 +170,7 @@ export class Transaction {
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction T${this.id} (${this.hint}) is waiting for restart`);
         await this.retryAfter.whenFinished(true);
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction T${this.id} (${this.hint}) is ready for restart`);
-        return Transaction.runAs<T>(this.hint, true, this.trace, this.snapshot.cache, func, ...args);
+        return Transaction.runAs<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.cache, func, ...args);
       }
       else
         throw error;
@@ -218,7 +220,7 @@ export class Transaction {
 
   private runTriggers(): void {
     const hint = Dbg.isOn ? `■-■-■ TRIGGERS(${this.snapshot.triggers.length}) after T${this.id} (${this.snapshot.hint})` : /* istanbul ignore next */ "TRIGGERS";
-    this.reaction.tran = Transaction.runAs(hint, true, this.trace, undefined,
+    this.reaction.tran = Transaction.runAs(hint, true, false, this.trace, undefined,
       Transaction.runTriggersFunc, this.snapshot.triggers);
   }
 
@@ -244,8 +246,10 @@ export class Transaction {
   }
 
   private tryResolveConflicts(conflicts: Record[]): void {
-    this.error = this.error || error(`transaction T${this.id} (${this.hint}) conflicts with: ${Hint.conflicts(conflicts)}`);
-    throw this.error;
+    if (!this.sidebyside) {
+      this.error = this.error || error(`transaction T${this.id} (${this.hint}) conflicts with: ${Hint.conflicts(conflicts)}`);
+      throw this.error;
+    } // ignore conflicts otherwise
   }
 
   private performCommit(): void {
