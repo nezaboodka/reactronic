@@ -112,6 +112,7 @@ export class CacheImpl extends Cache<any> {
       if (!renewing.error)
         c.invalid.renewing = renewing;
       c = renewing;
+      ctx.bumpBy(r.prev.record.snapshot.timestamp);
       Record.markChanged(r, member, true, renewing);
     }
     return { valid: true, cache: c, record: r };
