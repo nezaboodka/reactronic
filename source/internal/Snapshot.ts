@@ -53,8 +53,8 @@ export class Snapshot implements ISnapshot {
   };
 
   /* istanbul ignore next */
-  static equal = function(oldValue: any, newValue: any): boolean {
-    return oldValue === newValue; // to be redefined by Cache implementation
+  static isConflicting = function(oldValue: any, newValue: any): boolean {
+    return oldValue !== newValue; // to be redefined by Cache implementation
   };
 
   read(h: Handle): Record {
@@ -154,9 +154,9 @@ export class Snapshot implements ISnapshot {
         merged[prop] = ours.data[prop];
         while (theirs !== ours.prev.record && theirs !== Record.blank) {
           if (theirs.changes.has(prop)) {
-            const equal = Snapshot.equal(theirs.data[prop], ours.data[prop]);
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} ${equal ? "==" : "<>"} ${Hint.record(theirs, prop)}.`);
-            if (!equal)
+            const conflict = Snapshot.isConflicting(theirs.data[prop], ours.data[prop]);
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} ${conflict ? "<>" : "=="} ${Hint.record(theirs, prop)}.`);
+            if (conflict)
               ours.conflicts.set(prop, theirs);
             break;
           }

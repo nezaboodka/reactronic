@@ -524,13 +524,14 @@ class CacheResult extends PropValue implements ICacheResult {
     return result;
   }
 
-  static equal(oldValue: any, newValue: any): boolean {
+  static isConflicting(oldValue: any, newValue: any): boolean {
     let result: boolean;
     if (oldValue instanceof CacheResult && newValue instanceof CacheResult)
-      result = oldValue.config.reentrance === Reentrance.RunSideBySide &&
-        newValue.config.reentrance === Reentrance.RunSideBySide;
+      result = oldValue.record !== Record.blank && (
+        oldValue.config.reentrance !== Reentrance.RunSideBySide ||
+        newValue.config.reentrance !== Reentrance.RunSideBySide);
     else
-      result = oldValue === newValue;
+      result = oldValue !== newValue;
     return result;
   }
 
@@ -544,7 +545,7 @@ class CacheResult extends PropValue implements ICacheResult {
     Dbg.getCurrentTrace = getCurrentTrace;
     Record.markViewed = CacheResult.markViewed; // override
     Record.markChanged = CacheResult.markChanged; // override
-    Snapshot.equal = CacheResult.equal; // override
+    Snapshot.isConflicting = CacheResult.isConflicting; // override
     Snapshot.applyAllDependencies = CacheResult.applyAllDependencies; // override
     Hooks.createCacheTrap = CacheImpl.createCacheTrap; // override
     Promise.prototype.then = reactronic_then; // override

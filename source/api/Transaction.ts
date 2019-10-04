@@ -244,7 +244,7 @@ export class Transaction {
   }
 
   private tryResolveConflicts(conflicts: Record[]): void {
-    this.error = this.error || error(`transaction T${this.id} (${this.hint}) conflicts with other transactions on: ${Hint.conflicts(conflicts)}`);
+    this.error = this.error || error(`transaction T${this.id} (${this.hint}) conflicts with: ${Hint.conflicts(conflicts)}`);
     throw this.error;
   }
 
