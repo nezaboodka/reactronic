@@ -95,7 +95,7 @@ export class Snapshot implements ISnapshot {
     if (this.applied)
       throw misuse(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
     if (this.caching !== undefined && token !== this.caching && value !== RT_HANDLE)
-      throw misuse(`cache must have no side effects: @cached ${this.caching.blank.member} try to change ${Hint.record(r, prop)}`);
+      throw misuse(`cache must have no side effects: ${this.hint} tries to change ${Hint.record(r, prop)}`);
     if (r === Record.blank && value !== RT_HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hint.record(r, prop)} doesn't exist in snapshot v${this.stamp}`);
   }
