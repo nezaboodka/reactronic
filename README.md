@@ -298,21 +298,27 @@ function standalone<T>(func: F<T>, ...args: any[]): T;
 abstract class Cache<T> {
   configure(config: Partial<Config>): Config;
   readonly config: config;
-  readonly stamp: number;
   readonly args: ReadonlyArray<any>;
   readonly value: T;
   readonly error: any;
+  readonly stamp: number;
   readonly isInvalid: boolean;
-  invalidate(cause: string | undefined): boolean;
+  invalidate(): boolean;
   call(args?: any[]): T | undefined;
 
   static of<T>(method: F<T>): Cache<T>;
   static unmount(...objects: any[]): Transaction;
+}
 
+// Reactronic
+
+class Reactronic {
+  static triggersAutoStartDisabled: boolean;
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void;
   static getTraceHint<T extends object>(obj: T): string | undefined;
   static setTrace(t: Trace | undefined);
   static get trace(): Trace;
   static get isTraceOn(): boolean;
 }
+
 ```
