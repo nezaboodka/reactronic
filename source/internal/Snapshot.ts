@@ -24,17 +24,17 @@ export class Snapshot implements ISnapshot {
   get timestamp(): number { return this.stamp; }
   private stamp: number;
   private bumper: number;
-  readonly cache: ICacheResult | undefined;
+  readonly caching: any;
   readonly changeset: Map<Handle, Record>;
   readonly triggers: ICacheResult[];
   private applied: boolean;
 
-  constructor(hint: string, cache: ICacheResult | undefined) {
+  constructor(hint: string, caching: any) {
     this.id = ++Snapshot.lastId;
     this.hint = hint;
     this.stamp = UNDEFINED_TIMESTAMP;
     this.bumper = 1;
-    this.cache = cache;
+    this.caching = caching;
     this.changeset = new Map<Handle, Record>();
     this.triggers = [];
     this.applied = false;
@@ -94,8 +94,8 @@ export class Snapshot implements ISnapshot {
   private guard(h: Handle, r: Record, prop: PropKey, value: any, token: any): void {
     if (this.applied)
       throw misuse(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
-    if (this.cache !== undefined && token !== this.cache && value !== RT_HANDLE)
-      throw misuse(`cache must have no side effects (an attempt to change ${Hint.record(r, prop)})`);
+    if (this.caching !== undefined && token !== this.caching && value !== RT_HANDLE)
+      throw misuse(`cache must have no side effects: @cached ${this.caching.blank.member} try to change ${Hint.record(r, prop)}`);
     if (r === Record.blank && value !== RT_HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hint.record(r, prop)} doesn't exist in snapshot v${this.stamp}`);
   }
@@ -107,7 +107,7 @@ export class Snapshot implements ISnapshot {
 
   acquire(outer: Snapshot): void {
     if (!this.applied && this.stamp === UNDEFINED_TIMESTAMP) {
-      this.stamp = this.cache === undefined || outer.stamp === UNDEFINED_TIMESTAMP
+      this.stamp = this.caching === undefined || outer.stamp === UNDEFINED_TIMESTAMP
         ? Snapshot.headStamp : outer.stamp;
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
@@ -130,7 +130,7 @@ export class Snapshot implements ISnapshot {
           if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(r)} is merged with ${Hint.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`);
         }
       });
-      if (this.cache === undefined) {
+      if (this.caching === undefined) {
         this.bumper = this.stamp;
         this.stamp = ++Snapshot.headStamp;
       }
