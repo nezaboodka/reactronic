@@ -22,6 +22,7 @@ const expected: string[] = [
 test("basic", t => {
   R.triggersAutoStartDisabled = true;
   R.triggersAutoStartDisabled = false;
+  R.performanceWarningThreshold = 3;
   R.setTrace(tracing.off);
   R.setTrace(tracing.noisy);
   // Simple transactions
