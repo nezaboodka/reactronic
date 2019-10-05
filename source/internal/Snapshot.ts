@@ -14,32 +14,30 @@ const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1;
 // Snapshot
 
 export class Snapshot implements ISnapshot {
-  static lastUsedId: number = -1;
-  static headTimestamp: number = 1;
+  static lastId: number = -1;
+  static headStamp: number = 1;
   static pending: Snapshot[] = [];
   static oldest: Snapshot | undefined = undefined;
 
   readonly id: number;
   readonly hint: string;
   readonly cache: ICacheResult | undefined;
-  get timestamp(): number { return this._timestamp; }
-  get bumper(): number { return this._bumper; }
-  get applied(): boolean { return this._applied; }
+  get timestamp(): number { return this.stamp; }
   readonly changeset: Map<Handle, Record>;
   readonly triggers: ICacheResult[];
-  private _timestamp: number;
-  private _bumper: number;
-  private _applied: boolean;
+  private stamp: number;
+  private bumper: number;
+  private applied: boolean;
 
   constructor(hint: string, cache: ICacheResult | undefined) {
-    this.id = ++Snapshot.lastUsedId;
+    this.id = ++Snapshot.lastId;
     this.hint = hint;
     this.cache = cache;
     this.changeset = new Map<Handle, Record>();
     this.triggers = [];
-    this._timestamp = UNDEFINED_TIMESTAMP;
-    this._bumper = 1;
-    this._applied = false;
+    this.stamp = UNDEFINED_TIMESTAMP;
+    this.bumper = 1;
+    this.applied = false;
   }
 
   /* istanbul ignore next */
@@ -60,7 +58,7 @@ export class Snapshot implements ISnapshot {
   read(h: Handle): Record {
     const r = this.tryRead(h);
     if (r === Record.blank) /* istanbul ignore next */
-      throw misuse(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.timestamp}`);
+      throw misuse(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.stamp}`);
     return r;
   }
 
@@ -94,27 +92,27 @@ export class Snapshot implements ISnapshot {
   }
 
   private guard(h: Handle, r: Record, prop: PropKey, value: any, token: any): void {
-    if (this._applied)
+    if (this.applied)
       throw misuse(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
     if (this.cache !== undefined && token !== this.cache && value !== RT_HANDLE)
       throw misuse(`cache must have no side effects (an attempt to change ${Hint.record(r, prop)})`);
     if (r === Record.blank && value !== RT_HANDLE) /* istanbul ignore next */
-      throw misuse(`object ${Hint.record(r, prop)} doesn't exist in snapshot v${this.timestamp}`);
+      throw misuse(`object ${Hint.record(r, prop)} doesn't exist in snapshot v${this.stamp}`);
   }
 
   bumpBy(timestamp: number): void {
-    if (timestamp > this._bumper)
-      this._bumper = timestamp;
+    if (timestamp > this.bumper)
+      this.bumper = timestamp;
   }
 
   acquire(outer: Snapshot): void {
-    if (!this._applied && this._timestamp === UNDEFINED_TIMESTAMP) {
-      this._timestamp = this.cache === undefined || outer._timestamp === UNDEFINED_TIMESTAMP
-        ? Snapshot.headTimestamp : outer._timestamp;
+    if (!this.applied && this.stamp === UNDEFINED_TIMESTAMP) {
+      this.stamp = this.cache === undefined || outer.stamp === UNDEFINED_TIMESTAMP
+        ? Snapshot.headStamp : outer.stamp;
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this;
-      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("╔══", `v${this.timestamp}`, `${this.hint}`);
+      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("╔══", `v${this.stamp}`, `${this.hint}`);
     }
   }
 
@@ -133,11 +131,11 @@ export class Snapshot implements ISnapshot {
         }
       });
       if (this.cache === undefined) {
-        this._bumper = this._timestamp;
-        this._timestamp = ++Snapshot.headTimestamp;
+        this.bumper = this.stamp;
+        this.stamp = ++Snapshot.headStamp;
       }
       else
-        this._timestamp = this._bumper; // downgrade timestamp of renewed cache
+        this.stamp = this.bumper; // downgrade timestamp of renewed cache
     }
     return conflicts;
   }
@@ -173,7 +171,7 @@ export class Snapshot implements ISnapshot {
   }
 
   apply(error?: any): void {
-    this._applied = true;
+    this.applied = true;
     this.changeset.forEach((r: Record, h: Handle) => {
       r.changes.forEach(prop => CopyOnWrite.seal(r.data[prop], h.proxy, prop));
       r.freeze();
@@ -191,7 +189,7 @@ export class Snapshot implements ISnapshot {
       }
     });
     if (Dbg.isOn && Dbg.trace.transactions)
-      Dbg.log(this.timestamp < UNDEFINED_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
+      Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.stamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`);
     Snapshot.applyAllDependencies(this, error);
   }
 
@@ -224,12 +222,12 @@ export class Snapshot implements ISnapshot {
   // }
 
   private static garbageCollection(s: Snapshot): void {
-    if (s.timestamp !== 0) {
+    if (s.stamp !== 0) {
       if (s === Snapshot.oldest) {
         const p = Snapshot.pending;
-        p.sort((a, b) => a._timestamp - b._timestamp);
+        p.sort((a, b) => a.stamp - b.stamp);
         let i: number = 0;
-        while (i < p.length && p[i]._applied) {
+        while (i < p.length && p[i].applied) {
           Snapshot.unlinkHistory(p[i]);
           i++;
         }
@@ -240,9 +238,9 @@ export class Snapshot implements ISnapshot {
   }
 
   private static unlinkHistory(s: Snapshot): void {
-    if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", "GC", `v${s.timestamp}t${s.id} (${s.hint}) snapshot is the oldest one now`);
+    if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", "GC", `v${s.stamp}t${s.id} (${s.hint}) snapshot is the oldest one now`);
     s.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== Record.blank) Dbg.log("", " g", `v${s.timestamp}t${s.id}: ${Hint.record(r.prev.record)} is ready for GC because overwritten by ${Hint.record(r)}`);
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== Record.blank) Dbg.log("", " g", `v${s.stamp}t${s.id}: ${Hint.record(r.prev.record)} is ready for GC because overwritten by ${Hint.record(r)}`);
       r.prev.record = Record.blank; // unlink history
     });
   }

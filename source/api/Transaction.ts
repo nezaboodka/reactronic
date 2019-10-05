@@ -302,8 +302,8 @@ export class Transaction {
     blank.prev.record = blank; // loopback
     blank.freeze();
     Record.blank = blank;
-    Snapshot.lastUsedId = 100;
-    Snapshot.headTimestamp = 101;
+    Snapshot.lastId = 100;
+    Snapshot.headStamp = 101;
     Snapshot.oldest = undefined;
   }
 }
