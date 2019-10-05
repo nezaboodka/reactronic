@@ -317,8 +317,8 @@ class Reactronic {
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void;
   static getTraceHint<T extends object>(obj: T): string | undefined;
   static setTrace(t: Trace | undefined);
-  static get trace(): Trace;
-  static get isTraceOn(): boolean;
+  static readonly trace: Trace;
+  static readonly isTraceOn: boolean;
 }
 
 ```
