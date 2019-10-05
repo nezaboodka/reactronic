@@ -38,7 +38,7 @@ export class Monitor extends Stateful {
 }
 
 export interface Worker {
-  // hint(tranless?: boolean): string;
+  // hint(notran?: boolean): string;
   readonly tran: Transaction;
   // readonly progress: number; // 0..100
 }
