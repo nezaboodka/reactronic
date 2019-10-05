@@ -202,6 +202,8 @@ export class Snapshot implements ISnapshot {
   archive(): void {
     Snapshot.garbageCollection(this);
     Utils.freezeMap(this.changeset);
+    Object.freeze(this.triggers);
+    Object.freeze(this);
   }
 
   // static undo(s: Snapshot): void {
