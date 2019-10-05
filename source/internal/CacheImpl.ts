@@ -438,6 +438,8 @@ class CacheResult extends PropValue implements ICacheResult {
     const value = r.data[prop] as PropValue;
     if (value !== undefined && value.replacedBy === undefined) {
       value.replacedBy = head;
+      if (value instanceof CacheResult)
+        value.unsubscribeFromAllObservables();
       if (value.observers)
         value.observers.forEach(c => c.invalidateDueTo({ record: head, prop }, value, timestamp, triggers, true));
     }
@@ -486,8 +488,6 @@ class CacheResult extends PropValue implements ICacheResult {
     const observers = value.observers;
     if (observers)
       observers.delete(this); // now unsubscribed
-    else
-      throw misuse("invariant is broken, please restart the application");
     if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(ref.record, ref.prop, true));
   }
 
