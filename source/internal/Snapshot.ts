@@ -21,12 +21,12 @@ export class Snapshot implements ISnapshot {
 
   readonly id: number;
   readonly hint: string;
-  readonly cache: ICacheResult | undefined;
   get timestamp(): number { return this.stamp; }
-  readonly changeset: Map<Handle, Record>;
-  readonly triggers: ICacheResult[];
   private stamp: number;
   private bumper: number;
+  readonly cache: ICacheResult | undefined;
+  readonly changeset: Map<Handle, Record>;
+  readonly triggers: ICacheResult[];
   private applied: boolean;
 
   constructor(hint: string, cache: ICacheResult | undefined) {
