@@ -32,11 +32,11 @@ export class Snapshot implements ISnapshot {
   constructor(hint: string, cache: ICacheResult | undefined) {
     this.id = ++Snapshot.lastId;
     this.hint = hint;
+    this.stamp = UNDEFINED_TIMESTAMP;
+    this.bumper = 1;
     this.cache = cache;
     this.changeset = new Map<Handle, Record>();
     this.triggers = [];
-    this.stamp = UNDEFINED_TIMESTAMP;
-    this.bumper = 1;
     this.applied = false;
   }
 
