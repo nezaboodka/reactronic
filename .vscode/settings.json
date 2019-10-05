@@ -13,5 +13,21 @@
     "dist/": true,
     "build/": true,
   },
-  "typescript.tsdk": "node_modules\\typescript\\lib"
+  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "cSpell.words": [
+    "Chetyrko",
+    "Stateful",
+    "Yury",
+    "argsx",
+    "cacheof",
+    "decoratedclass",
+    "decoratedfield",
+    "gmail",
+    "nothrow",
+    "notran",
+    "reactronic",
+    "sidebyside",
+    "unmount",
+    "ychetyrko"
+  ]
 }

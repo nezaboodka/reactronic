@@ -85,7 +85,7 @@ export interface ISnapshot {
 }
 
 export interface ICacheResult {
-  hint(tranless?: boolean): string;
+  hint(notran?: boolean): string;
   bind<T>(func: F<T>): F<T>;
   readonly invalid: { since: number };
   invalidateDueTo(cause: PropValue, hint: PropHint, since: number, triggers: ICacheResult[], unsubscribe: boolean): void;

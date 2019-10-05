@@ -129,7 +129,7 @@ export class CacheImpl extends Cache<any> {
         case Reentrance.WaitAndRestart:
           result = new Error(`transaction T${caller.id} (${caller.hint}) will be restarted after T${prev.tran.id} (${prev.tran.hint})`);
           caller.cancel(result, prev.tran);
-          // TODO: "c.invalidation.recaching = caller" in order serialize all the transactions
+          // TODO: "c.invalid.renewing = caller" in order serialize all the transactions
           break;
         case Reentrance.CancelPrevious:
           prev.tran.cancel(new Error(`transaction T${prev.tran.id} (${prev.tran.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null);
@@ -571,7 +571,7 @@ function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
   return res;
 }
 
-const original_primise_then = Promise.prototype.then;
+const original_promise_then = Promise.prototype.then;
 
 function reactronic_then(this: any,
   resolve?: ((value: any) => any | PromiseLike<any>) | undefined | null,
@@ -591,7 +591,7 @@ function reactronic_then(this: any,
     resolve = tran.bind(resolve, false);
     reject = tran.bind(reject, true);
   }
-  return original_primise_then.call(this, resolve, reject);
+  return original_promise_then.call(this, resolve, reject);
 }
 
 /* istanbul ignore next */
