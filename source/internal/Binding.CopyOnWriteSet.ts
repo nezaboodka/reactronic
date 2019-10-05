@@ -18,10 +18,10 @@ export abstract class CopyOnWriteSet<T> extends Set<T> {
   values(): IterableIterator<T> { return super.values.call(R<Set<T>>(this)); }
 
   static seal<T>(owner: any, prop: PropertyKey, set: Set<T>): Binding<Set<T>> {
-    return Binding.seal(owner, prop, set, set.size, CopyOnWriteSet.prototype, CopyOnWriteSet.getsize, CopyOnWriteSet.clone);
+    return Binding.seal(owner, prop, set, set.size, CopyOnWriteSet.prototype, CopyOnWriteSet.getSize, CopyOnWriteSet.clone);
   }
 
-  static getsize<T>(set: Set<T>): number {
+  static getSize<T>(set: Set<T>): number {
     return set.size;
   }
 
