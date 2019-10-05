@@ -395,7 +395,7 @@ class CacheResult extends PropValue implements ICacheResult {
         times = existing ? existing.times + 1 : 1;
       }
       observables.set(value, {record, prop, times});
-      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  ${weak ? 's' : 'r'} `, `${c.hint()} ${weak ? 'weakly uses' : 'uses'} ${Hint.record(record, prop)} (${times} times)`);
+      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  r `, `${c.hint()} ${weak ? 'uses (weakly)' : 'uses'} ${Hint.record(record, prop)} - ${times} time(s)`);
     }
   }
 
@@ -460,7 +460,7 @@ class CacheResult extends PropValue implements ICacheResult {
     const log: string[] = [];
     this.unsubscribeFrom(this.observables, log);
     this.unsubscribeFrom(this.weakObservables, log);
-    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is unsubscribed from {${log.join(", ")}}.`);
+    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "-", `${Hint.record(this.record, this.member)} is unsubscribed from {${log.join(", ")}}.`);
   }
 
   private subscribeTo(weak: boolean, observables: Map<PropValue, PropHint>, timestamp: number, triggers: ICacheResult[], log: string[]): void {
@@ -484,7 +484,7 @@ class CacheResult extends PropValue implements ICacheResult {
         value.observers = new Set<CacheResult>(); // acquire
       value.observers.add(this); // now subscribed
       if (Dbg.isOn && Dbg.trace.subscriptions) log.push(`${Hint.record(hint.record, hint.prop, true)}${hint.times > 1 ? `*${hint.times}` : ""}`);
-      if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("≡", "!", `${this.hint()} uses ${Hint.record(hint.record, hint.prop)} ${hint.times} times.`, 0, " *** WARNING ***");
+      if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("≡", "!", `${this.hint()} uses ${Hint.record(hint.record, hint.prop)} ${hint.times} time(s).`, 0, " *** WARNING ***");
     }
     return result;
   }
