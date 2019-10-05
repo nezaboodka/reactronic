@@ -88,5 +88,5 @@ export interface ICacheResult {
   bind<T>(func: F<T>): F<T>;
   readonly invalid: { since: number };
   invalidateDueTo(cause: PropValue, hint: PropHint, since: number, triggers: ICacheResult[]): void;
-  renew(timestamp: number, now: boolean, nothrow: boolean): void;
+  trig(timestamp: number, now: boolean, nothrow: boolean): void;
 }

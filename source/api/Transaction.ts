@@ -226,7 +226,7 @@ export class Transaction {
 
   private static runTriggersFunc(triggers: ICacheResult[]): Transaction {
     const timestamp = Transaction.current.snapshot.timestamp;
-    triggers.map(t => t.renew(timestamp, false, false));
+    triggers.map(t => t.trig(timestamp, false, false));
     return Transaction.current;
   }
 

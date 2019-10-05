@@ -346,7 +346,7 @@ class CacheResult extends PropValue implements ICacheResult {
       prev.invalid.renewing = undefined;
   }
 
-  renew(timestamp: number, now: boolean, nothrow: boolean): void {
+  trig(timestamp: number, now: boolean, nothrow: boolean): void {
     const latency = this.config.latency;
     if (now || latency === -1) {
       if (!this.error && (this.config.kind === Kind.Transaction ||
@@ -368,7 +368,7 @@ class CacheResult extends PropValue implements ICacheResult {
     else if (latency === 0)
       this.addToAsyncTriggerBatch();
     else if (latency > 0) // ignore disabled triggers (latency -2)
-      setTimeout(() => this.renew(TOP_TIMESTAMP, true, true), latency);
+      setTimeout(() => this.trig(TOP_TIMESTAMP, true, true), latency);
   }
 
   private addToAsyncTriggerBatch(): void {
@@ -381,7 +381,7 @@ class CacheResult extends PropValue implements ICacheResult {
     const triggers = CacheResult.asyncTriggerBatch;
     CacheResult.asyncTriggerBatch = []; // reset
     for (const t of triggers)
-      t.renew(TOP_TIMESTAMP, true, true);
+      t.trig(TOP_TIMESTAMP, true, true);
   }
 
   private static markViewed(record: Record, prop: PropKey, value: PropValue, weak: boolean): void {
@@ -401,12 +401,8 @@ class CacheResult extends PropValue implements ICacheResult {
 
   private static markChanged(r: Record, prop: PropKey, changed: boolean, value: any): void {
     changed ? r.changes.add(prop) : r.changes.delete(prop);
-    if (Dbg.isOn && Dbg.trace.writes)
-      if (changed)
-        Dbg.log("║", "  w ", `${Hint.record(r, prop)} = ${valueHint(value)}`);
-      else
-        Dbg.log("║", "  w ", `${Hint.record(r, prop)} = ${valueHint(value)}`, undefined, " (same as previous)");
-    }
+    if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log("║", "  w ", `${Hint.record(r, prop)} = ${valueHint(value)}`) : Dbg.log("║", "  w ", `${Hint.record(r, prop)} = ${valueHint(value)}`, undefined, " (same as previous)");
+  }
 
   private static applyAllDependencies(snapshot: Snapshot, error?: any): void {
     const timestamp = snapshot.timestamp;
@@ -511,7 +507,7 @@ class CacheResult extends PropValue implements ICacheResult {
       const isTrigger = this.config.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] === undefined;
       if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.prop === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.prop)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
       this.unsubscribeFromAllObservables(); // now unsubscribed
-      if (isTrigger)
+      if (isTrigger) // break cascade invalidation on trigger
         triggers.push(this);
       else if (this.observers) // cascade invalidation
           this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, prop: this.member, times: 0}, since, triggers));
