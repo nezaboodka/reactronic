@@ -10,6 +10,8 @@ export class Reactronic {
   // Options
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled; }
   static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value; }
+  static get performanceWarningsDisabled(): boolean { return Hooks.performanceWarningsDisabled; }
+  static set performanceWarningsDisabled(value: boolean) { Hooks.performanceWarningsDisabled = value; }
   // Tracing
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name); }
   static getTraceHint<T extends object>(obj: T): string | undefined { return Handle.getHint(obj); }

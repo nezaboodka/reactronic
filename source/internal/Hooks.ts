@@ -84,6 +84,7 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 
 export class Hooks implements ProxyHandler<Handle> {
   static triggersAutoStartDisabled: boolean = false;
+  static performanceWarningsDisabled: boolean = false;
   static readonly proxy: Hooks = new Hooks();
 
   getPrototypeOf(h: Handle): object | null {

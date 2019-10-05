@@ -492,10 +492,8 @@ class CacheResult extends PropValue implements ICacheResult {
       if (!value.observers)
         value.observers = new Set<CacheResult>(); // acquire
       value.observers.add(this); // now subscribed
-      if (Dbg.isOn) {
-        if (Dbg.trace.subscriptions) log.push(`${Hint.record(hint.record, hint.prop, true)}${hint.times > 1 ? `*${hint.times}` : ""}`);
-        if (hint.times > 4 && Dbg.trace.warnings) Dbg.log("≡", "!", `${this.hint()} uses ${Hint.record(hint.record, hint.prop)} ${hint.times} times.`, 0, " *** WARNING ***");
-      }
+      if (Dbg.isOn && Dbg.trace.subscriptions) log.push(`${Hint.record(hint.record, hint.prop, true)}${hint.times > 1 ? `*${hint.times}` : ""}`);
+      if (hint.times > 3 && !Hooks.performanceWarningsDisabled) Dbg.log("≡", "!", `${this.hint()} uses ${Hint.record(hint.record, hint.prop)} ${hint.times} times.`, 0, " *** WARNING ***");
     }
     return result;
   }
