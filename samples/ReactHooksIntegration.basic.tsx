@@ -27,7 +27,7 @@ class Rx extends Stateful {
   }
 
   @trigger
-  keepfresh(): void {
+  keepFresh(): void {
     if (cacheof(this.jsx).isInvalid)
       this.refresh({rx: this});
   }

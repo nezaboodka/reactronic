@@ -29,7 +29,7 @@ class Rx extends Stateful {
   }
 
   @trigger
-  keepfresh(): void {
+  keepFresh(): void {
     if (cacheof(this.jsx).isInvalid)
       this.refresh({rx: this, counter: this.counter + 1});
   }
@@ -53,7 +53,7 @@ function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
     Reactronic.setTraceHint(rx, hint);
   if (trace) {
     cacheof(rx.jsx).configure({trace});
-    cacheof(rx.keepfresh).configure({trace});
+    cacheof(rx.keepFresh).configure({trace});
   }
   return rx;
 }

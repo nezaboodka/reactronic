@@ -118,10 +118,10 @@ functions (dependencies), which are used during their execution.
 ``` tsx
 class MyView extends React.Component<MyModel> {
   @trigger // called immediately in response to state changes
-  autorefresh() {
+  keepFresh() {
     if (cacheof(this.render).isInvalid)
       this.setState({}); // telling React to re-render
-  } // autorefresh is subscribed to render
+  } // keepFresh is subscribed to render
 
   @cached
   render() {
@@ -134,12 +134,12 @@ class MyView extends React.Component<MyModel> {
 }
 ```
 
-In the example above, `autorefresh` trigger is transparently subscribed
+In the example above, `keepFresh` trigger is transparently subscribed
 to the cached function `render`. In turn, the `render` function is
 subscribed to the `url` and `content` properties of a corresponding
 `MyModel` object. Once `url` or `content` values are changed, the
 `render` cache becomes invalid and causes invalidation and immediate
-re-execution of `autorefresh` trigger. While executed, the `autorefresh`
+re-execution of `keepFresh` trigger. While executed, the `keepFresh`
 trigger function enqueues re-rendering request to React, which calls
 `render` function causing it to renew its cached value.
 
