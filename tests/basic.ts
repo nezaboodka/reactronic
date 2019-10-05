@@ -65,7 +65,7 @@ export class DemoView extends Stateful {
   }
 
   // @transaction @trace(tracing.noisy)
-  // subprint(): void {
+  // subPrint(): void {
   //   this.render().forEach(x => output.push(x));
   // }
 
@@ -84,7 +84,7 @@ export class DemoView extends Stateful {
 
   @cached
   render(): string[] {
-    // Print only those users whos name starts with filter string
+    // Print only those users who's name starts with filter string
     const r: string[] = [];
     r.push(`Filter: ${this.userFilter}`);
     const a = this.filteredUsers();
