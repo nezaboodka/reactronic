@@ -5,13 +5,16 @@
   "files.exclude": {
     "node_modules/": true,
     "dist/": true,
+    "build/": true,
     ".nyc_output": true,
-    "coverage": true
+    "coverage": true,
   },
   "files.watcherExclude": {
     "node_modules/": true,
     "dist/": true,
     "build/": true,
+    ".nyc_output": true,
+    "coverage": true,
   },
   "typescript.tsdk": "node_modules\\typescript\\lib",
   "cSpell.words": [
