@@ -444,10 +444,6 @@ class CacheResult extends PropValue implements ICacheResult {
     const value = prev.data[prop] as PropValue;
     if (value !== undefined && value.replacedBy === undefined) {
       value.replacedBy = record;
-      // if (value instanceof CacheResult)
-      //   value.unsubscribeFromAllObservables();
-      // if (value.observers)
-      //   value.observers.forEach(c => c.invalidateDueTo({ record: head, prop }, value, timestamp, triggers, true));
       if (value instanceof CacheResult && (value.invalid.since === TOP_TIMESTAMP || value.invalid.since === 0)) {
         value.invalid.since = timestamp;
         value.unsubscribeFromAllObservables();
