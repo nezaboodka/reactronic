@@ -389,14 +389,13 @@ class CacheResult extends PropValue implements ICacheResult {
     if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.read().bumpBy(record.snapshot.timestamp);
       const observables = c.getObservables(weak);
-      if (Dbg.isOn) {
+      let times: number = 0;
+      if (!Hooks.performanceWarningsDisabled) {
         const existing = observables.get(value);
-        const times = existing ? existing.times + 1 : 1;
-        observables.set(value, {record, prop, times});
-        if (Dbg.trace.reads) Dbg.log("║", `  ${weak ? 's' : 'r'} `, `${c.hint()} ${weak ? 'weakly uses' : 'uses'} ${Hint.record(record, prop)} (${times} times)`);
+        times = existing ? existing.times + 1 : 1;
       }
-      else
-        observables.set(value, {record, prop, times: 0});
+      observables.set(value, {record, prop, times});
+      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  ${weak ? 's' : 'r'} `, `${c.hint()} ${weak ? 'weakly uses' : 'uses'} ${Hint.record(record, prop)} (${times} times)`);
     }
   }
 
