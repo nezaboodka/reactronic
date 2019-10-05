@@ -20,8 +20,9 @@ const expected: string[] = [
 ];
 
 test("basic", t => {
-  R.triggersAutoStartDisabled = true;
+  R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled;
   R.triggersAutoStartDisabled = false;
+  R.performanceWarningThreshold = R.performanceWarningThreshold + 1;
   R.performanceWarningThreshold = 3;
   R.setTrace(tracing.off);
   R.setTrace(tracing.noisy);
