@@ -144,7 +144,7 @@ export class CacheImpl extends Cache<any> {
   static invalidate(self: CacheImpl): void {
     const call = self.write();
     const c = call.cache;
-    c.getObservableSet(false).set(c, {record: call.record, prop: c.member}); // c.member
+    c.getObservables(false).set(c, {record: call.record, prop: c.member}); // c.member
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`);
   }
 
@@ -388,7 +388,7 @@ class CacheResult extends PropValue implements ICacheResult {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.read().bumpBy(record.snapshot.timestamp);
-      c.getObservableSet(weak).set(value, {record, prop});
+      c.getObservables(weak).set(value, {record, prop});
       if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  ${weak ? 's' : 'r'} `, `${c.hint()} ${weak ? 'weakly uses' : 'uses'} ${Hint.record(record, prop)}`);
     }
   }
@@ -497,7 +497,7 @@ class CacheResult extends PropValue implements ICacheResult {
     if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(hint.record, hint.prop, true));
   }
 
-  getObservableSet(weak: boolean): Map<PropValue, PropHint> {
+  getObservables(weak: boolean): Map<PropValue, PropHint> {
     return weak ? this.weakObservables : this.observables;
   }
 
