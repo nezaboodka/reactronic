@@ -390,7 +390,7 @@ class CacheResult extends PropValue implements ICacheResult {
       Snapshot.read().bumpBy(record.snapshot.timestamp);
       const observables = c.getObservables(weak);
       let times: number = 0;
-      if (!Hooks.performanceWarningsDisabled) {
+      if (Hooks.performanceWarningThreshold > 0) {
         const existing = observables.get(value);
         times = existing ? existing.times + 1 : 1;
       }
@@ -492,7 +492,7 @@ class CacheResult extends PropValue implements ICacheResult {
         value.observers = new Set<CacheResult>(); // acquire
       value.observers.add(this); // now subscribed
       if (Dbg.isOn && Dbg.trace.subscriptions) log.push(`${Hint.record(hint.record, hint.prop, true)}${hint.times > 1 ? `*${hint.times}` : ""}`);
-      if (hint.times > 3 && !Hooks.performanceWarningsDisabled) Dbg.log("≡", "!", `${this.hint()} uses ${Hint.record(hint.record, hint.prop)} ${hint.times} times.`, 0, " *** WARNING ***");
+      if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("≡", "!", `${this.hint()} uses ${Hint.record(hint.record, hint.prop)} ${hint.times} times.`, 0, " *** WARNING ***");
     }
     return result;
   }
