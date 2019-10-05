@@ -6,12 +6,12 @@
 import { Trace } from '../api/Trace';
 
 export function error(message: string): Error {
-  if (Dbg.isOn && Dbg.trace.errors) Dbg.log("X", "err", message, undefined, " <<< ERROR");
+  if (Dbg.isOn && Dbg.trace.errors) Dbg.log("≡", "!", message, undefined, " <<< ERROR");
   return new Error(message);
 }
 
 export function misuse(message: string): Error {
-  Dbg.log("X", "err", message, undefined, " *** ERROR ***");
+  Dbg.log("≡", "!", message, undefined, " *** ERROR ***");
   return new Error(message);
 }
 
