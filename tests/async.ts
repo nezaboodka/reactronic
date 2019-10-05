@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { stateful, transaction, trigger, cached, latency, Reactronic as R, Monitor, monitor, all, sleep, reentrance, Reentrance } from '../source/reactronic';
+import { stateful, transaction, trigger, cached, cachedArgs, latency, Reactronic as R, Monitor, monitor, all, sleep, reentrance, Reentrance } from '../source/reactronic';
 export { tracing } from './common';
 
 export const output: string[] = [];
@@ -35,7 +35,7 @@ export class DemoView {
     }
   }
 
-  @cached
+  @cached @cachedArgs(false)
   async render(): Promise<string[]> {
     const result: string[] = [];
     result.push(`${mon.busy ? "[...] " : ""}Url: ${this.model.url}`);
