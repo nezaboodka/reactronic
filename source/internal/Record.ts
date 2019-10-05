@@ -63,13 +63,6 @@ export class Record {
     Utils.freezeMap(this.conflicts);
     Object.freeze(this);
   }
-
-  static archive<T, C>(r: Record): void {
-    if (r !== Record.blank) {
-      // Utils.freezeSet(r.replaced);
-      // Utils.freezeMap(r.observers);
-    }
-  }
 }
 
 // Dependencies (abstract)
