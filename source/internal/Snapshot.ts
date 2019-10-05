@@ -23,12 +23,12 @@ export class Snapshot implements ISnapshot {
   readonly hint: string;
   readonly cache: ICacheResult | undefined;
   get timestamp(): number { return this._timestamp; }
-  get readstamp(): number { return this._readstamp; }
+  get bumper(): number { return this._bumper; }
   get applied(): boolean { return this._applied; }
   readonly changeset: Map<Handle, Record>;
   readonly triggers: ICacheResult[];
   private _timestamp: number;
-  private _readstamp: number;
+  private _bumper: number;
   private _applied: boolean;
 
   constructor(hint: string, cache: ICacheResult | undefined) {
@@ -38,7 +38,7 @@ export class Snapshot implements ISnapshot {
     this.changeset = new Map<Handle, Record>();
     this.triggers = [];
     this._timestamp = UNDEFINED_TIMESTAMP;
-    this._readstamp = 1;
+    this._bumper = 1;
     this._applied = false;
   }
 
@@ -103,8 +103,8 @@ export class Snapshot implements ISnapshot {
   }
 
   bumpBy(timestamp: number): void {
-    if (timestamp > this._readstamp)
-      this._readstamp = timestamp;
+    if (timestamp > this._bumper)
+      this._bumper = timestamp;
   }
 
   acquire(outer: Snapshot): void {
@@ -133,11 +133,11 @@ export class Snapshot implements ISnapshot {
         }
       });
       if (this.cache === undefined) {
-        this._readstamp = this._timestamp;
+        this._bumper = this._timestamp;
         this._timestamp = ++Snapshot.headTimestamp;
       }
       else
-        this._timestamp = this._readstamp; // downgrade timestamp of renewed cache
+        this._timestamp = this._bumper; // downgrade timestamp of renewed cache
     }
     return conflicts;
   }
