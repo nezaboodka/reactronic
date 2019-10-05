@@ -127,7 +127,7 @@ export class Transaction {
     if (root) {
       if (result instanceof Promise)
         result = Transaction.outside(() => {
-          return t.autoretry(t.postponed(result), func, ...args);
+          return t.wrapToRetry(t.postponed(result), func, ...args);
         });
       t.seal();
     }
@@ -160,7 +160,7 @@ export class Transaction {
       throw misuse("cannot run transaction that is already sealed");
   }
 
-  private async autoretry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
+  private async wrapToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
     try {
       const result = await p;
       return result;
