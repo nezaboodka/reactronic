@@ -167,7 +167,7 @@ export class Snapshot implements ISnapshot {
         }
       });
       Utils.copyAllProps(merged, ours.data); // overwrite with merged copy
-      ours.prev.record = head; // rebased
+      ours.prev.record = head; // rebase is completed
     }
     return counter;
   }
@@ -200,7 +200,7 @@ export class Snapshot implements ISnapshot {
   };
 
   archive(): void {
-    Snapshot.grabageCollection(this);
+    Snapshot.garbageCollection(this);
     Utils.freezeMap(this.changeset);
   }
 
@@ -221,7 +221,7 @@ export class Snapshot implements ISnapshot {
   //   });
   // }
 
-  private static grabageCollection(s: Snapshot): void {
+  private static garbageCollection(s: Snapshot): void {
     if (s.timestamp !== 0) {
       if (s === Snapshot.oldest) {
         const p = Snapshot.pending;
