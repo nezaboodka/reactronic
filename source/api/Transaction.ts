@@ -279,19 +279,19 @@ export class Transaction {
     return this.promise;
   }
 
-  private static snapshotRead(): Snapshot {
+  private static readableSnapshot(): Snapshot {
     return Transaction._current.snapshot;
   }
 
-  private static snapshotWrite(): Snapshot {
+  private static writableSnapshot(): Snapshot {
     if (Transaction._inspection)
       throw misuse("cannot make changes during transaction inspection");
     return Transaction._current.snapshot;
   }
 
   static _init(): void {
-    Snapshot.read = Transaction.snapshotRead; // override
-    Snapshot.write = Transaction.snapshotWrite; // override
+    Snapshot.readable = Transaction.readableSnapshot; // override
+    Snapshot.writable = Transaction.writableSnapshot; // override
     Transaction.none.sealed = true;
     Transaction.none.snapshot.apply();
     Transaction.init.snapshot.acquire(Transaction.init.snapshot);

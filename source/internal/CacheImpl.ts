@@ -74,7 +74,7 @@ export class CacheImpl extends Cache<any> {
         return call2.cache.ret;
       }, args);
       call2.cache.ret = ret;
-      if (!weak && Snapshot.read().timestamp >= call2.cache.record.snapshot.timestamp)
+      if (!weak && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
         call = call2;
     }
     else
@@ -90,7 +90,7 @@ export class CacheImpl extends Cache<any> {
   }
 
   private read(args: any[] | undefined): CacheCall {
-    const ctx = Snapshot.read();
+    const ctx = Snapshot.readable();
     const r: Record = ctx.tryRead(this.handle);
     const c: CacheResult = r.data[this.blank.member] || this.initialize();
     const valid = c.config.kind !== Kind.Transaction &&
@@ -101,7 +101,7 @@ export class CacheImpl extends Cache<any> {
   }
 
   private write(): CacheCall {
-    const ctx = Snapshot.write();
+    const ctx = Snapshot.writable();
     const member = this.blank.member;
     const r: Record = ctx.write(this.handle, member, RT_HANDLE, this);
     let c: CacheResult = r.data[member] || this.blank;
@@ -387,7 +387,7 @@ class CacheResult extends PropValue implements ICacheResult {
   private static markViewed(record: Record, prop: PropKey, value: PropValue, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
-      Snapshot.read().bumpBy(record.snapshot.timestamp);
+      Snapshot.readable().bumpBy(record.snapshot.timestamp);
       const observables = c.getObservables(weak);
       let times: number = 0;
       if (Hooks.performanceWarningThreshold > 0) {
