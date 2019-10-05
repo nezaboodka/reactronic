@@ -218,7 +218,7 @@ function reentrance(reentrance: Reentrance); // transactions & triggers
 function monitor(monitor: Monitor | null);
 function trace(trace: Partial<Trace>);
 
-// Config, Kind, Reentrance, Monitor
+// Config, Kind, Reentrance, Monitor, Trace
 
 interface Config {
   readonly kind: Kind;
