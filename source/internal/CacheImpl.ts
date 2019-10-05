@@ -144,7 +144,7 @@ export class CacheImpl extends Cache<any> {
   static invalidate(self: CacheImpl): void {
     const call = self.write();
     const c = call.cache;
-    c.getObservables(false).set(c, {record: call.record, prop: c.member}); // c.member
+    c.getObservables(false).set(c, {record: call.record, prop: c.member, times: 0}); // c.member
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`);
   }
 
@@ -388,8 +388,15 @@ class CacheResult extends PropValue implements ICacheResult {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
       Snapshot.read().bumpBy(record.snapshot.timestamp);
-      c.getObservables(weak).set(value, {record, prop});
-      if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  ${weak ? 's' : 'r'} `, `${c.hint()} ${weak ? 'weakly uses' : 'uses'} ${Hint.record(record, prop)}`);
+      const observables = c.getObservables(weak);
+      if (Dbg.isOn) {
+        const existing = observables.get(value);
+        const times = existing ? existing.times + 1 : 1;
+        observables.set(value, {record, prop, times});
+        if (Dbg.trace.reads) Dbg.log("║", `  ${weak ? 's' : 'r'} `, `${c.hint()} ${weak ? 'weakly uses' : 'uses'} ${Hint.record(record, prop)} (${times} times)`);
+      }
+      else
+        observables.set(value, {record, prop, times: 0});
     }
   }
 
@@ -447,7 +454,7 @@ class CacheResult extends PropValue implements ICacheResult {
         value.unsubscribeFromAllObservables();
       }
       if (value.observers)
-        value.observers.forEach(c => c.invalidateDueTo(value, { record, prop }, timestamp, triggers, true));
+        value.observers.forEach(c => c.invalidateDueTo(value, { record, prop, times: 0 }, timestamp, triggers, true));
     }
   }
 
@@ -485,7 +492,10 @@ class CacheResult extends PropValue implements ICacheResult {
       if (!value.observers)
         value.observers = new Set<CacheResult>(); // acquire
       value.observers.add(this); // now subscribed
-      if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(hint.record, hint.prop, true));
+      if (Dbg.isOn) {
+        if (Dbg.trace.subscriptions) log.push(`${Hint.record(hint.record, hint.prop, true)}${hint.times > 1 ? `*${hint.times}` : ""}`);
+        if (hint.times > 2 && Dbg.trace.warnings) Dbg.log("!", "!", `${this.hint()} uses ${Hint.record(hint.record, hint.prop)} ${hint.times} times.`, 0, " <<< WARNING");
+      }
     }
     return result;
   }
@@ -512,7 +522,7 @@ class CacheResult extends PropValue implements ICacheResult {
       if (isTrigger)
         triggers.push(this);
       else if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, prop: this.member}, since, triggers, true));
+          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, prop: this.member, times: 0}, since, triggers, true));
     }
     return result;
   }

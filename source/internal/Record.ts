@@ -22,12 +22,11 @@ export class PropValue {
   }
 }
 
-export class PropHint {
-  constructor(
-    readonly record: Record,
-    readonly prop: PropKey) {
-  }
-}
+export type PropHint = {
+  readonly times: number;
+  readonly record: Record;
+  readonly prop: PropKey;
+};
 
 // Record
 
