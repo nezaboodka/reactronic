@@ -449,7 +449,7 @@ class CacheResult extends PropValue implements ICacheResult {
         value.unsubscribeFromAllObservables();
       }
       if (value.observers)
-        value.observers.forEach(c => c.invalidateDueTo(value, { record, prop, times: 0 }, timestamp, triggers, true));
+        value.observers.forEach(c => c.invalidateDueTo(value, { record, prop, times: 0 }, timestamp, triggers));
     }
   }
 
@@ -471,7 +471,7 @@ class CacheResult extends PropValue implements ICacheResult {
     const t = weak ? -1 : timestamp;
     observables.forEach((hint, val) => {
         if (!this.subscribeToPropValue(val, hint, t, log))
-          this.invalidateDueTo(val, hint, timestamp, triggers, false);
+          this.invalidateDueTo(val, hint, timestamp, triggers);
     });
   }
 
@@ -504,18 +504,17 @@ class CacheResult extends PropValue implements ICacheResult {
     return weak ? this.weakObservables : this.observables;
   }
 
-  invalidateDueTo(cause: PropValue, hint: PropHint, since: number, triggers: ICacheResult[], unsubscribe: boolean): boolean {
+  invalidateDueTo(cause: PropValue, hint: PropHint, since: number, triggers: ICacheResult[]): boolean {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
       const isTrigger = this.config.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] === undefined;
       if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.prop === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.prop)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
-      if (unsubscribe)
-        this.unsubscribeFromAllObservables(); // now unsubscribed
+      this.unsubscribeFromAllObservables(); // now unsubscribed
       if (isTrigger)
         triggers.push(this);
       else if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, prop: this.member, times: 0}, since, triggers, true));
+          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, prop: this.member, times: 0}, since, triggers));
     }
     return result;
   }
