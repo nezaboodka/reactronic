@@ -292,6 +292,7 @@ class Transaction {
 
 function cacheof<T>(method: F<T>): Cache<T>;
 function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined;
+function nonreactive<T>(func: F<T>, ...args: any[]): T;
 function standalone<T>(func: F<T>, ...args: any[]): T;
 
 abstract class Cache<T> {
