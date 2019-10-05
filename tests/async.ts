@@ -7,7 +7,7 @@ import { stateful, transaction, trigger, cached, cachedArgs, latency, Reactronic
 export { tracing } from './common';
 
 export const output: string[] = [];
-export const mon = Monitor.create("demo");
+export const mon = Monitor.create("mon");
 
 @stateful
 export class DemoModel {

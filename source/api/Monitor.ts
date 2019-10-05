@@ -7,10 +7,10 @@ import { Handle, Stateful } from '../internal/all';
 import { Transaction } from './Transaction';
 
 export class Monitor extends Stateful {
-  private flag: boolean = false;
+  private toggle: boolean = false;
   private counter: number = 0;
   private workers = new Set<Task>();
-  get busy(): boolean { return this.flag; }
+  get busy(): boolean { return this.toggle; }
   get count(): number { return this.counter; }
   get tasks(): ReadonlySet<Task> { return this.workers; }
 
@@ -20,7 +20,7 @@ export class Monitor extends Stateful {
 
   static enter(m: Monitor, worker: Task): void {
     if (m.counter === 0)
-      m.flag = true;
+      m.toggle = true;
     m.counter++;
     m.workers.add(worker);
   }
@@ -29,7 +29,7 @@ export class Monitor extends Stateful {
     m.workers.delete(worker);
     m.counter--;
     if (m.counter === 0)
-      m.flag = false;
+      m.toggle = false;
   }
 
   private static createFunc(hint: string | undefined): Monitor {
