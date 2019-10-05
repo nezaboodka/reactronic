@@ -7,29 +7,29 @@ import { Handle, Stateful } from '../internal/all';
 import { Transaction } from './Transaction';
 
 export class Monitor extends Stateful {
-  private _busy: boolean = false;
-  private _counter: number = 0;
-  private _workers = new Set<Worker>();
-  get busy(): boolean { return this._busy; }
-  get counter(): number { return this._counter; }
-  get workers(): ReadonlySet<Worker> { return this._workers; }
+  private flag: boolean = false;
+  private counter: number = 0;
+  private workers = new Set<Task>();
+  get busy(): boolean { return this.flag; }
+  get count(): number { return this.counter; }
+  get tasks(): ReadonlySet<Task> { return this.workers; }
 
   static create(hint?: string): Monitor {
     return Transaction.run("Monitor.create", Monitor.createFunc, hint);
   }
 
-  static enter(m: Monitor, worker: Worker): void {
-    if (m._counter === 0)
-      m._busy = true;
-    m._counter++;
-    m._workers.add(worker);
+  static enter(m: Monitor, worker: Task): void {
+    if (m.counter === 0)
+      m.flag = true;
+    m.counter++;
+    m.workers.add(worker);
   }
 
-  static leave(m: Monitor, worker: Worker): void {
-    m._workers.delete(worker);
-    m._counter--;
-    if (m._counter === 0)
-      m._busy = false;
+  static leave(m: Monitor, worker: Task): void {
+    m.workers.delete(worker);
+    m.counter--;
+    if (m.counter === 0)
+      m.flag = false;
   }
 
   private static createFunc(hint: string | undefined): Monitor {
@@ -37,8 +37,6 @@ export class Monitor extends Stateful {
   }
 }
 
-export interface Worker {
-  // hint(notran?: boolean): string;
+export interface Task {
   readonly tran: Transaction;
-  // readonly progress: number; // 0..100
 }
