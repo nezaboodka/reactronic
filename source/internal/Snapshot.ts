@@ -147,7 +147,7 @@ export class Snapshot implements ISnapshot {
     if (ours.prev.record !== head && head !== Record.blank) {
       counter++;
       const unmounted: boolean = head.changes.has(RT_UNMOUNT);
-      const merged = Utils.copyAllProps(head.data, {}); // create merged copy
+      const merged = {...head.data}; // clone
       ours.changes.forEach(prop => {
         counter++;
         merged[prop] = ours.data[prop];
