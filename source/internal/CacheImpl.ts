@@ -254,7 +254,7 @@ class CacheResult extends PropValue implements ICacheResult {
 
   hint(): string { return `${Hint.record(this.record, this.member)}`; }
 
-  get isCopiedOnWrite(): boolean { return false; }
+  get copyOnWriteMode(): boolean { return false; }
 
   bind<T>(func: F<T>): F<T> {
     const Cache_run: F<T> = (...args: any[]): T => {

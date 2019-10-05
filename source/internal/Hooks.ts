@@ -334,7 +334,7 @@ export class CopyOnWrite implements ProxyHandler<Binding<any>> {
     const v = pv.value;
     if (Array.isArray(v)) {
       if (!Object.isFrozen(v)) {
-        if (pv.isCopiedOnWrite)
+        if (pv.copyOnWriteMode)
           pv.value = new Proxy(CopyOnWriteArray.seal(proxy, prop, v), CopyOnWrite.global);
         else
           Object.freeze(v); // just freeze without copy-on-write hooks
@@ -342,7 +342,7 @@ export class CopyOnWrite implements ProxyHandler<Binding<any>> {
     }
     else if (v instanceof Set) {
       if (!Object.isFrozen(v)) {
-        if (pv.isCopiedOnWrite)
+        if (pv.copyOnWriteMode)
           pv.value = new Proxy(CopyOnWriteSet.seal(proxy, prop, v), CopyOnWrite.global);
         else
           Utils.freezeSet(v); // just freeze without copy-on-write hooks
@@ -350,7 +350,7 @@ export class CopyOnWrite implements ProxyHandler<Binding<any>> {
     }
     else if (v instanceof Map) {
       if (!Object.isFrozen(v)) {
-        if (pv.isCopiedOnWrite)
+        if (pv.copyOnWriteMode)
           pv.value = new Proxy(CopyOnWriteMap.seal(proxy, prop, v), CopyOnWrite.global);
         else
           Utils.freezeMap(v); // just freeze without copy-on-write hooks
