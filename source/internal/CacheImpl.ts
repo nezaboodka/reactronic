@@ -25,7 +25,7 @@ export class CacheImpl extends Cache<any> {
   get stamp(): number { return this.weak().record.snapshot.timestamp; }
   get isInvalid(): boolean { return !this.weak().valid; }
   invalidate(): void { CacheImpl.invalidate(this); }
-  call(args?: any): any { return this.recall(true, args).cache.value; }
+  call(args?: any[]): any { return this.recall(true, args).cache.value; }
 
   constructor(handle: Handle, member: PropKey, config: Cfg) {
     super();
