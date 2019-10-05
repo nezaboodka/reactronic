@@ -5,7 +5,7 @@
 [![Package Size](https://img.shields.io/bundlephobia/minzip/reactronic.svg?colorB=success)](https://bundlephobia.com/result?p=reactronic)
 [![CircleCI Status](https://circleci.com/gh/nezaboodka/reactronic.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/nezaboodka/reactronic)
 ![Coverage](https://img.shields.io/badge/coverage-94%25-success.svg)
-![Lines](https://img.shields.io/badge/lines-1312-success.svg)
+![Lines](https://img.shields.io/badge/lines-1331-success.svg)
 [![Demo](https://img.shields.io/badge/demo-live-success.svg)](https://nezaboodka.github.io/reactronic-demo/)
 
 Live demo: https://nezaboodka.github.io/reactronic-demo/
@@ -112,7 +112,7 @@ function that is called on-demand to renew the value if it was
 invalidated.
 
 Trigger and cached functions are instrumented with hooks to
-seamlesly subscribe to those state objects and other cached
+seamlessly subscribe to those state objects and other cached
 functions (dependencies), which are used during their execution.
 
 ``` tsx
@@ -195,7 +195,7 @@ Key Reactronic principles and differentiators:
 Roadmap:
 
   - v1.5: History/undo/redo API and implementation
-  - v1.7: Patches and conflict resolition API
+  - v1.7: Patches and conflict resolution API
   - v2.0: Sync API and implementation
 
 ## Installation
