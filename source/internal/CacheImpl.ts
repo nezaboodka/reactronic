@@ -95,7 +95,7 @@ export class CacheImpl extends Cache<any> {
     const c: CacheResult = r.data[this.blank.member] || this.initialize();
     const valid = c.config.kind !== Kind.Transaction &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
-      (args === undefined || c.args[0] === args[0]) ||
+      (!c.config.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[RT_UNMOUNT] !== undefined;
     return { valid, cache: c, record: r };
   }

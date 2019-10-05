@@ -40,6 +40,7 @@ const RT_DEFAULT_STATELESS_CONFIG: Config = Object.freeze({
   kind: Kind.Stateless,
   latency: -2, // never
   reentrance: Reentrance.PreventWithError,
+  cachedArgs: false,
   monitor: null,
   trace: undefined,
 });
@@ -47,6 +48,7 @@ const RT_DEFAULT_STATEFUL_CONFIG: Config = Object.freeze({
   kind: Kind.Stateful,
   latency: -2, // never
   reentrance: Reentrance.PreventWithError,
+  cachedArgs: false,
   monitor: null,
   trace: undefined,
 });
@@ -56,6 +58,7 @@ export class Cfg implements Config {
   readonly kind: Kind;
   readonly latency: number;
   readonly reentrance: Reentrance;
+  readonly cachedArgs: boolean;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
   static readonly STATEFUL = Object.freeze(new Cfg(undef, {body: undef, ...RT_DEFAULT_STATEFUL_CONFIG}, {}, false));
@@ -66,6 +69,7 @@ export class Cfg implements Config {
     this.kind = merge(RT_DEFAULT_STATELESS_CONFIG.kind, existing.kind, patch.kind, implicit);
     this.latency = merge(RT_DEFAULT_STATELESS_CONFIG.latency, existing.latency, patch.latency, implicit);
     this.reentrance = merge(RT_DEFAULT_STATELESS_CONFIG.reentrance, existing.reentrance, patch.reentrance, implicit);
+    this.cachedArgs = merge(RT_DEFAULT_STATELESS_CONFIG.cachedArgs, existing.cachedArgs, patch.cachedArgs, implicit);
     this.monitor = merge(RT_DEFAULT_STATELESS_CONFIG.monitor, existing.monitor, patch.monitor, implicit);
     this.trace = merge(RT_DEFAULT_STATELESS_CONFIG.trace, existing.trace, patch.trace, implicit);
     Object.freeze(this);

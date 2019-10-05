@@ -215,6 +215,7 @@ function cached(proto, prop, pd); // method only
 
 function latency(latency: number); // triggers only
 function reentrance(reentrance: Reentrance); // transactions & triggers
+function cachedArgs(cachedArgs: boolean); // cached & triggers
 function monitor(monitor: Monitor | null);
 function trace(trace: Partial<Trace>);
 
@@ -224,6 +225,7 @@ interface Config {
   readonly kind: Kind;
   readonly latency: number; // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance;
+  readonly cachedArgs: boolean;
   readonly monitor: Monitor | null;
   readonly trace?: Partial<Trace>;
 }

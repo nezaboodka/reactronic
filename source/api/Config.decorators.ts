@@ -42,6 +42,10 @@ export function reentrance(reentrance: Reentrance): F<any> {
   return config({reentrance});
 }
 
+export function cachedArgs(cachedArgs: boolean): F<any> {
+  return config({cachedArgs});
+}
+
 export function monitor(monitor: Monitor | null): F<any> {
   return config({monitor});
 }
