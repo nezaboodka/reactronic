@@ -507,7 +507,7 @@ class CacheResult extends PropValue implements ICacheResult {
   }
 
   invalidateDueTo(cause: PropValue, hint: PropHint, since: number, triggers: ICacheResult[]): boolean {
-    const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
+    const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0;
     if (result) {
       this.invalid.since = since;
       const isTrigger = this.config.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined;
