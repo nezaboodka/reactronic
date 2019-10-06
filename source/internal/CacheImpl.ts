@@ -479,7 +479,7 @@ class CacheResult extends PropValue implements ICacheResult {
     let result = value.replacedBy === undefined;
     if (result && timestamp !== -1)
       result = !(value instanceof CacheResult && timestamp >= value.invalid.since);
-    if (result) {
+    if (result && this.record !== hint.record) {
       if (!value.observers)
         value.observers = new Set<CacheResult>(); // acquire
       value.observers.add(this); // now subscribed
@@ -501,8 +501,7 @@ class CacheResult extends PropValue implements ICacheResult {
   }
 
   invalidateDueTo(cause: PropValue, hint: PropHint, since: number, triggers: ICacheResult[]): boolean {
-    const result = this.record !== hint.record &&
-      (this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0);
+    const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
       const isTrigger = this.config.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined;
