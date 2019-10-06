@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, Utils, Record, PropKey, PropValue, PropHint, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, RT_HANDLE, RT_CACHE, RT_UNMOUNT } from './all';
+import { Dbg, misuse, Utils, Record, PropKey, PropValue, PropHint, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all';
 import { Cache } from '../api/Cache';
 export { Cache, cacheof, resolved } from '../api/Cache';
 import { Config, Kind, Reentrance, Trace } from '../api/Config';
@@ -96,14 +96,14 @@ export class CacheImpl extends Cache<any> {
     const valid = c.config.kind !== Kind.Transaction &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (!c.config.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
-      r.data[RT_UNMOUNT] !== undefined;
+      r.data[R_UNMOUNT] !== undefined;
     return { valid, cache: c, record: r };
   }
 
   private write(): CacheCall {
     const ctx = Snapshot.writable();
     const member = this.blank.member;
-    const r: Record = ctx.write(this.handle, member, RT_HANDLE, this);
+    const r: Record = ctx.write(this.handle, member, R_HANDLE, this);
     let c: CacheResult = r.data[member] || this.blank;
     if (c.record !== r) {
       const renewing = new CacheResult(r, member, c);
@@ -184,12 +184,12 @@ export class CacheImpl extends Cache<any> {
     const cache = new CacheImpl(h, prop, config);
     const cacheTrap: F<any> = (...args: any[]): any =>
       cache.recall(false, args).cache.ret;
-    Utils.set(cacheTrap, RT_CACHE, cache);
+    Utils.set(cacheTrap, R_CACHE, cache);
     return cacheTrap;
   }
 
   static of(method: F<any>): Cache<any> {
-    const impl: Cache<any> | undefined = Utils.get(method, RT_CACHE);
+    const impl: Cache<any> | undefined = Utils.get(method, R_CACHE);
     if (!impl)
       throw misuse("given method is not a reactronic cache");
     return impl;
@@ -202,8 +202,8 @@ export class CacheImpl extends Cache<any> {
 
   private static unmountFunc(...objects: any[]): Transaction {
     for (const x of objects) {
-      if (Utils.get(x, RT_HANDLE))
-        x[RT_UNMOUNT] = RT_UNMOUNT;
+      if (Utils.get(x, R_HANDLE))
+        x[R_UNMOUNT] = R_UNMOUNT;
     }
     return Transaction.current;
   }
@@ -352,9 +352,9 @@ class CacheResult extends PropValue implements ICacheResult {
       if (!this.error && (this.config.kind === Kind.Transaction ||
           (timestamp >= this.invalid.since && !this.invalid.renewing))) {
         try {
-          const proxy: any = Utils.get(this.record.data, RT_HANDLE).proxy;
+          const proxy: any = Utils.get(this.record.data, R_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
-          const cache: CacheImpl = Utils.get(trap, RT_CACHE);
+          const cache: CacheImpl = Utils.get(trap, R_CACHE);
           const call: CacheCall = cache.recall(false);
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error
@@ -386,7 +386,7 @@ class CacheResult extends PropValue implements ICacheResult {
 
   private static markViewed(record: Record, prop: PropKey, value: PropValue, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
-    if (c && c.config.kind !== Kind.Transaction && prop !== RT_HANDLE) {
+    if (c && c.config.kind !== Kind.Transaction && prop !== R_HANDLE) {
       Snapshot.readable().bumpBy(record.snapshot.timestamp);
       const observables = c.getObservables(weak);
       let times: number = 0;
@@ -409,7 +409,7 @@ class CacheResult extends PropValue implements ICacheResult {
     if (error === undefined) {
       const triggers = snapshot.triggers;
       snapshot.changeset.forEach((r: Record, h: Handle) => {
-        if (!r.changes.has(RT_UNMOUNT))
+        if (!r.changes.has(R_UNMOUNT))
           r.changes.forEach(prop => {
             CacheResult.markPrevValueAsReplaced(timestamp, r, prop, triggers);
             CacheResult.completePropChange(timestamp, r, prop, triggers);
@@ -504,7 +504,7 @@ class CacheResult extends PropValue implements ICacheResult {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
-      const isTrigger = this.config.kind === Kind.Trigger && this.record.data[RT_UNMOUNT] === undefined;
+      const isTrigger = this.config.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined;
       if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.prop === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.prop)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
       this.unsubscribeFromAllObservables(); // now unsubscribed
       if (isTrigger) // break cascade invalidation on trigger
@@ -549,7 +549,7 @@ function valueHint(value: any): string {
     result = `Map(${value.size})`;
   else if (value instanceof CacheResult)
     result = `<renew:${Hint.record(value.record.prev.record, undefined, true)}>`;
-  else if (value === RT_UNMOUNT)
+  else if (value === R_UNMOUNT)
     result = "<unmount>";
   else if (value !== undefined && value !== null)
     result = value.toString().slice(0, 20);

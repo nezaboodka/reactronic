@@ -5,7 +5,7 @@
 
 import { Dbg, misuse } from './Dbg';
 
-export const RT_COPY_ON_WRITE: unique symbol = Symbol("RT:COPY-ON-WRITE");
+export const R_COPY_ON_WRITE: unique symbol = Symbol("R:COPY-ON-WRITE");
 
 export class Binding<T> {
   constructor(
@@ -44,7 +44,7 @@ export class Binding<T> {
     const self: any = value;
     if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "     ·", `${owner.constructor.name}.${prop.toString()} - copy-on-write - sealed ${size} item(s)`);
     const binding = new Binding<T>(owner, prop, value, size, getSize, clone);
-    self[RT_COPY_ON_WRITE] = binding;
+    self[R_COPY_ON_WRITE] = binding;
     Object.setPrototypeOf(value, proto);
     Object.freeze(value);
     return binding;
@@ -52,16 +52,16 @@ export class Binding<T> {
 }
 
 export function R<T>(self: any): T {
-  const binding: Binding<T> = self[RT_COPY_ON_WRITE];
+  const binding: Binding<T> = self[R_COPY_ON_WRITE];
   return binding !== undefined ? binding.readable(self) : self;
 }
 
 export function W<T>(self: any): T {
-  const binding: Binding<T> = self[RT_COPY_ON_WRITE];
+  const binding: Binding<T> = self[R_COPY_ON_WRITE];
   return binding !== undefined ? binding.writable(self) : self;
 }
 
 export function S<T>(self: any): number {
-  const binding: Binding<T> = self[RT_COPY_ON_WRITE];
+  const binding: Binding<T> = self[R_COPY_ON_WRITE];
   return binding !== undefined ? binding.sizing(self) : -1;
 }

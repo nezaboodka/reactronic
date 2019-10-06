@@ -5,8 +5,8 @@
 
 import { Dbg, misuse } from './Dbg';
 import { Utils, undef } from './Utils';
-import { Record, PropKey, ISnapshot, ICacheResult, RT_UNMOUNT } from './Record';
-import { Handle, RT_HANDLE } from './Handle';
+import { Record, PropKey, ISnapshot, ICacheResult, R_UNMOUNT } from './Record';
+import { Handle, R_HANDLE } from './Handle';
 import { CopyOnWrite } from './Hooks';
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1;
@@ -82,7 +82,7 @@ export class Snapshot implements ISnapshot {
     this.guard(h, r, prop, value, token);
     if (r.snapshot !== this) {
       const data = {...r.data};
-      Reflect.set(data, RT_HANDLE, h);
+      Reflect.set(data, R_HANDLE, h);
       r = new Record(h.head, this, data);
       this.changeset.set(h, r);
       h.changing = r;
@@ -94,9 +94,9 @@ export class Snapshot implements ISnapshot {
   private guard(h: Handle, r: Record, prop: PropKey, value: any, token: any): void {
     if (this.applied)
       throw misuse(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`);
-    if (r.snapshot !== this && value !== RT_HANDLE && this.caching !== undefined && token !== this.caching)
+    if (r.snapshot !== this && value !== R_HANDLE && this.caching !== undefined && token !== this.caching)
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hint.record(r, prop)}`);
-    if (r === Record.blank && value !== RT_HANDLE) /* istanbul ignore next */
+    if (r === Record.blank && value !== R_HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hint.record(r, prop)} doesn't exist in snapshot v${this.stamp}`);
   }
 
@@ -144,14 +144,14 @@ export class Snapshot implements ISnapshot {
     let counter: number = -1;
     if (ours.prev.record !== head && head !== Record.blank) {
       counter++;
-      const unmounted: boolean = head.changes.has(RT_UNMOUNT);
+      const unmounted: boolean = head.changes.has(R_UNMOUNT);
       const merged = {...head.data}; // clone
       ours.changes.forEach(prop => {
         counter++;
         merged[prop] = ours.data[prop];
         if (head !== ours.prev.record) {
-          if (unmounted || prop === RT_UNMOUNT) {
-            if (unmounted !== (prop === RT_UNMOUNT)) {
+          if (unmounted || prop === R_UNMOUNT) {
+            if (unmounted !== (prop === R_UNMOUNT)) {
               if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} <> ${Hint.record(head, prop)}.`);
               ours.conflicts.set(prop, head);
             }
@@ -257,7 +257,7 @@ export class Hint {
   }
 
   static record(r: Record, prop?: PropKey, typeless?: boolean): string {
-    const h: Handle | undefined = Utils.get(r.data, RT_HANDLE);
+    const h: Handle | undefined = Utils.get(r.data, R_HANDLE);
     return Hint.handle(h, prop, r.snapshot.timestamp, r.snapshot.id, typeless);
   }
 

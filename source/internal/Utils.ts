@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-export const RT_CACHE: unique symbol = Symbol("RT:CACHE");
+export const R_CACHE: unique symbol = Symbol("R:CACHE");
 
 export class Utils {
   static get(obj: any, sym: symbol): any {

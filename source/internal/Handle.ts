@@ -8,7 +8,7 @@ import { Record } from './Record';
 
 // Handle
 
-export const RT_HANDLE: unique symbol = Symbol("RT:HANDLE");
+export const R_HANDLE: unique symbol = Symbol("R:HANDLE");
 
 export class Handle {
   private static id: number = 20;
@@ -32,7 +32,7 @@ export class Handle {
 
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
-      const h: Handle = Utils.get(obj, RT_HANDLE);
+      const h: Handle = Utils.get(obj, R_HANDLE);
       if (h)
         h.hint = hint;
     }
@@ -40,7 +40,7 @@ export class Handle {
   }
 
   static getHint(obj: object): string | undefined {
-    const h: Handle = Utils.get(obj, RT_HANDLE);
+    const h: Handle = Utils.get(obj, R_HANDLE);
     return h ? h.hint : undefined;
   }
 }
