@@ -196,7 +196,7 @@ export class Snapshot implements ISnapshot {
   };
 
   archive(): void {
-    Snapshot.garbageCollection(this);
+    this.triggerGarbageCollection();
     Utils.freezeMap(this.changeset);
     Object.freeze(this.triggers);
     Object.freeze(this);
@@ -219,14 +219,14 @@ export class Snapshot implements ISnapshot {
   //   });
   // }
 
-  private static garbageCollection(s: Snapshot): void {
-    if (s.stamp !== 0) {
-      if (s === Snapshot.oldest) {
+  private triggerGarbageCollection(): void {
+    if (this.stamp !== 0) {
+      if (this === Snapshot.oldest) {
         const p = Snapshot.pending;
         p.sort((a, b) => a.stamp - b.stamp);
         let i: number = 0;
         while (i < p.length && p[i].applied) {
-          Snapshot.unlinkHistory(p[i]);
+          p[i].unlinkHistory();
           i++;
         }
         Snapshot.pending = p.slice(i);
@@ -235,10 +235,10 @@ export class Snapshot implements ISnapshot {
     }
   }
 
-  private static unlinkHistory(s: Snapshot): void {
-    if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", "GC", `v${s.stamp}t${s.id} (${s.hint}) snapshot is the oldest one now`);
-    s.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== Record.blank) Dbg.log("", " g", `v${s.stamp}t${s.id}: ${Hint.record(r.prev.record)} is ready for GC because overwritten by ${Hint.record(r)}`);
+  private unlinkHistory(): void {
+    if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", "GC", `v${this.stamp}t${this.id} (${this.hint}) snapshot is the oldest one now`);
+    this.changeset.forEach((r: Record, h: Handle) => {
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== Record.blank) Dbg.log("", " g", `v${this.stamp}t${this.id}: ${Hint.record(r.prev.record)} is ready for GC because overwritten by ${Hint.record(r)}`);
       r.prev.record = Record.blank; // unlink history
     });
   }
