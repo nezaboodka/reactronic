@@ -140,7 +140,7 @@ export class Snapshot implements ISnapshot {
     return conflicts;
   }
 
-  static rebaseRecord(ours: Record, head: Record): number {
+  private static rebaseRecord(ours: Record, head: Record): number {
     let counter: number = -1;
     if (ours.prev.record !== head && head !== Record.blank) {
       counter++;
