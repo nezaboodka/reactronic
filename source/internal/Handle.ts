@@ -32,7 +32,7 @@ export class Handle {
 
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
-      const h: Handle = Utils.get(obj, R_HANDLE);
+      const h = Utils.get<Handle>(obj, R_HANDLE);
       if (h)
         h.hint = hint;
     }
@@ -40,7 +40,7 @@ export class Handle {
   }
 
   static getHint(obj: object): string | undefined {
-    const h: Handle = Utils.get(obj, R_HANDLE);
+    const h = Utils.get<Handle>(obj, R_HANDLE);
     return h ? h.hint : undefined;
   }
 }

@@ -19,6 +19,7 @@ export class DemoModel extends StatefulDemoModelBase {
   @stateless shared: string = "for testing purposes";
   title: string = "Demo";
   users: Person[] = [];
+  undeclared?: any; // for testing purposes
 
   @transaction
   loadUsers(): void {

@@ -255,7 +255,7 @@ export class Hint {
   }
 
   static record(r: Record, prop?: PropKey, typeless?: boolean): string {
-    const h: Handle | undefined = Utils.get(r.data, R_HANDLE);
+    const h = Utils.get<Handle | undefined>(r.data, R_HANDLE);
     return Hint.handle(h, prop, r.snapshot.timestamp, r.snapshot.id, typeless);
   }
 

@@ -10,7 +10,7 @@ import { CopyOnWriteSet } from './Binding.CopyOnWriteSet';
 import { CopyOnWriteMap } from './Binding.CopyOnWriteMap';
 import { Record, PropKey, PropValue, F, R_UNMOUNT } from './Record';
 import { Handle, R_HANDLE } from './Handle';
-import { Snapshot } from './Snapshot';
+import { Snapshot, Hint } from './Snapshot';
 import { Config, Kind, Reentrance } from '../api/Config';
 import { Monitor } from '../api/Monitor';
 import { Cache } from '../api/Cache';
@@ -26,6 +26,11 @@ export class Stateful {
       triggers.forEach((rx, prop) =>
         (h.proxy[prop][R_CACHE] as Cache<any>).invalidate());
     return h.proxy;
+  }
+
+  toString(): string {
+    const h = Utils.get<Handle>(this, R_HANDLE);
+    return Hint.handle(h);
   }
 }
 
@@ -101,12 +106,14 @@ export class Hooks implements ProxyHandler<Handle> {
         Record.markViewed(r, prop, result, false);
         result = result.value;
       }
+      else if (prop === R_HANDLE) {
+        // do nothing, just return handle
+      }
       else {
-        if (prop !== R_HANDLE) {
-          result = Reflect.get(h.stateless, prop, receiver);
-          // if (result === undefined) // treat undefined fields as stateful
-          //   Record.markViewed(r, prop, false);
-        }
+        result = Reflect.get(h.stateless, prop, receiver);
+        if (result === undefined)
+          // Record.markViewed(r, prop, false); // treat undefined fields as stateful
+          throw misuse(`undeclared properties are not supported: ${Hint.record(r, prop)}`);
       }
     }
     else
@@ -219,7 +226,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const get = function(this: any): any {
       const p = Object.getPrototypeOf(this);
       const classConfig: Cfg = Hooks.getConfig(p, R_CLASS) || (this instanceof Stateful ? Cfg.STATEFUL : Cfg.STATELESS);
-      const h: Handle = classConfig.kind !== Kind.Stateless ? Utils.get(this, R_HANDLE) : Hooks.acquireHandle(this);
+      const h: Handle = classConfig.kind !== Kind.Stateless ? Utils.get<Handle>(this, R_HANDLE) : Hooks.acquireHandle(this);
       const value = Hooks.createCacheTrap(h, method, methodConfig);
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable });
       return value;
@@ -265,7 +272,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static acquireHandle(obj: any): Handle {
     if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
       throw misuse("only objects can be reactive");
-    let h: Handle = Utils.get(obj, R_HANDLE);
+    let h = Utils.get<Handle>(obj, R_HANDLE);
     if (!h) {
       h = new Handle(obj, obj, obj.constructor.name, Hooks.proxy);
       Utils.set(obj, R_HANDLE, h);

@@ -6,7 +6,7 @@
 export const R_CACHE: unique symbol = Symbol("R:CACHE");
 
 export class Utils {
-  static get(obj: any, sym: symbol): any {
+  static get<T>(obj: any, sym: symbol): T {
     return obj[sym];
   }
 

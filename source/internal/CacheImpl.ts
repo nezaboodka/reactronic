@@ -189,7 +189,7 @@ export class CacheImpl extends Cache<any> {
   }
 
   static of(method: F<any>): Cache<any> {
-    const impl: Cache<any> | undefined = Utils.get(method, R_CACHE);
+    const impl = Utils.get<Cache<any> | undefined>(method, R_CACHE);
     if (!impl)
       throw misuse("given method is not a reactronic cache");
     return impl;
@@ -202,7 +202,7 @@ export class CacheImpl extends Cache<any> {
 
   private static unmountFunc(...objects: any[]): Transaction {
     for (const x of objects) {
-      if (Utils.get(x, R_HANDLE))
+      if (Utils.get<Handle>(x, R_HANDLE))
         x[R_UNMOUNT] = R_UNMOUNT;
     }
     return Transaction.current;
@@ -352,9 +352,9 @@ class CacheResult extends PropValue implements ICacheResult {
       if (!this.error && (this.config.kind === Kind.Transaction ||
           (timestamp >= this.invalid.since && !this.invalid.renewing))) {
         try {
-          const proxy: any = Utils.get(this.record.data, R_HANDLE).proxy;
+          const proxy: any = Utils.get<Handle>(this.record.data, R_HANDLE).proxy;
           const trap: Function = Reflect.get(proxy, this.member, proxy);
-          const cache: CacheImpl = Utils.get(trap, R_CACHE);
+          const cache = Utils.get<CacheImpl>(trap, R_CACHE);
           const call: CacheCall = cache.recall(false);
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }); // bad idea to hide an error

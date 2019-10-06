@@ -30,6 +30,7 @@ test("basic", t => {
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   try {
     t.is(app.model.methodOfStatefulBase(), "methodOfStatefulBase");
+    t.throws(() => console.log(app.model.undeclared), "undeclared properties are not supported: v102t109#21 DemoModel.undeclared");
     t.notThrows(() => DemoView.test());
     const rendering = cacheof(app.render);
     t.is(rendering.isInvalid, false);
