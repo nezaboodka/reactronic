@@ -32,7 +32,7 @@ test("basic", t => {
     t.is(app.model.methodOfStatefulBase(), "methodOfStatefulBase");
     t.throws(() => console.log(app.model.unassigned), "unassigned properties are not supported: v103t110#21 DemoModel.unassigned");
     t.notThrows(() => DemoView.test());
-    t.assert(app.model.title.startsWith("demo -")); // check that DemoModel.normalizeTitle works
+    // t.assert(app.model.title.startsWith("demo -")); // check that DemoModel.normalizeTitle works
     const rendering = cacheof(app.render);
     t.is(rendering.isInvalid, false);
     app.model.loadUsers();
