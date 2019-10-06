@@ -125,9 +125,17 @@ export class Hooks implements ProxyHandler<Handle> {
     const rt: Cfg | undefined = Hooks.getConfig(h.stateless, prop);
     if (!rt || (rt.body === decoratedfield && rt.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.writable().write(h, prop, value);
+      const curr = r.data[prop] as PropValue;
       const prev = r.prev.record.data[prop] as PropValue;
-      const changed = prev !== undefined ? prev.value !== value : value !== undefined;
-      r.data[prop] = changed ? new PropValue(value) : prev;
+      const changed = prev === undefined || prev.value !== value;
+      if (changed) {
+        if (prev === curr)
+          r.data[prop] = new PropValue(value);
+        else
+          curr.value = value;
+      }
+      else if (prev !== curr)
+        r.data[prop] = prev; // restore previous value
       Record.markChanged(r, prop, changed, value);
     }
     else
