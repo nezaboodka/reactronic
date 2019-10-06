@@ -424,7 +424,7 @@ class CacheResult extends PropValue implements ICacheResult {
             CacheResult.subscribeToAllObservablesAndComplete(timestamp, r, prop, triggers));
         else
           for (const prop in r.prev.record.data)
-            CacheResult.subscribeToAllObservablesAndComplete(timestamp, r, prop);
+            CacheResult.subscribeToAllObservablesAndComplete(timestamp, r, prop); // complete only, no subscriptions
       });
     }
     else
