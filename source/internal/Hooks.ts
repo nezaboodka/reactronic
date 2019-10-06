@@ -113,7 +113,7 @@ export class Hooks implements ProxyHandler<Handle> {
         result = Reflect.get(h.stateless, prop, receiver);
         if (result === undefined)
           // Record.markViewed(r, prop, false); // treat undefined fields as stateful
-          throw misuse(`undeclared properties are not supported: ${Hint.record(r, prop)}`);
+          throw misuse(`unassigned properties are not supported: ${Hint.record(r, prop)}`);
       }
     }
     else
