@@ -21,10 +21,12 @@ import { Trace } from '../api/Trace';
 export class Stateful {
   constructor() {
     const h = Hooks.createHandle(true, this, undefined, new.target.name);
-    const triggers: Map<PropKey, Cfg> | undefined = Hooks.getConfigTable(new.target.prototype)[R_TRIGGERS];
-    if (triggers && !Hooks.triggersAutoStartDisabled)
-      triggers.forEach((rx, prop) =>
-        (h.proxy[prop][R_CACHE] as Cache<any>).invalidate());
+    if (!Hooks.triggersAutoStartDisabled) {
+      const triggers: Map<PropKey, Cfg> | undefined = Hooks.getConfigTable(new.target.prototype)[R_TRIGGERS];
+      if (triggers)
+        triggers.forEach((rx, prop) =>
+          (h.proxy[prop][R_CACHE] as Cache<any>).invalidate());
+    }
     return h.proxy;
   }
 
