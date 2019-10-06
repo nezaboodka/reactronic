@@ -100,11 +100,6 @@ export class Snapshot implements ISnapshot {
       throw misuse(`object ${Hint.record(r, prop)} doesn't exist in snapshot v${this.stamp}`);
   }
 
-  bump(timestamp: number): void {
-    if (timestamp > this.bumper)
-      this.bumper = timestamp;
-  }
-
   acquire(outer: Snapshot): void {
     if (!this.applied && this.stamp === UNDEFINED_TIMESTAMP) {
       this.stamp = this.caching === undefined || outer.stamp === UNDEFINED_TIMESTAMP
@@ -114,6 +109,11 @@ export class Snapshot implements ISnapshot {
         Snapshot.oldest = this;
       if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("╔══", `v${this.stamp}`, `${this.hint}`);
     }
+  }
+
+  bump(timestamp: number): void {
+    if (timestamp > this.bumper)
+      this.bumper = timestamp;
   }
 
   rebase(): Record[] | undefined { // return conflicts
