@@ -112,7 +112,7 @@ export class CacheImpl extends Cache<any> {
       if (!renewing.error)
         c.invalid.renewing = renewing;
       c = renewing;
-      ctx.bumpBy(r.prev.record.snapshot.timestamp);
+      ctx.bump(r.prev.record.snapshot.timestamp);
       Record.markChanged(r, member, true, renewing);
     }
     return { valid: true, cache: c, record: r };
@@ -387,7 +387,7 @@ class CacheResult extends PropValue implements ICacheResult {
   private static markViewed(record: Record, prop: PropKey, value: PropValue, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active; // alias
     if (c && c.config.kind !== Kind.Transaction && prop !== R_HANDLE) {
-      Snapshot.readable().bumpBy(record.snapshot.timestamp);
+      Snapshot.readable().bump(record.snapshot.timestamp);
       const observables = c.getObservables(weak);
       let times: number = 0;
       if (Hooks.performanceWarningThreshold > 0) {

@@ -100,7 +100,7 @@ export class Snapshot implements ISnapshot {
       throw misuse(`object ${Hint.record(r, prop)} doesn't exist in snapshot v${this.stamp}`);
   }
 
-  bumpBy(timestamp: number): void {
+  bump(timestamp: number): void {
     if (timestamp > this.bumper)
       this.bumper = timestamp;
   }
