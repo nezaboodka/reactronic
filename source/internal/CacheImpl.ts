@@ -408,25 +408,31 @@ class CacheResult extends PropValue implements ICacheResult {
     const timestamp = snapshot.timestamp;
     if (error === undefined) {
       const triggers = snapshot.triggers;
+      // Mark previous values as replaced and invalidate existing observers
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(R_UNMOUNT))
-          r.changes.forEach(prop => {
-            CacheResult.markPrevValueAsReplaced(timestamp, r, prop, triggers);
-            CacheResult.completePropChange(timestamp, r, prop, triggers);
-          });
+          r.changes.forEach(prop =>
+            CacheResult.markPrevValueAsReplaced(timestamp, r, prop, triggers));
         else
-          for (const prop in r.prev.record.data) {
+          for (const prop in r.prev.record.data)
             CacheResult.markPrevValueAsReplaced(timestamp, r, prop, triggers);
-            CacheResult.completePropChange(timestamp, r, prop);
-          }
+      });
+      // Subscribe to new observers and complete property change
+      snapshot.changeset.forEach((r: Record, h: Handle) => {
+        if (!r.changes.has(R_UNMOUNT))
+          r.changes.forEach(prop =>
+            CacheResult.subscribeToAllObservablesAndComplete(timestamp, r, prop, triggers));
+        else
+          for (const prop in r.prev.record.data)
+            CacheResult.subscribeToAllObservablesAndComplete(timestamp, r, prop);
       });
     }
     else
       snapshot.changeset.forEach((r: Record, h: Handle) =>
-        r.changes.forEach(prop => CacheResult.completePropChange(timestamp, r, prop)));
+        r.changes.forEach(prop => CacheResult.subscribeToAllObservablesAndComplete(timestamp, r, prop)));
   }
 
-  private static completePropChange(timestamp: number, record: Record, prop: PropKey, triggers?: ICacheResult[]): void {
+  private static subscribeToAllObservablesAndComplete(timestamp: number, record: Record, prop: PropKey, triggers?: ICacheResult[]): void {
     const cache = record.data[prop];
     if (cache instanceof CacheResult && cache.record === record) {
       if (triggers)
@@ -486,7 +492,7 @@ class CacheResult extends PropValue implements ICacheResult {
       if (Dbg.isOn && Dbg.trace.subscriptions) log.push(`${Hint.record(hint.record, hint.prop, true)}${hint.times > 1 ? `*${hint.times}` : ""}`);
       if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("≡", "!", `${this.hint()} uses ${Hint.record(hint.record, hint.prop)} ${hint.times} time(s).`, 0, " *** WARNING ***");
     }
-    return result;
+    return result || value.replacedBy === hint.record;
   }
 
   private unsubscribeFromPropValue(value: PropValue, hint: PropHint, log: string[]): void {
