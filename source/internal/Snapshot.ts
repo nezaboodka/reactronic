@@ -149,19 +149,17 @@ export class Snapshot implements ISnapshot {
       ours.changes.forEach(prop => {
         counter++;
         merged[prop] = ours.data[prop];
-        if (head !== ours.prev.record) {
-          if (unmounted || prop === R_UNMOUNT) {
-            if (unmounted !== (prop === R_UNMOUNT)) {
-              if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} <> ${Hint.record(head, prop)}.`);
-              ours.conflicts.set(prop, head);
-            }
+        if (unmounted || prop === R_UNMOUNT) {
+          if (unmounted !== (prop === R_UNMOUNT)) {
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} <> ${Hint.record(head, prop)}.`);
+            ours.conflicts.set(prop, head);
           }
-          else {
-            const conflict = Snapshot.isConflicting(head.data[prop], ours.prev.record.data[prop]);
-            if (conflict)
-              ours.conflicts.set(prop, head);
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} ${conflict ? "<>" : "=="} ${Hint.record(head, prop)}.`);
-          }
+        }
+        else {
+          const conflict = Snapshot.isConflicting(head.data[prop], ours.prev.record.data[prop]);
+          if (conflict)
+            ours.conflicts.set(prop, head);
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} ${conflict ? "<>" : "=="} ${Hint.record(head, prop)}.`);
         }
       });
       Utils.copyAllProps(merged, ours.data); // overwrite with merged copy
