@@ -10,6 +10,7 @@ tests
 dist/etc
 dist/samples
 dist/tests
+dist/types
 node_modules
 .nyc_output
 .nycrc

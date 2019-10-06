@@ -16,7 +16,7 @@
     "baseUrl": "source",
     // "rootDir": "source",
     "outDir": "dist",
-    "declarationDir": "dist",
+    "declarationDir": "dist/types",
     "declaration": true,
     // Debugging
     "sourceMap": true,
