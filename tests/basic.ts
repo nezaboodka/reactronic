@@ -67,7 +67,7 @@ export class DemoView extends Stateful {
   print(): void {
     const lines = this.render();
     lines.forEach(x => {
-      output.push(x);
+      output.push(x); /* istanbul ignore next */
       if (R.isTraceOn && !R.trace.silent) console.log(x);
     });
   }
