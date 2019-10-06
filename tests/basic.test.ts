@@ -30,7 +30,7 @@ test("basic", t => {
   const app = Transaction.run("app", () => new DemoView(new DemoModel()));
   try {
     t.is(app.model.methodOfStatefulBase(), "methodOfStatefulBase");
-    t.throws(() => console.log(app.model.unassigned), "unassigned properties are not supported: v102t109#21 DemoModel.unassigned");
+    t.throws(() => console.log(app.model.unassigned), "unassigned properties are not supported: v103t110#21 DemoModel.unassigned");
     t.notThrows(() => DemoView.test());
     const rendering = cacheof(app.render);
     t.is(rendering.isInvalid, false);

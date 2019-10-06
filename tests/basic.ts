@@ -26,6 +26,13 @@ export class DemoModel extends StatefulDemoModelBase {
     this._loadUsers();
   }
 
+  @trigger
+  normalizeTitle() {
+    const stamp = new Date().toUTCString();
+    const t = this.title.toLowerCase();
+    this.title = `${t} - ${stamp}`;
+  }
+
   private _loadUsers(): void {
     this.users.push(new Person({
       name: "John", age: 38,

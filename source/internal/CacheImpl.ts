@@ -144,7 +144,7 @@ export class CacheImpl extends Cache<any> {
   static invalidate(self: CacheImpl): void {
     const call = self.write();
     const c = call.cache;
-    c.getObservables(false).set(c, {record: call.record, prop: c.member, times: 0}); // c.member
+    c.getObservables(false).set(c, {record: Record.blank, prop: c.member, times: 0}); // c.member
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`);
   }
 
@@ -501,7 +501,8 @@ class CacheResult extends PropValue implements ICacheResult {
   }
 
   invalidateDueTo(cause: PropValue, hint: PropHint, since: number, triggers: ICacheResult[]): boolean {
-    const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
+    const result = this.record !== hint.record &&
+      (this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0);
     if (result) {
       this.invalid.since = since;
       const isTrigger = this.config.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined;
