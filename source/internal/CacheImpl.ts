@@ -432,15 +432,6 @@ class CacheResult extends PropValue implements ICacheResult {
         r.changes.forEach(prop => CacheResult.subscribeToAllObservablesAndComplete(timestamp, r, prop)));
   }
 
-  private static subscribeToAllObservablesAndComplete(timestamp: number, record: Record, prop: PropKey, triggers?: ICacheResult[]): void {
-    const cache = record.data[prop];
-    if (cache instanceof CacheResult && cache.record === record) {
-      if (triggers)
-        cache.subscribeToAllObservables(timestamp, triggers);
-      cache.complete();
-    }
-}
-
   private static markPrevValueAsReplaced(timestamp: number, record: Record, prop: PropKey, triggers: ICacheResult[]): void {
     const prev = record.prev.record;
     const value = prev.data[prop] as PropValue;
@@ -452,6 +443,15 @@ class CacheResult extends PropValue implements ICacheResult {
       }
       if (value.observers)
         value.observers.forEach(c => c.invalidateDueTo(value, { record, prop, times: 0 }, timestamp, triggers));
+    }
+  }
+
+  private static subscribeToAllObservablesAndComplete(timestamp: number, record: Record, prop: PropKey, triggers?: ICacheResult[]): void {
+    const cache = record.data[prop];
+    if (cache instanceof CacheResult && cache.record === record) {
+      if (triggers)
+        cache.subscribeToAllObservables(timestamp, triggers);
+      cache.complete();
     }
   }
 
