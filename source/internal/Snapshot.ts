@@ -142,7 +142,7 @@ export class Snapshot implements ISnapshot {
 
   private static rebaseRecord(ours: Record, head: Record): number {
     let counter: number = -1;
-    if (ours.prev.record !== head && head !== Record.blank) {
+    if (ours.prev.record !== head) {
       counter++;
       const unmounted: boolean = head.changes.has(R_UNMOUNT);
       const merged = {...head.data}; // clone
