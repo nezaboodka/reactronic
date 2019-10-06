@@ -102,8 +102,8 @@ export class Snapshot implements ISnapshot {
 
   acquire(outer: Snapshot): void {
     if (!this.applied && this.stamp === UNDEFINED_TIMESTAMP) {
-      this.stamp = this.caching === undefined || outer.stamp === UNDEFINED_TIMESTAMP
-        ? Snapshot.headStamp : outer.stamp;
+      const ahead = this.caching === undefined || outer.stamp === UNDEFINED_TIMESTAMP;
+      this.stamp = ahead ? Snapshot.headStamp : outer.stamp;
       Snapshot.pending.push(this);
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this;
