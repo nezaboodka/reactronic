@@ -507,14 +507,13 @@ class CacheResult extends PropValue implements ICacheResult {
   }
 
   invalidateDueTo(cause: PropValue, hint: PropHint, since: number, triggers: ICacheResult[]): boolean {
-    const result = /* this.record !== hint.record && */
-      (this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0);
+    const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since === 0;
     if (result) {
       this.invalid.since = since;
       const isTrigger = this.config.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined;
       if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.prop === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.prop)} since v${since}${isTrigger ? " and will run automatically" : ""}`);
       this.unsubscribeFromAllObservables(); // now unsubscribed
-      if (isTrigger) // break cascade invalidation on trigger
+      if (isTrigger) // stop cascade invalidation on trigger
         triggers.push(this);
       else if (this.observers) // cascade invalidation
           this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, prop: this.member, times: 0}, since, triggers));
