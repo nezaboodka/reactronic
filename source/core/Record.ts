@@ -34,10 +34,7 @@ export class FieldValue {
   replacer?: Record
   observers?: Set<Observer>
   get copyOnWriteMode(): boolean { return true }
-
-  constructor(value: any) {
-    this.value = value
-  }
+  constructor(value: any) { this.value = value }
 }
 
 export type FieldHint = {
