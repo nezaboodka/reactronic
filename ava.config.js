@@ -4,4 +4,4 @@ export default {
   babel: false,
   files: ["tests/**/*.test.ts"],
   require: ["ts-node/register"]
-};
+}

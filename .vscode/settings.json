@@ -11,6 +11,17 @@
     "build/": true,
   },
   "typescript.tsdk": "node_modules\\typescript\\lib",
+  "cSpell.ignorePaths": [
+    "node_modules",
+    "**/node_modules",
+    "**/node_modules/**",
+    "node_modules/**",
+    "vscode-extension",
+    ".git",
+    "CODE_OF_CONDUCT.md",
+    "package-lock.json",
+    "yarn.lock",
+  ],
   "cSpell.words": [
     "Asynchrony",
     "Chetyrko",
