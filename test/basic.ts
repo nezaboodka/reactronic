@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, transaction, trigger, cached, Reactronic as R, trace } from '../source/reactronic'
+import { Stateful, stateless, transaction, trigger, cached, cachedArgs, Reactronic as R, trace } from '../source/reactronic'
 import { Person } from './common'
 
 export const output: string[] = []
@@ -65,7 +65,7 @@ export class DemoView extends Stateful {
 
   @trigger
   print(): void {
-    const lines = this.render()
+    const lines = this.render(0)
     lines.forEach(x => {
       output.push(x) /* istanbul ignore next */
       if (R.isTraceOn && !R.trace.silent) console.log(x)
@@ -90,8 +90,8 @@ export class DemoView extends Stateful {
     return result
   }
 
-  @cached
-  render(): string[] {
+  @cached @cachedArgs(true)
+  render(counter: number): string[] {
     // Print only those users who's name starts with filter string
     const r: string[] = []
     r.push(`Filter: ${this.userFilter}`)

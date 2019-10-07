@@ -37,13 +37,16 @@ test("basic", t => {
     t.assert(app.model.title.startsWith("demo -")) // check that DemoModel.normalizeTitle works
     const rendering = cacheof(app.render)
     t.is(rendering.isInvalid, false)
+    t.is(rendering.args.length, 1)
+    t.is(rendering.value.length, 1)
     app.model.loadUsers()
+    t.is(rendering.value.length, 2)
     const daddy: Person = app.model.users[0]
     t.is(daddy.name, "John")
     t.is(daddy.age, 38)
     t.is(rendering.isInvalid, false)
     const stamp = rendering.stamp
-    app.render()
+    app.render(0)
     t.is(rendering.stamp, stamp)
     rendering.invalidate()
     t.not(rendering.stamp, stamp)
