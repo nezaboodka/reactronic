@@ -4,8 +4,8 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Trace } from './Trace'
-import { F } from '../internal/Record'
-import { Hooks } from '../internal/Hooks'
+import { F } from '../core/Record'
+import { Hooks } from '../core/Hooks'
 import { Config, Reentrance, Kind } from './Config'
 import { Monitor } from './Monitor'
 

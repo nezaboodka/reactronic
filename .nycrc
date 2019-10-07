@@ -5,7 +5,7 @@
   "branches": 50,
   "exclude": [
     "**/*.d.ts",
-    "source/internal/Binding.CopyOnWrite*.ts"
+    "source/core/Binding.CopyOnWrite*.ts"
   ],
   "include": [
     "source/**/*.ts",

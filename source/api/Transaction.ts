@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, error, undef, Record, ICacheResult, F, Snapshot, Hint } from '../internal/all'
+import { Dbg, misuse, error, undef, Record, ICacheResult, F, Snapshot, Hint } from '../core/all'
 import { Trace } from './Config'
 
 export class Transaction {
