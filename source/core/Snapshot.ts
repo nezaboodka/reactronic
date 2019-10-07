@@ -5,7 +5,7 @@
 
 import { Dbg, misuse } from './Dbg'
 import { Utils, undef } from './Utils'
-import { Record, FieldKey, ISnapshot, Observer } from './Record'
+import { Record, FieldKey, Context, Observer } from './Record'
 import { Handle, R_HANDLE } from './Handle'
 import { CopyOnWriteProxy } from './Hooks'
 
@@ -14,7 +14,7 @@ const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 // Snapshot
 
-export class Snapshot implements ISnapshot {
+export class Snapshot implements Context {
   static lastId: number = -1
   static headStamp: number = 1
   static pending: Snapshot[] = []
@@ -65,14 +65,14 @@ export class Snapshot implements ISnapshot {
 
   tryRead(h: Handle): Record {
     let r: Record | undefined = h.changing
-    if (r && r.snapshot !== this) {
+    if (r && r.creator !== this) {
       r = this.changeset.get(h)
       if (r)
         h.changing = r // remember last changing record
     }
     if (!r) {
       r = h.head
-      while (r !== Record.blank && r.snapshot.timestamp > this.timestamp)
+      while (r !== Record.blank && r.creator.timestamp > this.timestamp)
         r = r.prev.record
     }
     return r
@@ -81,7 +81,7 @@ export class Snapshot implements ISnapshot {
   write(h: Handle, field: FieldKey, value: any, token?: any): Record {
     let r: Record = this.tryRead(h)
     this.guard(h, r, field, value, token)
-    if (r.snapshot !== this) {
+    if (r.creator !== this) {
       const data = {...r.data}
       Reflect.set(data, R_HANDLE, h)
       r = new Record(h.head, this, data)
@@ -95,7 +95,7 @@ export class Snapshot implements ISnapshot {
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.applied)
       throw misuse(`stateful property ${Hint.handle(h, field)} can only be modified inside transaction`)
-    if (r.snapshot !== this && value !== R_HANDLE && this.caching !== undefined && token !== this.caching)
+    if (r.creator !== this && value !== R_HANDLE && this.caching !== undefined && token !== this.caching)
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hint.record(r, field)}`)
     if (r === Record.blank && value !== R_HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hint.record(r, field)} doesn't exist in snapshot v${this.stamp}`)
@@ -257,7 +257,7 @@ export class Hint {
 
   static record(r: Record, field?: FieldKey, typeless?: boolean): string {
     const h = Utils.get<Handle | undefined>(r.data, R_HANDLE)
-    return Hint.handle(h, field, r.snapshot.timestamp, r.snapshot.id, typeless)
+    return Hint.handle(h, field, r.creator.timestamp, r.creator.id, typeless)
   }
 
   static conflicts(conflicts: Record[]): string {

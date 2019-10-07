@@ -32,14 +32,14 @@ export type FieldHint = {
 
 export class Record {
   readonly prev: { record: Record }
-  readonly snapshot: ISnapshot
+  readonly creator: Context
   readonly data: any
   readonly changes: Set<FieldKey>
   readonly conflicts: Map<FieldKey, Record>
 
-  constructor(prev: Record, snapshot: ISnapshot, data: object) {
+  constructor(prev: Record, context: Context, data: object) {
     this.prev = { record: prev }
-    this.snapshot = snapshot
+    this.creator = context
     this.data = data
     this.changes = new Set<FieldKey>()
     this.conflicts = new Map<FieldKey, Record>()
@@ -67,7 +67,7 @@ export class Record {
 
 // Dependencies (abstract)
 
-export interface ISnapshot {
+export interface Context {
   readonly id: number
   readonly hint: string
   readonly timestamp: number
