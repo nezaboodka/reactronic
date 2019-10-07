@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build All -  tsc",
+      "label": "Build All  -  tsc",
       "type": "shell",
       "command": "npm run build",
       "problemMatcher": ["$tsc", "$eslint-stylish"],
@@ -17,7 +17,7 @@
       }
     },
     {
-      "label": "Run Tests  -  nyc & ava",
+      "label": "Test All  -  nyc & ava",
       "type": "shell",
       "command": "npm run test",
       "isBackground": true,
