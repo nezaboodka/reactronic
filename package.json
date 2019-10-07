@@ -2,10 +2,10 @@
   "name": "reactronic",
   "version": "0.19.90",
   "description": "Reactronic - Transactionally Reactive State Management",
-  "main": "dist/source/reactronic.js",
-  "types": "dist/source/reactronic.d.ts",
+  "main": "build/dist/source/reactronic.js",
+  "types": "build/dist/source/reactronic.d.ts",
   "files": [
-    "dist/source/**/*.*"
+    "build/dist/source/**/*.*"
   ],
   "repository": {
     "type": "git",
