@@ -14,7 +14,7 @@ export function reactiveRender(render: (counter: number) => JSX.Element, trace?:
 
 function reactiveRenderFunc(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(
-    !trace ? createReactState : () => createReactState(trace))
+    !trace ? createReactState : (): ReactState => createReactState(trace))
   const rx = state.rx
   rx.counter = state.counter
   rx.refresh = refresh // just in case React will change refresh on each rendering
@@ -37,7 +37,7 @@ class Rx extends Stateful {
   @stateless counter: number = 0
   @stateless refresh: (next: ReactState) => void = nop
   @stateless readonly unmountEffect = (): (() => void) => {
-    return () => Cache.unmount(this)
+    return (): void => { Cache.unmount(this) }
   }
 }
 
