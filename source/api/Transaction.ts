@@ -189,8 +189,8 @@ export class Transaction {
     let result: T
     const outer = Transaction._current
     try {
-      this.workers++
       Transaction._current = this
+      this.workers++
       this.snapshot.acquire(outer.snapshot)
       result = func(...args)
       if (this.sealed && this.workers === 1) {
