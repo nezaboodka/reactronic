@@ -23,9 +23,9 @@ export class PropValue {
 }
 
 export type PropHint = {
-  readonly times: number,
-  readonly record: Record,
-  readonly prop: PropKey,
+  readonly times: number
+  readonly record: Record
+  readonly prop: PropKey
 }
 
 // Record
