@@ -12,6 +12,8 @@ const expected: string[] = [
   "Filter: Jo",
   "Filter: Jo",
   "John's children: Billy, Barry, Steve",
+  "Filter: Jo",
+  "John's children: Billy, Barry, Steve",
   "Filter: ",
   "John Smith's children: Barry, William Smith, Steven Smith",
   "Kevin's children: Britney",
@@ -43,6 +45,8 @@ test("basic", t => {
     const stamp = rendering.stamp
     app.render()
     t.is(rendering.stamp, stamp)
+    rendering.invalidate()
+    t.not(rendering.stamp, stamp)
     // Multi-part transaction
     const tran1 = new Transaction("tran1")
     tran1.run(() => {
