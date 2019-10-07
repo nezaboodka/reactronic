@@ -30,7 +30,7 @@ class Rx extends Stateful {
 
   @trigger
   keepFresh(): void {
-    if (cacheof(this.jsx).isInvalid)
+    if (cacheof(this.jsx).invalid)
       this.refresh({rx: this, counter: this.counter + 1})
   }
 

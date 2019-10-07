@@ -30,7 +30,7 @@ export abstract class Cache<T> {
   abstract readonly value: T
   abstract readonly error: any
   abstract readonly stamp: number
-  abstract readonly isInvalid: boolean
+  abstract readonly invalid: boolean
   abstract invalidate(): void
   abstract call(args?: any[]): T | undefined
 

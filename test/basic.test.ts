@@ -36,7 +36,7 @@ test("basic", t => {
     t.notThrows(() => DemoView.test())
     t.assert(app.model.title.startsWith("demo -")) // check that DemoModel.normalizeTitle works
     const rendering = cacheof(app.render)
-    t.is(rendering.isInvalid, false)
+    t.is(rendering.invalid, false)
     t.is(rendering.args.length, 1)
     t.is(rendering.value.length, 1)
     app.model.loadUsers()
@@ -44,7 +44,7 @@ test("basic", t => {
     const daddy: Person = app.model.users[0]
     t.is(daddy.name, "John")
     t.is(daddy.age, 38)
-    t.is(rendering.isInvalid, false)
+    t.is(rendering.invalid, false)
     const stamp = rendering.stamp
     app.render(0)
     t.is(rendering.stamp, stamp)
@@ -74,7 +74,7 @@ test("basic", t => {
     t.throws(() => tran1.inspect(() => { daddy.name = "Forbidden" }), "cannot make changes during transaction inspection")
     t.is(daddy.age, 38)
     t.is(daddy.children.length, 3)
-    t.is(rendering.isInvalid, false)
+    t.is(rendering.invalid, false)
     tran1.run(() => {
       t.is(daddy.age, 40)
       daddy.age += 5
@@ -92,12 +92,12 @@ test("basic", t => {
       t.is(daddy.age, 45)
       t.is(daddy.children.length, 3)
     })
-    t.is(rendering.isInvalid, false)
+    t.is(rendering.invalid, false)
     t.is(daddy.name, "John")
     t.is(daddy.age, 38)
     t.is(daddy.attributes.size, 0)
     tran1.commit() // changes are applied, reactions are executed
-    t.is(rendering.isInvalid, false)
+    t.is(rendering.invalid, false)
     t.not(rendering.stamp, stamp)
     t.is(daddy.name, "John Smith")
     t.is(daddy.age, 45)

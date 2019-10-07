@@ -119,7 +119,7 @@ functions (dependencies), which are used during their execution.
 class MyView extends React.Component<MyModel> {
   @trigger // called immediately in response to state changes
   keepFresh() {
-    if (cacheof(this.render).isInvalid)
+    if (cacheof(this.render).invalid)
       this.setState({}); // telling React to re-render
   } // keepFresh is subscribed to render
 
@@ -305,7 +305,7 @@ abstract class Cache<T> {
   readonly value: T;
   readonly error: any;
   readonly stamp: number;
-  readonly isInvalid: boolean;
+  readonly invalid: boolean;
   invalidate(): boolean;
   call(args?: any[]): T | undefined;
 

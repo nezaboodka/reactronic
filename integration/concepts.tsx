@@ -23,7 +23,7 @@ class Model extends Stateful {
 class View extends React.Component<Model> {
   @trigger
   keepFresh(): void {
-    if (cacheof(this.render).isInvalid)
+    if (cacheof(this.render).invalid)
       this.setState({}) // ask React
   }
 
