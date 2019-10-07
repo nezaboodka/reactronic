@@ -112,7 +112,7 @@ export class CacheImpl extends Cache<any> {
         c.invalid.renewing = renewing
       c = renewing
       ctx.bump(r.prev.record.creator.timestamp)
-      Record.markChanged(r, field, true, renewing)
+      Record.markChanged(r, field, renewing, true)
     }
     return { valid: true, cache: c, record: r }
   }
@@ -398,7 +398,7 @@ class CacheResult extends FieldValue implements Observer {
     }
   }
 
-  private static markChanged(r: Record, field: FieldKey, changed: boolean, value: any): void {
+  private static markChanged(r: Record, field: FieldKey, value: any, changed: boolean): void {
     changed ? r.changes.add(field) : r.changes.delete(field)
     if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log("║", "  w ", `${Hint.record(r, field)} = ${valueHint(value)}`) : Dbg.log("║", "  w ", `${Hint.record(r, field)} = ${valueHint(value)}`, undefined, " (same as previous)")
   }

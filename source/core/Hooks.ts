@@ -138,7 +138,7 @@ export class Hooks implements ProxyHandler<Handle> {
       }
       else if (prev !== curr)
         r.data[field] = prev // restore previous value
-      Record.markChanged(r, field, changed, value)
+      Record.markChanged(r, field, value, changed)
     }
     else
       h.stateless[field] = value
@@ -323,7 +323,7 @@ function initRecordField(stateful: boolean, optionsTable: any, field: FieldKey, 
   if (stateful && optionsTable[field] !== false) {
     const value = stateless[field]
     r.data[field] = new FieldValue(value)
-    Record.markChanged(r, field, true, value)
+    Record.markChanged(r, field, value, true)
   }
 }
 

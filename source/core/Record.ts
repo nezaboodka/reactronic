@@ -67,7 +67,7 @@ export class Record {
   static blank: Record
 
   /* istanbul ignore next */
-  static markChanged = function(record: Record, field: FieldKey, changed: boolean, value: any): void {
+  static markChanged = function(record: Record, field: FieldKey, value: any, changed: boolean): void {
     return undef() // to be redefined by Cache implementation
   }
 
