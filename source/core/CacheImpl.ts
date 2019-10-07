@@ -77,7 +77,7 @@ export class CacheImpl extends Cache<any> {
       if (!weak && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`)
     Record.markViewed(call.record, call.cache.member, call.cache, weak)
     return call
   }
@@ -565,7 +565,7 @@ function valueHint(value: any): string {
 
 function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
   const t = Transaction.current
-  let res = Dbg.merge(t.trace, t.id > 0 ? 31 + t.id % 6 : 37, `T${t.id}`, Dbg.global)
+  let res = Dbg.merge(t.trace, t.id > 0 ? 31 + t.id % 6 : 37, t.id > 0 ? `T${t.id}` : "", Dbg.global)
   res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
   if (CacheResult.active)
     res = Dbg.merge({margin2: CacheResult.active.margin}, undefined, undefined, res)

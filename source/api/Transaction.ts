@@ -7,10 +7,10 @@ import { Dbg, misuse, error, undef, Record, ICacheResult, F, Snapshot, Hint } fr
 import { Trace } from './Options'
 
 export class Transaction {
-  static readonly none: Transaction = new Transaction("<none>")
-  static readonly init: Transaction = new Transaction("<init>")
-  static _current: Transaction
-  static _inspection: boolean = false
+  private static readonly none: Transaction = new Transaction("<none>")
+  private static readonly init: Transaction = new Transaction("<init>")
+  private static _current: Transaction
+  private static _inspection: boolean = false
 
   readonly trace?: Partial<Trace> // assigned in constructor
   readonly margin: number
