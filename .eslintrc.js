@@ -6,6 +6,7 @@ module.exports = {
     "indent": ["error", 2],
     "semi": ["error", "never"],
     "prefer-const": "error",
+    "comma-dangle": ["error", "always-multiline"],
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-unused-vars": "off",
     "@typescript-eslint/no-inferrable-types": "off",

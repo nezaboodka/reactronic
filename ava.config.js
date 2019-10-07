@@ -3,5 +3,5 @@ export default {
   extensions: ["ts"],
   babel: false,
   files: ["tests/**/*.test.ts"],
-  require: ["ts-node/register"]
+  require: ["ts-node/register"],
 }
