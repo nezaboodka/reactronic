@@ -12,6 +12,7 @@ export const R_HANDLE: unique symbol = Symbol("R:HANDLE")
 
 export class Handle {
   private static id: number = 20
+
   readonly stateless: any
   readonly id: number
   readonly proxy: any
