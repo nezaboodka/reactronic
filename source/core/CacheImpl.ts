@@ -24,7 +24,7 @@ export class CacheImpl extends Cache<any> {
   get error(): boolean { return this.weak().cache.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get isInvalid(): boolean { return !this.weak().valid }
-  invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hint.handle(this.handle, this.blank.member)}).invalidate` : "Cache.invalidate", CacheImpl.invalidateFunc, this) }
+  invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hint.handle(this.handle, this.blank.member)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
   call(args?: any[]): any { return this.recall(true, args).cache.value }
 
   constructor(handle: Handle, member: PropKey, options: OptionsImpl) {
@@ -140,7 +140,7 @@ export class CacheImpl extends Cache<any> {
     return result
   }
 
-  static invalidateFunc(self: CacheImpl): void {
+  static doInvalidate(self: CacheImpl): void {
     const call = self.write()
     const c = call.cache
     c.getObservables(false).set(c, {record: Record.blank, prop: c.member, times: 0}) // c.member
