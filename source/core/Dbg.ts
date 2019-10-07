@@ -55,8 +55,7 @@ export class Dbg {
     if (!silent) /* istanbul ignore next */
       console.log("\x1b[37m%s\x1b[0m \x1b[" + t.color + "m%s %s%s\x1b[0m \x1b[" + t.color + "m%s%s\x1b[0m \x1b[" + t.color + "m%s\x1b[0m%s",
         "#rt", t.prefix, margin1, operation, margin2, marker, message,
-        (highlight !== undefined ? `${highlight}` : ``) +
-        (ms > 2 ? `    [ ${ms}ms ]` : ``))
+        (highlight !== undefined ? `${highlight}` : ``) + (ms > 2 ? `    [ ${ms}ms ]` : ``))
   }
 
   static merge(t: Partial<Trace> | undefined, color: number | undefined, prefix: string | undefined, existing: Trace): Trace {
