@@ -75,7 +75,7 @@ export class Transaction {
     return this
   }
 
-  bind<T>(func: F<T>, secondary: boolean = false): F<T> {
+  bind<T>(func: F<T>, secondary: boolean): F<T> {
     this.guard()
     const self = this
     const inspect = Transaction._inspection
