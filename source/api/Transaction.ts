@@ -251,7 +251,7 @@ export class Transaction {
   }
 
   private finish(): void {
-    // No exception are assumed here
+    // It's critical to have no exceptions in this block
     this.snapshot.apply(this.error)
     this.snapshot.archive()
     if (this.promise) {
