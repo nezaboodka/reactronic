@@ -32,17 +32,19 @@
   "devDependencies": {
     "@types/node": "12.7.11",
     "@types/react": "16.9.5",
-    "react": "16.10.2",
-    "ava": "2.4.0",
-    "ts-node": "8.4.1",
-    "tslint": "5.20.0",
     "typescript": "3.6.3",
+    "ts-node": "8.4.1",
+    "react": "16.10.2",
+    "eslint": "6.5.1",
+    "@typescript-eslint/parser": "2.3.2",
+    "@typescript-eslint/eslint-plugin": "2.3.2",
+    "ava": "2.4.0",
     "nyc": "14.1.1"
   },
   "scripts": {
-    "build": "tsc && tslint -c tslint.json 'source/**/*.ts' 'tests/**/*.test.ts'",
+    "build": "tsc && eslint source/**/*.ts tests/**/*.test.ts",
     "dist": "tsc --sourceMap false",
     "test": "nyc ava",
-    "cover": "nyc ava && start coverage/index.html"
+    "cover": "nyc ava && start build/coverage/index.html"
   }
 }

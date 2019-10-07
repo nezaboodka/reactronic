@@ -13,7 +13,7 @@ class Model extends Stateful {
   timestamp: number = Date.now()
 
   @transaction
-  async goto(url: string) {
+  async goto(url: string): Promise<void> {
     this.url = url
     this.content = await (await fetch(url)).text()
     this.timestamp = Date.now()
@@ -22,13 +22,13 @@ class Model extends Stateful {
 
 class View extends React.Component<Model> {
   @trigger
-  keepFresh() {
+  keepFresh(): void {
     if (cacheof(this.render).isInvalid)
       this.setState({}) // ask React
   }
 
   @cached
-  render() {
+  render(): JSX.Element {
     return (
       <div>
         <div>{this.props.url}</div>

@@ -77,8 +77,7 @@ export class CacheImpl extends Cache<any> {
       if (!weak && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
         call = call2
     }
-    else
-      if (Dbg.isOn && Dbg.trace.methods && (c.config.trace === undefined || c.config.trace.methods === undefined || c.config.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.config.trace === undefined || c.config.trace.methods === undefined || c.config.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`)
     Record.markViewed(call.record, call.cache.member, call.cache, weak)
     return call
   }
@@ -124,19 +123,19 @@ export class CacheImpl extends Cache<any> {
     const caller = Transaction.current
     if (prev && prev !== c)
       switch (c.config.reentrance) {
-        case Reentrance.PreventWithError:
-          throw misuse(`${c.hint()} is configured as non-reentrant`)
-        case Reentrance.WaitAndRestart:
-          result = new Error(`transaction T${caller.id} (${caller.hint}) will be restarted after T${prev.tran.id} (${prev.tran.hint})`)
-          caller.cancel(result, prev.tran)
-          // TODO: "c.invalid.renewing = caller" in order serialize all the transactions
-          break
-        case Reentrance.CancelPrevious:
-          prev.tran.cancel(new Error(`transaction T${prev.tran.id} (${prev.tran.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
-          c.invalid.renewing = undefined // allow
-          break
-        case Reentrance.RunSideBySide:
-          break // do nothing
+      case Reentrance.PreventWithError:
+        throw misuse(`${c.hint()} is configured as non-reentrant`)
+      case Reentrance.WaitAndRestart:
+        result = new Error(`transaction T${caller.id} (${caller.hint}) will be restarted after T${prev.tran.id} (${prev.tran.hint})`)
+        caller.cancel(result, prev.tran)
+        // TODO: "c.invalid.renewing = caller" in order serialize all the transactions
+        break
+      case Reentrance.CancelPrevious:
+        prev.tran.cancel(new Error(`transaction T${prev.tran.id} (${prev.tran.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
+        c.invalid.renewing = undefined // allow
+        break
+      case Reentrance.RunSideBySide:
+        break // do nothing
       }
     return result
   }
@@ -257,13 +256,13 @@ class CacheResult extends PropValue implements ICacheResult {
   get copyOnWriteMode(): boolean { return false }
 
   bind<T>(func: F<T>): F<T> {
-    const Cache_run: F<T> = (...args: any[]): T => {
+    const fCacheRun: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hint.record(this.record)}.${this.member.toString()} - step in  `, 0, "        │")
       const result = CacheImpl.run<T>(this, func, ...args)
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "_/", `${Hint.record(this.record)}.${this.member.toString()} - step out `, 0, this.started > 0 ? "        │" : "")
       return result
     }
-    return Cache_run
+    return fCacheRun
   }
 
   compute(proxy: any, args: any[] | undefined): void {
@@ -331,7 +330,7 @@ class CacheResult extends PropValue implements ICacheResult {
 
   private monitorLeave(mon: Monitor): void {
     Transaction.outside(() => {
-      const leave = () => {
+      const leave = (): void => {
         CacheImpl.run(undefined, Transaction.runAs, "Monitor.leave",
           true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           Monitor.leave, mon, this)
@@ -541,7 +540,7 @@ class CacheResult extends PropValue implements ICacheResult {
     Snapshot.isConflicting = CacheResult.isConflicting // override
     Snapshot.applyAllDependencies = CacheResult.applyAllDependencies // override
     Hooks.createCacheTrap = CacheImpl.createCacheTrap // override
-    Promise.prototype.then = reactronic_then // override
+    Promise.prototype.then = fReactronicThen // override
   }
 }
 
@@ -575,18 +574,18 @@ function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
   return res
 }
 
-const original_promise_then = Promise.prototype.then
+const fOriginalPromiseThen = Promise.prototype.then
 
-function reactronic_then(this: any,
+function fReactronicThen(this: any,
   resolve?: ((value: any) => any | PromiseLike<any>) | undefined | null,
   reject?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
   const tran = Transaction.current
   if (!tran.isFinished()) {
     if (!resolve)
-      resolve = resolve_return
+      resolve = resolveReturn
     if (!reject)
-      reject = reject_rethrow
+      reject = rejectRethrow
     const cache = CacheResult.active
     if (cache) {
       resolve = cache.bind(resolve)
@@ -595,16 +594,16 @@ function reactronic_then(this: any,
     resolve = tran.bind(resolve, false)
     reject = tran.bind(reject, true)
   }
-  return original_promise_then.call(this, resolve, reject)
+  return fOriginalPromiseThen.call(this, resolve, reject)
 }
 
 /* istanbul ignore next */
-export function resolve_return(value: any): any {
+export function resolveReturn(value: any): any {
   return value
 }
 
 /* istanbul ignore next */
-export function reject_rethrow(error: any): never {
+export function rejectRethrow(error: any): never {
   throw error
 }
 

@@ -15,8 +15,8 @@
     "noLib": false,
     "baseUrl": "source",
     // "rootDir": "source",
-    "outDir": "dist",
-    "declarationDir": "dist",
+    "outDir": "build/dist",
+    "declarationDir": "build/dist",
     "declaration": true,
     // Debugging
     "sourceMap": true,

@@ -23,8 +23,8 @@
     "lcovonly",
     "html"
   ],
-  "temp-dir": "coverage/.output",
-  "report-dir": "coverage",
+  "temp-dir": "build/coverage/output",
+  "report-dir": "build/coverage",
   "cache": false,
   "all": true
 }

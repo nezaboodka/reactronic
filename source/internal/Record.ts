@@ -49,7 +49,7 @@ export class Record {
 
   /* istanbul ignore next */
   static markChanged = function(r: Record, prop: PropKey, changed: boolean, value: any): void {
-     return undef() // to be redefined by Cache implementation
+    return undef() // to be redefined by Cache implementation
   }
 
   /* istanbul ignore next */

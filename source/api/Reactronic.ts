@@ -15,7 +15,7 @@ export class Reactronic {
   // Tracing
   static get isTraceOn(): boolean { return Dbg.isOn }
   static get trace(): Trace { return Dbg.trace }
-  static setTrace(t: Trace | undefined) { Dbg.global = t || Dbg.OFF; Dbg.isOn = t !== undefined }
+  static setTrace(t: Trace | undefined): void { Dbg.global = t || Dbg.OFF; Dbg.isOn = t !== undefined }
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name) }
   static getTraceHint<T extends object>(obj: T): string | undefined { return Handle.getHint(obj) }
 }

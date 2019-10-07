@@ -306,7 +306,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   /* istanbul ignore next */
   static createCacheTrap = function(h: Handle, prop: PropKey, rt: Cfg): F<any> {
-     throw misuse("createCacheTrap should never be called")
+    throw misuse("createCacheTrap should never be called")
   }
 }
 
@@ -329,7 +329,7 @@ function initRecordProp(stateful: boolean, rxTable: any, prop: PropKey, r: Recor
 
 /* istanbul ignore next */
 function decoratedfield(...args: any[]): never {
-   throw misuse("decoratedfield should never be called")
+  throw misuse("decoratedfield should never be called")
 }
 
 /* istanbul ignore next */

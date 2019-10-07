@@ -7,7 +7,7 @@
       "label": "Build  -  tsc",
       "type": "shell",
       "command": "npm run build",
-      "problemMatcher": ["$tsc", "$tslint5"],
+      "problemMatcher": ["$tsc", "$eslint-stylish"],
       "group": "build",
       "presentation": {
         "echo": true,

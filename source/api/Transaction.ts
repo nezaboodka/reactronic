@@ -79,13 +79,13 @@ export class Transaction {
     this.guard()
     const self = this
     const inspect = Transaction._inspection
-    const enter = !secondary ? function() { self.workers++ } : function() { /* nop */ }
+    const enter = !secondary ? function(): void { self.workers++ } : function(): void { /* nop */ }
     const leave = function(...args: any[]): T { self.workers--; return func(...args) }
     !inspect ? self.do(undefined, enter) : self.inspect(enter)
-    const Transaction_do: F<T> = (...args: any[]): T => {
+    const fTransactionDo: F<T> = (...args: any[]): T => {
       return !inspect ? self.do<T>(undefined, leave, ...args) : self.inspect<T>(leave, ...args)
     }
-    return Transaction_do
+    return fTransactionDo
   }
 
   cancel(error: Error, retryAfterOrIgnore?: Transaction | null): this {
@@ -271,7 +271,7 @@ export class Transaction {
 
   private acquirePromise(): Promise<void> {
     if (!this.promise) {
-      this.promise = new Promise((resolve, reject) => {
+      this.promise = new Promise((resolve, reject): void => {
         this.resolve = resolve
         this.reject = reject
       })

@@ -15,7 +15,7 @@ export class Utils {
     return obj
   }
 
-  static freezeSet<T>(obj?: Set<T>) {
+  static freezeSet<T>(obj?: Set<T>): void {
     if (obj instanceof Set) {
       const pd = { configurable: false, enumerable: false, get: undef, set: undef }
       Object.defineProperty(obj, "add", pd)
@@ -25,7 +25,7 @@ export class Utils {
     }
   }
 
-  static freezeMap<K, V>(obj?: Map<K, V>) {
+  static freezeMap<K, V>(obj?: Map<K, V>): void {
     if (obj instanceof Map) {
       const pd = { configurable: false, enumerable: false, get: undef, set: undef }
       Object.defineProperty(obj, "set", pd)
@@ -59,7 +59,7 @@ export async function all(promises: Array<Promise<any>>): Promise<any[]> {
 
 /* istanbul ignore next */
 export function sleep<T>(timeout: number): Promise<T> {
-  return new Promise(function(resolve: any) {
+  return new Promise(function(resolve: any): void {
     setTimeout(resolve.bind(null, () => resolve), timeout)
   })
 }

@@ -53,8 +53,7 @@ export class Dbg {
     const margin2: string = "  ".repeat(t.margin2)
     const silent = (trace && trace.silent !== undefined) ? trace.silent : t.silent
     if (!silent) /* istanbul ignore next */
-      console.log("\x1b[37m%s\x1b[0m \x1b[" + t.color +
-        "m%s %s%s\x1b[0m \x1b[" + t.color + "m%s%s\x1b[0m \x1b[" + t.color + "m%s\x1b[0m%s",
+      console.log("\x1b[37m%s\x1b[0m \x1b[" + t.color + "m%s %s%s\x1b[0m \x1b[" + t.color + "m%s%s\x1b[0m \x1b[" + t.color + "m%s\x1b[0m%s",
         "#rt", t.prefix, margin1, operation, margin2, marker, message,
         (highlight !== undefined ? `${highlight}` : ``) +
         (ms > 2 ? `    [ ${ms}ms ]` : ``))
