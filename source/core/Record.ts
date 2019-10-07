@@ -31,7 +31,7 @@ export type FieldKey = PropertyKey
 
 export class FieldValue {
   value: any
-  replacedBy?: Record
+  replacer?: Record
   observers?: Set<Observer>
   get copyOnWriteMode(): boolean { return true }
 

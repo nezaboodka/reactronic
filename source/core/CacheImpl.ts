@@ -434,8 +434,8 @@ class CacheResult extends FieldValue implements Observer {
   private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
     const prev = record.prev.record
     const value = prev.data[field] as FieldValue
-    if (value !== undefined && value.replacedBy === undefined) {
-      value.replacedBy = record
+    if (value !== undefined && value.replacer === undefined) {
+      value.replacer = record
       if (value instanceof CacheResult && (value.invalid.since === TOP_TIMESTAMP || value.invalid.since <= 0)) {
         value.invalid.since = timestamp
         value.unsubscribeFromAllObservables()
@@ -481,7 +481,7 @@ class CacheResult extends FieldValue implements Observer {
   }
 
   private subscribeToFieldValue(value: FieldValue, hint: FieldHint, timestamp: number, log: string[]): boolean {
-    let result = value.replacedBy === undefined
+    let result = value.replacer === undefined
     if (result && timestamp !== -1)
       result = !(value instanceof CacheResult && timestamp >= value.invalid.since)
     if (result) {
@@ -491,7 +491,7 @@ class CacheResult extends FieldValue implements Observer {
       if (Dbg.isOn && Dbg.trace.subscriptions) log.push(`${Hint.record(hint.record, hint.field, true)}${hint.times > 1 ? `*${hint.times}` : ""}`)
       if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("≡", "!", `${this.hint()} uses ${Hint.record(hint.record, hint.field)} ${hint.times} time(s).`, 0, " *** WARNING ***")
     }
-    return result || value.replacedBy === hint.record
+    return result || value.replacer === hint.record
   }
 
   private unsubscribeFromFieldValue(value: FieldValue, hint: FieldHint, log: string[]): void {
