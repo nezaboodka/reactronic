@@ -339,7 +339,7 @@ class CacheResult extends FieldValue implements Observer {
     })
   }
 
-  complete(error?: any): void {
+  finish(error?: any): void {
     const prev = this.record.prev.record.data[this.field]
     if (prev instanceof CacheResult && prev.invalid.renewing === this)
       prev.invalid.renewing = undefined
@@ -420,15 +420,15 @@ class CacheResult extends FieldValue implements Observer {
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(R_UNMOUNT))
           r.changes.forEach(field =>
-            CacheResult.subscribeToAllObservablesAndComplete(timestamp, r, field, triggers))
+            CacheResult.subscribeToAllObservablesAndFinish(timestamp, r, field, triggers))
         else
           for (const field in r.prev.record.data)
-            CacheResult.subscribeToAllObservablesAndComplete(timestamp, r, field) // complete only, no subscriptions
+            CacheResult.subscribeToAllObservablesAndFinish(timestamp, r, field) // complete only, no subscriptions
       })
     }
     else
       snapshot.changeset.forEach((r: Record, h: Handle) =>
-        r.changes.forEach(field => CacheResult.subscribeToAllObservablesAndComplete(timestamp, r, field)))
+        r.changes.forEach(field => CacheResult.subscribeToAllObservablesAndFinish(timestamp, r, field)))
   }
 
   private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
@@ -445,12 +445,12 @@ class CacheResult extends FieldValue implements Observer {
     }
   }
 
-  private static subscribeToAllObservablesAndComplete(timestamp: number, record: Record, field: FieldKey, triggers?: Observer[]): void {
+  private static subscribeToAllObservablesAndFinish(timestamp: number, record: Record, field: FieldKey, triggers?: Observer[]): void {
     const cache = record.data[field]
     if (cache instanceof CacheResult && cache.record === record) {
       if (triggers)
         cache.subscribeToAllObservables(timestamp, triggers)
-      cache.complete()
+      cache.finish()
     }
   }
 
