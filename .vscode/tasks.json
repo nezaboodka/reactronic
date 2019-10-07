@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build  -  tsc",
+      "label": "Build All -  tsc",
       "type": "shell",
       "command": "npm run build",
       "problemMatcher": ["$tsc", "$eslint-stylish"],
