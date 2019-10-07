@@ -3,8 +3,8 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { CopyOnWrite, R, W } from './Binding'
-export { CopyOnWrite } from './Binding'
+import { CopyOnWrite, R, W } from './CopyOnWrite'
+export { CopyOnWrite } from './CopyOnWrite'
 
 export abstract class CopyOnWriteMap<K, V> extends Map<K, V> {
   clear(): void { super.clear.call(W<Map<K, V>>(this)) }

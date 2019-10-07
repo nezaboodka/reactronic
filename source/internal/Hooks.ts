@@ -5,9 +5,9 @@
 
 import { misuse } from './Dbg'
 import { Utils, undef, R_CACHE } from './Utils'
-import { CopyOnWriteArray, CopyOnWrite } from './Binding.CopyOnWriteArray'
-import { CopyOnWriteSet } from './Binding.CopyOnWriteSet'
-import { CopyOnWriteMap } from './Binding.CopyOnWriteMap'
+import { CopyOnWriteArray, CopyOnWrite } from './CopyOnWriteArray'
+import { CopyOnWriteSet } from './CopyOnWriteSet'
+import { CopyOnWriteMap } from './CopyOnWriteMap'
 import { Record, PropKey, PropValue, F, R_UNMOUNT } from './Record'
 import { Handle, R_HANDLE } from './Handle'
 import { Snapshot, Hint } from './Snapshot'

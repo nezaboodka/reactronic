@@ -3,8 +3,8 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { CopyOnWrite, R, W } from './Binding'
-export { CopyOnWrite } from './Binding'
+import { CopyOnWrite, R, W } from './CopyOnWrite'
+export { CopyOnWrite } from './CopyOnWrite'
 
 export abstract class CopyOnWriteSet<T> extends Set<T> {
   add(value: T): this { super.add.call(W<Set<T>>(this), value); return this }
