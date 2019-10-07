@@ -5,7 +5,7 @@
 
 import { Dbg, misuse } from './Dbg'
 import { Utils, undef } from './Utils'
-import { Record, FieldKey, ISnapshot, ICacheResult } from './Record'
+import { Record, FieldKey, ISnapshot, Observer } from './Record'
 import { Handle, R_HANDLE } from './Handle'
 import { CopyOnWriteProxy } from './Hooks'
 
@@ -27,7 +27,7 @@ export class Snapshot implements ISnapshot {
   private bumper: number
   readonly caching: any
   readonly changeset: Map<Handle, Record>
-  readonly triggers: ICacheResult[]
+  readonly triggers: Observer[]
   private applied: boolean
 
   constructor(hint: string, caching: any) {

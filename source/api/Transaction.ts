@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, error, undef, Record, ICacheResult, F, Snapshot, Hint } from '../core/all'
+import { Dbg, misuse, error, undef, Record, Observer, F, Snapshot, Hint } from '../core/all'
 import { Trace } from './Options'
 
 export class Transaction {
@@ -224,7 +224,7 @@ export class Transaction {
       Transaction.runTriggersFunc, this.snapshot.triggers)
   }
 
-  private static runTriggersFunc(triggers: ICacheResult[]): Transaction {
+  private static runTriggersFunc(triggers: Observer[]): Transaction {
     const timestamp = Transaction.current.snapshot.timestamp
     triggers.map(t => t.trig(timestamp, false, false))
     return Transaction.current

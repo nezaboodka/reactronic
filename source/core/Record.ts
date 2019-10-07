@@ -14,7 +14,7 @@ export type FieldKey = PropertyKey
 export class FieldValue {
   value: any
   replacedBy?: Record
-  observers?: Set<ICacheResult>
+  observers?: Set<Observer>
   get copyOnWriteMode(): boolean { return true }
 
   constructor(value: any) {
@@ -73,10 +73,10 @@ export interface ISnapshot {
   readonly timestamp: number
 }
 
-export interface ICacheResult {
+export interface Observer {
   hint(notran?: boolean): string
   bind<T>(func: F<T>): F<T>
   readonly invalid: { since: number }
-  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: ICacheResult[]): void
+  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: Observer[]): void
   trig(timestamp: number, now: boolean, nothrow: boolean): void
 }

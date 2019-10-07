@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, Utils, Record, FieldKey, FieldValue, FieldHint, ICacheResult, F, Handle, Snapshot, Hint, OptionsImpl, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
+import { Dbg, misuse, Utils, Record, FieldKey, FieldValue, FieldHint, Observer, F, Handle, Snapshot, Hint, OptionsImpl, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
 import { Cache } from '../api/Cache'
 export { Cache, cacheof, resolved } from '../api/Cache'
 import { Options, Kind, Reentrance, Trace } from '../api/Options'
@@ -210,7 +210,7 @@ export class CacheImpl extends Cache<any> {
 
 // CacheResult
 
-class CacheResult extends FieldValue implements ICacheResult {
+class CacheResult extends FieldValue implements Observer {
   static asyncTriggerBatch: CacheResult[] = []
   static active?: CacheResult = undefined
 
@@ -431,7 +431,7 @@ class CacheResult extends FieldValue implements ICacheResult {
         r.changes.forEach(field => CacheResult.subscribeToAllObservablesAndComplete(timestamp, r, field)))
   }
 
-  private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: ICacheResult[]): void {
+  private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
     const prev = record.prev.record
     const value = prev.data[field] as FieldValue
     if (value !== undefined && value.replacedBy === undefined) {
@@ -445,7 +445,7 @@ class CacheResult extends FieldValue implements ICacheResult {
     }
   }
 
-  private static subscribeToAllObservablesAndComplete(timestamp: number, record: Record, field: FieldKey, triggers?: ICacheResult[]): void {
+  private static subscribeToAllObservablesAndComplete(timestamp: number, record: Record, field: FieldKey, triggers?: Observer[]): void {
     const cache = record.data[field]
     if (cache instanceof CacheResult && cache.record === record) {
       if (triggers)
@@ -454,7 +454,7 @@ class CacheResult extends FieldValue implements ICacheResult {
     }
   }
 
-  private subscribeToAllObservables(timestamp: number, triggers: ICacheResult[]): void {
+  private subscribeToAllObservables(timestamp: number, triggers: Observer[]): void {
     const log: string[] = []
     this.subscribeTo(false, this.observables, timestamp, triggers, log)
     this.subscribeTo(true, this.weakObservables, timestamp, triggers, log)
@@ -468,7 +468,7 @@ class CacheResult extends FieldValue implements ICacheResult {
     if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.options.trace, " ", "-", `${Hint.record(this.record, this.field)} is unsubscribed from {${log.join(", ")}}.`)
   }
 
-  private subscribeTo(weak: boolean, observables: Map<FieldValue, FieldHint>, timestamp: number, triggers: ICacheResult[], log: string[]): void {
+  private subscribeTo(weak: boolean, observables: Map<FieldValue, FieldHint>, timestamp: number, triggers: Observer[], log: string[]): void {
     const t = weak ? -1 : timestamp
     observables.forEach((hint, val) => {
       if (!this.subscribeToFieldValue(val, hint, t, log))
@@ -505,7 +505,7 @@ class CacheResult extends FieldValue implements ICacheResult {
     return weak ? this.weakObservables : this.observables
   }
 
-  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: ICacheResult[]): boolean {
+  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: Observer[]): boolean {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0
     if (result) {
       this.invalid.since = since
