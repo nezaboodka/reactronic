@@ -15,8 +15,8 @@
     "noLib": false,
     "baseUrl": "source",
     // "rootDir": "source",
-    "outDir": "build/dist",
-    "declarationDir": "build/dist",
+    "outDir": "build/package",
+    "declarationDir": "build/package",
     "declaration": true,
     // Debugging
     "sourceMap": true,
@@ -40,7 +40,6 @@
   // ],
   "exclude": [
     "node_modules",
-    "dist",
     "build"
   ]
 }

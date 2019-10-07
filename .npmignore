@@ -7,10 +7,10 @@ src
 source
 samples
 test
-build/dist/etc
-build/dist/samples
-build/dist/test
-build/dist/types
+build/package/etc
+build/package/samples
+build/package/test
+build/package/types
 node_modules
 .nycrc
 coverage
