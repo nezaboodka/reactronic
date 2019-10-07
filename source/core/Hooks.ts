@@ -8,7 +8,7 @@ import { Utils, undef, R_CACHE } from './Utils'
 import { CopyOnWriteArray, CopyOnWrite } from './CopyOnWriteArray'
 import { CopyOnWriteSet } from './CopyOnWriteSet'
 import { CopyOnWriteMap } from './CopyOnWriteMap'
-import { Record, PropKey, PropValue, F } from './Record'
+import { Record, FieldKey, FieldValue, F } from './Record'
 import { Handle, R_HANDLE } from './Handle'
 import { Snapshot, Hint, R_UNMOUNT } from './Snapshot'
 import { Options, Kind, Reentrance } from '../api/Options'
@@ -22,10 +22,10 @@ export class Stateful {
   constructor() {
     const h = Hooks.createHandle(true, this, undefined, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
-      const triggers: Map<PropKey, OptionsImpl> | undefined = Hooks.getOptionsTable(new.target.prototype)[R_TRIGGERS]
+      const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(new.target.prototype)[R_TRIGGERS]
       if (triggers)
-        triggers.forEach((rx, prop) =>
-          (h.proxy[prop][R_CACHE] as Cache<any>).invalidate())
+        triggers.forEach((rx, field) =>
+          (h.proxy[field][R_CACHE] as Cache<any>).invalidate())
     }
     return h.proxy
   }
@@ -98,69 +98,69 @@ export class Hooks implements ProxyHandler<Handle> {
     return Reflect.getPrototypeOf(h.stateless)
   }
 
-  get(h: Handle, prop: PropKey, receiver: any): any {
+  get(h: Handle, field: FieldKey, receiver: any): any {
     let result: any
-    const options: OptionsImpl | undefined = Hooks.getOptions(h.stateless, prop)
+    const options: OptionsImpl | undefined = Hooks.getOptions(h.stateless, field)
     if (!options || (options.body === decoratedfield && options.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.readable().read(h)
-      result = r.data[prop]
-      if (result instanceof PropValue) {
-        Record.markViewed(r, prop, result, false)
+      result = r.data[field]
+      if (result instanceof FieldValue) {
+        Record.markViewed(r, field, result, false)
         result = result.value
       }
-      else if (prop === R_HANDLE) {
+      else if (field === R_HANDLE) {
         // do nothing, just return handle
       }
       else {
-        result = Reflect.get(h.stateless, prop, receiver)
+        result = Reflect.get(h.stateless, field, receiver)
         if (result === undefined)
-          // Record.markViewed(r, prop, false); // treat undefined fields as stateful
-          throw misuse(`unassigned properties are not supported: ${Hint.record(r, prop)}`)
+          // Record.markViewed(r, field, false); // treat undefined fields as stateful
+          throw misuse(`unassigned properties are not supported: ${Hint.record(r, field)}`)
       }
     }
     else
-      result = Reflect.get(h.stateless, prop, receiver)
+      result = Reflect.get(h.stateless, field, receiver)
     return result
   }
 
-  set(h: Handle, prop: PropKey, value: any, receiver: any): boolean {
-    const options: OptionsImpl | undefined = Hooks.getOptions(h.stateless, prop)
+  set(h: Handle, field: FieldKey, value: any, receiver: any): boolean {
+    const options: OptionsImpl | undefined = Hooks.getOptions(h.stateless, field)
     if (!options || (options.body === decoratedfield && options.kind !== Kind.Stateless)) { // versioned state
-      const r: Record = Snapshot.writable().write(h, prop, value)
-      const curr = r.data[prop] as PropValue
-      const prev = r.prev.record.data[prop] as PropValue
+      const r: Record = Snapshot.writable().write(h, field, value)
+      const curr = r.data[field] as FieldValue
+      const prev = r.prev.record.data[field] as FieldValue
       const changed = prev === undefined || prev.value !== value
       if (changed) {
         if (prev === curr)
-          r.data[prop] = new PropValue(value)
+          r.data[field] = new FieldValue(value)
         else
           curr.value = value
       }
       else if (prev !== curr)
-        r.data[prop] = prev // restore previous value
-      Record.markChanged(r, prop, changed, value)
+        r.data[field] = prev // restore previous value
+      Record.markChanged(r, field, changed, value)
     }
     else
-      h.stateless[prop] = value
+      h.stateless[field] = value
     return true
   }
 
-  getOwnPropertyDescriptor(h: Handle, prop: PropKey): PropertyDescriptor | undefined {
+  getOwnPropertyDescriptor(h: Handle, field: FieldKey): PropertyDescriptor | undefined {
     const r: Record = Snapshot.readable().read(h)
-    const pd = Reflect.getOwnPropertyDescriptor(r.data, prop)
+    const pd = Reflect.getOwnPropertyDescriptor(r.data, field)
     if (pd)
       pd.configurable = pd.writable = true
     return pd
   }
 
-  ownKeys(h: Handle): PropKey[] {
+  ownKeys(h: Handle): FieldKey[] {
     // TODO: Better implementation to avoid filtering
     const r: Record = Snapshot.readable().read(h)
     const result = []
-    for (const prop of Object.getOwnPropertyNames(r.data)) {
-      const value = r.data[prop]
+    for (const field of Object.getOwnPropertyNames(r.data)) {
+      const value = r.data[field]
       if (typeof(value) !== "object" || value.constructor.name !== "CacheResult")
-        result.push(prop)
+        result.push(field)
     }
     return result
   }
@@ -168,7 +168,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClass(implicit: boolean, options: Partial<Options>, origCtor: any): any {
     let ctor: any = origCtor
     const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-    const triggers: Map<PropKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[R_TRIGGERS]
+    const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[R_TRIGGERS]
     if (stateful) {
       ctor = class extends origCtor {
         constructor(...args: any[]) {
@@ -178,8 +178,8 @@ export class Hooks implements ProxyHandler<Handle> {
           if (self.constructor === ctor)
             h.hint = origCtor.name
           if (triggers && !Hooks.triggersAutoStartDisabled)
-            triggers.forEach((rx, prop) =>
-              (h.proxy[prop][R_CACHE] as Cache<any>).invalidate())
+            triggers.forEach((rx, field) =>
+              (h.proxy[field][R_CACHE] as Cache<any>).invalidate())
           return h.proxy
         }
       }
@@ -191,7 +191,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClassOld(implicit: boolean, options: Partial<Options>, origCtor: any): any {
     let ctor: any = origCtor
     const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-    const triggers: Map<PropKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[R_TRIGGERS]
+    const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[R_TRIGGERS]
     if (stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args)
@@ -199,8 +199,8 @@ export class Hooks implements ProxyHandler<Handle> {
           ? stateless[R_HANDLE] || Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
           : Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
         if (triggers)
-          triggers.forEach((rx, prop) => {
-            const cache: Cache<any> = h.proxy[prop][R_CACHE]
+          triggers.forEach((fieldOptions, field) => {
+            const cache: Cache<any> = h.proxy[field][R_CACHE]
             cache.invalidate()
           })
         return h.proxy
@@ -212,24 +212,24 @@ export class Hooks implements ProxyHandler<Handle> {
     return ctor
   }
 
-  static decorateField(implicit: boolean, options: Partial<Options>, proto: any, prop: PropKey): any {
-    options = Hooks.setOptions(proto, prop, decoratedfield, options, implicit)
+  static decorateField(implicit: boolean, options: Partial<Options>, proto: any, field: FieldKey): any {
+    options = Hooks.setOptions(proto, field, decoratedfield, options, implicit)
     if (options.kind !== Kind.Stateless) {
       const get = function(this: any): any {
         const h: Handle = Hooks.acquireHandle(this)
-        return Hooks.proxy.get(h, prop, this)
+        return Hooks.proxy.get(h, field, this)
       }
       const set = function(this: any, value: any): boolean {
         const h: Handle = Hooks.acquireHandle(this)
-        return Hooks.proxy.set(h, prop, value, this)
+        return Hooks.proxy.set(h, field, value, this)
       }
       const enumerable = true
       const configurable = false
-      return Object.defineProperty(proto, prop, { get, set, enumerable, configurable })
+      return Object.defineProperty(proto, field, { get, set, enumerable, configurable })
     }
   }
 
-  static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: PropKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: FieldKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
     const methodOptions = Hooks.setOptions(proto, method, pd.value, options, implicit)
@@ -244,35 +244,35 @@ export class Hooks implements ProxyHandler<Handle> {
     return Object.defineProperty(proto, method, { get, enumerable, configurable })
   }
 
-  private static getOptions(proto: any, prop: PropKey): OptionsImpl | undefined {
-    return Hooks.getOptionsTable(proto)[prop]
+  private static getOptions(proto: any, field: FieldKey): OptionsImpl | undefined {
+    return Hooks.getOptionsTable(proto)[field]
   }
 
-  private static setOptions(proto: any, prop: PropKey, body: Function | undefined, options: Partial<OptionsImpl>, implicit: boolean): OptionsImpl {
+  private static setOptions(proto: any, field: FieldKey, body: Function | undefined, options: Partial<OptionsImpl>, implicit: boolean): OptionsImpl {
     const optionsTable: any = Hooks.acquireOptionsTable(proto)
-    const existing: OptionsImpl = optionsTable[prop] || OptionsImpl.STATELESS
-    const result = optionsTable[prop] = new OptionsImpl(body, existing, options, implicit)
+    const existing: OptionsImpl = optionsTable[field] || OptionsImpl.STATELESS
+    const result = optionsTable[field] = new OptionsImpl(body, existing, options, implicit)
     if (result.kind === Kind.Trigger && result.latency > -2) {
-      let triggers: Map<PropKey, OptionsImpl> | undefined = optionsTable[R_TRIGGERS]
+      let triggers: Map<FieldKey, OptionsImpl> | undefined = optionsTable[R_TRIGGERS]
       if (!triggers)
-        triggers = optionsTable[R_TRIGGERS] = new Map<PropKey, OptionsImpl>()
-      triggers.set(prop, result)
+        triggers = optionsTable[R_TRIGGERS] = new Map<FieldKey, OptionsImpl>()
+      triggers.set(field, result)
     }
     else if (existing.kind === Kind.Trigger && existing.latency > -2) {
-      const triggers: Map<PropKey, OptionsImpl> | undefined = optionsTable[R_TRIGGERS]
+      const triggers: Map<FieldKey, OptionsImpl> | undefined = optionsTable[R_TRIGGERS]
       if (triggers)
-        triggers.delete(prop)
+        triggers.delete(field)
     }
     return result
   }
 
   private static acquireOptionsTable(proto: any): any {
-    let rxTable: any = proto[R_TABLE]
+    let optionsTable: any = proto[R_TABLE]
     if (!proto.hasOwnProperty(R_TABLE)) {
-      rxTable = Object.setPrototypeOf({}, rxTable || {})
-      Utils.set(proto, R_TABLE, rxTable)
+      optionsTable = Object.setPrototypeOf({}, optionsTable || {})
+      Utils.set(proto, R_TABLE, optionsTable)
     }
-    return rxTable
+    return optionsTable
   }
 
   static getOptionsTable(proto: any): any {
@@ -305,25 +305,25 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static createCacheTrap = function(h: Handle, prop: PropKey, rt: OptionsImpl): F<any> {
+  static createCacheTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     throw misuse("createCacheTrap should never be called")
   }
 }
 
 function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Record): void {
-  const rxTable = Hooks.getOptionsTable(Object.getPrototypeOf(stateless))
+  const optionsTable = Hooks.getOptionsTable(Object.getPrototypeOf(stateless))
   const r = Snapshot.writable().write(h, "<RT:HANDLE>", R_HANDLE)
-  for (const prop of Object.getOwnPropertyNames(stateless))
-    initRecordProp(stateful, rxTable, prop, r, stateless)
-  for (const prop of Object.getOwnPropertySymbols(stateless)) /* istanbul ignore next */
-    initRecordProp(stateful, rxTable, prop, r, stateless)
+  for (const field of Object.getOwnPropertyNames(stateless))
+    initRecordField(stateful, optionsTable, field, r, stateless)
+  for (const field of Object.getOwnPropertySymbols(stateless)) /* istanbul ignore next */
+    initRecordField(stateful, optionsTable, field, r, stateless)
 }
 
-function initRecordProp(stateful: boolean, rxTable: any, prop: PropKey, r: Record, stateless: any): void {
-  if (stateful && rxTable[prop] !== false) {
-    const value = stateless[prop]
-    r.data[prop] = new PropValue(value)
-    Record.markChanged(r, prop, true, value)
+function initRecordField(stateful: boolean, optionsTable: any, field: FieldKey, r: Record, stateless: any): void {
+  if (stateful && optionsTable[field] !== false) {
+    const value = stateless[field]
+    r.data[field] = new FieldValue(value)
+    Record.markChanged(r, field, true, value)
   }
 }
 
@@ -340,22 +340,22 @@ function decoratedclass(...args: any[]): never {
 export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
   static readonly global: CopyOnWriteProxy = new CopyOnWriteProxy()
 
-  get(binding: CopyOnWrite<any>, prop: PropKey, receiver: any): any {
+  get(binding: CopyOnWrite<any>, field: FieldKey, receiver: any): any {
     const a: any = binding.readable(receiver)
-    return a[prop]
+    return a[field]
   }
 
-  set(binding: CopyOnWrite<any>, prop: PropKey, value: any, receiver: any): boolean {
+  set(binding: CopyOnWrite<any>, field: FieldKey, value: any, receiver: any): boolean {
     const a: any = binding.writable(receiver)
-    return a[prop] = value
+    return a[field] = value
   }
 
-  static seal(pv: PropValue, proxy: any, prop: PropKey): void {
+  static seal(pv: FieldValue, proxy: any, field: FieldKey): void {
     const v = pv.value
     if (Array.isArray(v)) {
       if (!Object.isFrozen(v)) {
         if (pv.copyOnWriteMode)
-          pv.value = new Proxy(CopyOnWriteArray.seal(proxy, prop, v), CopyOnWriteProxy.global)
+          pv.value = new Proxy(CopyOnWriteArray.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Object.freeze(v) // just freeze without copy-on-write hooks
       }
@@ -363,7 +363,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
     else if (v instanceof Set) {
       if (!Object.isFrozen(v)) {
         if (pv.copyOnWriteMode)
-          pv.value = new Proxy(CopyOnWriteSet.seal(proxy, prop, v), CopyOnWriteProxy.global)
+          pv.value = new Proxy(CopyOnWriteSet.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Utils.freezeSet(v) // just freeze without copy-on-write hooks
       }
@@ -371,7 +371,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
     else if (v instanceof Map) {
       if (!Object.isFrozen(v)) {
         if (pv.copyOnWriteMode)
-          pv.value = new Proxy(CopyOnWriteMap.seal(proxy, prop, v), CopyOnWriteProxy.global)
+          pv.value = new Proxy(CopyOnWriteMap.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Utils.freezeMap(v) // just freeze without copy-on-write hooks
       }

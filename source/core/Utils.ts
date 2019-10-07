@@ -35,11 +35,11 @@ export class Utils {
     }
   }
 
-  static copyAllProps(source: any, target: any): any {
-    for (const prop of Object.getOwnPropertyNames(source))
-      target[prop] = source[prop]
-    for (const prop of Object.getOwnPropertySymbols(source))
-      target[prop] = source[prop]
+  static copyAllFields(source: any, target: any): any {
+    for (const field of Object.getOwnPropertyNames(source))
+      target[field] = source[field]
+    for (const field of Object.getOwnPropertySymbols(source))
+      target[field] = source[field]
     return target
   }
 }

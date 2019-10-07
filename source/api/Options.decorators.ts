@@ -10,28 +10,28 @@ import { Options, Reentrance, Kind } from './Options'
 import { Monitor } from './Monitor'
 
 export function stateful(proto: object, prop?: PropertyKey): any {
-  const rx = { kind: Kind.Stateful }
-  return prop ? Hooks.decorateField(true, rx, proto, prop) : Hooks.decorateClass(true, rx, proto)
+  const opt = { kind: Kind.Stateful }
+  return prop ? Hooks.decorateField(true, opt, proto, prop) : Hooks.decorateClass(true, opt, proto)
 }
 
 export function stateless(proto: object, prop: PropertyKey): any {
-  const rx = { kind: Kind.Stateless }
-  return Hooks.decorateField(true, rx, proto, prop)
+  const opt = { kind: Kind.Stateless }
+  return Hooks.decorateField(true, opt, proto, prop)
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const rx = { kind: Kind.Transaction }
-  return Hooks.decorateMethod(true, rx, proto, prop, pd)
+  const opt = { kind: Kind.Transaction }
+  return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
 export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const rx = { kind: Kind.Trigger, latency: -1 } // immediate trigger
-  return Hooks.decorateMethod(true, rx, proto, prop, pd)
+  const opt = { kind: Kind.Trigger, latency: -1 } // immediate trigger
+  return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
 export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const rx = { kind: Kind.Cached }
-  return Hooks.decorateMethod(true, rx, proto, prop, pd)
+  const opt = { kind: Kind.Cached }
+  return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
 export function latency(latency: number): F<any> {

@@ -46,7 +46,7 @@
 
 // export class StoreParams {
 //   readonly name?: string;
-//   readonly idProperty?: string;
+//   readonly idField?: string;
 //   readonly isObjectWithId?: (obj: object) => boolean;
 //   readonly twoWaySync?: (incomingPatches: object[], outgoingPatches: object[]) => void;
 // }

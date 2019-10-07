@@ -5,7 +5,7 @@
 
 import { Dbg, misuse } from './Dbg'
 import { Utils, undef } from './Utils'
-import { Record, PropKey, ISnapshot, ICacheResult } from './Record'
+import { Record, FieldKey, ISnapshot, ICacheResult } from './Record'
 import { Handle, R_HANDLE } from './Handle'
 import { CopyOnWriteProxy } from './Hooks'
 
@@ -78,9 +78,9 @@ export class Snapshot implements ISnapshot {
     return r
   }
 
-  write(h: Handle, prop: PropKey, value: any, token?: any): Record {
+  write(h: Handle, field: FieldKey, value: any, token?: any): Record {
     let r: Record = this.tryRead(h)
-    this.guard(h, r, prop, value, token)
+    this.guard(h, r, field, value, token)
     if (r.snapshot !== this) {
       const data = {...r.data}
       Reflect.set(data, R_HANDLE, h)
@@ -92,13 +92,13 @@ export class Snapshot implements ISnapshot {
     return r
   }
 
-  private guard(h: Handle, r: Record, prop: PropKey, value: any, token: any): void {
+  private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.applied)
-      throw misuse(`stateful property ${Hint.handle(h, prop)} can only be modified inside transaction`)
+      throw misuse(`stateful property ${Hint.handle(h, field)} can only be modified inside transaction`)
     if (r.snapshot !== this && value !== R_HANDLE && this.caching !== undefined && token !== this.caching)
-      throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hint.record(r, prop)}`)
+      throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hint.record(r, field)}`)
     if (r === Record.blank && value !== R_HANDLE) /* istanbul ignore next */
-      throw misuse(`object ${Hint.record(r, prop)} doesn't exist in snapshot v${this.stamp}`)
+      throw misuse(`object ${Hint.record(r, field)} doesn't exist in snapshot v${this.stamp}`)
   }
 
   acquire(outer: Snapshot): void {
@@ -147,23 +147,23 @@ export class Snapshot implements ISnapshot {
       counter++
       const unmounted: boolean = head.changes.has(R_UNMOUNT)
       const merged = {...head.data} // clone
-      ours.changes.forEach(prop => {
+      ours.changes.forEach(field => {
         counter++
-        merged[prop] = ours.data[prop]
-        if (unmounted || prop === R_UNMOUNT) {
-          if (unmounted !== (prop === R_UNMOUNT)) {
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} <> ${Hint.record(head, prop)}.`)
-            ours.conflicts.set(prop, head)
+        merged[field] = ours.data[field]
+        if (unmounted || field === R_UNMOUNT) {
+          if (unmounted !== (field === R_UNMOUNT)) {
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, field)} <> ${Hint.record(head, field)}.`)
+            ours.conflicts.set(field, head)
           }
         }
         else {
-          const conflict = Snapshot.isConflicting(head.data[prop], ours.prev.record.data[prop])
+          const conflict = Snapshot.isConflicting(head.data[field], ours.prev.record.data[field])
           if (conflict)
-            ours.conflicts.set(prop, head)
-          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, prop)} ${conflict ? "<>" : "=="} ${Hint.record(head, prop)}.`)
+            ours.conflicts.set(field, head)
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "Y", `${Hint.record(ours, field)} ${conflict ? "<>" : "=="} ${Hint.record(head, field)}.`)
         }
       })
-      Utils.copyAllProps(merged, ours.data) // overwrite with merged copy
+      Utils.copyAllFields(merged, ours.data) // overwrite with merged copy
       ours.prev.record = head // rebase is completed
     }
     return counter
@@ -172,7 +172,7 @@ export class Snapshot implements ISnapshot {
   apply(error?: any): void {
     this.applied = true
     this.changeset.forEach((r: Record, h: Handle) => {
-      r.changes.forEach(prop => CopyOnWriteProxy.seal(r.data[prop], h.proxy, prop))
+      r.changes.forEach(field => CopyOnWriteProxy.seal(r.data[field], h.proxy, field))
       r.freeze()
       h.writers--
       if (h.writers === 0)
@@ -180,9 +180,9 @@ export class Snapshot implements ISnapshot {
       if (!error) {
         h.head = r
         if (Dbg.isOn && Dbg.trace.changes) {
-          const props: string[] = []
-          r.changes.forEach(prop => props.push(prop.toString()))
-          const s = props.join(", ")
+          const fields: string[] = []
+          r.changes.forEach(field => fields.push(field.toString()))
+          const s = fields.join(", ")
           Dbg.log("║", "•", `${Hint.record(r)}(${s}) is applied on top of ${Hint.record(r.prev.record)}.`)
         }
       }
@@ -205,15 +205,15 @@ export class Snapshot implements ISnapshot {
 
   // static undo(s: Snapshot): void {
   //   s.changeset.forEach((r: Record, h: Handle) => {
-  //     r.changes.forEach(prop => {
+  //     r.changes.forEach(field => {
   //       if (r.prev.record !== Record.blank) {
-  //         const prevValue: any = r.prev.record.data[prop];
+  //         const prevValue: any = r.prev.record.data[field];
   //         const ctx = Snapshot.write();
-  //         const t: Record = ctx.write(h, prop, prevValue);
+  //         const t: Record = ctx.write(h, field, prevValue);
   //         if (t.snapshot === ctx) {
-  //           t.data[prop] = prevValue;
-  //           const v: any = t.prev.record.data[prop];
-  //           Record.markChanged(t, prop, v !== prevValue, prevValue);
+  //           t.data[field] = prevValue;
+  //           const v: any = t.prev.record.data[field];
+  //           Record.markChanged(t, field, v !== prevValue, prevValue);
   //         }
   //       }
   //     });
@@ -246,31 +246,31 @@ export class Snapshot implements ISnapshot {
 }
 
 export class Hint {
-  static handle(h: Handle | undefined, prop?: PropKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
+  static handle(h: Handle | undefined, field?: FieldKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const obj = h === undefined
       ? "blank"
       : (typeless
         ? (stamp === undefined ? `#${h.id}` : `v${stamp}t${tran}#${h.id}`)
         : (stamp === undefined ? `#${h.id} ${h.hint}` : `v${stamp}t${tran}#${h.id} ${h.hint}`))
-    return prop !== undefined ? `${obj}.${prop.toString()}` : obj
+    return field !== undefined ? `${obj}.${field.toString()}` : obj
   }
 
-  static record(r: Record, prop?: PropKey, typeless?: boolean): string {
+  static record(r: Record, field?: FieldKey, typeless?: boolean): string {
     const h = Utils.get<Handle | undefined>(r.data, R_HANDLE)
-    return Hint.handle(h, prop, r.snapshot.timestamp, r.snapshot.id, typeless)
+    return Hint.handle(h, field, r.snapshot.timestamp, r.snapshot.id, typeless)
   }
 
   static conflicts(conflicts: Record[]): string {
     return conflicts.map(ours => {
       const items: string[] = []
-      ours.conflicts.forEach((theirs: Record, prop: PropKey) => {
-        items.push(Hint.conflictProp(prop, ours, theirs))
+      ours.conflicts.forEach((theirs: Record, field: FieldKey) => {
+        items.push(Hint.conflictingFieldHint(field, ours, theirs))
       })
       return items.join(", ")
     }).join(", ")
   }
 
-  static conflictProp(prop: PropKey, ours: Record, theirs: Record): string {
-    return Hint.record(theirs, prop)
+  static conflictingFieldHint(field: FieldKey, ours: Record, theirs: Record): string {
+    return Hint.record(theirs, field)
   }
 }
