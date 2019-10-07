@@ -30,7 +30,7 @@
     "no-console": false,
     "no-implicit-dependencies": false,
     "no-bitwise": false,
-    "no-unexpected-multiline": true,
-    "semicolon": false
+    "semicolon": [true, "never"],
+    "no-unexpected-multiline": true
   }
 }
