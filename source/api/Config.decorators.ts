@@ -6,7 +6,7 @@
 import { Trace } from './Trace'
 import { F } from '../core/Record'
 import { Hooks } from '../core/Hooks'
-import { Config, Reentrance, Kind } from './Config'
+import { Options, Reentrance, Kind } from './Config'
 import { Monitor } from './Monitor'
 
 export function stateful(proto: object, prop?: PropertyKey): any {
@@ -35,26 +35,26 @@ export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescri
 }
 
 export function latency(latency: number): F<any> {
-  return config({latency})
+  return options({latency})
 }
 
 export function reentrance(reentrance: Reentrance): F<any> {
-  return config({reentrance})
+  return options({reentrance})
 }
 
 export function cachedArgs(cachedArgs: boolean): F<any> {
-  return config({cachedArgs})
+  return options({cachedArgs})
 }
 
 export function monitor(monitor: Monitor | null): F<any> {
-  return config({monitor})
+  return options({monitor})
 }
 
 export function trace(trace: Partial<Trace>): F<any> {
-  return config({trace})
+  return options({trace})
 }
 
-function config(config: Partial<Config>): F<any> {
+function options(config: Partial<Options>): F<any> {
   return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
     if (prop && pd)
       return Hooks.decorateMethod(false, config, proto, prop, pd) /* istanbul ignore next */

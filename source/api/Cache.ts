@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Transaction } from './Transaction'
-import { Config } from './Config'
+import { Options } from './Config'
 import { CacheImpl, F } from '../core/all'
 
 export function cacheof<T>(method: F<T>): Cache<T> {
@@ -24,8 +24,8 @@ export function standalone<T>(func: F<T>, ...args: any[]): T {
 }
 
 export abstract class Cache<T> {
-  abstract configure(config: Partial<Config>): Config
-  abstract readonly config: Config
+  abstract setOptions(config: Partial<Options>): Options
+  abstract readonly options: Options
   abstract readonly args: ReadonlyArray<any>
   abstract readonly value: T
   abstract readonly error: any

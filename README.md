@@ -219,9 +219,9 @@ function cachedArgs(cachedArgs: boolean); // cached & triggers
 function monitor(monitor: Monitor | null);
 function trace(trace: Partial<Trace>);
 
-// Config, Kind, Reentrance, Monitor, Trace
+// Options, Kind, Reentrance, Monitor, Trace
 
-interface Config {
+interface Options {
   readonly kind: Kind;
   readonly latency: number; // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance;
@@ -298,8 +298,8 @@ function nonreactive<T>(func: F<T>, ...args: any[]): T;
 function standalone<T>(func: F<T>, ...args: any[]): T;
 
 abstract class Cache<T> {
-  configure(config: Partial<Config>): Config;
-  readonly config: config;
+  setOptions(options: Partial<Options>): Options;
+  readonly options: Options;
   readonly args: ReadonlyArray<any>;
   readonly value: T;
   readonly error: any;

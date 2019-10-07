@@ -3,10 +3,10 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, Utils, Record, PropKey, PropValue, PropHint, ICacheResult, F, Handle, Snapshot, Hint, Cfg, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
+import { Dbg, misuse, Utils, Record, PropKey, PropValue, PropHint, ICacheResult, F, Handle, Snapshot, Hint, Opts, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
 import { Cache } from '../api/Cache'
 export { Cache, cacheof, resolved } from '../api/Cache'
-import { Config, Kind, Reentrance, Trace } from '../api/Config'
+import { Options, Kind, Reentrance, Trace } from '../api/Config'
 import { Transaction } from '../api/Transaction'
 import { Monitor } from '../api/Monitor'
 
@@ -17,8 +17,8 @@ export class CacheImpl extends Cache<any> {
   private readonly handle: Handle
   private readonly blank: CacheResult
 
-  configure(config: Partial<Config>): Config { return this.reconfigure(config) }
-  get config(): Config { return this.weak().cache.config }
+  setOptions(config: Partial<Options>): Options { return this.reconfigure(config) }
+  get options(): Options { return this.weak().cache.options }
   get args(): ReadonlyArray<any> { return this.weak().cache.args }
   get value(): any { return this.recall(true).cache.value }
   get error(): boolean { return this.weak().cache.error }
@@ -27,7 +27,7 @@ export class CacheImpl extends Cache<any> {
   invalidate(): void { CacheImpl.invalidate(this) }
   call(args?: any[]): any { return this.recall(true, args).cache.value }
 
-  constructor(handle: Handle, member: PropKey, config: Cfg) {
+  constructor(handle: Handle, member: PropKey, config: Opts) {
     super()
     this.handle = handle
     this.blank = new CacheResult(Record.blank, member, config)
@@ -36,8 +36,8 @@ export class CacheImpl extends Cache<any> {
 
   private initialize(): CacheResult {
     const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/init` : /* istanbul ignore next */ "Cache.init"
-    const sidebyside = this.blank.config.reentrance === Reentrance.RunSideBySide
-    const result = Transaction.runAs(hint, true, sidebyside, this.blank.config.trace, this, (): CacheResult => {
+    const sidebyside = this.blank.options.reentrance === Reentrance.RunSideBySide
+    const result = Transaction.runAs(hint, true, sidebyside, this.blank.options.trace, this, (): CacheResult => {
       const c = this.write().cache
       c.ret = undefined
       c.value = undefined
@@ -53,7 +53,7 @@ export class CacheImpl extends Cache<any> {
     const c: CacheResult = call.cache
     if (!call.valid && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${c.member.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"
-      const cfg = c.config
+      const cfg = c.options
       const spawn = weak || cfg.kind !== Kind.Transaction
       const sidebyside = cfg.reentrance === Reentrance.RunSideBySide
       const token = cfg.kind === Kind.Cached ? this : undefined
@@ -77,7 +77,7 @@ export class CacheImpl extends Cache<any> {
       if (!weak && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.config.trace === undefined || c.config.trace.methods === undefined || c.config.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current !== Transaction.none ? "║" : "", "  ==", `${Hint.record(call.record)}.${call.cache.member.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`)
     Record.markViewed(call.record, call.cache.member, call.cache, weak)
     return call
   }
@@ -92,9 +92,9 @@ export class CacheImpl extends Cache<any> {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
     const c: CacheResult = r.data[this.blank.member] || this.initialize()
-    const valid = c.config.kind !== Kind.Transaction &&
+    const valid = c.options.kind !== Kind.Transaction &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
-      (!c.config.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
+      (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[R_UNMOUNT] !== undefined
     return { valid, cache: c, record: r }
   }
@@ -122,7 +122,7 @@ export class CacheImpl extends Cache<any> {
     const prev = c.invalid.renewing
     const caller = Transaction.current
     if (prev && prev !== c)
-      switch (c.config.reentrance) {
+      switch (c.options.reentrance) {
       case Reentrance.PreventWithError:
         throw misuse(`${c.hint()} is configured as non-reentrant`)
       case Reentrance.WaitAndRestart:
@@ -147,17 +147,17 @@ export class CacheImpl extends Cache<any> {
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`)
   }
 
-  private reconfigure(config: Partial<Config>): Config {
+  private reconfigure(config: Partial<Options>): Options {
     const call = this.read(undefined)
     const c: CacheResult = call.cache
     const r: Record = call.record
     const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure"
-    return Transaction.runAs(hint, false, false, undefined, undefined, (): Config => {
+    return Transaction.runAs(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
       const c2: CacheResult = call2.cache
-      c2.config = new Cfg(c2.config.body, c2.config, config, false)
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.config = ...`)
-      return c2.config
+      c2.options = new Opts(c2.options.body, c2.options, config, false)
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.options = ...`)
+      return c2.options
     })
   }
 
@@ -179,7 +179,7 @@ export class CacheImpl extends Cache<any> {
     return result
   }
 
-  static createCacheTrap(h: Handle, prop: PropKey, config: Cfg): F<any> {
+  static createCacheTrap(h: Handle, prop: PropKey, config: Opts): F<any> {
     const cache = new CacheImpl(h, prop, config)
     const cacheTrap: F<any> = (...args: any[]): any =>
       cache.recall(false, args).cache.ret
@@ -217,7 +217,7 @@ class CacheResult extends PropValue implements ICacheResult {
   readonly tran: Transaction
   readonly record: Record
   readonly member: PropKey
-  config: Cfg
+  options: Opts
   args: any[]
   ret: any
   error: any
@@ -227,18 +227,18 @@ class CacheResult extends PropValue implements ICacheResult {
   readonly weakObservables: Map<PropValue, PropHint>
   readonly margin: number
 
-  constructor(record: Record, member: PropKey, init: CacheResult | Cfg) {
+  constructor(record: Record, member: PropKey, init: CacheResult | Opts) {
     super(undefined)
     this.tran = Transaction.current
     this.record = record
     this.member = member
     if (init instanceof CacheResult) {
-      this.config = init.config
+      this.options = init.options
       this.args = init.args
       // this.value = init.value
     }
     else { // init instanceof Config
-      this.config = init
+      this.options = init
       this.args = []
       // this.value = undefined
     }
@@ -278,7 +278,7 @@ class CacheResult extends PropValue implements ICacheResult {
   static computeFunc(proxy: any, c: CacheResult): void {
     c.enter()
     try {
-      c.ret = c.config.body.call(proxy, ...c.args)
+      c.ret = c.options.body.call(proxy, ...c.args)
     }
     finally {
       c.leaveOrAsync()
@@ -286,8 +286,8 @@ class CacheResult extends PropValue implements ICacheResult {
   }
 
   enter(): void {
-    if (this.config.monitor)
-      this.monitorEnter(this.config.monitor)
+    if (this.options.monitor)
+      this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.member)} - enter`)
     this.started = Date.now()
   }
@@ -317,8 +317,8 @@ class CacheResult extends PropValue implements ICacheResult {
     const ms: number = Date.now() - this.started
     this.started = 0
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.member)} ${message}`, ms, highlight)
-    if (this.config.monitor)
-      this.monitorLeave(this.config.monitor)
+    if (this.options.monitor)
+      this.monitorLeave(this.options.monitor)
     // CacheResult.freeze(this)
   }
 
@@ -346,9 +346,9 @@ class CacheResult extends PropValue implements ICacheResult {
   }
 
   trig(timestamp: number, now: boolean, nothrow: boolean): void {
-    const latency = this.config.latency
+    const latency = this.options.latency
     if (now || latency === -1) {
-      if (!this.error && (this.config.kind === Kind.Transaction ||
+      if (!this.error && (this.options.kind === Kind.Transaction ||
           (timestamp >= this.invalid.since && !this.invalid.renewing))) {
         try {
           const proxy: any = Utils.get<Handle>(this.record.data, R_HANDLE).proxy
@@ -385,7 +385,7 @@ class CacheResult extends PropValue implements ICacheResult {
 
   private static markViewed(record: Record, prop: PropKey, value: PropValue, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active // alias
-    if (c && c.config.kind !== Kind.Transaction && prop !== R_HANDLE) {
+    if (c && c.options.kind !== Kind.Transaction && prop !== R_HANDLE) {
       Snapshot.readable().bump(record.snapshot.timestamp)
       const observables = c.getObservables(weak)
       let times: number = 0
@@ -458,14 +458,14 @@ class CacheResult extends PropValue implements ICacheResult {
     const log: string[] = []
     this.subscribeTo(false, this.observables, timestamp, triggers, log)
     this.subscribeTo(true, this.weakObservables, timestamp, triggers, log)
-    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to {${log.join(", ")}}.`)
+    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.options.trace, " ", "o", `${Hint.record(this.record, this.member)} is subscribed to {${log.join(", ")}}.`)
   }
 
   private unsubscribeFromAllObservables(): void {
     const log: string[] = []
     this.unsubscribeFrom(this.observables, log)
     this.unsubscribeFrom(this.weakObservables, log)
-    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.config.trace && this.config.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.config.trace, " ", "-", `${Hint.record(this.record, this.member)} is unsubscribed from {${log.join(", ")}}.`)
+    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.options.trace, " ", "-", `${Hint.record(this.record, this.member)} is unsubscribed from {${log.join(", ")}}.`)
   }
 
   private subscribeTo(weak: boolean, observables: Map<PropValue, PropHint>, timestamp: number, triggers: ICacheResult[], log: string[]): void {
@@ -509,8 +509,8 @@ class CacheResult extends PropValue implements ICacheResult {
     const result = this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0
     if (result) {
       this.invalid.since = since
-      const isTrigger = this.config.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.config.trace && this.config.trace.invalidations)) Dbg.logAs(this.config.trace, " ", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.prop === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.prop)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
+      const isTrigger = this.options.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, " ", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.prop === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.prop)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
       this.unsubscribeFromAllObservables() // now unsubscribed
       if (isTrigger) // stop cascade invalidation on trigger
         triggers.push(this)

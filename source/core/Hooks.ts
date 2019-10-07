@@ -11,7 +11,7 @@ import { CopyOnWriteMap } from './CopyOnWriteMap'
 import { Record, PropKey, PropValue, F, R_UNMOUNT } from './Record'
 import { Handle, R_HANDLE } from './Handle'
 import { Snapshot, Hint } from './Snapshot'
-import { Config, Kind, Reentrance } from '../api/Config'
+import { Options, Kind, Reentrance } from '../api/Config'
 import { Monitor } from '../api/Monitor'
 import { Cache } from '../api/Cache'
 import { Trace } from '../api/Trace'
@@ -22,7 +22,7 @@ export class Stateful {
   constructor() {
     const h = Hooks.createHandle(true, this, undefined, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
-      const triggers: Map<PropKey, Cfg> | undefined = Hooks.getConfigTable(new.target.prototype)[R_TRIGGERS]
+      const triggers: Map<PropKey, Opts> | undefined = Hooks.getConfigTable(new.target.prototype)[R_TRIGGERS]
       if (triggers)
         triggers.forEach((rx, prop) =>
           (h.proxy[prop][R_CACHE] as Cache<any>).invalidate())
@@ -43,7 +43,7 @@ const R_CLASS: unique symbol = Symbol("R:CLASS")
 const R_TRIGGERS: unique symbol = Symbol("R:TRIGGERS")
 
 const BLANK_TABLE = Object.freeze({})
-const DEFAULT_STATELESS_CONFIG: Config = Object.freeze({
+const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   kind: Kind.Stateless,
   latency: -2, // never
   reentrance: Reentrance.PreventWithError,
@@ -51,7 +51,7 @@ const DEFAULT_STATELESS_CONFIG: Config = Object.freeze({
   monitor: null,
   trace: undefined,
 })
-const DEFAULT_STATEFUL_CONFIG: Config = Object.freeze({
+const DEFAULT_STATEFUL_OPTIONS: Options = Object.freeze({
   kind: Kind.Stateful,
   latency: -2, // never
   reentrance: Reentrance.PreventWithError,
@@ -60,7 +60,7 @@ const DEFAULT_STATEFUL_CONFIG: Config = Object.freeze({
   trace: undefined,
 })
 
-export class Cfg implements Config {
+export class Opts implements Options {
   readonly body: Function
   readonly kind: Kind
   readonly latency: number
@@ -68,17 +68,17 @@ export class Cfg implements Config {
   readonly cachedArgs: boolean
   readonly monitor: Monitor | null
   readonly trace?: Partial<Trace>
-  static readonly STATEFUL = Object.freeze(new Cfg(undef, {body: undef, ...DEFAULT_STATEFUL_CONFIG}, {}, false))
-  static readonly STATELESS = Object.freeze(new Cfg(undef, {body: undef, ...DEFAULT_STATELESS_CONFIG}, {}, false))
+  static readonly STATEFUL = Object.freeze(new Opts(undef, {body: undef, ...DEFAULT_STATEFUL_OPTIONS}, {}, false))
+  static readonly STATELESS = Object.freeze(new Opts(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))
 
-  constructor(body: Function | undefined, existing: Cfg, patch: Partial<Cfg>, implicit: boolean) {
+  constructor(body: Function | undefined, existing: Opts, patch: Partial<Opts>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body
-    this.kind = merge(DEFAULT_STATELESS_CONFIG.kind, existing.kind, patch.kind, implicit)
-    this.latency = merge(DEFAULT_STATELESS_CONFIG.latency, existing.latency, patch.latency, implicit)
-    this.reentrance = merge(DEFAULT_STATELESS_CONFIG.reentrance, existing.reentrance, patch.reentrance, implicit)
-    this.cachedArgs = merge(DEFAULT_STATELESS_CONFIG.cachedArgs, existing.cachedArgs, patch.cachedArgs, implicit)
-    this.monitor = merge(DEFAULT_STATELESS_CONFIG.monitor, existing.monitor, patch.monitor, implicit)
-    this.trace = merge(DEFAULT_STATELESS_CONFIG.trace, existing.trace, patch.trace, implicit)
+    this.kind = merge(DEFAULT_STATELESS_OPTIONS.kind, existing.kind, patch.kind, implicit)
+    this.latency = merge(DEFAULT_STATELESS_OPTIONS.latency, existing.latency, patch.latency, implicit)
+    this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
+    this.cachedArgs = merge(DEFAULT_STATELESS_OPTIONS.cachedArgs, existing.cachedArgs, patch.cachedArgs, implicit)
+    this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
+    this.trace = merge(DEFAULT_STATELESS_OPTIONS.trace, existing.trace, patch.trace, implicit)
     Object.freeze(this)
   }
 }
@@ -100,8 +100,8 @@ export class Hooks implements ProxyHandler<Handle> {
 
   get(h: Handle, prop: PropKey, receiver: any): any {
     let result: any
-    const rt: Cfg | undefined = Hooks.getConfig(h.stateless, prop)
-    if (!rt || (rt.body === decoratedfield && rt.kind !== Kind.Stateless)) { // versioned state
+    const options: Opts | undefined = Hooks.getConfig(h.stateless, prop)
+    if (!options || (options.body === decoratedfield && options.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.readable().read(h)
       result = r.data[prop]
       if (result instanceof PropValue) {
@@ -124,8 +124,8 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   set(h: Handle, prop: PropKey, value: any, receiver: any): boolean {
-    const rt: Cfg | undefined = Hooks.getConfig(h.stateless, prop)
-    if (!rt || (rt.body === decoratedfield && rt.kind !== Kind.Stateless)) { // versioned state
+    const options: Opts | undefined = Hooks.getConfig(h.stateless, prop)
+    if (!options || (options.body === decoratedfield && options.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.writable().write(h, prop, value)
       const curr = r.data[prop] as PropValue
       const prev = r.prev.record.data[prop] as PropValue
@@ -165,10 +165,10 @@ export class Hooks implements ProxyHandler<Handle> {
     return result
   }
 
-  static decorateClass(implicit: boolean, rt: Partial<Config>, origCtor: any): any {
+  static decorateClass(implicit: boolean, options: Partial<Options>, origCtor: any): any {
     let ctor: any = origCtor
-    const stateful = rt.kind !== undefined && rt.kind !== Kind.Stateless
-    const triggers: Map<PropKey, Cfg> | undefined = Hooks.getConfigTable(ctor.prototype)[R_TRIGGERS]
+    const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
+    const triggers: Map<PropKey, Opts> | undefined = Hooks.getConfigTable(ctor.prototype)[R_TRIGGERS]
     if (stateful) {
       ctor = class extends origCtor {
         constructor(...args: any[]) {
@@ -183,15 +183,15 @@ export class Hooks implements ProxyHandler<Handle> {
           return h.proxy
         }
       }
-      Hooks.configure(ctor.prototype, R_CLASS, decoratedclass, rt, implicit)
+      Hooks.setOptions(ctor.prototype, R_CLASS, decoratedclass, options, implicit)
     }
     return ctor
   }
 
-  static decorateClassOld(implicit: boolean, rt: Partial<Config>, origCtor: any): any {
+  static decorateClassOld(implicit: boolean, options: Partial<Options>, origCtor: any): any {
     let ctor: any = origCtor
-    const stateful = rt.kind !== undefined && rt.kind !== Kind.Stateless
-    const triggers: Map<PropKey, Cfg> | undefined = Hooks.getConfigTable(ctor.prototype)[R_TRIGGERS]
+    const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
+    const triggers: Map<PropKey, Opts> | undefined = Hooks.getConfigTable(ctor.prototype)[R_TRIGGERS]
     if (stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args)
@@ -208,13 +208,13 @@ export class Hooks implements ProxyHandler<Handle> {
       Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)) // preserve prototype
       Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)) // preserve static definitions
     }
-    Hooks.configure(ctor.prototype, R_CLASS, decoratedclass, rt, implicit)
+    Hooks.setOptions(ctor.prototype, R_CLASS, decoratedclass, options, implicit)
     return ctor
   }
 
-  static decorateField(implicit: boolean, rt: Partial<Config>, proto: any, prop: PropKey): any {
-    rt = Hooks.configure(proto, prop, decoratedfield, rt, implicit)
-    if (rt.kind !== Kind.Stateless) {
+  static decorateField(implicit: boolean, options: Partial<Options>, proto: any, prop: PropKey): any {
+    options = Hooks.setOptions(proto, prop, decoratedfield, options, implicit)
+    if (options.kind !== Kind.Stateless) {
       const get = function(this: any): any {
         const h: Handle = Hooks.acquireHandle(this)
         return Hooks.proxy.get(h, prop, this)
@@ -229,13 +229,13 @@ export class Hooks implements ProxyHandler<Handle> {
     }
   }
 
-  static decorateMethod(implicit: boolean, rt: Partial<Config>, proto: any, method: PropKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: PropKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
-    const methodConfig = Hooks.configure(proto, method, pd.value, rt, implicit)
+    const methodConfig = Hooks.setOptions(proto, method, pd.value, options, implicit)
     const get = function(this: any): any {
       const p = Object.getPrototypeOf(this)
-      const classConfig: Cfg = Hooks.getConfig(p, R_CLASS) || (this instanceof Stateful ? Cfg.STATEFUL : Cfg.STATELESS)
+      const classConfig: Opts = Hooks.getConfig(p, R_CLASS) || (this instanceof Stateful ? Opts.STATEFUL : Opts.STATELESS)
       const h: Handle = classConfig.kind !== Kind.Stateless ? Utils.get<Handle>(this, R_HANDLE) : Hooks.acquireHandle(this)
       const value = Hooks.createCacheTrap(h, method, methodConfig)
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
@@ -244,22 +244,22 @@ export class Hooks implements ProxyHandler<Handle> {
     return Object.defineProperty(proto, method, { get, enumerable, configurable })
   }
 
-  private static getConfig(proto: any, prop: PropKey): Cfg | undefined {
+  private static getConfig(proto: any, prop: PropKey): Opts | undefined {
     return Hooks.getConfigTable(proto)[prop]
   }
 
-  private static configure(proto: any, prop: PropKey, body: Function | undefined, rt: Partial<Cfg>, implicit: boolean): Cfg {
+  private static setOptions(proto: any, prop: PropKey, body: Function | undefined, options: Partial<Opts>, implicit: boolean): Opts {
     const configTable: any = Hooks.acquireConfigTable(proto)
-    const existing: Cfg = configTable[prop] || Cfg.STATELESS
-    const result = configTable[prop] = new Cfg(body, existing, rt, implicit)
+    const existing: Opts = configTable[prop] || Opts.STATELESS
+    const result = configTable[prop] = new Opts(body, existing, options, implicit)
     if (result.kind === Kind.Trigger && result.latency > -2) {
-      let triggers: Map<PropKey, Cfg> | undefined = configTable[R_TRIGGERS]
+      let triggers: Map<PropKey, Opts> | undefined = configTable[R_TRIGGERS]
       if (!triggers)
-        triggers = configTable[R_TRIGGERS] = new Map<PropKey, Cfg>()
+        triggers = configTable[R_TRIGGERS] = new Map<PropKey, Opts>()
       triggers.set(prop, result)
     }
     else if (existing.kind === Kind.Trigger && existing.latency > -2) {
-      const triggers: Map<PropKey, Cfg> | undefined = configTable[R_TRIGGERS]
+      const triggers: Map<PropKey, Opts> | undefined = configTable[R_TRIGGERS]
       if (triggers)
         triggers.delete(prop)
     }
@@ -305,7 +305,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static createCacheTrap = function(h: Handle, prop: PropKey, rt: Cfg): F<any> {
+  static createCacheTrap = function(h: Handle, prop: PropKey, rt: Opts): F<any> {
     throw misuse("createCacheTrap should never be called")
   }
 }
