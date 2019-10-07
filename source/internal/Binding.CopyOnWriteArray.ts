@@ -3,8 +3,8 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Binding, R, W } from './Binding'
-export { Binding } from './Binding'
+import { CopyOnWrite, R, W } from './Binding'
+export { CopyOnWrite } from './Binding'
 
 export abstract class CopyOnWriteArray<T> extends Array<T> {
   get length(): number { return super.length /* S<T[]>(this)*/ }
@@ -35,8 +35,8 @@ export abstract class CopyOnWriteArray<T> extends Array<T> {
   // reduceRight(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: T[]) => T, initialValue?: T): T
   // reduceRight<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U { return super.reduceRight.call(R<T[]>(this), callbackfn, initialValue) }
 
-  static seal<T>(owner: any, prop: PropertyKey, array: T[]): Binding<T[]> {
-    return Binding.seal(owner, prop, array, array.length, CopyOnWriteArray.prototype, CopyOnWriteArray.getSize, CopyOnWriteArray.clone)
+  static seal<T>(owner: any, prop: PropertyKey, array: T[]): CopyOnWrite<T[]> {
+    return CopyOnWrite.seal(owner, prop, array, array.length, CopyOnWriteArray.prototype, CopyOnWriteArray.getSize, CopyOnWriteArray.clone)
   }
 
   static getSize<T>(set: T[]): number {

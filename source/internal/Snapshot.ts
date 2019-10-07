@@ -7,7 +7,7 @@ import { Dbg, misuse } from './Dbg'
 import { Utils, undef } from './Utils'
 import { Record, PropKey, ISnapshot, ICacheResult, R_UNMOUNT } from './Record'
 import { Handle, R_HANDLE } from './Handle'
-import { CopyOnWrite } from './Hooks'
+import { CopyOnWriteProxy } from './Hooks'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
@@ -171,7 +171,7 @@ export class Snapshot implements ISnapshot {
   apply(error?: any): void {
     this.applied = true
     this.changeset.forEach((r: Record, h: Handle) => {
-      r.changes.forEach(prop => CopyOnWrite.seal(r.data[prop], h.proxy, prop))
+      r.changes.forEach(prop => CopyOnWriteProxy.seal(r.data[prop], h.proxy, prop))
       r.freeze()
       h.writers--
       if (h.writers === 0)

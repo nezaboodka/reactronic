@@ -7,7 +7,7 @@ import { Dbg, misuse } from './Dbg'
 
 export const R_COPY_ON_WRITE: unique symbol = Symbol("R:COPY-ON-WRITE")
 
-export class Binding<T> {
+export class CopyOnWrite<T> {
   constructor(
     readonly owner: any,
     readonly prop: PropertyKey,
@@ -38,12 +38,12 @@ export class Binding<T> {
     return v
   }
 
-  static seal<T>(owner: any, prop: PropertyKey, value: T, size: number, proto: object, getSize: (v: T) => number, clone: (v: T) => T): Binding<T> {
+  static seal<T>(owner: any, prop: PropertyKey, value: T, size: number, proto: object, getSize: (v: T) => number, clone: (v: T) => T): CopyOnWrite<T> {
     if (Object.isFrozen(value)) /* istanbul ignore next */
       throw misuse("copy-on-write collection cannot be referenced from multiple objects")
     const self: any = value
     if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "     ·", `${owner.constructor.name}.${prop.toString()} - copy-on-write - sealed ${size} item(s)`)
-    const binding = new Binding<T>(owner, prop, value, size, getSize, clone)
+    const binding = new CopyOnWrite<T>(owner, prop, value, size, getSize, clone)
     self[R_COPY_ON_WRITE] = binding
     Object.setPrototypeOf(value, proto)
     Object.freeze(value)
@@ -52,16 +52,16 @@ export class Binding<T> {
 }
 
 export function R<T>(self: any): T {
-  const binding: Binding<T> = self[R_COPY_ON_WRITE]
+  const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
   return binding !== undefined ? binding.readable(self) : self
 }
 
 export function W<T>(self: any): T {
-  const binding: Binding<T> = self[R_COPY_ON_WRITE]
+  const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
   return binding !== undefined ? binding.writable(self) : self
 }
 
 export function S<T>(self: any): number {
-  const binding: Binding<T> = self[R_COPY_ON_WRITE]
+  const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
   return binding !== undefined ? binding.sizing(self) : -1
 }

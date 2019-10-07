@@ -3,8 +3,8 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Binding, R, W } from './Binding'
-export { Binding } from './Binding'
+import { CopyOnWrite, R, W } from './Binding'
+export { CopyOnWrite } from './Binding'
 
 export abstract class CopyOnWriteSet<T> extends Set<T> {
   add(value: T): this { super.add.call(W<Set<T>>(this), value); return this }
@@ -17,8 +17,8 @@ export abstract class CopyOnWriteSet<T> extends Set<T> {
   keys(): IterableIterator<T> { return super.keys.call(R<Set<T>>(this)) }
   values(): IterableIterator<T> { return super.values.call(R<Set<T>>(this)) }
 
-  static seal<T>(owner: any, prop: PropertyKey, set: Set<T>): Binding<Set<T>> {
-    return Binding.seal(owner, prop, set, set.size, CopyOnWriteSet.prototype, CopyOnWriteSet.getSize, CopyOnWriteSet.clone)
+  static seal<T>(owner: any, prop: PropertyKey, set: Set<T>): CopyOnWrite<Set<T>> {
+    return CopyOnWrite.seal(owner, prop, set, set.size, CopyOnWriteSet.prototype, CopyOnWriteSet.getSize, CopyOnWriteSet.clone)
   }
 
   static getSize<T>(set: Set<T>): number {

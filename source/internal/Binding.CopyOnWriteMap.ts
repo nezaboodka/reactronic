@@ -3,8 +3,8 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Binding, R, W } from './Binding'
-export { Binding } from './Binding'
+import { CopyOnWrite, R, W } from './Binding'
+export { CopyOnWrite } from './Binding'
 
 export abstract class CopyOnWriteMap<K, V> extends Map<K, V> {
   clear(): void { super.clear.call(W<Map<K, V>>(this)) }
@@ -18,8 +18,8 @@ export abstract class CopyOnWriteMap<K, V> extends Map<K, V> {
   keys(): IterableIterator<K> { return super.keys.call(R<Map<K, V>>(this)) }
   values(): IterableIterator<V> { return super.values.call(R<Map<K, V>>(this)) }
 
-  static seal<K, V>(owner: any, prop: PropertyKey, map: Map<K, V>): Binding<Map<K, V>> {
-    return Binding.seal(owner, prop, map, map.size, CopyOnWriteMap.prototype, CopyOnWriteMap.getSize, CopyOnWriteMap.clone)
+  static seal<K, V>(owner: any, prop: PropertyKey, map: Map<K, V>): CopyOnWrite<Map<K, V>> {
+    return CopyOnWrite.seal(owner, prop, map, map.size, CopyOnWriteMap.prototype, CopyOnWriteMap.getSize, CopyOnWriteMap.clone)
   }
 
   static getSize<K, V>(set: Map<K, V>): number {

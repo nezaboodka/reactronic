@@ -5,7 +5,7 @@
 
 import { misuse } from './Dbg'
 import { Utils, undef, R_CACHE } from './Utils'
-import { CopyOnWriteArray, Binding } from './Binding.CopyOnWriteArray'
+import { CopyOnWriteArray, CopyOnWrite } from './Binding.CopyOnWriteArray'
 import { CopyOnWriteSet } from './Binding.CopyOnWriteSet'
 import { CopyOnWriteMap } from './Binding.CopyOnWriteMap'
 import { Record, PropKey, PropValue, F, R_UNMOUNT } from './Record'
@@ -337,15 +337,15 @@ function decoratedclass(...args: any[]): never {
   throw misuse("decoratedclass should never be called")
 }
 
-export class CopyOnWrite implements ProxyHandler<Binding<any>> {
-  static readonly global: CopyOnWrite = new CopyOnWrite()
+export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
+  static readonly global: CopyOnWriteProxy = new CopyOnWriteProxy()
 
-  get(binding: Binding<any>, prop: PropKey, receiver: any): any {
+  get(binding: CopyOnWrite<any>, prop: PropKey, receiver: any): any {
     const a: any = binding.readable(receiver)
     return a[prop]
   }
 
-  set(binding: Binding<any>, prop: PropKey, value: any, receiver: any): boolean {
+  set(binding: CopyOnWrite<any>, prop: PropKey, value: any, receiver: any): boolean {
     const a: any = binding.writable(receiver)
     return a[prop] = value
   }
@@ -355,7 +355,7 @@ export class CopyOnWrite implements ProxyHandler<Binding<any>> {
     if (Array.isArray(v)) {
       if (!Object.isFrozen(v)) {
         if (pv.copyOnWriteMode)
-          pv.value = new Proxy(CopyOnWriteArray.seal(proxy, prop, v), CopyOnWrite.global)
+          pv.value = new Proxy(CopyOnWriteArray.seal(proxy, prop, v), CopyOnWriteProxy.global)
         else
           Object.freeze(v) // just freeze without copy-on-write hooks
       }
@@ -363,7 +363,7 @@ export class CopyOnWrite implements ProxyHandler<Binding<any>> {
     else if (v instanceof Set) {
       if (!Object.isFrozen(v)) {
         if (pv.copyOnWriteMode)
-          pv.value = new Proxy(CopyOnWriteSet.seal(proxy, prop, v), CopyOnWrite.global)
+          pv.value = new Proxy(CopyOnWriteSet.seal(proxy, prop, v), CopyOnWriteProxy.global)
         else
           Utils.freezeSet(v) // just freeze without copy-on-write hooks
       }
@@ -371,7 +371,7 @@ export class CopyOnWrite implements ProxyHandler<Binding<any>> {
     else if (v instanceof Map) {
       if (!Object.isFrozen(v)) {
         if (pv.copyOnWriteMode)
-          pv.value = new Proxy(CopyOnWriteMap.seal(proxy, prop, v), CopyOnWrite.global)
+          pv.value = new Proxy(CopyOnWriteMap.seal(proxy, prop, v), CopyOnWriteProxy.global)
         else
           Utils.freezeMap(v) // just freeze without copy-on-write hooks
       }
