@@ -14,7 +14,7 @@ module.exports = {
     "@typescript-eslint/no-use-before-define": "off",
     "@typescript-eslint/no-this-alias": "off",
     "@typescript-eslint/member-delimiter-style": "off",
-    "@typescript-eslint/interface-name-prefix": "off",
+    // "@typescript-eslint/interface-name-prefix": "off",
     "@typescript-eslint/explicit-function-return-type": ["error", { allowExpressions: true }],
   },
   "overrides": [
