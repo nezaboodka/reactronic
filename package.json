@@ -43,6 +43,7 @@
   },
   "scripts": {
     "build": "tsc && eslint **/*.ts **/*.tsx **/*.js",
+    "fix": "eslint --fix **/*.ts **/*.tsx **/*.js",
     "dist": "tsc --sourceMap false",
     "test": "nyc ava",
     "cover": "nyc ava && start build/coverage/index.html"

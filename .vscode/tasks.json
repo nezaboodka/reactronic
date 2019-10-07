@@ -57,6 +57,19 @@
           "focus": true,
           "panel": "shared"
       },
-    }    
+    },
+    {
+      "label": "Fix All  -  eslint",
+      "type": "shell",
+      "command": "npm run fix",
+      "problemMatcher": ["$tsc", "$eslint-stylish"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      }
+    },
   ]
 }
