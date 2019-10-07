@@ -37,7 +37,7 @@ export class CacheImpl extends Cache<any> {
   private initialize(): CacheResult {
     const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.field.toString()}/init` : /* istanbul ignore next */ "Cache.init"
     const sidebyside = this.blank.options.reentrance === Reentrance.RunSideBySide
-    const result = Transaction.runAs(hint, true, sidebyside, this.blank.options.trace, this, (): CacheResult => {
+    const result = Transaction.runEx(hint, true, sidebyside, this.blank.options.trace, this, (): CacheResult => {
       const c = this.write().cache
       c.ret = undefined
       c.value = undefined
@@ -58,7 +58,7 @@ export class CacheImpl extends Cache<any> {
       const sidebyside = cfg.reentrance === Reentrance.RunSideBySide
       const token = cfg.kind === Kind.Cached ? this : undefined
       let call2 = call
-      const ret = Transaction.runAs(hint, spawn, sidebyside, cfg.trace, token, (argsx: any[] | undefined): any => {
+      const ret = Transaction.runEx(hint, spawn, sidebyside, cfg.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.tran.isCanceled()) {
           call2 = this.read(argsx) // re-read on retry
@@ -152,7 +152,7 @@ export class CacheImpl extends Cache<any> {
     const c: CacheResult = call.cache
     const r: Record = call.record
     const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.field.toString()}/setOptions` : /* istanbul ignore next */ "setOptions"
-    return Transaction.runAs(hint, false, false, undefined, undefined, (): Options => {
+    return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
       const c2: CacheResult = call2.cache
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
@@ -195,7 +195,7 @@ export class CacheImpl extends Cache<any> {
   }
 
   static unmount(...objects: any[]): Transaction {
-    return Transaction.runAs("<unmount>", false, false,
+    return Transaction.runEx("<unmount>", false, false,
       undefined, undefined, CacheImpl.unmountFunc, ...objects)
   }
 
@@ -323,7 +323,7 @@ class CacheResult extends FieldValue implements Observer {
   }
 
   private monitorEnter(mon: Monitor): void {
-    CacheImpl.runAs<void>(undefined, Transaction.runAs, "Monitor.enter",
+    CacheImpl.runAs<void>(undefined, Transaction.runEx, "Monitor.enter",
       true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
       Monitor.enter, mon, this)
   }
@@ -331,7 +331,7 @@ class CacheResult extends FieldValue implements Observer {
   private monitorLeave(mon: Monitor): void {
     Transaction.outside<void>(() => {
       const leave = (): void => {
-        CacheImpl.runAs<void>(undefined, Transaction.runAs, "Monitor.leave",
+        CacheImpl.runAs<void>(undefined, Transaction.runEx, "Monitor.leave",
           true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           Monitor.leave, mon, this)
       }

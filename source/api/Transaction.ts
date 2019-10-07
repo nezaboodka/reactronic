@@ -116,10 +116,10 @@ export class Transaction {
   // }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
-    return Transaction.runAs(hint, false, false, undefined, undefined, func, ...args)
+    return Transaction.runEx(hint, false, false, undefined, undefined, func, ...args)
   }
 
-  static runAs<T>(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
+  static runEx<T>(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
     const t: Transaction = Transaction.acquire(hint, spawn, sidebyside, trace, token)
     const root = t !== Transaction._current
     t.guard()
@@ -170,7 +170,7 @@ export class Transaction {
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction T${this.id} (${this.hint}) is waiting for restart`)
         await this.retryAfter.whenFinished(true)
         // if (Dbg.trace.transactions) Dbg.log("", "  ", `transaction T${this.id} (${this.hint}) is ready for restart`)
-        return Transaction.runAs<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
+        return Transaction.runEx<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
       }
       else
         throw error
@@ -220,7 +220,7 @@ export class Transaction {
 
   private runTriggers(): void {
     const hint = Dbg.isOn ? `■-■-■ TRIGGERS(${this.snapshot.triggers.length}) after T${this.id} (${this.snapshot.hint})` : /* istanbul ignore next */ "TRIGGERS"
-    this.reaction.tran = Transaction.runAs(hint, true, false, this.trace, undefined,
+    this.reaction.tran = Transaction.runEx(hint, true, false, this.trace, undefined,
       Transaction.runTriggersFunc, this.snapshot.triggers)
   }
 
