@@ -27,7 +27,7 @@ export class DemoModel extends StatefulDemoModelBase {
   }
 
   @trigger
-  normalizeTitle() {
+  normalizeTitle(): void {
     const stamp = new Date().toUTCString()
     const t = this.title.toLowerCase()
     this.title = `${t} - ${stamp}`
