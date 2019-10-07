@@ -5,10 +5,11 @@
 
 import { Dbg, misuse } from './Dbg'
 import { Utils, undef } from './Utils'
-import { Record, PropKey, ISnapshot, ICacheResult, R_UNMOUNT } from './Record'
+import { Record, PropKey, ISnapshot, ICacheResult } from './Record'
 import { Handle, R_HANDLE } from './Handle'
 import { CopyOnWriteProxy } from './Hooks'
 
+export const R_UNMOUNT: unique symbol = Symbol("R:UNMOUNT")
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 // Snapshot

@@ -5,7 +5,7 @@
 
 import { Utils, undef } from './Utils'
 
-export const R_UNMOUNT: unique symbol = Symbol("R:UNMOUNT")
+export type F<T> = (...args: any[]) => T
 
 // Property
 
@@ -66,8 +66,6 @@ export class Record {
 }
 
 // Dependencies (abstract)
-
-export type F<T> = (...args: any[]) => T
 
 export interface ISnapshot {
   readonly id: number
