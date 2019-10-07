@@ -207,10 +207,8 @@ export class Transaction {
     }
     finally { // it's critical to have no exceptions in this block
       this.workers--
-      if (this.sealed && this.workers === 0) {
-        !this.error ? this.performCommit() : this.performCancel()
-        Object.freeze(this)
-      }
+      if (this.sealed && this.workers === 0)
+        this.finish()
       if (this.snapshot.triggers.length > 0)
         this.runTriggers()
       Transaction._current = outer
@@ -252,21 +250,17 @@ export class Transaction {
     } // ignore conflicts otherwise
   }
 
-  private performCommit(): void {
-    this.snapshot.apply()
-    this.snapshot.archive()
-    if (this.promise)
-      this.resolve()
-  }
-
-  private performCancel(): void {
+  private finish(): void {
+    // No exception are assumed here
     this.snapshot.apply(this.error)
     this.snapshot.archive()
-    if (this.promise)
-      if (!this.retryAfter)
+    if (this.promise) {
+      if (this.error && !this.retryAfter)
         this.reject(this.error)
       else
         this.resolve()
+    }
+    Object.freeze(this)
   }
 
   private acquirePromise(): Promise<void> {
