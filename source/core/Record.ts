@@ -46,15 +46,15 @@ export type FieldHint = {
 // Record
 
 export class Record {
-  readonly prev: { record: Record }
   readonly creator: Context
+  readonly prev: { record: Record }
   readonly data: any
   readonly changes: Set<FieldKey>
   readonly conflicts: Map<FieldKey, Record>
 
-  constructor(prev: Record, creator: Context, data: object) {
-    this.prev = { record: prev }
+  constructor(creator: Context, prev: Record, data: object) {
     this.creator = creator
+    this.prev = { record: prev }
     this.data = data
     this.changes = new Set<FieldKey>()
     this.conflicts = new Map<FieldKey, Record>()

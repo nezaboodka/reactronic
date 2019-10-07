@@ -84,7 +84,7 @@ export class Snapshot implements Context {
     if (r.creator !== this) {
       const data = {...r.data}
       Reflect.set(data, R_HANDLE, h)
-      r = new Record(h.head, this, data)
+      r = new Record(this, h.head, data)
       this.changeset.set(h, r)
       h.changing = r
       h.writers++

@@ -298,7 +298,7 @@ export class Transaction {
     Transaction.init.sealed = true
     Transaction.init.snapshot.apply()
     Transaction._current = Transaction.none
-    const blank = new Record(Record.blank, Transaction.init.snapshot, {})
+    const blank = new Record(Transaction.init.snapshot, Record.blank, {})
     blank.prev.record = blank // loopback
     blank.freeze()
     Record.blank = blank
