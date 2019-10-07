@@ -76,7 +76,7 @@ export class Record {
     return undef() // to be redefined by Cache implementation
   }
 
-  freeze<T, C>(): void {
+  freeze(): void {
     Object.freeze(this.data)
     Utils.freezeSet(this.changes)
     Utils.freezeMap(this.conflicts)
