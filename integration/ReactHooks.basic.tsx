@@ -9,10 +9,10 @@ import { Stateful, stateless, trigger, cached, cacheof, standalone, Transaction,
 type ReactState = { rx: Rx }
 
 export function reactiveRender(render: () => JSX.Element): JSX.Element {
-  return standalone(reactiveRenderFunc, render)
+  return standalone(renderReactively, render)
 }
 
-function reactiveRenderFunc(render: () => JSX.Element): JSX.Element {
+function renderReactively(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
   const rx = state.rx
   rx.refresh = refresh // just in case React will change refresh on each rendering
