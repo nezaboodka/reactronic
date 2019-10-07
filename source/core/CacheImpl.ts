@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, Utils, Record, PropKey, PropValue, PropHint, ICacheResult, F, Handle, Snapshot, Hint, Opts, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
+import { Dbg, misuse, Utils, Record, PropKey, PropValue, PropHint, ICacheResult, F, Handle, Snapshot, Hint, OptionsImpl, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
 import { Cache } from '../api/Cache'
 export { Cache, cacheof, resolved } from '../api/Cache'
 import { Options, Kind, Reentrance, Trace } from '../api/Options'
@@ -17,7 +17,7 @@ export class CacheImpl extends Cache<any> {
   private readonly handle: Handle
   private readonly blank: CacheResult
 
-  setOptions(config: Partial<Options>): Options { return this.reconfigure(config) }
+  setOptions(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().cache.options }
   get args(): ReadonlyArray<any> { return this.weak().cache.args }
   get value(): any { return this.recall(true).cache.value }
@@ -27,10 +27,10 @@ export class CacheImpl extends Cache<any> {
   invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hint.handle(this.handle, this.blank.member)}).invalidate` : "Cache.invalidate", CacheImpl.invalidateFunc, this) }
   call(args?: any[]): any { return this.recall(true, args).cache.value }
 
-  constructor(handle: Handle, member: PropKey, config: Opts) {
+  constructor(handle: Handle, member: PropKey, options: OptionsImpl) {
     super()
     this.handle = handle
-    this.blank = new CacheResult(Record.blank, member, config)
+    this.blank = new CacheResult(Record.blank, member, options)
     CacheResult.freeze(this.blank)
   }
 
@@ -124,7 +124,7 @@ export class CacheImpl extends Cache<any> {
     if (prev && prev !== c)
       switch (c.options.reentrance) {
         case Reentrance.PreventWithError:
-          throw misuse(`${c.hint()} is configured as non-reentrant`)
+          throw misuse(`${c.hint()} is not reentrant`)
         case Reentrance.WaitAndRestart:
           result = new Error(`transaction T${caller.id} (${caller.hint}) will be restarted after T${prev.tran.id} (${prev.tran.hint})`)
           caller.cancel(result, prev.tran)
@@ -147,15 +147,15 @@ export class CacheImpl extends Cache<any> {
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, prop)}`)
   }
 
-  private reconfigure(config: Partial<Options>): Options {
+  private reconfigure(options: Partial<Options>): Options {
     const call = this.read(undefined)
     const c: CacheResult = call.cache
     const r: Record = call.record
-    const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/configure` : /* istanbul ignore next */ "configure"
+    const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.member.toString()}/setOptions` : /* istanbul ignore next */ "setOptions"
     return Transaction.runAs(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
       const c2: CacheResult = call2.cache
-      c2.options = new Opts(c2.options.body, c2.options, config, false)
+      c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
       if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.member.toString()}.options = ...`)
       return c2.options
     })
@@ -179,8 +179,8 @@ export class CacheImpl extends Cache<any> {
     return result
   }
 
-  static createCacheTrap(h: Handle, prop: PropKey, config: Opts): F<any> {
-    const cache = new CacheImpl(h, prop, config)
+  static createCacheTrap(h: Handle, prop: PropKey, options: OptionsImpl): F<any> {
+    const cache = new CacheImpl(h, prop, options)
     const cacheTrap: F<any> = (...args: any[]): any =>
       cache.recall(false, args).cache.ret
     Utils.set(cacheTrap, R_CACHE, cache)
@@ -217,7 +217,7 @@ class CacheResult extends PropValue implements ICacheResult {
   readonly tran: Transaction
   readonly record: Record
   readonly member: PropKey
-  options: Opts
+  options: OptionsImpl
   args: any[]
   ret: any
   error: any
@@ -227,7 +227,7 @@ class CacheResult extends PropValue implements ICacheResult {
   readonly weakObservables: Map<PropValue, PropHint>
   readonly margin: number
 
-  constructor(record: Record, member: PropKey, init: CacheResult | Opts) {
+  constructor(record: Record, member: PropKey, init: CacheResult | OptionsImpl) {
     super(undefined)
     this.tran = Transaction.current
     this.record = record
@@ -237,7 +237,7 @@ class CacheResult extends PropValue implements ICacheResult {
       this.args = init.args
       // this.value = init.value
     }
-    else { // init instanceof Config
+    else { // init instanceof OptionsImpl
       this.options = init
       this.args = []
       // this.value = undefined
@@ -485,8 +485,8 @@ class CacheResult extends PropValue implements ICacheResult {
     if (result && timestamp !== -1)
       result = !(value instanceof CacheResult && timestamp >= value.invalid.since)
     if (result) {
-      if (!value.observers)
-        value.observers = new Set<CacheResult>() // acquire
+      if (!value.observers) // acquire
+        value.observers = new Set<CacheResult>()
       value.observers.add(this) // now subscribed
       if (Dbg.isOn && Dbg.trace.subscriptions) log.push(`${Hint.record(hint.record, hint.prop, true)}${hint.times > 1 ? `*${hint.times}` : ""}`)
       if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("≡", "!", `${this.hint()} uses ${Hint.record(hint.record, hint.prop)} ${hint.times} time(s).`, 0, " *** WARNING ***")
@@ -511,7 +511,7 @@ class CacheResult extends PropValue implements ICacheResult {
       this.invalid.since = since
       const isTrigger = this.options.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined
       if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, " ", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.prop === this.member ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.prop)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
-      this.unsubscribeFromAllObservables() // now unsubscribed
+      this.unsubscribeFromAllObservables()
       if (isTrigger) // stop cascade invalidation on trigger
         triggers.push(this)
       else if (this.observers) // cascade invalidation

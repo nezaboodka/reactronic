@@ -54,13 +54,13 @@ export function trace(trace: Partial<Trace>): F<any> {
   return options({trace})
 }
 
-function options(config: Partial<Options>): F<any> {
+function options(options: Partial<Options>): F<any> {
   return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
     if (prop && pd)
-      return Hooks.decorateMethod(false, config, proto, prop, pd) /* istanbul ignore next */
+      return Hooks.decorateMethod(false, options, proto, prop, pd) /* istanbul ignore next */
     else if (prop) /* istanbul ignore next */
-      return Hooks.decorateField(false, config, proto, prop)
+      return Hooks.decorateField(false, options, proto, prop)
     else /* istanbul ignore next */
-      return Hooks.decorateClass(false, config, proto)
+      return Hooks.decorateClass(false, options, proto)
   }
 }

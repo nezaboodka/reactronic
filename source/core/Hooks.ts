@@ -22,7 +22,7 @@ export class Stateful {
   constructor() {
     const h = Hooks.createHandle(true, this, undefined, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
-      const triggers: Map<PropKey, Opts> | undefined = Hooks.getConfigTable(new.target.prototype)[R_TRIGGERS]
+      const triggers: Map<PropKey, OptionsImpl> | undefined = Hooks.getOptionsTable(new.target.prototype)[R_TRIGGERS]
       if (triggers)
         triggers.forEach((rx, prop) =>
           (h.proxy[prop][R_CACHE] as Cache<any>).invalidate())
@@ -36,7 +36,7 @@ export class Stateful {
   }
 }
 
-// Config
+// Options
 
 const R_TABLE: unique symbol = Symbol("R:TABLE")
 const R_CLASS: unique symbol = Symbol("R:CLASS")
@@ -60,7 +60,7 @@ const DEFAULT_STATEFUL_OPTIONS: Options = Object.freeze({
   trace: undefined,
 })
 
-export class Opts implements Options {
+export class OptionsImpl implements Options {
   readonly body: Function
   readonly kind: Kind
   readonly latency: number
@@ -68,10 +68,10 @@ export class Opts implements Options {
   readonly cachedArgs: boolean
   readonly monitor: Monitor | null
   readonly trace?: Partial<Trace>
-  static readonly STATEFUL = Object.freeze(new Opts(undef, {body: undef, ...DEFAULT_STATEFUL_OPTIONS}, {}, false))
-  static readonly STATELESS = Object.freeze(new Opts(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))
+  static readonly STATEFUL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATEFUL_OPTIONS}, {}, false))
+  static readonly STATELESS = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))
 
-  constructor(body: Function | undefined, existing: Opts, patch: Partial<Opts>, implicit: boolean) {
+  constructor(body: Function | undefined, existing: OptionsImpl, patch: Partial<OptionsImpl>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body
     this.kind = merge(DEFAULT_STATELESS_OPTIONS.kind, existing.kind, patch.kind, implicit)
     this.latency = merge(DEFAULT_STATELESS_OPTIONS.latency, existing.latency, patch.latency, implicit)
@@ -100,7 +100,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   get(h: Handle, prop: PropKey, receiver: any): any {
     let result: any
-    const options: Opts | undefined = Hooks.getConfig(h.stateless, prop)
+    const options: OptionsImpl | undefined = Hooks.getOptions(h.stateless, prop)
     if (!options || (options.body === decoratedfield && options.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.readable().read(h)
       result = r.data[prop]
@@ -124,7 +124,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   set(h: Handle, prop: PropKey, value: any, receiver: any): boolean {
-    const options: Opts | undefined = Hooks.getConfig(h.stateless, prop)
+    const options: OptionsImpl | undefined = Hooks.getOptions(h.stateless, prop)
     if (!options || (options.body === decoratedfield && options.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.writable().write(h, prop, value)
       const curr = r.data[prop] as PropValue
@@ -168,7 +168,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClass(implicit: boolean, options: Partial<Options>, origCtor: any): any {
     let ctor: any = origCtor
     const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-    const triggers: Map<PropKey, Opts> | undefined = Hooks.getConfigTable(ctor.prototype)[R_TRIGGERS]
+    const triggers: Map<PropKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[R_TRIGGERS]
     if (stateful) {
       ctor = class extends origCtor {
         constructor(...args: any[]) {
@@ -191,7 +191,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClassOld(implicit: boolean, options: Partial<Options>, origCtor: any): any {
     let ctor: any = origCtor
     const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-    const triggers: Map<PropKey, Opts> | undefined = Hooks.getConfigTable(ctor.prototype)[R_TRIGGERS]
+    const triggers: Map<PropKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[R_TRIGGERS]
     if (stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args)
@@ -232,41 +232,41 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: PropKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
-    const methodConfig = Hooks.setOptions(proto, method, pd.value, options, implicit)
+    const methodOptions = Hooks.setOptions(proto, method, pd.value, options, implicit)
     const get = function(this: any): any {
       const p = Object.getPrototypeOf(this)
-      const classConfig: Opts = Hooks.getConfig(p, R_CLASS) || (this instanceof Stateful ? Opts.STATEFUL : Opts.STATELESS)
-      const h: Handle = classConfig.kind !== Kind.Stateless ? Utils.get<Handle>(this, R_HANDLE) : Hooks.acquireHandle(this)
-      const value = Hooks.createCacheTrap(h, method, methodConfig)
+      const classOptions: OptionsImpl = Hooks.getOptions(p, R_CLASS) || (this instanceof Stateful ? OptionsImpl.STATEFUL : OptionsImpl.STATELESS)
+      const h: Handle = classOptions.kind !== Kind.Stateless ? Utils.get<Handle>(this, R_HANDLE) : Hooks.acquireHandle(this)
+      const value = Hooks.createCacheTrap(h, method, methodOptions)
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
       return value
     }
     return Object.defineProperty(proto, method, { get, enumerable, configurable })
   }
 
-  private static getConfig(proto: any, prop: PropKey): Opts | undefined {
-    return Hooks.getConfigTable(proto)[prop]
+  private static getOptions(proto: any, prop: PropKey): OptionsImpl | undefined {
+    return Hooks.getOptionsTable(proto)[prop]
   }
 
-  private static setOptions(proto: any, prop: PropKey, body: Function | undefined, options: Partial<Opts>, implicit: boolean): Opts {
-    const configTable: any = Hooks.acquireConfigTable(proto)
-    const existing: Opts = configTable[prop] || Opts.STATELESS
-    const result = configTable[prop] = new Opts(body, existing, options, implicit)
+  private static setOptions(proto: any, prop: PropKey, body: Function | undefined, options: Partial<OptionsImpl>, implicit: boolean): OptionsImpl {
+    const optionsTable: any = Hooks.acquireOptionsTable(proto)
+    const existing: OptionsImpl = optionsTable[prop] || OptionsImpl.STATELESS
+    const result = optionsTable[prop] = new OptionsImpl(body, existing, options, implicit)
     if (result.kind === Kind.Trigger && result.latency > -2) {
-      let triggers: Map<PropKey, Opts> | undefined = configTable[R_TRIGGERS]
+      let triggers: Map<PropKey, OptionsImpl> | undefined = optionsTable[R_TRIGGERS]
       if (!triggers)
-        triggers = configTable[R_TRIGGERS] = new Map<PropKey, Opts>()
+        triggers = optionsTable[R_TRIGGERS] = new Map<PropKey, OptionsImpl>()
       triggers.set(prop, result)
     }
     else if (existing.kind === Kind.Trigger && existing.latency > -2) {
-      const triggers: Map<PropKey, Opts> | undefined = configTable[R_TRIGGERS]
+      const triggers: Map<PropKey, OptionsImpl> | undefined = optionsTable[R_TRIGGERS]
       if (triggers)
         triggers.delete(prop)
     }
     return result
   }
 
-  private static acquireConfigTable(proto: any): any {
+  private static acquireOptionsTable(proto: any): any {
     let rxTable: any = proto[R_TABLE]
     if (!proto.hasOwnProperty(R_TABLE)) {
       rxTable = Object.setPrototypeOf({}, rxTable || {})
@@ -275,7 +275,7 @@ export class Hooks implements ProxyHandler<Handle> {
     return rxTable
   }
 
-  static getConfigTable(proto: any): any {
+  static getOptionsTable(proto: any): any {
     return proto[R_TABLE] || /* istanbul ignore next */ BLANK_TABLE
   }
 
@@ -305,13 +305,13 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static createCacheTrap = function(h: Handle, prop: PropKey, rt: Opts): F<any> {
+  static createCacheTrap = function(h: Handle, prop: PropKey, rt: OptionsImpl): F<any> {
     throw misuse("createCacheTrap should never be called")
   }
 }
 
 function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Record): void {
-  const rxTable = Hooks.getConfigTable(Object.getPrototypeOf(stateless))
+  const rxTable = Hooks.getOptionsTable(Object.getPrototypeOf(stateless))
   const r = Snapshot.writable().write(h, "<RT:HANDLE>", R_HANDLE)
   for (const prop of Object.getOwnPropertyNames(stateless))
     initRecordProp(stateful, rxTable, prop, r, stateless)
