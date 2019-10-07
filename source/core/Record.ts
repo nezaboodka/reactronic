@@ -7,6 +7,24 @@ import { Utils, undef } from './Utils'
 
 export type F<T> = (...args: any[]) => T
 
+// Context
+
+export interface Context {
+  readonly id: number
+  readonly hint: string
+  readonly timestamp: number
+}
+
+// Observer
+
+export interface Observer {
+  hint(notran?: boolean): string
+  bind<T>(func: F<T>): F<T>
+  readonly invalid: { since: number }
+  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: Observer[]): void
+  trig(timestamp: number, now: boolean, nothrow: boolean): void
+}
+
 // Field
 
 export type FieldKey = PropertyKey
@@ -63,20 +81,4 @@ export class Record {
     Utils.freezeSet(this.changes)
     Utils.freezeMap(this.conflicts)
   }
-}
-
-// Dependencies (abstract)
-
-export interface Context {
-  readonly id: number
-  readonly hint: string
-  readonly timestamp: number
-}
-
-export interface Observer {
-  hint(notran?: boolean): string
-  bind<T>(func: F<T>): F<T>
-  readonly invalid: { since: number }
-  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: Observer[]): void
-  trig(timestamp: number, now: boolean, nothrow: boolean): void
 }
