@@ -14,7 +14,7 @@ export function reactiveRender(render: (counter: number) => JSX.Element, trace?:
 
 function renderReactively(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(
-    !trace ? createReactState : (): ReactState => createReactState(trace))
+    !trace ? createReactState : () => createReactState(trace))
   const rx = state.rx
   rx.counter = state.counter
   rx.refresh = refresh // just in case React will change refresh on each rendering
