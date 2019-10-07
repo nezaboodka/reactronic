@@ -196,11 +196,11 @@ export class Snapshot implements Context {
     // to be redefined by Cache implementation
   }
 
-  archive(): void {
-    this.triggerGarbageCollection()
+  collect(): void {
     Utils.freezeMap(this.changeset)
     Object.freeze(this.triggers)
     Object.freeze(this)
+    this.triggerGarbageCollection()
   }
 
   // static undo(s: Snapshot): void {

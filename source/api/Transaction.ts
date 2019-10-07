@@ -253,7 +253,7 @@ export class Transaction {
   private finish(): void {
     // It's critical to have no exceptions in this block
     this.snapshot.apply(this.error)
-    this.snapshot.archive()
+    this.snapshot.collect()
     if (this.promise) {
       if (this.error && !this.retryAfter)
         this.reject(this.error)
