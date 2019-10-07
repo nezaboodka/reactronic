@@ -3,17 +3,17 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Trace } from './Trace';
-export { Trace } from './Trace';
-import { Monitor } from './Monitor';
+import { Trace } from './Trace'
+export { Trace } from './Trace'
+import { Monitor } from './Monitor'
 
 export interface Config {
-  readonly kind: Kind;
-  readonly latency: number; // milliseconds, -1 is immediately, -2 is never
-  readonly reentrance: Reentrance;
-  readonly cachedArgs: boolean;
-  readonly monitor: Monitor | null;
-  readonly trace?: Partial<Trace>;
+  readonly kind: Kind
+  readonly latency: number // milliseconds, -1 is immediately, -2 is never
+  readonly reentrance: Reentrance
+  readonly cachedArgs: boolean
+  readonly monitor: Monitor | null
+  readonly trace?: Partial<Trace>
 }
 
 export enum Kind {

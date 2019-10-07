@@ -29,6 +29,8 @@
     "no-shadowed-variable": false,
     "no-console": false,
     "no-implicit-dependencies": false,
-    "no-bitwise": false
+    "no-bitwise": false,
+    "no-unexpected-multiline": true,
+    "semicolon": false
   }
 }

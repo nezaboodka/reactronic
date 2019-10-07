@@ -3,16 +3,16 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Trace } from '../api/Trace';
+import { Trace } from '../api/Trace'
 
 export function error(message: string): Error {
-  if (Dbg.isOn && Dbg.trace.errors) Dbg.log("≡", "!", message, undefined, " <<< ERROR");
-  return new Error(message);
+  if (Dbg.isOn && Dbg.trace.errors) Dbg.log("≡", "!", message, undefined, " <<< ERROR")
+  return new Error(message)
 }
 
 export function misuse(message: string): Error {
-  Dbg.log("≡", "!", message, undefined, " *** ERROR ***");
-  return new Error(message);
+  Dbg.log("≡", "!", message, undefined, " *** ERROR ***")
+  return new Error(message)
 }
 
 // Dbg
@@ -38,26 +38,26 @@ export class Dbg {
     margin2: 0,
   };
 
-  static isOn: boolean = false;
-  static global: Trace = Dbg.OFF;
-  static get trace(): Trace { return this.getCurrentTrace(undefined); }
-  static getCurrentTrace = (local: Partial<Trace> | undefined): Trace => Dbg.global;
+  static isOn: boolean = false
+  static global: Trace = Dbg.OFF
+  static get trace(): Trace { return this.getCurrentTrace(undefined) }
+  static getCurrentTrace = (local: Partial<Trace> | undefined): Trace => Dbg.global
 
   static log(operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
-    Dbg.logAs(undefined, operation, marker, message, ms, highlight);
+    Dbg.logAs(undefined, operation, marker, message, ms, highlight)
   }
 
   static logAs(trace: Partial<Trace> | undefined, operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
-    const t = Dbg.getCurrentTrace(trace);
-    const margin1: string = "  ".repeat(t.margin1 >= 0 ? t.margin1 : 0);
-    const margin2: string = "  ".repeat(t.margin2);
-    const silent = (trace && trace.silent !== undefined) ? trace.silent : t.silent;
+    const t = Dbg.getCurrentTrace(trace)
+    const margin1: string = "  ".repeat(t.margin1 >= 0 ? t.margin1 : 0)
+    const margin2: string = "  ".repeat(t.margin2)
+    const silent = (trace && trace.silent !== undefined) ? trace.silent : t.silent
     if (!silent) /* istanbul ignore next */
       console.log("\x1b[37m%s\x1b[0m \x1b[" + t.color +
         "m%s %s%s\x1b[0m \x1b[" + t.color + "m%s%s\x1b[0m \x1b[" + t.color + "m%s\x1b[0m%s",
         "#rt", t.prefix, margin1, operation, margin2, marker, message,
         (highlight !== undefined ? `${highlight}` : ``) +
-        (ms > 2 ? `    [ ${ms}ms ]` : ``));
+        (ms > 2 ? `    [ ${ms}ms ]` : ``))
   }
 
   static merge(t: Partial<Trace> | undefined, color: number | undefined, prefix: string | undefined, existing: Trace): Trace {
@@ -79,11 +79,11 @@ export class Dbg {
       prefix: t.prefix !== undefined ? t.prefix : existing.prefix,
       margin1: t.margin1 !== undefined ? t.margin1 : existing.margin1,
       margin2: t.margin2 !== undefined ? t.margin2 : existing.margin2,
-    };
+    }
     if (color !== undefined)
-      result.color = color;
+      result.color = color
     if (prefix !== undefined)
-      result.prefix = prefix;
-    return result;
+      result.prefix = prefix
+    return result
   }
 }

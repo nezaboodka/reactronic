@@ -3,9 +3,9 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse } from './Dbg';
+import { Dbg, misuse } from './Dbg'
 
-export const R_COPY_ON_WRITE: unique symbol = Symbol("R:COPY-ON-WRITE");
+export const R_COPY_ON_WRITE: unique symbol = Symbol("R:COPY-ON-WRITE")
 
 export class Binding<T> {
   constructor(
@@ -18,50 +18,50 @@ export class Binding<T> {
   }
 
   sizing(receiver: any): number {
-    const v: T = this.owner[this.prop];
-    return v === receiver ? this.size : this.getSize(v);
+    const v: T = this.owner[this.prop]
+    return v === receiver ? this.size : this.getSize(v)
   }
 
   readable(receiver: any): T {
-    let v: T = this.owner[this.prop];
+    let v: T = this.owner[this.prop]
     if (v === receiver) // check if array is not yet cloned
-      v = this.value;
-    return v;
+      v = this.value
+    return v
   }
 
   writable(receiver: any): T {
-    let v: T = this.owner[this.prop];
+    let v: T = this.owner[this.prop]
     if (v === receiver) { // check if it's first write and clone then
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "     ·", `${this.owner.constructor.name}.${this.prop.toString()} - copy-on-write - cloned`);
-      v = this.owner[this.prop] = this.clone(this.value);
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "     ·", `${this.owner.constructor.name}.${this.prop.toString()} - copy-on-write - cloned`)
+      v = this.owner[this.prop] = this.clone(this.value)
     }
-    return v;
+    return v
   }
 
   static seal<T>(owner: any, prop: PropertyKey, value: T, size: number, proto: object, getSize: (v: T) => number, clone: (v: T) => T): Binding<T> {
     if (Object.isFrozen(value)) /* istanbul ignore next */
-      throw misuse("copy-on-write collection cannot be referenced from multiple objects");
-    const self: any = value;
-    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "     ·", `${owner.constructor.name}.${prop.toString()} - copy-on-write - sealed ${size} item(s)`);
-    const binding = new Binding<T>(owner, prop, value, size, getSize, clone);
-    self[R_COPY_ON_WRITE] = binding;
-    Object.setPrototypeOf(value, proto);
-    Object.freeze(value);
-    return binding;
+      throw misuse("copy-on-write collection cannot be referenced from multiple objects")
+    const self: any = value
+    if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "     ·", `${owner.constructor.name}.${prop.toString()} - copy-on-write - sealed ${size} item(s)`)
+    const binding = new Binding<T>(owner, prop, value, size, getSize, clone)
+    self[R_COPY_ON_WRITE] = binding
+    Object.setPrototypeOf(value, proto)
+    Object.freeze(value)
+    return binding
   }
 }
 
 export function R<T>(self: any): T {
-  const binding: Binding<T> = self[R_COPY_ON_WRITE];
-  return binding !== undefined ? binding.readable(self) : self;
+  const binding: Binding<T> = self[R_COPY_ON_WRITE]
+  return binding !== undefined ? binding.readable(self) : self
 }
 
 export function W<T>(self: any): T {
-  const binding: Binding<T> = self[R_COPY_ON_WRITE];
-  return binding !== undefined ? binding.writable(self) : self;
+  const binding: Binding<T> = self[R_COPY_ON_WRITE]
+  return binding !== undefined ? binding.writable(self) : self
 }
 
 export function S<T>(self: any): number {
-  const binding: Binding<T> = self[R_COPY_ON_WRITE];
-  return binding !== undefined ? binding.sizing(self) : -1;
+  const binding: Binding<T> = self[R_COPY_ON_WRITE]
+  return binding !== undefined ? binding.sizing(self) : -1
 }

@@ -3,11 +3,11 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-export { all, sleep } from './internal/all';
-export { Config, Kind, Reentrance, Trace } from './api/Config';
-export { Reactronic } from './api/Reactronic';
-export { Stateful } from './internal/Hooks';
-export { stateless, stateful, transaction, trigger, cached, latency, reentrance, cachedArgs, monitor, trace } from './api/Config.decorators';
-export { Transaction } from './api/Transaction';
-export { Cache, cacheof, resolved, nonreactive, standalone } from './api/Cache';
-export { Monitor, Task } from './api/Monitor';
+export { all, sleep } from './internal/all'
+export { Config, Kind, Reentrance, Trace } from './api/Config'
+export { Reactronic } from './api/Reactronic'
+export { Stateful } from './internal/Hooks'
+export { stateless, stateful, transaction, trigger, cached, latency, reentrance, cachedArgs, monitor, trace } from './api/Config.decorators'
+export { Transaction } from './api/Transaction'
+export { Cache, cacheof, resolved, nonreactive, standalone } from './api/Cache'
+export { Monitor, Task } from './api/Monitor'

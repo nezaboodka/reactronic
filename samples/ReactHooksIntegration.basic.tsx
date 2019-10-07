@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import * as React from 'react';
+import * as React from 'react'
 import { Stateful, stateless, trigger, cached, cacheof, standalone, Transaction, Cache } from 'reactronic';
 
 type ReactState = { rx: Rx; };

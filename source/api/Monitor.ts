@@ -3,40 +3,40 @@
 // Copyright (C) 2017-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Handle, Stateful } from '../internal/all';
-import { Transaction } from './Transaction';
+import { Handle, Stateful } from '../internal/all'
+import { Transaction } from './Transaction'
 
 export class Monitor extends Stateful {
-  private toggle: boolean = false;
-  private counter: number = 0;
-  private workers = new Set<Task>();
-  get busy(): boolean { return this.toggle; }
-  get count(): number { return this.counter; }
-  get tasks(): ReadonlySet<Task> { return this.workers; }
+  private toggle: boolean = false
+  private counter: number = 0
+  private workers = new Set<Task>()
+  get busy(): boolean { return this.toggle }
+  get count(): number { return this.counter }
+  get tasks(): ReadonlySet<Task> { return this.workers }
 
   static create(hint?: string): Monitor {
-    return Transaction.run("Monitor.create", Monitor.createFunc, hint);
+    return Transaction.run("Monitor.create", Monitor.createFunc, hint)
   }
 
   static enter(m: Monitor, worker: Task): void {
     if (m.counter === 0)
-      m.toggle = true;
-    m.counter++;
-    m.workers.add(worker);
+      m.toggle = true
+    m.counter++
+    m.workers.add(worker)
   }
 
   static leave(m: Monitor, worker: Task): void {
-    m.workers.delete(worker);
-    m.counter--;
+    m.workers.delete(worker)
+    m.counter--
     if (m.counter === 0)
-      m.toggle = false;
+      m.toggle = false
   }
 
   private static createFunc(hint: string | undefined): Monitor {
-    return Handle.setHint(new Monitor(), hint);
+    return Handle.setHint(new Monitor(), hint)
   }
 }
 
 export interface Task {
-  readonly tran: Transaction;
+  readonly tran: Transaction
 }
