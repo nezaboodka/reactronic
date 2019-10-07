@@ -183,7 +183,7 @@ export class Hooks implements ProxyHandler<Handle> {
           return h.proxy
         }
       }
-      Hooks.setOptions(ctor.prototype, R_CLASS, decoratedclass, options, implicit)
+      Hooks.setup(ctor.prototype, R_CLASS, decoratedclass, options, implicit)
     }
     return ctor
   }
@@ -208,12 +208,12 @@ export class Hooks implements ProxyHandler<Handle> {
       Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)) // preserve prototype
       Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)) // preserve static definitions
     }
-    Hooks.setOptions(ctor.prototype, R_CLASS, decoratedclass, options, implicit)
+    Hooks.setup(ctor.prototype, R_CLASS, decoratedclass, options, implicit)
     return ctor
   }
 
   static decorateField(implicit: boolean, options: Partial<Options>, proto: any, field: FieldKey): any {
-    options = Hooks.setOptions(proto, field, decoratedfield, options, implicit)
+    options = Hooks.setup(proto, field, decoratedfield, options, implicit)
     if (options.kind !== Kind.Stateless) {
       const get = function(this: any): any {
         const h: Handle = Hooks.acquireHandle(this)
@@ -232,7 +232,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: FieldKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
-    const methodOptions = Hooks.setOptions(proto, method, pd.value, options, implicit)
+    const methodOptions = Hooks.setup(proto, method, pd.value, options, implicit)
     const get = function(this: any): any {
       const p = Object.getPrototypeOf(this)
       const classOptions: OptionsImpl = Hooks.getOptions(p, R_CLASS) || (this instanceof Stateful ? OptionsImpl.STATEFUL : OptionsImpl.STATELESS)
@@ -248,7 +248,7 @@ export class Hooks implements ProxyHandler<Handle> {
     return Hooks.getOptionsTable(proto)[field]
   }
 
-  private static setOptions(proto: any, field: FieldKey, body: Function | undefined, options: Partial<OptionsImpl>, implicit: boolean): OptionsImpl {
+  private static setup(proto: any, field: FieldKey, body: Function | undefined, options: Partial<OptionsImpl>, implicit: boolean): OptionsImpl {
     const optionsTable: any = Hooks.acquireOptionsTable(proto)
     const existing: OptionsImpl = optionsTable[field] || OptionsImpl.STATELESS
     const result = optionsTable[field] = new OptionsImpl(body, existing, options, implicit)

@@ -24,7 +24,7 @@ export function standalone<T>(func: F<T>, ...args: any[]): T {
 }
 
 export abstract class Cache<T> {
-  abstract setOptions(options: Partial<Options>): Options
+  abstract setup(options: Partial<Options>): Options
   abstract readonly options: Options
   abstract readonly args: ReadonlyArray<any>
   abstract readonly value: T

@@ -299,7 +299,7 @@ function nonreactive<T>(func: F<T>, ...args: any[]): T;
 function standalone<T>(func: F<T>, ...args: any[]): T;
 
 abstract class Cache<T> {
-  setOptions(options: Partial<Options>): Options;
+  setup(options: Partial<Options>): Options;
   readonly options: Options;
   readonly args: ReadonlyArray<any>;
   readonly value: T;

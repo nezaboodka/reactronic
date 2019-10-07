@@ -27,7 +27,7 @@ const expected: string[] = [
 test("async", async t => {
   R.setTrace(tracing.noisy)
   const app = Transaction.run("app", () => new DemoView(new DemoModel()))
-  cacheof(app.model.load).setOptions({reentrance: Reentrance.PreventWithError})
+  cacheof(app.model.load).setup({reentrance: Reentrance.PreventWithError})
   try {
     t.throws(() => { app.test = "testing @stateful for fields" },
       "stateful property #23 DemoView.test can only be modified inside transaction")

@@ -52,8 +52,8 @@ function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
   if (hint)
     Reactronic.setTraceHint(rx, hint)
   if (trace) {
-    cacheof(rx.jsx).setOptions({trace})
-    cacheof(rx.keepFresh).setOptions({trace})
+    cacheof(rx.jsx).setup({trace})
+    cacheof(rx.keepFresh).setup({trace})
   }
   return rx
 }

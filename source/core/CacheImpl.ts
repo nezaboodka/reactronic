@@ -17,7 +17,7 @@ export class CacheImpl extends Cache<any> {
   private readonly handle: Handle
   private readonly blank: CacheResult
 
-  setOptions(options: Partial<Options>): Options { return this.reconfigure(options) }
+  setup(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().cache.options }
   get args(): ReadonlyArray<any> { return this.weak().cache.args }
   get value(): any { return this.tryToCall(true).cache.value }
@@ -151,7 +151,7 @@ export class CacheImpl extends Cache<any> {
     const call = this.read(undefined)
     const c: CacheResult = call.cache
     const r: Record = call.record
-    const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.field.toString()}/setOptions` : /* istanbul ignore next */ "setOptions"
+    const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.field.toString()}/setup` : /* istanbul ignore next */ "Cache/setup"
     return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
       const c2: CacheResult = call2.cache
