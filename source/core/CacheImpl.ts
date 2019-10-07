@@ -20,12 +20,12 @@ export class CacheImpl extends Cache<any> {
   setOptions(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().cache.options }
   get args(): ReadonlyArray<any> { return this.weak().cache.args }
-  get value(): any { return this.recall(true).cache.value }
+  get value(): any { return this.tryToCall(true).cache.value }
   get error(): boolean { return this.weak().cache.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get isInvalid(): boolean { return !this.weak().valid }
   invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hint.handle(this.handle, this.blank.member)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
-  call(args?: any[]): any { return this.recall(true, args).cache.value }
+  call(args?: any[]): any { return this.tryToCall(true, args).cache.value }
 
   constructor(handle: Handle, member: PropKey, options: OptionsImpl) {
     super()
@@ -48,7 +48,7 @@ export class CacheImpl extends Cache<any> {
     return result
   }
 
-  recall(weak: boolean, args?: any[]): CacheCall {
+  tryToCall(weak: boolean, args?: any[]): CacheCall {
     let call: CacheCall = this.read(args)
     const c: CacheResult = call.cache
     if (!call.valid && (!weak || !c.invalid.renewing)) {
@@ -182,7 +182,7 @@ export class CacheImpl extends Cache<any> {
   static createCacheTrap(h: Handle, prop: PropKey, options: OptionsImpl): F<any> {
     const cache = new CacheImpl(h, prop, options)
     const cacheTrap: F<any> = (...args: any[]): any =>
-      cache.recall(false, args).cache.ret
+      cache.tryToCall(false, args).cache.ret
     Utils.set(cacheTrap, R_CACHE, cache)
     return cacheTrap
   }
@@ -354,7 +354,7 @@ class CacheResult extends PropValue implements ICacheResult {
           const proxy: any = Utils.get<Handle>(this.record.data, R_HANDLE).proxy
           const trap: Function = Reflect.get(proxy, this.member, proxy)
           const cache = Utils.get<CacheImpl>(trap, R_CACHE)
-          const call: CacheCall = cache.recall(false)
+          const call: CacheCall = cache.tryToCall(false)
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }) // bad idea to hide an error
         }
