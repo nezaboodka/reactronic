@@ -17,7 +17,7 @@
       }
     },
     {
-      "label": "Test All  -  eslint & nyc & ava",
+      "label": "Test All  -  ava",
       "type": "shell",
       "command": "npm run test",
       "isBackground": true,
