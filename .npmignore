@@ -6,10 +6,10 @@ etc
 src
 source
 samples
-tests
+test
 build/dist/etc
 build/dist/samples
-build/dist/tests
+build/dist/test
 build/dist/types
 node_modules
 .nycrc

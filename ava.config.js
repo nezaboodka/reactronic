@@ -3,6 +3,6 @@ export default {
   extensions: ["ts"],
   babel: false,
   verbose: true,
-  files: ["tests/**/*.test.ts"],
+  files: ["test/**/*.test.ts"],
   require: ["ts-node/register"],
 }
