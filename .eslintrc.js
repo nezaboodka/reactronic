@@ -3,7 +3,7 @@ module.exports = {
   plugins: ["@typescript-eslint"],
   extends: ['plugin:@typescript-eslint/recommended'],
   "rules": {
-    "indent": ["error", 2],
+    "indent": ["error", 2, { "SwitchCase": 1 }],
     "semi": ["error", "never"],
     "prefer-const": "error",
     "comma-dangle": ["error", "always-multiline"],

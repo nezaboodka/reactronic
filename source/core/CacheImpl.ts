@@ -123,19 +123,19 @@ export class CacheImpl extends Cache<any> {
     const caller = Transaction.current
     if (prev && prev !== c)
       switch (c.options.reentrance) {
-      case Reentrance.PreventWithError:
-        throw misuse(`${c.hint()} is configured as non-reentrant`)
-      case Reentrance.WaitAndRestart:
-        result = new Error(`transaction T${caller.id} (${caller.hint}) will be restarted after T${prev.tran.id} (${prev.tran.hint})`)
-        caller.cancel(result, prev.tran)
-        // TODO: "c.invalid.renewing = caller" in order serialize all the transactions
-        break
-      case Reentrance.CancelPrevious:
-        prev.tran.cancel(new Error(`transaction T${prev.tran.id} (${prev.tran.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
-        c.invalid.renewing = undefined // allow
-        break
-      case Reentrance.RunSideBySide:
-        break // do nothing
+        case Reentrance.PreventWithError:
+          throw misuse(`${c.hint()} is configured as non-reentrant`)
+        case Reentrance.WaitAndRestart:
+          result = new Error(`transaction T${caller.id} (${caller.hint}) will be restarted after T${prev.tran.id} (${prev.tran.hint})`)
+          caller.cancel(result, prev.tran)
+          // TODO: "c.invalid.renewing = caller" in order serialize all the transactions
+          break
+        case Reentrance.CancelPrevious:
+          prev.tran.cancel(new Error(`transaction T${prev.tran.id} (${prev.tran.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
+          c.invalid.renewing = undefined // allow
+          break
+        case Reentrance.RunSideBySide:
+          break // do nothing
       }
     return result
   }
