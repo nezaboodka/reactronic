@@ -16,11 +16,11 @@ export function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined 
 }
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return CacheImpl.run<T>(undefined, func, ...args)
+  return CacheImpl.runAs<T>(undefined, func, ...args)
 }
 
 export function standalone<T>(func: F<T>, ...args: any[]): T {
-  return CacheImpl.run<T>(undefined, Transaction.outside, func, ...args)
+  return CacheImpl.runAs<T>(undefined, Transaction.outside, func, ...args)
 }
 
 export abstract class Cache<T> {

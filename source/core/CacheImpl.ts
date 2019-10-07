@@ -161,7 +161,7 @@ export class CacheImpl extends Cache<any> {
     })
   }
 
-  static run<T>(c: CacheResult | undefined, func: F<T>, ...args: any[]): T {
+  static runAs<T>(c: CacheResult | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined
     const outer = CacheResult.active
     try {
@@ -258,7 +258,7 @@ class CacheResult extends PropValue implements ICacheResult {
   bind<T>(func: F<T>): F<T> {
     const fCacheRun: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hint.record(this.record)}.${this.member.toString()} - step in  `, 0, "        │")
-      const result = CacheImpl.run<T>(this, func, ...args)
+      const result = CacheImpl.runAs<T>(this, func, ...args)
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "_/", `${Hint.record(this.record)}.${this.member.toString()} - step out `, 0, this.started > 0 ? "        │" : "")
       return result
     }
@@ -269,7 +269,7 @@ class CacheResult extends PropValue implements ICacheResult {
     if (args)
       this.args = args
     if (!this.error)
-      CacheImpl.run(this, CacheResult.computeFunc, proxy, this)
+      CacheImpl.runAs<void>(this, CacheResult.computeFunc, proxy, this)
     else
       this.ret = Promise.reject(this.error)
     this.invalid.since = TOP_TIMESTAMP
@@ -323,15 +323,15 @@ class CacheResult extends PropValue implements ICacheResult {
   }
 
   private monitorEnter(mon: Monitor): void {
-    CacheImpl.run(undefined, Transaction.runAs, "Monitor.enter",
+    CacheImpl.runAs<void>(undefined, Transaction.runAs, "Monitor.enter",
       true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
       Monitor.enter, mon, this)
   }
 
   private monitorLeave(mon: Monitor): void {
-    Transaction.outside(() => {
+    Transaction.outside<void>(() => {
       const leave = (): void => {
-        CacheImpl.run(undefined, Transaction.runAs, "Monitor.leave",
+        CacheImpl.runAs<void>(undefined, Transaction.runAs, "Monitor.leave",
           true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           Monitor.leave, mon, this)
       }
