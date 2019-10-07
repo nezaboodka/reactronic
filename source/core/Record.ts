@@ -52,9 +52,9 @@ export class Record {
   readonly changes: Set<FieldKey>
   readonly conflicts: Map<FieldKey, Record>
 
-  constructor(prev: Record, context: Context, data: object) {
+  constructor(prev: Record, creator: Context, data: object) {
     this.prev = { record: prev }
-    this.creator = context
+    this.creator = creator
     this.data = data
     this.changes = new Set<FieldKey>()
     this.conflicts = new Map<FieldKey, Record>()
