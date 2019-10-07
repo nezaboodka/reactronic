@@ -42,7 +42,7 @@ export class DemoModel extends StatefulDemoModelBase {
         new Person({ name: "Barry" }), // Barry
         new Person({ name: "Steve" }), // Steven
       ],
-    }));
+    }))
     this.users.push(new Person({
       name: "Kevin", age: 27,
       emails: ["kevin@mail.com"],

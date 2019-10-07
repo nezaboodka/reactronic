@@ -335,7 +335,7 @@ class CacheResult extends PropValue implements ICacheResult {
         CacheImpl.run(undefined, Transaction.runAs, "Monitor.leave",
           true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           Monitor.leave, mon, this)
-      };
+      }
       this.tran.whenFinished(false).then(leave, leave)
     })
   }
@@ -575,7 +575,7 @@ function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
   return res
 }
 
-const original_promise_then = Promise.prototype.then;
+const original_promise_then = Promise.prototype.then
 
 function reactronic_then(this: any,
   resolve?: ((value: any) => any | PromiseLike<any>) | undefined | null,

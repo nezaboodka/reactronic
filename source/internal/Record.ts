@@ -50,12 +50,12 @@ export class Record {
   /* istanbul ignore next */
   static markChanged = function(r: Record, prop: PropKey, changed: boolean, value: any): void {
      return undef() // to be redefined by Cache implementation
-  };
+  }
 
   /* istanbul ignore next */
   static markViewed = function(r: Record, prop: PropKey, value: PropValue, weak: boolean): void {
     return undef() // to be redefined by Cache implementation
-  };
+  }
 
   freeze<T, C>(): void {
     Object.freeze(this.data)

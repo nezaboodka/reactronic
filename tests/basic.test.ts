@@ -17,7 +17,7 @@ const expected: string[] = [
   "Kevin's children: Britney",
   // "Filter: Jo",
   // "John's children: Billy, Barry, Steve",
-];
+]
 
 test("basic", t => {
   R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled
@@ -64,7 +64,7 @@ test("basic", t => {
     t.is(app.model.shared, tran1.hint)
     t.is(daddy.name, "John")
     t.is(tran1.inspect(() => daddy.name), "John Smith")
-    t.throws(() => tran1.inspect(() => { daddy.name = "Forbidden"; }), "cannot make changes during transaction inspection")
+    t.throws(() => tran1.inspect(() => { daddy.name = "Forbidden" }), "cannot make changes during transaction inspection")
     t.is(daddy.age, 38)
     t.is(daddy.children.length, 3)
     t.is(rendering.isInvalid, false)
@@ -99,19 +99,19 @@ test("basic", t => {
     t.throws(() => {
       if (daddy.emails)
         daddy.emails.push("dad@mail.com")
-    }, "stateful property #26 Person.emails can only be modified inside transaction");
+    }, "stateful property #26 Person.emails can only be modified inside transaction")
     t.throws(() => tran1.run(/* istanbul ignore next */ () => { /* nope */ }), "cannot run transaction that is already sealed")
     // // Undo transaction
     // tran1.undo()
     // t.is(daddy.name, "John")
     // t.is(daddy.age, 38)
     // Check protection and error handling
-    t.throws(() => { cacheof(daddy.setParent).configure({latency: 0}); },
+    t.throws(() => { cacheof(daddy.setParent).configure({latency: 0}) },
       "given method is not a reactronic cache")
-    t.throws(() => { console.log(cacheof(daddy.setParent).config.monitor); },
+    t.throws(() => { console.log(cacheof(daddy.setParent).config.monitor) },
       "given method is not a reactronic cache")
     const tran2 = new Transaction("tran2")
-    t.throws(() => tran2.run(() => { throw new Error("test"); }), "test")
+    t.throws(() => tran2.run(() => { throw new Error("test") }), "test")
     t.throws(() => tran2.commit(),
       "cannot commit transaction that is already canceled: Error: test")
     const tran3 = new Transaction("tran3")

@@ -43,17 +43,17 @@ export class Snapshot implements ISnapshot {
   /* istanbul ignore next */
   static readable = function(): Snapshot {
     return undef() // to be redefined by Transaction implementation
-  };
+  }
 
   /* istanbul ignore next */
   static writable = function(): Snapshot {
     return undef() // to be redefined by Transaction implementation
-  };
+  }
 
   /* istanbul ignore next */
   static isConflicting = function(oldValue: any, newValue: any): boolean {
     return oldValue !== newValue // to be redefined by Cache implementation
-  };
+  }
 
   read(h: Handle): Record {
     const r = this.tryRead(h)

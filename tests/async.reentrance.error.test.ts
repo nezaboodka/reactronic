@@ -11,7 +11,7 @@ const requests: Array<{ url: string, delay: number }> = [
   { url: "nezaboodka.com", delay: 500 },
   { url: "google.com", delay: 300 },
   { url: "microsoft.com", delay: 200 },
-];
+]
 
 const expected: string[] = [
   "Url: reactronic",
@@ -22,14 +22,14 @@ const expected: string[] = [
   "[...] Log: RTA, nezaboodka.com/500",
   "Url: nezaboodka.com",
   "Log: RTA, nezaboodka.com/500",
-];
+]
 
 test("async", async t => {
   R.setTrace(tracing.noisy)
   const app = Transaction.run("app", () => new DemoView(new DemoModel()))
   cacheof(app.model.load).configure({reentrance: Reentrance.PreventWithError})
   try {
-    t.throws(() => { app.test = "testing @stateful for fields"; },
+    t.throws(() => { app.test = "testing @stateful for fields" },
       "stateful property #23 DemoView.test can only be modified inside transaction")
     await app.print() // trigger first run
     const first = app.model.load(requests[0].url, requests[0].delay)

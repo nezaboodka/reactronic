@@ -84,7 +84,7 @@ export class Transaction {
     !inspect ? self.do(undefined, enter) : self.inspect(enter)
     const Transaction_do: F<T> = (...args: any[]): T => {
       return !inspect ? self.do<T>(undefined, leave, ...args) : self.inspect<T>(leave, ...args)
-    };
+    }
     return Transaction_do
   }
 
@@ -128,7 +128,7 @@ export class Transaction {
       if (result instanceof Promise)
         result = Transaction.outside(() => {
           return t.wrapToRetry(t.postponed(result), func, ...args)
-        });
+        })
       t.seal()
     }
     return result

@@ -51,7 +51,7 @@ export function undef(...args: any[]): never {
 
 export async function all(promises: Array<Promise<any>>): Promise<any[]> {
   let error: any
-  const result = await Promise.all(promises.map(x => x.catch(e => { error = error || e; return e; })))
+  const result = await Promise.all(promises.map(x => x.catch(e => { error = error || e; return e })))
   if (error)
     throw error
   return result

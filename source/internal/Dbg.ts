@@ -36,7 +36,7 @@ export class Dbg {
     prefix: "",
     margin1: 0,
     margin2: 0,
-  };
+  }
 
   static isOn: boolean = false
   static global: Trace = Dbg.OFF

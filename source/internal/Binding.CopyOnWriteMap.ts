@@ -13,7 +13,7 @@ export abstract class CopyOnWriteMap<K, V> extends Map<K, V> {
   get(key: K): V | undefined { return super.get.call(R<Map<K, V>>(this), key) }
   has(key: K): boolean { return super.has.call(R<Map<K, V>>(this), key) }
   set(key: K, value: V): this { super.set.call(W<Map<K, V>>(this), key, value); return this }
-  get size(): number { return super.size; /* S<Map<K, V>>(this);*/ }
+  get size(): number { return super.size /* S<Map<K, V>>(this)*/ }
   entries(): IterableIterator<[K, V]> { return super.entries.call(R<Map<K, V>>(this)) }
   keys(): IterableIterator<K> { return super.keys.call(R<Map<K, V>>(this)) }
   values(): IterableIterator<V> { return super.values.call(R<Map<K, V>>(this)) }

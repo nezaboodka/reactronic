@@ -218,11 +218,11 @@ export class Hooks implements ProxyHandler<Handle> {
       const get = function(this: any): any {
         const h: Handle = Hooks.acquireHandle(this)
         return Hooks.proxy.get(h, prop, this)
-      };
+      }
       const set = function(this: any, value: any): boolean {
         const h: Handle = Hooks.acquireHandle(this)
         return Hooks.proxy.set(h, prop, value, this)
-      };
+      }
       const enumerable = true
       const configurable = false
       return Object.defineProperty(proto, prop, { get, set, enumerable, configurable })

@@ -7,7 +7,7 @@ import { Binding, R, W } from './Binding'
 export { Binding } from './Binding'
 
 export abstract class CopyOnWriteArray<T> extends Array<T> {
-  get length(): number { return super.length /* S<T[]>(this);*/ }
+  get length(): number { return super.length /* S<T[]>(this)*/ }
   toString(): string { return super.toString.call(R<T[]>(this)) }
   toLocaleString(): string { return super.toLocaleString.call(R<T[]>(this)) }
   pop(): T | undefined { return super.pop.call(W<T[]>(this)) }
