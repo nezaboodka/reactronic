@@ -43,6 +43,7 @@ export class Record {
     this.data = data
     this.changes = new Set<FieldKey>()
     this.conflicts = new Map<FieldKey, Record>()
+    Object.freeze(this)
   }
 
   static blank: Record
@@ -61,7 +62,6 @@ export class Record {
     Object.freeze(this.data)
     Utils.freezeSet(this.changes)
     Utils.freezeMap(this.conflicts)
-    Object.freeze(this)
   }
 }
 
