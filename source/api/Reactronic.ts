@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Hooks, Handle, Dbg } from '../core/all'
-import { Trace } from './Config'
+import { Trace } from './Options'
 
 export class Reactronic {
   // Options

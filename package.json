@@ -42,9 +42,9 @@
     "nyc": "14.1.1"
   },
   "scripts": {
-    "build": "tsc && eslint **/*.ts **/*.tsx **/*.js",
+    "build": "eslint **/*.ts **/*.tsx **/*.js && tsc",
     "fix": "eslint --fix **/*.ts **/*.tsx **/*.js",
-    "dist": "tsc --sourceMap false",
+    "dist": "eslint **/*.ts **/*.tsx **/*.js && tsc --sourceMap false",
     "test": "nyc ava",
     "cover": "nyc ava && start build/coverage/index.html"
   }

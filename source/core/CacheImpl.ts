@@ -6,7 +6,7 @@
 import { Dbg, misuse, Utils, Record, PropKey, PropValue, PropHint, ICacheResult, F, Handle, Snapshot, Hint, Opts, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
 import { Cache } from '../api/Cache'
 export { Cache, cacheof, resolved } from '../api/Cache'
-import { Options, Kind, Reentrance, Trace } from '../api/Config'
+import { Options, Kind, Reentrance, Trace } from '../api/Options'
 import { Transaction } from '../api/Transaction'
 import { Monitor } from '../api/Monitor'
 

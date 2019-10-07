@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Transaction } from './Transaction'
-import { Options } from './Config'
+import { Options } from './Options'
 import { CacheImpl, F } from '../core/all'
 
 export function cacheof<T>(method: F<T>): Cache<T> {

@@ -6,7 +6,7 @@
 import { Trace } from './Trace'
 import { F } from '../core/Record'
 import { Hooks } from '../core/Hooks'
-import { Options, Reentrance, Kind } from './Config'
+import { Options, Reentrance, Kind } from './Options'
 import { Monitor } from './Monitor'
 
 export function stateful(proto: object, prop?: PropertyKey): any {
