@@ -19,14 +19,14 @@ export interface Options {
 export enum Kind {
   Stateless = 0,
   Stateful = 1,
-  Transaction = 2,
+  Action = 2,
   Trigger = 3,
   Cached = 4,
 }
 
 export enum Reentrance {
-  PreventWithError = 1, // fail with error if there is an existing transaction in progress (default)
-  WaitAndRestart = 0, // wait for existing transaction to finish and then restart reentrant one
-  CancelPrevious = -1, // cancel previous transaction in favor of recent one
-  RunSideBySide = -2, // multiple simultaneous transactions are allowed
+  PreventWithError = 1, // fail with error if there is an existing action in progress (default)
+  WaitAndRestart = 0, // wait for existing action to finish and then restart reentrant one
+  CancelPrevious = -1, // cancel previous action in favor of recent one
+  RunSideBySide = -2, // multiple simultaneous actions are allowed
 }

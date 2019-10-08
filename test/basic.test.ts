@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction, Cache, Tools as RT, Kind, cacheof, nonreactive, standalone } from '../source/core/all.api'
+import { Action, Cache, Tools as RT, Kind, cacheof, nonreactive, standalone } from '../source/core/all.api'
 import { Person, tracing, nop } from './common'
 import { DemoModel, DemoView, output } from './basic'
 
@@ -28,8 +28,8 @@ test("basic", t => {
   RT.performanceWarningThreshold = 3
   RT.setTrace(tracing.off)
   RT.setTrace(tracing.noisy)
-  // Simple transactions
-  const app = Transaction.run("app", () => new DemoView(new DemoModel()))
+  // Simple actions
+  const app = Action.run("app", () => new DemoView(new DemoModel()))
   try {
     t.is(app.model.methodOfStatefulBase(), "methodOfStatefulBase")
     t.throws(() => console.log(app.model.unassigned), "unassigned properties are not supported: v103t112#21 DemoModel.unassigned")
@@ -50,32 +50,32 @@ test("basic", t => {
     t.is(rendering.stamp, stamp)
     rendering.invalidate()
     t.not(rendering.stamp, stamp)
-    // Multi-part transaction
-    const tran1 = new Transaction("tran1")
-    tran1.run(() => {
-      t.throws(() => tran1.commit(), "cannot commit transaction having active workers")
-      app.model.shared = app.shared = tran1.hint
+    // Multi-part actions
+    const action1 = new Action("action1")
+    action1.run(() => {
+      t.throws(() => action1.apply(), "cannot apply action having active workers")
+      app.model.shared = app.shared = action1.hint
       daddy.age += 2 // causes no execution of DemoApp.render
-      daddy.name = "John Smith" // causes execution of DemoApp.render upon commit
+      daddy.name = "John Smith" // causes execution of DemoApp.render upon apply
       daddy.children[0].name = "Barry" // Barry
       daddy.children[1].name = "William Smith" // Billy
       daddy.children[2].name = "Steven Smith" // Steve
       t.is(daddy.name, "John Smith")
       t.is(daddy.age, 40)
-      t.is(Transaction.outside(() => daddy.age), 38)
+      t.is(Action.outside(() => daddy.age), 38)
       t.is(standalone(() => daddy.age), 38)
       t.is(nonreactive(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = "Jo" // set to the same value
     })
-    t.is(app.model.shared, tran1.hint)
+    t.is(app.model.shared, action1.hint)
     t.is(daddy.name, "John")
-    t.is(tran1.inspect(() => daddy.name), "John Smith")
-    t.throws(() => tran1.inspect(() => { daddy.name = "Forbidden" }), "cannot make changes during transaction inspection")
+    t.is(action1.inspect(() => daddy.name), "John Smith")
+    t.throws(() => action1.inspect(() => { daddy.name = "Forbidden" }), "cannot make changes during action inspection")
     t.is(daddy.age, 38)
     t.is(daddy.children.length, 3)
     t.is(rendering.invalid, false)
-    tran1.run(() => {
+    action1.run(() => {
       t.is(daddy.age, 40)
       daddy.age += 5
       app.userFilter = ""
@@ -96,19 +96,19 @@ test("basic", t => {
     t.is(daddy.name, "John")
     t.is(daddy.age, 38)
     t.is(daddy.attributes.size, 0)
-    tran1.commit() // changes are applied, reactions are executed
+    action1.apply() // changes are applied, reactions are executed
     t.is(rendering.invalid, false)
     t.not(rendering.stamp, stamp)
     t.is(daddy.name, "John Smith")
     t.is(daddy.age, 45)
     t.is(daddy.attributes.size, 2)
-    // Protection from modification outside of transaction
+    // Protection from modification outside of actions
     t.throws(() => {
       if (daddy.emails)
         daddy.emails.push("dad@mail.com")
-    }, "stateful property #26 Person.emails can only be modified inside transaction")
-    t.throws(() => tran1.run(/* istanbul ignore next */ () => { /* nope */ }), "cannot run transaction that is already sealed")
-    // // Undo transaction
+    }, "stateful property #26 Person.emails can only be modified inside actions")
+    t.throws(() => action1.run(/* istanbul ignore next */ () => { /* nope */ }), "cannot run action that is already sealed")
+    // // Undo action
     // tran1.undo()
     // t.is(daddy.name, "John")
     // t.is(daddy.age, 38)
@@ -117,17 +117,17 @@ test("basic", t => {
       "given method is not a reactronic cache")
     t.throws(() => { console.log(cacheof(daddy.setParent).options.monitor) },
       "given method is not a reactronic cache")
-    const tran2 = new Transaction("tran2")
-    t.throws(() => tran2.run(() => { throw new Error("test") }), "test")
-    t.throws(() => tran2.commit(),
-      "cannot commit transaction that is already canceled: Error: test")
-    const tran3 = new Transaction("tran3")
-    t.throws(() => tran3.run(() => {
-      tran3.cancel(new Error("test"))
-      tran3.run(nop)
+    const action2 = new Action("action2")
+    t.throws(() => action2.run(() => { throw new Error("test") }), "test")
+    t.throws(() => action2.apply(),
+      "cannot apply action that is already canceled: Error: test")
+    const action3 = new Action("action3")
+    t.throws(() => action3.run(() => {
+      action3.cancel(new Error("test"))
+      action3.run(nop)
     }), "test")
-    t.throws(() => tran3.commit(),
-      "cannot commit transaction that is already canceled: Error: test")
+    t.throws(() => action3.apply(),
+      "cannot apply action that is already canceled: Error: test")
     // Other
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)

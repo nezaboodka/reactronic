@@ -40,7 +40,7 @@ export class Snapshot implements Context {
     this.applied = false
   }
 
-  // To be redefined by Transaction and Cache implementations
+  // To be redefined by Action and Cache implementations
   static readable: () => Snapshot = undef
   static writable: () => Snapshot = undef
   static markChanged: (record: Record, field: FieldKey, value: any, changed: boolean) => void = undef
@@ -86,7 +86,7 @@ export class Snapshot implements Context {
 
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.applied)
-      throw misuse(`stateful property ${Hint.handle(h, field)} can only be modified inside transaction`)
+      throw misuse(`stateful property ${Hint.handle(h, field)} can only be modified inside actions`)
     if (r.creator !== this && value !== R_HANDLE && this.caching !== undefined && token !== this.caching)
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hint.record(r, field)}`)
     if (r === BLANK && value !== R_HANDLE) /* istanbul ignore next */
@@ -100,7 +100,7 @@ export class Snapshot implements Context {
       Snapshot.pending.push(this)
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this
-      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("╔══", `v${this.stamp}`, `${this.hint}`)
+      if (Dbg.isOn && Dbg.trace.actions) Dbg.log("╔══", `v${this.stamp}`, `${this.hint}`)
     }
   }
 
@@ -179,8 +179,8 @@ export class Snapshot implements Context {
         }
       }
     })
-    if (Dbg.isOn && Dbg.trace.transactions)
-      Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.stamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`)
+    if (Dbg.isOn && Dbg.trace.actions)
+      Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.stamp}`, `${this.hint} - ${error ? "CANCEL" : "APPLY"}(${this.changeset.size})${error ? ` - ${error}` : ``}`)
     Snapshot.applyAllDependencies(this, error)
   }
 

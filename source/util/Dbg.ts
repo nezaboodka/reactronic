@@ -22,7 +22,7 @@ export class Dbg {
     silent: false,
     errors: false,
     warnings: false,
-    transactions: false,
+    actions: false,
     methods: false,
     steps: false,
     monitors: false,
@@ -61,7 +61,7 @@ export class Dbg {
   static merge(t: Partial<Trace> | undefined, color: number | undefined, prefix: string | undefined, existing: Trace): Trace {
     const result = !t ? { ...existing } : {
       silent: t.silent !== undefined ? t.silent : existing.silent,
-      transactions: t.transactions !== undefined ? t.transactions : existing.transactions,
+      actions: t.actions !== undefined ? t.actions : existing.actions,
       methods: t.methods !== undefined ? t.methods : existing.methods,
       steps: t.steps !== undefined ? t.steps : existing.steps,
       monitors: t.monitors !== undefined ? t.monitors : existing.monitors,

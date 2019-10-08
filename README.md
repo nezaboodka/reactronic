@@ -17,7 +17,7 @@ Reactronic is a JavaScript library that provides
 state management in a Web application.
 
 Transactional reactivity means that state changes are being made in an
-isolated data snapshot and then, once atomically committed, are
+isolated data snapshot and then, once atomically applied, are
 **consistently propagated** to corresponding visual components for
 (re)rendering. All that is done in automatic, seamless, and fine-grained
 way, because reactronic **takes full care of tracking dependencies**
@@ -28,8 +28,8 @@ between visual components (observers) and state objects (observables).
 Transactional reactivity is based on four fundamental concepts:
 
   - **State** - a set of objects that store data of an application;
-  - **Transaction** - a function that changes state objects in an atomic way;
-  - **Trigger** - a function that is called automatically in response to state changes made by a transaction;
+  - **Action** - a function that changes state objects in an atomic (transactional) way;
+  - **Trigger** - a function that is called automatically in response to state changes made by an action;
   - **Cache** - a computed value having associated function that is called on-demand to renew the value if it was invalidated.
 
 The following picture illustrates relationships between the concepts
@@ -57,16 +57,17 @@ In the example above, the class `MyModel` is based on Reactronic's
 `Stateful` class and all its properties `url`, `content`, and `timestamp`
 are hooked.
 
-### Transaction
+### Action
 
-Transaction is a function that changes state objects in an atomic way.
-Every transaction function is instrumented with hooks to provide
-transparent atomicity (by implicit context switching and isolation).
+Action is a function that changes state objects in an atomic
+(transactional) way. Such a function is instrumented with hooks
+to provide transparent atomicity (by implicit context switching
+and isolation).
 
 ``` typescript
 class MyModel extends Stateful {
   // ...
-  @transaction
+  @action
   async load(url: string): Promise<void> {
     this.url = url;
     this.content = await fetch(url);
@@ -75,33 +76,33 @@ class MyModel extends Stateful {
 }
 ```
 
-In the example above, the function `load` is a transaction
-that makes changes to `url`, `content` and `timestamp` properties.
-While the transaction is running, the changes are visible only inside
-the transaction itself. The new values become atomically visible
-outside of the transaction only upon its completion.
+In the example above, the function `load` is an action that makes
+changes to `url`, `content` and `timestamp` properties. While the
+action is running, the changes are visible only inside the action
+itself. The new values become atomically visible outside of the
+action only upon its completion.
 
 Atomicity is achieved by making changes in an isolated data
-snapshot that is visible outside of the transaction (e.g.
-displayed on user screen) only when it is finished. Multiple
+snapshot that is visible outside of the action (e.g. displayed
+on user screen) only when it is finished. Multiple
 objects and their properties can be changed with full respect
 to the all-or-nothing principle. To do so, separate data
-snapshot is automatically maintained for each transaction.
+snapshot is automatically maintained for each action.
 That is a logical snapshot that does not create a full copy
 of all the data.
 
-Compensating actions are not needed in case of the transaction
-failure, because all the changes made by the transaction in its
-logical snapshot are simply discarded. In case the transaction
-is successfully committed, affected caches are invalidated
+Compensating actions are not needed in case of the action
+failure, because all the changes made by the action in its
+logical snapshot are simply discarded. In case the action
+is successfully applied, affected caches are invalidated
 and corresponding caching functions are re-executed in a proper
 order (but only when all the data changes are fully applied).
 
 Asynchronous operations (promises) are supported out of the box
-during transaction execution. The transaction may consist
-of a set of asynchronous calls prolonging transaction until
-completion of all of them. An asynchronous call may spawn other
-asynchronous calls, which prolong transaction execution until
+during action execution. The action may consist of a set of
+asynchronous calls prolonging the action until completion of
+all of them. An asynchronous call may spawn other
+asynchronous calls, which prolong action execution until
 the whole chain of asynchronous operations is fully completed.
 
 ### Trigger & Cache
@@ -165,19 +166,19 @@ There are multiple options to configure behavior of transactional reactivity.
 invocation of the corresponding function:
 
   - `(ms)` - delay in milliseconds;
-  - `-1` - rerun immediately (right after commit of a transaction);
+  - `-1` - rerun immediately (right after an action is applied);
   - `-2` - never rerun (disabled trigger).
 
-**Reentrance** option defines how to handle reentrant calls of transactions and triggers:
+**Reentrance** option defines how to handle reentrant calls of actions and triggers:
 
-  - `Reentrance.PreventWithError` - fail with error if there is an existing transaction in progress;
-  - `Reentrance.WaitAndRestart` - wait for previous transaction to finish and then restart current one;
-  - `Reentrance.CancelPrevious` - cancel previous transaction in favor of current one;
-  - `Reentrance.RunSideBySide` - multiple simultaneous transactions are allowed.
+  - `Reentrance.PreventWithError` - fail with error if there is an existing action in progress;
+  - `Reentrance.WaitAndRestart` - wait for previous action to finish and then restart current one;
+  - `Reentrance.CancelPrevious` - cancel previous action in favor of current one;
+  - `Reentrance.RunSideBySide` - multiple simultaneous actions are allowed.
 
 **Monitor** option is an object that holds the status of running
 functions, which it is attached to. A single monitor object can be
-shared between multiple transaction and cache functions, thus
+shared between multiple actions, triggers, and cache functions, thus
 maintaining consolidated busy/idle status for all of them.
 
 ## Notes
@@ -209,12 +210,12 @@ NPM: `npm install reactronic`
 
 function stateful(proto, prop?); // field or class
 function stateless(proto, prop); // field only
-function transaction(proto, prop, pd); // method only
+function action(proto, prop, pd); // method only
 function trigger(proto, prop, pd); // method only
 function cached(proto, prop, pd); // method only
 
 function latency(latency: number); // triggers only
-function reentrance(reentrance: Reentrance); // transactions & triggers
+function reentrance(reentrance: Reentrance); // actions & triggers
 function cachedArgs(cachedArgs: boolean); // cached & triggers
 function monitor(monitor: Monitor | null);
 function trace(trace: Partial<Trace>);
@@ -233,16 +234,16 @@ interface Options {
 enum Kind {
   Stateless = 0,
   Stateful = 1,
-  Transaction = 2,
+  Action = 2,
   Trigger = 3,
   Cached = 4,
 }
 
 enum Reentrance {
-  PreventWithError = 1, // fail with error if there is an existing transaction in progress (default)
-  WaitAndRestart = 0, // wait for existing transaction to finish and then restart reentrant one
-  CancelPrevious = -1, // cancel previous transaction in favor of recent one
-  RunSideBySide = -2, // multiple simultaneous transactions are allowed
+  PreventWithError = 1, // fail with error if there is an existing action in progress (default)
+  WaitAndRestart = 0, // wait for existing action to finish and then restart reentrant one
+  CancelPrevious = -1, // cancel previous action in favor of recent one
+  RunSideBySide = -2, // multiple simultaneous actions are allowed
 }
 
 class Monitor {
@@ -253,7 +254,7 @@ class Monitor {
 
 interface Trace {
   readonly silent: boolean;
-  readonly transactions: boolean;
+  readonly actions: boolean;
   readonly methods: boolean;
   readonly steps: boolean;
   readonly monitors: boolean;
@@ -265,25 +266,25 @@ interface Trace {
   readonly gc: boolean;
 }
 
-// Transaction
+// Action
 
 type F<T> = (...args: any[]) => T;
 
-class Transaction {
+class Action {
   constructor(hint: string);
   readonly id: number;
   readonly hint: string;
   run<T>(func: F<T>, ...args: any[]): T;
   wrap<T>(func: F<T>): F<T>;
-  commit(): void;
-  seal(): Transaction; // t1.seal().whenFinished().then(fulfill, reject)
-  cancel(error?: Error, retryAfter?: Transaction);
+  apply(): void;
+  seal(): Action; // a1.seal().whenFinished().then(fulfill, reject)
+  cancel(error?: Error, retryAfter?: Action);
   isCanceled(): boolean;
   isFinished(): boolean;
   whenFinished(): Promise<void>;
   join<T>(p: Promise<T>): Promise<T>;
 
-  static readonly current: Transaction;
+  static readonly current: Action;
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T;
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
@@ -310,7 +311,7 @@ abstract class Cache<T> {
   call(args?: any[]): T | undefined;
 
   static of<T>(method: F<T>): Cache<T>;
-  static unmount(...objects: any[]): Transaction;
+  static unmount(...objects: any[]): Action;
 }
 
 // Tools

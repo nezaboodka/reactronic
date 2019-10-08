@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { Stateful, stateless, trigger, cached, cacheof, standalone, Transaction, Cache } from 'core/all.api'
+import { Stateful, stateless, trigger, cached, cacheof, standalone, Action, Cache } from 'core/all.api'
 
 type ReactState = { rx: Rx }
 
@@ -39,7 +39,7 @@ class Rx extends Stateful {
 }
 
 function createReactState(): ReactState {
-  return {rx: Transaction.run<Rx>("<rx>", createRx)}
+  return {rx: Action.run<Rx>("<rx>", createRx)}
 }
 
 function createRx(): Rx {

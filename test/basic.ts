@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, transaction, trigger, cached, cachedArgs, Tools as RT, trace } from '../source/core/all.api'
+import { Stateful, stateless, action, trigger, cached, cachedArgs, Tools as RT, trace } from '../source/core/all.api'
 import { Person } from './common'
 
 export const output: string[] = []
@@ -21,7 +21,7 @@ export class DemoModel extends StatefulDemoModelBase {
   users: Person[] = []
   unassigned?: any // for testing purposes
 
-  @transaction
+  @action
   loadUsers(): void {
     this._loadUsers()
   }
@@ -72,7 +72,7 @@ export class DemoView extends Stateful {
     })
   }
 
-  // @transaction @trace(tracing.noisy)
+  // @action @trace(tracing.noisy)
   // subPrint(): void {
   //   this.render().forEach(x => output.push(x));
   // }

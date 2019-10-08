@@ -56,7 +56,7 @@ export class Person extends Stateful {
 export const tracing: { friendly: Trace, noisy: Trace, off: undefined } = {
   friendly: {
     silent: process.env.AVA_DEBUG === undefined,
-    transactions: true,
+    actions: true,
     methods: true,
     steps: false,
     monitors: true,
@@ -75,7 +75,7 @@ export const tracing: { friendly: Trace, noisy: Trace, off: undefined } = {
   },
   noisy: {
     silent: process.env.AVA_DEBUG === undefined,
-    transactions: true,
+    actions: true,
     methods: true,
     steps: true,
     monitors: true,

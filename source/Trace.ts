@@ -5,7 +5,7 @@
 
 export interface Trace {
   readonly silent: boolean
-  readonly transactions: boolean
+  readonly actions: boolean
   readonly methods: boolean
   readonly steps: boolean
   readonly monitors: boolean

@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction, Cache, Tools as RT, Reentrance, cacheof, all, sleep } from '../source/core/all.api'
+import { Action, Cache, Tools as RT, Reentrance, cacheof, all, sleep } from '../source/core/all.api'
 import { DemoModel, DemoView, mon, output, tracing } from './async'
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -30,11 +30,11 @@ const expected: string[] = [
 
 test("async", async t => {
   RT.setTrace(tracing.noisy)
-  const app = Transaction.run("app", () => new DemoView(new DemoModel()))
+  const app = Action.run("app", () => new DemoView(new DemoModel()))
   cacheof(app.model.load).setup({reentrance: Reentrance.RunSideBySide})
   try {
     t.throws(() => { app.test = "testing @stateful for fields" },
-      "stateful property #23 DemoView.test can only be modified inside transaction")
+      "stateful property #23 DemoView.test can only be modified inside actions")
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
     t.is(mon.count, 3)

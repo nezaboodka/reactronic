@@ -8,7 +8,7 @@ import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, Snapshot, BL
 import { Cache } from '../Cache'
 export { Cache, cacheof, resolved } from '../Cache'
 import { Options, Kind, Reentrance, Trace } from '../Options'
-import { Transaction } from '../Action'
+import { Action } from '../Action'
 import { Monitor } from '../Monitor'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
@@ -25,7 +25,7 @@ export class CacheImpl extends Cache<any> {
   get error(): boolean { return this.weak().cache.error }
   get stamp(): number { return this.weak().record.creator.timestamp }
   get invalid(): boolean { return !this.weak().valid }
-  invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hint.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
+  invalidate(): void { Action.run(Dbg.isOn ? `cacheof(${Hint.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
   call(args?: any[]): any { return this.tryCall(true, args).cache.value }
 
   constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
@@ -38,7 +38,7 @@ export class CacheImpl extends Cache<any> {
   private initialize(): CacheResult {
     const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.field.toString()}/init` : /* istanbul ignore next */ "Cache.init"
     const sidebyside = this.blank.options.reentrance === Reentrance.RunSideBySide
-    const result = Transaction.runEx<CacheResult>(hint, true, sidebyside, this.blank.options.trace, this, (): CacheResult => {
+    const result = Action.runEx<CacheResult>(hint, true, sidebyside, this.blank.options.trace, this, (): CacheResult => {
       const c = this.write().cache
       c.ret = undefined
       c.value = undefined
@@ -55,13 +55,13 @@ export class CacheImpl extends Cache<any> {
     if (!call.valid && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"
       const cfg = c.options
-      const spawn = weak || cfg.kind !== Kind.Transaction
+      const spawn = weak || cfg.kind !== Kind.Action
       const sidebyside = cfg.reentrance === Reentrance.RunSideBySide
       const token = cfg.kind === Kind.Cached ? this : undefined
       let call2 = call
-      const ret = Transaction.runEx(hint, spawn, sidebyside, cfg.trace, token, (argsx: any[] | undefined): any => {
+      const ret = Action.runEx(hint, spawn, sidebyside, cfg.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
-        if (call2.cache.tran.isCanceled()) {
+        if (call2.cache.action.isCanceled()) {
           call2 = this.read(argsx) // re-read on retry
           if (!call2.valid) {
             call2 = this.write()
@@ -78,7 +78,7 @@ export class CacheImpl extends Cache<any> {
       if (!weak && Snapshot.readable().timestamp >= call2.cache.record.creator.timestamp)
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", "  =", `${Hint.record(call.record)}.${call.cache.field.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Action.current.isFinished() ? "" : "║", "  =", `${Hint.record(call.record)}.${call.cache.field.toString()} is reused (cached by T${call.cache.action.id} ${call.cache.action.hint})`)
     Snapshot.markViewed(call.record, call.cache.field, call.cache, weak)
     return call
   }
@@ -93,7 +93,7 @@ export class CacheImpl extends Cache<any> {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
     const c: CacheResult = r.data[this.blank.field] || this.initialize()
-    const valid = c.options.kind !== Kind.Transaction &&
+    const valid = c.options.kind !== Kind.Action &&
       (ctx === c.record.creator || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[R_UNMOUNT] !== undefined
@@ -121,18 +121,18 @@ export class CacheImpl extends Cache<any> {
   private static checkForReentrance(c: CacheResult): Error | undefined {
     let result: Error | undefined = undefined
     const prev = c.invalid.renewing
-    const caller = Transaction.current
-    if (prev && prev !== c && !prev.tran.isCanceled())
+    const caller = Action.current
+    if (prev && prev !== c && !prev.action.isCanceled())
       switch (c.options.reentrance) {
         case Reentrance.PreventWithError:
           throw misuse(`${c.hint()} is not reentrant`)
         case Reentrance.WaitAndRestart:
-          result = new Error(`transaction T${caller.id} (${caller.hint}) will be restarted after T${prev.tran.id} (${prev.tran.hint})`)
-          caller.cancel(result, prev.tran)
-          // TODO: "c.invalid.renewing = caller" in order serialize all the transactions
+          result = new Error(`action T${caller.id} (${caller.hint}) will be restarted after T${prev.action.id} (${prev.action.hint})`)
+          caller.cancel(result, prev.action)
+          // TODO: "c.invalid.renewing = caller" in order serialize all the actions
           break
         case Reentrance.CancelPrevious:
-          prev.tran.cancel(new Error(`transaction T${prev.tran.id} (${prev.tran.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
+          prev.action.cancel(new Error(`action T${prev.action.id} (${prev.action.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
           c.invalid.renewing = undefined // allow
           break
         case Reentrance.RunSideBySide:
@@ -153,7 +153,7 @@ export class CacheImpl extends Cache<any> {
     const c: CacheResult = call.cache
     const r: Record = call.record
     const hint: string = Dbg.isOn ? `cacheof(${Hint.handle(this.handle)}.${this.blank.field.toString()}).setup()` : /* istanbul ignore next */ "Cache.setup()"
-    return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
+    return Action.runEx(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
       const c2: CacheResult = call2.cache
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
@@ -195,17 +195,17 @@ export class CacheImpl extends Cache<any> {
     return impl
   }
 
-  static unmount(...objects: any[]): Transaction {
-    return Transaction.runEx("<unmount>", false, false,
+  static unmount(...objects: any[]): Action {
+    return Action.runEx("<unmount>", false, false,
       undefined, undefined, CacheImpl.unmountFunc, ...objects)
   }
 
-  private static unmountFunc(...objects: any[]): Transaction {
+  private static unmountFunc(...objects: any[]): Action {
     for (const x of objects) {
       if (Utils.get<Handle>(x, R_HANDLE))
         x[R_UNMOUNT] = R_UNMOUNT
     }
-    return Transaction.current
+    return Action.current
   }
 }
 
@@ -215,7 +215,7 @@ class CacheResult extends FieldValue implements Observer {
   static asyncTriggerBatch: CacheResult[] = []
   static active?: CacheResult = undefined
 
-  readonly tran: Transaction
+  readonly action: Action
   readonly record: Record
   readonly field: FieldKey
   options: OptionsImpl
@@ -230,7 +230,7 @@ class CacheResult extends FieldValue implements Observer {
 
   constructor(record: Record, field: FieldKey, init: CacheResult | OptionsImpl) {
     super(undefined)
-    this.tran = Transaction.current
+    this.action = Action.current
     this.record = record
     this.field = field
     if (init instanceof CacheResult) {
@@ -324,19 +324,19 @@ class CacheResult extends FieldValue implements Observer {
   }
 
   private monitorEnter(mon: Monitor): void {
-    CacheImpl.runAs<void>(undefined, Transaction.runEx, "Monitor.enter",
+    CacheImpl.runAs<void>(undefined, Action.runEx, "Monitor.enter",
       true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
       Monitor.enter, mon, this)
   }
 
   private monitorLeave(mon: Monitor): void {
-    Transaction.outside<void>(() => {
+    Action.outside<void>(() => {
       const leave = (): void => {
-        CacheImpl.runAs<void>(undefined, Transaction.runEx, "Monitor.leave",
+        CacheImpl.runAs<void>(undefined, Action.runEx, "Monitor.leave",
           true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           Monitor.leave, mon, this)
       }
-      this.tran.whenFinished(false).then(leave, leave)
+      this.action.whenFinished(false).then(leave, leave)
     })
   }
 
@@ -349,7 +349,7 @@ class CacheResult extends FieldValue implements Observer {
   trig(timestamp: number, now: boolean, nothrow: boolean): void {
     const latency = this.options.latency
     if (now || latency === -1) {
-      if (!this.error && (this.options.kind === Kind.Transaction ||
+      if (!this.error && (this.options.kind === Kind.Action ||
           (timestamp >= this.invalid.since && !this.invalid.renewing))) {
         try {
           const proxy: any = Utils.get<Handle>(this.record.data, R_HANDLE).proxy
@@ -386,7 +386,7 @@ class CacheResult extends FieldValue implements Observer {
 
   private static markViewed(record: Record, field: FieldKey, value: FieldValue, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active // alias
-    if (c && c.options.kind !== Kind.Transaction && field !== R_HANDLE) {
+    if (c && c.options.kind !== Kind.Action && field !== R_HANDLE) {
       const ctx = Snapshot.readable()
       ctx.bump(record.creator.timestamp)
       const t = weak ? -1 : ctx.timestamp
@@ -504,8 +504,8 @@ class CacheResult extends FieldValue implements Observer {
       const isTrigger = this.options.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined
       if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
       this.unsubscribeFromAllObservables()
-      if (!this.tran.isFinished())
-        this.tran.cancel(new Error(`transaction T${this.tran.id} (${this.tran.hint}) is canceled due to invalidation by ${Hint.record(hint.record, hint.field)} and will be silently ignored`), null)
+      if (!this.action.isFinished())
+        this.action.cancel(new Error(`action T${this.action.id} (${this.action.hint}) is canceled due to invalidation by ${Hint.record(hint.record, hint.field)} and will be silently ignored`), null)
       if (isTrigger) // stop cascade invalidation on trigger
         triggers.push(this)
       else if (this.observers) // cascade invalidation
@@ -558,9 +558,9 @@ function valueHint(value: any): string {
 }
 
 function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
-  const t = Transaction.current
-  let res = Dbg.merge(t.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : "", Dbg.global)
-  res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
+  const a = Action.current
+  let res = Dbg.merge(a.trace, a.id > 1 ? 31 + a.id % 6 : 37, a.id > 1 ? `T${a.id}` : "", Dbg.global)
+  res = Dbg.merge({margin1: a.margin}, undefined, undefined, res)
   if (CacheResult.active)
     res = Dbg.merge({margin2: CacheResult.active.margin}, undefined, undefined, res)
   if (local)
@@ -574,8 +574,8 @@ function fReactronicThen(this: any,
   resolve?: ((value: any) => any | PromiseLike<any>) | undefined | null,
   reject?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
-  const tran = Transaction.current
-  if (!tran.isFinished()) {
+  const action = Action.current
+  if (!action.isFinished()) {
     if (!resolve)
       resolve = resolveReturn
     if (!reject)
@@ -585,8 +585,8 @@ function fReactronicThen(this: any,
       resolve = cache.bind(resolve)
       reject = cache.bind(reject)
     }
-    resolve = tran.bind(resolve, false)
-    reject = tran.bind(reject, true)
+    resolve = action.bind(resolve, false)
+    reject = action.bind(reject, true)
   }
   return fOriginalPromiseThen.call(this, resolve, reject)
 }

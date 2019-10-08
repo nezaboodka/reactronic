@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Hint, Stateful } from './core/all.internal'
-import { Transaction } from './Action'
+import { Action } from './Action'
 
 export class Monitor extends Stateful {
   private toggle: boolean = false
@@ -15,7 +15,7 @@ export class Monitor extends Stateful {
   get tasks(): ReadonlySet<Task> { return this.workers }
 
   static create(hint?: string): Monitor {
-    return Transaction.run("Monitor.create", Monitor.createFunc, hint)
+    return Action.run("Monitor.create", Monitor.createFunc, hint)
   }
 
   static enter(m: Monitor, worker: Task): void {
@@ -38,5 +38,5 @@ export class Monitor extends Stateful {
 }
 
 export interface Task {
-  readonly tran: Transaction
+  readonly action: Action
 }
