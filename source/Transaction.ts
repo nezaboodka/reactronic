@@ -290,6 +290,7 @@ export class Transaction {
     Transaction.none.snapshot.apply()
     Snapshot.init.acquire(Snapshot.init)
     Snapshot.init.apply()
+    Snapshot.init.collect()
     Transaction._current = Transaction.none
     const blank = new Record(Snapshot.init, Record.blank, {})
     blank.prev.record = blank // loopback

@@ -566,7 +566,7 @@ function valueHint(value: any): string {
 
 function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
   const t = Transaction.current
-  let res = Dbg.merge(t.trace, t.id > 0 ? 31 + t.id % 6 : 37, t.id > 0 ? `T${t.id}` : "", Dbg.global)
+  let res = Dbg.merge(t.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : "", Dbg.global)
   res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
   if (CacheResult.active)
     res = Dbg.merge({margin2: CacheResult.active.margin}, undefined, undefined, res)
