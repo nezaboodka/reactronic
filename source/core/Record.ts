@@ -15,19 +15,15 @@ export interface Context {
   readonly timestamp: number
 }
 
-// Observer
-
-export interface Observer {
-  hint(notran?: boolean): string
-  bind<T>(func: F<T>): F<T>
-  readonly invalid: { since: number }
-  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: Observer[]): void
-  trig(timestamp: number, now: boolean, nothrow: boolean): void
-}
-
 // Field
 
 export type FieldKey = PropertyKey
+
+export type FieldHint = {
+  readonly times: number
+  readonly record: Record
+  readonly field: FieldKey
+}
 
 export class FieldValue {
   value: any
@@ -35,12 +31,6 @@ export class FieldValue {
   observers?: Set<Observer>
   get copyOnWriteMode(): boolean { return true }
   constructor(value: any) { this.value = value }
-}
-
-export type FieldHint = {
-  readonly times: number
-  readonly record: Record
-  readonly field: FieldKey
 }
 
 // Record
@@ -78,4 +68,14 @@ export class Record {
     Utils.freezeSet(this.changes)
     Utils.freezeMap(this.conflicts)
   }
+}
+
+// Observer
+
+export interface Observer {
+  hint(notran?: boolean): string
+  bind<T>(func: F<T>): F<T>
+  readonly invalid: { since: number }
+  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: Observer[]): void
+  trig(timestamp: number, now: boolean, nothrow: boolean): void
 }
