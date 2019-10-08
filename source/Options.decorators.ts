@@ -5,8 +5,8 @@
 
 import { F } from './util/all'
 import { Trace } from './Trace'
-import { Hooks } from './core/Hooks'
-import { Options, Reentrance, Kind } from './Options'
+import { Hooks, options } from './core/Hooks'
+import { Reentrance, Kind } from './Options'
 import { Monitor } from './Monitor'
 
 export function stateful(proto: object, prop?: PropertyKey): any {
@@ -52,15 +52,4 @@ export function monitor(monitor: Monitor | null): F<any> {
 
 export function trace(trace: Partial<Trace>): F<any> {
   return options({trace})
-}
-
-function options(options: Partial<Options>): F<any> {
-  return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
-    if (prop && pd)
-      return Hooks.decorateMethod(false, options, proto, prop, pd) /* istanbul ignore next */
-    else if (prop) /* istanbul ignore next */
-      return Hooks.decorateField(false, options, proto, prop)
-    else /* istanbul ignore next */
-      return Hooks.decorateClass(false, options, proto)
-  }
 }
