@@ -175,7 +175,7 @@ export class Snapshot implements Context {
           const fields: string[] = []
           r.changes.forEach(field => fields.push(field.toString()))
           const s = fields.join(", ")
-          Dbg.log("║", "•", `${Hint.record(r)}(${s}) is applied on top of ${Hint.record(r.prev.record)}.`)
+          Dbg.log("║", "√", `${Hint.record(r)}(${s}) is applied on top of ${Hint.record(r.prev.record)}.`)
         }
       }
     })

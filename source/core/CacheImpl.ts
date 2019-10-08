@@ -502,7 +502,7 @@ class CacheResult extends FieldValue implements Observer {
     if (result) {
       this.invalid.since = since
       const isTrigger = this.options.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, " ", isTrigger ? "  ■ " : "  □ ", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, " ", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
       this.unsubscribeFromAllObservables()
       if (!this.tran.isFinished())
         this.tran.cancel(new Error(`transaction T${this.tran.id} (${this.tran.hint}) is canceled due to invalidation by ${Hint.record(hint.record, hint.field)} and will be silently ignored`), null)
