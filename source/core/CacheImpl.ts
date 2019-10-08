@@ -429,7 +429,7 @@ class CacheResult extends FieldValue implements Observer {
     }
     else
       snapshot.changeset.forEach((r: Record, h: Handle) =>
-        r.changes.forEach(field => CacheResult.subscribeToAllObservablesAndFinish(timestamp, r, field)))
+        r.changes.forEach(field => CacheResult.unsubscribeFromAllObservablesAndFinish(timestamp, r, field)))
   }
 
   private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
@@ -451,6 +451,14 @@ class CacheResult extends FieldValue implements Observer {
     if (cache instanceof CacheResult && cache.record === record) {
       if (triggers)
         cache.subscribeToAllObservables(timestamp, triggers)
+      cache.finish()
+    }
+  }
+
+  private static unsubscribeFromAllObservablesAndFinish(timestamp: number, record: Record, field: FieldKey): void {
+    const cache = record.data[field]
+    if (cache instanceof CacheResult && cache.record === record) {
+      cache.unsubscribeFromAllObservables()
       cache.finish()
     }
   }
