@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Dbg, misuse, error, undef, F } from './util/all'
-import { Record, Observer, Snapshot, Hint } from './core/all'
+import { Record, Observer, Snapshot, Hint } from './core/all.internal'
 import { Trace } from './Options'
 
 export class Transaction {

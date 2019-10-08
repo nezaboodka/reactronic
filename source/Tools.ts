@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Dbg } from './util/Dbg'
-import { Hooks, Hint } from './core/all'
+import { Hooks, Hint } from './core/all.internal'
 import { Trace } from './Options'
 
 export class Tools {
