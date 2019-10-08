@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction, Cache, Reactivity as R, Reentrance, cacheof, all, sleep } from '../source/api'
+import { Transaction, Cache, Tools as RT, Reentrance, cacheof, all, sleep } from '../source/api'
 import { DemoModel, DemoView, mon, output, tracing } from './async'
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -29,7 +29,7 @@ const expected: string[] = [
 ]
 
 test("async", async t => {
-  R.setTrace(tracing.noisy)
+  RT.setTrace(tracing.noisy)
   const app = Transaction.run("app", () => new DemoView(new DemoModel()))
   cacheof(app.model.load).setup({reentrance: Reentrance.RunSideBySide})
   try {
@@ -43,7 +43,7 @@ test("async", async t => {
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
-    if (R.isTraceOn && !R.trace.silent) console.log(error.toString())
+    if (RT.isTraceOn && !RT.trace.silent) console.log(error.toString())
   }
   finally {
     t.is(mon.count, 0)
@@ -51,12 +51,12 @@ test("async", async t => {
     await sleep(400)
     await Cache.unmount(app, app.model).whenFinished(true)
   } /* istanbul ignore next */
-  if (R.isTraceOn && !R.trace.silent)
+  if (RT.isTraceOn && !RT.trace.silent)
     for (const x of output)
       console.log(x)
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (R.isTraceOn && !R.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (RT.isTraceOn && !RT.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

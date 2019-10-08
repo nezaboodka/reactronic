@@ -313,9 +313,9 @@ abstract class Cache<T> {
   static unmount(...objects: any[]): Transaction;
 }
 
-// Reactivity
+// Tools
 
-class Reactivity {
+class Tools {
   static triggersAutoStartDisabled: boolean;
   static performanceWarningThreshold: number;
   static readonly isTraceOn: boolean;

@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, transaction, trigger, cached, cachedArgs, Reactivity as R, trace } from '../source/api'
+import { Stateful, stateless, transaction, trigger, cached, cachedArgs, Tools as RT, trace } from '../source/api'
 import { Person } from './common'
 
 export const output: string[] = []
@@ -68,7 +68,7 @@ export class DemoView extends Stateful {
     const lines = this.render(0)
     lines.forEach(x => {
       output.push(x) /* istanbul ignore next */
-      if (R.isTraceOn && !R.trace.silent) console.log(x)
+      if (RT.isTraceOn && !RT.trace.silent) console.log(x)
     })
   }
 

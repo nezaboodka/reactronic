@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction, Cache, Reactivity as R, Kind, cacheof, nonreactive, standalone } from '../source/api'
+import { Transaction, Cache, Tools as RT, Kind, cacheof, nonreactive, standalone } from '../source/api'
 import { Person, tracing, nop } from './common'
 import { DemoModel, DemoView, output } from './basic'
 
@@ -22,12 +22,12 @@ const expected: string[] = [
 ]
 
 test("basic", t => {
-  R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled
-  R.triggersAutoStartDisabled = false
-  R.performanceWarningThreshold = R.performanceWarningThreshold + 1
-  R.performanceWarningThreshold = 3
-  R.setTrace(tracing.off)
-  R.setTrace(tracing.noisy)
+  RT.triggersAutoStartDisabled = !RT.triggersAutoStartDisabled
+  RT.triggersAutoStartDisabled = false
+  RT.performanceWarningThreshold = RT.performanceWarningThreshold + 1
+  RT.performanceWarningThreshold = 3
+  RT.setTrace(tracing.off)
+  RT.setTrace(tracing.noisy)
   // Simple transactions
   const app = Transaction.run("app", () => new DemoView(new DemoModel()))
   try {
@@ -131,9 +131,9 @@ test("basic", t => {
     // Other
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)
-    t.is(R.getTraceHint(app), "DemoView")
-    R.setTraceHint(app, "App")
-    t.is(R.getTraceHint(app), "App")
+    t.is(RT.getTraceHint(app), "DemoView")
+    RT.setTraceHint(app, "App")
+    t.is(RT.getTraceHint(app), "App")
     t.deepEqual(Object.getOwnPropertyNames(app.model), [/*"shared",*/ "title", "users"])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
   }
@@ -142,7 +142,7 @@ test("basic", t => {
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (R.isTraceOn && !R.trace.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
+    if (RT.isTraceOn && !RT.trace.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
     t.is(output[i], expected[i])
   }
 })
