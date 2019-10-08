@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Utils, F } from '../util/all'
+import { Utils } from '../util/all'
 
 export const R_HANDLE: unique symbol = Symbol("R:HANDLE")
 export const R_CACHE: unique symbol = Symbol("R:CACHE")
@@ -38,6 +38,8 @@ export class FieldValue {
 // Record
 
 export class Record {
+  static blank: Record
+
   readonly creator: Context
   readonly prev: { record: Record }
   readonly data: any
@@ -52,8 +54,6 @@ export class Record {
     this.conflicts = new Map<FieldKey, Record>()
     Object.freeze(this)
   }
-
-  static blank: Record
 
   freeze(): void {
     Object.freeze(this.data)
@@ -84,7 +84,20 @@ export class Handle {
     this.changing = undefined
     this.writers = 0
   }
+}
 
+// Observer
+
+export interface Observer {
+  hint(notran?: boolean): string
+  readonly invalid: { since: number }
+  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: Observer[]): void
+  trig(timestamp: number, now: boolean, nothrow: boolean): void
+}
+
+// Hint
+
+export class Hint {
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
       const h = Utils.get<Handle>(obj, R_HANDLE)
@@ -98,21 +111,7 @@ export class Handle {
     const h = Utils.get<Handle>(obj, R_HANDLE)
     return h ? h.hint : undefined
   }
-}
 
-// Observer
-
-export interface Observer {
-  hint(notran?: boolean): string
-  bind<T>(func: F<T>): F<T>
-  readonly invalid: { since: number }
-  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: Observer[]): void
-  trig(timestamp: number, now: boolean, nothrow: boolean): void
-}
-
-// Hint
-
-export class Hint {
   static handle(h: Handle | undefined, field?: FieldKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const obj = h === undefined
       ? "blank"

@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Dbg } from './util/Dbg'
-import { Hooks, Handle } from './core/all'
+import { Hooks, Hint } from './core/all'
 import { Trace } from './Options'
 
 export class Reactronic {
@@ -17,6 +17,6 @@ export class Reactronic {
   static get isTraceOn(): boolean { return Dbg.isOn }
   static get trace(): Trace { return Dbg.trace }
   static setTrace(t: Trace | undefined): void { Dbg.global = t || Dbg.OFF; Dbg.isOn = t !== undefined }
-  static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Handle.setHint(obj, name) }
-  static getTraceHint<T extends object>(obj: T): string | undefined { return Handle.getHint(obj) }
+  static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Hint.setHint(obj, name) }
+  static getTraceHint<T extends object>(obj: T): string | undefined { return Hint.getHint(obj) }
 }
