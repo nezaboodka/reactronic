@@ -5,7 +5,7 @@
 
 export { all, sleep } from './util/all'
 export { Options, Kind, Reentrance, Trace } from './Options'
-export { Reactronic } from './Rx'
+export { Reactronic } from './Reactronic'
 export { Stateful } from './core/Hooks'
 export { stateless, stateful, transaction, trigger, cached, latency, reentrance, cachedArgs, monitor, trace } from './Options.decorators'
 export { Transaction } from './Transaction'
