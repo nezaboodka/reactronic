@@ -387,7 +387,8 @@ class CacheResult extends FieldValue implements Observer {
   private static markViewed(record: Record, field: FieldKey, value: FieldValue, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active // alias
     if (c && c.options.kind !== Kind.Transaction && field !== R_HANDLE) {
-      Snapshot.readable().bump(record.creator.timestamp)
+      const ctx = Snapshot.readable()
+      ctx.bump(record.creator.timestamp)
       const observables = c.getObservables(weak)
       let times: number = 0
       if (Hooks.performanceWarningThreshold > 0) {
@@ -464,32 +465,28 @@ class CacheResult extends FieldValue implements Observer {
   }
 
   private subscribeToAllObservables(timestamp: number, triggers: Observer[]): void {
-    const log: string[] = []
-    this.subscribeTo(false, this.observables, timestamp, triggers, log)
-    this.subscribeTo(true, this.weakObservables, timestamp, triggers, log)
-    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.options.trace, " ", "o", `${Hint.record(this.record, this.field)} is subscribed to {${log.join(", ")}}.`)
+    this.subscribeTo(false, this.observables, timestamp, triggers)
+    this.subscribeTo(true, this.weakObservables, timestamp, triggers)
   }
 
   private unsubscribeFromAllObservables(): void {
-    const log: string[] = []
-    this.unsubscribeFrom(this.observables, log)
-    this.unsubscribeFrom(this.weakObservables, log)
-    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions)) && log.length > 0) Dbg.logAs(this.options.trace, " ", "-", `${Hint.record(this.record, this.field)} is unsubscribed from {${log.join(", ")}}.`)
+    this.unsubscribeFrom(this.observables)
+    this.unsubscribeFrom(this.weakObservables)
   }
 
-  private subscribeTo(weak: boolean, observables: Map<FieldValue, FieldHint>, timestamp: number, triggers: Observer[], log: string[]): void {
+  private subscribeTo(weak: boolean, observables: Map<FieldValue, FieldHint>, timestamp: number, triggers: Observer[]): void {
     const t = weak ? -1 : timestamp
     observables.forEach((hint, val) => {
-      if (!this.subscribeToFieldValue(val, hint, t, log))
+      if (!this.subscribeToFieldValue(val, hint, t))
         this.invalidateDueTo(val, hint, timestamp, triggers)
     })
   }
 
-  private unsubscribeFrom(observables: Map<FieldValue, FieldHint>, log: string[]): void {
-    observables.forEach((hint, val) => this.unsubscribeFromFieldValue(val, hint, log))
+  private unsubscribeFrom(observables: Map<FieldValue, FieldHint>): void {
+    observables.forEach((hint, val) => this.unsubscribeFromFieldValue(val, hint))
   }
 
-  private subscribeToFieldValue(value: FieldValue, hint: FieldHint, timestamp: number, log: string[]): boolean {
+  private subscribeToFieldValue(value: FieldValue, hint: FieldHint, timestamp: number): boolean {
     let result = value.replacement === undefined
     if (result && timestamp !== -1)
       result = !(value instanceof CacheResult && timestamp >= value.invalid.since)
@@ -497,17 +494,17 @@ class CacheResult extends FieldValue implements Observer {
       if (!value.observers) // acquire
         value.observers = new Set<CacheResult>()
       value.observers.add(this) // now subscribed
-      if (Dbg.isOn && Dbg.trace.subscriptions) log.push(`${Hint.record(hint.record, hint.field, true)}${hint.times > 1 ? `*${hint.times}` : ""}`)
+      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, " ", "o", `${Hint.record(this.record, this.field)} is subscribed to ${Hint.record(hint.record, hint.field, true)}${hint.times > 1 ? ` (${hint.times} times)` : ""}.`)
       if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("≡", "!", `${this.hint()} uses ${Hint.record(hint.record, hint.field)} ${hint.times} time(s).`, 0, " *** WARNING ***")
     }
     return result || value.replacement === hint.record
   }
 
-  private unsubscribeFromFieldValue(value: FieldValue, hint: FieldHint, log: string[]): void {
+  private unsubscribeFromFieldValue(value: FieldValue, hint: FieldHint): void {
     const observers = value.observers
     if (observers)
       observers.delete(this) // now unsubscribed
-    if (Dbg.isOn && Dbg.trace.subscriptions) log.push(Hint.record(hint.record, hint.field, true))
+    if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, " ", "-", `${Hint.record(this.record, this.field)} is unsubscribed from ${Hint.record(hint.record, hint.field, true)}.`)
   }
 
   getObservables(weak: boolean): Map<FieldValue, FieldHint> {
@@ -521,6 +518,8 @@ class CacheResult extends FieldValue implements Observer {
       const isTrigger = this.options.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined
       if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, " ", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
       this.unsubscribeFromAllObservables()
+      // if (!this.tran.isFinished())
+      //   this.tran.cancel(new Error("invalidated"), null) // silently ignore
       if (isTrigger) // stop cascade invalidation on trigger
         triggers.push(this)
       else if (this.observers) // cascade invalidation
