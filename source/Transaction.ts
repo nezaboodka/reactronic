@@ -233,7 +233,7 @@ export class Transaction {
     if (!t.error && error) {
       t.error = error
       t.retryAfter = retryAfter
-      if (Dbg.isOn && Dbg.trace.errors && retryAfter === undefined) Dbg.log("║", "!", `${error.message}`, undefined, " *** ERROR ***")
+      if (Dbg.isOn && Dbg.trace.errors && retryAfter === undefined) Dbg.log("║", "‼ ", `${error.message}`, undefined, " *** ERROR ***")
     }
     t.sealed = true
   }
