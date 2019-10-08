@@ -9,8 +9,8 @@ import { Trace } from './Options'
 
 export class Transaction {
   private static readonly none: Transaction = new Transaction("<none>")
-  private static _current: Transaction
-  private static _inspection: boolean = false
+  private static running: Transaction
+  private static inspection: boolean = false
 
   readonly trace?: Partial<Trace> // assigned in constructor
   readonly margin: number
@@ -27,7 +27,7 @@ export class Transaction {
 
   constructor(hint: string, sidebyside: boolean = false, trace?: Partial<Trace>, token?: any) {
     this.trace = trace
-    this.margin = Transaction._current ? Transaction._current.margin + 1 : -1
+    this.margin = Transaction.running ? Transaction.running.margin + 1 : -1
     this.snapshot = new Snapshot(hint, token)
     this.sidebyside = sidebyside
     this.workers = 0
@@ -40,7 +40,7 @@ export class Transaction {
     this.reaction = { tran: undefined }
   }
 
-  static get current(): Transaction { return Transaction._current }
+  static get current(): Transaction { return Transaction.running }
   get id(): number { return this.snapshot.id }
   get hint(): string { return this.snapshot.hint }
 
@@ -50,14 +50,14 @@ export class Transaction {
   }
 
   inspect<T>(func: F<T>, ...args: any[]): T {
-    const restore = Transaction._inspection
+    const restore = Transaction.inspection
     try {
-      Transaction._inspection = true
-      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("", "  ", `transaction T${this.id} (${this.hint}) is being inspected by T${Transaction._current.id} (${Transaction._current.hint})`)
+      Transaction.inspection = true
+      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log("", "  ", `transaction T${this.id} (${this.hint}) is being inspected by T${Transaction.running.id} (${Transaction.running.hint})`)
       return this.do(undefined, func, ...args)
     }
     finally {
-      Transaction._inspection = restore
+      Transaction.inspection = restore
     }
   }
 
@@ -78,7 +78,7 @@ export class Transaction {
   bind<T>(func: F<T>, secondary: boolean): F<T> {
     this.guard()
     const self = this
-    const inspect = Transaction._inspection
+    const inspect = Transaction.inspection
     const enter = !secondary ? function(): void { self.workers++ } : function(): void { /* nop */ }
     const leave = function(...args: any[]): T { self.workers--; return func(...args) }
     !inspect ? self.do(undefined, enter) : self.inspect(enter)
@@ -121,7 +121,7 @@ export class Transaction {
 
   static runEx<T>(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
     const t: Transaction = Transaction.acquire(hint, spawn, sidebyside, trace, token)
-    const root = t !== Transaction._current
+    const root = t !== Transaction.running
     t.guard()
     let result: any = t.do<T>(trace, func, ...args)
     if (root) {
@@ -135,28 +135,28 @@ export class Transaction {
   }
 
   static outside<T>(func: F<T>, ...args: any[]): T {
-    const outer = Transaction._current
+    const outer = Transaction.running
     try {
-      Transaction._current = Transaction.none
+      Transaction.running = Transaction.none
       return func(...args)
     }
     finally {
-      Transaction._current = outer
+      Transaction.running = outer
     }
   }
 
   // Internal
 
   private static acquire(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any): Transaction {
-    return spawn || Transaction._current.isFinished()
+    return spawn || Transaction.running.isFinished()
       ? new Transaction(hint, sidebyside, trace, token)
-      : Transaction._current
+      : Transaction.running
   }
 
   private guard(): void {
     if (this.error) // prevent from continuing canceled transaction
       throw this.error
-    if (this.sealed && Transaction._current !== this)
+    if (this.sealed && Transaction.running !== this)
       throw misuse("cannot run transaction that is already sealed")
   }
 
@@ -187,9 +187,9 @@ export class Transaction {
 
   private do<T>(trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
     let result: T
-    const outer = Transaction._current
+    const outer = Transaction.running
     try {
-      Transaction._current = this
+      Transaction.running = this
       this.workers++
       this.snapshot.acquire(outer.snapshot)
       result = func(...args)
@@ -201,7 +201,7 @@ export class Transaction {
       }
     }
     catch (e) {
-      if (!Transaction._inspection)
+      if (!Transaction.inspection)
         this.cancel(e)
       throw e
     }
@@ -211,7 +211,7 @@ export class Transaction {
         this.finish()
       if (this.snapshot.triggers.length > 0)
         this.runTriggers()
-      Transaction._current = outer
+      Transaction.running = outer
     }
     return result
   }
@@ -274,13 +274,13 @@ export class Transaction {
   }
 
   private static readableSnapshot(): Snapshot {
-    return Transaction._current.snapshot
+    return Transaction.running.snapshot
   }
 
   private static writableSnapshot(): Snapshot {
-    if (Transaction._inspection)
+    if (Transaction.inspection)
       throw misuse("cannot make changes during transaction inspection")
-    return Transaction._current.snapshot
+    return Transaction.running.snapshot
   }
 
   static _init(): void {
@@ -288,7 +288,7 @@ export class Transaction {
     Snapshot.writable = Transaction.writableSnapshot // override
     Transaction.none.sealed = true
     Transaction.none.snapshot.apply()
-    Transaction._current = Transaction.none
+    Transaction.running = Transaction.none
     Snapshot._init()
   }
 }
