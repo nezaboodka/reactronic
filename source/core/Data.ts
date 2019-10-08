@@ -38,7 +38,7 @@ export class FieldValue {
 // Record
 
 export class Record {
-  static blank: Record
+  static blank: Record // initialized by Transaction._init
 
   readonly creator: Context
   readonly prev: { record: Record }

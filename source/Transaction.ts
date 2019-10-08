@@ -9,7 +9,6 @@ import { Trace } from './Options'
 
 export class Transaction {
   private static readonly none: Transaction = new Transaction("<none>")
-  private static readonly init: Transaction = new Transaction("<init>")
   private static _current: Transaction
   private static _inspection: boolean = false
 
@@ -289,14 +288,13 @@ export class Transaction {
     Snapshot.writable = Transaction.writableSnapshot // override
     Transaction.none.sealed = true
     Transaction.none.snapshot.apply()
-    Transaction.init.snapshot.acquire(Transaction.init.snapshot)
-    Transaction.init.sealed = true
-    Transaction.init.snapshot.apply()
+    Snapshot.init.acquire(Snapshot.init)
+    Snapshot.init.apply()
     Transaction._current = Transaction.none
-    const blank = new Record(Transaction.init.snapshot, Record.blank, {})
+    const blank = new Record(Snapshot.init, Record.blank, {})
     blank.prev.record = blank // loopback
-    blank.freeze()
     Record.blank = blank
+    blank.freeze()
     Snapshot.lastId = 100
     Snapshot.headStamp = 101
     Snapshot.oldest = undefined

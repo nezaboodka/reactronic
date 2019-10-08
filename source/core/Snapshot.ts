@@ -17,6 +17,7 @@ export class Snapshot implements Context {
   static headStamp: number = 1
   static pending: Snapshot[] = []
   static oldest: Snapshot | undefined = undefined
+  static readonly init: Snapshot = new Snapshot("<init>", undefined)
 
   readonly id: number
   readonly hint: string
