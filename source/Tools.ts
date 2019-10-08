@@ -8,7 +8,7 @@ import { Hooks, Hint } from './core/all'
 import { Trace } from './Options'
 
 export class Tools {
-  // Options
+  // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
   static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }
   static get performanceWarningThreshold(): number { return Hooks.performanceWarningThreshold }
