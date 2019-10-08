@@ -3,8 +3,8 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, error, undef } from '../util/all'
-import { Record, Observer, F, Snapshot, Hint } from '../core/all'
+import { Dbg, misuse, error, undef, F } from '../util/all'
+import { Record, Observer, Snapshot, Hint } from '../core/all'
 import { Trace } from './Options'
 
 export class Transaction {
@@ -117,7 +117,7 @@ export class Transaction {
   // }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
-    return Transaction.runEx(hint, false, false, undefined, undefined, func, ...args)
+    return Transaction.runEx<T>(hint, false, false, undefined, undefined, func, ...args)
   }
 
   static runEx<T>(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {

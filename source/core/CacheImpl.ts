@@ -3,8 +3,8 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, Utils } from '../util/all'
-import { Record, FieldKey, FieldValue, FieldHint, Observer, F, Handle, Snapshot, Hint, OptionsImpl, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
+import { Dbg, misuse, Utils, F } from '../util/all'
+import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, Snapshot, Hint, OptionsImpl, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
 import { Cache } from '../api/Cache'
 export { Cache, cacheof, resolved } from '../api/Cache'
 import { Options, Kind, Reentrance, Trace } from '../api/Options'
@@ -38,7 +38,7 @@ export class CacheImpl extends Cache<any> {
   private initialize(): CacheResult {
     const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.field.toString()}/init` : /* istanbul ignore next */ "Cache.init"
     const sidebyside = this.blank.options.reentrance === Reentrance.RunSideBySide
-    const result = Transaction.runEx(hint, true, sidebyside, this.blank.options.trace, this, (): CacheResult => {
+    const result = Transaction.runEx<CacheResult>(hint, true, sidebyside, this.blank.options.trace, this, (): CacheResult => {
       const c = this.write().cache
       c.ret = undefined
       c.value = undefined

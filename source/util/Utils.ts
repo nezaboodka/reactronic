@@ -3,6 +3,8 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
+export type F<T> = (...args: any[]) => T
+
 export class Utils {
   static get<T>(obj: any, sym: symbol): T {
     return obj[sym]

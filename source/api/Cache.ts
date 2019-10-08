@@ -3,9 +3,10 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
+import { F } from '../util/all'
 import { Transaction } from './Transaction'
 import { Options } from './Options'
-import { CacheImpl, F } from '../core/all'
+import { CacheImpl } from '../core/all'
 
 export function cacheof<T>(method: F<T>): Cache<T> {
   return Cache.of<T>(method)

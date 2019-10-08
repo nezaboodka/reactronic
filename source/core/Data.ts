@@ -3,12 +3,11 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Utils, undef } from '../util/all'
+import { Utils, undef, F } from '../util/all'
 
 export const R_HANDLE: unique symbol = Symbol("R:HANDLE")
 export const R_CACHE: unique symbol = Symbol("R:CACHE")
 export const R_UNMOUNT: unique symbol = Symbol("R:UNMOUNT")
-export type F<T> = (...args: any[]) => T
 
 // Context
 
