@@ -2,8 +2,8 @@
   "name": "reactronic",
   "version": "0.19.112",
   "description": "Reactronic - Transactionally Reactive State Management",
-  "main": "build/package/source/reactronic.js",
-  "types": "build/package/source/reactronic.d.ts",
+  "main": "build/package/source/api.js",
+  "types": "build/package/source/api.d.ts",
   "files": [
     "build/package/source/**/*.*"
   ],
