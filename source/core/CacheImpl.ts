@@ -5,11 +5,11 @@
 
 import { Dbg, misuse, Utils, F } from '../util/all'
 import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, Snapshot, Hint, OptionsImpl, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
-import { Cache } from '../api/Cache'
-export { Cache, cacheof, resolved } from '../api/Cache'
-import { Options, Kind, Reentrance, Trace } from '../api/Options'
-import { Transaction } from '../api/Transaction'
-import { Monitor } from '../api/Monitor'
+import { Cache } from '../Cache'
+export { Cache, cacheof, resolved } from '../Cache'
+import { Options, Kind, Reentrance, Trace } from '../Options'
+import { Transaction } from '../Transaction'
+import { Monitor } from '../Monitor'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 type CacheCall = { valid: boolean, cache: CacheResult, record: Record }

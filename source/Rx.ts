@@ -3,8 +3,8 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg } from '../util/Dbg'
-import { Hooks, Handle } from '../core/all'
+import { Dbg } from './util/Dbg'
+import { Hooks, Handle } from './core/all'
 import { Trace } from './Options'
 
 export class Reactronic {

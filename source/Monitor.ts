@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Handle, Stateful } from '../core/all'
+import { Handle, Stateful } from './core/all'
 import { Transaction } from './Transaction'
 
 export class Monitor extends Stateful {

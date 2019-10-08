@@ -3,9 +3,9 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { F } from '../util/all'
+import { F } from './util/all'
 import { Trace } from './Trace'
-import { Hooks } from '../core/Hooks'
+import { Hooks } from './core/Hooks'
 import { Options, Reentrance, Kind } from './Options'
 import { Monitor } from './Monitor'
 

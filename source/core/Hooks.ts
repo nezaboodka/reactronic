@@ -9,10 +9,10 @@ import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, FieldKey, FieldValue, Handle, R_HANDLE, R_UNMOUNT, R_CACHE, Hint } from './Data'
 import { Snapshot } from './Snapshot'
-import { Options, Kind, Reentrance } from '../api/Options'
-import { Monitor } from '../api/Monitor'
-import { Cache } from '../api/Cache'
-import { Trace } from '../api/Trace'
+import { Options, Kind, Reentrance } from '../Options'
+import { Monitor } from '../Monitor'
+import { Cache } from '../Cache'
+import { Trace } from '../Trace'
 
 // Stateful
 
