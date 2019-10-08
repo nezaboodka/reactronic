@@ -283,7 +283,7 @@ export class Hooks implements ProxyHandler<Handle> {
       throw misuse("only objects can be reactive")
     let h = Utils.get<Handle>(obj, R_HANDLE)
     if (!h) {
-      h = new Handle(obj, obj, obj.constructor.name, Hooks.proxy)
+      h = new Handle(obj, obj, Hooks.proxy, Record.blank, obj.constructor.name)
       Utils.set(obj, R_HANDLE, h)
       Hooks.decorateField(false, {kind: Kind.Stateful}, obj, R_UNMOUNT)
     }
@@ -291,13 +291,13 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   static createHandle(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
-    const h = new Handle(stateless, proxy, hint, Hooks.proxy)
+    const h = new Handle(stateless, proxy, Hooks.proxy, Record.blank, hint)
     Snapshot.writable().write(h, "<RT:HANDLE>", R_HANDLE)
     return h
   }
 
   static createHandleByDecoratedClass(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
-    const h = new Handle(stateless, proxy, hint, Hooks.proxy)
+    const h = new Handle(stateless, proxy, Hooks.proxy, Record.blank, hint)
     const r = Snapshot.writable().write(h, "<RT:HANDLE>", R_HANDLE)
     initRecordData(h, stateful, stateless, r)
     return h

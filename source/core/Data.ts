@@ -67,22 +67,22 @@ export class Record {
 export class Handle {
   private static id: number = 20
 
-  readonly stateless: any
   readonly id: number
+  readonly stateless: any
   readonly proxy: any
-  hint: string
   head: Record
   changing?: Record
   writers: number
+  hint: string
 
-  constructor(stateless: any, proxy: any, hint: string, handler: ProxyHandler<Handle>) {
-    this.stateless = stateless
+  constructor(stateless: any, proxy: any, handler: ProxyHandler<Handle>, head: Record, hint: string) {
     this.id = ++Handle.id
+    this.stateless = stateless
     this.proxy = proxy || new Proxy<Handle>(this, handler)
-    this.hint = hint
-    this.head = Record.blank
+    this.head = head
     this.changing = undefined
     this.writers = 0
+    this.hint = hint
   }
 }
 
