@@ -39,12 +39,13 @@ export class Snapshot extends Context {
     this.applied = false
   }
 
-  static readable: () => Snapshot = undef // to be redefined by Transaction implementation
-  static writable: () => Snapshot = undef // to be redefined by Transaction implementation
-  static markChanged: (record: Record, field: FieldKey, value: any, changed: boolean) => void = undef // to be redefined by Cache implementation
-  static markViewed: (record: Record, field: FieldKey, value: FieldValue, weak: boolean) => void = undef // to be redefined by Cache implementation
-  static isConflicting: (oldValue: any, newValue: any) => boolean = undef // to be redefined by Cache implementation
-  static applyAllDependencies = (snapshot: Snapshot, error?: any): void => { /* to be redefined by Cache implementation */ }
+  // To be redefined by Transaction and Cache implementations
+  static readable: () => Snapshot = undef
+  static writable: () => Snapshot = undef
+  static markChanged: (record: Record, field: FieldKey, value: any, changed: boolean) => void = undef
+  static markViewed: (record: Record, field: FieldKey, value: FieldValue, weak: boolean) => void = undef
+  static isConflicting: (oldValue: any, newValue: any) => boolean = undef
+  static applyAllDependencies = (snapshot: Snapshot, error?: any): void => { /* nop */ }
 
   read(h: Handle): Record {
     const r = this.tryRead(h)
