@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Utils, undef } from './Utils'
+import { Utils, undef } from '../util/all'
 
 export type F<T> = (...args: any[]) => T
 

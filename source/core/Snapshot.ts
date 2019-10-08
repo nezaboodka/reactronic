@@ -3,8 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse } from './Dbg'
-import { Utils, undef } from './Utils'
+import { Dbg, Utils, misuse, undef } from '../util/all'
 import { Record, FieldKey, Context, Observer } from './Record'
 import { Handle, R_HANDLE } from './Handle'
 import { CopyOnWriteProxy } from './Hooks'

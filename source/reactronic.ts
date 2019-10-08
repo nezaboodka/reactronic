@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-export { all, sleep } from './core/all'
+export { all, sleep } from './util/all'
 export { Options, Kind, Reentrance, Trace } from './api/Options'
 export { Reactronic } from './api/Reactronic'
 export { Stateful } from './core/Hooks'

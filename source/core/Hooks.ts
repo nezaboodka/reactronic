@@ -3,11 +3,10 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { misuse } from './Dbg'
-import { Utils, undef, R_CACHE } from './Utils'
-import { CopyOnWriteArray, CopyOnWrite } from './CopyOnWriteArray'
-import { CopyOnWriteSet } from './CopyOnWriteSet'
-import { CopyOnWriteMap } from './CopyOnWriteMap'
+import { Utils, misuse, undef, R_CACHE } from '../util/all'
+import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
+import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
+import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, FieldKey, FieldValue, F } from './Record'
 import { Handle, R_HANDLE } from './Handle'
 import { Snapshot, Hint, R_UNMOUNT } from './Snapshot'

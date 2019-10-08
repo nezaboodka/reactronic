@@ -3,7 +3,8 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Dbg, misuse, error, undef, Record, Observer, F, Snapshot, Hint } from '../core/all'
+import { Dbg, misuse, error, undef } from '../util/all'
+import { Record, Observer, F, Snapshot, Hint } from '../core/all'
 import { Trace } from './Options'
 
 export class Transaction {
