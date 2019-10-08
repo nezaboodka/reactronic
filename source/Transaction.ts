@@ -207,10 +207,11 @@ export class Transaction {
     }
     finally { // it's critical to have no exceptions in this block
       this.workers--
-      if (this.sealed && this.workers === 0)
+      if (this.sealed && this.workers === 0) {
         this.finish()
-      if (this.snapshot.triggers.length > 0)
-        this.runTriggers()
+        if (this.snapshot.triggers.length > 0)
+          this.runTriggers()
+      }
       Transaction.running = outer
     }
     return result

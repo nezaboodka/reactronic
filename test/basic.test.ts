@@ -32,7 +32,7 @@ test("basic", t => {
   const app = Transaction.run("app", () => new DemoView(new DemoModel()))
   try {
     t.is(app.model.methodOfStatefulBase(), "methodOfStatefulBase")
-    t.throws(() => console.log(app.model.unassigned), "unassigned properties are not supported: v103t110#21 DemoModel.unassigned")
+    t.throws(() => console.log(app.model.unassigned), "unassigned properties are not supported: v103t112#21 DemoModel.unassigned")
     t.notThrows(() => DemoView.test())
     t.assert(app.model.title.startsWith("demo -")) // check that DemoModel.normalizeTitle works
     const rendering = cacheof(app.render)
@@ -142,7 +142,7 @@ test("basic", t => {
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (RT.isTraceOn && !RT.trace.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
+    if (RT.isTraceOn && !RT.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })
