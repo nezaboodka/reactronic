@@ -120,7 +120,7 @@ export class Snapshot implements Context {
               conflicts = []
             conflicts.push(r)
           }
-          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "≈", `${Hint.record(r)} is merged with ${Hint.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "±", `${Hint.record(r)} is merged with ${Hint.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
       if (this.caching === undefined) {
@@ -144,7 +144,7 @@ export class Snapshot implements Context {
         merged[field] = ours.data[field]
         if (unmounted || field === R_UNMOUNT) {
           if (unmounted !== (field === R_UNMOUNT)) {
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "≈", `${Hint.record(ours, field)} <> ${Hint.record(head, field)}.`)
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "±", `${Hint.record(ours, field)} <> ${Hint.record(head, field)}`)
             ours.conflicts.set(field, head)
           }
         }
@@ -152,7 +152,7 @@ export class Snapshot implements Context {
           const conflict = Snapshot.isConflicting(head.data[field], ours.prev.record.data[field])
           if (conflict)
             ours.conflicts.set(field, head)
-          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "≈", `${Hint.record(ours, field)} ${conflict ? "<>" : "=="} ${Hint.record(head, field)}.`)
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║", "±", `${Hint.record(ours, field)} ${conflict ? "<>" : "=="} ${Hint.record(head, field)}`)
         }
       })
       Utils.copyAllFields(merged, ours.data) // overwrite with merged copy
@@ -175,7 +175,7 @@ export class Snapshot implements Context {
           const fields: string[] = []
           r.changes.forEach(field => fields.push(field.toString()))
           const s = fields.join(", ")
-          Dbg.log("║", "√", `${Hint.record(r)}(${s}) is applied on top of ${Hint.record(r.prev.record)}.`)
+          Dbg.log("║", "√", `${Hint.record(r)}(${s}) is applied on top of ${Hint.record(r.prev.record)}`)
         }
       }
     })
@@ -225,9 +225,9 @@ export class Snapshot implements Context {
   }
 
   private unlinkHistory(): void {
-    if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", " G", `v${this.stamp}t${this.id} (${this.hint}) snapshot is the oldest one now`)
+    if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", "gc", `Dismiss history of v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== BLANK) Dbg.log("", "   g ", `v${this.stamp}t${this.id}: ${Hint.record(r.prev.record)} is ready for GC because overwritten by ${Hint.record(r)}`)
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== BLANK) Dbg.log("", "   gc", `${Hint.record(r.prev.record)} is ready for GC because overwritten by ${Hint.record(r)}`)
       r.prev.record = BLANK // unlink history
     })
   }

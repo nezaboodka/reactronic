@@ -78,7 +78,7 @@ export class CacheImpl extends Cache<any> {
       if (!weak && Snapshot.readable().timestamp >= call2.cache.record.creator.timestamp)
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", "  ==", `${Hint.record(call.record)}.${call.cache.field.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", "  =", `${Hint.record(call.record)}.${call.cache.field.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`)
     Snapshot.markViewed(call.record, call.cache.field, call.cache, weak)
     return call
   }
@@ -461,7 +461,7 @@ class CacheResult extends FieldValue implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this) // now unsubscribed
-      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", "  - ", `${Hint.record(this.record, this.field)} is unsubscribed from ${Hint.record(hint.record, hint.field, true)}.`)
+      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", "  - ", `${Hint.record(this.record, this.field)} is unsubscribed from ${Hint.record(hint.record, hint.field, true)}`)
     })
     observables.clear()
   }
@@ -486,8 +486,8 @@ class CacheResult extends FieldValue implements Observer {
       value.observers.add(this)
       observables.set(value, hint)
       // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  r `, `${c.hint()} ${weak ? 'uses (weakly)' : 'uses'} ${Hint.record(record, field)} - ${times} time(s)`)
-      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, "║", "  o ", `${Hint.record(this.record, this.field)} is subscribed to ${Hint.record(hint.record, hint.field, true)}${hint.times > 1 ? ` (${hint.times} times)` : ""}.`)
-      if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("≡", "  ‼ ", `${this.hint()} uses ${Hint.record(hint.record, hint.field)} ${hint.times} time(s).`, 0, " *** WARNING ***")
+      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, "║", "  ∞ ", `${Hint.record(this.record, this.field)} is subscribed to ${Hint.record(hint.record, hint.field, true)}${hint.times > 1 ? ` (${hint.times} times)` : ""}`)
+      if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("█", " ███", `${this.hint()} uses ${Hint.record(hint.record, hint.field)} ${hint.times} time(s)`, 0, " *** WARNING ***")
     }
     return result || value.replacement === record
   }
