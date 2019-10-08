@@ -40,29 +40,15 @@ export class Snapshot extends Context {
   }
 
   /* istanbul ignore next */
-  static readable = function(): Snapshot {
-    return undef() // to be redefined by Transaction implementation
-  }
-
+  static readable: () => Snapshot = undef // to be redefined by Transaction implementation
   /* istanbul ignore next */
-  static writable = function(): Snapshot {
-    return undef() // to be redefined by Transaction implementation
-  }
-
+  static writable: () => Snapshot = undef // to be redefined by Transaction implementation
   /* istanbul ignore next */
-  static markChanged = function(record: Record, field: FieldKey, value: any, changed: boolean): void {
-    return undef() // to be redefined by Cache implementation
-  }
-
+  static markChanged: (record: Record, field: FieldKey, value: any, changed: boolean) => void = undef // to be redefined by Cache implementation
   /* istanbul ignore next */
-  static markViewed = function(record: Record, field: FieldKey, value: FieldValue, weak: boolean): void {
-    return undef() // to be redefined by Cache implementation
-  }
-
+  static markViewed: (record: Record, field: FieldKey, value: FieldValue, weak: boolean) => void = undef // to be redefined by Cache implementation
   /* istanbul ignore next */
-  static isConflicting = function(oldValue: any, newValue: any): boolean {
-    return oldValue !== newValue // to be redefined by Cache implementation
-  }
+  static isConflicting: (oldValue: any, newValue: any) => boolean = undef // to be redefined by Cache implementation
 
   static applyAllDependencies = function(snapshot: Snapshot, error?: any): void {
     // to be redefined by Cache implementation
