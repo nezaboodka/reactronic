@@ -349,28 +349,28 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
     return a[field] = value
   }
 
-  static seal(pv: FieldValue, proxy: any, field: FieldKey): void {
-    const v = pv.value
+  static seal(fv: FieldValue, proxy: any, field: FieldKey): void {
+    const v = fv.value
     if (Array.isArray(v)) {
       if (!Object.isFrozen(v)) {
-        if (pv.copyOnWriteMode)
-          pv.value = new Proxy(CopyOnWriteArray.seal(proxy, field, v), CopyOnWriteProxy.global)
+        if (fv.copyOnWriteMode)
+          fv.value = new Proxy(CopyOnWriteArray.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Object.freeze(v) // just freeze without copy-on-write hooks
       }
     }
     else if (v instanceof Set) {
       if (!Object.isFrozen(v)) {
-        if (pv.copyOnWriteMode)
-          pv.value = new Proxy(CopyOnWriteSet.seal(proxy, field, v), CopyOnWriteProxy.global)
+        if (fv.copyOnWriteMode)
+          fv.value = new Proxy(CopyOnWriteSet.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Utils.freezeSet(v) // just freeze without copy-on-write hooks
       }
     }
     else if (v instanceof Map) {
       if (!Object.isFrozen(v)) {
-        if (pv.copyOnWriteMode)
-          pv.value = new Proxy(CopyOnWriteMap.seal(proxy, field, v), CopyOnWriteProxy.global)
+        if (fv.copyOnWriteMode)
+          fv.value = new Proxy(CopyOnWriteMap.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Utils.freezeMap(v) // just freeze without copy-on-write hooks
       }
