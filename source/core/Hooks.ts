@@ -29,7 +29,7 @@ export class Stateful {
     return h.proxy
   }
 
-  toString(): string {
+  [Symbol.toStringTag](): string {
     const h = Utils.get<Handle>(this, R_HANDLE)
     return Hint.handle(h)
   }
@@ -112,7 +112,7 @@ export class Hooks implements ProxyHandler<Handle> {
       }
       else {
         result = Reflect.get(h.stateless, field, receiver)
-        if (result === undefined)
+        if (result === undefined && field !== Symbol.toPrimitive)
           // Record.markViewed(r, field, false); // treat undefined fields as stateful
           throw misuse(`unassigned properties are not supported: ${Hint.record(r, field)}`)
       }
