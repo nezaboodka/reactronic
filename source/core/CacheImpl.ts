@@ -31,7 +31,7 @@ export class CacheImpl extends Cache<any> {
   constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
     super()
     this.handle = handle
-    this.blank = new CacheResult(Record.blank, field, options)
+    this.blank = new CacheResult(Snapshot.blank, field, options)
     CacheResult.freeze(this.blank)
   }
 
@@ -144,7 +144,7 @@ export class CacheImpl extends Cache<any> {
   static doInvalidate(self: CacheImpl): void {
     const call = self.write()
     const c = call.cache
-    c.getObservables(false).set(c, {record: Record.blank, field: c.field, times: 0})
+    c.getObservables(false).set(c, {record: Snapshot.blank, field: c.field, times: 0})
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, field)}`)
   }
 
