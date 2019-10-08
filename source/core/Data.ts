@@ -21,7 +21,7 @@ export interface Context {
 
 export type FieldKey = PropertyKey
 
-export type FieldHint = {
+export interface FieldHint {
   readonly times: number
   readonly record: Record
   readonly field: FieldKey
