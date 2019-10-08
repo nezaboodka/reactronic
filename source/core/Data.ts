@@ -29,7 +29,7 @@ export interface FieldHint {
 
 export class FieldValue {
   value: any
-  replacer?: Record
+  replacement?: Record
   observers?: Set<Observer>
   get copyOnWriteMode(): boolean { return true }
   constructor(value: any) { this.value = value }
