@@ -11,10 +11,10 @@ export const R_UNMOUNT: unique symbol = Symbol("R:UNMOUNT")
 
 // Context
 
-export abstract class Context {
-  abstract readonly id: number
-  abstract readonly hint: string
-  abstract readonly timestamp: number
+export interface Context {
+  readonly id: number
+  readonly hint: string
+  readonly timestamp: number
 }
 
 // Field

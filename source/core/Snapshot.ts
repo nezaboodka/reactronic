@@ -12,7 +12,7 @@ const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 // Snapshot
 
-export class Snapshot extends Context {
+export class Snapshot implements Context {
   static lastId: number = -1
   static headStamp: number = 1
   static pending: Snapshot[] = []
@@ -29,7 +29,6 @@ export class Snapshot extends Context {
   private applied: boolean
 
   constructor(hint: string, caching: any) {
-    super()
     this.id = ++Snapshot.lastId
     this.hint = hint
     this.stamp = UNDEFINED_TIMESTAMP
