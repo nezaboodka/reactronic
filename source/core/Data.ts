@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Utils, undef, F } from '../util/all'
+import { Utils, F } from '../util/all'
 
 export const R_HANDLE: unique symbol = Symbol("R:HANDLE")
 export const R_CACHE: unique symbol = Symbol("R:CACHE")
@@ -11,10 +11,10 @@ export const R_UNMOUNT: unique symbol = Symbol("R:UNMOUNT")
 
 // Context
 
-export interface Context {
-  readonly id: number
-  readonly hint: string
-  readonly timestamp: number
+export abstract class Context {
+  abstract readonly id: number
+  abstract readonly hint: string
+  abstract readonly timestamp: number
 }
 
 // Field
@@ -54,16 +54,6 @@ export class Record {
   }
 
   static blank: Record
-
-  /* istanbul ignore next */
-  static markChanged = function(record: Record, field: FieldKey, value: any, changed: boolean): void {
-    return undef() // to be redefined by Cache implementation
-  }
-
-  /* istanbul ignore next */
-  static markViewed = function(record: Record, field: FieldKey, value: FieldValue, weak: boolean): void {
-    return undef() // to be redefined by Cache implementation
-  }
 
   freeze(): void {
     Object.freeze(this.data)

@@ -103,7 +103,7 @@ export class Hooks implements ProxyHandler<Handle> {
       const r: Record = Snapshot.readable().read(h)
       result = r.data[field]
       if (result instanceof FieldValue) {
-        Record.markViewed(r, field, result, false)
+        Snapshot.markViewed(r, field, result, false)
         result = result.value
       }
       else if (field === R_HANDLE) {
@@ -136,7 +136,7 @@ export class Hooks implements ProxyHandler<Handle> {
       }
       else if (prev !== curr)
         r.data[field] = prev // restore previous value
-      Record.markChanged(r, field, value, changed)
+      Snapshot.markChanged(r, field, value, changed)
     }
     else
       h.stateless[field] = value
@@ -321,7 +321,7 @@ function initRecordField(stateful: boolean, optionsTable: any, field: FieldKey, 
   if (stateful && optionsTable[field] !== false) {
     const value = stateless[field]
     r.data[field] = new FieldValue(value)
-    Record.markChanged(r, field, value, true)
+    Snapshot.markChanged(r, field, value, true)
   }
 }
 

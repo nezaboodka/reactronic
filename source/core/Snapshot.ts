@@ -4,14 +4,14 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Dbg, Utils, misuse, undef } from '../util/all'
-import { Context, Record, FieldKey, Handle, Observer, Hint, R_HANDLE, R_UNMOUNT } from './Data'
+import { Context, Record, FieldKey, FieldValue, Handle, Observer, Hint, R_HANDLE, R_UNMOUNT } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 // Snapshot
 
-export class Snapshot implements Context {
+export class Snapshot extends Context {
   static lastId: number = -1
   static headStamp: number = 1
   static pending: Snapshot[] = []
@@ -28,6 +28,7 @@ export class Snapshot implements Context {
   private applied: boolean
 
   constructor(hint: string, caching: any) {
+    super()
     this.id = ++Snapshot.lastId
     this.hint = hint
     this.stamp = UNDEFINED_TIMESTAMP
@@ -49,8 +50,22 @@ export class Snapshot implements Context {
   }
 
   /* istanbul ignore next */
+  static markChanged = function(record: Record, field: FieldKey, value: any, changed: boolean): void {
+    return undef() // to be redefined by Cache implementation
+  }
+
+  /* istanbul ignore next */
+  static markViewed = function(record: Record, field: FieldKey, value: FieldValue, weak: boolean): void {
+    return undef() // to be redefined by Cache implementation
+  }
+
+  /* istanbul ignore next */
   static isConflicting = function(oldValue: any, newValue: any): boolean {
     return oldValue !== newValue // to be redefined by Cache implementation
+  }
+
+  static applyAllDependencies = function(snapshot: Snapshot, error?: any): void {
+    // to be redefined by Cache implementation
   }
 
   read(h: Handle): Record {
@@ -187,10 +202,6 @@ export class Snapshot implements Context {
     if (Dbg.isOn && Dbg.trace.transactions)
       Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? "╚══" : /* istanbul ignore next */ "═══", `v${this.stamp}`, `${this.hint} - ${error ? "CANCEL" : "COMMIT"}(${this.changeset.size})${error ? ` - ${error}` : ``}`)
     Snapshot.applyAllDependencies(this, error)
-  }
-
-  static applyAllDependencies = function(snapshot: Snapshot, error?: any): void {
-    // to be redefined by Cache implementation
   }
 
   collect(): void {

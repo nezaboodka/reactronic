@@ -79,13 +79,13 @@ export class CacheImpl extends Cache<any> {
         call = call2
     }
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", "  ==", `${Hint.record(call.record)}.${call.cache.field.toString()} is reused (cached by T${call.cache.tran.id} ${call.cache.tran.hint})`)
-    Record.markViewed(call.record, call.cache.field, call.cache, weak)
+    Snapshot.markViewed(call.record, call.cache.field, call.cache, weak)
     return call
   }
 
   private weak(): CacheCall {
     const call = this.read(undefined)
-    Record.markViewed(call.record, call.cache.field, call.cache, true)
+    Snapshot.markViewed(call.record, call.cache.field, call.cache, true)
     return call
   }
 
@@ -113,7 +113,7 @@ export class CacheImpl extends Cache<any> {
         c.invalid.renewing = renewing
       c = renewing
       ctx.bump(r.prev.record.creator.timestamp)
-      Record.markChanged(r, field, renewing, true)
+      Snapshot.markChanged(r, field, renewing, true)
     }
     return { valid: true, cache: c, record: r }
   }
@@ -536,8 +536,8 @@ class CacheResult extends FieldValue implements Observer {
 
   static init(): void {
     Dbg.getCurrentTrace = getCurrentTrace
-    Record.markViewed = CacheResult.markViewed // override
-    Record.markChanged = CacheResult.markChanged // override
+    Snapshot.markViewed = CacheResult.markViewed // override
+    Snapshot.markChanged = CacheResult.markChanged // override
     Snapshot.isConflicting = CacheResult.isConflicting // override
     Snapshot.applyAllDependencies = CacheResult.applyAllDependencies // override
     Hooks.createCacheTrap = CacheImpl.createCacheTrap // override
