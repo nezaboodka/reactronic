@@ -4,6 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 export * from './Data'
+export * from './Hint'
 export * from './Snapshot'
 export * from './Hooks'
 export * from './CacheImpl'

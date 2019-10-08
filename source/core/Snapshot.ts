@@ -4,7 +4,8 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Dbg, Utils, misuse, undef } from '../util/all'
-import { Context, Record, FieldKey, FieldValue, Handle, Observer, Hint, R_HANDLE, R_UNMOUNT } from './Data'
+import { Context, Record, FieldKey, FieldValue, Handle, Observer, R_HANDLE, R_UNMOUNT } from './Data'
+import { Hint } from './Hint'
 import { CopyOnWriteProxy } from './Hooks'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
