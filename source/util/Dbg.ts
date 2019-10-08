@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Trace } from '../api/Trace'
+import { Trace } from '../Trace'
 
 export function error(message: string): Error {
   if (Dbg.isOn && Dbg.trace.errors) Dbg.log("≡", "!", message, undefined, " <<< ERROR")

@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction, Cache, Reactronic as R, Kind, cacheof, nonreactive, standalone } from '../source/reactronic'
+import { Transaction, Cache, Reactronic as R, Kind, cacheof, nonreactive, standalone } from '../source/api'
 import { Person, tracing, nop } from './common'
 import { DemoModel, DemoView, output } from './basic'
 
