@@ -422,15 +422,15 @@ class CacheResult extends FieldValue implements Observer {
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(R_UNMOUNT))
           r.changes.forEach(field =>
-            CacheResult.subscribeToAllObservablesAndFinish(timestamp, r, field, triggers))
+            CacheResult.finish(timestamp, r, field, triggers))
         else
           for (const field in r.prev.record.data)
-            CacheResult.subscribeToAllObservablesAndFinish(timestamp, r, field) // complete only, no subscriptions
+            CacheResult.finish(timestamp, r, field)
       })
     }
     else
       snapshot.changeset.forEach((r: Record, h: Handle) =>
-        r.changes.forEach(field => CacheResult.unsubscribeFromAllObservablesAndFinish(timestamp, r, field)))
+        r.changes.forEach(field => CacheResult.finish(timestamp, r, field)))
   }
 
   private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
@@ -447,19 +447,13 @@ class CacheResult extends FieldValue implements Observer {
     }
   }
 
-  private static subscribeToAllObservablesAndFinish(timestamp: number, record: Record, field: FieldKey, triggers?: Observer[]): void {
+  private static finish(timestamp: number, record: Record, field: FieldKey, triggers?: Observer[]): void {
     const cache = record.data[field]
     if (cache instanceof CacheResult && cache.record === record) {
       if (triggers)
         cache.subscribeToAllObservables(timestamp, triggers)
-      cache.finish()
-    }
-  }
-
-  private static unsubscribeFromAllObservablesAndFinish(timestamp: number, record: Record, field: FieldKey): void {
-    const cache = record.data[field]
-    if (cache instanceof CacheResult && cache.record === record) {
-      cache.unsubscribeFromAllObservables()
+      else
+        cache.unsubscribeFromAllObservables()
       cache.finish()
     }
   }
