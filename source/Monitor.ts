@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Hint, Stateful } from './core/all.internal'
-import { Transaction } from './Transaction'
+import { Transaction } from './Action'
 
 export class Monitor extends Stateful {
   private toggle: boolean = false

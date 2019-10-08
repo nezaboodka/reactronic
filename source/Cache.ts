@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { F } from './util/all'
-import { Transaction } from './Transaction'
+import { Transaction } from './Action'
 import { Options } from './Options'
 import { CacheImpl } from './core/all.internal'
 

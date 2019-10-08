@@ -8,7 +8,7 @@ import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, Snapshot, BL
 import { Cache } from '../Cache'
 export { Cache, cacheof, resolved } from '../Cache'
 import { Options, Kind, Reentrance, Trace } from '../Options'
-import { Transaction } from '../Transaction'
+import { Transaction } from '../Action'
 import { Monitor } from '../Monitor'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
