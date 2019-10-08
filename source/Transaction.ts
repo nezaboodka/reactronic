@@ -288,13 +288,8 @@ export class Transaction {
     Snapshot.writable = Transaction.writableSnapshot // override
     Transaction.none.sealed = true
     Transaction.none.snapshot.apply()
-    Snapshot.init.acquire(Snapshot.init)
-    Snapshot.init.apply()
-    Snapshot.init.collect()
     Transaction._current = Transaction.none
-    Snapshot.lastId = 100
-    Snapshot.headStamp = 101
-    Snapshot.oldest = undefined
+    Snapshot._init()
   }
 }
 

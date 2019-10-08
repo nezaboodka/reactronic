@@ -231,6 +231,15 @@ export class Snapshot implements Context {
       r.prev.record = BLANK // unlink history
     })
   }
+
+  static _init(): void {
+    Snapshot.init.acquire(Snapshot.init)
+    Snapshot.init.apply()
+    Snapshot.init.collect()
+    Snapshot.lastId = 100
+    Snapshot.headStamp = 101
+    Snapshot.oldest = undefined
+  }
 }
 
 export const BLANK = new Record(Snapshot.init, undefined, {})
