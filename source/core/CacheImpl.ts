@@ -389,7 +389,8 @@ class CacheResult extends FieldValue implements Observer {
     if (c && c.options.kind !== Kind.Transaction && field !== R_HANDLE) {
       const ctx = Snapshot.readable()
       ctx.bump(record.creator.timestamp)
-      if (!c.subscribeToFieldValue(weak, record, field, value, ctx.timestamp))
+      const t = weak ? -1 : ctx.timestamp
+      if (!c.subscribeToFieldValue(weak, record, field, value, t))
         c.invalidateDueTo(value, {record, field, times: 0}, ctx.timestamp, ctx.triggers)
     }
   }
