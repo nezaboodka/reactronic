@@ -417,7 +417,7 @@ class CacheResult extends FieldValue implements Observer {
           for (const field in r.prev.record.data)
             CacheResult.markPrevValueAsReplaced(timestamp, r, field, triggers)
       })
-      // Subscribe to new observers and complete field change
+      // Subscribe to new observers and finish cache computations
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(R_UNMOUNT))
           r.changes.forEach(field =>
