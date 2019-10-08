@@ -292,10 +292,6 @@ export class Transaction {
     Snapshot.init.apply()
     Snapshot.init.collect()
     Transaction._current = Transaction.none
-    const blank = new Record(Snapshot.init, Snapshot.blank, {})
-    blank.prev.record = blank // loopback
-    Snapshot.blank = blank
-    blank.freeze()
     Snapshot.lastId = 100
     Snapshot.headStamp = 101
     Snapshot.oldest = undefined

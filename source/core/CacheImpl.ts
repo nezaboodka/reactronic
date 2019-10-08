@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Dbg, misuse, Utils, F } from '../util/all'
-import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, Snapshot, Hint, OptionsImpl, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
+import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, Snapshot, BLANK, Hint, OptionsImpl, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './all'
 import { Cache } from '../Cache'
 export { Cache, cacheof, resolved } from '../Cache'
 import { Options, Kind, Reentrance, Trace } from '../Options'
@@ -31,7 +31,7 @@ export class CacheImpl extends Cache<any> {
   constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
     super()
     this.handle = handle
-    this.blank = new CacheResult(Snapshot.blank, field, options)
+    this.blank = new CacheResult(BLANK, field, options)
     CacheResult.freeze(this.blank)
   }
 
@@ -144,7 +144,7 @@ export class CacheImpl extends Cache<any> {
   static doInvalidate(self: CacheImpl): void {
     const call = self.write()
     const c = call.cache
-    c.getObservables(false).set(c, {record: Snapshot.blank, field: c.field, times: 0})
+    c.getObservables(false).set(c, {record: BLANK, field: c.field, times: 0})
     // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", "  r ", `${c.hint(true)} uses ${Hint.record(r, field)}`)
   }
 

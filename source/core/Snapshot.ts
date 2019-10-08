@@ -18,7 +18,6 @@ export class Snapshot implements Context {
   static pending: Snapshot[] = []
   static oldest: Snapshot | undefined = undefined
   static readonly init: Snapshot = new Snapshot("<init>", undefined)
-  static blank: Record // initialized by Transaction._init
 
   readonly id: number
   readonly hint: string
@@ -51,7 +50,7 @@ export class Snapshot implements Context {
 
   read(h: Handle): Record {
     const r = this.tryRead(h)
-    if (r === Snapshot.blank) /* istanbul ignore next */
+    if (r === BLANK) /* istanbul ignore next */
       throw misuse(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.stamp}`)
     return r
   }
@@ -65,7 +64,7 @@ export class Snapshot implements Context {
     }
     if (!r) {
       r = h.head
-      while (r !== Snapshot.blank && r.creator.timestamp > this.timestamp)
+      while (r !== BLANK && r.creator.timestamp > this.timestamp)
         r = r.prev.record
     }
     return r
@@ -90,7 +89,7 @@ export class Snapshot implements Context {
       throw misuse(`stateful property ${Hint.handle(h, field)} can only be modified inside transaction`)
     if (r.creator !== this && value !== R_HANDLE && this.caching !== undefined && token !== this.caching)
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hint.record(r, field)}`)
-    if (r === Snapshot.blank && value !== R_HANDLE) /* istanbul ignore next */
+    if (r === BLANK && value !== R_HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hint.record(r, field)} doesn't exist in snapshot v${this.stamp}`)
   }
 
@@ -228,8 +227,11 @@ export class Snapshot implements Context {
   private unlinkHistory(): void {
     if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", "GC", `v${this.stamp}t${this.id} (${this.hint}) snapshot is the oldest one now`)
     this.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== Snapshot.blank) Dbg.log("", " g", `v${this.stamp}t${this.id}: ${Hint.record(r.prev.record)} is ready for GC because overwritten by ${Hint.record(r)}`)
-      r.prev.record = Snapshot.blank // unlink history
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== BLANK) Dbg.log("", " g", `v${this.stamp}t${this.id}: ${Hint.record(r.prev.record)} is ready for GC because overwritten by ${Hint.record(r)}`)
+      r.prev.record = BLANK // unlink history
     })
   }
 }
+
+export const BLANK = new Record(Snapshot.init, undefined, {})
+BLANK.freeze()
