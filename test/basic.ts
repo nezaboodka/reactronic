@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, transaction, trigger, cached, cachedArgs, Reactronic as R, trace } from '../source/api'
+import { Stateful, stateless, transaction, trigger, cached, cachedArgs, Reactivity as R, trace } from '../source/api'
 import { Person } from './common'
 
 export const output: string[] = []

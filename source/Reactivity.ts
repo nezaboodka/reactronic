@@ -7,7 +7,7 @@ import { Dbg } from './util/Dbg'
 import { Hooks, Hint } from './core/all'
 import { Trace } from './Options'
 
-export class Reactronic {
+export class Reactivity {
   // Options
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
   static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }
