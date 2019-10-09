@@ -83,9 +83,9 @@ itself. The new values become atomically visible outside of the
 action only upon its completion.
 
 Atomicity is achieved by making changes in an isolated data
-snapshot that is visible outside of the action (e.g. displayed
-on user screen) only when it is finished. Multiple
-objects and their properties can be changed with full respect
+snapshot that is not visible outside of the running action
+until it is fully finished and applied. Multiple objects
+and their properties can be changed with full respect
 to the all-or-nothing principle. To do so, separate data
 snapshot is automatically maintained for each action.
 That is a logical snapshot that does not create a full copy
