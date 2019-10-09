@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Utils } from '../util/all'
+import { Utils } from '../util/Utils'
 
 export const R_HANDLE: unique symbol = Symbol("R:HANDLE")
 export const R_CACHE: unique symbol = Symbol("R:CACHE")

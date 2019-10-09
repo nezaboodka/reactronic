@@ -3,8 +3,9 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { F } from './util/all'
-import { Action, Options } from './core/all.api'
+import { F } from './util/Utils'
+import { Options } from './Options'
+import { Action } from './Action'
 import { Method } from './core/Method' // implementation
 
 export function cacheof<T>(method: F<T>): Cache<T> {

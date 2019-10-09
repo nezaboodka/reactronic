@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { Stateful, action, cached, trigger, cacheof } from 'core/all.api'
+import { Stateful, action, cached, trigger, cacheof } from '.api'
 
 class Model extends Stateful {
   // state

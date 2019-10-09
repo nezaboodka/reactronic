@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Action, Cache, Tools as RT, Reentrance, cacheof, resolved, sleep } from '../source/core/all.api'
+import { Action, Cache, Tools as RT, Reentrance, cacheof, resolved, sleep } from '../source/.api'
 import { DemoModel, DemoView, mon, output, tracing } from './async'
 
 const requests: Array<{ url: string, delay: number }> = [

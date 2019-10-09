@@ -3,8 +3,8 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { F } from './util/all'
-import { Trace } from './core/all.api'
+import { F } from './util/Utils'
+import { Trace } from './Trace'
 import { Transaction } from './core/Transaction' // implementation
 
 export abstract class Action {

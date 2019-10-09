@@ -3,8 +3,8 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Utils } from '../util/all'
-import {Record, FieldKey, Handle, R_HANDLE } from './Data'
+import { Utils } from '../util/Utils'
+import { Record, FieldKey, Handle, R_HANDLE } from './Data'
 
 // Hint
 
