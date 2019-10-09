@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Hint, Stateful } from './core/.internal'
+import { Hint, Stateful } from './core/.index'
 import { Action } from './Action'
 
 export class Monitor extends Stateful {

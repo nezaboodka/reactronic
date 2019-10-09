@@ -5,7 +5,7 @@
 
 import { undef, F } from '../util/Utils'
 import { Dbg, misuse, error } from '../util/Dbg'
-import { Record, Observer, Snapshot, Hint } from './.internal'
+import { Record, Observer, Snapshot, Hint } from './.index'
 import { Action } from '../Action'
 import { Trace } from '../Options'
 
