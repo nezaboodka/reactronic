@@ -1,6 +1,6 @@
 {
   "name": "reactronic",
-  "version": "0.19.201",
+  "version": "0.19.202",
   "description": "Reactronic - Transactionally Reactive State Management",
   "main": "build/package/source/core/all.api.js",
   "types": "build/package/source/core/all.api.d.ts",
