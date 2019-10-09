@@ -438,7 +438,7 @@ class CacheResult extends FieldValue implements Observer {
         value.unsubscribeFromAllObservables()
       }
       if (value.observers)
-        value.observers.forEach(c => c.invalidateDueTo(value, { record, field: field, times: 0 }, timestamp, triggers))
+        value.observers.forEach(c => c.invalidateDueTo(value, { record, field, times: 0 }, timestamp, triggers))
     }
   }
 
@@ -483,7 +483,7 @@ class CacheResult extends FieldValue implements Observer {
       if (!value.observers) // acquire
         value.observers = new Set<CacheResult>()
       // Two-way linking
-      const hint: FieldHint = {record, field: field, times}
+      const hint: FieldHint = {record, field, times}
       value.observers.add(this)
       observables.set(value, hint)
       // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  r `, `${c.hint()} ${weak ? 'uses (weakly)' : 'uses'} ${Hint.record(record, field)} - ${times} time(s)`)

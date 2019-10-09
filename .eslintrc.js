@@ -8,6 +8,7 @@ module.exports = {
     "prefer-const": "error",
     "comma-dangle": ["error", "always-multiline"],
     "no-unexpected-multiline": "error",
+    "object-shorthand": ["error", "always"],
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-unused-vars": "off",
     "@typescript-eslint/no-inferrable-types": "off",
