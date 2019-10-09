@@ -49,6 +49,7 @@ export function undef(...args: any[]): never {
   throw new Error("this method should never be called")
 }
 
+/* istanbul ignore next */
 export async function all(promises: Array<Promise<any>>): Promise<any[]> {
   let error: any
   const result = await Promise.all(promises.map(x => x.catch(e => { error = error || e; return e })))
