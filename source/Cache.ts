@@ -5,7 +5,7 @@
 
 import { F } from './util/all'
 import { Action, Options } from './core/all.api'
-import { CacheImpl } from './core/CacheImpl' // implementation
+import { Method } from './core/Method' // implementation
 
 export function cacheof<T>(method: F<T>): Cache<T> {
   return Cache.of<T>(method)
@@ -16,11 +16,11 @@ export function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined 
 }
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return CacheImpl.runAs<T>(undefined, func, ...args)
+  return Method.runAs<T>(undefined, func, ...args)
 }
 
 export function standalone<T>(func: F<T>, ...args: any[]): T {
-  return CacheImpl.runAs<T>(undefined, Action.outside, func, ...args)
+  return Method.runAs<T>(undefined, Action.outside, func, ...args)
 }
 
 export abstract class Cache<T> {
@@ -34,6 +34,6 @@ export abstract class Cache<T> {
   abstract invalidate(): void
   abstract call(args?: any[]): T | undefined
 
-  static of<T>(method: F<T>): Cache<T> { return CacheImpl.of(method) }
-  static unmount(...objects: any[]): Action { return CacheImpl.unmount(...objects) }
+  static of<T>(method: F<T>): Cache<T> { return Method.of(method) }
+  static unmount(...objects: any[]): Action { return Method.unmount(...objects) }
 }

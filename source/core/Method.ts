@@ -15,7 +15,7 @@ import { Monitor } from '../Monitor'
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 type CacheCall = { valid: boolean, cache: CacheResult, record: Record }
 
-export class CacheImpl extends Cache<any> {
+export class Method extends Cache<any> {
   private readonly handle: Handle
   private readonly blank: CacheResult
 
@@ -26,7 +26,7 @@ export class CacheImpl extends Cache<any> {
   get error(): boolean { return this.weak().cache.error }
   get stamp(): number { return this.weak().record.creator.timestamp }
   get invalid(): boolean { return !this.weak().valid }
-  invalidate(): void { Action.run(Dbg.isOn ? `cacheof(${Hint.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
+  invalidate(): void { Action.run(Dbg.isOn ? `cacheof(${Hint.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", Method.doInvalidate, this) }
   call(args?: any[]): any { return this.tryCall(true, args).cache.value }
 
   constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
@@ -109,7 +109,7 @@ export class CacheImpl extends Cache<any> {
     if (c.record !== r) {
       const renewing = new CacheResult(r, field, c)
       r.data[field] = renewing
-      renewing.error = CacheImpl.checkForReentrance(c)
+      renewing.error = Method.checkForReentrance(c)
       if (!renewing.error)
         c.invalid.renewing = renewing
       c = renewing
@@ -142,7 +142,7 @@ export class CacheImpl extends Cache<any> {
     return result
   }
 
-  static doInvalidate(self: CacheImpl): void {
+  static doInvalidate(self: Method): void {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c = call.cache
@@ -182,7 +182,7 @@ export class CacheImpl extends Cache<any> {
   }
 
   static createCacheTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
-    const cache = new CacheImpl(h, field, options)
+    const cache = new Method(h, field, options)
     const cacheTrap: F<any> = (...args: any[]): any =>
       cache.tryCall(false, args).cache.ret
     Utils.set(cacheTrap, R_CACHE, cache)
@@ -198,7 +198,7 @@ export class CacheImpl extends Cache<any> {
 
   static unmount(...objects: any[]): Action {
     return Action.runEx("<unmount>", false, false,
-      undefined, undefined, CacheImpl.unmountFunc, ...objects)
+      undefined, undefined, Method.unmountFunc, ...objects)
   }
 
   private static unmountFunc(...objects: any[]): Action {
@@ -260,7 +260,7 @@ class CacheResult extends FieldValue implements Observer {
   bind<T>(func: F<T>): F<T> {
     const fCacheRun: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hint.record(this.record)}.${this.field.toString()} - step in  `, 0, "        │")
-      const result = CacheImpl.runAs<T>(this, func, ...args)
+      const result = Method.runAs<T>(this, func, ...args)
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "_/", `${Hint.record(this.record)}.${this.field.toString()} - step out `, 0, this.started > 0 ? "        │" : "")
       return result
     }
@@ -271,7 +271,7 @@ class CacheResult extends FieldValue implements Observer {
     if (args)
       this.args = args
     if (!this.error)
-      CacheImpl.runAs<void>(this, CacheResult.computeFunc, proxy, this)
+      Method.runAs<void>(this, CacheResult.computeFunc, proxy, this)
     else
       this.ret = Promise.reject(this.error)
     this.invalid.since = TOP_TIMESTAMP
@@ -325,7 +325,7 @@ class CacheResult extends FieldValue implements Observer {
   }
 
   private monitorEnter(mon: Monitor): void {
-    CacheImpl.runAs<void>(undefined, Action.runEx, "Monitor.enter",
+    Method.runAs<void>(undefined, Action.runEx, "Monitor.enter",
       true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
       Monitor.enter, mon, this)
   }
@@ -333,7 +333,7 @@ class CacheResult extends FieldValue implements Observer {
   private monitorLeave(mon: Monitor): void {
     Action.outside<void>(() => {
       const leave = (): void => {
-        CacheImpl.runAs<void>(undefined, Action.runEx, "Monitor.leave",
+        Method.runAs<void>(undefined, Action.runEx, "Monitor.leave",
           true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           Monitor.leave, mon, this)
       }
@@ -355,7 +355,7 @@ class CacheResult extends FieldValue implements Observer {
         try {
           const proxy: any = Utils.get<Handle>(this.record.data, R_HANDLE).proxy
           const trap: Function = Reflect.get(proxy, this.field, proxy)
-          const cache = Utils.get<CacheImpl>(trap, R_CACHE)
+          const cache = Utils.get<Method>(trap, R_CACHE)
           const call: CacheCall = cache.tryCall(false)
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }) // bad idea to hide an error
@@ -534,7 +534,7 @@ class CacheResult extends FieldValue implements Observer {
     Snapshot.markChanged = CacheResult.markChanged // override
     Snapshot.isConflicting = CacheResult.isConflicting // override
     Snapshot.applyAllDependencies = CacheResult.applyAllDependencies // override
-    Hooks.createCacheTrap = CacheImpl.createCacheTrap // override
+    Hooks.createCacheTrap = Method.createCacheTrap // override
     Promise.prototype.then = fReactronicThen // override
   }
 }
