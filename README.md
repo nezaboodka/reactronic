@@ -47,9 +47,9 @@ their properties, both on reads and writes.
 
 ``` typescript
 class MyModel extends Stateful {
-  url: string = "https://github.com/nezaboodka/reactronic";
-  content: string = "transactionally reactive state management";
-  timestamp: Date = Date.now();
+  url: string = "https://github.com/nezaboodka/reactronic"
+  content: string = "transactionally reactive state management"
+  timestamp: Date = Date.now()
 }
 ```
 
@@ -69,9 +69,9 @@ class MyModel extends Stateful {
   // ...
   @action
   async load(url: string): Promise<void> {
-    this.url = url;
-    this.content = await fetch(url);
-    this.timestamp = Date.now();
+    this.url = url
+    this.content = await fetch(url)
+    this.timestamp = Date.now()
   }
 }
 ```
@@ -121,7 +121,7 @@ class MyView extends React.Component<MyModel> {
   @trigger // called immediately in response to state changes
   keepFresh() {
     if (cacheof(this.render).invalid)
-      this.setState({}); // telling React to re-render
+      this.setState({}) // telling React to re-render
   } // keepFresh is subscribed to render
 
   @cached
@@ -130,7 +130,7 @@ class MyView extends React.Component<MyModel> {
       <div>
         <h1>{this.props.url}</h1>
         <div>{this.props.content}</div>
-      </div>);
+      </div>)
   } // render is subscribed to "url" and "content"
 }
 ```
@@ -208,27 +208,27 @@ NPM: `npm install reactronic`
 ```typescript
 // Decorators
 
-function stateful(proto, prop?); // field or class
-function stateless(proto, prop); // field only
-function action(proto, prop, pd); // method only
-function trigger(proto, prop, pd); // method only
-function cached(proto, prop, pd); // method only
+function stateful(proto, prop?) // field or class
+function stateless(proto, prop) // field only
+function action(proto, prop, pd) // method only
+function trigger(proto, prop, pd) // method only
+function cached(proto, prop, pd) // method only
 
-function latency(latency: number); // triggers only
-function reentrance(reentrance: Reentrance); // actions & triggers
-function cachedArgs(cachedArgs: boolean); // cached & triggers
-function monitor(monitor: Monitor | null);
-function trace(trace: Partial<Trace>);
+function latency(latency: number) // triggers only
+function reentrance(reentrance: Reentrance) // actions & triggers
+function cachedArgs(cachedArgs: boolean) // cached & triggers
+function monitor(monitor: Monitor | null)
+function trace(trace: Partial<Trace>)
 
 // Options, Kind, Reentrance, Monitor, Trace
 
 interface Options {
-  readonly kind: Kind;
-  readonly latency: number; // milliseconds, -1 is immediately, -2 is never
-  readonly reentrance: Reentrance;
-  readonly cachedArgs: boolean;
-  readonly monitor: Monitor | null;
-  readonly trace?: Partial<Trace>;
+  readonly kind: Kind
+  readonly latency: number // milliseconds, -1 is immediately, -2 is never
+  readonly reentrance: Reentrance
+  readonly cachedArgs: boolean
+  readonly monitor: Monitor | null
+  readonly trace?: Partial<Trace>
 }
 
 enum Kind {
@@ -247,83 +247,83 @@ enum Reentrance {
 }
 
 class Monitor {
-  readonly busy: boolean;
-  readonly counter: number;
-  static create(hint?: string): Monitor;
+  readonly busy: boolean
+  readonly counter: number
+  static create(hint?: string): Monitor
 }
 
 interface Trace {
-  readonly silent: boolean;
-  readonly actions: boolean;
-  readonly methods: boolean;
-  readonly steps: boolean;
-  readonly monitors: boolean;
-  readonly reads: boolean;
-  readonly writes: boolean;
-  readonly changes: boolean;
-  readonly subscriptions: boolean;
-  readonly invalidations: boolean;
-  readonly gc: boolean;
+  readonly silent: boolean
+  readonly actions: boolean
+  readonly methods: boolean
+  readonly steps: boolean
+  readonly monitors: boolean
+  readonly reads: boolean
+  readonly writes: boolean
+  readonly changes: boolean
+  readonly subscriptions: boolean
+  readonly invalidations: boolean
+  readonly gc: boolean
 }
 
 // Action
 
-type F<T> = (...args: any[]) => T;
+type F<T> = (...args: any[]) => T
 
 class Action {
-  constructor(hint: string);
-  readonly id: number;
-  readonly hint: string;
-  run<T>(func: F<T>, ...args: any[]): T;
-  wrap<T>(func: F<T>): F<T>;
-  apply(): void;
-  seal(): Action; // a1.seal().whenFinished().then(fulfill, reject)
-  cancel(error?: Error, retryAfter?: Action);
-  isCanceled(): boolean;
-  isFinished(): boolean;
-  whenFinished(): Promise<void>;
-  join<T>(p: Promise<T>): Promise<T>;
+  constructor(hint: string)
+  readonly id: number
+  readonly hint: string
+  run<T>(func: F<T>, ...args: any[]): T
+  wrap<T>(func: F<T>): F<T>
+  apply(): void
+  seal(): Action // a1.seal().whenFinished().then(fulfill, reject)
+  cancel(error?: Error, retryAfter?: Action)
+  isCanceled(): boolean
+  isFinished(): boolean
+  whenFinished(): Promise<void>
+  join<T>(p: Promise<T>): Promise<T>
 
-  static readonly current: Action;
+  static readonly current: Action
 
-  static run<T>(hint: string, func: F<T>, ...args: any[]): T;
+  static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
-    trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T;
-  static outside<T>(func: F<T>, ...args: any[]): T;
+    trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T
+  static outside<T>(func: F<T>, ...args: any[]): T
 }
 
 // Cache
 
-function cacheof<T>(method: F<T>): Cache<T>;
-function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined;
-function nonreactive<T>(func: F<T>, ...args: any[]): T;
-function standalone<T>(func: F<T>, ...args: any[]): T;
+function cacheof<T>(method: F<T>): Cache<T>
+function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined
+function nonreactive<T>(func: F<T>, ...args: any[]): T
+function standalone<T>(func: F<T>, ...args: any[]): T
 
 abstract class Cache<T> {
-  setup(options: Partial<Options>): Options;
-  readonly options: Options;
-  readonly args: ReadonlyArray<any>;
-  readonly value: T;
-  readonly error: any;
-  readonly stamp: number;
-  readonly invalid: boolean;
-  invalidate(): boolean;
-  call(args?: any[]): T | undefined;
+  setup(options: Partial<Options>): Options
+  readonly options: Options
+  readonly args: ReadonlyArray<any>
+  readonly value: T
+  readonly error: any
+  readonly stamp: number
+  readonly invalid: boolean
+  invalidate(): boolean
+  call(args?: any[]): T | undefined
 
-  static of<T>(method: F<T>): Cache<T>;
-  static unmount(...objects: any[]): Action;
+  static of<T>(method: F<T>): Cache<T>
+  static unmount(...objects: any[]): Action
 }
 
 // Tools
 
 class Tools {
-  static triggersAutoStartDisabled: boolean;
-  static performanceWarningThreshold: number;
-  static readonly isTraceOn: boolean;
-  static readonly trace: Trace;
-  static setTrace(t: Trace | undefined);
-  static setTraceHint<T extends object>(obj: T, name: string | undefined): void;
-  static getTraceHint<T extends object>(obj: T): string | undefined;
+  static triggersAutoStartDisabled: boolean
+  static performanceWarningThreshold: number
+  static readonly isTraceOn: boolean
+  static readonly trace: Trace
+  static setTrace(t: Trace | undefined)
+  static setTraceHint<T extends object>(obj: T, name: string | undefined): void
+  static getTraceHint<T extends object>(obj: T): string | undefined
 }
 
 ```
