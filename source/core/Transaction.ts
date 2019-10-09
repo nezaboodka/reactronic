@@ -24,7 +24,7 @@ export class Transaction extends Action {
   private promise?: Promise<void>
   private resolve: (value?: void) => void
   private reject: (reason: any) => void
-  private readonly reaction: { task?: Transaction }
+  private readonly reaction: { action?: Action }
 
   constructor(hint: string, sidebyside: boolean = false, trace?: Partial<Trace>, token?: any) {
     super()
@@ -39,7 +39,7 @@ export class Transaction extends Action {
     this.promise = undefined
     this.resolve = undef
     this.reject = undef
-    this.reaction = { task: undefined }
+    this.reaction = { action: undefined }
   }
 
   static get current(): Transaction { return Transaction.running }
@@ -107,8 +107,8 @@ export class Transaction extends Action {
   async whenFinished(includingReaction: boolean): Promise<void> {
     if (!this.isFinished())
       await this.acquirePromise()
-    if (includingReaction && this.reaction.task)
-      await this.reaction.task.whenFinished(true)
+    if (includingReaction && this.reaction.action)
+      await this.reaction.action.whenFinished(true)
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
@@ -150,7 +150,7 @@ export class Transaction extends Action {
   }
 
   private guard(): void {
-    if (this.error) // prevent from continuing canceled task
+    if (this.error) // prevent from continuing canceled transaction
       throw this.error
     if (this.sealed && Transaction.running !== this)
       throw misuse("cannot run action that is already sealed")
@@ -215,7 +215,7 @@ export class Transaction extends Action {
 
   private runTriggers(): void {
     const hint = Dbg.isOn ? `■-■-■ TRIGGERS(${this.snapshot.triggers.length}) after T${this.id} (${this.snapshot.hint})` : /* istanbul ignore next */ "TRIGGERS"
-    this.reaction.task = Transaction.runEx(hint, true, false, this.trace, undefined,
+    this.reaction.action = Transaction.runEx(hint, true, false, this.trace, undefined,
       Transaction.runTriggersFunc, this.snapshot.triggers)
   }
 
