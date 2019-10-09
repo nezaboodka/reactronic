@@ -246,6 +246,8 @@ export class Transaction extends Action {
       this.error = this.error || error(`action T${this.id} (${this.hint}) conflicts with: ${Hint.conflicts(conflicts)}`)
       throw this.error
     } // ignore conflicts otherwise
+    else if (Dbg.isOn && Dbg.trace.warnings)
+      Dbg.log("║", "  · ", `conflict is ignored - action T${this.id} (${this.hint}) conflicts with: ${Hint.conflicts(conflicts)}`)
   }
 
   private finish(): void {

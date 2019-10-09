@@ -5,9 +5,9 @@
   "branches": 50,
   "exclude": [
     "**/*.d.ts",
-    "source/core/CopyOnWriteArray.ts",
-    "source/core/CopyOnWriteSet.ts",
-    "source/core/CopyOnWriteMap.ts"
+    "source/util/CopyOnWriteArray.ts",
+    "source/util/CopyOnWriteSet.ts",
+    "source/util/CopyOnWriteMap.ts"
   ],
   "include": [
     "source/**/*.ts",
