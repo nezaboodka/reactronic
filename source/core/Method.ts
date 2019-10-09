@@ -79,7 +79,7 @@ export class Method extends Cache<any> {
       if (!weak && Snapshot.readable().timestamp >= call2.cache.record.creator.timestamp)
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Action.current.isFinished() ? "" : "║", " (=)", `${Hint.record(call.record)}.${call.cache.field.toString()} is reused (cached by T${call.cache.action.id} ${call.cache.action.hint})`)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Action.current.isFinished() ? "" : "║", " (=)", `${Hint.record(call.record)}.${call.cache.field.toString()} result is reused from T${call.cache.action.id} ${call.cache.action.hint}`)
     Snapshot.markViewed(call.record, call.cache.field, call.cache, weak)
     return call
   }
