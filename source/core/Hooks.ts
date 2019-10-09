@@ -199,29 +199,30 @@ export class Hooks implements ProxyHandler<Handle> {
     return ctor
   }
 
-  // static decorateClassOld(implicit: boolean, options: Partial<Options>, origCtor: any): any {
-  //   let ctor: any = origCtor
-  //   const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-  //   const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[R_TRIGGERS]
-  //   if (stateful) {
-  //     ctor = function(this: any, ...args: any[]): any {
-  //       const stateless = new origCtor(...args)
-  //       const h: Handle = stateless instanceof Proxy
-  //         ? stateless[R_HANDLE] || Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
-  //         : Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
-  //       if (triggers)
-  //         triggers.forEach((fieldOptions, field) => {
-  //           const cache: Cache<any> = h.proxy[field][R_CACHE]
-  //           cache.invalidate()
-  //         })
-  //       return h.proxy
-  //     }
-  //     Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)) // preserve prototype
-  //     Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)) // preserve static definitions
-  //   }
-  //   Hooks.setup(ctor.prototype, R_CLASS, decoratedclass, options, implicit)
-  //   return ctor
-  // }
+  /* istanbul ignore next */
+  static decorateClassOld(implicit: boolean, options: Partial<Options>, origCtor: any): any {
+    let ctor: any = origCtor
+    const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
+    const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[R_TRIGGERS]
+    if (stateful) {
+      ctor = function(this: any, ...args: any[]): any {
+        const stateless = new origCtor(...args)
+        const h: Handle = stateless instanceof Proxy
+          ? stateless[R_HANDLE] || Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
+          : Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
+        if (triggers)
+          triggers.forEach((fieldOptions, field) => {
+            const cache: Cache<any> = h.proxy[field][R_CACHE]
+            cache.invalidate()
+          })
+        return h.proxy
+      }
+      Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)) // preserve prototype
+      Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)) // preserve static definitions
+    }
+    Hooks.setup(ctor.prototype, R_CLASS, decoratedclass, options, implicit)
+    return ctor
+  }
 
   static decorateField(implicit: boolean, options: Partial<Options>, proto: any, field: FieldKey): any {
     options = Hooks.setup(proto, field, decoratedfield, options, implicit)
