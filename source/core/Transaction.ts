@@ -152,7 +152,7 @@ export class Transaction extends Action {
 
   private guard(): void {
     if (this.error) // prevent from continuing canceled transaction
-      throw this.error
+      throw error(this.error.message, this.error)
     if (this.sealed && Transaction.running !== this)
       throw misuse("cannot run action that is already sealed")
   }
@@ -247,7 +247,7 @@ export class Transaction extends Action {
 
   private tryResolveConflicts(conflicts: Record[]): void {
     if (!this.sidebyside) {
-      this.error = this.error || error(`action T${this.id} (${this.hint}) conflicts with: ${Hint.conflicts(conflicts)}`)
+      this.error = this.error || error(`action T${this.id} (${this.hint}) conflicts with: ${Hint.conflicts(conflicts)}`, undefined)
       throw this.error
     } // ignore conflicts otherwise
     else if (Dbg.isOn && Dbg.trace.warnings)
