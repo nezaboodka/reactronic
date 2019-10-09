@@ -10,17 +10,17 @@ import { Transaction } from './core/Transaction' // implementation
 export abstract class Action {
   static get current(): Action { return Transaction.current }
 
-  abstract readonly id: number;
-  abstract readonly hint: string;
-  abstract run<T>(func: F<T>, ...args: any[]): T;
-  abstract inspect<T>(func: F<T>, ...args: any[]): T;
-  abstract apply(): void;
-  abstract seal(): this;
-  abstract bind<T>(func: F<T>, secondary: boolean): F<T>;
-  abstract cancel(error: Error, retryAfterOrIgnore?: Action | null): this;
-  abstract isCanceled(): boolean;
-  abstract isFinished(): boolean;
-  abstract async whenFinished(includingReaction: boolean): Promise<void>;
+  abstract readonly id: number
+  abstract readonly hint: string
+  abstract run<T>(func: F<T>, ...args: any[]): T
+  abstract inspect<T>(func: F<T>, ...args: any[]): T
+  abstract apply(): void
+  abstract seal(): this
+  abstract bind<T>(func: F<T>, secondary: boolean): F<T>
+  abstract cancel(error: Error, retryAfterOrIgnore?: Action | null): this
+  abstract isCanceled(): boolean
+  abstract isFinished(): boolean
+  abstract async whenFinished(includingReaction: boolean): Promise<void>
 
   static create(hint: string): Action { return new Transaction(hint) }
   static run<T>(hint: string, func: F<T>, ...args: any[]): T { return Transaction.run<T>(hint, func, ...args) }
