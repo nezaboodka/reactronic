@@ -271,7 +271,6 @@ interface Trace {
 type F<T> = (...args: any[]) => T
 
 class Action {
-  constructor(hint: string)
   readonly id: number
   readonly hint: string
   run<T>(func: F<T>, ...args: any[]): T
@@ -285,7 +284,7 @@ class Action {
   join<T>(p: Promise<T>): Promise<T>
 
   static readonly current: Action
-
+  static create(hint: string): Action
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
     trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T
