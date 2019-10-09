@@ -4,8 +4,8 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { F } from './util/all'
-import { Trace } from './Options'
-import { Transaction } from './core/Transaction'
+import { Trace } from './core/all.api'
+import { Transaction } from './core/Transaction' // implementation
 
 export abstract class Action {
   static get current(): Action { return Transaction.current }

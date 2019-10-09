@@ -5,7 +5,7 @@
 
 import { F } from './util/all'
 import { Action, Options } from './core/all.api'
-import { CacheImpl } from './core/all.internal'
+import { CacheImpl } from './core/CacheImpl' // implementation
 
 export function cacheof<T>(method: F<T>): Cache<T> {
   return Cache.of<T>(method)
