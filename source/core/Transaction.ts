@@ -157,20 +157,24 @@ export class Transaction extends Action {
       throw misuse("cannot run action that is already sealed")
   }
 
-  private async wrapToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T> {
+  private async wrapToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T | undefined> {
     try {
       const result = await p
       return result
     }
     catch (error) {
-      if (this.retryAfter && this.retryAfter !== Transaction.none) {
-        // if (Dbg.trace.actions) Dbg.log("", "  ", `action T${this.id} (${this.hint}) is waiting for restart`)
-        await this.retryAfter.whenFinished(true)
-        // if (Dbg.trace.actions) Dbg.log("", "  ", `action T${this.id} (${this.hint}) is ready for restart`)
-        return Transaction.runEx<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
+      if (this.retryAfter !== Transaction.none) {
+        if (this.retryAfter) {
+          // if (Dbg.trace.actions) Dbg.log("", "  ", `action T${this.id} (${this.hint}) is waiting for restart`)
+          await this.retryAfter.whenFinished(true)
+          // if (Dbg.trace.actions) Dbg.log("", "  ", `action T${this.id} (${this.hint}) is ready for restart`)
+          return Transaction.runEx<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
+        }
+        else
+          throw error
       }
       else
-        throw error
+        return undefined
     }
   }
 
