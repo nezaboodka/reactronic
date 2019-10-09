@@ -113,7 +113,8 @@ export class Hooks implements ProxyHandler<Handle> {
     let result: any
     const options: OptionsImpl | undefined = Hooks.getOptions(h.stateless, field)
     if (!options || (options.body === decoratedfield && options.kind !== Kind.Stateless)) { // versioned state
-      const r: Record = Snapshot.readable().read(h)
+      const ctx = Snapshot.readable()
+      const r: Record = ctx.read(h)
       result = r.data[field]
       if (result instanceof FieldValue) {
         Snapshot.markViewed(r, field, result, false)
@@ -126,7 +127,7 @@ export class Hooks implements ProxyHandler<Handle> {
         result = Reflect.get(h.stateless, field, receiver)
         if (result === undefined && field !== Symbol.toPrimitive)
           // Record.markViewed(r, field, false); // treat undefined fields as stateful
-          throw misuse(`unassigned properties are not supported: ${Hint.record(r, field)}`)
+          throw misuse(`unassigned properties are not supported: ${Hint.record(r, field)} is used by T${ctx.id} (${ctx.hint})`)
       }
     }
     else
