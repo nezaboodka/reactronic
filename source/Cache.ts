@@ -4,8 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { F } from './util/all'
-import { Action } from './Action'
-import { Options } from './Options'
+import { Action, Options } from './core/all.api'
 import { CacheImpl } from './core/all.internal'
 
 export function cacheof<T>(method: F<T>): Cache<T> {

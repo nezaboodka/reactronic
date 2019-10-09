@@ -9,6 +9,7 @@ import { Cache } from '../Cache'
 export { Cache, cacheof, resolved } from '../Cache'
 import { Options, Kind, Reentrance, Trace } from '../Options'
 import { Action } from '../Action'
+import { Transaction } from './Transaction'
 import { Monitor } from '../Monitor'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
@@ -558,9 +559,9 @@ function valueHint(value: any): string {
 }
 
 function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
-  const a = Action.current
-  let res = Dbg.merge(a.trace, a.id > 1 ? 31 + a.id % 6 : 37, a.id > 1 ? `T${a.id}` : "", Dbg.global)
-  res = Dbg.merge({margin1: a.margin}, undefined, undefined, res)
+  const t = Transaction.current
+  let res = Dbg.merge(t.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : "", Dbg.global)
+  res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
   if (CacheResult.active)
     res = Dbg.merge({margin2: CacheResult.active.margin}, undefined, undefined, res)
   if (local)

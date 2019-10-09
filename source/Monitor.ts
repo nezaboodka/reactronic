@@ -3,29 +3,29 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Hint, Stateful } from './core/all.internal'
-import { Action } from './Action'
+import { Hint } from './core/all.internal'
+import { Action, Stateful } from './core/all.api'
 
 export class Monitor extends Stateful {
   private toggle: boolean = false
   private counter: number = 0
-  private workers = new Set<Task>()
+  private workers = new Set<Worker>()
   get busy(): boolean { return this.toggle }
   get count(): number { return this.counter }
-  get tasks(): ReadonlySet<Task> { return this.workers }
+  get tasks(): ReadonlySet<Worker> { return this.workers }
 
   static create(hint?: string): Monitor {
     return Action.run("Monitor.create", Monitor.createFunc, hint)
   }
 
-  static enter(m: Monitor, worker: Task): void {
+  static enter(m: Monitor, worker: Worker): void {
     if (m.counter === 0)
       m.toggle = true
     m.counter++
     m.workers.add(worker)
   }
 
-  static leave(m: Monitor, worker: Task): void {
+  static leave(m: Monitor, worker: Worker): void {
     m.workers.delete(worker)
     m.counter--
     if (m.counter === 0)
@@ -37,6 +37,6 @@ export class Monitor extends Stateful {
   }
 }
 
-export interface Task {
+export interface Worker {
   readonly action: Action
 }

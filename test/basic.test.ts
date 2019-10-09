@@ -51,7 +51,7 @@ test("basic", t => {
     rendering.invalidate()
     t.not(rendering.stamp, stamp)
     // Multi-part actions
-    const action1 = new Action("action1")
+    const action1 = Action.create("action1")
     action1.run(() => {
       t.throws(() => action1.apply(), "cannot apply action having active workers")
       app.model.shared = app.shared = action1.hint
@@ -117,11 +117,11 @@ test("basic", t => {
       "given method is not a reactronic cache")
     t.throws(() => { console.log(cacheof(daddy.setParent).options.monitor) },
       "given method is not a reactronic cache")
-    const action2 = new Action("action2")
+    const action2 = Action.create("action2")
     t.throws(() => action2.run(() => { throw new Error("test") }), "test")
     t.throws(() => action2.apply(),
       "cannot apply action that is already canceled: Error: test")
-    const action3 = new Action("action3")
+    const action3 = Action.create("action3")
     t.throws(() => action3.run(() => {
       action3.cancel(new Error("test"))
       action3.run(nop)
