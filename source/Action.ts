@@ -9,7 +9,7 @@ import { Trace } from './Options'
 
 export class Action {
   private static readonly none: Action = new Action("<none>")
-  private static running: Action
+  private static running: Action = Action.none
   private static inspection: boolean = false
 
   readonly trace?: Partial<Trace> // assigned in constructor
@@ -283,7 +283,6 @@ export class Action {
     Snapshot.writable = Action.writableSnapshot // override
     Action.none.sealed = true
     Action.none.snapshot.apply()
-    Action.running = Action.none
     Snapshot._init()
   }
 }
