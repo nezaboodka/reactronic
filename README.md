@@ -176,8 +176,8 @@ invocation of the corresponding function:
   - `Reentrance.CancelPrevious` - cancel previous action in favor of current one;
   - `Reentrance.RunSideBySide` - multiple simultaneous actions are allowed.
 
-**Stopwatch** is an object that holds the status of running functions,
-which it is attached to. A single stopwatch object can be shared between
+**Indicator** is an object that holds the status of running functions,
+which it is attached to. A single indicator object can be shared between
 multiple actions, triggers, and cache functions, thus maintaining
 consolidated status for all of them (busyness, workers, ticks, etc).
 
@@ -216,7 +216,7 @@ function cached(proto, prop, pd) // method only
 
 function reentrance(reentrance: Reentrance) // actions & triggers
 function cachedArgs(cachedArgs: boolean) // cached & triggers
-function stopwatch(stopwatch: Stopwatch | null)
+function indicator(indicator: Indicator | null)
 function trace(trace: Partial<Trace>)
 
 function cacheof<T>(method: F<T>): Cache<T>
@@ -224,13 +224,13 @@ function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined
 function nonreactive<T>(func: F<T>, ...args: any[]): T
 function standalone<T>(func: F<T>, ...args: any[]): T
 
-// Options, Kind, Reentrance, Stopwatch, Trace
+// Options, Kind, Reentrance, Indicator, Trace
 
 interface Options {
   readonly kind: Kind
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly stopwatch: Stopwatch | null
+  readonly indicator: Indicator | null
   readonly trace?: Partial<Trace>
 }
 
@@ -249,12 +249,12 @@ enum Reentrance {
   RunSideBySide = -2, // multiple simultaneous actions are allowed
 }
 
-class Stopwatch {
+class Indicator {
   readonly delay?: number
   readonly busy: boolean
   readonly counter: number
   readonly ticks: number
-  static create(hint?: string, delay?: number): Stopwatch
+  static create(hint?: string, delay?: number): Indicator
 }
 
 interface Trace {
@@ -262,7 +262,7 @@ interface Trace {
   readonly actions: boolean
   readonly methods: boolean
   readonly steps: boolean
-  readonly stopwatch: boolean
+  readonly indicators: boolean
   readonly reads: boolean
   readonly writes: boolean
   readonly changes: boolean

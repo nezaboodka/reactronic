@@ -5,12 +5,12 @@
 
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, Snapshot, BLANK, Hint, OptionsImpl, StopwatchImpl, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './.index'
+import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, Snapshot, BLANK, Hint, OptionsImpl, IndicatorImpl, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './.index'
 import { Cache } from '../Cache'
 import { Options, Kind, Reentrance, Trace } from '../Options'
 import { Action } from '../Action'
 import { ActionImpl } from './ActionImpl'
-import { Stopwatch } from '../Stopwatch'
+import { Indicator } from '../Indicator'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 type CacheCall = { valid: boolean, cache: CacheResult, record: Record }
@@ -288,8 +288,8 @@ class CacheResult extends FieldValue implements Observer {
   }
 
   enter(): void {
-    if (this.options.stopwatch)
-      this.stopwatchEnter(this.options.stopwatch)
+    if (this.options.indicator)
+      this.indicatorEnter(this.options.indicator)
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.field)} - enter`)
     this.started = Date.now()
   }
@@ -319,23 +319,23 @@ class CacheResult extends FieldValue implements Observer {
     const ms: number = Date.now() - this.started
     this.started = 0
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.field)} ${message}`, ms, highlight)
-    if (this.options.stopwatch)
-      this.stopwatchLeave(this.options.stopwatch)
+    if (this.options.indicator)
+      this.indicatorLeave(this.options.indicator)
     // CacheResult.freeze(this)
   }
 
-  private stopwatchEnter(mon: Stopwatch): void {
-    CacheImpl.runAs<void>(undefined, Action.runEx, "Stopwatch.enter",
-      true, false, Dbg.isOn && Dbg.trace.stopwatch ? undefined : Dbg.global, undefined,
-      StopwatchImpl.enter, mon, this)
+  private indicatorEnter(mon: Indicator): void {
+    CacheImpl.runAs<void>(undefined, Action.runEx, "Indicator.enter",
+      true, false, Dbg.isOn && Dbg.trace.indicators ? undefined : Dbg.global, undefined,
+      IndicatorImpl.enter, mon, this)
   }
 
-  private stopwatchLeave(mon: Stopwatch): void {
+  private indicatorLeave(mon: Indicator): void {
     Action.outside<void>(() => {
       const leave = (): void => {
-        CacheImpl.runAs<void>(undefined, Action.runEx, "Stopwatch.leave",
-          true, false, Dbg.isOn && Dbg.trace.stopwatch ? undefined : Dbg.global, undefined,
-          StopwatchImpl.leave, mon, this)
+        CacheImpl.runAs<void>(undefined, Action.runEx, "Indicator.leave",
+          true, false, Dbg.isOn && Dbg.trace.indicators ? undefined : Dbg.global, undefined,
+          IndicatorImpl.leave, mon, this)
       }
       this.action.whenFinished(false).then(leave, leave)
     })

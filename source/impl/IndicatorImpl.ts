@@ -6,9 +6,9 @@
 import { misuse } from '../util/Dbg'
 import { Hint } from './.index'
 import { Action } from '../Action'
-import { Stopwatch, Worker } from '../Stopwatch'
+import { Indicator, Worker } from '../Indicator'
 
-export class StopwatchImpl extends Stopwatch {
+export class IndicatorImpl extends Indicator {
   private timeout: any = undefined
   delay?: number = undefined
   busy: boolean = false
@@ -37,7 +37,7 @@ export class StopwatchImpl extends Stopwatch {
 
   private reset(): void {
     if (this.count > 0 || this.workers.size > 0)
-      throw misuse("cannot reset stopwatch having active workers")
+      throw misuse("cannot reset indicator having active workers")
     this.busy = false
     // this.count = 0
     // this.workers.clear()
@@ -45,22 +45,22 @@ export class StopwatchImpl extends Stopwatch {
     this.ticks = 0
   }
 
-  static create(hint?: string, delay?: number): StopwatchImpl {
-    return Action.run("Stopwatch.create", StopwatchImpl.createFunc, hint, delay)
+  static create(hint?: string, delay?: number): IndicatorImpl {
+    return Action.run("Indicator.create", IndicatorImpl.createFunc, hint, delay)
   }
 
-  private static createFunc(hint?: string, delay?: number): StopwatchImpl {
-    const m = new StopwatchImpl()
+  private static createFunc(hint?: string, delay?: number): IndicatorImpl {
+    const m = new IndicatorImpl()
     Hint.setHint(m, hint)
     m.delay = delay
     return m
   }
 
-  static enter(m: Stopwatch, worker: Worker): void {
+  static enter(m: Indicator, worker: Worker): void {
     m.enter(worker)
   }
 
-  static leave(m: Stopwatch, worker: Worker): void {
+  static leave(m: Indicator, worker: Worker): void {
     m.leave(worker)
   }
 }

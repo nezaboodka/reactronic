@@ -3,10 +3,10 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, StopwatchImpl } from './impl/.index'
+import { Stateful, IndicatorImpl } from './impl/.index'
 import { Action } from './Action'
 
-export abstract class Stopwatch extends Stateful {
+export abstract class Indicator extends Stateful {
   abstract readonly delay?: number
   abstract readonly busy: boolean
   abstract readonly count: number
@@ -16,7 +16,7 @@ export abstract class Stopwatch extends Stateful {
   abstract enter(worker: Worker): void
   abstract leave(worker: Worker): void
 
-  static create(hint?: string, delay?: number): Stopwatch { return StopwatchImpl.create(hint, delay) }
+  static create(hint?: string, delay?: number): Indicator { return IndicatorImpl.create(hint, delay) }
 }
 
 export interface Worker {

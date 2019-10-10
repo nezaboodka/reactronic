@@ -12,7 +12,7 @@ import { Record, FieldKey, FieldValue, Handle, R_HANDLE, R_UNMOUNT, R_CACHE } fr
 import { Hint } from './Hint'
 import { Snapshot, BLANK } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
-import { Stopwatch } from '../Stopwatch'
+import { Indicator } from '../Indicator'
 import { Cache } from '../Cache'
 import { Trace } from '../Trace'
 
@@ -58,14 +58,14 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   kind: Kind.Stateless,
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
-  stopwatch: null,
+  indicator: null,
   trace: undefined,
 })
 const DEFAULT_STATEFUL_OPTIONS: Options = Object.freeze({
   kind: Kind.Stateful,
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
-  stopwatch: null,
+  indicator: null,
   trace: undefined,
 })
 
@@ -74,7 +74,7 @@ export class OptionsImpl implements Options {
   readonly kind: Kind
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly stopwatch: Stopwatch | null
+  readonly indicator: Indicator | null
   readonly trace?: Partial<Trace>
   static readonly STATEFUL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATEFUL_OPTIONS}, {}, false))
   static readonly STATELESS = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))
@@ -84,7 +84,7 @@ export class OptionsImpl implements Options {
     this.kind = merge(DEFAULT_STATELESS_OPTIONS.kind, existing.kind, patch.kind, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.cachedArgs = merge(DEFAULT_STATELESS_OPTIONS.cachedArgs, existing.cachedArgs, patch.cachedArgs, implicit)
-    this.stopwatch = merge(DEFAULT_STATELESS_OPTIONS.stopwatch, existing.stopwatch, patch.stopwatch, implicit)
+    this.indicator = merge(DEFAULT_STATELESS_OPTIONS.indicator, existing.indicator, patch.indicator, implicit)
     this.trace = merge(DEFAULT_STATELESS_OPTIONS.trace, existing.trace, patch.trace, implicit)
     Object.freeze(this)
   }

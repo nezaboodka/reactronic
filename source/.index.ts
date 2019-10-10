@@ -9,7 +9,7 @@ export { Tools } from './Tools'
 export { Stateful } from './impl/Hooks'
 export { stateless, stateful, action, trigger, cached,
   cacheof, resolved, nonreactive, standalone,
-  reentrance, cachedArgs, stopwatch, trace } from './Tools'
+  reentrance, cachedArgs, indicator, trace } from './Tools'
 export { Action } from './Action'
 export { Cache,  } from './Cache'
-export { Stopwatch, Worker } from './Stopwatch'
+export { Indicator, Worker } from './Indicator'

@@ -5,7 +5,7 @@
 
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
-import { Action, Cache, Stopwatch, Kind, Reentrance, Trace } from './.index'
+import { Action, Cache, Indicator, Kind, Reentrance, Trace } from './.index'
 import { CacheImpl, Hooks, options, Hint } from './impl/.index'
 
 export class Tools {
@@ -75,8 +75,8 @@ export function cachedArgs(cachedArgs: boolean): F<any> {
   return options({cachedArgs})
 }
 
-export function stopwatch(stopwatch: Stopwatch | null): F<any> {
-  return options({stopwatch})
+export function indicator(indicator: Indicator | null): F<any> {
+  return options({indicator})
 }
 
 export function trace(trace: Partial<Trace>): F<any> {
