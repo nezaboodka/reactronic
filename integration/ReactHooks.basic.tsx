@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { Stateful, stateless, trigger, cached, cacheof, standalone, Action, Cache } from '.index'
+import { Stateful, Action, Cache, stateless, trigger, cached, cacheof, standalone } from '.index'
 
 type ReactState = { rx: Rx }
 

@@ -3,7 +3,8 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { stateful, action, trigger, cached, cachedArgs, latency, Tools as RT, Indicator, indicator, all, sleep, reentrance, Reentrance } from '../source/.index'
+import { stateful, action, trigger, cached, cachedArgs, latency, indicator,
+  reentrance, Indicator, Reentrance, Tools as RT, all, sleep } from '../source/.index'
 export { tracing } from './common'
 
 export const output: string[] = []
