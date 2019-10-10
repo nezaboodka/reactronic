@@ -35,7 +35,7 @@ test("async", async t => {
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
     t.is(mon.count, 1)
-    t.is(mon.tasks.size, 1)
+    t.is(mon.workers.size, 1)
     await first
   }
   catch (error) { /* istanbul ignore next */
@@ -44,7 +44,7 @@ test("async", async t => {
   }
   finally {
     t.is(mon.count, 0)
-    t.is(mon.tasks.size, 0)
+    t.is(mon.workers.size, 0)
     const r = resolved(app.render)
     t.is(r && r.length, 2)
     await sleep(400)

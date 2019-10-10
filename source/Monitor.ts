@@ -7,11 +7,11 @@ import { Hint, Stateful } from './core/.index'
 import { Action } from './Action'
 
 export class Monitor extends Stateful {
-  busy: boolean = false
   private counter: number = 0
-  private workers = new Set<Worker>()
+  private actions = new Set<Worker>()
+  busy: boolean = false
   get count(): number { return this.counter }
-  get tasks(): ReadonlySet<Worker> { return this.workers }
+  get workers(): ReadonlySet<Worker> { return this.actions }
 
   static create(hint?: string): Monitor {
     return Action.run("Monitor.create", Monitor.createFunc, hint)
@@ -21,11 +21,11 @@ export class Monitor extends Stateful {
     if (m.counter === 0)
       m.busy = true
     m.counter++
-    m.workers.add(worker)
+    m.actions.add(worker)
   }
 
   static leave(m: Monitor, worker: Worker): void {
-    m.workers.delete(worker)
+    m.actions.delete(worker)
     m.counter--
     if (m.counter === 0)
       m.busy = false
