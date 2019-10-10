@@ -6,7 +6,7 @@
 import { F } from './util/Utils'
 import { Options } from './Options'
 import { Action } from './Action'
-import { CacheImpl } from './core/CacheImpl' // implementation
+import { CacheImpl } from './impl/CacheImpl' // implementation
 
 export abstract class Cache<T> {
   abstract readonly options: Options

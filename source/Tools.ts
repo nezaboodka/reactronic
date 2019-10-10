@@ -6,7 +6,7 @@
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Action, Cache, Stopwatch, Kind, Reentrance, Trace } from './.index'
-import { CacheImpl, Hooks, options, Hint } from './core/.index'
+import { CacheImpl, Hooks, options, Hint } from './impl/.index'
 
 export class Tools {
   // Configuration

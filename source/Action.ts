@@ -5,7 +5,7 @@
 
 import { F } from './util/Utils'
 import { Trace } from './Trace'
-import { ActionImpl } from './core/ActionImpl'
+import { ActionImpl } from './impl/ActionImpl'
 
 export abstract class Action {
   static get current(): Action { return ActionImpl.current }
