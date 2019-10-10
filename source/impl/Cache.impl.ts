@@ -9,7 +9,7 @@ import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, Snapshot, BL
 import { Cache } from '../Cache'
 import { Options, Kind, Reentrance, Trace } from '../Options'
 import { Action } from '../Action'
-import { ActionImpl } from './ActionImpl'
+import { ActionImpl } from './Action.impl'
 import { Indicator } from '../Indicator'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
