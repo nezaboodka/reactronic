@@ -7,7 +7,7 @@ import { F } from './util/Utils'
 import { Trace } from './Trace'
 import { Hooks, options } from './core/Hooks'
 import { Reentrance, Kind } from './Options'
-import { Monitor } from './Monitor'
+import { Ticker } from './Ticker'
 
 export function stateful(proto: object, prop?: PropertyKey): any {
   const opt = { kind: Kind.Stateful }
@@ -46,8 +46,8 @@ export function cachedArgs(cachedArgs: boolean): F<any> {
   return options({cachedArgs})
 }
 
-export function monitor(monitor: Monitor | null): F<any> {
-  return options({monitor})
+export function ticker(ticker: Ticker | null): F<any> {
+  return options({ticker})
 }
 
 export function trace(trace: Partial<Trace>): F<any> {

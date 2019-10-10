@@ -6,33 +6,33 @@
 import { Hint, Stateful } from './core/.index'
 import { Action } from './Action'
 
-export class Monitor extends Stateful {
+export class Ticker extends Stateful {
   private counter: number = 0
   private actions = new Set<Worker>()
   busy: boolean = false
   get count(): number { return this.counter }
   get workers(): ReadonlySet<Worker> { return this.actions }
 
-  static create(hint?: string): Monitor {
-    return Action.run("Monitor.create", Monitor.createFunc, hint)
+  static create(hint?: string): Ticker {
+    return Action.run("Ticker.create", Ticker.createFunc, hint)
   }
 
-  static enter(m: Monitor, worker: Worker): void {
+  static enter(m: Ticker, worker: Worker): void {
     if (m.counter === 0)
       m.busy = true
     m.counter++
     m.actions.add(worker)
   }
 
-  static leave(m: Monitor, worker: Worker): void {
+  static leave(m: Ticker, worker: Worker): void {
     m.actions.delete(worker)
     m.counter--
     if (m.counter === 0)
       m.busy = false
   }
 
-  private static createFunc(hint: string | undefined): Monitor {
-    return Hint.setHint(new Monitor(), hint)
+  private static createFunc(hint: string | undefined): Ticker {
+    return Hint.setHint(new Ticker(), hint)
   }
 }
 

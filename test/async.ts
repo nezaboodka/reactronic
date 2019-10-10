@@ -3,18 +3,18 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { stateful, action, trigger, cached, cachedArgs, latency, Tools as RT, Monitor, monitor, all, sleep, reentrance, Reentrance } from '../source/.index'
+import { stateful, action, trigger, cached, cachedArgs, latency, Tools as RT, Ticker, ticker, all, sleep, reentrance, Reentrance } from '../source/.index'
 export { tracing } from './common'
 
 export const output: string[] = []
-export const mon = Monitor.create("DemoMonitor")
+export const tick = Ticker.create("DemoTicker")
 
 @stateful
 export class DemoModel {
   url: string = "reactronic"
   log: string[] = ["RTA"]
 
-  @action @monitor(mon) @reentrance(Reentrance.PreventWithError)
+  @action @ticker(tick) @reentrance(Reentrance.PreventWithError)
   async load(url: string, delay: number): Promise<void> {
     this.url = url
     await all([sleep(delay)])
@@ -38,9 +38,9 @@ export class DemoView {
   @cached @cachedArgs(false)
   async render(): Promise<string[]> {
     const result: string[] = []
-    result.push(`${mon.busy ? "[...] " : ""}Url: ${this.model.url}`)
+    result.push(`${tick.busy ? "[...] " : ""}Url: ${this.model.url}`)
     await sleep(10)
-    result.push(`${mon.busy ? "[...] " : ""}Log: ${this.model.log.join(", ")}`)
+    result.push(`${tick.busy ? "[...] " : ""}Log: ${this.model.log.join(", ")}`)
     return result
   }
 }

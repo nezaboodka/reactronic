@@ -5,14 +5,14 @@
 
 import { Trace } from './Trace'
 export { Trace } from './Trace'
-import { Monitor } from './Monitor'
+import { Ticker } from './Ticker'
 
 export interface Options {
   readonly kind: Kind
   readonly latency: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly monitor: Monitor | null
+  readonly ticker: Ticker | null
   readonly trace?: Partial<Trace>
 }
 

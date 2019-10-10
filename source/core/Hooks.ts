@@ -12,7 +12,7 @@ import { Record, FieldKey, FieldValue, Handle, R_HANDLE, R_UNMOUNT, R_CACHE } fr
 import { Hint } from './Hint'
 import { Snapshot, BLANK } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
-import { Monitor } from '../Monitor'
+import { Ticker } from '../Ticker'
 import { Cache } from '../Cache'
 import { Trace } from '../Trace'
 
@@ -59,7 +59,7 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   latency: -2, // never
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
-  monitor: null,
+  ticker: null,
   trace: undefined,
 })
 const DEFAULT_STATEFUL_OPTIONS: Options = Object.freeze({
@@ -67,7 +67,7 @@ const DEFAULT_STATEFUL_OPTIONS: Options = Object.freeze({
   latency: -2, // never
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
-  monitor: null,
+  ticker: null,
   trace: undefined,
 })
 
@@ -77,7 +77,7 @@ export class OptionsImpl implements Options {
   readonly latency: number
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly monitor: Monitor | null
+  readonly ticker: Ticker | null
   readonly trace?: Partial<Trace>
   static readonly STATEFUL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATEFUL_OPTIONS}, {}, false))
   static readonly STATELESS = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))
@@ -88,7 +88,7 @@ export class OptionsImpl implements Options {
     this.latency = merge(DEFAULT_STATELESS_OPTIONS.latency, existing.latency, patch.latency, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.cachedArgs = merge(DEFAULT_STATELESS_OPTIONS.cachedArgs, existing.cachedArgs, patch.cachedArgs, implicit)
-    this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
+    this.ticker = merge(DEFAULT_STATELESS_OPTIONS.ticker, existing.ticker, patch.ticker, implicit)
     this.trace = merge(DEFAULT_STATELESS_OPTIONS.trace, existing.trace, patch.trace, implicit)
     Object.freeze(this)
   }

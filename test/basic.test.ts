@@ -115,7 +115,7 @@ test("basic", t => {
     // Check protection and error handling
     t.throws(() => { cacheof(daddy.setParent).setup({latency: 0}) },
       "given method is not a reactronic cache")
-    t.throws(() => { console.log(cacheof(daddy.setParent).options.monitor) },
+    t.throws(() => { console.log(cacheof(daddy.setParent).options.ticker) },
       "given method is not a reactronic cache")
     const action2 = Action.create("action2")
     t.throws(() => action2.run(() => { throw new Error("test") }), "test")

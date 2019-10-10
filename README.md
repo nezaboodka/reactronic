@@ -176,10 +176,10 @@ invocation of the corresponding function:
   - `Reentrance.CancelPrevious` - cancel previous action in favor of current one;
   - `Reentrance.RunSideBySide` - multiple simultaneous actions are allowed.
 
-**Monitor** option is an object that holds the status of running
-functions, which it is attached to. A single monitor object can be
-shared between multiple actions, triggers, and cache functions, thus
-maintaining consolidated busy/idle status for all of them.
+**Ticker** is an object that holds the status of running functions,
+which it is attached to. A single ticker object can be shared between
+multiple actions, triggers, and cache functions, thus maintaining
+consolidated status for all of them (busy, idle, timings, etc).
 
 ## Notes
 
@@ -217,17 +217,17 @@ function cached(proto, prop, pd) // method only
 function latency(latency: number) // triggers only
 function reentrance(reentrance: Reentrance) // actions & triggers
 function cachedArgs(cachedArgs: boolean) // cached & triggers
-function monitor(monitor: Monitor | null)
+function ticker(ticker: Ticker | null)
 function trace(trace: Partial<Trace>)
 
-// Options, Kind, Reentrance, Monitor, Trace
+// Options, Kind, Reentrance, Ticker, Trace
 
 interface Options {
   readonly kind: Kind
   readonly latency: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly monitor: Monitor | null
+  readonly ticker: Ticker | null
   readonly trace?: Partial<Trace>
 }
 
@@ -246,10 +246,10 @@ enum Reentrance {
   RunSideBySide = -2, // multiple simultaneous actions are allowed
 }
 
-class Monitor {
+class Ticker {
   readonly busy: boolean
   readonly counter: number
-  static create(hint?: string): Monitor
+  static create(hint?: string): Ticker
 }
 
 interface Trace {
@@ -257,7 +257,7 @@ interface Trace {
   readonly actions: boolean
   readonly methods: boolean
   readonly steps: boolean
-  readonly monitors: boolean
+  readonly tickers: boolean
   readonly reads: boolean
   readonly writes: boolean
   readonly changes: boolean
