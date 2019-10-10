@@ -32,7 +32,7 @@ export class IndicatorImpl extends Indicator {
   }
 
   private reset(now: boolean): void {
-    if (this.retention === undefined || now) {
+    if (now || this.retention === undefined) {
       if (this.counter > 0 || this.actions.size > 0) /* istanbul ignore next */
         throw misuse("cannot reset indicator having active actions")
       this.busy = false
