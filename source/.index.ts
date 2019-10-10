@@ -9,7 +9,7 @@ export { Tools } from './Tools'
 export { Stateful } from './core/Hooks'
 export { stateless, stateful, action, trigger, cached,
   cacheof, resolved, nonreactive, standalone,
-  latency, reentrance, cachedArgs, ticker, trace } from './Tools'
+  reentrance, cachedArgs, ticker, trace } from './Tools'
 export { Action } from './Action'
 export { Cache,  } from './Cache'
 export { Ticker, Worker } from './Ticker'

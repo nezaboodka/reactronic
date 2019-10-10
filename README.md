@@ -214,7 +214,6 @@ function action(proto, prop, pd) // method only
 function trigger(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
-function latency(latency: number) // triggers only
 function reentrance(reentrance: Reentrance) // actions & triggers
 function cachedArgs(cachedArgs: boolean) // cached & triggers
 function ticker(ticker: Ticker | null)
@@ -224,7 +223,6 @@ function trace(trace: Partial<Trace>)
 
 interface Options {
   readonly kind: Kind
-  readonly latency: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
   readonly ticker: Ticker | null

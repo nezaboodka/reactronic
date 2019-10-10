@@ -113,7 +113,7 @@ test("basic", t => {
     // t.is(daddy.name, "John")
     // t.is(daddy.age, 38)
     // Check protection and error handling
-    t.throws(() => { cacheof(daddy.setParent).setup({latency: 0}) },
+    t.throws(() => { cacheof(daddy.setParent).setup({ticker: null}) },
       "given method is not a reactronic cache")
     t.throws(() => { console.log(cacheof(daddy.setParent).options.ticker) },
       "given method is not a reactronic cache")

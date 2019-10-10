@@ -56,7 +56,6 @@ const R_TRIGGERS: unique symbol = Symbol("R:TRIGGERS")
 const BLANK_TABLE = Object.freeze({})
 const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   kind: Kind.Stateless,
-  latency: -2, // never
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
   ticker: null,
@@ -64,7 +63,6 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
 })
 const DEFAULT_STATEFUL_OPTIONS: Options = Object.freeze({
   kind: Kind.Stateful,
-  latency: -2, // never
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
   ticker: null,
@@ -74,7 +72,6 @@ const DEFAULT_STATEFUL_OPTIONS: Options = Object.freeze({
 export class OptionsImpl implements Options {
   readonly body: Function
   readonly kind: Kind
-  readonly latency: number
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
   readonly ticker: Ticker | null
@@ -85,7 +82,6 @@ export class OptionsImpl implements Options {
   constructor(body: Function | undefined, existing: OptionsImpl, patch: Partial<OptionsImpl>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body
     this.kind = merge(DEFAULT_STATELESS_OPTIONS.kind, existing.kind, patch.kind, implicit)
-    this.latency = merge(DEFAULT_STATELESS_OPTIONS.latency, existing.latency, patch.latency, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.cachedArgs = merge(DEFAULT_STATELESS_OPTIONS.cachedArgs, existing.cachedArgs, patch.cachedArgs, implicit)
     this.ticker = merge(DEFAULT_STATELESS_OPTIONS.ticker, existing.ticker, patch.ticker, implicit)
@@ -265,13 +261,13 @@ export class Hooks implements ProxyHandler<Handle> {
     const optionsTable: any = Hooks.acquireOptionsTable(proto)
     const existing: OptionsImpl = optionsTable[field] || OptionsImpl.STATELESS
     const result = optionsTable[field] = new OptionsImpl(body, existing, options, implicit)
-    if (result.kind === Kind.Trigger && result.latency > -2) {
+    if (result.kind === Kind.Trigger) {
       let triggers: Map<FieldKey, OptionsImpl> | undefined = optionsTable[R_TRIGGERS]
       if (!triggers)
         triggers = optionsTable[R_TRIGGERS] = new Map<FieldKey, OptionsImpl>()
       triggers.set(field, result)
     }
-    else if (existing.kind === Kind.Trigger && existing.latency > -2) {
+    else if (existing.kind === Kind.Trigger) {
       const triggers: Map<FieldKey, OptionsImpl> | undefined = optionsTable[R_TRIGGERS]
       if (triggers)
         triggers.delete(field)

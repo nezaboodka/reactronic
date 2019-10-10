@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { stateful, action, trigger, cached, cachedArgs, latency, Tools as RT, Ticker, ticker, all, sleep, reentrance, Reentrance } from '../source/.index'
+import { stateful, action, trigger, cached, cachedArgs, Tools as RT, Ticker, ticker, all, sleep, reentrance, Reentrance } from '../source/.index'
 export { tracing } from './common'
 
 export const output: string[] = []
@@ -26,7 +26,7 @@ export class DemoView {
   @stateful test: any
   constructor(readonly model: DemoModel) { }
 
-  @trigger @latency(-1)
+  @trigger
   async print(): Promise<void> {
     const lines: string[] = await this.render()
     for (const x of lines) {
