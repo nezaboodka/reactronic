@@ -10,7 +10,8 @@ import { Indicator, Worker } from '../Indicator'
 
 export class IndicatorImpl extends Indicator {
   private timeout: any = undefined
-  delay?: number = undefined
+  throttle?: number = undefined
+  debounce?: number = undefined
   busy: boolean = false
   count: number = 0
   workers = new Set<Worker>()
@@ -28,10 +29,10 @@ export class IndicatorImpl extends Indicator {
     this.workers.delete(worker)
     this.count--
     if (this.count === 0) {
-      if (this.delay === undefined)
+      if (this.debounce === undefined)
         this.reset()
       else
-        this.timeout = setTimeout(() => this.reset(), this.delay)
+        this.timeout = setTimeout(() => this.reset(), this.debounce)
     }
   }
 
@@ -45,14 +46,14 @@ export class IndicatorImpl extends Indicator {
     this.ticks = 0
   }
 
-  static create(hint?: string, delay?: number): IndicatorImpl {
-    return Action.run("Indicator.create", IndicatorImpl.createFunc, hint, delay)
+  static create(hint?: string, debounce?: number): IndicatorImpl {
+    return Action.run("Indicator.create", IndicatorImpl.createFunc, hint, debounce)
   }
 
-  private static createFunc(hint?: string, delay?: number): IndicatorImpl {
+  private static createFunc(hint?: string, debounce?: number): IndicatorImpl {
     const m = new IndicatorImpl()
     Hint.setHint(m, hint)
-    m.delay = delay
+    m.debounce = debounce
     return m
   }
 

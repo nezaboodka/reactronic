@@ -250,11 +250,11 @@ enum Reentrance {
 }
 
 class Indicator {
-  readonly delay?: number
+  readonly debounce?: number
   readonly busy: boolean
   readonly counter: number
   readonly ticks: number
-  static create(hint?: string, delay?: number): Indicator
+  static create(hint?: string, debounce?: number): Indicator
 }
 
 interface Trace {

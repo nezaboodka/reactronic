@@ -7,7 +7,7 @@ import { Stateful, IndicatorImpl } from './impl/.index'
 import { Action } from './Action'
 
 export abstract class Indicator extends Stateful {
-  abstract readonly delay?: number
+  abstract readonly debounce?: number
   abstract readonly busy: boolean
   abstract readonly count: number
   abstract readonly workers: ReadonlySet<Worker>
@@ -16,7 +16,7 @@ export abstract class Indicator extends Stateful {
   abstract enter(worker: Worker): void
   abstract leave(worker: Worker): void
 
-  static create(hint?: string, delay?: number): Indicator { return IndicatorImpl.create(hint, delay) }
+  static create(hint?: string, debounce?: number): Indicator { return IndicatorImpl.create(hint, debounce) }
 }
 
 export interface Worker {
