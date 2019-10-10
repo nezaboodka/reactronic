@@ -253,11 +253,11 @@ enum Reentrance {
 
 class Indicator {
   readonly busy: boolean
-  readonly counter: number
+  readonly actionCount: number
   readonly actions: ReadonlySet<Action>
-  readonly frameCount: number
-  readonly prolonged?: number // milliseconds
-  static create(hint?: string, prolonged?: number): Indicator
+  readonly animationFrameCount: number
+  readonly prolongAtLeastFor?: number // milliseconds
+  static create(hint?: string, prolongAtLeastFor?: number): Indicator
 }
 
 interface Trace {

@@ -8,13 +8,13 @@ import { Action } from './Action'
 
 export abstract class Indicator extends Stateful {
   abstract readonly busy: boolean
-  abstract readonly counter: number
+  abstract readonly actionCount: number
   abstract readonly actions: ReadonlySet<Action>
-  abstract readonly frameCount: number
-  abstract readonly prolonged?: number // milliseconds
+  abstract readonly animationFrameCount: number
+  abstract readonly prolongAtLeastFor?: number // milliseconds
 
   abstract enter(action: Action): void
   abstract leave(action: Action): void
 
-  static create(hint?: string, prolonged?: number): Indicator { return IndicatorImpl.create(hint, prolonged) }
+  static create(hint?: string, prolongAtLeastFor?: number): Indicator { return IndicatorImpl.create(hint, prolongAtLeastFor) }
 }
