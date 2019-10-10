@@ -12,8 +12,8 @@ export class IndicatorImpl extends Indicator {
   busy: boolean = false
   counter: number = 0
   actions = new Set<Action>()
-  frames: number = 0
-  retention?: number = undefined // milliseconds
+  frameCount: number = 0
+  prolonged?: number = undefined // milliseconds
   private timeout: any = undefined
 
   enter(action: Action): void {
@@ -32,27 +32,27 @@ export class IndicatorImpl extends Indicator {
   }
 
   private reset(now: boolean): void {
-    if (now || this.retention === undefined) {
+    if (now || this.prolonged === undefined) {
       if (this.counter > 0 || this.actions.size > 0) /* istanbul ignore next */
         throw misuse("cannot reset indicator having active actions")
       this.busy = false
       this.timeout = clear(this.timeout)
-      this.frames = 0
+      this.frameCount = 0
     }
     else
       this.timeout = setTimeout(() =>
         Action.runEx<void>("Indicator.reset", true, false,
-          undefined, undefined, IndicatorImpl.reset, this, true), this.retention)
+          undefined, undefined, IndicatorImpl.reset, this, true), this.prolonged)
   }
 
-  static create(hint?: string, retention?: number): IndicatorImpl {
-    return Action.run("Indicator.create", IndicatorImpl.doCreate, hint, retention)
+  static create(hint?: string, prolonged?: number): IndicatorImpl {
+    return Action.run("Indicator.create", IndicatorImpl.doCreate, hint, prolonged)
   }
 
-  private static doCreate(hint?: string, retention?: number): IndicatorImpl {
+  private static doCreate(hint?: string, prolonged?: number): IndicatorImpl {
     const m = new IndicatorImpl()
     Hint.setHint(m, hint)
-    m.retention = retention
+    m.prolonged = prolonged
     return m
   }
 
