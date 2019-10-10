@@ -221,10 +221,10 @@ export class ActionImpl extends Action {
   private runTriggers(): void {
     const hint = Dbg.isOn ? `■-■-■ TRIGGERS(${this.snapshot.triggers.length}) after T${this.id} (${this.snapshot.hint})` : /* istanbul ignore next */ "TRIGGERS"
     this.reaction.action = ActionImpl.runEx(hint, true, false, this.trace, undefined,
-      ActionImpl.runTriggersFunc, this.snapshot.triggers)
+      ActionImpl.doRunTriggers, this.snapshot.triggers)
   }
 
-  private static runTriggersFunc(triggers: Observer[]): ActionImpl {
+  private static doRunTriggers(triggers: Observer[]): ActionImpl {
     const timestamp = ActionImpl.current.snapshot.timestamp
     triggers.map(t => t.trig(timestamp, false, false))
     return ActionImpl.current

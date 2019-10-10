@@ -198,10 +198,10 @@ export class CacheImpl extends Cache<any> {
 
   static unmount(...objects: any[]): Action {
     return Action.runEx("<unmount>", false, false,
-      undefined, undefined, CacheImpl.unmountFunc, ...objects)
+      undefined, undefined, CacheImpl.doUnmount, ...objects)
   }
 
-  private static unmountFunc(...objects: any[]): Action {
+  private static doUnmount(...objects: any[]): Action {
     for (const x of objects) {
       if (Utils.get<Handle>(x, R_HANDLE))
         x[R_UNMOUNT] = R_UNMOUNT
@@ -271,13 +271,13 @@ class CacheResult extends FieldValue implements Observer {
     if (args)
       this.args = args
     if (!this.error)
-      CacheImpl.runAs<void>(this, CacheResult.computeFunc, proxy, this)
+      CacheImpl.runAs<void>(this, CacheResult.doCompute, proxy, this)
     else
       this.ret = Promise.reject(this.error)
     this.invalid.since = TOP_TIMESTAMP
   }
 
-  static computeFunc(proxy: any, c: CacheResult): void {
+  static doCompute(proxy: any, c: CacheResult): void {
     c.enter()
     try {
       c.ret = c.options.body.call(proxy, ...c.args)

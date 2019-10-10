@@ -47,10 +47,10 @@ export class IndicatorImpl extends Indicator {
   }
 
   static create(hint?: string, debounce?: number): IndicatorImpl {
-    return Action.run("Indicator.create", IndicatorImpl.createFunc, hint, debounce)
+    return Action.run("Indicator.create", IndicatorImpl.doCreate, hint, debounce)
   }
 
-  private static createFunc(hint?: string, debounce?: number): IndicatorImpl {
+  private static doCreate(hint?: string, debounce?: number): IndicatorImpl {
     const m = new IndicatorImpl()
     Hint.setHint(m, hint)
     m.debounce = debounce
