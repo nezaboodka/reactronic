@@ -66,7 +66,7 @@ export class ActionImpl extends Action {
 
   apply(): void {
     if (this.workers > 0)
-      throw misuse("cannot apply action having active workers")
+      throw misuse("cannot apply action having active actions")
     if (this.error)
       throw misuse(`cannot apply action that is already canceled: ${this.error}`)
     this.seal() // apply immediately, because pending === 0
