@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, Monitor } from './core/.index'
+import { Stateful, StopwatchImpl } from './core/.index'
 import { Action } from './Action'
 
 export abstract class Stopwatch extends Stateful {
@@ -14,7 +14,7 @@ export abstract class Stopwatch extends Stateful {
   abstract enter(worker: Worker): void
   abstract leave(worker: Worker): void
 
-  static create(hint?: string): Stopwatch { return Monitor.create(hint) }
+  static create(hint?: string): Stopwatch { return StopwatchImpl.create(hint) }
 }
 
 export interface Worker {

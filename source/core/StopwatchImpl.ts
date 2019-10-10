@@ -7,7 +7,7 @@ import { Hint } from './.index'
 import { Action } from '../Action'
 import { Stopwatch, Worker } from '../Stopwatch'
 
-export class Monitor extends Stopwatch {
+export class StopwatchImpl extends Stopwatch {
   private timeout?: NodeJS.Timeout = undefined
   interval?: number = undefined
   busy: boolean = false
@@ -50,12 +50,12 @@ export class Monitor extends Stopwatch {
     m.leave(worker)
   }
 
-  static create(hint?: string, interval?: number): Monitor {
-    return Action.run("Stopwatch.create", Monitor.createFunc, hint, interval)
+  static create(hint?: string, interval?: number): StopwatchImpl {
+    return Action.run("Stopwatch.create", StopwatchImpl.createFunc, hint, interval)
   }
 
-  private static createFunc(hint?: string, interval?: number): Monitor {
-    const m = new Monitor()
+  private static createFunc(hint?: string, interval?: number): StopwatchImpl {
+    const m = new StopwatchImpl()
     Hint.setHint(m, hint)
     m.interval = interval
     return m
