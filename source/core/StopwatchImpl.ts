@@ -3,6 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
+import { misuse } from '../util/Dbg'
 import { Hint } from './.index'
 import { Action } from '../Action'
 import { Stopwatch, Worker } from '../Stopwatch'
@@ -37,7 +38,11 @@ export class StopwatchImpl extends Stopwatch {
   }
 
   private reset(): void {
+    if (this.count > 0 || this.workers.size > 0)
+      throw misuse("cannot reset stopwatch having active workers")
     this.busy = false
+    // this.count = 0
+    // this.workers.clear()
     this.timer = undefined
     this.ticks = 0
   }
