@@ -12,6 +12,7 @@ export abstract class Action {
 
   abstract readonly id: number
   abstract readonly hint: string
+
   abstract run<T>(func: F<T>, ...args: any[]): T
   abstract inspect<T>(func: F<T>, ...args: any[]): T
   abstract apply(): void

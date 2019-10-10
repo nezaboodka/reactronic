@@ -9,13 +9,14 @@ import { Action } from './Action'
 import { CacheImpl } from './core/CacheImpl' // implementation
 
 export abstract class Cache<T> {
-  abstract setup(options: Partial<Options>): Options
   abstract readonly options: Options
   abstract readonly args: ReadonlyArray<any>
   abstract readonly value: T
   abstract readonly error: any
   abstract readonly stamp: number
   abstract readonly invalid: boolean
+
+  abstract setup(options: Partial<Options>): Options
   abstract invalidate(): void
   abstract call(args?: any[]): T | undefined
 

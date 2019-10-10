@@ -206,7 +206,7 @@ NPM: `npm install reactronic`
 ## API (TypeScript)
 
 ```typescript
-// Decorators
+// Decorators & Operators
 
 function stateful(proto, prop?) // field or class
 function stateless(proto, prop) // field only
@@ -218,6 +218,11 @@ function reentrance(reentrance: Reentrance) // actions & triggers
 function cachedArgs(cachedArgs: boolean) // cached & triggers
 function stopwatch(stopwatch: Stopwatch | null)
 function trace(trace: Partial<Trace>)
+
+function cacheof<T>(method: F<T>): Cache<T>
+function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined
+function nonreactive<T>(func: F<T>, ...args: any[]): T
+function standalone<T>(func: F<T>, ...args: any[]): T
 
 // Options, Kind, Reentrance, Stopwatch, Trace
 
@@ -247,6 +252,7 @@ enum Reentrance {
 class Stopwatch {
   readonly busy: boolean
   readonly counter: number
+  readonly ticks: number
   static create(hint?: string): Stopwatch
 }
 
@@ -269,8 +275,11 @@ interface Trace {
 type F<T> = (...args: any[]) => T
 
 class Action {
+  static readonly current: Action
+
   readonly id: number
   readonly hint: string
+
   run<T>(func: F<T>, ...args: any[]): T
   wrap<T>(func: F<T>): F<T>
   apply(): void
@@ -281,7 +290,6 @@ class Action {
   whenFinished(): Promise<void>
   join<T>(p: Promise<T>): Promise<T>
 
-  static readonly current: Action
   static create(hint: string): Action
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
@@ -291,19 +299,15 @@ class Action {
 
 // Cache
 
-function cacheof<T>(method: F<T>): Cache<T>
-function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined
-function nonreactive<T>(func: F<T>, ...args: any[]): T
-function standalone<T>(func: F<T>, ...args: any[]): T
-
 abstract class Cache<T> {
-  setup(options: Partial<Options>): Options
   readonly options: Options
   readonly args: ReadonlyArray<any>
   readonly value: T
   readonly error: any
   readonly stamp: number
   readonly invalid: boolean
+
+  setup(options: Partial<Options>): Options
   invalidate(): boolean
   call(args?: any[]): T | undefined
 

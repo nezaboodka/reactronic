@@ -11,6 +11,7 @@ export abstract class Stopwatch extends Stateful {
   abstract readonly count: number
   abstract readonly workers: ReadonlySet<Worker>
   abstract readonly ticks: number
+
   abstract enter(worker: Worker): void
   abstract leave(worker: Worker): void
 
