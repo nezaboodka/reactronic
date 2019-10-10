@@ -287,7 +287,7 @@ class Action {
   run<T>(func: F<T>, ...args: any[]): T
   wrap<T>(func: F<T>): F<T>
   apply(): void
-  seal(): Action // a1.seal().whenFinished().then(fulfill, reject)
+  seal(): this // a1.seal().whenFinished().then(fulfill, reject)
   cancel(error?: Error, retryAfter?: Action)
   isCanceled(): boolean
   isFinished(): boolean
