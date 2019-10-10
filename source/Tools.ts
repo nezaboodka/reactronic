@@ -6,7 +6,7 @@
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Action, Cache, Stopwatch, Kind, Reentrance, Trace } from './.index'
-import { Method, Hooks, options, Hint } from './core/.index'
+import { RCache, Hooks, options, Hint } from './core/.index'
 
 export class Tools {
   // Configuration
@@ -33,11 +33,11 @@ export function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined 
 }
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return Method.runAs<T>(undefined, func, ...args)
+  return RCache.runAs<T>(undefined, func, ...args)
 }
 
 export function standalone<T>(func: F<T>, ...args: any[]): T {
-  return Method.runAs<T>(undefined, Action.outside, func, ...args)
+  return RCache.runAs<T>(undefined, Action.outside, func, ...args)
 }
 
 // Decorators
