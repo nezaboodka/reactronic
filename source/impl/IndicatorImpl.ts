@@ -32,7 +32,10 @@ export class IndicatorImpl extends Indicator {
       if (this.debounce === undefined)
         this.reset()
       else
-        this.timeout = setTimeout(() => this.reset(), this.debounce)
+        this.timeout = setTimeout(() => {
+          Action.runEx<void>("Indicator.reset", true, false,
+            undefined, undefined, () => this.reset())
+        }, this.debounce)
     }
   }
 
