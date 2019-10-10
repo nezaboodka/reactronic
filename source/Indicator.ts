@@ -7,7 +7,8 @@ import { Stateful, IndicatorImpl } from './impl/.index'
 import { Action } from './Action'
 
 export abstract class Indicator extends Stateful {
-  abstract readonly debounce?: number
+  abstract readonly throttle?: number // milliseconds
+  abstract readonly debounce?: number // milliseconds
   abstract readonly busy: boolean
   abstract readonly count: number
   abstract readonly workers: ReadonlySet<Worker>

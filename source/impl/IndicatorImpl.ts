@@ -9,13 +9,13 @@ import { Action } from '../Action'
 import { Indicator, Worker } from '../Indicator'
 
 export class IndicatorImpl extends Indicator {
-  private timeout: any = undefined
-  throttle?: number = undefined
-  debounce?: number = undefined
+  throttle?: number = undefined // milliseconds
+  debounce?: number = undefined // milliseconds
   busy: boolean = false
   count: number = 0
   workers = new Set<Worker>()
   ticks: number = 0
+  private timeout: any = undefined
 
   enter(worker: Worker): void {
     this.timeout = clear(this.timeout) // yes, on each enter
@@ -28,25 +28,22 @@ export class IndicatorImpl extends Indicator {
   leave(worker: Worker): void {
     this.workers.delete(worker)
     this.count--
-    if (this.count === 0) {
-      if (this.debounce === undefined)
-        this.reset()
-      else
-        this.timeout = setTimeout(() => {
-          Action.runEx<void>("Indicator.reset", true, false,
-            undefined, undefined, () => this.reset())
-        }, this.debounce)
-    }
+    if (this.count === 0)
+      this.reset(false)
   }
 
-  private reset(): void {
-    if (this.count > 0 || this.workers.size > 0)
-      throw misuse("cannot reset indicator having active workers")
-    this.busy = false
-    // this.count = 0
-    // this.workers.clear()
-    this.timeout = clear(this.timeout)
-    this.ticks = 0
+  private reset(now: boolean): void {
+    if (this.debounce === undefined || now) {
+      if (this.count > 0 || this.workers.size > 0)
+        throw misuse("cannot reset indicator having active workers")
+      this.busy = false
+      this.timeout = clear(this.timeout)
+      this.ticks = 0
+    }
+    else
+      this.timeout = setTimeout(() =>
+        Action.runEx<void>("Indicator.reset", true, false,
+          undefined, undefined, () => this.reset(true)), this.debounce)
   }
 
   static create(hint?: string, debounce?: number): IndicatorImpl {
