@@ -12,4 +12,4 @@ export { stateless, stateful, action, trigger, cached,
   reentrance, cachedArgs, indicator, trace } from './Tools'
 export { Action } from './Action'
 export { Cache,  } from './Cache'
-export { Indicator, Worker } from './Indicator'
+export { Indicator } from './Indicator'

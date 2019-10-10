@@ -6,27 +6,27 @@
 import { misuse } from '../util/Dbg'
 import { Hint } from './.index'
 import { Action } from '../Action'
-import { Indicator, Worker } from '../Indicator'
+import { Indicator } from '../Indicator'
 
 export class IndicatorImpl extends Indicator {
   throttle?: number = undefined // milliseconds
   retention?: number = undefined // milliseconds
   busy: boolean = false
   count: number = 0
-  workers = new Set<Worker>()
+  actions = new Set<Action>()
   ticks: number = 0
   private timeout: any = undefined
 
-  enter(worker: Worker): void {
+  enter(action: Action): void {
     this.timeout = clear(this.timeout) // yes, on each enter
     if (this.count === 0)
       this.busy = true
     this.count++
-    this.workers.add(worker)
+    this.actions.add(action)
   }
 
-  leave(worker: Worker): void {
-    this.workers.delete(worker)
+  leave(action: Action): void {
+    this.actions.delete(action)
     this.count--
     if (this.count === 0)
       this.reset(false)
@@ -34,8 +34,8 @@ export class IndicatorImpl extends Indicator {
 
   private reset(now: boolean): void {
     if (this.retention === undefined || now) {
-      if (this.count > 0 || this.workers.size > 0) /* istanbul ignore next */
-        throw misuse("cannot reset indicator having active workers")
+      if (this.count > 0 || this.actions.size > 0) /* istanbul ignore next */
+        throw misuse("cannot reset indicator having active actions")
       this.busy = false
       this.timeout = clear(this.timeout)
       this.ticks = 0
@@ -57,12 +57,12 @@ export class IndicatorImpl extends Indicator {
     return m
   }
 
-  static enter(ind: Indicator, worker: Worker): void {
-    ind.enter(worker)
+  static enter(ind: Indicator, action: Action): void {
+    ind.enter(action)
   }
 
-  static leave(ind: Indicator, worker: Worker): void {
-    ind.leave(worker)
+  static leave(ind: Indicator, action: Action): void {
+    ind.leave(action)
   }
 
   static reset(ind: IndicatorImpl, now: boolean): void {

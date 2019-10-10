@@ -179,7 +179,7 @@ invocation of the corresponding function:
 **Indicator** is an object that holds the status of running functions,
 which it is attached to. A single indicator object can be shared between
 multiple actions, triggers, and cache functions, thus maintaining
-consolidated status for all of them (busyness, workers, ticks, etc).
+consolidated status for all of them (busy, actions, ticks, etc).
 
 ## Notes
 

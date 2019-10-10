@@ -54,7 +54,7 @@ test("basic", t => {
     // Multi-part actions
     const action1 = Action.create("action1")
     action1.run(() => {
-      t.throws(() => action1.apply(), "cannot apply action having active workers")
+      t.throws(() => action1.apply(), "cannot apply action having active actions")
       app.model.shared = app.shared = action1.hint
       daddy.age += 2 // causes no execution of DemoApp.render
       daddy.name = "John Smith" // causes execution of DemoApp.render upon apply

@@ -34,7 +34,7 @@ test("async", async t => {
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
     t.is(ind.count, 3)
-    t.is(ind.workers.size, 3)
+    t.is(ind.actions.size, 3)
     await all(responses)
   }
   catch (error) { /* istanbul ignore next */
@@ -43,7 +43,7 @@ test("async", async t => {
   }
   finally {
     t.is(ind.count, 0)
-    t.is(ind.workers.size, 0)
+    t.is(ind.actions.size, 0)
     await sleep(400)
     await Cache.unmount(app, app.model).whenFinished(true)
   } /* istanbul ignore next */

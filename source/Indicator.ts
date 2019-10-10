@@ -11,15 +11,11 @@ export abstract class Indicator extends Stateful {
   abstract readonly retention?: number // milliseconds
   abstract readonly busy: boolean
   abstract readonly count: number
-  abstract readonly workers: ReadonlySet<Worker>
+  abstract readonly actions: ReadonlySet<Action>
   abstract readonly ticks: number
 
-  abstract enter(worker: Worker): void
-  abstract leave(worker: Worker): void
+  abstract enter(action: Action): void
+  abstract leave(action: Action): void
 
   static create(hint?: string, retention?: number): Indicator { return IndicatorImpl.create(hint, retention) }
-}
-
-export interface Worker {
-  readonly action: Action
 }
