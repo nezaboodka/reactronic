@@ -10,6 +10,7 @@ export abstract class Ticker extends Stateful {
   abstract readonly busy: boolean
   abstract readonly count: number
   abstract readonly workers: ReadonlySet<Worker>
+  abstract readonly ticks: number
   abstract enter(worker: Worker): void
   abstract leave(worker: Worker): void
 

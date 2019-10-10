@@ -3,28 +3,27 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Hint, Stateful } from './.index'
+import { Hint } from './.index'
 import { Action } from '../Action'
-import { Ticker } from '../Ticker'
+import { Ticker, Worker } from '../Ticker'
 
-export class Monitor extends Stateful {
-  private counter: number = 0
-  private actions = new Set<Worker>()
+export class Monitor extends Ticker {
   busy: boolean = false
-  get count(): number { return this.counter }
-  get workers(): ReadonlySet<Worker> { return this.actions }
+  count: number = 0
+  workers = new Set<Worker>()
+  ticks: number = 0
 
   enter(worker: Worker): void {
-    if (this.counter === 0)
+    if (this.count === 0)
       this.busy = true
-    this.counter++
-    this.actions.add(worker)
+    this.count++
+    this.workers.add(worker)
   }
 
   leave(worker: Worker): void {
-    this.actions.delete(worker)
-    this.counter--
-    if (this.counter === 0)
+    this.workers.delete(worker)
+    this.count--
+    if (this.count === 0)
       this.busy = false
   }
 
@@ -43,8 +42,4 @@ export class Monitor extends Stateful {
   private static createFunc(hint: string | undefined): Monitor {
     return Hint.setHint(new Monitor(), hint)
   }
-}
-
-export interface Worker {
-  readonly action: Action
 }
