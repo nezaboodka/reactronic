@@ -17,7 +17,7 @@ export class Monitor extends Ticker {
 
   enter(worker: Worker): void {
     if (this.timeout !== undefined)
-      clearTimeout(this.timeout)
+      clearTimeout(this.timeout) // yes, on each enter
     this.timeout = undefined
     if (this.count === 0)
       this.busy = true
