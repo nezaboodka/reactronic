@@ -255,7 +255,7 @@ class Indicator {
   readonly retention?: number // milliseconds
   readonly busy: boolean
   readonly counter: number
-  readonly ticks: number
+  readonly frames: number
   static create(hint?: string, retention?: number): Indicator
 }
 

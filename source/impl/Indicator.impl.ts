@@ -9,36 +9,35 @@ import { Action } from '../Action'
 import { Indicator } from '../Indicator'
 
 export class IndicatorImpl extends Indicator {
-  throttle?: number = undefined // milliseconds
-  retention?: number = undefined // milliseconds
   busy: boolean = false
-  count: number = 0
+  counter: number = 0
   actions = new Set<Action>()
-  ticks: number = 0
+  frames: number = 0
+  retention?: number = undefined // milliseconds
   private timeout: any = undefined
 
   enter(action: Action): void {
     this.timeout = clear(this.timeout) // yes, on each enter
-    if (this.count === 0)
+    if (this.counter === 0)
       this.busy = true
-    this.count++
+    this.counter++
     this.actions.add(action)
   }
 
   leave(action: Action): void {
     this.actions.delete(action)
-    this.count--
-    if (this.count === 0)
+    this.counter--
+    if (this.counter === 0)
       this.reset(false)
   }
 
   private reset(now: boolean): void {
     if (this.retention === undefined || now) {
-      if (this.count > 0 || this.actions.size > 0) /* istanbul ignore next */
+      if (this.counter > 0 || this.actions.size > 0) /* istanbul ignore next */
         throw misuse("cannot reset indicator having active actions")
       this.busy = false
       this.timeout = clear(this.timeout)
-      this.ticks = 0
+      this.frames = 0
     }
     else
       this.timeout = setTimeout(() =>
