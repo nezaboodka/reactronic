@@ -7,6 +7,7 @@ import { Stateful, StopwatchImpl } from './impl/.index'
 import { Action } from './Action'
 
 export abstract class Stopwatch extends Stateful {
+  abstract readonly delay?: number
   abstract readonly busy: boolean
   abstract readonly count: number
   abstract readonly workers: ReadonlySet<Worker>
@@ -15,7 +16,7 @@ export abstract class Stopwatch extends Stateful {
   abstract enter(worker: Worker): void
   abstract leave(worker: Worker): void
 
-  static create(hint?: string): Stopwatch { return StopwatchImpl.create(hint) }
+  static create(hint?: string, delay?: number): Stopwatch { return StopwatchImpl.create(hint, delay) }
 }
 
 export interface Worker {

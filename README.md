@@ -250,10 +250,11 @@ enum Reentrance {
 }
 
 class Stopwatch {
+  readonly delay?: number
   readonly busy: boolean
   readonly counter: number
   readonly ticks: number
-  static create(hint?: string): Stopwatch
+  static create(hint?: string, delay?: number): Stopwatch
 }
 
 interface Trace {
