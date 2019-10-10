@@ -8,7 +8,7 @@ export { Options, Kind, Reentrance, Trace } from './Options'
 export { Tools } from './Tools'
 export { Stateful } from './impl/Hooks'
 export { stateless, stateful, action, trigger, cached,
-  cacheof, resolved, nonreactive, standalone,
+  cacheof, resolved, nonreactive, standalone, latency,
   reentrance, cachedArgs, indicator, trace } from './Tools'
 export { Action } from './Action'
 export { Cache,  } from './Cache'

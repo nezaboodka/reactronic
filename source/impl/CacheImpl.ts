@@ -348,35 +348,42 @@ class CacheResult extends FieldValue implements Observer {
   }
 
   trig(timestamp: number, now: boolean, nothrow: boolean): void {
-    if (!this.error && (this.options.kind === Kind.Action ||
-        (timestamp >= this.invalid.since && !this.invalid.renewing))) {
-      try {
-        const proxy: any = Utils.get<Handle>(this.record.data, R_HANDLE).proxy
-        const trap: Function = Reflect.get(proxy, this.field, proxy)
-        const cache = Utils.get<CacheImpl>(trap, R_CACHE)
-        const call: CacheCall = cache.tryCall(false)
-        if (call.cache.ret instanceof Promise)
-          call.cache.ret.catch(error => { /* nop */ }) // bad idea to hide an error
-      }
-      catch (e) {
-        if (!nothrow)
-          throw e
+    const latency = this.options.latency
+    if (now || latency === -1) {
+      if (!this.error && (this.options.kind === Kind.Action ||
+          (timestamp >= this.invalid.since && !this.invalid.renewing))) {
+        try {
+          const proxy: any = Utils.get<Handle>(this.record.data, R_HANDLE).proxy
+          const trap: Function = Reflect.get(proxy, this.field, proxy)
+          const cache = Utils.get<CacheImpl>(trap, R_CACHE)
+          const call: CacheCall = cache.tryCall(false)
+          if (call.cache.ret instanceof Promise)
+            call.cache.ret.catch(error => { /* nop */ }) // bad idea to hide an error
+        }
+        catch (e) {
+          if (!nothrow)
+            throw e
+        }
       }
     }
+    else if (latency === 0)
+      this.addToAsyncTriggerBatch()
+    else if (latency > 0) // ignore disabled triggers (latency -2)
+      setTimeout(() => this.trig(TOP_TIMESTAMP, true, true), latency)
   }
 
-  // private addToAsyncTriggerBatch(): void {
-  //   CacheResult.asyncTriggerBatch.push(this)
-  //   if (CacheResult.asyncTriggerBatch.length === 1)
-  //     setTimeout(CacheResult.processAsyncTriggerBatch, 0)
-  // }
+  private addToAsyncTriggerBatch(): void {
+    CacheResult.asyncTriggerBatch.push(this)
+    if (CacheResult.asyncTriggerBatch.length === 1)
+      setTimeout(CacheResult.processAsyncTriggerBatch, 0)
+  }
 
-  // private static processAsyncTriggerBatch(): void {
-  //   const triggers = CacheResult.asyncTriggerBatch
-  //   CacheResult.asyncTriggerBatch = [] // reset
-  //   for (const t of triggers)
-  //     t.trig(TOP_TIMESTAMP, true, true)
-  // }
+  private static processAsyncTriggerBatch(): void {
+    const triggers = CacheResult.asyncTriggerBatch
+    CacheResult.asyncTriggerBatch = [] // reset
+    for (const t of triggers)
+      t.trig(TOP_TIMESTAMP, true, true)
+  }
 
   private static markViewed(record: Record, field: FieldKey, value: FieldValue, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active // alias

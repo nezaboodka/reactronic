@@ -9,6 +9,7 @@ import { Indicator } from './Indicator'
 
 export interface Options {
   readonly kind: Kind
+  readonly latency: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
   readonly indicator: Indicator | null

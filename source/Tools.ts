@@ -67,6 +67,10 @@ export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescri
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
+export function latency(latency: number): F<any> {
+  return options({latency})
+}
+
 export function reentrance(reentrance: Reentrance): F<any> {
   return options({reentrance})
 }
