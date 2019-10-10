@@ -34,7 +34,7 @@ export class IndicatorImpl extends Indicator {
 
   private reset(now: boolean): void {
     if (this.debounce === undefined || now) {
-      if (this.count > 0 || this.workers.size > 0)
+      if (this.count > 0 || this.workers.size > 0) /* istanbul ignore next */
         throw misuse("cannot reset indicator having active workers")
       this.busy = false
       this.timeout = clear(this.timeout)
@@ -43,7 +43,7 @@ export class IndicatorImpl extends Indicator {
     else
       this.timeout = setTimeout(() =>
         Action.runEx<void>("Indicator.reset", true, false,
-          undefined, undefined, () => this.reset(true)), this.debounce)
+          undefined, undefined, IndicatorImpl.reset, this, true), this.debounce)
   }
 
   static create(hint?: string, debounce?: number): IndicatorImpl {
@@ -57,12 +57,16 @@ export class IndicatorImpl extends Indicator {
     return m
   }
 
-  static enter(m: Indicator, worker: Worker): void {
-    m.enter(worker)
+  static enter(ind: Indicator, worker: Worker): void {
+    ind.enter(worker)
   }
 
-  static leave(m: Indicator, worker: Worker): void {
-    m.leave(worker)
+  static leave(ind: Indicator, worker: Worker): void {
+    ind.leave(worker)
+  }
+
+  static reset(ind: IndicatorImpl, now: boolean): void {
+    ind.reset(now)
   }
 }
 

@@ -8,7 +8,7 @@ import { stateful, action, trigger, cached, cachedArgs, latency, indicator,
 export { tracing } from './common'
 
 export const output: string[] = []
-export const ind = Indicator.create("DemoIndicator")
+export const ind = Indicator.create("DemoIndicator", 0)
 
 @stateful
 export class DemoModel {

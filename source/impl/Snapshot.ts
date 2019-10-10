@@ -88,7 +88,7 @@ export class Snapshot implements Context {
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.applied)
       throw misuse(`stateful property ${Hint.handle(h, field)} can only be modified inside actions`)
-    if (r.creator !== this && value !== R_HANDLE && this.caching !== undefined && token !== this.caching)
+    if (/*r.creator !== this &&*/ value !== R_HANDLE && this.caching !== undefined && token !== this.caching)
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hint.record(r, field)}`)
     if (r === BLANK && value !== R_HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hint.record(r, field)} doesn't exist in snapshot v${this.stamp}`)

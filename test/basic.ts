@@ -33,6 +33,11 @@ export class DemoModel extends StatefulDemoModelBase {
     this.title = `${t} - ${stamp}`
   }
 
+  @cached
+  cacheWithSideEffect(): void {
+    this.title = "should fail on this line"
+  }
+
   private _loadUsers(): void {
     this.users.push(new Person({
       name: "John", age: 38,
