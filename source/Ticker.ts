@@ -15,8 +15,6 @@ export abstract class Ticker extends Stateful {
   abstract leave(worker: Worker): void
 
   static create(hint?: string): Ticker { return Monitor.create(hint) }
-  static enter(m: Ticker, worker: Worker): void { Monitor.enter(m, worker) }
-  static leave(m: Ticker, worker: Worker): void { Monitor.leave(m, worker) }
 }
 
 export interface Worker {

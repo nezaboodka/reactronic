@@ -30,10 +30,16 @@ export class Monitor extends Ticker {
     this.count--
     if (this.count === 0) {
       if (this.interval === undefined)
-        this.busy = false
+        this.reset()
       else
-        this.timeout = setTimeout(() => this.busy = false, this.interval)
+        this.timeout = setTimeout(() => this.reset(), this.interval)
     }
+  }
+
+  private reset(): void {
+    this.busy = false
+    this.timeout = undefined
+    this.ticks = 0
   }
 
   static enter(m: Ticker, worker: Worker): void {

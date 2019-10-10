@@ -5,7 +5,7 @@
 
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, Snapshot, BLANK, Hint, OptionsImpl, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './.index'
+import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, Snapshot, BLANK, Hint, OptionsImpl, Monitor, Hooks, R_HANDLE, R_CACHE, R_UNMOUNT } from './.index'
 import { Cache } from '../Cache'
 import { Options, Kind, Reentrance, Trace } from '../Options'
 import { Action } from '../Action'
@@ -289,7 +289,7 @@ class CacheResult extends FieldValue implements Observer {
 
   enter(): void {
     if (this.options.ticker)
-      this.tickerEnter(this.options.ticker)
+      this.monitorEnter(this.options.ticker)
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.field)} - enter`)
     this.started = Date.now()
   }
@@ -320,22 +320,22 @@ class CacheResult extends FieldValue implements Observer {
     this.started = 0
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.field)} ${message}`, ms, highlight)
     if (this.options.ticker)
-      this.tickerLeave(this.options.ticker)
+      this.monitorLeave(this.options.ticker)
     // CacheResult.freeze(this)
   }
 
-  private tickerEnter(mon: Ticker): void {
+  private monitorEnter(mon: Ticker): void {
     Method.runAs<void>(undefined, Action.runEx, "Ticker.enter",
       true, false, Dbg.isOn && Dbg.trace.tickers ? undefined : Dbg.global, undefined,
-      Ticker.enter, mon, this)
+      Monitor.enter, mon, this)
   }
 
-  private tickerLeave(mon: Ticker): void {
+  private monitorLeave(mon: Ticker): void {
     Action.outside<void>(() => {
       const leave = (): void => {
         Method.runAs<void>(undefined, Action.runEx, "Ticker.leave",
           true, false, Dbg.isOn && Dbg.trace.tickers ? undefined : Dbg.global, undefined,
-          Ticker.leave, mon, this)
+          Monitor.leave, mon, this)
       }
       this.action.whenFinished(false).then(leave, leave)
     })
