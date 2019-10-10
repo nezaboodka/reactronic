@@ -5,13 +5,13 @@
 
 import { Trace } from './Trace'
 export { Trace } from './Trace'
-import { Ticker } from './Ticker'
+import { Stopwatch } from './Stopwatch'
 
 export interface Options {
   readonly kind: Kind
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly ticker: Ticker | null
+  readonly stopwatch: Stopwatch | null
   readonly trace?: Partial<Trace>
 }
 

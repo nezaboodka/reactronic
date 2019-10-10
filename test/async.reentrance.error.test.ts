@@ -5,7 +5,7 @@
 
 import test from 'ava'
 import { Action, Cache, Tools as RT, Reentrance, cacheof, resolved, sleep } from '../source/.index'
-import { DemoModel, DemoView, tick, output, tracing } from './async'
+import { DemoModel, DemoView, watch, output, tracing } from './async'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: "nezaboodka.com", delay: 500 },
@@ -34,8 +34,8 @@ test("async", async t => {
     await app.print() // trigger first run
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
-    t.is(tick.count, 1)
-    t.is(tick.workers.size, 1)
+    t.is(watch.count, 1)
+    t.is(watch.workers.size, 1)
     await first
   }
   catch (error) { /* istanbul ignore next */
@@ -43,8 +43,8 @@ test("async", async t => {
     if (RT.isTraceOn && !RT.trace.silent) console.log(error.toString())
   }
   finally {
-    t.is(tick.count, 0)
-    t.is(tick.workers.size, 0)
+    t.is(watch.count, 0)
+    t.is(watch.workers.size, 0)
     const r = resolved(app.render)
     t.is(r && r.length, 2)
     await sleep(400)

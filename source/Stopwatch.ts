@@ -6,7 +6,7 @@
 import { Stateful, Monitor } from './core/.index'
 import { Action } from './Action'
 
-export abstract class Ticker extends Stateful {
+export abstract class Stopwatch extends Stateful {
   abstract readonly busy: boolean
   abstract readonly count: number
   abstract readonly workers: ReadonlySet<Worker>
@@ -14,7 +14,7 @@ export abstract class Ticker extends Stateful {
   abstract enter(worker: Worker): void
   abstract leave(worker: Worker): void
 
-  static create(hint?: string): Ticker { return Monitor.create(hint) }
+  static create(hint?: string): Stopwatch { return Monitor.create(hint) }
 }
 
 export interface Worker {

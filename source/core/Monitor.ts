@@ -5,9 +5,9 @@
 
 import { Hint } from './.index'
 import { Action } from '../Action'
-import { Ticker, Worker } from '../Ticker'
+import { Stopwatch, Worker } from '../Stopwatch'
 
-export class Monitor extends Ticker {
+export class Monitor extends Stopwatch {
   private timeout?: NodeJS.Timeout = undefined
   interval?: number = undefined
   busy: boolean = false
@@ -42,16 +42,16 @@ export class Monitor extends Ticker {
     this.ticks = 0
   }
 
-  static enter(m: Ticker, worker: Worker): void {
+  static enter(m: Stopwatch, worker: Worker): void {
     m.enter(worker)
   }
 
-  static leave(m: Ticker, worker: Worker): void {
+  static leave(m: Stopwatch, worker: Worker): void {
     m.leave(worker)
   }
 
   static create(hint?: string, interval?: number): Monitor {
-    return Action.run("Ticker.create", Monitor.createFunc, hint, interval)
+    return Action.run("Stopwatch.create", Monitor.createFunc, hint, interval)
   }
 
   private static createFunc(hint?: string, interval?: number): Monitor {

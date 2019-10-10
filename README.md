@@ -176,10 +176,10 @@ invocation of the corresponding function:
   - `Reentrance.CancelPrevious` - cancel previous action in favor of current one;
   - `Reentrance.RunSideBySide` - multiple simultaneous actions are allowed.
 
-**Ticker** is an object that holds the status of running functions,
-which it is attached to. A single ticker object can be shared between
+**Stopwatch** is an object that holds the status of running functions,
+which it is attached to. A single stopwatch object can be shared between
 multiple actions, triggers, and cache functions, thus maintaining
-consolidated status for all of them (busy, idle, timings, etc).
+consolidated status for all of them (busyness, workers, ticks, etc).
 
 ## Notes
 
@@ -216,16 +216,16 @@ function cached(proto, prop, pd) // method only
 
 function reentrance(reentrance: Reentrance) // actions & triggers
 function cachedArgs(cachedArgs: boolean) // cached & triggers
-function ticker(ticker: Ticker | null)
+function stopwatch(stopwatch: Stopwatch | null)
 function trace(trace: Partial<Trace>)
 
-// Options, Kind, Reentrance, Ticker, Trace
+// Options, Kind, Reentrance, Stopwatch, Trace
 
 interface Options {
   readonly kind: Kind
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly ticker: Ticker | null
+  readonly stopwatch: Stopwatch | null
   readonly trace?: Partial<Trace>
 }
 
@@ -244,10 +244,10 @@ enum Reentrance {
   RunSideBySide = -2, // multiple simultaneous actions are allowed
 }
 
-class Ticker {
+class Stopwatch {
   readonly busy: boolean
   readonly counter: number
-  static create(hint?: string): Ticker
+  static create(hint?: string): Stopwatch
 }
 
 interface Trace {
@@ -255,7 +255,7 @@ interface Trace {
   readonly actions: boolean
   readonly methods: boolean
   readonly steps: boolean
-  readonly tickers: boolean
+  readonly stopwatch: boolean
   readonly reads: boolean
   readonly writes: boolean
   readonly changes: boolean

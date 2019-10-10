@@ -113,9 +113,9 @@ test("basic", t => {
     // t.is(daddy.name, "John")
     // t.is(daddy.age, 38)
     // Check protection and error handling
-    t.throws(() => { cacheof(daddy.setParent).setup({ticker: null}) },
+    t.throws(() => { cacheof(daddy.setParent).setup({stopwatch: null}) },
       "given method is not a reactronic cache")
-    t.throws(() => { console.log(cacheof(daddy.setParent).options.ticker) },
+    t.throws(() => { console.log(cacheof(daddy.setParent).options.stopwatch) },
       "given method is not a reactronic cache")
     const action2 = Action.create("action2")
     t.throws(() => action2.run(() => { throw new Error("test") }), "test")

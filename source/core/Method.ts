@@ -10,7 +10,7 @@ import { Cache } from '../Cache'
 import { Options, Kind, Reentrance, Trace } from '../Options'
 import { Action } from '../Action'
 import { Transaction } from './Transaction'
-import { Ticker } from '../Ticker'
+import { Stopwatch } from '../Stopwatch'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 type CacheCall = { valid: boolean, cache: CacheResult, record: Record }
@@ -288,8 +288,8 @@ class CacheResult extends FieldValue implements Observer {
   }
 
   enter(): void {
-    if (this.options.ticker)
-      this.monitorEnter(this.options.ticker)
+    if (this.options.stopwatch)
+      this.monitorEnter(this.options.stopwatch)
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.field)} - enter`)
     this.started = Date.now()
   }
@@ -319,22 +319,22 @@ class CacheResult extends FieldValue implements Observer {
     const ms: number = Date.now() - this.started
     this.started = 0
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.field)} ${message}`, ms, highlight)
-    if (this.options.ticker)
-      this.monitorLeave(this.options.ticker)
+    if (this.options.stopwatch)
+      this.monitorLeave(this.options.stopwatch)
     // CacheResult.freeze(this)
   }
 
-  private monitorEnter(mon: Ticker): void {
-    Method.runAs<void>(undefined, Action.runEx, "Ticker.enter",
-      true, false, Dbg.isOn && Dbg.trace.tickers ? undefined : Dbg.global, undefined,
+  private monitorEnter(mon: Stopwatch): void {
+    Method.runAs<void>(undefined, Action.runEx, "Stopwatch.enter",
+      true, false, Dbg.isOn && Dbg.trace.stopwatch ? undefined : Dbg.global, undefined,
       Monitor.enter, mon, this)
   }
 
-  private monitorLeave(mon: Ticker): void {
+  private monitorLeave(mon: Stopwatch): void {
     Action.outside<void>(() => {
       const leave = (): void => {
-        Method.runAs<void>(undefined, Action.runEx, "Ticker.leave",
-          true, false, Dbg.isOn && Dbg.trace.tickers ? undefined : Dbg.global, undefined,
+        Method.runAs<void>(undefined, Action.runEx, "Stopwatch.leave",
+          true, false, Dbg.isOn && Dbg.trace.stopwatch ? undefined : Dbg.global, undefined,
           Monitor.leave, mon, this)
       }
       this.action.whenFinished(false).then(leave, leave)
