@@ -10,7 +10,7 @@ import { Indicator, Worker } from '../Indicator'
 
 export class IndicatorImpl extends Indicator {
   throttle?: number = undefined // milliseconds
-  debounce?: number = undefined // milliseconds
+  retention?: number = undefined // milliseconds
   busy: boolean = false
   count: number = 0
   workers = new Set<Worker>()
@@ -33,7 +33,7 @@ export class IndicatorImpl extends Indicator {
   }
 
   private reset(now: boolean): void {
-    if (this.debounce === undefined || now) {
+    if (this.retention === undefined || now) {
       if (this.count > 0 || this.workers.size > 0) /* istanbul ignore next */
         throw misuse("cannot reset indicator having active workers")
       this.busy = false
@@ -43,17 +43,17 @@ export class IndicatorImpl extends Indicator {
     else
       this.timeout = setTimeout(() =>
         Action.runEx<void>("Indicator.reset", true, false,
-          undefined, undefined, IndicatorImpl.reset, this, true), this.debounce)
+          undefined, undefined, IndicatorImpl.reset, this, true), this.retention)
   }
 
-  static create(hint?: string, debounce?: number): IndicatorImpl {
-    return Action.run("Indicator.create", IndicatorImpl.doCreate, hint, debounce)
+  static create(hint?: string, retention?: number): IndicatorImpl {
+    return Action.run("Indicator.create", IndicatorImpl.doCreate, hint, retention)
   }
 
-  private static doCreate(hint?: string, debounce?: number): IndicatorImpl {
+  private static doCreate(hint?: string, retention?: number): IndicatorImpl {
     const m = new IndicatorImpl()
     Hint.setHint(m, hint)
-    m.debounce = debounce
+    m.retention = retention
     return m
   }
 

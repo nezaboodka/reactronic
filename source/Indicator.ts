@@ -8,7 +8,7 @@ import { Action } from './Action'
 
 export abstract class Indicator extends Stateful {
   abstract readonly throttle?: number // milliseconds
-  abstract readonly debounce?: number // milliseconds
+  abstract readonly retention?: number // milliseconds
   abstract readonly busy: boolean
   abstract readonly count: number
   abstract readonly workers: ReadonlySet<Worker>
@@ -17,7 +17,7 @@ export abstract class Indicator extends Stateful {
   abstract enter(worker: Worker): void
   abstract leave(worker: Worker): void
 
-  static create(hint?: string, debounce?: number): Indicator { return IndicatorImpl.create(hint, debounce) }
+  static create(hint?: string, retention?: number): Indicator { return IndicatorImpl.create(hint, retention) }
 }
 
 export interface Worker {
