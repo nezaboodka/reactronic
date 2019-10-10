@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { stateful, action, trigger, cached, cachedArgs, latency, indicator,
+import { stateful, action, trigger, cached, cachedArgs, delay, indicator,
   reentrance, Indicator, Reentrance, Tools as RT, all, sleep } from '../source/.index'
 export { tracing } from './common'
 
@@ -27,7 +27,7 @@ export class DemoView {
   @stateful test: any
   constructor(readonly model: DemoModel) { }
 
-  @trigger @latency(-1)
+  @trigger @delay(-1)
   async print(): Promise<void> {
     const lines: string[] = await this.render()
     for (const x of lines) {

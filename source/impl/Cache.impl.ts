@@ -348,8 +348,8 @@ class CacheResult extends FieldValue implements Observer {
   }
 
   trig(timestamp: number, now: boolean, nothrow: boolean): void {
-    const latency = this.options.latency
-    if (now || latency === -1) {
+    const delay = this.options.delay
+    if (now || delay === -1) {
       if (!this.error && (this.options.kind === Kind.Action ||
           (timestamp >= this.invalid.since && !this.invalid.renewing))) {
         try {
@@ -366,10 +366,10 @@ class CacheResult extends FieldValue implements Observer {
         }
       }
     }
-    else if (latency === 0)
+    else if (delay === 0)
       this.addToAsyncTriggerBatch()
-    else if (latency > 0) // ignore disabled triggers (latency -2)
-      setTimeout(() => this.trig(TOP_TIMESTAMP, true, true), latency)
+    else if (delay > 0) // ignore disabled triggers (delay -2)
+      setTimeout(() => this.trig(TOP_TIMESTAMP, true, true), delay)
   }
 
   private addToAsyncTriggerBatch(): void {

@@ -58,7 +58,7 @@ export function action(proto: object, prop: PropertyKey, pd: TypedPropertyDescri
 }
 
 export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const opt = { kind: Kind.Trigger, latency: -1 } // immediate trigger
+  const opt = { kind: Kind.Trigger, delay: -1 } // immediate trigger
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
@@ -67,8 +67,8 @@ export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescri
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
-export function latency(latency: number): F<any> {
-  return options({latency})
+export function delay(delay: number): F<any> {
+  return options({delay})
 }
 
 export function reentrance(reentrance: Reentrance): F<any> {

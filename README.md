@@ -162,12 +162,12 @@ one.
 
 There are multiple options to configure behavior of transactional reactivity.
 
-**Latency** option defines a delay between trigger invalidation and
+**Delay** option defines a period between trigger invalidation and
 invocation of the corresponding function:
 
   - `(ms)` - delay in milliseconds;
-  - `-1` - rerun immediately (right after an action is applied);
-  - `-2` - never rerun (disabled trigger).
+  - `-1` - run trigger immediately once action is applied;
+  - `-2` - never run trigger (disabled trigger).
 
 **Reentrance** option defines how to handle reentrant calls of actions and triggers:
 
@@ -214,7 +214,7 @@ function action(proto, prop, pd) // method only
 function trigger(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
-function latency(latency: number) // triggers only
+function delay(delay: number) // triggers only
 function reentrance(reentrance: Reentrance) // actions & triggers
 function cachedArgs(cachedArgs: boolean) // cached & triggers
 function indicator(indicator: Indicator | null)
@@ -229,7 +229,7 @@ function standalone<T>(func: F<T>, ...args: any[]): T
 
 interface Options {
   readonly kind: Kind
-  readonly latency: number // milliseconds, -1 is immediately, -2 is never
+  readonly delay: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
   readonly indicator: Indicator | null
