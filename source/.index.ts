@@ -7,7 +7,9 @@ export { all, sleep } from './util/Utils'
 export { Options, Kind, Reentrance, Trace } from './Options'
 export { Tools } from './Tools'
 export { Stateful } from './core/Hooks'
-export { stateless, stateful, action, trigger, cached, latency, reentrance, cachedArgs, ticker, trace } from './Options.decorators'
+export { stateless, stateful, action, trigger, cached,
+  cacheof, resolved, nonreactive, standalone,
+  latency, reentrance, cachedArgs, ticker, trace } from './Tools'
 export { Action } from './Action'
-export { Cache, cacheof, resolved, nonreactive, standalone } from './Cache'
+export { Cache,  } from './Cache'
 export { Ticker, Worker } from './Ticker'

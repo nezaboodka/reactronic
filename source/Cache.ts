@@ -8,22 +8,6 @@ import { Options } from './Options'
 import { Action } from './Action'
 import { Method } from './core/Method' // implementation
 
-export function cacheof<T>(method: F<T>): Cache<T> {
-  return Cache.of<T>(method)
-}
-
-export function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return (cacheof(method) as any).call(args)
-}
-
-export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return Method.runAs<T>(undefined, func, ...args)
-}
-
-export function standalone<T>(func: F<T>, ...args: any[]): T {
-  return Method.runAs<T>(undefined, Action.outside, func, ...args)
-}
-
 export abstract class Cache<T> {
   abstract setup(options: Partial<Options>): Options
   abstract readonly options: Options
