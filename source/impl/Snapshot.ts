@@ -5,9 +5,12 @@
 
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Context, Record, FieldKey, FieldValue, Handle, Observer, HANDLE, UNMOUNT } from './Data'
-import { Hint } from './Hint'
+import { Context, Record, FieldKey, FieldValue, Handle, Observer } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
+
+export const HANDLE: unique symbol = Symbol("R:HANDLE")
+export const CACHE: unique symbol = Symbol("R:CACHE")
+export const UNMOUNT: unique symbol = Symbol("R:UNMOUNT")
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
@@ -240,6 +243,52 @@ export class Snapshot implements Context {
     Snapshot.lastId = 100
     Snapshot.headStamp = 101
     Snapshot.oldest = undefined
+  }
+}
+
+// Hint
+
+export class Hint {
+  static setHint<T>(obj: T, hint: string | undefined): T {
+    if (hint) {
+      const h = Utils.get<Handle>(obj, HANDLE)
+      if (h)
+        h.hint = hint
+    }
+    return obj
+  }
+
+  static getHint(obj: object): string | undefined {
+    const h = Utils.get<Handle>(obj, HANDLE)
+    return h ? h.hint : undefined
+  }
+
+  static handle(h: Handle | undefined, field?: FieldKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
+    const obj = h === undefined
+      ? "blank"
+      : (typeless
+        ? (stamp === undefined ? `#${h.id}` : `v${stamp}t${tran}#${h.id}`)
+        : (stamp === undefined ? `#${h.id} ${h.hint}` : `v${stamp}t${tran}#${h.id} ${h.hint}`))
+    return field !== undefined ? `${obj}.${field.toString()}` : obj
+  }
+
+  static record(r: Record, field?: FieldKey, typeless?: boolean): string {
+    const h = Utils.get<Handle | undefined>(r.data, HANDLE)
+    return Hint.handle(h, field, r.creator.timestamp, r.creator.id, typeless)
+  }
+
+  static conflicts(conflicts: Record[]): string {
+    return conflicts.map(ours => {
+      const items: string[] = []
+      ours.conflicts.forEach((theirs: Record, field: FieldKey) => {
+        items.push(Hint.conflictingFieldHint(field, ours, theirs))
+      })
+      return items.join(", ")
+    }).join(", ")
+  }
+
+  static conflictingFieldHint(field: FieldKey, ours: Record, theirs: Record): string {
+    return Hint.record(theirs, field)
   }
 }
 

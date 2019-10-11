@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { misuse } from '../util/Dbg'
-import { Hint } from './Hint'
+import { Hint } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Status, Worker } from '../Status'
 

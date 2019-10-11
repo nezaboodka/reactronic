@@ -5,7 +5,7 @@
 
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
-import { Hint } from './impl/Hint'
+import { Hint } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { CacheImpl } from './impl/Cache-impl'
 import { Action, Cache, Status, Kind, Reentrance, Trace } from './.index'

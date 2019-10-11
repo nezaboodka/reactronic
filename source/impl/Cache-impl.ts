@@ -5,9 +5,8 @@
 
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, HANDLE, CACHE, UNMOUNT } from './Data'
-import { Hint } from './Hint'
-import { Snapshot, BLANK } from './Snapshot'
+import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle } from './Data'
+import { Snapshot, Hint, BLANK, HANDLE, CACHE, UNMOUNT } from './Snapshot'
 import { Transaction } from './Transaction'
 import { StatusImpl } from './Status-impl'
 import { Hooks, OptionsImpl } from './Hooks'

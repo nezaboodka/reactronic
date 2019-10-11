@@ -5,10 +5,6 @@
 
 import { Utils } from '../util/Utils'
 
-export const HANDLE: unique symbol = Symbol("R:HANDLE")
-export const CACHE: unique symbol = Symbol("R:CACHE")
-export const UNMOUNT: unique symbol = Symbol("R:UNMOUNT")
-
 // Context
 
 export interface Context {
