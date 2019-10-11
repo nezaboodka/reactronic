@@ -5,7 +5,7 @@
 
 import test from 'ava'
 import { Action, Cache, Reentrance, Tools as RT, cacheof, all, sleep } from '../source/.index'
-import { DemoModel, DemoView, ind, output, tracing } from './async'
+import { DemoModel, DemoView, loading, output, tracing } from './async'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: "nezaboodka.com", delay: 100 },
@@ -37,8 +37,8 @@ test("async", async t => {
       "stateful property #23 DemoView.test can only be modified inside actions")
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
-    t.is(ind.actionCount, 3)
-    t.is(ind.actions.size, 3)
+    t.is(loading.actionCount, 3)
+    t.is(loading.actions.size, 3)
     await all(responses)
   }
   catch (error) { /* istanbul ignore next */
@@ -46,8 +46,8 @@ test("async", async t => {
     if (RT.isTraceOn && !RT.trace.silent) console.log(error.toString())
   }
   finally {
-    t.is(ind.actionCount, 0)
-    t.is(ind.actions.size, 0)
+    t.is(loading.actionCount, 0)
+    t.is(loading.actions.size, 0)
     await sleep(400)
     await Cache.unmount(app, app.model).whenFinished(true)
   } /* istanbul ignore next */

@@ -7,8 +7,8 @@ import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Hint } from './impl/Hint'
 import { Hooks, options } from './impl/Hooks'
-import { CacheImpl } from './impl/Cache.impl'
-import { Action, Cache, Indicator, Kind, Reentrance, Trace } from './.index'
+import { CacheImpl } from './impl/Cache-impl'
+import { Action, Cache, Status, Kind, Reentrance, Trace } from './.index'
 
 export class Tools {
   // Configuration
@@ -81,8 +81,8 @@ export function cachedArgs(cachedArgs: boolean): F<any> {
   return options({cachedArgs})
 }
 
-export function indicator(indicator: Indicator | null): F<any> {
-  return options({indicator})
+export function status(status: Status | null): F<any> {
+  return options({status})
 }
 
 export function trace(trace: Partial<Trace>): F<any> {

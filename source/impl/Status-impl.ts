@@ -6,9 +6,9 @@
 import { misuse } from '../util/Dbg'
 import { Hint } from './Hint'
 import { Action } from '../Action'
-import { Indicator } from '../Indicator'
+import { Status } from '../Status'
 
-export class IndicatorImpl extends Indicator {
+export class StatusImpl extends Status {
   busy: boolean = false
   actionCount: number = 0
   actions = new Set<Action>()
@@ -34,37 +34,37 @@ export class IndicatorImpl extends Indicator {
   private reset(now: boolean): void {
     if (now || this.prolongAtLeastFor === undefined) {
       if (this.actionCount > 0 || this.actions.size > 0) /* istanbul ignore next */
-        throw misuse("cannot reset indicator having active actions")
+        throw misuse("cannot reset status having active actions")
       this.busy = false
       this.timeout = clear(this.timeout)
       this.animationFrameCount = 0
     }
     else
       this.timeout = setTimeout(() =>
-        Action.runEx<void>("Indicator.reset", true, false,
-          undefined, undefined, IndicatorImpl.reset, this, true), this.prolongAtLeastFor)
+        Action.runEx<void>("Status.reset", true, false,
+          undefined, undefined, StatusImpl.reset, this, true), this.prolongAtLeastFor)
   }
 
-  static create(hint?: string, prolonged?: number): IndicatorImpl {
-    return Action.run("Indicator.create", IndicatorImpl.doCreate, hint, prolonged)
+  static create(hint?: string, prolonged?: number): StatusImpl {
+    return Action.run("Status.create", StatusImpl.doCreate, hint, prolonged)
   }
 
-  private static doCreate(hint?: string, prolongAtLeastFor?: number): IndicatorImpl {
-    const m = new IndicatorImpl()
+  private static doCreate(hint?: string, prolongAtLeastFor?: number): StatusImpl {
+    const m = new StatusImpl()
     Hint.setHint(m, hint)
     m.prolongAtLeastFor = prolongAtLeastFor
     return m
   }
 
-  static enter(ind: Indicator, action: Action): void {
+  static enter(ind: Status, action: Action): void {
     ind.enter(action)
   }
 
-  static leave(ind: Indicator, action: Action): void {
+  static leave(ind: Status, action: Action): void {
     ind.leave(action)
   }
 
-  static reset(ind: IndicatorImpl, now: boolean): void {
+  static reset(ind: StatusImpl, now: boolean): void {
     ind.reset(now)
   }
 }

@@ -8,7 +8,7 @@ export interface Trace {
   readonly actions: boolean
   readonly methods: boolean
   readonly steps: boolean
-  readonly indicators: boolean
+  readonly status: boolean
   readonly reads: boolean
   readonly writes: boolean
   readonly changes: boolean

@@ -12,7 +12,7 @@ import { Record, FieldKey, FieldValue, Handle, R_HANDLE, R_UNMOUNT, R_CACHE } fr
 import { Hint } from './Hint'
 import { Snapshot, BLANK } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
-import { Indicator } from '../Indicator'
+import { Status } from '../Status'
 import { Cache } from '../Cache'
 import { Trace } from '../Trace'
 
@@ -59,7 +59,7 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   delay: -2, // never
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
-  indicator: null,
+  status: null,
   trace: undefined,
 })
 const DEFAULT_STATEFUL_OPTIONS: Options = Object.freeze({
@@ -67,7 +67,7 @@ const DEFAULT_STATEFUL_OPTIONS: Options = Object.freeze({
   delay: -2, // never
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
-  indicator: null,
+  status: null,
   trace: undefined,
 })
 
@@ -77,7 +77,7 @@ export class OptionsImpl implements Options {
   readonly delay: number
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly indicator: Indicator | null
+  readonly status: Status | null
   readonly trace?: Partial<Trace>
   static readonly STATEFUL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATEFUL_OPTIONS}, {}, false))
   static readonly STATELESS = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))
@@ -88,7 +88,7 @@ export class OptionsImpl implements Options {
     this.delay = merge(DEFAULT_STATELESS_OPTIONS.delay, existing.delay, patch.delay, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.cachedArgs = merge(DEFAULT_STATELESS_OPTIONS.cachedArgs, existing.cachedArgs, patch.cachedArgs, implicit)
-    this.indicator = merge(DEFAULT_STATELESS_OPTIONS.indicator, existing.indicator, patch.indicator, implicit)
+    this.status = merge(DEFAULT_STATELESS_OPTIONS.status, existing.status, patch.status, implicit)
     this.trace = merge(DEFAULT_STATELESS_OPTIONS.trace, existing.trace, patch.trace, implicit)
     Object.freeze(this)
   }

@@ -4,10 +4,10 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Stateful } from './impl/Hooks'
-import { IndicatorImpl } from './impl/Indicator.impl'
+import { StatusImpl } from './impl/Status-impl'
 import { Action } from './Action'
 
-export abstract class Indicator extends Stateful {
+export abstract class Status extends Stateful {
   abstract readonly busy: boolean
   abstract readonly actionCount: number
   abstract readonly actions: ReadonlySet<Action>
@@ -17,5 +17,5 @@ export abstract class Indicator extends Stateful {
   abstract enter(action: Action): void
   abstract leave(action: Action): void
 
-  static create(hint?: string, prolongAtLeastFor?: number): Indicator { return IndicatorImpl.create(hint, prolongAtLeastFor) }
+  static create(hint?: string, prolongAtLeastFor?: number): Status { return StatusImpl.create(hint, prolongAtLeastFor) }
 }

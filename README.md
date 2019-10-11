@@ -176,10 +176,10 @@ invocation of the corresponding function:
   - `Reentrance.CancelPrevious` - cancel previous action in favor of current one;
   - `Reentrance.RunSideBySide` - multiple simultaneous actions are allowed.
 
-**Indicator** is an object that holds the status of running functions,
-which it is attached to. A single indicator object can be shared between
+**Status** is an object that holds the status of running functions,
+which it is attached to. A single status object can be shared between
 multiple actions, triggers, and cache functions, thus maintaining
-consolidated status for all of them (busy, actions, ticks, etc).
+consolidated status for all of them (busy, actions, etc).
 
 ## Notes
 
@@ -217,7 +217,7 @@ function cached(proto, prop, pd) // method only
 function delay(delay: number) // triggers only
 function reentrance(reentrance: Reentrance) // actions & triggers
 function cachedArgs(cachedArgs: boolean) // cached & triggers
-function indicator(indicator: Indicator | null)
+function status(status: Status | null)
 function trace(trace: Partial<Trace>)
 
 function cacheof<T>(method: F<T>): Cache<T>
@@ -225,14 +225,14 @@ function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined
 function nonreactive<T>(func: F<T>, ...args: any[]): T
 function standalone<T>(func: F<T>, ...args: any[]): T
 
-// Options, Kind, Reentrance, Indicator, Trace
+// Options, Kind, Reentrance, Status, Trace
 
 interface Options {
   readonly kind: Kind
   readonly delay: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly indicator: Indicator | null
+  readonly status: Status | null
   readonly trace?: Partial<Trace>
 }
 
@@ -251,13 +251,13 @@ enum Reentrance {
   RunSideBySide = -2, // multiple simultaneous actions are allowed
 }
 
-class Indicator {
+class Status {
   readonly busy: boolean
   readonly actionCount: number
   readonly actions: ReadonlySet<Action>
   readonly animationFrameCount: number
   readonly prolongAtLeastFor?: number // milliseconds
-  static create(hint?: string, prolongAtLeastFor?: number): Indicator
+  static create(hint?: string, prolongAtLeastFor?: number): Status
 }
 
 interface Trace {
@@ -265,7 +265,7 @@ interface Trace {
   readonly actions: boolean
   readonly methods: boolean
   readonly steps: boolean
-  readonly indicators: boolean
+  readonly status: boolean
   readonly reads: boolean
   readonly writes: boolean
   readonly changes: boolean
