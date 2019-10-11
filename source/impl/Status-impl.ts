@@ -5,7 +5,7 @@
 
 import { misuse } from '../util/Dbg'
 import { Hint } from './Hint'
-import { Action } from '../Action'
+import { Transaction } from './Transaction'
 import { Status, Worker } from '../Status'
 
 export class StatusImpl extends Status {
@@ -41,12 +41,12 @@ export class StatusImpl extends Status {
     }
     else
       this.timeout = setTimeout(() =>
-        Action.runEx<void>("Status.reset", true, false,
+        Transaction.runEx<void>("Status.reset", true, false,
           undefined, undefined, StatusImpl.reset, this, true), this.delayBeforeIdle)
   }
 
   static create(hint?: string, prolonged?: number): StatusImpl {
-    return Action.run("Status.create", StatusImpl.doCreate, hint, prolonged)
+    return Transaction.run("Status.create", StatusImpl.doCreate, hint, prolonged)
   }
 
   private static doCreate(hint?: string, delayBeforeIdle?: number): StatusImpl {
@@ -56,12 +56,12 @@ export class StatusImpl extends Status {
     return m
   }
 
-  static enter(ind: Status, worker: Action): void {
+  static enter(ind: Status, worker: Worker): void {
     ind.enter(worker)
   }
 
-  static leave(ind: Status, action: Action): void {
-    ind.leave(action)
+  static leave(ind: Status, worker: Worker): void {
+    ind.leave(worker)
   }
 
   static reset(ind: StatusImpl, now: boolean): void {
