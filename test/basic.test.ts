@@ -21,7 +21,7 @@ const expected: string[] = [
   // "John's children: Billy, Barry, Steve",
 ]
 
-test("All", t => {
+test("main", t => {
   RT.triggersAutoStartDisabled = !RT.triggersAutoStartDisabled
   RT.triggersAutoStartDisabled = false
   RT.performanceWarningThreshold = RT.performanceWarningThreshold + 1
@@ -132,7 +132,7 @@ test("All", t => {
     t.is(RT.getTraceHint(app), "DemoView")
     RT.setTraceHint(app, "App")
     t.is(RT.getTraceHint(app), "App")
-    t.deepEqual(Object.getOwnPropertyNames(app.model), ["text", /*"shared",*/ "title", "users"])
+    t.deepEqual(Object.getOwnPropertyNames(app.model), [/*"shared",*/ "title", "users"])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
   }
   finally { // cleanup

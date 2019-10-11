@@ -3,26 +3,15 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, action, trigger, cached, cachedArgs, Tools as RT, trace } from '../../source/.index'
+import { Stateful, stateless, action, trigger, cached, cachedArgs, Tools as RT } from '../../source/.index'
 import { Person } from './common'
 
 export const output: string[] = []
 
-export class StatefulDemoModelBase extends Stateful {
-  readonly text = 'methodOfStatefulBase'
-
-  @cached @trace({})
-  methodOfStatefulBase(): string {
-    return 'methodOfStatefulBase'
-    // return this.text
-  }
-}
-
-export class Demo extends StatefulDemoModelBase {
+export class Demo extends Stateful {
   @stateless shared: string = "for testing purposes"
   title: string = "Demo"
   users: Person[] = []
-  unassigned?: any // for testing purposes
 
   @action
   loadUsers(): void {
@@ -34,11 +23,6 @@ export class Demo extends StatefulDemoModelBase {
     const stamp = new Date().toUTCString()
     const t = this.title.toLowerCase()
     this.title = `${t} - ${stamp}`
-  }
-
-  @cached
-  cacheWithSideEffect(): void {
-    this.title = "should fail on this line"
   }
 
   private _loadUsers(): void {
