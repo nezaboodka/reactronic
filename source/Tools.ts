@@ -7,7 +7,7 @@ import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Hints } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
-import { CacheImpl } from './impl/Cache-impl'
+import { CacheImpl } from './impl/CacheImpl'
 import { Action, Cache, Status, Kind, Reentrance, Trace } from './.index'
 
 export class Tools {

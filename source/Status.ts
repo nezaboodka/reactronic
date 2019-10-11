@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Stateful } from './impl/Hooks'
-import { StatusImpl } from './impl/Status-impl'
+import { StatusImpl } from './impl/StatusImpl'
 
 export abstract class Status extends Stateful {
   abstract readonly busy: boolean
