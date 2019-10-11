@@ -263,6 +263,10 @@ class Status {
 interface Worker {
   readonly id: number
   readonly hint: string
+  cancel(error?: Error, retryAfter?: Action): this
+  isCanceled(): boolean
+  isFinished(): boolean
+  whenFinished(): Promise<void>
 }
 
 interface Trace {
@@ -283,7 +287,7 @@ interface Trace {
 
 type F<T> = (...args: any[]) => T
 
-class Action {
+class Action implements Worker {
   static readonly current: Action
 
   readonly id: number
@@ -293,7 +297,7 @@ class Action {
   wrap<T>(func: F<T>): F<T>
   apply(): void
   seal(): this // a1.seal().whenFinished().then(fulfill, reject)
-  cancel(error?: Error, retryAfter?: Action)
+  cancel(error?: Error, retryAfter?: Action): this
   isCanceled(): boolean
   isFinished(): boolean
   whenFinished(): Promise<void>

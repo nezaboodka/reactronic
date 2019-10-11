@@ -12,7 +12,7 @@ import { Transaction } from './Transaction'
 import { StatusImpl } from './Status-impl'
 import { Hooks, OptionsImpl } from './Hooks'
 import { Options, Kind, Reentrance, Trace } from '../Options'
-import { Status } from '../Status'
+import { Status, Worker } from '../Status'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
@@ -65,7 +65,7 @@ export class CacheImpl extends Cache<any> {
       let call2 = call
       const ret = Transaction.runEx(hint, spawn, sidebyside, cfg.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
-        if (call2.cache.tran.isCanceled()) {
+        if (call2.cache.worker.isCanceled()) {
           call2 = this.read(argsx) // re-read on retry
           if (!call2.valid) {
             call2 = this.write()
@@ -82,7 +82,7 @@ export class CacheImpl extends Cache<any> {
       if (!weak && Snapshot.readable().timestamp >= call2.cache.record.creator.timestamp)
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", " (=)", `${Hint.record(call.record)}.${call.cache.field.toString()} result is reused from T${call.cache.tran.id} ${call.cache.tran.hint}`)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", " (=)", `${Hint.record(call.record)}.${call.cache.field.toString()} result is reused from T${call.cache.worker.id} ${call.cache.worker.hint}`)
     Snapshot.markViewed(call.record, call.cache.field, call.cache, weak)
     return call
   }
@@ -126,17 +126,17 @@ export class CacheImpl extends Cache<any> {
     let result: Error | undefined = undefined
     const prev = c.invalid.renewing
     const caller = Transaction.current
-    if (prev && prev !== c && !prev.tran.isCanceled())
+    if (prev && prev !== c && !prev.worker.isCanceled())
       switch (c.options.reentrance) {
         case Reentrance.PreventWithError:
           throw misuse(`${c.hint()} is not reentrant`)
         case Reentrance.WaitAndRestart:
-          result = new Error(`action T${caller.id} (${caller.hint}) will be restarted after T${prev.tran.id} (${prev.tran.hint})`)
-          caller.cancel(result, prev.tran)
+          result = new Error(`action T${caller.id} (${caller.hint}) will be restarted after T${prev.worker.id} (${prev.worker.hint})`)
+          caller.cancel(result, prev.worker)
           // TODO: "c.invalid.renewing = caller" in order serialize all the actions
           break
         case Reentrance.CancelPrevious:
-          prev.tran.cancel(new Error(`action T${prev.tran.id} (${prev.tran.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
+          prev.worker.cancel(new Error(`action T${prev.worker.id} (${prev.worker.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
           c.invalid.renewing = undefined // allow
           break
         case Reentrance.RunSideBySide:
@@ -219,7 +219,7 @@ class CacheResult extends FieldValue implements Observer {
   static asyncTriggerBatch: CacheResult[] = []
   static active?: CacheResult = undefined
 
-  readonly tran: Transaction
+  readonly worker: Worker
   readonly record: Record
   readonly field: FieldKey
   options: OptionsImpl
@@ -234,7 +234,7 @@ class CacheResult extends FieldValue implements Observer {
 
   constructor(record: Record, field: FieldKey, init: CacheResult | OptionsImpl) {
     super(undefined)
-    this.tran = Transaction.current
+    this.worker = Transaction.current
     this.record = record
     this.field = field
     if (init instanceof CacheResult) {
@@ -340,7 +340,7 @@ class CacheResult extends FieldValue implements Observer {
           true, false, Dbg.isOn && Dbg.trace.status ? undefined : Dbg.global, undefined,
           StatusImpl.leave, mon, this)
       }
-      this.tran.whenFinished(false).then(leave, leave)
+      this.worker.whenFinished(false).then(leave, leave)
     })
   }
 
@@ -508,8 +508,8 @@ class CacheResult extends FieldValue implements Observer {
       const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
       if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
       this.unsubscribeFromAllObservables()
-      if (!this.tran.isFinished())
-        this.tran.cancel(new Error(`action T${this.tran.id} (${this.tran.hint}) is canceled due to invalidation by ${Hint.record(hint.record, hint.field)} and will be silently ignored`), null)
+      if (!this.worker.isFinished())
+        this.worker.cancel(new Error(`action T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hint.record(hint.record, hint.field)} and will be silently ignored`), null)
       if (isTrigger) // stop cascade invalidation on trigger
         triggers.push(this)
       else if (this.observers) // cascade invalidation

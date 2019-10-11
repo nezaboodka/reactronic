@@ -22,4 +22,8 @@ export abstract class Status extends Stateful {
 export interface Worker {
   readonly id: number
   readonly hint: string
+  cancel(error: Error, retryAfterOrIgnore?: Worker | null): this
+  isCanceled(): boolean
+  isFinished(): boolean
+  whenFinished(includingReaction: boolean): Promise<void>
 }

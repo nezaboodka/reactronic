@@ -8,6 +8,7 @@ import { Dbg, misuse, error } from '../util/Dbg'
 import { Record, Observer } from './Data'
 import { Hint } from './Hint'
 import { Snapshot } from './Snapshot'
+import { Worker } from '../Status'
 import { Action } from '../Action'
 import { Trace } from '../Options'
 
@@ -93,7 +94,7 @@ export class Transaction extends Action {
     return fActionDo
   }
 
-  cancel(error: Error, retryAfterOrIgnore?: Transaction | null): this {
+  cancel(error: Error, retryAfterOrIgnore?: Worker | null): this {
     this.do(undefined, Transaction.seal, this, error,
       retryAfterOrIgnore === null ? Transaction.none : retryAfterOrIgnore)
     return this
