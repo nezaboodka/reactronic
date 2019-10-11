@@ -403,7 +403,7 @@ class CacheResult extends Observable implements Observer {
     if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log("║", "  w ", `${Hints.record(r, field)} = ${valueHint(value)}`) : Dbg.log("║", "  w ", `${Hints.record(r, field)} = ${valueHint(value)}`, undefined, " (same as previous)")
   }
 
-  private static applyAllDependencies(snapshot: Snapshot, error?: any): void {
+  private static propagateChanges(snapshot: Snapshot, error?: any): void {
     const timestamp = snapshot.timestamp
     if (error === undefined) {
       const triggers = snapshot.triggers
@@ -524,7 +524,7 @@ class CacheResult extends Observable implements Observer {
     Snapshot.markViewed = CacheResult.markViewed // override
     Snapshot.markChanged = CacheResult.markChanged // override
     Snapshot.isConflicting = CacheResult.isConflicting // override
-    Snapshot.applyAllDependencies = CacheResult.applyAllDependencies // override
+    Snapshot.propagateChanges = CacheResult.propagateChanges // override
     Hooks.createCacheTrap = CacheImpl.createCacheTrap // override
     Promise.prototype.then = fReactronicThen // override
   }

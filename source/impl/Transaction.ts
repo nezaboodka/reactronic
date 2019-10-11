@@ -236,7 +236,7 @@ export class Transaction extends Action {
     if (!t.error && error) {
       t.error = error
       t.waiting = retryAfter
-      Snapshot.applyAllDependencies(t.snapshot, t.error)
+      Snapshot.propagateChanges(t.snapshot, t.error)
       if (Dbg.isOn && Dbg.trace.errors && retryAfter === undefined) Dbg.log("║", "███", `${error.message}`, undefined, " *** ERROR ***")
     }
     t.sealed = true
