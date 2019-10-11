@@ -3,7 +3,8 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, IndicatorImpl } from './impl/.index'
+import { Stateful } from './impl/Hooks'
+import { IndicatorImpl } from './impl/Indicator.impl'
 import { Action } from './Action'
 
 export abstract class Indicator extends Stateful {

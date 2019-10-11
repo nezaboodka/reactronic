@@ -5,8 +5,10 @@
 
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
+import { Hint } from './impl/Hint'
+import { Hooks, options } from './impl/Hooks'
+import { CacheImpl } from './impl/Cache.impl'
 import { Action, Cache, Indicator, Kind, Reentrance, Trace } from './.index'
-import { CacheImpl, Hooks, options, Hint } from './impl/.index'
 
 export class Tools {
   // Configuration
