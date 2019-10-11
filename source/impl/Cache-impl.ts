@@ -6,7 +6,7 @@
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle } from './Data'
-import { Snapshot, Hint, BLANK, HANDLE, CACHE, UNMOUNT } from './Snapshot'
+import { Snapshot, Hints, BLANK, HANDLE, CACHE, UNMOUNT } from './Snapshot'
 import { Transaction } from './Transaction'
 import { StatusImpl } from './Status-impl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -28,7 +28,7 @@ export class CacheImpl extends Cache<any> {
   get error(): boolean { return this.weak().cache.error }
   get stamp(): number { return this.weak().record.creator.timestamp }
   get invalid(): boolean { return !this.weak().valid }
-  invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hint.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
+  invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hints.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
   call(args?: any[]): any { return this.tryCall(true, args).cache.value }
 
   constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
@@ -39,7 +39,7 @@ export class CacheImpl extends Cache<any> {
   }
 
   private initialize(): CacheResult {
-    const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${this.blank.field.toString()}/init` : /* istanbul ignore next */ "Cache.init"
+    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.blank.field.toString()}/init` : /* istanbul ignore next */ "Cache.init"
     const sidebyside = this.blank.options.reentrance === Reentrance.RunSideBySide
     const result = Transaction.runEx<CacheResult>(hint, true, sidebyside, this.blank.options.trace, this, (): CacheResult => {
       const c = this.write().cache
@@ -56,7 +56,7 @@ export class CacheImpl extends Cache<any> {
     let call: CacheCall = this.read(args)
     const c: CacheResult = call.cache
     if (!call.valid && (!weak || !c.invalid.renewing)) {
-      const hint: string = Dbg.isOn ? `${Hint.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"
+      const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"
       const cfg = c.options
       const spawn = weak || cfg.kind !== Kind.Action
       const sidebyside = cfg.reentrance === Reentrance.RunSideBySide
@@ -81,7 +81,7 @@ export class CacheImpl extends Cache<any> {
       if (!weak && Snapshot.readable().timestamp >= call2.cache.record.creator.timestamp)
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", " (=)", `${Hint.record(call.record)}.${call.cache.field.toString()} result is reused from T${call.cache.worker.id} ${call.cache.worker.hint}`)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", " (=)", `${Hints.record(call.record)}.${call.cache.field.toString()} result is reused from T${call.cache.worker.id} ${call.cache.worker.hint}`)
     Snapshot.markViewed(call.record, call.cache.field, call.cache, weak)
     return call
   }
@@ -155,12 +155,12 @@ export class CacheImpl extends Cache<any> {
     const call = this.read(undefined)
     const c: CacheResult = call.cache
     const r: Record = call.record
-    const hint: string = Dbg.isOn ? `cacheof(${Hint.handle(this.handle)}.${this.blank.field.toString()}).setup()` : /* istanbul ignore next */ "Cache.setup()"
+    const hint: string = Dbg.isOn ? `cacheof(${Hints.handle(this.handle)}.${this.blank.field.toString()}).setup()` : /* istanbul ignore next */ "Cache.setup()"
     return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
       const c2: CacheResult = call2.cache
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hint.record(r)}.${c.field.toString()}.options = ...`)
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hints.record(r)}.${c.field.toString()}.options = ...`)
       return c2.options
     })
   }
@@ -255,15 +255,15 @@ class CacheResult extends FieldValue implements Observer {
     this.margin = CacheResult.active ? CacheResult.active.margin + 1 : 1
   }
 
-  hint(): string { return `${Hint.record(this.record, this.field)}` }
+  hint(): string { return `${Hints.record(this.record, this.field)}` }
 
   get copyOnWriteMode(): boolean { return false }
 
   bind<T>(func: F<T>): F<T> {
     const fCacheRun: F<T> = (...args: any[]): T => {
-      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hint.record(this.record)}.${this.field.toString()} - step in  `, 0, "        │")
+      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hints.record(this.record)}.${this.field.toString()} - step in  `, 0, "        │")
       const result = CacheImpl.runAs<T>(this, func, ...args)
-      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "_/", `${Hint.record(this.record)}.${this.field.toString()} - step out `, 0, this.started > 0 ? "        │" : "")
+      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "_/", `${Hints.record(this.record)}.${this.field.toString()} - step out `, 0, this.started > 0 ? "        │" : "")
       return result
     }
     return fCacheRun
@@ -292,7 +292,7 @@ class CacheResult extends FieldValue implements Observer {
   enter(): void {
     if (this.options.status)
       this.statusEnter(this.options.status)
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hint.record(this.record, this.field)} - enter`)
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "‾\\", `${Hints.record(this.record, this.field)} - enter`)
     this.started = Date.now()
   }
 
@@ -309,7 +309,7 @@ class CacheResult extends FieldValue implements Observer {
           this.leave(" ▒", "- finished ", "  ERR ──┘")
           throw error
         })
-      if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hint.record(this.record, this.field)} - leave... `, 0, "ASYNC ──┐")
+      if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", "_/", `${Hints.record(this.record, this.field)} - leave... `, 0, "ASYNC ──┐")
     }
     else {
       this.value = this.ret
@@ -320,7 +320,7 @@ class CacheResult extends FieldValue implements Observer {
   private leave(op: string, message: string, highlight: string | undefined = undefined): void {
     const ms: number = Date.now() - this.started
     this.started = 0
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hint.record(this.record, this.field)} ${message}`, ms, highlight)
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log("║", `${op}`, `${Hints.record(this.record, this.field)} ${message}`, ms, highlight)
     if (this.options.status)
       this.statusLeave(this.options.status)
     // CacheResult.freeze(this)
@@ -400,7 +400,7 @@ class CacheResult extends FieldValue implements Observer {
 
   private static markChanged(r: Record, field: FieldKey, value: any, changed: boolean): void {
     changed ? r.changes.add(field) : r.changes.delete(field)
-    if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log("║", "  w ", `${Hint.record(r, field)} = ${valueHint(value)}`) : Dbg.log("║", "  w ", `${Hint.record(r, field)} = ${valueHint(value)}`, undefined, " (same as previous)")
+    if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log("║", "  w ", `${Hints.record(r, field)} = ${valueHint(value)}`) : Dbg.log("║", "  w ", `${Hints.record(r, field)} = ${valueHint(value)}`, undefined, " (same as previous)")
   }
 
   private static applyAllDependencies(snapshot: Snapshot, error?: any): void {
@@ -464,7 +464,7 @@ class CacheResult extends FieldValue implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this) // now unsubscribed
-      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", "  - ", `${Hint.record(this.record, this.field)} is unsubscribed from ${Hint.record(hint.record, hint.field, true)}`)
+      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", "  - ", `${Hints.record(this.record, this.field)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
     })
     observables.clear()
   }
@@ -489,8 +489,8 @@ class CacheResult extends FieldValue implements Observer {
       value.observers.add(this)
       observables.set(value, hint)
       // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  r `, `${c.hint()} ${weak ? 'uses (weakly)' : 'uses'} ${Hint.record(record, field)} - ${times} time(s)`)
-      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, "║", "  ∞ ", `${Hint.record(this.record, this.field)} is subscribed to ${Hint.record(hint.record, hint.field, true)}${hint.times > 1 ? ` (${hint.times} times)` : ""}`)
-      if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("█", " ███", `${this.hint()} uses ${Hint.record(hint.record, hint.field)} ${hint.times} time(s)`, 0, " *** WARNING ***")
+      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, "║", "  ∞ ", `${Hints.record(this.record, this.field)} is subscribed to ${Hints.record(hint.record, hint.field, true)}${hint.times > 1 ? ` (${hint.times} times)` : ""}`)
+      if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("█", " ███", `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} time(s)`, 0, " *** WARNING ***")
     }
     return result || value.replacement === record
   }
@@ -505,10 +505,10 @@ class CacheResult extends FieldValue implements Observer {
     if (result) {
       this.invalid.since = since
       const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
+      if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
       this.unsubscribeFromAllObservables()
       if (!this.worker.isFinished())
-        this.worker.cancel(new Error(`action T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hint.record(hint.record, hint.field)} and will be silently ignored`), null)
+        this.worker.cancel(new Error(`action T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)} and will be silently ignored`), null)
       if (isTrigger) // stop cascade invalidation on trigger
         triggers.push(this)
       else if (this.observers) // cascade invalidation
@@ -550,7 +550,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof CacheResult)
-    result = `<renew:${Hint.record(value.record.prev.record, undefined, true)}>`
+    result = `<renew:${Hints.record(value.record.prev.record, undefined, true)}>`
   else if (value === UNMOUNT)
     result = "<unmount>"
   else if (value !== undefined && value !== null)

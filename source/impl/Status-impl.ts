@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { misuse } from '../util/Dbg'
-import { Hint } from './Snapshot'
+import { Hints } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Status, Worker } from '../Status'
 
@@ -51,7 +51,7 @@ export class StatusImpl extends Status {
 
   private static doCreate(hint?: string, delayBeforeIdle?: number): StatusImpl {
     const m = new StatusImpl()
-    Hint.setHint(m, hint)
+    Hints.setHint(m, hint)
     m.delayBeforeIdle = delayBeforeIdle
     return m
   }

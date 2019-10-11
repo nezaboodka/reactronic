@@ -6,7 +6,7 @@
 import { undef, F } from '../util/Utils'
 import { Dbg, misuse, error } from '../util/Dbg'
 import { Record, Observer } from './Data'
-import { Snapshot, Hint } from './Snapshot'
+import { Snapshot, Hints } from './Snapshot'
 import { Worker } from '../Status'
 import { Action } from '../Action'
 import { Trace } from '../Options'
@@ -249,11 +249,11 @@ export class Transaction extends Action {
 
   private tryResolveConflicts(conflicts: Record[]): void {
     if (!this.sidebyside) {
-      this.error = this.error || error(`action T${this.id} (${this.hint}) conflicts with: ${Hint.conflicts(conflicts)}`, undefined)
+      this.error = this.error || error(`action T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
       throw this.error
     } // ignore conflicts otherwise
     else if (Dbg.isOn && Dbg.trace.warnings)
-      Dbg.log("║", "  · ", `conflict is ignored - action T${this.id} (${this.hint}) conflicts with: ${Hint.conflicts(conflicts)}`)
+      Dbg.log("║", "  · ", `conflict is ignored - action T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
   }
 
   private finish(): void {

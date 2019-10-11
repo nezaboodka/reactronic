@@ -9,7 +9,7 @@ import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, FieldKey, FieldValue, Handle } from './Data'
-import { Snapshot, Hint, BLANK, HANDLE, CACHE, UNMOUNT } from './Snapshot'
+import { Snapshot, Hints, BLANK, HANDLE, CACHE, UNMOUNT } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Status } from '../Status'
 import { Cache } from '../Cache'
@@ -31,7 +31,7 @@ export class Stateful {
 
   [Symbol.toStringTag](): string {
     const h = Utils.get<Handle>(this, HANDLE)
-    return Hint.handle(h)
+    return Hints.handle(h)
   }
 }
 
@@ -126,7 +126,7 @@ export class Hooks implements ProxyHandler<Handle> {
         result = Reflect.get(h.stateless, field, receiver)
         if (result === undefined && field !== Symbol.toPrimitive)
           // Record.markViewed(r, field, false); // treat undefined fields as stateful
-          throw misuse(`unassigned properties are not supported: ${Hint.record(r, field)} is used by T${ctx.id} (${ctx.hint})`)
+          throw misuse(`unassigned properties are not supported: ${Hints.record(r, field)} is used by T${ctx.id} (${ctx.hint})`)
       }
     }
     else

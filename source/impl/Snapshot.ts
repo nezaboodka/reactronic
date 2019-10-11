@@ -55,7 +55,7 @@ export class Snapshot implements Context {
   read(h: Handle): Record {
     const r = this.tryRead(h)
     if (r === BLANK) /* istanbul ignore next */
-      throw misuse(`object ${Hint.handle(h)} doesn't exist in snapshot v${this.stamp}`)
+      throw misuse(`object ${Hints.handle(h)} doesn't exist in snapshot v${this.stamp}`)
     return r
   }
 
@@ -90,11 +90,11 @@ export class Snapshot implements Context {
 
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.applied)
-      throw misuse(`stateful property ${Hint.handle(h, field)} can only be modified inside actions`)
+      throw misuse(`stateful property ${Hints.handle(h, field)} can only be modified inside actions`)
     if (value !== HANDLE && this.caching !== undefined && token !== this.caching && (r.creator !== this || r.prev.record !== BLANK))
-      throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hint.record(r, field)}`)
+      throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, field)}`)
     if (r === BLANK && value !== HANDLE) /* istanbul ignore next */
-      throw misuse(`object ${Hint.record(r, field)} doesn't exist in snapshot v${this.stamp}`)
+      throw misuse(`object ${Hints.record(r, field)} doesn't exist in snapshot v${this.stamp}`)
   }
 
   acquire(outer: Snapshot): void {
@@ -124,7 +124,7 @@ export class Snapshot implements Context {
               conflicts = []
             conflicts.push(r)
           }
-          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("╠╝", "", `${Hint.record(r)} is merged with ${Hint.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("╠╝", "", `${Hints.record(r)} is merged with ${Hints.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
       if (this.caching === undefined) {
@@ -148,7 +148,7 @@ export class Snapshot implements Context {
         merged[field] = ours.data[field]
         if (unmounted || field === UNMOUNT) {
           if (unmounted !== (field === UNMOUNT)) {
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║╠", "", `${Hint.record(ours, field)} <> ${Hint.record(head, field)}`, 0, " <<< CONFLICT >>>")
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║╠", "", `${Hints.record(ours, field)} <> ${Hints.record(head, field)}`, 0, " <<< CONFLICT >>>")
             ours.conflicts.set(field, head)
           }
         }
@@ -156,7 +156,7 @@ export class Snapshot implements Context {
           const conflict = Snapshot.isConflicting(head.data[field], ours.prev.record.data[field])
           if (conflict)
             ours.conflicts.set(field, head)
-          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║╠", "", `${Hint.record(ours, field)} ${conflict ? "<>" : "=="} ${Hint.record(head, field)}`, 0, conflict ? " <<< CONFLICT >>>" : undefined)
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║╠", "", `${Hints.record(ours, field)} ${conflict ? "<>" : "=="} ${Hints.record(head, field)}`, 0, conflict ? " <<< CONFLICT >>>" : undefined)
         }
       })
       Utils.copyAllFields(merged, ours.data) // overwrite with merged copy
@@ -179,7 +179,7 @@ export class Snapshot implements Context {
           const fields: string[] = []
           r.changes.forEach(field => fields.push(field.toString()))
           const s = fields.join(", ")
-          Dbg.log("║", "√", `${Hint.record(r)}(${s}) is applied on top of ${Hint.record(r.prev.record)}`)
+          Dbg.log("║", "√", `${Hints.record(r)}(${s}) is applied on top of ${Hints.record(r.prev.record)}`)
         }
       }
     })
@@ -231,7 +231,7 @@ export class Snapshot implements Context {
   private unlinkHistory(): void {
     if (Dbg.isOn && Dbg.trace.gc) Dbg.log("", " Ɵ", `Dismiss history of v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== BLANK) Dbg.log("", "   · ", `${Hint.record(r.prev.record)} is ready for GC because overwritten by ${Hint.record(r)}`)
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== BLANK) Dbg.log("", "   · ", `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
       r.prev.record = BLANK // unlink history
     })
   }
@@ -246,9 +246,9 @@ export class Snapshot implements Context {
   }
 }
 
-// Hint
+// Hints
 
-export class Hint {
+export class Hints {
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
       const h = Utils.get<Handle>(obj, HANDLE)
@@ -274,21 +274,21 @@ export class Hint {
 
   static record(r: Record, field?: FieldKey, typeless?: boolean): string {
     const h = Utils.get<Handle | undefined>(r.data, HANDLE)
-    return Hint.handle(h, field, r.creator.timestamp, r.creator.id, typeless)
+    return Hints.handle(h, field, r.creator.timestamp, r.creator.id, typeless)
   }
 
   static conflicts(conflicts: Record[]): string {
     return conflicts.map(ours => {
       const items: string[] = []
       ours.conflicts.forEach((theirs: Record, field: FieldKey) => {
-        items.push(Hint.conflictingFieldHint(field, ours, theirs))
+        items.push(Hints.conflictingFieldHint(field, ours, theirs))
       })
       return items.join(", ")
     }).join(", ")
   }
 
   static conflictingFieldHint(field: FieldKey, ours: Record, theirs: Record): string {
-    return Hint.record(theirs, field)
+    return Hints.record(theirs, field)
   }
 }
 

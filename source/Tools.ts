@@ -5,7 +5,7 @@
 
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
-import { Hint } from './impl/Snapshot'
+import { Hints } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { CacheImpl } from './impl/Cache-impl'
 import { Action, Cache, Status, Kind, Reentrance, Trace } from './.index'
@@ -20,8 +20,8 @@ export class Tools {
   static get isTraceOn(): boolean { return Dbg.isOn }
   static get trace(): Trace { return Dbg.trace }
   static setTrace(t: Trace | undefined): void { Dbg.global = t || Dbg.OFF; Dbg.isOn = t !== undefined }
-  static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Hint.setHint(obj, name) }
-  static getTraceHint<T extends object>(obj: T): string | undefined { return Hint.getHint(obj) }
+  static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Hints.setHint(obj, name) }
+  static getTraceHint<T extends object>(obj: T): string | undefined { return Hints.getHint(obj) }
 }
 
 // Operators
