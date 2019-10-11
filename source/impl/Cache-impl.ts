@@ -5,7 +5,7 @@
 
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, R_HANDLE, R_CACHE, R_UNMOUNT } from './Data'
+import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, HANDLE, CACHE, UNMOUNT } from './Data'
 import { Hint } from './Hint'
 import { Snapshot, BLANK } from './Snapshot'
 import { ActionImpl } from './Action-impl'
@@ -101,14 +101,14 @@ export class CacheImpl extends Cache<any> {
     const valid = c.options.kind !== Kind.Action &&
       (ctx === c.record.creator || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
-      r.data[R_UNMOUNT] !== undefined
+      r.data[UNMOUNT] !== undefined
     return { valid, cache: c, record: r }
   }
 
   private write(): CacheCall {
     const ctx = Snapshot.writable()
     const field = this.blank.field
-    const r: Record = ctx.write(this.handle, field, R_HANDLE, this)
+    const r: Record = ctx.write(this.handle, field, HANDLE, this)
     let c: CacheResult = r.data[field] || this.blank
     if (c.record !== r) {
       const renewing = new CacheResult(r, field, c)
@@ -189,12 +189,12 @@ export class CacheImpl extends Cache<any> {
     const cache = new CacheImpl(h, field, options)
     const cacheTrap: F<any> = (...args: any[]): any =>
       cache.tryCall(false, args).cache.ret
-    Utils.set(cacheTrap, R_CACHE, cache)
+    Utils.set(cacheTrap, CACHE, cache)
     return cacheTrap
   }
 
   static of(method: F<any>): Cache<any> {
-    const impl = Utils.get<Cache<any> | undefined>(method, R_CACHE)
+    const impl = Utils.get<Cache<any> | undefined>(method, CACHE)
     if (!impl)
       throw misuse("given method is not a reactronic cache")
     return impl
@@ -207,8 +207,8 @@ export class CacheImpl extends Cache<any> {
 
   private static doUnmount(...objects: any[]): Action {
     for (const x of objects) {
-      if (Utils.get<Handle>(x, R_HANDLE))
-        x[R_UNMOUNT] = R_UNMOUNT
+      if (Utils.get<Handle>(x, HANDLE))
+        x[UNMOUNT] = UNMOUNT
     }
     return Action.current
   }
@@ -357,9 +357,9 @@ class CacheResult extends FieldValue implements Observer {
       if (!this.error && (this.options.kind === Kind.Action ||
           (timestamp >= this.invalid.since && !this.invalid.renewing))) {
         try {
-          const proxy: any = Utils.get<Handle>(this.record.data, R_HANDLE).proxy
+          const proxy: any = Utils.get<Handle>(this.record.data, HANDLE).proxy
           const trap: Function = Reflect.get(proxy, this.field, proxy)
-          const cache = Utils.get<CacheImpl>(trap, R_CACHE)
+          const cache = Utils.get<CacheImpl>(trap, CACHE)
           const call: CacheCall = cache.tryCall(false)
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }) // bad idea to hide an error
@@ -391,7 +391,7 @@ class CacheResult extends FieldValue implements Observer {
 
   private static markViewed(record: Record, field: FieldKey, value: FieldValue, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active // alias
-    if (c && c.options.kind !== Kind.Action && field !== R_HANDLE) {
+    if (c && c.options.kind !== Kind.Action && field !== HANDLE) {
       const ctx = Snapshot.readable()
       ctx.bump(record.creator.timestamp)
       const t = weak ? -1 : ctx.timestamp
@@ -411,7 +411,7 @@ class CacheResult extends FieldValue implements Observer {
       const triggers = snapshot.triggers
       // Mark previous values as replaced and invalidate existing observers
       snapshot.changeset.forEach((r: Record, h: Handle) => {
-        if (!r.changes.has(R_UNMOUNT))
+        if (!r.changes.has(UNMOUNT))
           r.changes.forEach(field =>
             CacheResult.markPrevValueAsReplaced(timestamp, r, field, triggers))
         else
@@ -420,7 +420,7 @@ class CacheResult extends FieldValue implements Observer {
       })
       // Subscribe to new observers and finish cache computations
       snapshot.changeset.forEach((r: Record, h: Handle) => {
-        if (!r.changes.has(R_UNMOUNT))
+        if (!r.changes.has(UNMOUNT))
           r.changes.forEach(field => CacheResult.finish(r, field, false))
         else
           for (const field in r.prev.record.data)
@@ -506,7 +506,7 @@ class CacheResult extends FieldValue implements Observer {
       (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0)
     if (result) {
       this.invalid.since = since
-      const isTrigger = this.options.kind === Kind.Trigger && this.record.data[R_UNMOUNT] === undefined
+      const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
       if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hint.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
       this.unsubscribeFromAllObservables()
       if (!this.action.isFinished())
@@ -553,7 +553,7 @@ function valueHint(value: any): string {
     result = `Map(${value.size})`
   else if (value instanceof CacheResult)
     result = `<renew:${Hint.record(value.record.prev.record, undefined, true)}>`
-  else if (value === R_UNMOUNT)
+  else if (value === UNMOUNT)
     result = "<unmount>"
   else if (value !== undefined && value !== null)
     result = value.toString().slice(0, 20)

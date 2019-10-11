@@ -4,14 +4,14 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Utils } from '../util/Utils'
-import { Record, FieldKey, Handle, R_HANDLE } from './Data'
+import { Record, FieldKey, Handle, HANDLE } from './Data'
 
 // Hint
 
 export class Hint {
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
-      const h = Utils.get<Handle>(obj, R_HANDLE)
+      const h = Utils.get<Handle>(obj, HANDLE)
       if (h)
         h.hint = hint
     }
@@ -19,7 +19,7 @@ export class Hint {
   }
 
   static getHint(obj: object): string | undefined {
-    const h = Utils.get<Handle>(obj, R_HANDLE)
+    const h = Utils.get<Handle>(obj, HANDLE)
     return h ? h.hint : undefined
   }
 
@@ -33,7 +33,7 @@ export class Hint {
   }
 
   static record(r: Record, field?: FieldKey, typeless?: boolean): string {
-    const h = Utils.get<Handle | undefined>(r.data, R_HANDLE)
+    const h = Utils.get<Handle | undefined>(r.data, HANDLE)
     return Hint.handle(h, field, r.creator.timestamp, r.creator.id, typeless)
   }
 

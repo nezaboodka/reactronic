@@ -5,9 +5,9 @@
 
 import { Utils } from '../util/Utils'
 
-export const R_HANDLE: unique symbol = Symbol("R:HANDLE")
-export const R_CACHE: unique symbol = Symbol("R:CACHE")
-export const R_UNMOUNT: unique symbol = Symbol("R:UNMOUNT")
+export const HANDLE: unique symbol = Symbol("R:HANDLE")
+export const CACHE: unique symbol = Symbol("R:CACHE")
+export const UNMOUNT: unique symbol = Symbol("R:UNMOUNT")
 
 // Context
 

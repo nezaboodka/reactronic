@@ -5,7 +5,7 @@
 
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Context, Record, FieldKey, FieldValue, Handle, Observer, R_HANDLE, R_UNMOUNT } from './Data'
+import { Context, Record, FieldKey, FieldValue, Handle, Observer, HANDLE, UNMOUNT } from './Data'
 import { Hint } from './Hint'
 import { CopyOnWriteProxy } from './Hooks'
 
@@ -76,7 +76,7 @@ export class Snapshot implements Context {
     this.guard(h, r, field, value, token)
     if (r.creator !== this) {
       const data = {...r.data}
-      Reflect.set(data, R_HANDLE, h)
+      Reflect.set(data, HANDLE, h)
       r = new Record(this, h.head, data)
       this.changeset.set(h, r)
       h.changing = r
@@ -88,9 +88,9 @@ export class Snapshot implements Context {
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.applied)
       throw misuse(`stateful property ${Hint.handle(h, field)} can only be modified inside actions`)
-    if (value !== R_HANDLE && this.caching !== undefined && token !== this.caching && (r.creator !== this || r.prev.record !== BLANK))
+    if (value !== HANDLE && this.caching !== undefined && token !== this.caching && (r.creator !== this || r.prev.record !== BLANK))
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hint.record(r, field)}`)
-    if (r === BLANK && value !== R_HANDLE) /* istanbul ignore next */
+    if (r === BLANK && value !== HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hint.record(r, field)} doesn't exist in snapshot v${this.stamp}`)
   }
 
@@ -138,13 +138,13 @@ export class Snapshot implements Context {
     let counter: number = -1
     if (ours.prev.record !== head) {
       counter++
-      const unmounted: boolean = head.changes.has(R_UNMOUNT)
+      const unmounted: boolean = head.changes.has(UNMOUNT)
       const merged = {...head.data} // clone
       ours.changes.forEach(field => {
         counter++
         merged[field] = ours.data[field]
-        if (unmounted || field === R_UNMOUNT) {
-          if (unmounted !== (field === R_UNMOUNT)) {
+        if (unmounted || field === UNMOUNT) {
+          if (unmounted !== (field === UNMOUNT)) {
             if (Dbg.isOn && Dbg.trace.changes) Dbg.log("║╠", "", `${Hint.record(ours, field)} <> ${Hint.record(head, field)}`, 0, " <<< CONFLICT >>>")
             ours.conflicts.set(field, head)
           }
