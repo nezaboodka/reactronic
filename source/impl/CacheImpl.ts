@@ -29,7 +29,7 @@ export class CacheImpl extends Cache<any> {
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reusable }
   invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hints.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
-  receive(args?: any[]): any { return this.call(true, args).cache.value }
+  pull(args?: any[]): any { return this.call(true, args).cache.value }
 
   constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
     super()
