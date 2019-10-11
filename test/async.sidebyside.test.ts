@@ -28,7 +28,7 @@ const expected: string[] = [
   "Log: RTA, google.com/300",
 ]
 
-test("async.sidebyside", async t => {
+test("Reentrance.RunSideBySide", async t => {
   RT.setTrace(tracing.noisy)
   const app = Action.run("app", () => new DemoView(new DemoModel()))
   cacheof(app.model.load).setup({reentrance: Reentrance.RunSideBySide})

@@ -36,7 +36,7 @@ const expected: string[] = [
   "Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500",
 ]
 
-test("async.restart", async t => {
+test("Reentrance.WaitAndRestart", async t => {
   RT.setTrace(tracing.noisy)
   const app = Action.run("app", () => new DemoView(new DemoModel()))
   cacheof(app.model.load).setup({reentrance: Reentrance.WaitAndRestart})

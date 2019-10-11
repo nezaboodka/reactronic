@@ -24,7 +24,7 @@ const expected: string[] = [
   "Log: RTA, nezaboodka.com/500",
 ]
 
-test("async.error", async t => {
+test("Reentrance.PreventWithError", async t => {
   RT.setTrace(tracing.noisy)
   const app = Action.run("app", () => new DemoView(new DemoModel()))
   cacheof(app.model.load).setup({reentrance: Reentrance.PreventWithError})
