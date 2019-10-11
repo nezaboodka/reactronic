@@ -461,7 +461,7 @@ class CacheResult extends Observable implements Observer {
         observers.delete(this) // now unsubscribed
       if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", "  - ", `${Hints.record(this.record, this.field)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
     })
-    this.observables.clear()
+    this.observables.clear() // now fully unlinked
   }
 
   private subscribeTo(record: Record, field: FieldKey, value: Observable, timestamp: number): boolean {
