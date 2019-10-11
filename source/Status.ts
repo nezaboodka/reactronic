@@ -12,10 +12,10 @@ export abstract class Status extends Stateful {
   abstract readonly workerCount: number
   abstract readonly workers: ReadonlySet<Action>
   abstract readonly animationFrameCount: number
-  abstract readonly prolongAtLeastFor?: number // milliseconds
+  abstract readonly busyToIdleTimeLag?: number // milliseconds
 
   abstract enter(action: Action): void
   abstract leave(action: Action): void
 
-  static create(hint?: string, prolongAtLeastFor?: number): Status { return StatusImpl.create(hint, prolongAtLeastFor) }
+  static create(hint?: string, busyToIdleTimeLag?: number): Status { return StatusImpl.create(hint, busyToIdleTimeLag) }
 }
