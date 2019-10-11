@@ -28,6 +28,11 @@ test("basic", t => {
   RT.performanceWarningThreshold = 3
   RT.setTrace(tracing.off)
   RT.setTrace(tracing.noisy)
+  // Testing in-action caching
+  // Action.run("in-action caching", () => {
+  //   const m = new StatefulDemoModelBase()
+  //   t.is(m.methodOfStatefulBase(), "methodOfStatefulBase")
+  // })
   // Simple actions
   const app = Action.run("app", () => new DemoView(new DemoModel()))
   try {

@@ -9,6 +9,8 @@ import { Person } from './common'
 export const output: string[] = []
 
 export class StatefulDemoModelBase extends Stateful {
+  // readonly text = 'methodOfStatefulBase'
+
   @cached @trace({})
   methodOfStatefulBase(): string {
     return 'methodOfStatefulBase'

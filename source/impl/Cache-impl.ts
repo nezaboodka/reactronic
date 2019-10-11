@@ -42,7 +42,7 @@ export class CacheImpl extends Cache<any> {
     const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.blank.field.toString()}/init` : /* istanbul ignore next */ "Cache.init"
     const sidebyside = this.blank.options.reentrance === Reentrance.RunSideBySide
     const result = Transaction.runEx<CacheResult>(hint, true, sidebyside, this.blank.options.trace, this, (): CacheResult => {
-      const c = this.write().cache
+      const c = this.write(Snapshot.writable()).cache
       c.ret = undefined
       c.value = undefined
       c.invalid.since = -1
@@ -53,7 +53,7 @@ export class CacheImpl extends Cache<any> {
   }
 
   tryCall(weak: boolean, args?: any[]): CacheCall {
-    let call: CacheCall = this.read(args)
+    let call: CacheCall = this.read(Snapshot.readable(), args)
     const c: CacheResult = call.cache
     if (!call.valid && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"
@@ -65,14 +65,14 @@ export class CacheImpl extends Cache<any> {
       const ret = Transaction.runEx(hint, spawn, sidebyside, cfg.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
         if (call2.cache.worker.isCanceled()) {
-          call2 = this.read(argsx) // re-read on retry
+          call2 = this.read(Snapshot.readable(), argsx) // re-read on retry
           if (!call2.valid) {
-            call2 = this.write()
+            call2 = this.write(Snapshot.writable())
             call2.cache.compute(this.handle.proxy, argsx)
           }
         }
         else {
-          call2 = this.write()
+          call2 = this.write(Snapshot.writable())
           call2.cache.compute(this.handle.proxy, argsx)
         }
         return call2.cache.ret
@@ -87,13 +87,13 @@ export class CacheImpl extends Cache<any> {
   }
 
   private weak(): CacheCall {
-    const call = this.read(undefined)
+    const call = this.read(Snapshot.readable(), undefined)
     Snapshot.markViewed(call.record, call.cache.field, call.cache, true)
     return call
   }
 
-  private read(args: any[] | undefined): CacheCall {
-    const ctx = Snapshot.readable()
+  private read(ctx: Snapshot, args: any[] | undefined): CacheCall {
+    // const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
     const c: CacheResult = r.data[this.blank.field] || this.initialize()
     const valid = c.options.kind !== Kind.Action &&
@@ -103,8 +103,8 @@ export class CacheImpl extends Cache<any> {
     return { valid, cache: c, record: r }
   }
 
-  private write(): CacheCall {
-    const ctx = Snapshot.writable()
+  private write(ctx: Snapshot): CacheCall {
+    // const ctx = Snapshot.writable()
     const field = this.blank.field
     const r: Record = ctx.write(this.handle, field, HANDLE, this)
     let c: CacheResult = r.data[field] || this.blank
@@ -146,18 +146,18 @@ export class CacheImpl extends Cache<any> {
 
   static doInvalidate(self: CacheImpl): void {
     const ctx = Snapshot.readable()
-    const call = self.read(undefined)
+    const call = self.read(Snapshot.readable(), undefined)
     const c = call.cache
     c.invalidateDueTo(c, {record: BLANK, field: c.field, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
   private reconfigure(options: Partial<Options>): Options {
-    const call = this.read(undefined)
+    const call = this.read(Snapshot.readable(), undefined)
     const c: CacheResult = call.cache
     const r: Record = call.record
     const hint: string = Dbg.isOn ? `cacheof(${Hints.handle(this.handle)}.${this.blank.field.toString()}).setup()` : /* istanbul ignore next */ "Cache.setup()"
     return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
-      const call2 = this.write()
+      const call2 = this.write(Snapshot.writable())
       const c2: CacheResult = call2.cache
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
       if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hints.record(r)}.${c.field.toString()}.options = ...`)
