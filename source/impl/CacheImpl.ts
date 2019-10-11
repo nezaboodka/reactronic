@@ -15,7 +15,7 @@ import { Status, Worker } from '../Status'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-type CacheCall = { valid: boolean, cache: CacheResult, record: Record }
+type CacheCall = { reusable: boolean, cache: CacheResult, record: Record }
 
 export class CacheImpl extends Cache<any> {
   private readonly handle: Handle
@@ -27,7 +27,7 @@ export class CacheImpl extends Cache<any> {
   get value(): any { return this.tryCall(true, false, undefined).cache.value }
   get error(): boolean { return this.weak().cache.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
-  get invalid(): boolean { return !this.weak().valid }
+  get invalid(): boolean { return !this.weak().reusable }
   invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hints.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
   call(args?: any[]): any { return this.tryCall(false, false, args).cache.value }
 
@@ -56,7 +56,7 @@ export class CacheImpl extends Cache<any> {
     const ctx = Snapshot.readable()
     let call: CacheCall = this.read(ctx, args)
     const c: CacheResult = call.cache
-    if (!call.valid && (force || !c.invalid.renewing)) {
+    if (!call.reusable && (force || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"
       const cfg = c.options
       const spawn = weak || cfg.kind !== Kind.Action
@@ -67,7 +67,7 @@ export class CacheImpl extends Cache<any> {
         // TODO: Cleaner implementation is needed
         if (call2.cache.worker.isCanceled()) {
           call2 = this.read(Snapshot.readable(), argsx) // re-read on retry
-          if (!call2.valid) {
+          if (!call2.reusable) {
             call2 = this.write(Snapshot.writable())
             call2.cache.compute(this.handle.proxy, argsx)
           }
@@ -98,11 +98,11 @@ export class CacheImpl extends Cache<any> {
     // const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
     const c: CacheResult = r.data[this.blank.field] || this.initialize()
-    const valid = c.options.kind !== Kind.Action &&
+    const reusable = c.options.kind !== Kind.Action &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[UNMOUNT] !== undefined
-    return { valid, cache: c, record: r }
+    return { reusable, cache: c, record: r }
   }
 
   private write(ctx: Snapshot): CacheCall {
@@ -120,7 +120,7 @@ export class CacheImpl extends Cache<any> {
       ctx.bump(r.prev.record.snapshot.timestamp)
       Snapshot.markChanged(r, field, renewing, true)
     }
-    return { valid: true, cache: c, record: r }
+    return { reusable: true, cache: c, record: r }
   }
 
   private static checkForReentrance(c: CacheResult): Error | undefined {
