@@ -256,8 +256,8 @@ class Status {
   readonly workerCount: number
   readonly workers: ReadonlySet<Action>
   readonly animationFrameCount: number
-  readonly busyToIdleTimeLag?: number // milliseconds
-  static create(hint?: string, busyToIdleTimeLag?: number): Status
+  readonly busyEndLag?: number // milliseconds
+  static create(hint?: string, busyEndLag?: number): Status
 }
 
 interface Trace {

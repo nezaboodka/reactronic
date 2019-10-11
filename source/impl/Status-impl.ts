@@ -13,7 +13,7 @@ export class StatusImpl extends Status {
   workerCount: number = 0
   workers = new Set<Action>()
   animationFrameCount: number = 0
-  busyToIdleTimeLag?: number = undefined // milliseconds
+  busyEndLag?: number = undefined // milliseconds
   private timeout: any = undefined
 
   enter(action: Action): void {
@@ -32,7 +32,7 @@ export class StatusImpl extends Status {
   }
 
   private reset(now: boolean): void {
-    if (now || this.busyToIdleTimeLag === undefined) {
+    if (now || this.busyEndLag === undefined) {
       if (this.workerCount > 0 || this.workers.size > 0) /* istanbul ignore next */
         throw misuse("cannot reset status having active workers")
       this.busy = false
@@ -42,17 +42,17 @@ export class StatusImpl extends Status {
     else
       this.timeout = setTimeout(() =>
         Action.runEx<void>("Status.reset", true, false,
-          undefined, undefined, StatusImpl.reset, this, true), this.busyToIdleTimeLag)
+          undefined, undefined, StatusImpl.reset, this, true), this.busyEndLag)
   }
 
   static create(hint?: string, prolonged?: number): StatusImpl {
     return Action.run("Status.create", StatusImpl.doCreate, hint, prolonged)
   }
 
-  private static doCreate(hint?: string, busyToIdleTimeLag?: number): StatusImpl {
+  private static doCreate(hint?: string, busyEndLag?: number): StatusImpl {
     const m = new StatusImpl()
     Hint.setHint(m, hint)
-    m.busyToIdleTimeLag = busyToIdleTimeLag
+    m.busyEndLag = busyEndLag
     return m
   }
 
