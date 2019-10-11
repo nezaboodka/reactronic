@@ -5,12 +5,12 @@
 
 import test from 'ava'
 import { Action, Cache, Reentrance, Tools as RT, cacheof, all, sleep } from '../source/.index'
-import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './async'
+import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
+  { url: "nezaboodka.com", delay: 100 },
   { url: "google.com", delay: 300 },
   { url: "microsoft.com", delay: 200 },
-  { url: "nezaboodka.com", delay: 500 },
 ]
 
 const expected: string[] = [
@@ -18,35 +18,27 @@ const expected: string[] = [
   "Log: RTA",
   "[...] Url: reactronic",
   "[...] Log: RTA",
+  "[...] Url: nezaboodka.com",
+  "[...] Log: RTA, nezaboodka.com/100",
+  "[...] Url: microsoft.com",
+  "[...] Log: RTA, microsoft.com/200",
   "[...] Url: google.com",
   "[...] Log: RTA, google.com/300",
   "Url: google.com",
   "Log: RTA, google.com/300",
-  "[...] Url: google.com",
-  "[...] Log: RTA, google.com/300",
-  "[...] Url: microsoft.com",
-  "[...] Log: RTA, google.com/300, microsoft.com/200",
-  "Url: microsoft.com",
-  "Log: RTA, google.com/300, microsoft.com/200",
-  "[...] Url: microsoft.com",
-  "[...] Log: RTA, google.com/300, microsoft.com/200",
-  "[...] Url: nezaboodka.com",
-  "[...] Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500",
-  "Url: nezaboodka.com",
-  "Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500",
 ]
 
-test("Reentrance.WaitAndRestart", async t => {
+test("Reentrance.RunSideBySide", async t => {
   RT.setTrace(tracing.noisy)
   const app = Action.run("app", () => new AsyncDemoView(new AsyncDemo()))
-  cacheof(app.model.load).setup({reentrance: Reentrance.WaitAndRestart})
+  cacheof(app.model.load).setup({reentrance: Reentrance.RunSideBySide})
   try {
     t.throws(() => { app.test = "testing @stateful for fields" },
       "stateful property #23 AsyncDemoView.test can only be modified inside actions")
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
-    t.is(loading.workerCount, 1)
-    t.is(loading.workers.size, 1)
+    t.is(loading.workerCount, 3)
+    t.is(loading.workers.size, 3)
     await all(responses)
   }
   catch (error) { /* istanbul ignore next */
@@ -59,12 +51,9 @@ test("Reentrance.WaitAndRestart", async t => {
     await sleep(400)
     await Cache.unmount(app, app.model).whenFinished(true)
   } /* istanbul ignore next */
-  if (!RT.trace.silent) {
-    console.log("\nResults:\n")
+  if (RT.isTraceOn && !RT.trace.silent)
     for (const x of output)
       console.log(x)
-    console.log("\n")
-  }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
     if (RT.isTraceOn && !RT.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)

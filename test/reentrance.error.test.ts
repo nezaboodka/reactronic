@@ -4,11 +4,11 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Action, Cache, Reentrance, Tools as RT, cacheof, all, sleep } from '../source/.index'
-import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './async'
+import { Action, Cache, Reentrance, Tools as RT, cacheof, resolved, sleep } from '../source/.index'
+import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
-  { url: "nezaboodka.com", delay: 100 },
+  { url: "nezaboodka.com", delay: 500 },
   { url: "google.com", delay: 300 },
   { url: "microsoft.com", delay: 200 },
 ]
@@ -19,27 +19,24 @@ const expected: string[] = [
   "[...] Url: reactronic",
   "[...] Log: RTA",
   "[...] Url: nezaboodka.com",
-  "[...] Log: RTA, nezaboodka.com/100",
-  "[...] Url: microsoft.com",
-  "[...] Log: RTA, microsoft.com/200",
-  "[...] Url: google.com",
-  "[...] Log: RTA, google.com/300",
-  "Url: google.com",
-  "Log: RTA, google.com/300",
+  "[...] Log: RTA, nezaboodka.com/500",
+  "Url: nezaboodka.com",
+  "Log: RTA, nezaboodka.com/500",
 ]
 
-test("Reentrance.RunSideBySide", async t => {
+test("Reentrance.PreventWithError", async t => {
   RT.setTrace(tracing.noisy)
   const app = Action.run("app", () => new AsyncDemoView(new AsyncDemo()))
-  cacheof(app.model.load).setup({reentrance: Reentrance.RunSideBySide})
+  cacheof(app.model.load).setup({reentrance: Reentrance.PreventWithError})
   try {
     t.throws(() => { app.test = "testing @stateful for fields" },
       "stateful property #23 AsyncDemoView.test can only be modified inside actions")
     await app.print() // trigger first run
-    const responses = requests.map(x => app.model.load(x.url, x.delay))
-    t.is(loading.workerCount, 3)
-    t.is(loading.workers.size, 3)
-    await all(responses)
+    const first = app.model.load(requests[0].url, requests[0].delay)
+    t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
+    t.is(loading.workerCount, 1)
+    t.is(loading.workers.size, 1)
+    await first
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
@@ -48,6 +45,8 @@ test("Reentrance.RunSideBySide", async t => {
   finally {
     t.is(loading.workerCount, 0)
     t.is(loading.workers.size, 0)
+    const r = resolved(app.render)
+    t.is(r && r.length, 2)
     await sleep(400)
     await Cache.unmount(app, app.model).whenFinished(true)
   } /* istanbul ignore next */
@@ -56,7 +55,7 @@ test("Reentrance.RunSideBySide", async t => {
       console.log(x)
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (RT.isTraceOn && !RT.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (RT.isTraceOn && !RT.trace.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
     t.is(output[i], expected[i])
   }
 })

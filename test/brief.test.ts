@@ -21,7 +21,7 @@ const expected: string[] = [
   // "John's children: Billy, Barry, Steve",
 ]
 
-test("main", t => {
+test("Main", t => {
   RT.triggersAutoStartDisabled = !RT.triggersAutoStartDisabled
   RT.triggersAutoStartDisabled = false
   RT.performanceWarningThreshold = RT.performanceWarningThreshold + 1

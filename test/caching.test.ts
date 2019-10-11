@@ -28,7 +28,7 @@ export class Demo extends DemoBase {
   }
 }
 
-test("main", t => {
+test("Main", t => {
   RT.setTrace(tracing.noisy)
   const demo = Action.run("caching", () => {
     const m = new Demo()
