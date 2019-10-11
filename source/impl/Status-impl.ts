@@ -5,18 +5,18 @@
 
 import { misuse } from '../util/Dbg'
 import { Hint } from './Hint'
-import { Action } from '../Action'
+import { Action, Worker } from '../Action'
 import { Status } from '../Status'
 
 export class StatusImpl extends Status {
   busy: boolean = false
   workerCount: number = 0
-  workers = new Set<Action>()
+  workers = new Set<Worker>()
   animationFrameCount: number = 0
   delayBeforeIdle?: number = undefined // milliseconds
   private timeout: any = undefined
 
-  enter(worker: Action): void {
+  enter(worker: Worker): void {
     this.timeout = clear(this.timeout) // yes, on each enter
     if (this.workerCount === 0)
       this.busy = true
@@ -24,7 +24,7 @@ export class StatusImpl extends Status {
     this.workers.add(worker)
   }
 
-  leave(worker: Action): void {
+  leave(worker: Worker): void {
     this.workers.delete(worker)
     this.workerCount--
     if (this.workerCount === 0)

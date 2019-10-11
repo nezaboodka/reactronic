@@ -5,17 +5,17 @@
 
 import { Stateful } from './impl/Hooks'
 import { StatusImpl } from './impl/Status-impl'
-import { Action } from './Action'
+import { Worker } from './Action'
 
 export abstract class Status extends Stateful {
   abstract readonly busy: boolean
   abstract readonly workerCount: number
-  abstract readonly workers: ReadonlySet<Action>
+  abstract readonly workers: ReadonlySet<Worker>
   abstract readonly animationFrameCount: number
   abstract readonly delayBeforeIdle?: number // milliseconds
 
-  abstract enter(worker: Action): void
-  abstract leave(worker: Action): void
+  abstract enter(worker: Worker): void
+  abstract leave(worker: Worker): void
 
   static create(hint?: string, delayBeforeIdle?: number): Status { return StatusImpl.create(hint, delayBeforeIdle) }
 }
