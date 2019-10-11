@@ -8,7 +8,7 @@ import { stateful, action, trigger, cached, cachedArgs, delay, status,
 export { tracing } from './common'
 
 export const output: string[] = []
-export const loading = Status.create("DemoStatus", 0)
+export const loading = Status.create("loading", 0)
 
 @stateful
 export class DemoModel {
