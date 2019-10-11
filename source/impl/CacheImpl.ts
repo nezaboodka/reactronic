@@ -53,7 +53,8 @@ export class CacheImpl extends Cache<any> {
   }
 
   tryCall(weak: boolean, args?: any[]): CacheCall {
-    let call: CacheCall = this.read(Snapshot.readable(), args)
+    const ctx = Snapshot.readable()
+    let call: CacheCall = this.read(ctx, args)
     const c: CacheResult = call.cache
     if (!call.valid && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"

@@ -6,7 +6,7 @@
 import test from 'ava'
 import { Action, Cache, Tools as RT, Kind, cacheof, nonreactive, standalone } from '../source/.index'
 import { Person, tracing, nop } from './common'
-import { DemoModel, DemoView, output } from './basic'
+import { DemoModel, DemoView, output, StatefulDemoModelBase } from './basic'
 
 const expected: string[] = [
   "Filter: Jo",
@@ -28,11 +28,6 @@ test("basic", t => {
   RT.performanceWarningThreshold = 3
   RT.setTrace(tracing.off)
   RT.setTrace(tracing.noisy)
-  // Testing in-action caching
-  // Action.run("in-action caching", () => {
-  //   const m = new StatefulDemoModelBase()
-  //   t.is(m.methodOfStatefulBase(), "methodOfStatefulBase")
-  // })
   // Simple actions
   const app = Action.run("app", () => new DemoView(new DemoModel()))
   try {
@@ -134,6 +129,12 @@ test("basic", t => {
     }), "test")
     t.throws(() => action3.apply(),
       "cannot apply action that is already canceled: Error: test")
+    // Testing in-action caching
+    Action.run("in-action caching", () => {
+      const m = new StatefulDemoModelBase()
+      t.assert(m !== undefined)
+      // t.is(m.methodOfStatefulBase(), "methodOfStatefulBase")
+    })
     // Other
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)
