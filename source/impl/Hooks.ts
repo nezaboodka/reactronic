@@ -8,7 +8,7 @@ import { misuse } from '../util/Dbg'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
-import { Record, FieldKey, FieldValue, Handle } from './Data'
+import { Record, FieldKey, Observable, Handle } from './Data'
 import { Snapshot, Hints, BLANK, HANDLE, CACHE, UNMOUNT } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Status } from '../Status'
@@ -115,7 +115,7 @@ export class Hooks implements ProxyHandler<Handle> {
       const ctx = Snapshot.readable()
       const r: Record = ctx.read(h)
       result = r.data[field]
-      if (result instanceof FieldValue) {
+      if (result instanceof Observable) {
         Snapshot.markViewed(r, field, result, false)
         result = result.value
       }
@@ -138,12 +138,12 @@ export class Hooks implements ProxyHandler<Handle> {
     const options: OptionsImpl | undefined = Hooks.getOptions(h.stateless, field)
     if (!options || (options.body === decoratedfield && options.kind !== Kind.Stateless)) { // versioned state
       const r: Record = Snapshot.writable().write(h, field, value)
-      const curr = r.data[field] as FieldValue
-      const prev = r.prev.record.data[field] as FieldValue
+      const curr = r.data[field] as Observable
+      const prev = r.prev.record.data[field] as Observable
       const changed = prev === undefined || prev.value !== value
       if (changed) {
         if (prev === curr)
-          r.data[field] = new FieldValue(value)
+          r.data[field] = new Observable(value)
         else
           curr.value = value
       }
@@ -334,7 +334,7 @@ function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Re
 function initRecordField(stateful: boolean, optionsTable: any, field: FieldKey, r: Record, stateless: any): void {
   if (stateful && optionsTable[field] !== false) {
     const value = stateless[field]
-    r.data[field] = new FieldValue(value)
+    r.data[field] = new Observable(value)
     Snapshot.markChanged(r, field, value, true)
   }
 }
@@ -362,28 +362,28 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
     return a[field] = value
   }
 
-  static seal(fv: FieldValue, proxy: any, field: FieldKey): void {
-    const v = fv.value
+  static seal(observable: Observable, proxy: any, field: FieldKey): void {
+    const v = observable.value
     if (Array.isArray(v)) {
       if (!Object.isFrozen(v)) {
-        if (fv.copyOnWriteMode)
-          fv.value = new Proxy(CopyOnWriteArray.seal(proxy, field, v), CopyOnWriteProxy.global)
+        if (observable.copyOnWriteMode)
+          observable.value = new Proxy(CopyOnWriteArray.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Object.freeze(v) // just freeze without copy-on-write hooks
       }
     }
     else if (v instanceof Set) {
       if (!Object.isFrozen(v)) {
-        if (fv.copyOnWriteMode)
-          fv.value = new Proxy(CopyOnWriteSet.seal(proxy, field, v), CopyOnWriteProxy.global)
+        if (observable.copyOnWriteMode)
+          observable.value = new Proxy(CopyOnWriteSet.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Utils.freezeSet(v) // just freeze without copy-on-write hooks
       }
     }
     else if (v instanceof Map) {
       if (!Object.isFrozen(v)) {
-        if (fv.copyOnWriteMode)
-          fv.value = new Proxy(CopyOnWriteMap.seal(proxy, field, v), CopyOnWriteProxy.global)
+        if (observable.copyOnWriteMode)
+          observable.value = new Proxy(CopyOnWriteMap.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Utils.freezeMap(v) // just freeze without copy-on-write hooks
       }

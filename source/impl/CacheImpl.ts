@@ -5,7 +5,7 @@
 
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle } from './Data'
+import { Record, FieldKey, Observable, FieldHint, Observer, Handle } from './Data'
 import { Snapshot, Hints, BLANK, HANDLE, CACHE, UNMOUNT } from './Snapshot'
 import { Transaction } from './Transaction'
 import { StatusImpl } from './StatusImpl'
@@ -216,7 +216,7 @@ export class CacheImpl extends Cache<any> {
 
 // CacheResult
 
-class CacheResult extends FieldValue implements Observer {
+class CacheResult extends Observable implements Observer {
   static asyncTriggerBatch: CacheResult[] = []
   static active?: CacheResult = undefined
 
@@ -229,7 +229,7 @@ class CacheResult extends FieldValue implements Observer {
   error: any
   started: number
   readonly invalid: { since: number, renewing: CacheResult | undefined }
-  readonly observables: Map<FieldValue, FieldHint>
+  readonly observables: Map<Observable, FieldHint>
   readonly margin: number
 
   constructor(record: Record, field: FieldKey, init: CacheResult | OptionsImpl) {
@@ -251,7 +251,7 @@ class CacheResult extends FieldValue implements Observer {
     // this.error = undefined
     this.started = 0
     this.invalid = { since: 0, renewing: undefined }
-    this.observables = new Map<FieldValue, FieldHint>()
+    this.observables = new Map<Observable, FieldHint>()
     this.margin = CacheResult.active ? CacheResult.active.margin + 1 : 1
   }
 
@@ -387,13 +387,13 @@ class CacheResult extends FieldValue implements Observer {
       t.trig(TOP_TIMESTAMP, true, true)
   }
 
-  private static markViewed(record: Record, field: FieldKey, value: FieldValue, weak: boolean): void {
+  private static markViewed(record: Record, field: FieldKey, value: Observable, weak: boolean): void {
     const c: CacheResult | undefined = CacheResult.active // alias
     if (c && c.options.kind !== Kind.Action && field !== HANDLE) {
       const ctx = Snapshot.readable()
       ctx.bump(record.snapshot.timestamp)
       const t = weak ? -1 : ctx.timestamp
-      if (!c.subscribeToFieldValue(weak, record, field, value, t))
+      if (!c.subscribeTo(record, field, value, t))
         c.invalidateDueTo(value, {record, field, times: 0}, ctx.timestamp, ctx.triggers)
     }
   }
@@ -432,12 +432,12 @@ class CacheResult extends FieldValue implements Observer {
 
   private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
     const prev = record.prev.record
-    const value = prev.data[field] as FieldValue
+    const value = prev.data[field] as Observable
     if (value !== undefined && value.replacement === undefined) {
       value.replacement = record
       if (value instanceof CacheResult && (value.invalid.since === TOP_TIMESTAMP || value.invalid.since <= 0)) {
         value.invalid.since = timestamp
-        value.unsubscribeFromAllObservables()
+        value.unsubscribeFromAll()
       }
       if (value.observers)
         value.observers.forEach(c => c.invalidateDueTo(value, { record, field, times: 0 }, timestamp, triggers))
@@ -448,27 +448,23 @@ class CacheResult extends FieldValue implements Observer {
     const cache = record.data[field]
     if (cache instanceof CacheResult && cache.record === record) {
       if (cancel)
-        cache.unsubscribeFromAllObservables()
+        cache.unsubscribeFromAll()
       cache.finish()
     }
   }
 
-  private unsubscribeFromAllObservables(): void {
-    this.unsubscribeFrom(this.observables)
-  }
-
-  private unsubscribeFrom(observables: Map<FieldValue, FieldHint>): void {
+  private unsubscribeFromAll(): void {
     // It's critical to have on exceptions here
-    observables.forEach((hint, value) => {
+    this.observables.forEach((hint, value) => {
       const observers = value.observers
       if (observers)
         observers.delete(this) // now unsubscribed
       if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", "  - ", `${Hints.record(this.record, this.field)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
     })
-    observables.clear()
+    this.observables.clear()
   }
 
-  private subscribeToFieldValue(weak: boolean, record: Record, field: FieldKey, value: FieldValue, timestamp: number): boolean {
+  private subscribeTo(record: Record, field: FieldKey, value: Observable, timestamp: number): boolean {
     let result = value.replacement === undefined
     if (result && timestamp !== -1)
       result = !(value instanceof CacheResult && timestamp >= value.invalid.since)
@@ -493,14 +489,14 @@ class CacheResult extends FieldValue implements Observer {
     return result || value.replacement === record
   }
 
-  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: Observer[]): boolean {
+  invalidateDueTo(cause: Observable, hint: FieldHint, since: number, triggers: Observer[]): boolean {
     const result = this.record !== hint.record &&
       (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0)
     if (result) {
       this.invalid.since = since
       const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
       if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
-      this.unsubscribeFromAllObservables()
+      this.unsubscribeFromAll()
       if (!this.worker.isFinished())
         this.worker.cancel(new Error(`action T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)} and will be silently ignored`), null)
       if (isTrigger) // stop cascade invalidation on trigger

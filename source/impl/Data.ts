@@ -24,7 +24,7 @@ export interface FieldHint {
   readonly field: FieldKey
 }
 
-export class FieldValue {
+export class Observable {
   value: any
   replacement?: Record
   observers?: Set<Observer>
@@ -86,6 +86,6 @@ export class Handle {
 export interface Observer {
   hint(notran?: boolean): string
   readonly invalid: { since: number }
-  invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: Observer[]): void
+  invalidateDueTo(cause: Observable, hint: FieldHint, since: number, triggers: Observer[]): void
   trig(timestamp: number, now: boolean, nothrow: boolean): void
 }
