@@ -5,7 +5,7 @@
 
 import test from 'ava'
 import { Stateful, cached, Action, Tools as RT, trace } from '../source/.index'
-import { tracing } from './model/common'
+import { tracing } from './common'
 
 export class DemoBase extends Stateful {
   text: string = 'baseMethod'

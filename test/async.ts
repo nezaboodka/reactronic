@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { stateful, action, trigger, cached, cachedArgs, delay, status,
-  reentrance, Status, Reentrance, Tools as RT, all, sleep } from '../../source/.index'
+  reentrance, Status, Reentrance, Tools as RT, all, sleep } from '../source/.index'
 export { tracing } from './common'
 
 export const output: string[] = []

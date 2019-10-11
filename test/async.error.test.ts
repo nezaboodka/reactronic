@@ -5,7 +5,7 @@
 
 import test from 'ava'
 import { Action, Cache, Reentrance, Tools as RT, cacheof, resolved, sleep } from '../source/.index'
-import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './model/async'
+import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './async'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: "nezaboodka.com", delay: 500 },
