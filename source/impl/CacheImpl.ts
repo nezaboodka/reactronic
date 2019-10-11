@@ -65,7 +65,7 @@ export class CacheImpl extends Cache<any> {
       let call2 = call
       const ret = Transaction.runEx(hint, spawn, sidebyside, cfg.trace, token, (argsx: any[] | undefined): any => {
         // TODO: Cleaner implementation is needed
-        if (call2.cache.worker.isCanceled()) {
+        if (call2.cache.worker.isCanceled) {
           call2 = this.read(Snapshot.readable(), argsx) // re-read on retry
           if (!call2.reusable) {
             call2 = this.write(Snapshot.writable())
@@ -83,7 +83,7 @@ export class CacheImpl extends Cache<any> {
       if (!weak || ctx === ctx2 || (ctx2.applied && ctx.timestamp >= ctx2.timestamp))
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", " (=)", `${Hints.record(call.record)}.${call.cache.field.toString()} result is reused from T${call.cache.worker.id} ${call.cache.worker.hint}`)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? "" : "║", " (=)", `${Hints.record(call.record)}.${call.cache.field.toString()} result is reused from T${call.cache.worker.id} ${call.cache.worker.hint}`)
     Snapshot.markViewed(call.record, call.cache.field, call.cache, weak)
     return call
   }
@@ -127,7 +127,7 @@ export class CacheImpl extends Cache<any> {
     let result: Error | undefined = undefined
     const prev = c.invalid.renewing
     const caller = Transaction.current
-    if (prev && prev !== c && !prev.worker.isCanceled())
+    if (prev && prev !== c && !prev.worker.isCanceled)
       switch (c.options.reentrance) {
         case Reentrance.PreventWithError:
           throw misuse(`${c.hint()} is not reentrant`)
@@ -497,7 +497,7 @@ class CacheResult extends Observable implements Observer {
       const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
       if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
       this.unsubscribeFromAll()
-      if (!this.worker.isFinished())
+      if (!this.worker.isFinished)
         this.worker.cancel(new Error(`action T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)} and will be silently ignored`), null)
       if (isTrigger) // stop cascade invalidation on trigger
         triggers.push(this)
@@ -567,7 +567,7 @@ function fReactronicThen(this: any,
   reject?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
   const tran = Transaction.current
-  if (!tran.isFinished()) {
+  if (!tran.isFinished) {
     if (!resolve)
       resolve = resolveReturn
     if (!reject)

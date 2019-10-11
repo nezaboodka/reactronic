@@ -23,7 +23,7 @@ export class Transaction extends Action {
   private workers: number
   private sealed: boolean
   private error?: Error
-  private retryAfter?: Transaction
+  private waiting?: Transaction
   private promise?: Promise<void>
   private resolve: (value?: void) => void
   private reject: (reason: any) => void
@@ -38,7 +38,7 @@ export class Transaction extends Action {
     this.workers = 0
     this.sealed = false
     this.error = undefined
-    this.retryAfter = undefined
+    this.waiting = undefined
     this.promise = undefined
     this.resolve = undef
     this.reject = undef
@@ -99,16 +99,16 @@ export class Transaction extends Action {
     return this
   }
 
-  isCanceled(): boolean {
+  get isCanceled(): boolean {
     return this.error !== undefined
   }
 
-  isFinished(): boolean {
+  get isFinished(): boolean {
     return this.sealed && this.workers === 0
   }
 
   async whenFinished(includingReaction: boolean): Promise<void> {
-    if (!this.isFinished())
+    if (!this.isFinished)
       await this.acquirePromise()
     if (includingReaction && this.reaction.tran)
       await this.reaction.tran.whenFinished(true)
@@ -147,7 +147,7 @@ export class Transaction extends Action {
   // Internal
 
   private static acquire(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any): Transaction {
-    return spawn || Transaction.running.isFinished()
+    return spawn || Transaction.running.isFinished
       ? new Transaction(hint, sidebyside, trace, token)
       : Transaction.running
   }
@@ -165,10 +165,10 @@ export class Transaction extends Action {
       return result
     }
     catch (error) {
-      if (this.retryAfter !== Transaction.none) {
-        if (this.retryAfter) {
+      if (this.waiting !== Transaction.none) {
+        if (this.waiting) {
           // if (Dbg.trace.actions) Dbg.log("", "  ", `action T${this.id} (${this.hint}) is waiting for restart`)
-          await this.retryAfter.whenFinished(true)
+          await this.waiting.whenFinished(true)
           // if (Dbg.trace.actions) Dbg.log("", "  ", `action T${this.id} (${this.hint}) is ready for restart`)
           return Transaction.runEx<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
         }
@@ -199,7 +199,7 @@ export class Transaction extends Action {
       if (this.sealed && this.workers === 1) {
         if (!this.error)
           this.checkForConflicts() // merge with concurrent actions
-        else if (!this.retryAfter)
+        else if (!this.waiting)
           throw this.error
       }
     }
@@ -235,7 +235,7 @@ export class Transaction extends Action {
   private static seal(t: Transaction, error?: Error, retryAfter?: Transaction): void {
     if (!t.error && error) {
       t.error = error
-      t.retryAfter = retryAfter
+      t.waiting = retryAfter
       Snapshot.applyAllDependencies(t.snapshot, t.error)
       if (Dbg.isOn && Dbg.trace.errors && retryAfter === undefined) Dbg.log("║", "███", `${error.message}`, undefined, " *** ERROR ***")
     }
@@ -262,7 +262,7 @@ export class Transaction extends Action {
     this.snapshot.apply(this.error)
     this.snapshot.collect()
     if (this.promise) {
-      if (this.error && !this.retryAfter)
+      if (this.error && !this.waiting)
         this.reject(this.error)
       else
         this.resolve()

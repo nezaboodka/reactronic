@@ -20,8 +20,8 @@ export abstract class Action implements Worker {
   abstract seal(): this
   abstract bind<T>(func: F<T>, secondary: boolean): F<T>
   abstract cancel(error: Error, retryAfterOrIgnore?: Worker | null): this
-  abstract isCanceled(): boolean
-  abstract isFinished(): boolean
+  abstract readonly isCanceled: boolean
+  abstract readonly isFinished: boolean
   abstract async whenFinished(includingReaction: boolean): Promise<void>
 
   static create(hint: string): Action { return new Transaction(hint) }
