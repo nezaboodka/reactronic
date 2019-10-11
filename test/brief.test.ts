@@ -6,7 +6,7 @@
 import test from 'ava'
 import { Action, Cache, Tools as RT, Kind, cacheof, nonreactive, standalone } from '../source/.index'
 import { tracing, nop } from './common'
-import { Person, Demo, DemoView, output } from './basic'
+import { Person, Demo, DemoView, output } from './brief'
 
 const expected: string[] = [
   "Filter: Jo",
