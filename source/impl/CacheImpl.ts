@@ -24,12 +24,12 @@ export class CacheImpl extends Cache<any> {
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().cache.options }
   get args(): ReadonlyArray<any> { return this.weak().cache.args }
-  get value(): any { return this.tryCall(true, false, undefined).cache.value }
+  get value(): any { return this.tryCall(true, undefined).cache.value }
   get error(): boolean { return this.weak().cache.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reusable }
   invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hints.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
-  call(args?: any[]): any { return this.tryCall(false, false, args).cache.value }
+  call(args?: any[]): any { return this.tryCall(true, args).cache.value }
 
   constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
     super()
@@ -52,11 +52,11 @@ export class CacheImpl extends Cache<any> {
     return result
   }
 
-  tryCall(weak: boolean, force: boolean, args: any[] | undefined): CacheCall {
+  tryCall(weak: boolean, args: any[] | undefined): CacheCall {
     const ctx = Snapshot.readable()
     let call: CacheCall = this.read(ctx, args)
     const c: CacheResult = call.cache
-    if (!call.reusable && (force || !c.invalid.renewing)) {
+    if (!call.reusable && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && args[0] instanceof Function === false ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"
       const cfg = c.options
       const spawn = weak || cfg.kind !== Kind.Action
@@ -80,7 +80,7 @@ export class CacheImpl extends Cache<any> {
       }, args)
       call2.cache.ret = ret
       const ctx2 = call2.cache.record.snapshot
-      if (force || ctx === ctx2 || (ctx2.applied && ctx.timestamp >= ctx2.timestamp))
+      if (!weak || ctx === ctx2 || (ctx2.applied && ctx.timestamp >= ctx2.timestamp))
         call = call2
     }
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", " (=)", `${Hints.record(call.record)}.${call.cache.field.toString()} result is reused from T${call.cache.worker.id} ${call.cache.worker.hint}`)
@@ -188,7 +188,7 @@ export class CacheImpl extends Cache<any> {
   static createCacheTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     const cache = new CacheImpl(h, field, options)
     const cacheTrap: F<any> = (...args: any[]): any =>
-      cache.tryCall(false, true, args).cache.ret
+      cache.tryCall(false, args).cache.ret
     Utils.set(cacheTrap, CACHE, cache)
     return cacheTrap
   }
@@ -358,7 +358,7 @@ class CacheResult extends Observable implements Observer {
           const proxy: any = Utils.get<Handle>(this.record.data, HANDLE).proxy
           const trap: Function = Reflect.get(proxy, this.field, proxy)
           const cache = Utils.get<CacheImpl>(trap, CACHE)
-          const call: CacheCall = cache.tryCall(false, true, undefined)
+          const call: CacheCall = cache.tryCall(false, undefined)
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }) // bad idea to hide an error
         }
