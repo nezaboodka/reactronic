@@ -79,7 +79,7 @@ export class CacheImpl extends Cache<any> {
         return call2.cache.ret
       }, args)
       call2.cache.ret = ret
-      if (!weak && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
+      if (!weak && ctx.timestamp >= call2.cache.record.snapshot.timestamp)
         call = call2
     }
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", " (=)", `${Hints.record(call.record)}.${call.cache.field.toString()} result is reused from T${call.cache.worker.id} ${call.cache.worker.hint}`)
