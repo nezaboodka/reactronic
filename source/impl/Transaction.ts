@@ -249,10 +249,8 @@ export class Transaction extends Action {
   }
 
   private tryResolveConflicts(conflicts: Record[]): void {
-    if (!this.sidebyside) {
-      this.error = this.error || error(`action T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
-      throw this.error
-    } // ignore conflicts otherwise
+    if (!this.sidebyside)
+      throw error(`action T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
     else if (Dbg.isOn && Dbg.trace.warnings)
       Dbg.log("║", "  · ", `conflict is ignored - action T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
   }
