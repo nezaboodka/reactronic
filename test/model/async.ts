@@ -11,7 +11,7 @@ export const output: string[] = []
 export const loading = Status.create("loading", 0)
 
 @stateful
-export class DemoModel {
+export class AsyncDemo {
   url: string = "reactronic"
   log: string[] = ["RTA"]
 
@@ -23,9 +23,9 @@ export class DemoModel {
   }
 }
 
-export class DemoView {
+export class AsyncDemoView {
   @stateful test: any
-  constructor(readonly model: DemoModel) { }
+  constructor(readonly model: AsyncDemo) { }
 
   @trigger @delay(-1)
   async print(): Promise<void> {

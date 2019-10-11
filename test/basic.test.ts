@@ -6,7 +6,7 @@
 import test from 'ava'
 import { Action, Cache, Tools as RT, Kind, cacheof, nonreactive, standalone } from '../source/.index'
 import { Person, tracing, nop } from './model/common'
-import { DemoModel, DemoView, output, StatefulDemoModelBase } from './model/basic'
+import { Demo, DemoView, output, StatefulDemoModelBase } from './model/basic'
 
 const expected: string[] = [
   "Filter: Jo",
@@ -29,7 +29,7 @@ test("All", t => {
   RT.setTrace(tracing.off)
   RT.setTrace(tracing.noisy)
   // Simple actions
-  const app = Action.run("app", () => new DemoView(new DemoModel()))
+  const app = Action.run("app", () => new DemoView(new Demo()))
   try {
     t.is(app.model.methodOfStatefulBase(), "methodOfStatefulBase")
     t.throws(() => app.model.cacheWithSideEffect(), "cache must have no side effects: #21 DemoModel.cacheWithSideEffect should not change v104t114#21 DemoModel.title")

@@ -5,7 +5,7 @@
 
 import test from 'ava'
 import { Action, Cache, Reentrance, Tools as RT, cacheof, all, sleep } from '../source/.index'
-import { DemoModel, DemoView, loading, output, tracing } from './model/async'
+import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './model/async'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: "google.com", delay: 300 },
@@ -38,7 +38,7 @@ const expected: string[] = [
 
 test("Reentrance.WaitAndRestart", async t => {
   RT.setTrace(tracing.noisy)
-  const app = Action.run("app", () => new DemoView(new DemoModel()))
+  const app = Action.run("app", () => new AsyncDemoView(new AsyncDemo()))
   cacheof(app.model.load).setup({reentrance: Reentrance.WaitAndRestart})
   try {
     t.throws(() => { app.test = "testing @stateful for fields" },

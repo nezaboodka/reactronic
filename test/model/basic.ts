@@ -17,7 +17,7 @@ export class StatefulDemoModelBase extends Stateful {
   }
 }
 
-export class DemoModel extends StatefulDemoModelBase {
+export class Demo extends StatefulDemoModelBase {
   @stateless shared: string = "for testing purposes"
   title: string = "Demo"
   users: Person[] = []
@@ -62,10 +62,10 @@ export class DemoModel extends StatefulDemoModelBase {
 
 export class DemoView extends Stateful {
   @stateless shared: string = "for testing purposes"
-  @stateless readonly model: DemoModel
+  @stateless readonly model: Demo
   userFilter: string = "Jo"
 
-  constructor(model: DemoModel) {
+  constructor(model: Demo) {
     super()
     this.model = model
   }
