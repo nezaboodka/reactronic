@@ -41,8 +41,8 @@ export class Record {
   readonly changes: Set<FieldKey>
   readonly conflicts: Map<FieldKey, Record>
 
-  constructor(creator: Context, prev: Record | undefined, data: object) {
-    this.snapshot = creator
+  constructor(snapshot: Context, prev: Record | undefined, data: object) {
+    this.snapshot = snapshot
     this.prev = { record: prev || this } // loopback if prev is undefined
     this.data = data
     this.changes = new Set<FieldKey>()
