@@ -273,11 +273,11 @@ class CacheResult extends FieldValue implements Observer {
   compute(proxy: any, args: any[] | undefined): void {
     if (args)
       this.args = args
+    this.invalid.since = TOP_TIMESTAMP
     if (!this.error)
       CacheImpl.runAs<void>(this, CacheResult.doCompute, proxy, this)
     else
       this.ret = Promise.reject(this.error)
-    this.invalid.since = TOP_TIMESTAMP
   }
 
   static doCompute(proxy: any, c: CacheResult): void {

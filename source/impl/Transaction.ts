@@ -232,13 +232,14 @@ export class Transaction extends Action {
     return Transaction.current
   }
 
-  private static seal(a: Transaction, error?: Error, retryAfter?: Transaction): void {
-    if (!a.error && error) {
-      a.error = error
-      a.retryAfter = retryAfter
+  private static seal(t: Transaction, error?: Error, retryAfter?: Transaction): void {
+    if (!t.error && error) {
+      t.error = error
+      t.retryAfter = retryAfter
+      Snapshot.applyAllDependencies(t.snapshot, t.error)
       if (Dbg.isOn && Dbg.trace.errors && retryAfter === undefined) Dbg.log("║", "███", `${error.message}`, undefined, " *** ERROR ***")
     }
-    a.sealed = true
+    t.sealed = true
   }
 
   private checkForConflicts(): void {
