@@ -16,16 +16,16 @@ export class StatusImpl extends Status {
   delayBeforeIdle?: number = undefined // milliseconds
   private timeout: any = undefined
 
-  enter(action: Action): void {
+  enter(worker: Action): void {
     this.timeout = clear(this.timeout) // yes, on each enter
     if (this.workerCount === 0)
       this.busy = true
     this.workerCount++
-    this.workers.add(action)
+    this.workers.add(worker)
   }
 
-  leave(action: Action): void {
-    this.workers.delete(action)
+  leave(worker: Action): void {
+    this.workers.delete(worker)
     this.workerCount--
     if (this.workerCount === 0)
       this.reset(false)
@@ -56,8 +56,8 @@ export class StatusImpl extends Status {
     return m
   }
 
-  static enter(ind: Status, action: Action): void {
-    ind.enter(action)
+  static enter(ind: Status, worker: Action): void {
+    ind.enter(worker)
   }
 
   static leave(ind: Status, action: Action): void {

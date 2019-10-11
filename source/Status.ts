@@ -14,8 +14,8 @@ export abstract class Status extends Stateful {
   abstract readonly animationFrameCount: number
   abstract readonly delayBeforeIdle?: number // milliseconds
 
-  abstract enter(action: Action): void
-  abstract leave(action: Action): void
+  abstract enter(worker: Action): void
+  abstract leave(worker: Action): void
 
   static create(hint?: string, delayBeforeIdle?: number): Status { return StatusImpl.create(hint, delayBeforeIdle) }
 }
