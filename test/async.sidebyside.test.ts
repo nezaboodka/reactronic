@@ -34,7 +34,7 @@ test("Reentrance.RunSideBySide", async t => {
   cacheof(app.model.load).setup({reentrance: Reentrance.RunSideBySide})
   try {
     t.throws(() => { app.test = "testing @stateful for fields" },
-      "stateful property #23 DemoView.test can only be modified inside actions")
+      "stateful property #23 AsyncDemoView.test can only be modified inside actions")
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
     t.is(loading.workerCount, 3)

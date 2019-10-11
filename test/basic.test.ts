@@ -32,10 +32,10 @@ test("All", t => {
   const app = Action.run("app", () => new DemoView(new Demo()))
   try {
     t.is(app.model.methodOfStatefulBase(), "methodOfStatefulBase")
-    t.throws(() => app.model.cacheWithSideEffect(), "cache must have no side effects: #21 DemoModel.cacheWithSideEffect should not change v104t114#21 DemoModel.title")
-    t.throws(() => console.log(app.model.unassigned), "unassigned properties are not supported: v103t113#21 DemoModel.unassigned is used by T1 (<none>)")
+    t.throws(() => app.model.cacheWithSideEffect(), "cache must have no side effects: #21 Demo.cacheWithSideEffect should not change v104t114#21 Demo.title")
+    t.throws(() => console.log(app.model.unassigned), "unassigned properties are not supported: v103t113#21 Demo.unassigned is used by T1 (<none>)")
     t.notThrows(() => DemoView.test())
-    t.assert(app.model.title.startsWith("demo -")) // check that DemoModel.normalizeTitle works
+    t.assert(app.model.title.startsWith("demo -")) // check that Demo.normalizeTitle works
     const rendering = cacheof(app.render)
     t.is(rendering.invalid, false)
     t.is(rendering.args.length, 1)
