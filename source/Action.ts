@@ -5,11 +5,11 @@
 
 import { F } from './util/Utils'
 import { Trace } from './Trace'
-import { ActionImpl } from './impl/Action-impl'
+import { Transaction } from './impl/Transaction'
 import { Worker } from './Status'
 
 export abstract class Action implements Worker {
-  static get current(): Action { return ActionImpl.current }
+  static get current(): Action { return Transaction.current }
 
   abstract readonly id: number
   abstract readonly hint: string
@@ -24,8 +24,8 @@ export abstract class Action implements Worker {
   abstract isFinished(): boolean
   abstract async whenFinished(includingReaction: boolean): Promise<void>
 
-  static create(hint: string): Action { return new ActionImpl(hint) }
-  static run<T>(hint: string, func: F<T>, ...args: any[]): T { return ActionImpl.run<T>(hint, func, ...args) }
-  static runEx<T>(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T { return ActionImpl.runEx<T>(hint, spawn, sidebyside, trace, token, func, ...args) }
-  static outside<T>(func: F<T>, ...args: any[]): T { return ActionImpl.outside<T>(func, ...args) }
+  static create(hint: string): Action { return new Transaction(hint) }
+  static run<T>(hint: string, func: F<T>, ...args: any[]): T { return Transaction.run<T>(hint, func, ...args) }
+  static runEx<T>(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T { return Transaction.runEx<T>(hint, spawn, sidebyside, trace, token, func, ...args) }
+  static outside<T>(func: F<T>, ...args: any[]): T { return Transaction.outside<T>(func, ...args) }
 }

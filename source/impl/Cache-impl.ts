@@ -8,7 +8,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { Record, FieldKey, FieldValue, FieldHint, Observer, Handle, HANDLE, CACHE, UNMOUNT } from './Data'
 import { Hint } from './Hint'
 import { Snapshot, BLANK } from './Snapshot'
-import { ActionImpl } from './Action-impl'
+import { Transaction } from './Transaction'
 import { StatusImpl } from './Status-impl'
 import { Hooks, OptionsImpl } from './Hooks'
 import { Options, Kind, Reentrance, Trace } from '../Options'
@@ -563,7 +563,7 @@ function valueHint(value: any): string {
 }
 
 function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
-  const t = ActionImpl.current
+  const t = Transaction.current
   let res = Dbg.merge(t.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : "", Dbg.global)
   res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
   if (CacheResult.active)
