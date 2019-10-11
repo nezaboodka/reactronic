@@ -230,7 +230,6 @@ class CacheResult extends FieldValue implements Observer {
   started: number
   readonly invalid: { since: number, renewing: CacheResult | undefined }
   readonly observables: Map<FieldValue, FieldHint>
-  readonly weakObservables: Map<FieldValue, FieldHint>
   readonly margin: number
 
   constructor(record: Record, field: FieldKey, init: CacheResult | OptionsImpl) {
@@ -253,7 +252,6 @@ class CacheResult extends FieldValue implements Observer {
     this.started = 0
     this.invalid = { since: 0, renewing: undefined }
     this.observables = new Map<FieldValue, FieldHint>()
-    this.weakObservables = new Map<FieldValue, FieldHint>()
     this.margin = CacheResult.active ? CacheResult.active.margin + 1 : 1
   }
 
@@ -457,7 +455,6 @@ class CacheResult extends FieldValue implements Observer {
 
   private unsubscribeFromAllObservables(): void {
     this.unsubscribeFrom(this.observables)
-    this.unsubscribeFrom(this.weakObservables)
   }
 
   private unsubscribeFrom(observables: Map<FieldValue, FieldHint>): void {
@@ -477,10 +474,9 @@ class CacheResult extends FieldValue implements Observer {
       result = !(value instanceof CacheResult && timestamp >= value.invalid.since)
     if (result) {
       // Observables
-      const observables = this.getObservables(weak)
       let times: number = 0
       if (Hooks.performanceWarningThreshold > 0) {
-        const existing = observables.get(value)
+        const existing = this.observables.get(value)
         times = existing ? existing.times + 1 : 1
       }
       // Observers
@@ -489,16 +485,12 @@ class CacheResult extends FieldValue implements Observer {
       // Two-way linking
       const hint: FieldHint = {record, field, times}
       value.observers.add(this)
-      observables.set(value, hint)
+      this.observables.set(value, hint)
       // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  r `, `${c.hint()} ${weak ? 'uses (weakly)' : 'uses'} ${Hint.record(record, field)} - ${times} time(s)`)
       if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, "║", "  ∞ ", `${Hints.record(this.record, this.field)} is subscribed to ${Hints.record(hint.record, hint.field, true)}${hint.times > 1 ? ` (${hint.times} times)` : ""}`)
       if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("█", " ███", `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} time(s)`, 0, " *** WARNING ***")
     }
     return result || value.replacement === record
-  }
-
-  getObservables(weak: boolean): Map<FieldValue, FieldHint> {
-    return weak ? this.weakObservables : this.observables
   }
 
   invalidateDueTo(cause: FieldValue, hint: FieldHint, since: number, triggers: Observer[]): boolean {
@@ -528,7 +520,6 @@ class CacheResult extends FieldValue implements Observer {
 
   static freeze(c: CacheResult): void {
     Utils.freezeMap(c.observables)
-    Utils.freezeMap(c.weakObservables)
     Object.freeze(c)
   }
 
