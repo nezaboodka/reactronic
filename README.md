@@ -5,7 +5,7 @@
 [![Package Size](https://img.shields.io/bundlephobia/minzip/reactronic.svg?colorB=success)](https://bundlephobia.com/result?p=reactronic)
 [![CircleCI Status](https://circleci.com/gh/nezaboodka/reactronic.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/nezaboodka/reactronic)
 ![Coverage](https://img.shields.io/badge/coverage-94%25-success.svg)
-![Lines](https://img.shields.io/badge/lines-1354-success.svg)
+![Lines](https://img.shields.io/badge/lines-1375-success.svg)
 [![Demo](https://img.shields.io/badge/demo-live-success.svg)](https://nezaboodka.github.io/reactronic-demo/)
 
 Live demo: https://nezaboodka.github.io/reactronic-demo/
@@ -263,9 +263,9 @@ class Status {
 interface Worker {
   readonly id: number
   readonly hint: string
+  isCanceled: boolean
+  isFinished: boolean
   cancel(error?: Error, retryAfter?: Action): this
-  isCanceled(): boolean
-  isFinished(): boolean
   whenFinished(): Promise<void>
 }
 
@@ -296,10 +296,10 @@ class Action implements Worker {
   run<T>(func: F<T>, ...args: any[]): T
   wrap<T>(func: F<T>): F<T>
   apply(): void
-  seal(): this // a1.seal().whenFinished().then(fulfill, reject)
+  seal(): this // t1.seal().whenFinished().then(fulfill, reject)
   cancel(error?: Error, retryAfter?: Action): this
-  isCanceled(): boolean
-  isFinished(): boolean
+  isCanceled: boolean
+  isFinished: boolean
   whenFinished(): Promise<void>
   join<T>(p: Promise<T>): Promise<T>
 
@@ -322,7 +322,7 @@ abstract class Cache<T> {
 
   setup(options: Partial<Options>): Options
   invalidate(): boolean
-  call(args?: any[]): T | undefined
+  receive(args?: any[]): T | undefined
 
   static of<T>(method: F<T>): Cache<T>
   static unmount(...objects: any[]): Action

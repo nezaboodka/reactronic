@@ -119,16 +119,16 @@ export class Transaction extends Action {
   }
 
   static runEx<T>(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
-    const a: Transaction = Transaction.acquire(hint, spawn, sidebyside, trace, token)
-    const root = a !== Transaction.running
-    a.guard()
-    let result: any = a.do<T>(trace, func, ...args)
+    const t: Transaction = Transaction.acquire(hint, spawn, sidebyside, trace, token)
+    const root = t !== Transaction.running
+    t.guard()
+    let result: any = t.do<T>(trace, func, ...args)
     if (root) {
       if (result instanceof Promise)
         result = Transaction.outside(() => {
-          return a.wrapToRetry(a.postponed(result), func, ...args)
+          return t.wrapToRetry(t.postponed(result), func, ...args)
         })
-      a.seal()
+      t.seal()
     }
     return result
   }
