@@ -61,14 +61,14 @@ export class Snapshot implements Context {
 
   tryRead(h: Handle): Record {
     let r: Record | undefined = h.changing
-    if (r && r.creator !== this) {
+    if (r && r.snapshot !== this) {
       r = this.changeset.get(h)
       if (r)
         h.changing = r // remember last changing record
     }
     if (!r) {
       r = h.head
-      while (r !== BLANK && r.creator.timestamp > this.timestamp)
+      while (r !== BLANK && r.snapshot.timestamp > this.timestamp)
         r = r.prev.record
     }
     return r
@@ -77,7 +77,7 @@ export class Snapshot implements Context {
   write(h: Handle, field: FieldKey, value: any, token?: any): Record {
     let r: Record = this.tryRead(h)
     this.guard(h, r, field, value, token)
-    if (r.creator !== this) {
+    if (r.snapshot !== this) {
       const data = {...r.data}
       Reflect.set(data, HANDLE, h)
       r = new Record(this, h.head, data)
@@ -91,7 +91,7 @@ export class Snapshot implements Context {
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.applied)
       throw misuse(`stateful property ${Hints.handle(h, field)} can only be modified inside actions`)
-    if (value !== HANDLE && this.caching !== undefined && token !== this.caching && (r.creator !== this || r.prev.record !== BLANK))
+    if (value !== HANDLE && this.caching !== undefined && token !== this.caching && (r.snapshot !== this || r.prev.record !== BLANK))
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, field)}`)
     if (r === BLANK && value !== HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hints.record(r, field)} doesn't exist in snapshot v${this.stamp}`)
@@ -274,7 +274,7 @@ export class Hints {
 
   static record(r: Record, field?: FieldKey, typeless?: boolean): string {
     const h = Utils.get<Handle | undefined>(r.data, HANDLE)
-    return Hints.handle(h, field, r.creator.timestamp, r.creator.id, typeless)
+    return Hints.handle(h, field, r.snapshot.timestamp, r.snapshot.id, typeless)
   }
 
   static conflicts(conflicts: Record[]): string {

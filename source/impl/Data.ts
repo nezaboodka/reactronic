@@ -11,6 +11,7 @@ export interface Context {
   readonly id: number
   readonly hint: string
   readonly timestamp: number
+  readonly applied: boolean
 }
 
 // Field
@@ -34,14 +35,14 @@ export class FieldValue {
 // Record
 
 export class Record {
-  readonly creator: Context
+  readonly snapshot: Context
   readonly prev: { record: Record }
   readonly data: any
   readonly changes: Set<FieldKey>
   readonly conflicts: Map<FieldKey, Record>
 
   constructor(creator: Context, prev: Record | undefined, data: object) {
-    this.creator = creator
+    this.snapshot = creator
     this.prev = { record: prev || this } // loopback if prev is undefined
     this.data = data
     this.changes = new Set<FieldKey>()

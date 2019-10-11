@@ -26,7 +26,7 @@ export class CacheImpl extends Cache<any> {
   get args(): ReadonlyArray<any> { return this.weak().cache.args }
   get value(): any { return this.tryCall(true).cache.value }
   get error(): boolean { return this.weak().cache.error }
-  get stamp(): number { return this.weak().record.creator.timestamp }
+  get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().valid }
   invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hints.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
   call(args?: any[]): any { return this.tryCall(true, args).cache.value }
@@ -79,7 +79,7 @@ export class CacheImpl extends Cache<any> {
         return call2.cache.ret
       }, args)
       call2.cache.ret = ret
-      if (!weak && Snapshot.readable().timestamp >= call2.cache.record.creator.timestamp)
+      if (!weak && Snapshot.readable().timestamp >= call2.cache.record.snapshot.timestamp)
         call = call2
     }
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished() ? "" : "║", " (=)", `${Hints.record(call.record)}.${call.cache.field.toString()} result is reused from T${call.cache.worker.id} ${call.cache.worker.hint}`)
@@ -98,7 +98,7 @@ export class CacheImpl extends Cache<any> {
     const r: Record = ctx.tryRead(this.handle)
     const c: CacheResult = r.data[this.blank.field] || this.initialize()
     const valid = c.options.kind !== Kind.Action &&
-      (ctx === c.record.creator || ctx.timestamp < c.invalid.since) &&
+      (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[UNMOUNT] !== undefined
     return { valid, cache: c, record: r }
@@ -116,7 +116,7 @@ export class CacheImpl extends Cache<any> {
       if (!renewing.error)
         c.invalid.renewing = renewing
       c = renewing
-      ctx.bump(r.prev.record.creator.timestamp)
+      ctx.bump(r.prev.record.snapshot.timestamp)
       Snapshot.markChanged(r, field, renewing, true)
     }
     return { valid: true, cache: c, record: r }
@@ -392,7 +392,7 @@ class CacheResult extends FieldValue implements Observer {
     const c: CacheResult | undefined = CacheResult.active // alias
     if (c && c.options.kind !== Kind.Action && field !== HANDLE) {
       const ctx = Snapshot.readable()
-      ctx.bump(record.creator.timestamp)
+      ctx.bump(record.snapshot.timestamp)
       const t = weak ? -1 : ctx.timestamp
       if (!c.subscribeToFieldValue(weak, record, field, value, t))
         c.invalidateDueTo(value, {record, field, times: 0}, ctx.timestamp, ctx.triggers)
