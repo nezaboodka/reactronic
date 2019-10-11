@@ -469,20 +469,19 @@ class CacheResult extends Observable implements Observer {
     if (result && timestamp !== -1)
       result = !(value instanceof CacheResult && timestamp >= value.invalid.since)
     if (result) {
-      // Observables
+      // Performance tracking
       let times: number = 0
       if (Hooks.performanceWarningThreshold > 0) {
         const existing = this.observables.get(value)
         times = existing ? existing.times + 1 : 1
       }
-      // Observers
-      if (!value.observers) // acquire
+      // Acquire observers
+      if (!value.observers)
         value.observers = new Set<CacheResult>()
       // Two-way linking
       const hint: FieldHint = {record, field, times}
       value.observers.add(this)
       this.observables.set(value, hint)
-      // if (Dbg.isOn && Dbg.trace.reads) Dbg.log("║", `  r `, `${c.hint()} ${weak ? 'uses (weakly)' : 'uses'} ${Hint.record(record, field)} - ${times} time(s)`)
       if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, "║", "  ∞ ", `${Hints.record(this.record, this.field)} is subscribed to ${Hints.record(hint.record, hint.field, true)}${hint.times > 1 ? ` (${hint.times} times)` : ""}`)
       if (hint.times > Hooks.performanceWarningThreshold) Dbg.log("█", " ███", `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} time(s)`, 0, " *** WARNING ***")
     }
