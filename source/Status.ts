@@ -5,7 +5,6 @@
 
 import { Stateful } from './impl/Hooks'
 import { StatusImpl } from './impl/Status-impl'
-import { Worker } from './Action'
 
 export abstract class Status extends Stateful {
   abstract readonly busy: boolean
@@ -18,4 +17,9 @@ export abstract class Status extends Stateful {
   abstract leave(worker: Worker): void
 
   static create(hint?: string, delayBeforeIdle?: number): Status { return StatusImpl.create(hint, delayBeforeIdle) }
+}
+
+export interface Worker {
+  readonly id: number
+  readonly hint: string
 }

@@ -5,8 +5,8 @@
 
 import { misuse } from '../util/Dbg'
 import { Hint } from './Hint'
-import { Action, Worker } from '../Action'
-import { Status } from '../Status'
+import { Action } from '../Action'
+import { Status, Worker } from '../Status'
 
 export class StatusImpl extends Status {
   busy: boolean = false

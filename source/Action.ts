@@ -6,11 +6,7 @@
 import { F } from './util/Utils'
 import { Trace } from './Trace'
 import { ActionImpl } from './impl/Action-impl'
-
-export interface Worker {
-  readonly id: number
-  readonly hint: string
-}
+import { Worker } from './Status'
 
 export abstract class Action implements Worker {
   static get current(): Action { return ActionImpl.current }

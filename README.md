@@ -254,10 +254,15 @@ enum Reentrance {
 class Status {
   readonly busy: boolean
   readonly workerCount: number
-  readonly workers: ReadonlySet<Action>
+  readonly workers: ReadonlySet<Worker>
   readonly animationFrameCount: number
   readonly delayBeforeIdle?: number // milliseconds
   static create(hint?: string, delayBeforeIdle?: number): Status
+}
+
+interface Worker {
+  readonly id: number
+  readonly hint: string
 }
 
 interface Trace {
