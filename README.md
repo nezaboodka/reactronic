@@ -253,8 +253,8 @@ enum Reentrance {
 
 class Status {
   readonly busy: boolean
-  readonly actionCount: number
-  readonly actions: ReadonlySet<Action>
+  readonly workerCount: number
+  readonly workers: ReadonlySet<Action>
   readonly animationFrameCount: number
   readonly prolongAtLeastFor?: number // milliseconds
   static create(hint?: string, prolongAtLeastFor?: number): Status
