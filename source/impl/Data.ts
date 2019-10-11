@@ -14,15 +14,7 @@ export interface Context {
   readonly applied: boolean
 }
 
-// Field
-
-export type FieldKey = PropertyKey
-
-export interface FieldHint {
-  readonly times: number
-  readonly record: Record
-  readonly field: FieldKey
-}
+// Observables & Observer
 
 export class Observable {
   value: any
@@ -32,7 +24,22 @@ export class Observable {
   constructor(value: any) { this.value = value }
 }
 
+export interface Observer {
+  hint(notran?: boolean): string
+  readonly invalid: { since: number }
+  invalidateDueTo(cause: Observable, hint: FieldHint, since: number, triggers: Observer[]): void
+  trig(timestamp: number, now: boolean, nothrow: boolean): void
+}
+
 // Record
+
+export type FieldKey = PropertyKey
+
+export interface FieldHint {
+  readonly times: number
+  readonly record: Record
+  readonly field: FieldKey
+}
 
 export class Record {
   readonly snapshot: Context
@@ -79,13 +86,4 @@ export class Handle {
     this.writers = 0
     this.hint = hint
   }
-}
-
-// Observer
-
-export interface Observer {
-  hint(notran?: boolean): string
-  readonly invalid: { since: number }
-  invalidateDueTo(cause: Observable, hint: FieldHint, since: number, triggers: Observer[]): void
-  trig(timestamp: number, now: boolean, nothrow: boolean): void
 }
