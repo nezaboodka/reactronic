@@ -6,7 +6,7 @@
 import test from 'ava'
 import { Action, Cache, Tools as RT, Kind, cacheof, nonreactive, standalone } from '../source/.index'
 import { Person, tracing, nop } from './model/common'
-import { Demo, DemoView, output, StatefulDemoModelBase } from './model/basic'
+import { Demo, DemoView, output } from './model/basic'
 
 const expected: string[] = [
   "Filter: Jo",
@@ -31,9 +31,6 @@ test("All", t => {
   // Simple actions
   const app = Action.run("app", () => new DemoView(new Demo()))
   try {
-    t.is(app.model.methodOfStatefulBase(), "methodOfStatefulBase")
-    t.throws(() => app.model.cacheWithSideEffect(), "cache must have no side effects: #21 Demo.cacheWithSideEffect should not change v104t114#21 Demo.title")
-    t.throws(() => console.log(app.model.unassigned), "unassigned properties are not supported: v103t113#21 Demo.unassigned is used by T1 (<none>)")
     t.notThrows(() => DemoView.test())
     t.assert(app.model.title.startsWith("demo -")) // check that Demo.normalizeTitle works
     const rendering = cacheof(app.render)
@@ -129,19 +126,13 @@ test("All", t => {
     }), "test")
     t.throws(() => action3.apply(),
       "cannot apply action that is already canceled: Error: test")
-    // Testing in-action caching
-    Action.run("in-action caching", () => {
-      const m = new StatefulDemoModelBase()
-      t.assert(m !== undefined)
-      // t.is(m.methodOfStatefulBase(), "methodOfStatefulBase")
-    })
     // Other
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)
     t.is(RT.getTraceHint(app), "DemoView")
     RT.setTraceHint(app, "App")
     t.is(RT.getTraceHint(app), "App")
-    t.deepEqual(Object.getOwnPropertyNames(app.model), [/*"shared",*/ "title", "users"])
+    t.deepEqual(Object.getOwnPropertyNames(app.model), ["text", /*"shared",*/ "title", "users"])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
   }
   finally { // cleanup
