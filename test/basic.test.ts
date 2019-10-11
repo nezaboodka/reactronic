@@ -5,8 +5,8 @@
 
 import test from 'ava'
 import { Action, Cache, Tools as RT, Kind, cacheof, nonreactive, standalone } from '../source/.index'
-import { Person, tracing, nop } from './common'
-import { DemoModel, DemoView, output, StatefulDemoModelBase } from './basic'
+import { Person, tracing, nop } from './model/common'
+import { DemoModel, DemoView, output, StatefulDemoModelBase } from './model/basic'
 
 const expected: string[] = [
   "Filter: Jo",
