@@ -322,7 +322,7 @@ abstract class Cache<T> {
 
   setup(options: Partial<Options>): Options
   invalidate(): boolean
-  receive(args?: any[]): T | undefined
+  pullValue(args?: any[]): T | undefined
 
   static of<T>(method: F<T>): Cache<T>
   static unmount(...objects: any[]): Action
