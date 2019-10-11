@@ -22,7 +22,7 @@ export class Stateful {
   constructor() {
     const h = Hooks.createHandle(true, this, undefined, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
-      const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(new.target.prototype)[R_TRIGGERS]
+      const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(new.target.prototype)[CLASS_TRIGGERS]
       if (triggers)
         triggers.forEach((rx, field) =>
           (h.proxy[field][CACHE] as Cache<any>).invalidate())
@@ -49,9 +49,9 @@ export function options(options: Partial<Options>): F<any> {
 
 // Options
 
-const R_TABLE: unique symbol = Symbol("R:TABLE")
-const R_CLASS: unique symbol = Symbol("R:CLASS")
-const R_TRIGGERS: unique symbol = Symbol("R:TRIGGERS")
+const OPTIONS_TABLE: unique symbol = Symbol("R:TABLE")
+const CLASS_OPTIONS: unique symbol = Symbol("R:CLASS")
+const CLASS_TRIGGERS: unique symbol = Symbol("R:TRIGGERS")
 
 const BLANK_TABLE = Object.freeze({})
 const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
@@ -180,7 +180,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClass(implicit: boolean, options: Partial<Options>, origCtor: any): any {
     let ctor: any = origCtor
     const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-    const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[R_TRIGGERS]
+    const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[CLASS_TRIGGERS]
     if (stateful) {
       ctor = class extends origCtor {
         constructor(...args: any[]) {
@@ -195,7 +195,7 @@ export class Hooks implements ProxyHandler<Handle> {
           return h.proxy
         }
       }
-      Hooks.setup(ctor.prototype, R_CLASS, decoratedclass, options, implicit)
+      Hooks.setup(ctor.prototype, CLASS_OPTIONS, decoratedclass, options, implicit)
     }
     return ctor
   }
@@ -204,7 +204,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClassOld(implicit: boolean, options: Partial<Options>, origCtor: any): any {
     let ctor: any = origCtor
     const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-    const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[R_TRIGGERS]
+    const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[CLASS_TRIGGERS]
     if (stateful) {
       ctor = function(this: any, ...args: any[]): any {
         const stateless = new origCtor(...args)
@@ -221,7 +221,7 @@ export class Hooks implements ProxyHandler<Handle> {
       Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)) // preserve prototype
       Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)) // preserve static definitions
     }
-    Hooks.setup(ctor.prototype, R_CLASS, decoratedclass, options, implicit)
+    Hooks.setup(ctor.prototype, CLASS_OPTIONS, decoratedclass, options, implicit)
     return ctor
   }
 
@@ -248,7 +248,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const methodOptions = Hooks.setup(proto, method, pd.value, options, implicit)
     const get = function(this: any): any {
       const p = Object.getPrototypeOf(this)
-      const classOptions: OptionsImpl = Hooks.getOptions(p, R_CLASS) || (this instanceof Stateful ? OptionsImpl.STATEFUL : OptionsImpl.STATELESS)
+      const classOptions: OptionsImpl = Hooks.getOptions(p, CLASS_OPTIONS) || (this instanceof Stateful ? OptionsImpl.STATEFUL : OptionsImpl.STATELESS)
       const h: Handle = classOptions.kind !== Kind.Stateless ? Utils.get<Handle>(this, HANDLE) : Hooks.acquireHandle(this)
       const value = Hooks.createCacheTrap(h, method, methodOptions)
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
@@ -266,13 +266,13 @@ export class Hooks implements ProxyHandler<Handle> {
     const existing: OptionsImpl = optionsTable[field] || OptionsImpl.STATELESS
     const result = optionsTable[field] = new OptionsImpl(body, existing, options, implicit)
     if (result.kind === Kind.Trigger && result.delay > -2) {
-      let triggers: Map<FieldKey, OptionsImpl> | undefined = optionsTable[R_TRIGGERS]
+      let triggers: Map<FieldKey, OptionsImpl> | undefined = optionsTable[CLASS_TRIGGERS]
       if (!triggers)
-        triggers = optionsTable[R_TRIGGERS] = new Map<FieldKey, OptionsImpl>()
+        triggers = optionsTable[CLASS_TRIGGERS] = new Map<FieldKey, OptionsImpl>()
       triggers.set(field, result)
     }
     else if (existing.kind === Kind.Trigger && result.delay > -2) {
-      const triggers: Map<FieldKey, OptionsImpl> | undefined = optionsTable[R_TRIGGERS]
+      const triggers: Map<FieldKey, OptionsImpl> | undefined = optionsTable[CLASS_TRIGGERS]
       if (triggers)
         triggers.delete(field)
     }
@@ -280,16 +280,16 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   private static acquireOptionsTable(proto: any): any {
-    let optionsTable: any = proto[R_TABLE]
-    if (!proto.hasOwnProperty(R_TABLE)) {
+    let optionsTable: any = proto[OPTIONS_TABLE]
+    if (!proto.hasOwnProperty(OPTIONS_TABLE)) {
       optionsTable = Object.setPrototypeOf({}, optionsTable || {})
-      Utils.set(proto, R_TABLE, optionsTable)
+      Utils.set(proto, OPTIONS_TABLE, optionsTable)
     }
     return optionsTable
   }
 
   static getOptionsTable(proto: any): any {
-    return proto[R_TABLE] || /* istanbul ignore next */ BLANK_TABLE
+    return proto[OPTIONS_TABLE] || /* istanbul ignore next */ BLANK_TABLE
   }
 
   static acquireHandle(obj: any): Handle {
