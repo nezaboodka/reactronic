@@ -33,8 +33,8 @@ test("async", async t => {
       "stateful property #23 DemoView.test can only be modified inside actions")
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
-    t.is(loading.actionCount, 3)
-    t.is(loading.actions.size, 3)
+    t.is(loading.workerCount, 3)
+    t.is(loading.workers.size, 3)
     await all(responses)
   }
   catch (error) { /* istanbul ignore next */
@@ -42,8 +42,8 @@ test("async", async t => {
     if (RT.isTraceOn && !RT.trace.silent) console.log(error.toString())
   }
   finally {
-    t.is(loading.actionCount, 0)
-    t.is(loading.actions.size, 0)
+    t.is(loading.workerCount, 0)
+    t.is(loading.workers.size, 0)
     await sleep(400)
     await Cache.unmount(app, app.model).whenFinished(true)
   } /* istanbul ignore next */

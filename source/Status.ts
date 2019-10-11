@@ -9,8 +9,8 @@ import { Action } from './Action'
 
 export abstract class Status extends Stateful {
   abstract readonly busy: boolean
-  abstract readonly actionCount: number
-  abstract readonly actions: ReadonlySet<Action>
+  abstract readonly workerCount: number
+  abstract readonly workers: ReadonlySet<Action>
   abstract readonly animationFrameCount: number
   abstract readonly prolongAtLeastFor?: number // milliseconds
 

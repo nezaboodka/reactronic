@@ -10,31 +10,31 @@ import { Status } from '../Status'
 
 export class StatusImpl extends Status {
   busy: boolean = false
-  actionCount: number = 0
-  actions = new Set<Action>()
+  workerCount: number = 0
+  workers = new Set<Action>()
   animationFrameCount: number = 0
   prolongAtLeastFor?: number = undefined // milliseconds
   private timeout: any = undefined
 
   enter(action: Action): void {
     this.timeout = clear(this.timeout) // yes, on each enter
-    if (this.actionCount === 0)
+    if (this.workerCount === 0)
       this.busy = true
-    this.actionCount++
-    this.actions.add(action)
+    this.workerCount++
+    this.workers.add(action)
   }
 
   leave(action: Action): void {
-    this.actions.delete(action)
-    this.actionCount--
-    if (this.actionCount === 0)
+    this.workers.delete(action)
+    this.workerCount--
+    if (this.workerCount === 0)
       this.reset(false)
   }
 
   private reset(now: boolean): void {
     if (now || this.prolongAtLeastFor === undefined) {
-      if (this.actionCount > 0 || this.actions.size > 0) /* istanbul ignore next */
-        throw misuse("cannot reset status having active actions")
+      if (this.workerCount > 0 || this.workers.size > 0) /* istanbul ignore next */
+        throw misuse("cannot reset status having active workers")
       this.busy = false
       this.timeout = clear(this.timeout)
       this.animationFrameCount = 0
