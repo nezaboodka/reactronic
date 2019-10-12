@@ -7,7 +7,7 @@ import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Hints } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
-import { CacheImpl } from './impl/CacheImpl'
+import { Method } from './impl/Method'
 import { Action, Cache, Status, Kind, Reentrance, Trace } from './.index'
 
 export class Tools {
@@ -35,11 +35,11 @@ export function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined 
 }
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return CacheImpl.runAs<T>(undefined, func, ...args)
+  return Method.runAs<T>(undefined, func, ...args)
 }
 
 export function standalone<T>(func: F<T>, ...args: any[]): T {
-  return CacheImpl.runAs<T>(undefined, Action.outside, func, ...args)
+  return Method.runAs<T>(undefined, Action.outside, func, ...args)
 }
 
 // Decorators

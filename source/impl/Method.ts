@@ -17,7 +17,7 @@ import { Cache } from '../Cache'
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 type CacheCall = { reusable: boolean, cache: CacheResult, record: Record, context: Snapshot }
 
-export class CacheImpl extends Cache<any> {
+export class Method extends Cache<any> {
   private readonly handle: Handle
   private readonly blank: CacheResult
 
@@ -28,7 +28,7 @@ export class CacheImpl extends Cache<any> {
   get error(): boolean { return this.weak().cache.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reusable }
-  invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hints.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", CacheImpl.doInvalidate, this) }
+  invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hints.handle(this.handle, this.blank.field)}).invalidate` : "Cache.invalidate", Method.doInvalidate, this) }
   pullValue(args?: any[]): any { return this.call(true, args).cache.value }
 
   constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
@@ -118,7 +118,7 @@ export class CacheImpl extends Cache<any> {
     if (c.record !== r) {
       const renewing = new CacheResult(r, field, c)
       r.data[field] = renewing
-      renewing.error = CacheImpl.checkForReentrance(c)
+      renewing.error = Method.checkForReentrance(c)
       if (!renewing.error)
         c.invalid.renewing = renewing
       c = renewing
@@ -151,7 +151,7 @@ export class CacheImpl extends Cache<any> {
     return result
   }
 
-  static doInvalidate(self: CacheImpl): void {
+  static doInvalidate(self: Method): void {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c = call.cache
@@ -191,7 +191,7 @@ export class CacheImpl extends Cache<any> {
   }
 
   static createCacheTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
-    const cache = new CacheImpl(h, field, options)
+    const cache = new Method(h, field, options)
     const cacheTrap: F<any> = (...args: any[]): any =>
       cache.call(false, args).cache.ret
     Utils.set(cacheTrap, CACHE, cache)
@@ -207,7 +207,7 @@ export class CacheImpl extends Cache<any> {
 
   static unmount(...objects: any[]): Transaction {
     return Transaction.runEx("<unmount>", false, false,
-      undefined, undefined, CacheImpl.doUnmount, ...objects)
+      undefined, undefined, Method.doUnmount, ...objects)
   }
 
   private static doUnmount(...objects: any[]): Transaction {
@@ -267,7 +267,7 @@ class CacheResult extends Observable implements Observer {
   bind<T>(func: F<T>): F<T> {
     const fCacheRun: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "‾\\", `${Hints.record(this.record)}.${this.field.toString()} - step in  `, 0, "        │")
-      const result = CacheImpl.runAs<T>(this, func, ...args)
+      const result = Method.runAs<T>(this, func, ...args)
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, "║", "_/", `${Hints.record(this.record)}.${this.field.toString()} - step out `, 0, this.started > 0 ? "        │" : "")
       return result
     }
@@ -279,7 +279,7 @@ class CacheResult extends Observable implements Observer {
       this.args = args
     this.invalid.since = TOP_TIMESTAMP
     if (!this.error)
-      CacheImpl.runAs<void>(this, CacheResult.doCompute, proxy, this)
+      Method.runAs<void>(this, CacheResult.doCompute, proxy, this)
     else
       this.ret = Promise.reject(this.error)
   }
@@ -332,7 +332,7 @@ class CacheResult extends Observable implements Observer {
   }
 
   private statusEnter(mon: Status): void {
-    CacheImpl.runAs<void>(undefined, Transaction.runEx, "Status.enter",
+    Method.runAs<void>(undefined, Transaction.runEx, "Status.enter",
       true, false, Dbg.isOn && Dbg.trace.status ? undefined : Dbg.global, undefined,
       StatusImpl.enter, mon, this)
   }
@@ -340,7 +340,7 @@ class CacheResult extends Observable implements Observer {
   private statusLeave(mon: Status): void {
     Transaction.outside<void>(() => {
       const leave = (): void => {
-        CacheImpl.runAs<void>(undefined, Transaction.runEx, "Status.leave",
+        Method.runAs<void>(undefined, Transaction.runEx, "Status.leave",
           true, false, Dbg.isOn && Dbg.trace.status ? undefined : Dbg.global, undefined,
           StatusImpl.leave, mon, this)
       }
@@ -362,7 +362,7 @@ class CacheResult extends Observable implements Observer {
         try {
           const proxy: any = Utils.get<Handle>(this.record.data, HANDLE).proxy
           const trap: Function = Reflect.get(proxy, this.field, proxy)
-          const cache = Utils.get<CacheImpl>(trap, CACHE)
+          const cache = Utils.get<Method>(trap, CACHE)
           const call: CacheCall = cache.call(false, undefined)
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }) // bad idea to hide an error
@@ -533,7 +533,7 @@ class CacheResult extends Observable implements Observer {
     Snapshot.isConflicting = CacheResult.isConflicting // override
     Snapshot.propagateChanges = CacheResult.propagateChanges // override
     Snapshot.discardChanges = CacheResult.discardChanges // override
-    Hooks.createCacheTrap = CacheImpl.createCacheTrap // override
+    Hooks.createCacheTrap = Method.createCacheTrap // override
     Promise.prototype.then = fReactronicThen // override
   }
 }
