@@ -20,7 +20,6 @@ export class Demo extends Stateful {
 
   @cached
   cachedTitle(): string {
-    // return 'Demo'
     return this.title
   }
 
