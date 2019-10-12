@@ -184,8 +184,7 @@ export class Transaction extends Action {
       if (this.after !== Transaction.none) {
         if (this.after) {
           // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
-          if (this.after !== this)
-            await this.after.whenFinished(true)
+          await this.after.whenFinished(true)
           // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           return Transaction.runEx<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
         }
