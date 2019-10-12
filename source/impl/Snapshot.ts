@@ -55,7 +55,7 @@ export class Snapshot implements Context {
 
   read(h: Handle): Record {
     const r = this.tryRead(h)
-    if (r === BLANK) /* istanbul ignore next */
+    if (r === INIT) /* istanbul ignore next */
       throw misuse(`object ${Hints.handle(h)} doesn't exist in snapshot v${this.stamp}`)
     return r
   }
@@ -69,7 +69,7 @@ export class Snapshot implements Context {
     }
     if (!r) {
       r = h.head
-      while (r !== BLANK && r.snapshot.timestamp > this.timestamp)
+      while (r !== INIT && r.snapshot.timestamp > this.timestamp)
         r = r.prev.record
     }
     return r
@@ -92,9 +92,9 @@ export class Snapshot implements Context {
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.applied)
       throw misuse(`stateful property ${Hints.handle(h, field)} can only be modified inside actions`)
-    if (value !== HANDLE && this.caching !== undefined && token !== this.caching && (r.snapshot !== this || r.prev.record !== BLANK))
+    if (value !== HANDLE && this.caching !== undefined && token !== this.caching && (r.snapshot !== this || r.prev.record !== INIT))
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, field)}`)
-    if (r === BLANK && value !== HANDLE) /* istanbul ignore next */
+    if (r === INIT && value !== HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hints.record(r, field)} doesn't exist in snapshot v${this.stamp}`)
   }
 
@@ -199,7 +199,7 @@ export class Snapshot implements Context {
   // static undo(s: Snapshot): void {
   //   s.changeset.forEach((r: Record, h: Handle) => {
   //     r.changes.forEach(field => {
-  //       if (r.prev.record !== Record.blank) {
+  //       if (r.prev.record !== INIT) {
   //         const prevValue: any = r.prev.record.data[field];
   //         const ctx = Snapshot.write();
   //         const t: Record = ctx.write(h, field, prevValue);
@@ -232,8 +232,8 @@ export class Snapshot implements Context {
   private unlinkHistory(): void {
     if (Dbg.isOn && Dbg.trace.gc) Dbg.log('', ' Ɵ', `Dismiss history of v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== BLANK) Dbg.log('', '   · ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
-      r.prev.record = BLANK // unlink history
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== INIT) Dbg.log('', '   · ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
+      r.prev.record = INIT // unlink history
     })
   }
 
@@ -266,7 +266,7 @@ export class Hints {
 
   static handle(h: Handle | undefined, field?: FieldKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const obj = h === undefined
-      ? 'blank'
+      ? 'initial'
       : (typeless
         ? (stamp === undefined ? `#${h.id}` : `v${stamp}t${tran}#${h.id}`)
         : (stamp === undefined ? `#${h.id} ${h.hint}` : `v${stamp}t${tran}#${h.id} ${h.hint}`))
@@ -293,5 +293,5 @@ export class Hints {
   }
 }
 
-export const BLANK = new Record(Snapshot.init, undefined, {})
-BLANK.freeze()
+export const INIT = new Record(Snapshot.init, undefined, {})
+INIT.freeze()

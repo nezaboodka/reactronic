@@ -6,7 +6,7 @@
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, FieldKey, Observable, FieldHint, Observer, Handle } from './Data'
-import { Snapshot, Hints, BLANK, HANDLE, CACHE, UNMOUNT } from './Snapshot'
+import { Snapshot, Hints, INIT, HANDLE, CACHE, UNMOUNT } from './Snapshot'
 import { Transaction } from './Transaction'
 import { StatusImpl } from './StatusImpl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -19,7 +19,7 @@ type Call = { reusable: boolean, cache: CacheResult, record: Record, context: Sn
 
 export class Method extends Cache<any> {
   private readonly handle: Handle
-  private readonly blank: CacheResult
+  private readonly initial: CacheResult
 
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().cache.options }
@@ -28,27 +28,27 @@ export class Method extends Cache<any> {
   get error(): boolean { return this.weak().cache.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reusable }
-  invalidate(): void { Transaction.run(Dbg.isOn ? `cacheof(${Hints.handle(this.handle, this.blank.field)}).invalidate` : 'Cache.invalidate', Method.doInvalidate, this) }
+  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.initial.field)})` : 'Cache.invalidate', Method.doInvalidate, this) }
   pullValue(args?: any[]): any { return this.call(true, args).cache.value }
 
   constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
     super()
     this.handle = handle
-    this.blank = new CacheResult(BLANK, field, options)
-    CacheResult.freeze(this.blank)
+    this.initial = new CacheResult(INIT, field, options)
+    CacheResult.freeze(this.initial)
   }
 
   private initialize(): CacheResult {
-    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.blank.field.toString()}/init` : /* istanbul ignore next */ 'Cache.init'
-    const sidebyside = this.blank.options.reentrance === Reentrance.RunSideBySide
-    const result = Transaction.runEx<CacheResult>(hint, true, sidebyside, this.blank.options.trace, this, (): CacheResult => {
+    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.initial.field.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
+    const sidebyside = this.initial.options.reentrance === Reentrance.RunSideBySide
+    const result = Transaction.runEx<CacheResult>(hint, true, sidebyside, this.initial.options.trace, this, (): CacheResult => {
       const c = this.write().cache
       c.ret = undefined
       c.value = undefined
       c.invalid.since = -1
       return c
     })
-    this.blank.invalid.renewing = undefined
+    this.initial.invalid.renewing = undefined
     return result
   }
 
@@ -74,7 +74,7 @@ export class Method extends Cache<any> {
   }
 
   recompute(call: Call, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
-    if (Dbg.isOn && Dbg.trace.invalidations) Dbg.log(spawn ? ' ' : '║', ' ■■■', `${Hints.record(call.record, call.cache.field)}${call.cache.invalid.hint ? `   <<   ${invalidationChain(call.cache.invalid.hint, 0).join('   <<   ')}` : ''}`)
+    // if (Dbg.isOn && Dbg.trace.invalidations) Dbg.log(spawn ? ' ' : '║', ' ■■■', `${Hints.record(call.record, call.cache.field)}${call.cache.invalid.hint ? `   <<   ${invalidationChain(call.cache.invalid.hint, 0).join('   <<   ')}` : ''}`)
     // TODO: Cleaner implementation is needed
     let call2 = call
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
@@ -104,7 +104,7 @@ export class Method extends Cache<any> {
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
-    const c: CacheResult = r.data[this.blank.field] || this.initialize()
+    const c: CacheResult = r.data[this.initial.field] || this.initialize()
     const reusable = c.options.kind !== Kind.Action &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
@@ -114,9 +114,9 @@ export class Method extends Cache<any> {
 
   private write(): Call {
     const ctx = Snapshot.writable()
-    const field = this.blank.field
+    const field = this.initial.field
     const r: Record = ctx.write(this.handle, field, HANDLE, this)
-    let c: CacheResult = r.data[field] || this.blank
+    let c: CacheResult = r.data[field] || this.initial
     if (c.record !== r) {
       const renewing = new CacheResult(r, field, c)
       r.data[field] = renewing
@@ -157,14 +157,14 @@ export class Method extends Cache<any> {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c = call.cache
-    c.invalidateDueTo(c, {record: BLANK, field: c.field, times: 0}, ctx.timestamp, ctx.triggers)
+    c.invalidateDueTo(c, {record: INIT, field: c.field, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
   private reconfigure(options: Partial<Options>): Options {
     const call = this.read(undefined)
     const c: CacheResult = call.cache
     const r: Record = call.record
-    const hint: string = Dbg.isOn ? `cacheof(${Hints.handle(this.handle)}.${this.blank.field.toString()}).setup()` : /* istanbul ignore next */ 'Cache.setup()'
+    const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle)}.${this.initial.field.toString()})` : /* istanbul ignore next */ 'Cache.setup()'
     return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
       const c2: CacheResult = call2.cache
@@ -507,7 +507,7 @@ class CacheResult extends Observable implements Observer {
         this.invalid.since = since
         this.unsubscribeFromAll()
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
-        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', isTrigger ? '■' : '□', isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()}   <<   ${Hints.record(hint.record, hint.field)} (invalidated since v${since}${isTrigger ? ' and will run automatically)' : ')'}`)
+        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', isTrigger ? '■' : '□', isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()}   <<   ${Hints.record(hint.record, hint.field)}   (invalidated since v${since}${isTrigger ? ' and will run automatically)' : ')'}`)
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
         else if (this.observers) // cascade invalidation

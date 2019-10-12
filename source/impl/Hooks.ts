@@ -9,7 +9,7 @@ import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, FieldKey, Observable, Handle } from './Data'
-import { Snapshot, Hints, BLANK, HANDLE, CACHE, UNMOUNT } from './Snapshot'
+import { Snapshot, Hints, INIT, HANDLE, CACHE, UNMOUNT } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Status } from '../Status'
 import { Cache } from '../Cache'
@@ -296,7 +296,7 @@ export class Hooks implements ProxyHandler<Handle> {
       throw misuse('only objects can be reactive')
     let h = Utils.get<Handle>(obj, HANDLE)
     if (!h) {
-      h = new Handle(obj, obj, Hooks.proxy, BLANK, obj.constructor.name)
+      h = new Handle(obj, obj, Hooks.proxy, INIT, obj.constructor.name)
       Utils.set(obj, HANDLE, h)
       Hooks.decorateField(false, {kind: Kind.Stateful}, obj, UNMOUNT)
     }
@@ -304,13 +304,13 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   static createHandle(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
-    const h = new Handle(stateless, proxy, Hooks.proxy, BLANK, hint)
+    const h = new Handle(stateless, proxy, Hooks.proxy, INIT, hint)
     Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
     return h
   }
 
   static createHandleByDecoratedClass(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
-    const h = new Handle(stateless, proxy, Hooks.proxy, BLANK, hint)
+    const h = new Handle(stateless, proxy, Hooks.proxy, INIT, hint)
     const r = Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
     initRecordData(h, stateful, stateless, r)
     return h
