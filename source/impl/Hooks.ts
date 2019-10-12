@@ -48,9 +48,9 @@ export function options(options: Partial<Options>): F<any> {
 
 // Options
 
-const OPTIONS_TABLE: unique symbol = Symbol("R:TABLE")
-const CLASS_OPTIONS: unique symbol = Symbol("R:CLASS")
-const CLASS_TRIGGERS: unique symbol = Symbol("R:TRIGGERS")
+const OPTIONS_TABLE: unique symbol = Symbol('R:TABLE')
+const CLASS_OPTIONS: unique symbol = Symbol('R:CLASS')
+const CLASS_TRIGGERS: unique symbol = Symbol('R:TRIGGERS')
 
 const BLANK_TABLE = Object.freeze({})
 const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
@@ -170,7 +170,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const result = []
     for (const field of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[field]
-      if (typeof(value) !== "object" || value.constructor.name !== "CacheResult")
+      if (typeof(value) !== 'object' || value.constructor.name !== 'CacheResult')
         result.push(field)
     }
     return result
@@ -293,7 +293,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static acquireHandle(obj: any): Handle {
     if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
-      throw misuse("only objects can be reactive")
+      throw misuse('only objects can be reactive')
     let h = Utils.get<Handle>(obj, HANDLE)
     if (!h) {
       h = new Handle(obj, obj, Hooks.proxy, BLANK, obj.constructor.name)
@@ -305,26 +305,26 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static createHandle(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
     const h = new Handle(stateless, proxy, Hooks.proxy, BLANK, hint)
-    Snapshot.writable().write(h, "<RT:HANDLE>", HANDLE)
+    Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
     return h
   }
 
   static createHandleByDecoratedClass(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
     const h = new Handle(stateless, proxy, Hooks.proxy, BLANK, hint)
-    const r = Snapshot.writable().write(h, "<RT:HANDLE>", HANDLE)
+    const r = Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
     initRecordData(h, stateful, stateless, r)
     return h
   }
 
   /* istanbul ignore next */
   static createCacheTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
-    throw misuse("createCacheTrap should never be called")
+    throw misuse('createCacheTrap should never be called')
   }
 }
 
 function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Record): void {
   const optionsTable = Hooks.getOptionsTable(Object.getPrototypeOf(stateless))
-  const r = Snapshot.writable().write(h, "<RT:HANDLE>", HANDLE)
+  const r = Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
   for (const field of Object.getOwnPropertyNames(stateless))
     initRecordField(stateful, optionsTable, field, r, stateless)
   for (const field of Object.getOwnPropertySymbols(stateless)) /* istanbul ignore next */
@@ -341,12 +341,12 @@ function initRecordField(stateful: boolean, optionsTable: any, field: FieldKey, 
 
 /* istanbul ignore next */
 function decoratedfield(...args: any[]): never {
-  throw misuse("decoratedfield should never be called")
+  throw misuse('decoratedfield should never be called')
 }
 
 /* istanbul ignore next */
 function decoratedclass(...args: any[]): never {
-  throw misuse("decoratedclass should never be called")
+  throw misuse('decoratedclass should never be called')
 }
 
 export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {

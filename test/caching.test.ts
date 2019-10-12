@@ -7,40 +7,35 @@ import test from 'ava'
 import { Stateful, cached, Action, Tools as RT, trace, trigger } from '../source/.index'
 import { tracing } from './common'
 
-export class DemoBase extends Stateful {
-  text: string = 'baseMethod'
-  unassigned?: any // for testing purposes
+export class Demo extends Stateful {
+  title: string = 'title'
+  unassigned?: any
 
   @cached @trace({})
-  baseMethod(): string {
-    return 'baseMethod'
-    // return this.text
+  cachedTitle(): string {
+    return 'title'
+    // return this.title
   }
-}
-
-
-export class Demo extends DemoBase {
-  title: string = "title"
 
   @cached
   produceSideEffect(): void {
-    this.title = "should fail on this line"
+    this.title = 'should fail on this line'
   }
 
   @trigger
   changeAfterRead(): void {
-    if (this.title === "title")
-      this.title = "updated title"
+    if (this.title === 'title')
+      this.title = 'updated title'
   }
 }
 
-test("Main", t => {
+test('Main', t => {
   RT.setTrace(tracing.noisy)
-  const demo = Action.run("caching", () => {
+  const demo = Action.run('caching', () => {
     const d = new Demo()
-    t.is(d.baseMethod(), "baseMethod")
+    t.is(d.cachedTitle(), 'title')
     return d
   })
-  t.throws(() => demo.produceSideEffect(), "cache must have no side effects: #21 Demo.produceSideEffect should not change v103t108#21 Demo.title")
-  t.throws(() => console.log(demo.unassigned), "unassigned properties are not supported: v103t107#21 Demo.unassigned is used by T1 (<none>)")
+  t.throws(() => demo.produceSideEffect(), 'cache must have no side effects: #21 Demo.produceSideEffect should not change v103t108#21 Demo.title')
+  t.throws(() => console.log(demo.unassigned), 'unassigned properties are not supported: v103t107#21 Demo.unassigned is used by T1 (<none>)')
 })

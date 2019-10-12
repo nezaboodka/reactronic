@@ -8,33 +8,33 @@ import { Action, Cache, Reentrance, Tools as RT, cacheof, all, sleep } from '../
 import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
-  { url: "nezaboodka.com", delay: 100 },
-  { url: "google.com", delay: 300 },
-  { url: "microsoft.com", delay: 200 },
+  { url: 'nezaboodka.com', delay: 100 },
+  { url: 'google.com', delay: 300 },
+  { url: 'microsoft.com', delay: 200 },
 ]
 
 const expected: string[] = [
-  "Url: reactronic",
-  "Log: RTA",
-  "[...] Url: reactronic",
-  "[...] Log: RTA",
-  "[...] Url: nezaboodka.com",
-  "[...] Log: RTA, nezaboodka.com/100",
-  "[...] Url: microsoft.com",
-  "[...] Log: RTA, microsoft.com/200",
-  "[...] Url: google.com",
-  "[...] Log: RTA, google.com/300",
-  "Url: google.com",
-  "Log: RTA, google.com/300",
+  'Url: reactronic',
+  'Log: RTA',
+  '[...] Url: reactronic',
+  '[...] Log: RTA',
+  '[...] Url: nezaboodka.com',
+  '[...] Log: RTA, nezaboodka.com/100',
+  '[...] Url: microsoft.com',
+  '[...] Log: RTA, microsoft.com/200',
+  '[...] Url: google.com',
+  '[...] Log: RTA, google.com/300',
+  'Url: google.com',
+  'Log: RTA, google.com/300',
 ]
 
-test("Reentrance.RunSideBySide", async t => {
+test('Reentrance.RunSideBySide', async t => {
   RT.setTrace(tracing.noisy)
-  const app = Action.run("app", () => new AsyncDemoView(new AsyncDemo()))
+  const app = Action.run('app', () => new AsyncDemoView(new AsyncDemo()))
   cacheof(app.model.load).setup({reentrance: Reentrance.RunSideBySide})
   try {
-    t.throws(() => { app.test = "testing @stateful for fields" },
-      "stateful property #23 AsyncDemoView.test can only be modified inside actions")
+    t.throws(() => { app.test = 'testing @stateful for fields' },
+      'stateful property #23 AsyncDemoView.test can only be modified inside actions')
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
     t.is(loading.workerCount, 3)

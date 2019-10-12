@@ -8,8 +8,8 @@ import { Stateful, stateless, action, trigger, cached, cachedArgs, Tools as RT }
 export const output: string[] = []
 
 export class Demo extends Stateful {
-  @stateless shared: string = "for testing purposes"
-  title: string = "Demo"
+  @stateless shared: string = 'for testing purposes'
+  title: string = 'Demo'
   users: Person[] = []
 
   @action
@@ -26,28 +26,28 @@ export class Demo extends Stateful {
 
   private _loadUsers(): void {
     this.users.push(new Person({
-      name: "John", age: 38,
-      emails: ["john@mail.com"],
+      name: 'John', age: 38,
+      emails: ['john@mail.com'],
       children: [
-        new Person({ name: "Billy" }), // William
-        new Person({ name: "Barry" }), // Barry
-        new Person({ name: "Steve" }), // Steven
+        new Person({ name: 'Billy' }), // William
+        new Person({ name: 'Barry' }), // Barry
+        new Person({ name: 'Steve' }), // Steven
       ],
     }))
     this.users.push(new Person({
-      name: "Kevin", age: 27,
-      emails: ["kevin@mail.com"],
+      name: 'Kevin', age: 27,
+      emails: ['kevin@mail.com'],
       children: [
-        new Person({ name: "Britney" }),
+        new Person({ name: 'Britney' }),
       ],
     }))
   }
 }
 
 export class DemoView extends Stateful {
-  @stateless shared: string = "for testing purposes"
+  @stateless shared: string = 'for testing purposes'
   @stateless readonly model: Demo
-  userFilter: string = "Jo"
+  userFilter: string = 'Jo'
 
   constructor(model: Demo) {
     super()
@@ -89,7 +89,7 @@ export class DemoView extends Stateful {
     const a = this.filteredUsers()
     for (const x of a) {
       const childNames = x.children.map(child => child.name)
-      r.push(`${x.name}'s children: ${childNames.join(", ")}`)
+      r.push(`${x.name}'s children: ${childNames.join(', ')}`)
     }
     return r
   }
@@ -129,7 +129,7 @@ export class Person extends Stateful {
         if (i >= 0)
           a.splice(i, 1)
         else
-          throw new Error("invariant is broken, please restart the application")
+          throw new Error('invariant is broken, please restart the application')
       }
       if (value) { // add to children of a new parent
         value._children.push(this)

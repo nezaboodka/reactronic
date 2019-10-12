@@ -39,7 +39,7 @@ class Rx extends Stateful {
 }
 
 function createReactState(): ReactState {
-  return {rx: Action.run<Rx>("<rx>", createRx)}
+  return {rx: Action.run<Rx>('<rx>', createRx)}
 }
 
 function createRx(): Rx {

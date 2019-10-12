@@ -8,25 +8,25 @@ import { Action, Cache, Reentrance, Tools as RT, cacheof, resolved, sleep } from
 import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
-  { url: "nezaboodka.com", delay: 500 },
-  { url: "google.com", delay: 300 },
-  { url: "microsoft.com", delay: 200 },
+  { url: 'nezaboodka.com', delay: 500 },
+  { url: 'google.com', delay: 300 },
+  { url: 'microsoft.com', delay: 200 },
 ]
 
 const expected: string[] = [
-  "Url: reactronic",
-  "Log: RTA",
-  "[...] Url: reactronic",
-  "[...] Log: RTA",
-  "[...] Url: nezaboodka.com",
-  "[...] Log: RTA, nezaboodka.com/500",
-  "Url: nezaboodka.com",
-  "Log: RTA, nezaboodka.com/500",
+  'Url: reactronic',
+  'Log: RTA',
+  '[...] Url: reactronic',
+  '[...] Log: RTA',
+  '[...] Url: nezaboodka.com',
+  '[...] Log: RTA, nezaboodka.com/500',
+  'Url: nezaboodka.com',
+  'Log: RTA, nezaboodka.com/500',
 ]
 
-test("Reentrance.PreventWithError", async t => {
+test('Reentrance.PreventWithError', async t => {
   RT.setTrace(tracing.noisy)
-  const app = Action.run("app", () => new AsyncDemoView(new AsyncDemo()))
+  const app = Action.run('app', () => new AsyncDemoView(new AsyncDemo()))
   cacheof(app.model.load).setup({reentrance: Reentrance.PreventWithError})
   try {
     await app.print() // trigger first run

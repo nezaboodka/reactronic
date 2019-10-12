@@ -8,37 +8,37 @@ import { Action, Cache, Reentrance, Tools as RT, cacheof, all, sleep } from '../
 import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
-  { url: "google.com", delay: 300 },
-  { url: "microsoft.com", delay: 200 },
-  { url: "nezaboodka.com", delay: 500 },
+  { url: 'google.com', delay: 300 },
+  { url: 'microsoft.com', delay: 200 },
+  { url: 'nezaboodka.com', delay: 500 },
 ]
 
 const expected: string[] = [
-  "Url: reactronic",
-  "Log: RTA",
-  "[...] Url: reactronic",
-  "[...] Log: RTA",
-  "[...] Url: google.com",
-  "[...] Log: RTA, google.com/300",
-  "Url: google.com",
-  "Log: RTA, google.com/300",
-  "[...] Url: google.com",
-  "[...] Log: RTA, google.com/300",
-  "[...] Url: microsoft.com",
-  "[...] Log: RTA, google.com/300, microsoft.com/200",
-  "Url: microsoft.com",
-  "Log: RTA, google.com/300, microsoft.com/200",
-  "[...] Url: microsoft.com",
-  "[...] Log: RTA, google.com/300, microsoft.com/200",
-  "[...] Url: nezaboodka.com",
-  "[...] Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500",
-  "Url: nezaboodka.com",
-  "Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500",
+  'Url: reactronic',
+  'Log: RTA',
+  '[...] Url: reactronic',
+  '[...] Log: RTA',
+  '[...] Url: google.com',
+  '[...] Log: RTA, google.com/300',
+  'Url: google.com',
+  'Log: RTA, google.com/300',
+  '[...] Url: google.com',
+  '[...] Log: RTA, google.com/300',
+  '[...] Url: microsoft.com',
+  '[...] Log: RTA, google.com/300, microsoft.com/200',
+  'Url: microsoft.com',
+  'Log: RTA, google.com/300, microsoft.com/200',
+  '[...] Url: microsoft.com',
+  '[...] Log: RTA, google.com/300, microsoft.com/200',
+  '[...] Url: nezaboodka.com',
+  '[...] Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500',
+  'Url: nezaboodka.com',
+  'Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500',
 ]
 
-test("Reentrance.WaitAndRestart", async t => {
+test('Reentrance.WaitAndRestart', async t => {
   RT.setTrace(tracing.noisy)
-  const app = Action.run("app", () => new AsyncDemoView(new AsyncDemo()))
+  const app = Action.run('app', () => new AsyncDemoView(new AsyncDemo()))
   cacheof(app.model.load).setup({reentrance: Reentrance.WaitAndRestart})
   try {
     await app.print() // trigger first run
@@ -58,10 +58,10 @@ test("Reentrance.WaitAndRestart", async t => {
     await Cache.unmount(app, app.model).whenFinished(true)
   } /* istanbul ignore next */
   if (!RT.trace.silent) {
-    console.log("\nResults:\n")
+    console.log('\nResults:\n')
     for (const x of output)
       console.log(x)
-    console.log("\n")
+    console.log('\n')
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */

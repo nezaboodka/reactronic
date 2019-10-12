@@ -8,12 +8,12 @@ import { stateful, action, trigger, cached, cachedArgs, delay, status,
 export { tracing } from './common'
 
 export const output: string[] = []
-export const loading = Status.create("loading", 0)
+export const loading = Status.create('loading', 0)
 
 @stateful
 export class AsyncDemo {
-  url: string = "reactronic"
-  log: string[] = ["RTA"]
+  url: string = 'reactronic'
+  log: string[] = ['RTA']
 
   @action @status(loading) @reentrance(Reentrance.PreventWithError)
   async load(url: string, delay: number): Promise<void> {
@@ -39,9 +39,9 @@ export class AsyncDemoView {
   @cached @cachedArgs(false)
   async render(): Promise<string[]> {
     const result: string[] = []
-    result.push(`${loading.busy ? "[...] " : ""}Url: ${this.model.url}`)
+    result.push(`${loading.busy ? '[...] ' : ''}Url: ${this.model.url}`)
     await sleep(10)
-    result.push(`${loading.busy ? "[...] " : ""}Log: ${this.model.log.join(", ")}`)
+    result.push(`${loading.busy ? '[...] ' : ''}Log: ${this.model.log.join(', ')}`)
     return result
   }
 }

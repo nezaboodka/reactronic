@@ -8,8 +8,8 @@ import { Stateful, action, cached, trigger, cacheof } from '.index'
 
 class Model extends Stateful {
   // state
-  url: string = "https://nezaboodka.com"
-  content: string = ""
+  url: string = 'https://nezaboodka.com'
+  content: string = ''
   timestamp: number = Date.now()
 
   @action

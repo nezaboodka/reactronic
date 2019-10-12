@@ -34,19 +34,19 @@ export class StatusImpl extends Status {
   private idle(now: boolean): void {
     if (now || this.delayBeforeIdle === undefined) {
       if (this.workerCount > 0 || this.workers.size > 0) /* istanbul ignore next */
-        throw misuse("cannot reset status having active workers")
+        throw misuse('cannot reset status having active workers')
       this.busy = false
       this.timeout = clear(this.timeout)
       this.animationFrameCount = 0
     }
     else
       this.timeout = setTimeout(() =>
-        Transaction.runEx<void>("Status.idle", true, false,
+        Transaction.runEx<void>('Status.idle', true, false,
           undefined, undefined, StatusImpl.idle, this, true), this.delayBeforeIdle)
   }
 
   static create(hint?: string, prolonged?: number): StatusImpl {
-    return Transaction.run("Status.create", StatusImpl.doCreate, hint, prolonged)
+    return Transaction.run('Status.create', StatusImpl.doCreate, hint, prolonged)
   }
 
   private static doCreate(hint?: string, delayBeforeIdle?: number): StatusImpl {

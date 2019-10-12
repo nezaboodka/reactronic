@@ -18,9 +18,9 @@ export class Utils {
   static freezeSet<T>(obj?: Set<T>): void {
     if (obj instanceof Set) {
       const pd = { configurable: false, enumerable: false, get: undef, set: undef }
-      Object.defineProperty(obj, "add", pd)
-      Object.defineProperty(obj, "delete", pd)
-      Object.defineProperty(obj, "clear", pd)
+      Object.defineProperty(obj, 'add', pd)
+      Object.defineProperty(obj, 'delete', pd)
+      Object.defineProperty(obj, 'clear', pd)
       Object.freeze(obj)
     }
   }
@@ -28,9 +28,9 @@ export class Utils {
   static freezeMap<K, V>(obj?: Map<K, V>): void {
     if (obj instanceof Map) {
       const pd = { configurable: false, enumerable: false, get: undef, set: undef }
-      Object.defineProperty(obj, "set", pd)
-      Object.defineProperty(obj, "delete", pd)
-      Object.defineProperty(obj, "clear", pd)
+      Object.defineProperty(obj, 'set', pd)
+      Object.defineProperty(obj, 'delete', pd)
+      Object.defineProperty(obj, 'clear', pd)
       Object.freeze(obj)
     }
   }
@@ -46,7 +46,7 @@ export class Utils {
 
 /* istanbul ignore next */
 export function undef(...args: any[]): never {
-  throw new Error("this method should never be called")
+  throw new Error('this method should never be called')
 }
 
 /* istanbul ignore next */

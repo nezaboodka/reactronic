@@ -6,12 +6,12 @@
 import { Trace } from '../Trace'
 
 export function error(message: string, cause: Error | undefined): Error {
-  if (Dbg.isOn && Dbg.trace.errors) Dbg.log("█", "███", message, undefined, " *** ERROR ***")
+  if (Dbg.isOn && Dbg.trace.errors) Dbg.log('█', '███', message, undefined, ' *** ERROR ***')
   return new Error(message)
 }
 
 export function misuse(message: string): Error {
-  Dbg.log("", "", message, undefined, " *** ERROR ***")
+  Dbg.log('', '', message, undefined, ' *** ERROR ***')
   return new Error(message)
 }
 
@@ -33,7 +33,7 @@ export class Dbg {
     invalidations: false,
     gc: false,
     color: 37,
-    prefix: "",
+    prefix: '',
     margin1: 0,
     margin2: 0,
   }
@@ -49,13 +49,13 @@ export class Dbg {
 
   static logAs(trace: Partial<Trace> | undefined, operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
     const t = Dbg.getCurrentTrace(trace)
-    const margin1: string = "  ".repeat(t.margin1 >= 0 ? t.margin1 : 0)
-    const margin2: string = "  ".repeat(t.margin2)
+    const margin1: string = '  '.repeat(t.margin1 >= 0 ? t.margin1 : 0)
+    const margin2: string = '  '.repeat(t.margin2)
     const silent = (trace && trace.silent !== undefined) ? trace.silent : t.silent
     if (!silent) /* istanbul ignore next */
-      console.log("\x1b[37m%s\x1b[0m \x1b[" + t.color + "m%s %s%s\x1b[0m \x1b[" + t.color + "m%s%s\x1b[0m \x1b[" + t.color + "m%s\x1b[0m%s",
-        "#rt", t.prefix, margin1, operation, margin2, marker, message,
-        (highlight !== undefined ? `${highlight}` : ``) + (ms > 2 ? `    [ ${ms}ms ]` : ``))
+      console.log('\x1b[37m%s\x1b[0m \x1b[' + t.color + 'm%s %s%s\x1b[0m \x1b[' + t.color + 'm%s%s\x1b[0m \x1b[' + t.color + 'm%s\x1b[0m%s',
+        '#rt', t.prefix, margin1, operation, margin2, marker, message,
+        (highlight !== undefined ? `${highlight}` : '') + (ms > 2 ? `    [ ${ms}ms ]` : ''))
   }
 
   static merge(t: Partial<Trace> | undefined, color: number | undefined, prefix: string | undefined, existing: Trace): Trace {

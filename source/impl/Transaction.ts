@@ -12,7 +12,7 @@ import { Action } from '../Action'
 import { Trace } from '../Options'
 
 export class Transaction extends Action {
-  private static readonly none: Transaction = new Transaction("<none>")
+  private static readonly none: Transaction = new Transaction('<none>')
   private static running: Transaction = Transaction.none
   private static inspection: boolean = false
 
@@ -58,7 +58,7 @@ export class Transaction extends Action {
     const restore = Transaction.inspection
     try {
       Transaction.inspection = true
-      if (Dbg.isOn && Dbg.trace.actions) Dbg.log("", "  ", `action T${this.id} (${this.hint}) is being inspected by T${Transaction.running.id} (${Transaction.running.hint})`)
+      if (Dbg.isOn && Dbg.trace.actions) Dbg.log('', '  ', `action T${this.id} (${this.hint}) is being inspected by T${Transaction.running.id} (${Transaction.running.hint})`)
       return this.do(undefined, func, ...args)
     }
     finally {
@@ -68,7 +68,7 @@ export class Transaction extends Action {
 
   apply(): void {
     if (this.workers > 0)
-      throw misuse("cannot apply action having active actions")
+      throw misuse('cannot apply action having active actions')
     if (this.error)
       throw misuse(`cannot apply action that is already canceled: ${this.error}`)
     this.seal() // apply immediately, because pending === 0
@@ -156,7 +156,7 @@ export class Transaction extends Action {
     if (this.error) // prevent from continuing canceled action
       throw error(this.error.message, this.error)
     if (this.sealed && Transaction.running !== this)
-      throw misuse("cannot run action that is already sealed")
+      throw misuse('cannot run action that is already sealed')
   }
 
   private async wrapToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T | undefined> {
@@ -221,7 +221,7 @@ export class Transaction extends Action {
   }
 
   private runTriggers(): void {
-    const hint = Dbg.isOn ? `■-■-■ TRIGGERS(${this.snapshot.triggers.length}) after T${this.id} (${this.snapshot.hint})` : /* istanbul ignore next */ "TRIGGERS"
+    const hint = Dbg.isOn ? `■-■-■ TRIGGERS(${this.snapshot.triggers.length}) after T${this.id} (${this.snapshot.hint})` : /* istanbul ignore next */ 'TRIGGERS'
     this.reaction.tran = Transaction.runEx(hint, true, false, this.trace, undefined,
       Transaction.doRunTriggers, this.snapshot.triggers)
   }
@@ -237,7 +237,7 @@ export class Transaction extends Action {
       t.error = error
       t.waiting = retryAfter
       Snapshot.discardChanges(t.snapshot)
-      if (Dbg.isOn && Dbg.trace.errors && retryAfter === undefined) Dbg.log("║", "███", `${error.message}`, undefined, " *** ERROR ***")
+      if (Dbg.isOn && Dbg.trace.errors && retryAfter === undefined) Dbg.log('║', '███', `${error.message}`, undefined, ' *** ERROR ***')
     }
     t.sealed = true
   }
@@ -252,7 +252,7 @@ export class Transaction extends Action {
     if (!this.sidebyside)
       throw error(`action T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
     else if (Dbg.isOn && Dbg.trace.warnings)
-      Dbg.log("║", "  · ", `conflict is ignored - action T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
+      Dbg.log('║', '  · ', `conflict is ignored - action T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
   }
 
   private finish(): void {
@@ -284,7 +284,7 @@ export class Transaction extends Action {
 
   private static writableSnapshot(): Snapshot {
     if (Transaction.inspection)
-      throw misuse("cannot make changes during action inspection")
+      throw misuse('cannot make changes during action inspection')
     return Transaction.running.snapshot
   }
 
