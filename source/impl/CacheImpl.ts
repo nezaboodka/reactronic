@@ -494,8 +494,8 @@ class CacheResult extends Observable implements Observer {
   }
 
   invalidateDueTo(cause: Observable, hint: FieldHint, since: number, triggers: Observer[]): boolean {
-    const result = this.record !== hint.record &&
-      (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0)
+    const result = (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) &&
+      (hint.record.snapshot !== this.record.snapshot || !hint.record.changes.has(hint.field))
     if (result) {
       this.invalid.since = since
       const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
