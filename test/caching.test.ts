@@ -37,10 +37,9 @@ export class Demo extends DemoBase {
 test("Main", t => {
   RT.setTrace(tracing.noisy)
   const demo = Action.run("caching", () => {
-    const m = new Demo()
-    t.is(m.baseMethod(), "baseMethod")
-    // t.is(m.methodOfStatefulBase(), "methodOfStatefulBase")
-    return m
+    const d = new Demo()
+    t.is(d.baseMethod(), "baseMethod")
+    return d
   })
   t.throws(() => demo.produceSideEffect(), "cache must have no side effects: #21 Demo.produceSideEffect should not change v103t108#21 Demo.title")
   t.throws(() => console.log(demo.unassigned), "unassigned properties are not supported: v103t107#21 Demo.unassigned is used by T1 (<none>)")
