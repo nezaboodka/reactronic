@@ -28,7 +28,7 @@ export interface Observer {
   hint(notran?: boolean): string
   readonly invalid: { since: number }
   invalidateDueTo(hint: FieldHint, since: number, triggers: Observer[]): void
-  trig(timestamp: number, now: boolean, nothrow: boolean): void
+  validate(timestamp: number, now: boolean, nothrow: boolean): void
 }
 
 // Record

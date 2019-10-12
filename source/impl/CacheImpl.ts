@@ -354,7 +354,7 @@ class CacheResult extends Observable implements Observer {
       prev.invalid.renewing = undefined
   }
 
-  trig(timestamp: number, now: boolean, nothrow: boolean): void {
+  validate(timestamp: number, now: boolean, nothrow: boolean): void {
     const delay = this.options.delay
     if (now || delay === -1) {
       if (!this.error && (this.options.kind === Kind.Action ||
@@ -376,7 +376,7 @@ class CacheResult extends Observable implements Observer {
     else if (delay === 0)
       this.addToAsyncTriggerBatch()
     else if (delay > 0) // ignore disabled triggers (delay -2)
-      setTimeout(() => this.trig(TOP_TIMESTAMP, true, true), delay)
+      setTimeout(() => this.validate(TOP_TIMESTAMP, true, true), delay)
   }
 
   private addToAsyncTriggerBatch(): void {
@@ -389,7 +389,7 @@ class CacheResult extends Observable implements Observer {
     const triggers = CacheResult.asyncTriggerBatch
     CacheResult.asyncTriggerBatch = [] // reset
     for (const t of triggers)
-      t.trig(TOP_TIMESTAMP, true, true)
+      t.validate(TOP_TIMESTAMP, true, true)
   }
 
   private static markViewed(record: Record, field: FieldKey, value: Observable, weak: boolean): void {

@@ -228,7 +228,7 @@ export class Transaction extends Action {
 
   private static doRunTriggers(triggers: Observer[]): Transaction {
     const timestamp = Transaction.current.snapshot.timestamp
-    triggers.map(t => t.trig(timestamp, false, false))
+    triggers.map(t => t.validate(timestamp, false, false))
     return Transaction.current
   }
 
