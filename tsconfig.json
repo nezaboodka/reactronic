@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     // General
-    "pretty": false, // true causes PROBLEMS panel not recognizing errors in output
+    "pretty": true,
     "watch": false,
     "listFiles": true,
     "inlineSources": false,
-    "removeComments": false,
+    "removeComments": true,
     // Targets & outputs
     "target": "es6",
     "module": "commonjs",
