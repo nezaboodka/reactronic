@@ -23,12 +23,12 @@ export class Demo extends DemoBase {
   title: string = "title"
 
   @cached
-  cacheWithSideEffect(): void {
+  produceSideEffect(): void {
     this.title = "should fail on this line"
   }
 
   @trigger
-  noSelfInvalidation(): void {
+  changeAfterRead(): void {
     if (this.title === "title")
       this.title = "updated title"
   }
@@ -42,6 +42,6 @@ test("Main", t => {
     // t.is(m.methodOfStatefulBase(), "methodOfStatefulBase")
     return m
   })
-  t.throws(() => demo.cacheWithSideEffect(), "cache must have no side effects: #21 Demo.cacheWithSideEffect should not change v103t108#21 Demo.title")
+  t.throws(() => demo.produceSideEffect(), "cache must have no side effects: #21 Demo.cacheWithSideEffect should not change v103t108#21 Demo.title")
   t.throws(() => console.log(demo.unassigned), "unassigned properties are not supported: v103t107#21 Demo.unassigned is used by T1 (<none>)")
 })
