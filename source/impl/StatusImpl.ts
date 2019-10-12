@@ -28,10 +28,10 @@ export class StatusImpl extends Status {
     this.workers.delete(worker)
     this.workerCount--
     if (this.workerCount === 0)
-      this.reset(false)
+      this.idle(false)
   }
 
-  private reset(now: boolean): void {
+  private idle(now: boolean): void {
     if (now || this.delayBeforeIdle === undefined) {
       if (this.workerCount > 0 || this.workers.size > 0) /* istanbul ignore next */
         throw misuse("cannot reset status having active workers")
@@ -41,8 +41,8 @@ export class StatusImpl extends Status {
     }
     else
       this.timeout = setTimeout(() =>
-        Transaction.runEx<void>("Status.reset", true, false,
-          undefined, undefined, StatusImpl.reset, this, true), this.delayBeforeIdle)
+        Transaction.runEx<void>("Status.idle", true, false,
+          undefined, undefined, StatusImpl.idle, this, true), this.delayBeforeIdle)
   }
 
   static create(hint?: string, prolonged?: number): StatusImpl {
@@ -64,8 +64,8 @@ export class StatusImpl extends Status {
     ind.leave(worker)
   }
 
-  static reset(ind: StatusImpl, now: boolean): void {
-    ind.reset(now)
+  static idle(ind: StatusImpl, now: boolean): void {
+    ind.idle(now)
   }
 }
 
