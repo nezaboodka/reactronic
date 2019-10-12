@@ -15,7 +15,7 @@ import { Status, Worker } from '../Status'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-type CacheCall = { reusable: boolean, cache: CacheResult, record: Record }
+type CacheCall = { reusable: boolean, cache: CacheResult, record: Record, context: Snapshot }
 
 export class CacheImpl extends Cache<any> {
   private readonly handle: Handle
@@ -42,7 +42,7 @@ export class CacheImpl extends Cache<any> {
     const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.blank.field.toString()}/init` : /* istanbul ignore next */ "Cache.init"
     const sidebyside = this.blank.options.reentrance === Reentrance.RunSideBySide
     const result = Transaction.runEx<CacheResult>(hint, true, sidebyside, this.blank.options.trace, this, (): CacheResult => {
-      const c = this.write(Snapshot.writable()).cache
+      const c = this.write().cache
       c.ret = undefined
       c.value = undefined
       c.invalid.since = -1
@@ -53,8 +53,8 @@ export class CacheImpl extends Cache<any> {
   }
 
   call(weak: boolean, args: any[] | undefined): CacheCall {
-    const ctx = Snapshot.readable()
-    let call: CacheCall = this.read(ctx, args)
+    let call: CacheCall = this.read(args)
+    const ctx = call.context
     const c: CacheResult = call.cache
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"
@@ -77,14 +77,14 @@ export class CacheImpl extends Cache<any> {
     let call2 = call
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
       if (call2.cache.worker.isCanceled) {
-        call2 = this.read(Snapshot.readable(), argsx) // re-read on retry
+        call2 = this.read(argsx) // re-read on retry
         if (!call2.reusable) {
-          call2 = this.write(Snapshot.writable())
+          call2 = this.write()
           call2.cache.compute(this.handle.proxy, argsx)
         }
       }
       else {
-        call2 = this.write(Snapshot.writable())
+        call2 = this.write()
         call2.cache.compute(this.handle.proxy, argsx)
       }
       return call2.cache.ret
@@ -94,24 +94,24 @@ export class CacheImpl extends Cache<any> {
   }
 
   private weak(): CacheCall {
-    const call = this.read(Snapshot.readable(), undefined)
+    const call = this.read(undefined)
     Snapshot.markViewed(call.record, call.cache.field, call.cache, true)
     return call
   }
 
-  private read(ctx: Snapshot, args: any[] | undefined): CacheCall {
-    // const ctx = Snapshot.readable()
+  private read(args: any[] | undefined): CacheCall {
+    const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
     const c: CacheResult = r.data[this.blank.field] || this.initialize()
     const reusable = c.options.kind !== Kind.Action &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[UNMOUNT] !== undefined
-    return { reusable, cache: c, record: r }
+    return { reusable, cache: c, record: r, context: ctx }
   }
 
-  private write(ctx: Snapshot): CacheCall {
-    // const ctx = Snapshot.writable()
+  private write(): CacheCall {
+    const ctx = Snapshot.writable()
     const field = this.blank.field
     const r: Record = ctx.write(this.handle, field, HANDLE, this)
     let c: CacheResult = r.data[field] || this.blank
@@ -125,7 +125,7 @@ export class CacheImpl extends Cache<any> {
       ctx.bump(r.prev.record.snapshot.timestamp)
       Snapshot.markChanged(r, field, renewing, true)
     }
-    return { reusable: true, cache: c, record: r }
+    return { reusable: true, cache: c, record: r, context: ctx }
   }
 
   private static checkForReentrance(c: CacheResult): Error | undefined {
@@ -153,18 +153,18 @@ export class CacheImpl extends Cache<any> {
 
   static doInvalidate(self: CacheImpl): void {
     const ctx = Snapshot.readable()
-    const call = self.read(Snapshot.readable(), undefined)
+    const call = self.read(undefined)
     const c = call.cache
     c.invalidateDueTo(c, {record: BLANK, field: c.field, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
   private reconfigure(options: Partial<Options>): Options {
-    const call = this.read(Snapshot.readable(), undefined)
+    const call = this.read(undefined)
     const c: CacheResult = call.cache
     const r: Record = call.record
     const hint: string = Dbg.isOn ? `cacheof(${Hints.handle(this.handle)}.${this.blank.field.toString()}).setup()` : /* istanbul ignore next */ "Cache.setup()"
     return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
-      const call2 = this.write(Snapshot.writable())
+      const call2 = this.write()
       const c2: CacheResult = call2.cache
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
       if (Dbg.isOn && Dbg.trace.writes) Dbg.log("║", "  w ", `${Hints.record(r)}.${c.field.toString()}.options = ...`)
