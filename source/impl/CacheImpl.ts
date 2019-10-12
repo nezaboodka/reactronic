@@ -495,8 +495,9 @@ class CacheResult extends Observable implements Observer {
 
   invalidateDueTo(hint: FieldHint, value: Observable, since: number, triggers: Observer[]): void {
     if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
-      const notSelfInvalidation = hint.record.snapshot !== this.record.snapshot ||
-        !hint.record.changes.has(hint.field) || value instanceof CacheResult
+      const notSelfInvalidation = value.isComputed ||
+        hint.record.snapshot !== this.record.snapshot ||
+        !hint.record.changes.has(hint.field)
       if (notSelfInvalidation) {
         this.invalid.since = since
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
