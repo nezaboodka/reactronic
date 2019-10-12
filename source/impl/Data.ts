@@ -36,9 +36,9 @@ export interface Observer {
 export type FieldKey = PropertyKey
 
 export interface FieldHint {
-  readonly times: number
   readonly record: Record
   readonly field: FieldKey
+  readonly times: number
 }
 
 export class Record {
