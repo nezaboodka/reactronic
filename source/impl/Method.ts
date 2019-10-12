@@ -501,15 +501,15 @@ class CacheResult extends Observable implements Observer {
         !hint.record.changes.has(hint.field)
       if (notSelfInvalidation) {
         this.invalid.since = since
+        this.unsubscribeFromAll()
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
         if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', isTrigger ? '■' : '□', isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
-        this.unsubscribeFromAll()
-        if (!this.worker.isFinished)
-          this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)} and will be restarted automatically`), this.worker)
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
         else if (this.observers) // cascade invalidation
           this.observers.forEach(c => c.invalidateDueTo({record: this.record, field: this.field, times: 0}, this, since, triggers))
+        if (!this.worker.isFinished)
+          this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)}`), null)
       }
       else if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', 'x', `${this.hint()} invalidation is skipped`)
     }
