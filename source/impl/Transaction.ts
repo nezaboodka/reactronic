@@ -23,7 +23,7 @@ export class Transaction extends Action {
   private workers: number
   private sealed: boolean
   private error?: Error
-  private waiting?: Transaction
+  private after?: Transaction
   private promise?: Promise<void>
   private resolve: (value?: void) => void
   private reject: (reason: any) => void
@@ -38,7 +38,7 @@ export class Transaction extends Action {
     this.workers = 0
     this.sealed = false
     this.error = undefined
-    this.waiting = undefined
+    this.after = undefined
     this.promise = undefined
     this.resolve = undef
     this.reject = undef
@@ -58,7 +58,7 @@ export class Transaction extends Action {
     const restore = Transaction.inspection
     try {
       Transaction.inspection = true
-      if (Dbg.isOn && Dbg.trace.actions) Dbg.log('', '  ', `action T${this.id} (${this.hint}) is being inspected by T${Transaction.running.id} (${Transaction.running.hint})`)
+      if (Dbg.isOn && Dbg.trace.actions) Dbg.log('', '  ', `T${this.id} (${this.hint}) is being inspected by T${Transaction.running.id} (${Transaction.running.hint})`)
       return this.do(undefined, func, ...args)
     }
     finally {
@@ -97,19 +97,19 @@ export class Transaction extends Action {
     return transactionBoundDo
   }
 
-  static boundEnter<T>(t: Transaction, secondary: boolean): void {
+  private static boundEnter<T>(t: Transaction, secondary: boolean): void {
     if (!secondary)
       t.workers++
   }
 
-  static boundLeave<T>(t: Transaction, func: F<T>, ...args: any[]): T {
+  private static boundLeave<T>(t: Transaction, func: F<T>, ...args: any[]): T {
     t.workers--
     return func(...args)
   }
 
-  cancel(error: Error, retryAfterOrIgnore?: Worker | null): this {
+  cancel(error: Error, restartAfter?: Worker | null): this {
     this.do(undefined, Transaction.seal, this, error,
-      retryAfterOrIgnore === null ? Transaction.none : retryAfterOrIgnore)
+      restartAfter === null ? Transaction.none : restartAfter)
     return this
   }
 
@@ -176,14 +176,17 @@ export class Transaction extends Action {
   private async wrapToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T | undefined> {
     try {
       const result = await p
+      if (this.error)
+        throw this.error
       return result
     }
     catch (error) {
-      if (this.waiting !== Transaction.none) {
-        if (this.waiting) {
-          // if (Dbg.trace.actions) Dbg.log("", "  ", `action T${this.id} (${this.hint}) is waiting for restart`)
-          await this.waiting.whenFinished(true)
-          // if (Dbg.trace.actions) Dbg.log("", "  ", `action T${this.id} (${this.hint}) is ready for restart`)
+      if (this.after !== Transaction.none) {
+        if (this.after) {
+          // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
+          if (this.after !== this)
+            await this.after.whenFinished(true)
+          // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           return Transaction.runEx<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
         }
         else
@@ -213,7 +216,7 @@ export class Transaction extends Action {
       if (this.sealed && this.workers === 1) {
         if (!this.error)
           this.checkForConflicts() // merge with concurrent actions
-        else if (!this.waiting)
+        else if (!this.after)
           throw this.error
       }
     }
@@ -246,11 +249,15 @@ export class Transaction extends Action {
     return Transaction.current
   }
 
-  private static seal(t: Transaction, error?: Error, retryAfter?: Transaction): void {
+  private static seal(t: Transaction, error?: Error, after?: Transaction): void {
     if (!t.error && error) {
       t.error = error
-      t.waiting = retryAfter
-      if (Dbg.isOn && Dbg.trace.errors) Dbg.log('║', ' ███', `${error.message}`, undefined, ' *** CANCEL ***')
+      t.after = after
+      if (Dbg.isOn && Dbg.trace.errors) {
+        Dbg.log('║', ' ███', `${error.message}`, undefined, ' *** CANCEL ***')
+        if (after && after !== Transaction.none)
+          Dbg.log('║', ' ███', `will be restarted after T${after.id} (${after.hint})`)
+      }
       Snapshot.discardChanges(t.snapshot)
     }
     t.sealed = true
@@ -264,9 +271,9 @@ export class Transaction extends Action {
 
   private tryResolveConflicts(conflicts: Record[]): void {
     if (!this.sidebyside)
-      throw error(`action T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
+      throw error(`T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
     else if (Dbg.isOn && Dbg.trace.warnings)
-      Dbg.log('║', '  · ', `conflict is ignored - action T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
+      Dbg.log('║', '  · ', `conflict is ignored - T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
   }
 
   private finish(): void {
@@ -274,7 +281,7 @@ export class Transaction extends Action {
     this.snapshot.apply(this.error)
     this.snapshot.collect()
     if (this.promise) {
-      if (this.error && !this.waiting)
+      if (this.error && !this.after)
         this.reject(this.error)
       else
         this.resolve()

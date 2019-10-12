@@ -24,6 +24,6 @@ export interface Worker {
   readonly hint: string
   readonly isCanceled: boolean
   readonly isFinished: boolean
-  cancel(error: Error, retryAfterOrIgnore?: Worker | null): this
+  cancel(error: Error, restartAfter?: Worker | null): this
   whenFinished(includingReaction: boolean): Promise<void>
 }

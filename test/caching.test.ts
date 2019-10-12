@@ -20,8 +20,8 @@ export class Demo extends Stateful {
 
   @cached
   cachedTitle(): string {
-    return 'Demo'
-    // return this.title
+    // return 'Demo'
+    return this.title
   }
 
   @cached @trace({})
@@ -38,6 +38,6 @@ test('Main', t => {
     return d
   })
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
-  t.throws(() => demo.produceSideEffect(), 'cache must have no side effects: #21 Demo.produceSideEffect should not change v103t108#21 Demo.title')
-  t.throws(() => console.log(demo.unassigned), 'unassigned properties are not supported: v103t107#21 Demo.unassigned is used by T1 (<none>)')
+  t.throws(() => demo.produceSideEffect(), 'cache must have no side effects: #21 Demo.produceSideEffect should not change v103t107#21 Demo.title')
+  t.throws(() => console.log(demo.unassigned), 'unassigned properties are not supported: v103t106#21 Demo.unassigned is used by T1 (<none>)')
 })

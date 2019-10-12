@@ -59,7 +59,7 @@ export class Method extends Cache<any> {
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const cfg = c.options
-      const spawn = weak || (cfg.kind !== Kind.Action /*&& call.record.snapshot !== call.context*/)
+      const spawn = weak || (cfg.kind !== Kind.Action && call.record.snapshot !== call.context)
       const sidebyside = cfg.reentrance === Reentrance.RunSideBySide
       const token = cfg.kind === Kind.Cached ? this : undefined
       const call2 = this.recompute(call, hint, spawn, sidebyside, cfg.trace, token, args)
@@ -137,12 +137,12 @@ export class Method extends Cache<any> {
         case Reentrance.PreventWithError:
           throw misuse(`${c.hint()} is not reentrant`)
         case Reentrance.WaitAndRestart:
-          result = new Error(`action T${caller.id} (${caller.hint}) will be restarted after T${prev.worker.id} (${prev.worker.hint})`)
+          result = new Error(`T${caller.id} (${caller.hint}) will be restarted after T${prev.worker.id} (${prev.worker.hint})`)
           caller.cancel(result, prev.worker)
           // TODO: "c.invalid.renewing = caller" in order serialize all the actions
           break
         case Reentrance.CancelPrevious:
-          prev.worker.cancel(new Error(`action T${prev.worker.id} (${prev.worker.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
+          prev.worker.cancel(new Error(`T${prev.worker.id} (${prev.worker.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
           c.invalid.renewing = undefined // allow
           break
         case Reentrance.RunSideBySide:
@@ -504,7 +504,7 @@ class CacheResult extends Observable implements Observer {
         if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', isTrigger ? '■' : '□', isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
         this.unsubscribeFromAll()
         if (!this.worker.isFinished)
-          this.worker.cancel(new Error(`action T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)} and will be silently ignored`), null)
+          this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)} and will be restarted automatically`), this.worker)
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
         else if (this.observers) // cascade invalidation
