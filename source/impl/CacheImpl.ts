@@ -495,7 +495,9 @@ class CacheResult extends Observable implements Observer {
 
   invalidateDueTo(hint: FieldHint, value: Observable, since: number, triggers: Observer[]): void {
     if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
-      if (hint.record.snapshot !== this.record.snapshot || !hint.record.changes.has(hint.field) || value instanceof CacheResult) {
+      const notSelfInvalidation = hint.record.snapshot !== this.record.snapshot ||
+        !hint.record.changes.has(hint.field) || value instanceof CacheResult
+      if (notSelfInvalidation) {
         this.invalid.since = since
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
         if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
