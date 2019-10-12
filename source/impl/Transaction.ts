@@ -5,7 +5,7 @@
 
 import { undef, F } from '../util/Utils'
 import { Dbg, misuse, error } from '../util/Dbg'
-import { Record } from './Data'
+import { Record, Observer } from './Data'
 import { Snapshot, Hints } from './Snapshot'
 import { Worker } from '../Status'
 import { Action } from '../Action'
@@ -233,8 +233,14 @@ export class Transaction extends Action {
   }
 
   private runTriggers(): void {
+    const hint = Dbg.isOn ? `■-■-■ TRIGGERS(${this.snapshot.triggers.length}) after T${this.id} (${this.snapshot.hint})` : /* istanbul ignore next */ 'TRIGGERS'
+    Transaction.runEx(hint, true, false, this.trace, undefined,
+      Transaction.doRunTriggers, this.snapshot.triggers)
+  }
+
+  private static doRunTriggers(triggers: Observer[]): void {
     const timestamp = Transaction.current.snapshot.timestamp
-    this.snapshot.triggers.map(t => t.validate(timestamp, false, false))
+    triggers.map(t => t.validate(timestamp, false, false))
   }
 
   private static seal(t: Transaction, error?: Error, after?: Transaction): void {
