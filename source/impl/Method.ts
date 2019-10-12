@@ -57,7 +57,7 @@ export class Method extends Cache<any> {
     const ctx = call.context
     const c: CacheResult = call.cache
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
-      const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}${c.invalid.hint ? ` due to invalidation by ${Hints.record(c.invalid.hint.record, c.invalid.hint.field)}` : ''}` : /* istanbul ignore next */ 'Cache.run'
+      const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}${c.invalid.hint ? `   <<   ${invalidationChain(c.invalid.hint, 0).join('   <<   ')}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const cfg = c.options
       const spawn = weak || cfg.kind === Kind.Trigger ||
         (cfg.kind === Kind.Cached && call.record.snapshot !== call.context)
@@ -74,6 +74,7 @@ export class Method extends Cache<any> {
   }
 
   recompute(call: Call, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
+    if (Dbg.isOn && Dbg.trace.invalidations) Dbg.log(spawn ? ' ' : '║', ' ■■■', `${Hints.record(call.record, call.cache.field)}${call.cache.invalid.hint ? `   <<   ${invalidationChain(call.cache.invalid.hint, 0).join('   <<   ')}` : ''}`)
     // TODO: Cleaner implementation is needed
     let call2 = call
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
@@ -506,7 +507,7 @@ class CacheResult extends Observable implements Observer {
         this.invalid.since = since
         this.unsubscribeFromAll()
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
-        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', isTrigger ? '■' : '□', isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
+        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', isTrigger ? '■' : '□', isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()}   <<   ${Hints.record(hint.record, hint.field)} (invalidated since v${since}${isTrigger ? ' and will run automatically)' : ')'}`)
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
         else if (this.observers) // cascade invalidation
@@ -541,6 +542,19 @@ class CacheResult extends Observable implements Observer {
     Promise.prototype.then = fReactronicThen // override
   }
 }
+
+function invalidationChain(hint: FieldHint, since: number): string[] {
+  const result: string[] = []
+  let value: Observable = hint.record.data[hint.field]
+  while (value instanceof CacheResult && value.invalid.hint) {
+    result.push(Hints.record(hint.record, hint.field))
+    hint = value.invalid.hint
+    value = hint.record.data[hint.field]
+  }
+  result.push(Hints.record(hint.record, hint.field))
+  return result
+}
+
 
 function valueHint(value: any): string {
   let result: string = ''
