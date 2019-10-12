@@ -345,7 +345,7 @@ class CacheResult extends Observable implements Observer {
           true, false, Dbg.isOn && Dbg.trace.status ? undefined : Dbg.global, undefined,
           StatusImpl.leave, mon, this)
       }
-      this.worker.whenFinished(false).then(leave, leave)
+      this.worker.whenFinished().then(leave, leave)
     })
   }
 

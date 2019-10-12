@@ -5,7 +5,7 @@
 
 import { undef, F } from '../util/Utils'
 import { Dbg, misuse, error } from '../util/Dbg'
-import { Record, Observer } from './Data'
+import { Record } from './Data'
 import { Snapshot, Hints } from './Snapshot'
 import { Worker } from '../Status'
 import { Action } from '../Action'
@@ -27,7 +27,6 @@ export class Transaction extends Action {
   private promise?: Promise<void>
   private resolve: (value?: void) => void
   private reject: (reason: any) => void
-  private readonly reaction: { tran?: Transaction }
 
   constructor(hint: string, sidebyside: boolean = false, trace?: Partial<Trace>, token?: any) {
     super()
@@ -42,7 +41,6 @@ export class Transaction extends Action {
     this.promise = undefined
     this.resolve = undef
     this.reject = undef
-    this.reaction = { tran: undefined }
   }
 
   static get current(): Transaction { return Transaction.running }
@@ -121,11 +119,9 @@ export class Transaction extends Action {
     return this.sealed && this.workers === 0
   }
 
-  async whenFinished(includingReaction: boolean): Promise<void> {
+  async whenFinished(): Promise<void> {
     if (!this.isFinished)
       await this.acquirePromise()
-    if (includingReaction && this.reaction.tran)
-      await this.reaction.tran.whenFinished(true)
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
@@ -184,7 +180,7 @@ export class Transaction extends Action {
       if (this.after !== Transaction.none) {
         if (this.after) {
           // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
-          await this.after.whenFinished(true)
+          await this.after.whenFinished()
           // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           return Transaction.runEx<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
         }
@@ -198,7 +194,7 @@ export class Transaction extends Action {
 
   private async postponed<T>(p: Promise<T>): Promise<T> {
     const result = await p
-    await this.whenFinished(false)
+    await this.whenFinished()
     return result
   }
 
@@ -237,15 +233,8 @@ export class Transaction extends Action {
   }
 
   private runTriggers(): void {
-    const hint = Dbg.isOn ? `■-■-■ TRIGGERS(${this.snapshot.triggers.length}) after T${this.id} (${this.snapshot.hint})` : /* istanbul ignore next */ 'TRIGGERS'
-    this.reaction.tran = Transaction.runEx(hint, true, false, this.trace, undefined,
-      Transaction.doRunTriggers, this.snapshot.triggers)
-  }
-
-  private static doRunTriggers(triggers: Observer[]): Transaction {
     const timestamp = Transaction.current.snapshot.timestamp
-    triggers.map(t => t.validate(timestamp, false, false))
-    return Transaction.current
+    this.snapshot.triggers.map(t => t.validate(timestamp, false, false))
   }
 
   private static seal(t: Transaction, error?: Error, after?: Transaction): void {

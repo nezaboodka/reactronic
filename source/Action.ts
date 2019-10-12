@@ -22,7 +22,7 @@ export abstract class Action implements Worker {
   abstract cancel(error: Error, retryAfterOrIgnore?: Worker | null): this
   abstract readonly isCanceled: boolean
   abstract readonly isFinished: boolean
-  abstract async whenFinished(includingReaction: boolean): Promise<void>
+  abstract async whenFinished(): Promise<void>
 
   static create(hint: string): Action { return new Transaction(hint) }
   static run<T>(hint: string, func: F<T>, ...args: any[]): T { return Transaction.run<T>(hint, func, ...args) }

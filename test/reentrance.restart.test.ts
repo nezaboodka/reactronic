@@ -20,14 +20,6 @@ const expected: string[] = [
   '[...] Log: RTA',
   '[...] Url: google.com',
   '[...] Log: RTA, google.com/300',
-  'Url: google.com',
-  'Log: RTA, google.com/300',
-  '[...] Url: google.com',
-  '[...] Log: RTA, google.com/300',
-  '[...] Url: microsoft.com',
-  '[...] Log: RTA, google.com/300, microsoft.com/200',
-  'Url: microsoft.com',
-  'Log: RTA, google.com/300, microsoft.com/200',
   '[...] Url: microsoft.com',
   '[...] Log: RTA, google.com/300, microsoft.com/200',
   '[...] Url: nezaboodka.com',
@@ -55,7 +47,7 @@ test('Reentrance.WaitAndRestart', async t => {
     t.is(loading.workerCount, 0)
     t.is(loading.workers.size, 0)
     await sleep(400)
-    await Cache.unmount(app, app.model).whenFinished(true)
+    await Cache.unmount(app, app.model).whenFinished()
   } /* istanbul ignore next */
   if (!RT.trace.silent) {
     console.log('\nResults:\n')

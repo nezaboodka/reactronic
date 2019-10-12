@@ -49,7 +49,7 @@ test('Reentrance.RunSideBySide', async t => {
     t.is(loading.workerCount, 0)
     t.is(loading.workers.size, 0)
     await sleep(400)
-    await Cache.unmount(app, app.model).whenFinished(true)
+    await Cache.unmount(app, app.model).whenFinished()
   } /* istanbul ignore next */
   if (RT.isTraceOn && !RT.trace.silent)
     for (const x of output)

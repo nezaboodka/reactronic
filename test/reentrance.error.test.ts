@@ -46,7 +46,7 @@ test('Reentrance.PreventWithError', async t => {
     const r = resolved(app.render)
     t.is(r && r.length, 2)
     await sleep(400)
-    await Cache.unmount(app, app.model).whenFinished(true)
+    await Cache.unmount(app, app.model).whenFinished()
   } /* istanbul ignore next */
   if (RT.isTraceOn && !RT.trace.silent)
     for (const x of output)
