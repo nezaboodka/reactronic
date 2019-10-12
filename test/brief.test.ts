@@ -32,7 +32,6 @@ test('Main', t => {
   const app = Action.run('app', () => new DemoView(new Demo()))
   try {
     t.notThrows(() => DemoView.test())
-    t.assert(app.model.title.startsWith('demo -')) // check that Demo.normalizeTitle works
     const rendering = cacheof(app.render)
     t.is(rendering.invalid, false)
     t.is(rendering.args.length, 1)

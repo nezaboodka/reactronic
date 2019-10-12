@@ -17,13 +17,6 @@ export class Demo extends Stateful {
     this._loadUsers()
   }
 
-  @trigger
-  normalizeTitle(): void {
-    const stamp = new Date().toUTCString()
-    const t = this.title.toLowerCase()
-    this.title = `${t} - ${stamp}`
-  }
-
   private _loadUsers(): void {
     this.users.push(new Person({
       name: 'John', age: 38,
