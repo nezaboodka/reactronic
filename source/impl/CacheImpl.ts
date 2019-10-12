@@ -262,7 +262,7 @@ class CacheResult extends Observable implements Observer {
 
   hint(): string { return `${Hints.record(this.record, this.field)}` }
 
-  get copyOnWriteMode(): boolean { return false }
+  get isComputed(): boolean { return true }
 
   bind<T>(func: F<T>): F<T> {
     const fCacheRun: F<T> = (...args: any[]): T => {
