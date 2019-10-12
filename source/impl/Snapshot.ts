@@ -186,8 +186,7 @@ export class Snapshot implements Context {
     })
     if (Dbg.isOn && Dbg.trace.actions)
       Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
-    if (!error)
-      Snapshot.propagateChanges(this)
+    !error ? Snapshot.propagateChanges(this) : Snapshot.discardChanges(this)
   }
 
   collect(): void {
