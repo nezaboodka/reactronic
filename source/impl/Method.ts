@@ -41,7 +41,8 @@ export class Method extends Cache<any> {
   private initialize(): CacheResult {
     const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.initial.field.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
     const sidebyside = this.initial.options.reentrance === Reentrance.RunSideBySide
-    const result = Transaction.runEx<CacheResult>(hint, true, sidebyside, this.initial.options.trace, this, (): CacheResult => {
+    const token = this.initial.options.kind === Kind.Cached ? this : undefined
+    const result = Transaction.runEx<CacheResult>(hint, true, sidebyside, this.initial.options.trace, token, (): CacheResult => {
       const c = this.write().cache
       c.ret = undefined
       c.value = undefined
@@ -356,11 +357,10 @@ class CacheResult extends Observable implements Observer {
       prev.invalid.renewing = undefined
   }
 
-  validate(timestamp: number, now: boolean, nothrow: boolean): void {
+  validate(now: boolean, nothrow: boolean): void {
     const delay = this.options.delay
     if (now || delay === -1) {
-      if (!this.error && (this.options.kind === Kind.Action ||
-          (timestamp >= this.invalid.since && !this.invalid.renewing))) {
+      if (!this.error && (this.options.kind === Kind.Action || !this.invalid.renewing)) {
         try {
           const proxy: any = Utils.get<Handle>(this.record.data, HANDLE).proxy
           const trap: Function = Reflect.get(proxy, this.field, proxy)
@@ -378,7 +378,7 @@ class CacheResult extends Observable implements Observer {
     else if (delay === 0)
       this.addToAsyncTriggerBatch()
     else if (delay > 0) // ignore disabled triggers (delay -2)
-      setTimeout(() => this.validate(TOP_TIMESTAMP, true, true), delay)
+      setTimeout(() => this.validate(true, true), delay)
   }
 
   private addToAsyncTriggerBatch(): void {
@@ -391,7 +391,7 @@ class CacheResult extends Observable implements Observer {
     const triggers = CacheResult.asyncTriggerBatch
     CacheResult.asyncTriggerBatch = [] // reset
     for (const t of triggers)
-      t.validate(TOP_TIMESTAMP, true, true)
+      t.validate(true, true)
   }
 
   private static markViewed(record: Record, field: FieldKey, value: Observable, weak: boolean): void {
