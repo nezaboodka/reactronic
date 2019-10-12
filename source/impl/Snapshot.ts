@@ -149,7 +149,7 @@ export class Snapshot implements Context {
         merged[field] = ours.data[field]
         if (unmounted || field === UNMOUNT) {
           if (unmounted !== (field === UNMOUNT)) {
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, field)} <> ${Hints.record(head, field)}`, 0, ' <<< CONFLICT >>>')
+            if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, field)} <> ${Hints.record(head, field)}`, 0, ' *** CONFLICT ***')
             ours.conflicts.set(field, head)
           }
         }
@@ -157,7 +157,7 @@ export class Snapshot implements Context {
           const conflict = Snapshot.isConflicting(head.data[field], ours.prev.record.data[field])
           if (conflict)
             ours.conflicts.set(field, head)
-          if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, field)} ${conflict ? '<>' : '=='} ${Hints.record(head, field)}`, 0, conflict ? ' <<< CONFLICT >>>' : undefined)
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, field)} ${conflict ? '<>' : '=='} ${Hints.record(head, field)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
         }
       })
       Utils.copyAllFields(merged, ours.data) // overwrite with merged copy

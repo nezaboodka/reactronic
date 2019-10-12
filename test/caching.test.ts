@@ -20,7 +20,7 @@ export class Demo extends Stateful {
 
   @cached
   cachedTitle(): string {
-    return 'demo'
+    return 'Demo'
     // return this.title
   }
 
@@ -34,7 +34,7 @@ test('Main', t => {
   RT.setTrace(tracing.noisy)
   const demo = Action.run('caching', () => {
     const d = new Demo()
-    t.is(d.cachedTitle(), 'demo')
+    t.is(d.cachedTitle(), 'Demo')
     return d
   })
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works

@@ -265,13 +265,13 @@ class CacheResult extends Observable implements Observer {
   get isComputed(): boolean { return true }
 
   bind<T>(func: F<T>): F<T> {
-    const fCacheRun: F<T> = (...args: any[]): T => {
+    const doInsideCache: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.record(this.record)}.${this.field.toString()} - step in  `, 0, '        │')
       const result = Method.runAs<T>(this, func, ...args)
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record)}.${this.field.toString()} - step out `, 0, this.started > 0 ? '        │' : '')
       return result
     }
-    return fCacheRun
+    return doInsideCache
   }
 
   compute(proxy: any, args: any[] | undefined): void {

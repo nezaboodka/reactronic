@@ -84,13 +84,26 @@ export class Transaction extends Action {
     this.guard()
     const self = this
     const inspect = Transaction.inspection
-    const enter = !secondary ? function(): void { self.workers++ } : function(): void { /* nop */ }
-    const leave = function(...args: any[]): T { self.workers--; return func(...args) }
-    !inspect ? self.do(undefined, enter) : self.inspect(enter)
-    const fActionDo: F<T> = (...args: any[]): T => {
-      return !inspect ? self.do<T>(undefined, leave, ...args) : self.inspect<T>(leave, ...args)
+    if (!inspect)
+      self.run(Transaction.boundEnter, self, secondary)
+    else
+      self.inspect(Transaction.boundEnter, self, secondary)
+    const transactionBoundDo: F<T> = (...args: any[]): T => {
+      return !inspect
+        ? self.do<T>(undefined, Transaction.boundLeave, self, func, ...args)
+        : self.inspect<T>(Transaction.boundLeave, self, func, ...args)
     }
-    return fActionDo
+    return transactionBoundDo
+  }
+
+  static boundEnter<T>(t: Transaction, secondary: boolean): void {
+    if (!secondary)
+      t.workers++
+  }
+
+  static boundLeave<T>(t: Transaction, func: F<T>, ...args: any[]): T {
+    t.workers--
+    return func(...args)
   }
 
   cancel(error: Error, retryAfterOrIgnore?: Worker | null): this {
@@ -236,8 +249,8 @@ export class Transaction extends Action {
     if (!t.error && error) {
       t.error = error
       t.waiting = retryAfter
+      if (Dbg.isOn && Dbg.trace.errors) Dbg.log('║', ' ███', `${error.message}`, undefined, ' *** CANCEL ***')
       Snapshot.discardChanges(t.snapshot)
-      if (Dbg.isOn && Dbg.trace.errors && retryAfter === undefined) Dbg.log('║', '███', `${error.message}`, undefined, ' *** ERROR ***')
     }
     t.sealed = true
   }
