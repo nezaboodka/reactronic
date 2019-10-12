@@ -59,7 +59,7 @@ export class CacheImpl extends Cache<any> {
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"
       const cfg = c.options
-      const spawn = weak || cfg.kind !== Kind.Action
+      const spawn = weak || (cfg.kind !== Kind.Action /* && call.record.snapshot !== call.context */)
       const sidebyside = cfg.reentrance === Reentrance.RunSideBySide
       const token = cfg.kind === Kind.Cached ? this : undefined
       const call2 = this.recompute(call, hint, spawn, sidebyside, cfg.trace, token, args)
@@ -155,7 +155,7 @@ export class CacheImpl extends Cache<any> {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c = call.cache
-    c.invalidateDueTo({record: BLANK, field: c.field, times: 0}, ctx.timestamp, ctx.triggers)
+    c.invalidateDueTo({record: BLANK, field: c.field, times: 0}, c, ctx.timestamp, ctx.triggers)
   }
 
   private reconfigure(options: Partial<Options>): Options {
@@ -399,7 +399,7 @@ class CacheResult extends Observable implements Observer {
       ctx.bump(record.snapshot.timestamp)
       const t = weak ? -1 : ctx.timestamp
       if (!c.subscribeTo(record, field, value, t))
-        c.invalidateDueTo({record, field, times: 0}, ctx.timestamp, ctx.triggers)
+        c.invalidateDueTo({record, field, times: 0}, value, ctx.timestamp, ctx.triggers)
     }
   }
 
@@ -445,7 +445,7 @@ class CacheResult extends Observable implements Observer {
         value.unsubscribeFromAll()
       }
       if (value.observers)
-        value.observers.forEach(c => c.invalidateDueTo({ record, field, times: 0 }, timestamp, triggers))
+        value.observers.forEach(c => c.invalidateDueTo({ record, field, times: 0 }, value, timestamp, triggers))
     }
   }
 
@@ -493,22 +493,22 @@ class CacheResult extends Observable implements Observer {
     return result || value.replacement === record
   }
 
-  invalidateDueTo(hint: FieldHint, since: number, triggers: Observer[]): boolean {
-    const result = (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) &&
-      (hint.record.snapshot !== this.record.snapshot || !hint.record.changes.has(hint.field))
-    if (result) {
-      this.invalid.since = since
-      const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
-      if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
-      this.unsubscribeFromAll()
-      if (!this.worker.isFinished)
-        this.worker.cancel(new Error(`action T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)} and will be silently ignored`), null)
-      if (isTrigger) // stop cascade invalidation on trigger
-        triggers.push(this)
-      else if (this.observers) // cascade invalidation
-        this.observers.forEach(c => c.invalidateDueTo({record: this.record, field: this.field, times: 0}, since, triggers))
+  invalidateDueTo(hint: FieldHint, value: Observable, since: number, triggers: Observer[]): void {
+    if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
+      if (hint.record.snapshot !== this.record.snapshot || !hint.record.changes.has(hint.field)) {
+        this.invalid.since = since
+        const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
+        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
+        this.unsubscribeFromAll()
+        if (!this.worker.isFinished)
+          this.worker.cancel(new Error(`action T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)} and will be silently ignored`), null)
+        if (isTrigger) // stop cascade invalidation on trigger
+          triggers.push(this)
+        else if (this.observers) // cascade invalidation
+          this.observers.forEach(c => c.invalidateDueTo({record: this.record, field: this.field, times: 0}, this, since, triggers))
+      }
+      else if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", "x", `${this.hint()} invalidation is skipped`)
     }
-    return result
   }
 
   static isConflicting(oldValue: any, newValue: any): boolean {

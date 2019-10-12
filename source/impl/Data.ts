@@ -27,7 +27,7 @@ export class Observable {
 export interface Observer {
   hint(notran?: boolean): string
   readonly invalid: { since: number }
-  invalidateDueTo(hint: FieldHint, since: number, triggers: Observer[]): void
+  invalidateDueTo(hint: FieldHint, value: Observable, since: number, triggers: Observer[]): void
   validate(timestamp: number, now: boolean, nothrow: boolean): void
 }
 
