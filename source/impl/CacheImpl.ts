@@ -62,23 +62,7 @@ export class CacheImpl extends Cache<any> {
       const spawn = weak || cfg.kind !== Kind.Action
       const sidebyside = cfg.reentrance === Reentrance.RunSideBySide
       const token = cfg.kind === Kind.Cached ? this : undefined
-      let call2 = call
-      const ret = Transaction.runEx(hint, spawn, sidebyside, cfg.trace, token, (argsx: any[] | undefined): any => {
-        // TODO: Cleaner implementation is needed
-        if (call2.cache.worker.isCanceled) {
-          call2 = this.read(Snapshot.readable(), argsx) // re-read on retry
-          if (!call2.reusable) {
-            call2 = this.write(Snapshot.writable())
-            call2.cache.compute(this.handle.proxy, argsx)
-          }
-        }
-        else {
-          call2 = this.write(Snapshot.writable())
-          call2.cache.compute(this.handle.proxy, argsx)
-        }
-        return call2.cache.ret
-      }, args)
-      call2.cache.ret = ret
+      const call2 = this.recompute(call, hint, spawn, sidebyside, cfg.trace, token, args)
       const ctx2 = call2.cache.record.snapshot
       if (!weak || ctx === ctx2 || (ctx2.applied && ctx.timestamp >= ctx2.timestamp))
         call = call2
@@ -86,6 +70,27 @@ export class CacheImpl extends Cache<any> {
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? "" : "║", " (=)", `${Hints.record(call.record)}.${call.cache.field.toString()} result is reused from T${call.cache.worker.id} ${call.cache.worker.hint}`)
     Snapshot.markViewed(call.record, call.cache.field, call.cache, weak)
     return call
+  }
+
+  recompute(call: CacheCall, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): CacheCall {
+    // TODO: Cleaner implementation is needed
+    let call2 = call
+    const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
+      if (call2.cache.worker.isCanceled) {
+        call2 = this.read(Snapshot.readable(), argsx) // re-read on retry
+        if (!call2.reusable) {
+          call2 = this.write(Snapshot.writable())
+          call2.cache.compute(this.handle.proxy, argsx)
+        }
+      }
+      else {
+        call2 = this.write(Snapshot.writable())
+        call2.cache.compute(this.handle.proxy, argsx)
+      }
+      return call2.cache.ret
+    }, args)
+    call2.cache.ret = ret
+    return call2
   }
 
   private weak(): CacheCall {
