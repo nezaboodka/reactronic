@@ -89,9 +89,10 @@ export class Transaction extends Action {
     else
       self.inspect(Transaction.boundEnter, self, secondary)
     const transactionBoundDo: F<T> = (...args: any[]): T => {
-      return !inspect
-        ? self.do<T>(undefined, Transaction.boundLeave, self, func, ...args)
-        : self.inspect<T>(Transaction.boundLeave, self, func, ...args)
+      if (!inspect)
+        return self.do<T>(undefined, Transaction.boundLeave, self, func, ...args)
+      else
+        return self.inspect<T>(Transaction.boundLeave, self, func, ...args)
     }
     return transactionBoundDo
   }
