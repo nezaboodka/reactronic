@@ -59,7 +59,7 @@ export class CacheImpl extends Cache<any> {
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"
       const cfg = c.options
-      const spawn = weak || (cfg.kind !== Kind.Action /* && call.record.snapshot !== call.context */)
+      const spawn = weak || (cfg.kind !== Kind.Action /* && call.record.snapshot !== call.context*/)
       const sidebyside = cfg.reentrance === Reentrance.RunSideBySide
       const token = cfg.kind === Kind.Cached ? this : undefined
       const call2 = this.recompute(call, hint, spawn, sidebyside, cfg.trace, token, args)
@@ -495,7 +495,7 @@ class CacheResult extends Observable implements Observer {
 
   invalidateDueTo(hint: FieldHint, value: Observable, since: number, triggers: Observer[]): void {
     if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
-      if (hint.record.snapshot !== this.record.snapshot || !hint.record.changes.has(hint.field)) {
+      if (hint.record.snapshot !== this.record.snapshot || !hint.record.changes.has(hint.field) || value instanceof CacheResult) {
         this.invalid.since = since
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
         if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? " " : "║", isTrigger ? "■" : "□", isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated due to ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? " and will run automatically" : ""}`)
