@@ -15,7 +15,7 @@ import { Status, Worker } from '../Status'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-type CacheCall = { reusable: boolean, cache: CacheResult, record: Record, context: Snapshot }
+type Call = { reusable: boolean, cache: CacheResult, record: Record, context: Snapshot }
 
 export class Method extends Cache<any> {
   private readonly handle: Handle
@@ -52,8 +52,8 @@ export class Method extends Cache<any> {
     return result
   }
 
-  call(weak: boolean, args: any[] | undefined): CacheCall {
-    let call: CacheCall = this.read(args)
+  call(weak: boolean, args: any[] | undefined): Call {
+    let call: Call = this.read(args)
     const ctx = call.context
     const c: CacheResult = call.cache
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
@@ -72,7 +72,7 @@ export class Method extends Cache<any> {
     return call
   }
 
-  recompute(call: CacheCall, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): CacheCall {
+  recompute(call: Call, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
     // TODO: Cleaner implementation is needed
     let call2 = call
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
@@ -93,13 +93,13 @@ export class Method extends Cache<any> {
     return call2
   }
 
-  private weak(): CacheCall {
+  private weak(): Call {
     const call = this.read(undefined)
     Snapshot.markViewed(call.record, call.cache.field, call.cache, true)
     return call
   }
 
-  private read(args: any[] | undefined): CacheCall {
+  private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
     const c: CacheResult = r.data[this.blank.field] || this.initialize()
@@ -110,7 +110,7 @@ export class Method extends Cache<any> {
     return { reusable, cache: c, record: r, context: ctx }
   }
 
-  private write(): CacheCall {
+  private write(): Call {
     const ctx = Snapshot.writable()
     const field = this.blank.field
     const r: Record = ctx.write(this.handle, field, HANDLE, this)
@@ -363,7 +363,7 @@ class CacheResult extends Observable implements Observer {
           const proxy: any = Utils.get<Handle>(this.record.data, HANDLE).proxy
           const trap: Function = Reflect.get(proxy, this.field, proxy)
           const cache = Utils.get<Method>(trap, CACHE)
-          const call: CacheCall = cache.call(false, undefined)
+          const call: Call = cache.call(false, undefined)
           if (call.cache.ret instanceof Promise)
             call.cache.ret.catch(error => { /* nop */ }) // bad idea to hide an error
         }
