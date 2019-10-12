@@ -59,7 +59,7 @@ export class Method extends Cache<any> {
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ""}` : /* istanbul ignore next */ "Cache.run"
       const cfg = c.options
-      const spawn = weak || (cfg.kind !== Kind.Action /* && call.record.snapshot !== call.context*/)
+      const spawn = weak || (cfg.kind !== Kind.Action /*&& call.record.snapshot !== call.context*/)
       const sidebyside = cfg.reentrance === Reentrance.RunSideBySide
       const token = cfg.kind === Kind.Cached ? this : undefined
       const call2 = this.recompute(call, hint, spawn, sidebyside, cfg.trace, token, args)
