@@ -155,7 +155,7 @@ export class CacheImpl extends Cache<any> {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c = call.cache
-    c.invalidateDueTo(c, {record: BLANK, field: c.field, times: 0}, ctx.timestamp, ctx.triggers)
+    c.invalidateDueTo({record: BLANK, field: c.field, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
   private reconfigure(options: Partial<Options>): Options {
@@ -399,7 +399,7 @@ class CacheResult extends Observable implements Observer {
       ctx.bump(record.snapshot.timestamp)
       const t = weak ? -1 : ctx.timestamp
       if (!c.subscribeTo(record, field, value, t))
-        c.invalidateDueTo(value, {record, field, times: 0}, ctx.timestamp, ctx.triggers)
+        c.invalidateDueTo({record, field, times: 0}, ctx.timestamp, ctx.triggers)
     }
   }
 
@@ -445,7 +445,7 @@ class CacheResult extends Observable implements Observer {
         value.unsubscribeFromAll()
       }
       if (value.observers)
-        value.observers.forEach(c => c.invalidateDueTo(value, { record, field, times: 0 }, timestamp, triggers))
+        value.observers.forEach(c => c.invalidateDueTo({ record, field, times: 0 }, timestamp, triggers))
     }
   }
 
@@ -493,7 +493,7 @@ class CacheResult extends Observable implements Observer {
     return result || value.replacement === record
   }
 
-  invalidateDueTo(cause: Observable, hint: FieldHint, since: number, triggers: Observer[]): boolean {
+  invalidateDueTo(hint: FieldHint, since: number, triggers: Observer[]): boolean {
     const result = (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) &&
       (hint.record.snapshot !== this.record.snapshot || !hint.record.changes.has(hint.field))
     if (result) {
@@ -506,7 +506,7 @@ class CacheResult extends Observable implements Observer {
       if (isTrigger) // stop cascade invalidation on trigger
         triggers.push(this)
       else if (this.observers) // cascade invalidation
-        this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, field: this.field, times: 0}, since, triggers))
+        this.observers.forEach(c => c.invalidateDueTo({record: this.record, field: this.field, times: 0}, since, triggers))
     }
     return result
   }
