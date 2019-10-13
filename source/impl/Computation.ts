@@ -15,21 +15,21 @@ import { Status, Worker } from '../Status'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-type Call = { reusable: boolean, computed: Computation, record: Record, context: Snapshot }
+type Call = { reusable: boolean, computation: Computation, record: Record, context: Snapshot }
 
 export class Method extends Cache<any> {
   private readonly handle: Handle
   private readonly preset: Computation
 
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
-  get options(): Options { return this.weak().computed.options }
-  get args(): ReadonlyArray<any> { return this.weak().computed.args }
-  get value(): any { return this.call(true, undefined).computed.value }
-  get error(): boolean { return this.weak().computed.error }
+  get options(): Options { return this.weak().computation.options }
+  get args(): ReadonlyArray<any> { return this.weak().computation.args }
+  get value(): any { return this.call(true, undefined).computation.value }
+  get error(): boolean { return this.weak().computation.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reusable }
   invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.preset.field)})` : 'invalidate()', Method.doInvalidate, this) }
-  pullValue(args?: any[]): any { return this.call(true, args).computed.value }
+  pullValue(args?: any[]): any { return this.call(true, args).computation.value }
 
   constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
     super()
@@ -43,7 +43,7 @@ export class Method extends Cache<any> {
     const sidebyside = this.preset.options.reentrance === Reentrance.RunSideBySide
     const token = this.preset.options.kind === Kind.Cached ? this : undefined
     const result = Transaction.runEx<Computation>(hint, true, sidebyside, this.preset.options.trace, token, (): Computation => {
-      const c = this.write().computed
+      const c = this.write().computation
       c.ret = undefined
       c.value = undefined
       c.invalid.since = -1
@@ -56,7 +56,7 @@ export class Method extends Cache<any> {
   call(weak: boolean, args: any[] | undefined): Call {
     let call: Call = this.read(args)
     const ctx = call.context
-    const c: Computation = call.computed
+    const c: Computation = call.computation
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}${c.invalid.hint ? `   <<   ${invalidationChain(c.invalid.hint, 0).join('   <<   ')}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const cfg = c.options
@@ -65,12 +65,12 @@ export class Method extends Cache<any> {
       const sidebyside = cfg.reentrance === Reentrance.RunSideBySide
       const token = cfg.kind === Kind.Cached ? this : undefined
       const call2 = this.recompute(call, hint, spawn, sidebyside, cfg.trace, token, args)
-      const ctx2 = call2.computed.record.snapshot
+      const ctx2 = call2.computation.record.snapshot
       if (!weak || ctx === ctx2 || (ctx2.applied && ctx.timestamp >= ctx2.timestamp))
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record)}.${call.computed.field.toString()} result is reused from T${call.computed.worker.id} ${call.computed.worker.hint}`)
-    Snapshot.markViewed(call.record, call.computed.field, call.computed, weak)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record)}.${call.computation.field.toString()} result is reused from T${call.computation.worker.id} ${call.computation.worker.hint}`)
+    Snapshot.markViewed(call.record, call.computation.field, call.computation, weak)
     return call
   }
 
@@ -79,26 +79,26 @@ export class Method extends Cache<any> {
     // TODO: Cleaner implementation is needed
     let call2 = call
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
-      if (call2.computed.worker.isCanceled) {
+      if (call2.computation.worker.isCanceled) {
         call2 = this.read(argsx) // re-read on retry
         if (!call2.reusable) {
           call2 = this.write()
-          call2.computed.compute(this.handle.proxy, argsx)
+          call2.computation.execute(this.handle.proxy, argsx)
         }
       }
       else {
         call2 = this.write()
-        call2.computed.compute(this.handle.proxy, argsx)
+        call2.computation.execute(this.handle.proxy, argsx)
       }
-      return call2.computed.ret
+      return call2.computation.ret
     }, args)
-    call2.computed.ret = ret
+    call2.computation.ret = ret
     return call2
   }
 
   private weak(): Call {
     const call = this.read(undefined)
-    Snapshot.markViewed(call.record, call.computed.field, call.computed, true)
+    Snapshot.markViewed(call.record, call.computation.field, call.computation, true)
     return call
   }
 
@@ -110,7 +110,7 @@ export class Method extends Cache<any> {
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[UNMOUNT] !== undefined
-    return { reusable, computed: c, record: r, context: ctx }
+    return { reusable, computation: c, record: r, context: ctx }
   }
 
   private write(): Call {
@@ -128,7 +128,7 @@ export class Method extends Cache<any> {
       ctx.bump(r.prev.record.snapshot.timestamp)
       Snapshot.markChanged(r, field, renewing, true)
     }
-    return { reusable: true, computed: c, record: r, context: ctx }
+    return { reusable: true, computation: c, record: r, context: ctx }
   }
 
   private static checkForReentrance(c: Computation): Error | undefined {
@@ -157,18 +157,18 @@ export class Method extends Cache<any> {
   static doInvalidate(self: Method): void {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
-    const c = call.computed
+    const c = call.computation
     c.invalidateDueTo(c, {record: INIT, field: c.field, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
   private reconfigure(options: Partial<Options>): Options {
     const call = this.read(undefined)
-    const c: Computation = call.computed
+    const c: Computation = call.computation
     const r: Record = call.record
     const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle)}.${this.preset.field.toString()})` : /* istanbul ignore next */ 'Cache.setup()'
     return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
-      const c2: Computation = call2.computed
+      const c2: Computation = call2.computation
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
       if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  w ', `${Hints.record(r)}.${c.field.toString()}.options = ...`)
       return c2.options
@@ -196,7 +196,7 @@ export class Method extends Cache<any> {
   static createCacheTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     const cache = new Method(h, field, options)
     const cacheTrap: F<any> = (...args: any[]): any =>
-      cache.call(false, args).computed.ret
+      cache.call(false, args).computation.ret
     Utils.set(cacheTrap, CACHE, cache)
     return cacheTrap
   }
@@ -277,7 +277,7 @@ class Computation extends Observable implements Observer {
     return computationBound
   }
 
-  compute(proxy: any, args: any[] | undefined): void {
+  execute(proxy: any, args: any[] | undefined): void {
     if (args)
       this.args = args
     this.invalid.since = TOP_TIMESTAMP
@@ -371,8 +371,8 @@ class Computation extends Observable implements Observer {
           const trap: Function = Reflect.get(proxy, this.field, proxy)
           const cache = Utils.get<Method>(trap, CACHE)
           const call: Call = cache.call(false, undefined)
-          if (call.computed.ret instanceof Promise)
-            call.computed.ret.catch(error => { /* nop */ }) // bad idea to hide an error
+          if (call.computation.ret instanceof Promise)
+            call.computation.ret.catch(error => { /* nop */ }) // bad idea to hide an error
         }
         catch (e) {
           if (!nothrow)
