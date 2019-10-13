@@ -18,8 +18,6 @@ const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 type Call = { reusable: boolean, computed: Computation, record: Record, context: Snapshot }
 
 export class Method extends Cache<any> {
-  static computing?: Computation = undefined
-
   private readonly handle: Handle
   private readonly preset: Computation
 
@@ -179,9 +177,9 @@ export class Method extends Cache<any> {
 
   static runAs<T>(c: Computation | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined
-    const outer = Method.computing
+    const outer = Computation.current
     try {
-      Method.computing = c
+      Computation.current = c
       result = func(...args)
     }
     catch (e) {
@@ -190,7 +188,7 @@ export class Method extends Cache<any> {
       throw e
     }
     finally {
-      Method.computing = outer
+      Computation.current = outer
     }
     return result
   }
@@ -227,6 +225,7 @@ export class Method extends Cache<any> {
 // Computation
 
 class Computation extends Observable implements Observer {
+  static current?: Computation = undefined
   static asyncTriggerBatch: Computation[] = []
 
   readonly worker: Worker
@@ -261,7 +260,7 @@ class Computation extends Observable implements Observer {
     this.started = 0
     this.invalid = { since: 0, hint: undefined, renewing: undefined }
     this.observables = new Map<Observable, FieldHint>()
-    this.margin = Method.computing ? Method.computing.margin + 1 : 1
+    this.margin = Computation.current ? Computation.current.margin + 1 : 1
   }
 
   hint(): string { return `${Hints.record(this.record, this.field)}` }
@@ -269,13 +268,13 @@ class Computation extends Observable implements Observer {
   get isComputed(): boolean { return true }
 
   bind<T>(func: F<T>): F<T> {
-    const doInsideCache: F<T> = (...args: any[]): T => {
+    const computationBound: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.record(this.record)}.${this.field.toString()} - step in  `, 0, '        │')
       const result = Method.runAs<T>(this, func, ...args)
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record)}.${this.field.toString()} - step out `, 0, this.started > 0 ? '        │' : '')
       return result
     }
-    return doInsideCache
+    return computationBound
   }
 
   compute(proxy: any, args: any[] | undefined): void {
@@ -401,7 +400,7 @@ class Computation extends Observable implements Observer {
   }
 
   private static markViewed(record: Record, field: FieldKey, value: Observable, weak: boolean): void {
-    const c: Computation | undefined = Method.computing // alias
+    const c: Computation | undefined = Computation.current // alias
     if (c && c.options.kind !== Kind.Action && field !== HANDLE) {
       const ctx = Snapshot.readable()
       ctx.bump(record.snapshot.timestamp)
@@ -584,8 +583,8 @@ function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
   const t = Transaction.current
   let res = Dbg.merge(t.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : '', Dbg.global)
   res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
-  if (Method.computing)
-    res = Dbg.merge({margin2: Method.computing.margin}, undefined, undefined, res)
+  if (Computation.current)
+    res = Dbg.merge({margin2: Computation.current.margin}, undefined, undefined, res)
   if (local)
     res = Dbg.merge(local, undefined, undefined, res)
   return res
@@ -603,10 +602,10 @@ function fReactronicThen(this: any,
       resolve = resolveReturn
     if (!reject)
       reject = rejectRethrow
-    const cache = Method.computing
-    if (cache) {
-      resolve = cache.bind(resolve)
-      reject = cache.bind(reject)
+    const computation = Computation.current
+    if (computation) {
+      resolve = computation.bind(resolve)
+      reject = computation.bind(reject)
     }
     resolve = tran.bind(resolve, false)
     reject = tran.bind(reject, true)
