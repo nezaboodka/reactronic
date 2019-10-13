@@ -15,7 +15,7 @@ import { Status, Worker } from '../Status'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-type Call = { reusable: boolean, computation: Computation, record: Record, context: Snapshot }
+type Call = { context: Snapshot, record: Record, computation: Computation, reusable: boolean }
 
 export class Method extends Cache<any> {
   private readonly handle: Handle
@@ -110,7 +110,7 @@ export class Method extends Cache<any> {
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[UNMOUNT] !== undefined
-    return { reusable, computation: c, record: r, context: ctx }
+    return { context: ctx, record: r, computation: c, reusable }
   }
 
   private write(): Call {
@@ -128,7 +128,7 @@ export class Method extends Cache<any> {
       ctx.bump(r.prev.record.snapshot.timestamp)
       Snapshot.markChanged(r, field, renewing, true)
     }
-    return { reusable: true, computation: c, record: r, context: ctx }
+    return { context: ctx, record: r, computation: c, reusable: true }
   }
 
   private static checkForReentrance(c: Computation): Error | undefined {
