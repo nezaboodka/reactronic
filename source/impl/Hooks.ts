@@ -26,8 +26,8 @@ const EMPTY_META = Object.freeze({})
 export abstract class State {
   constructor() {
     const proto = new.target.prototype
-    // const blank = Hooks.getMeta(proto, BLANK)
-    const h = Hooks.createHandle(this, undefined, new.target.name)
+    const blank = Hooks.getMeta<any>(proto, BLANK)
+    const h = Hooks.createHandle(this, blank, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
       const triggers = Hooks.getMeta<any>(proto, TRIGGERS)
       for (const field in triggers)
@@ -304,18 +304,19 @@ export class Hooks implements ProxyHandler<Handle> {
     return h
   }
 
-  static createHandle(stateless: any, proxy: any, hint: string): Handle {
-    const h = new Handle(stateless, proxy, Hooks.proxy, INIT, hint)
-    Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
+  static createHandle(stateless: any, blank: any, hint: string): Handle {
+    const ctx = Snapshot.writable()
+    const h = new Handle(stateless, undefined, Hooks.proxy, INIT, hint)
+    ctx.write(h, HANDLE, blank)
     return h
   }
 
-  static createHandleByDecoratedClass(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
-    const h = new Handle(stateless, proxy, Hooks.proxy, INIT, hint)
-    const r = Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
-    initRecordData(h, stateful, stateless, r)
-    return h
-  }
+  // static createHandleByDecoratedClass(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
+  //   const h = new Handle(stateless, proxy, Hooks.proxy, INIT, hint)
+  //   const r = Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
+  //   initRecordData(h, stateful, stateless, r)
+  //   return h
+  // }
 
   /* istanbul ignore next */
   static createCacheTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
@@ -323,22 +324,22 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 }
 
-function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Record): void {
-  const blank = Hooks.getMeta(Object.getPrototypeOf(stateless), BLANK)
-  const r = Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
-  for (const field of Object.getOwnPropertyNames(stateless))
-    initRecordField(stateful, blank, field, r, stateless)
-  for (const field of Object.getOwnPropertySymbols(stateless)) /* istanbul ignore next */
-    initRecordField(stateful, blank, field, r, stateless)
-}
+// function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Record): void {
+//   const blank = Hooks.getMeta(Object.getPrototypeOf(stateless), BLANK)
+//   const r = Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
+//   for (const field of Object.getOwnPropertyNames(stateless))
+//     initRecordField(stateful, blank, field, r, stateless)
+//   for (const field of Object.getOwnPropertySymbols(stateless)) /* istanbul ignore next */
+//     initRecordField(stateful, blank, field, r, stateless)
+// }
 
-function initRecordField(stateful: boolean, blank: any, field: FieldKey, r: Record, stateless: any): void {
-  if (stateful && blank[field] !== false) {
-    const value = stateless[field]
-    r.data[field] = new Observable(value)
-    Snapshot.markChanged(r, field, value, true)
-  }
-}
+// function initRecordField(stateful: boolean, blank: any, field: FieldKey, r: Record, stateless: any): void {
+//   if (stateful && blank[field] !== false) {
+//     const value = stateless[field]
+//     r.data[field] = new Observable(value)
+//     Snapshot.markChanged(r, field, value, true)
+//   }
+// }
 
 /* istanbul ignore next */
 function decoratedfield(...args: any[]): never {
