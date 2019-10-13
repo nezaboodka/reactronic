@@ -56,16 +56,16 @@ export class MonitorImpl extends Monitor {
     return m
   }
 
-  static enter(ind: Monitor, worker: Worker): void {
-    ind.enter(worker)
+  static enter(mon: Monitor, worker: Worker): void {
+    mon.enter(worker)
   }
 
-  static leave(ind: Monitor, worker: Worker): void {
-    ind.leave(worker)
+  static leave(mon: Monitor, worker: Worker): void {
+    mon.leave(worker)
   }
 
-  static idle(ind: MonitorImpl, now: boolean): void {
-    ind.idle(now)
+  static idle(mon: MonitorImpl, now: boolean): void {
+    mon.idle(now)
   }
 }
 
