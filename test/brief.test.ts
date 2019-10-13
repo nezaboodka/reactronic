@@ -131,7 +131,7 @@ test('Main', t => {
     t.is(RT.getTraceHint(app), 'DemoView')
     RT.setTraceHint(app, 'App')
     t.is(RT.getTraceHint(app), 'App')
-    t.deepEqual(Object.getOwnPropertyNames(app.model), [/*"shared",*/ 'title', 'users'])
+    t.deepEqual(Object.getOwnPropertyNames(app.model), [/*"shared",*/ 'title', 'users', 'loadUsers'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
   }
   finally { // cleanup
