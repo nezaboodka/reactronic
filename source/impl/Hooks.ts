@@ -286,7 +286,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
     const v = observable.value
     if (Array.isArray(v)) {
       if (!Object.isFrozen(v)) {
-        if (!observable.isComputed)
+        if (!observable.isComputation)
           observable.value = new Proxy(CopyOnWriteArray.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Object.freeze(v) // just freeze without copy-on-write hooks
@@ -294,7 +294,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
     }
     else if (v instanceof Set) {
       if (!Object.isFrozen(v)) {
-        if (!observable.isComputed)
+        if (!observable.isComputation)
           observable.value = new Proxy(CopyOnWriteSet.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Utils.freezeSet(v) // just freeze without copy-on-write hooks
@@ -302,7 +302,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
     }
     else if (v instanceof Map) {
       if (!Object.isFrozen(v)) {
-        if (!observable.isComputed)
+        if (!observable.isComputation)
           observable.value = new Proxy(CopyOnWriteMap.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Utils.freezeMap(v) // just freeze without copy-on-write hooks

@@ -265,7 +265,7 @@ class Computation extends Observable implements Observer {
 
   hint(): string { return `${Hints.record(this.record, this.field)}` }
 
-  get isComputed(): boolean { return true }
+  get isComputation(): boolean { return true }
 
   bind<T>(func: F<T>): F<T> {
     const computationBound: F<T> = (...args: any[]): T => {
@@ -503,7 +503,7 @@ class Computation extends Observable implements Observer {
 
   invalidateDueTo(value: Observable, hint: FieldHint, since: number, triggers: Observer[]): void {
     if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
-      const notSelfInvalidation = value.isComputed ||
+      const notSelfInvalidation = value.isComputation ||
         hint.record.snapshot !== this.record.snapshot ||
         !hint.record.changes.has(hint.field)
       if (notSelfInvalidation) {
