@@ -6,7 +6,7 @@
 import { Trace } from '../Trace'
 
 export function error(message: string, cause: Error | undefined): Error {
-  if (Dbg.isOn && Dbg.trace.errors) Dbg.log('█', '███', message, undefined, ' *** ERROR ***')
+  if (Dbg.isOn && Dbg.trace.errors) Dbg.log('█', ' ███', message, undefined, ' *** ERROR ***')
   return new Error(message)
 }
 
