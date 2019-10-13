@@ -47,8 +47,6 @@ export function options(options: Partial<Options>): F<any> {
       return Hooks.decorateMethod(false, options, proto, prop, pd) /* istanbul ignore next */
     else /* istanbul ignore next */
       return Hooks.decorateField(false, options, proto, prop)
-    // else /* istanbul ignore next */
-    //   return Hooks.decorateClass(false, options, proto)
   }
 }
 
@@ -178,54 +176,6 @@ export class Hooks implements ProxyHandler<Handle> {
     return result
   }
 
-  // static decorateClass(implicit: boolean, options: Partial<Options>, origCtor: any): any {
-  //   let ctor: any = origCtor
-  //   const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-  //   const triggers = Hooks.getMeta<any>(ctor.prototype, TRIGGERS)
-  //   if (stateful) {
-  //     ctor = class extends origCtor {
-  //       constructor(...args: any[]) {
-  //         super(...args)
-  //         const self: any = this
-  //         const h: Handle = self[HANDLE] || Hooks.createHandleByDecoratedClass(stateful, self, undefined, origCtor.name)
-  //         if (self.constructor === ctor)
-  //           h.hint = origCtor.name
-  //         if (!Hooks.triggersAutoStartDisabled)
-  //           for (const field in triggers)
-  //             (h.proxy[field][CACHE] as Cache<any>).invalidate()
-  //         return h.proxy
-  //       }
-  //     }
-  //     Hooks.setup(ctor.prototype, CLASS_OPTIONS, decoratedclass, options, implicit)
-  //   }
-  //   return ctor
-  // }
-
-  // /* istanbul ignore next */
-  // static decorateClassOld(implicit: boolean, options: Partial<Options>, origCtor: any): any {
-  //   let ctor: any = origCtor
-  //   const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-  //   const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getBlank(ctor.prototype)[CLASS_TRIGGERS]
-  //   if (stateful) {
-  //     ctor = function(this: any, ...args: any[]): any {
-  //       const stateless = new origCtor(...args)
-  //       const h: Handle = stateless instanceof Proxy
-  //         ? stateless[HANDLE] || Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
-  //         : Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
-  //       if (triggers)
-  //         triggers.forEach((fieldOptions, field) => {
-  //           const cache: Cache<any> = h.proxy[field][CACHE]
-  //           cache.invalidate()
-  //         })
-  //       return h.proxy
-  //     }
-  //     Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)) // preserve prototype
-  //     Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)) // preserve static definitions
-  //   }
-  //   Hooks.setup(ctor.prototype, CLASS_OPTIONS, decoratedclass, options, implicit)
-  //   return ctor
-  // }
-
   static decorateField(implicit: boolean, options: Partial<Options>, proto: any, field: FieldKey): any {
     options = Hooks.setup(proto, field, decoratedfield, options, implicit)
     if (options.kind !== Kind.Stateless) {
@@ -308,45 +258,16 @@ export class Hooks implements ProxyHandler<Handle> {
     return h
   }
 
-  // static createHandleByDecoratedClass(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
-  //   const h = new Handle(stateless, proxy, Hooks.proxy, INIT, hint)
-  //   const r = Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
-  //   initRecordData(h, stateful, stateless, r)
-  //   return h
-  // }
-
   /* istanbul ignore next */
   static createCacheTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     throw misuse('createCacheTrap should never be called')
   }
 }
 
-// function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Record): void {
-//   const blank = Hooks.getMeta(Object.getPrototypeOf(stateless), BLANK)
-//   const r = Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
-//   for (const field of Object.getOwnPropertyNames(stateless))
-//     initRecordField(stateful, blank, field, r, stateless)
-//   for (const field of Object.getOwnPropertySymbols(stateless)) /* istanbul ignore next */
-//     initRecordField(stateful, blank, field, r, stateless)
-// }
-
-// function initRecordField(stateful: boolean, blank: any, field: FieldKey, r: Record, stateless: any): void {
-//   if (stateful && blank[field] !== false) {
-//     const value = stateless[field]
-//     r.data[field] = new Observable(value)
-//     Snapshot.markChanged(r, field, value, true)
-//   }
-// }
-
 /* istanbul ignore next */
 function decoratedfield(...args: any[]): never {
   throw misuse('decoratedfield should never be called')
 }
-
-// /* istanbul ignore next */
-// function decoratedclass(...args: any[]): never {
-//   throw misuse('decoratedclass should never be called')
-// }
 
 export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
   static readonly global: CopyOnWriteProxy = new CopyOnWriteProxy()
