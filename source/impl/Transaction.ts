@@ -240,9 +240,9 @@ export class Transaction extends Action {
       t.error = error
       t.after = after
       if (Dbg.isOn && Dbg.trace.errors) {
-        Dbg.log('║', ' ███', `${error.message}`, undefined, ' *** CANCEL ***')
+        Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== Transaction.none)
-          Dbg.log('║', ' ███', `will be restarted after T${after.id} (${after.hint})`)
+          Dbg.log('║', ' [!]', `will be restarted after T${after.id} (${after.hint})`)
       }
       Snapshot.discardChanges(t.snapshot)
     }

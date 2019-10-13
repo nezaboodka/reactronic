@@ -11,7 +11,7 @@ export function error(message: string, cause: Error | undefined): Error {
 }
 
 export function misuse(message: string): Error {
-  Dbg.log('', '', message, undefined, ' *** ERROR ***')
+  Dbg.log(' ', ' ███', message, undefined, ' *** ERROR ***')
   return new Error(message)
 }
 

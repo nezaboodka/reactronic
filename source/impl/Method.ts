@@ -309,12 +309,12 @@ class CacheResult extends Observable implements Observer {
       this.ret = this.ret.then(
         value => {
           this.value = value
-          this.leave(' ▒', '- finished ', '   OK ──┘')
+          this.leave('  □ ', '- finished ', ' OK ──┘')
           return value
         },
         error => {
           this.error = error
-          this.leave(' ▒', '- finished ', '  ERR ──┘')
+          this.leave('  □ ', '- finished ', 'ERR ──┘')
           throw error
         })
       if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', '_/', `${Hints.record(this.record, this.field)} - leave... `, 0, 'ASYNC ──┐')
@@ -511,7 +511,7 @@ class CacheResult extends Observable implements Observer {
         this.invalid.since = since
         this.unsubscribeFromAll()
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
-        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', isTrigger ? '■' : '□', isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
+        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', isTrigger ? '█' : '▒', isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
         else if (this.observers) // cascade invalidation
