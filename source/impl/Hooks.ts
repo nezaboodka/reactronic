@@ -21,7 +21,7 @@ export class Stateful {
   constructor() {
     const h = Hooks.createHandle(this, undefined, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
-      const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(new.target.prototype)[CLASS_TRIGGERS]
+      const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getBlank(new.target.prototype)[CLASS_TRIGGERS]
       if (triggers)
         triggers.forEach((rx, field) =>
           (h.proxy[field][CACHE] as Cache<any>).invalidate())
@@ -46,13 +46,14 @@ export function options(options: Partial<Options>): F<any> {
   }
 }
 
-// Options
+// Blank
 
-const OPTIONS_TABLE: unique symbol = Symbol('R:TABLE')
+const BLANK: unique symbol = Symbol('R:BLANK')
 const CLASS_OPTIONS: unique symbol = Symbol('R:CLASS')
 const CLASS_TRIGGERS: unique symbol = Symbol('R:TRIGGERS')
 
-const BLANK_TABLE = Object.freeze({})
+const DEFAULT_BLANK = Object.freeze({})
+
 const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   kind: Kind.Stateless,
   delay: -2, // never
@@ -61,6 +62,7 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   status: null,
   trace: undefined,
 })
+
 const DEFAULT_STATEFUL_OPTIONS: Options = Object.freeze({
   kind: Kind.Stateful,
   delay: -2, // never
@@ -179,7 +181,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateClass(implicit: boolean, options: Partial<Options>, origCtor: any): any {
     let ctor: any = origCtor
     const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-    const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[CLASS_TRIGGERS]
+    const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getBlank(ctor.prototype)[CLASS_TRIGGERS]
     if (stateful) {
       ctor = class extends origCtor {
         constructor(...args: any[]) {
@@ -199,30 +201,30 @@ export class Hooks implements ProxyHandler<Handle> {
     return ctor
   }
 
-  /* istanbul ignore next */
-  static decorateClassOld(implicit: boolean, options: Partial<Options>, origCtor: any): any {
-    let ctor: any = origCtor
-    const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-    const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(ctor.prototype)[CLASS_TRIGGERS]
-    if (stateful) {
-      ctor = function(this: any, ...args: any[]): any {
-        const stateless = new origCtor(...args)
-        const h: Handle = stateless instanceof Proxy
-          ? stateless[HANDLE] || Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
-          : Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
-        if (triggers)
-          triggers.forEach((fieldOptions, field) => {
-            const cache: Cache<any> = h.proxy[field][CACHE]
-            cache.invalidate()
-          })
-        return h.proxy
-      }
-      Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)) // preserve prototype
-      Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)) // preserve static definitions
-    }
-    Hooks.setup(ctor.prototype, CLASS_OPTIONS, decoratedclass, options, implicit)
-    return ctor
-  }
+  // /* istanbul ignore next */
+  // static decorateClassOld(implicit: boolean, options: Partial<Options>, origCtor: any): any {
+  //   let ctor: any = origCtor
+  //   const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
+  //   const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getBlank(ctor.prototype)[CLASS_TRIGGERS]
+  //   if (stateful) {
+  //     ctor = function(this: any, ...args: any[]): any {
+  //       const stateless = new origCtor(...args)
+  //       const h: Handle = stateless instanceof Proxy
+  //         ? stateless[HANDLE] || Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
+  //         : Hooks.createHandleByDecoratedClass(stateful, stateless, undefined, origCtor.name)
+  //       if (triggers)
+  //         triggers.forEach((fieldOptions, field) => {
+  //           const cache: Cache<any> = h.proxy[field][CACHE]
+  //           cache.invalidate()
+  //         })
+  //       return h.proxy
+  //     }
+  //     Object.setPrototypeOf(ctor, Object.getPrototypeOf(origCtor)) // preserve prototype
+  //     Object.defineProperties(ctor, Object.getOwnPropertyDescriptors(origCtor)) // preserve static definitions
+  //   }
+  //   Hooks.setup(ctor.prototype, CLASS_OPTIONS, decoratedclass, options, implicit)
+  //   return ctor
+  // }
 
   static decorateField(implicit: boolean, options: Partial<Options>, proto: any, field: FieldKey): any {
     options = Hooks.setup(proto, field, decoratedfield, options, implicit)
@@ -257,38 +259,38 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   private static getOptions(proto: any, field: FieldKey): OptionsImpl | undefined {
-    return Hooks.getOptionsTable(proto)[field]
+    return Hooks.getBlank(proto)[field]
   }
 
   private static setup(proto: any, field: FieldKey, body: Function | undefined, options: Partial<OptionsImpl>, implicit: boolean): OptionsImpl {
-    const optionsTable: any = Hooks.acquireOptionsTable(proto)
-    const existing: OptionsImpl = optionsTable[field] || OptionsImpl.STATELESS
-    const result = optionsTable[field] = new OptionsImpl(body, existing, options, implicit)
+    const blank: any = Hooks.acquireBlank(proto)
+    const existing: OptionsImpl = blank[field] || OptionsImpl.STATELESS
+    const result = blank[field] = new OptionsImpl(body, existing, options, implicit)
     if (result.kind === Kind.Trigger && result.delay > -2) {
-      let triggers: Map<FieldKey, OptionsImpl> | undefined = optionsTable[CLASS_TRIGGERS]
+      let triggers: Map<FieldKey, OptionsImpl> | undefined = blank[CLASS_TRIGGERS]
       if (!triggers)
-        triggers = optionsTable[CLASS_TRIGGERS] = new Map<FieldKey, OptionsImpl>()
+        triggers = blank[CLASS_TRIGGERS] = new Map<FieldKey, OptionsImpl>()
       triggers.set(field, result)
     }
     else if (existing.kind === Kind.Trigger && result.delay > -2) {
-      const triggers: Map<FieldKey, OptionsImpl> | undefined = optionsTable[CLASS_TRIGGERS]
+      const triggers: Map<FieldKey, OptionsImpl> | undefined = blank[CLASS_TRIGGERS]
       if (triggers)
         triggers.delete(field)
     }
     return result
   }
 
-  private static acquireOptionsTable(proto: any): any {
-    let optionsTable: any = proto[OPTIONS_TABLE]
-    if (!proto.hasOwnProperty(OPTIONS_TABLE)) {
-      optionsTable = Object.setPrototypeOf({}, optionsTable || {})
-      Utils.set(proto, OPTIONS_TABLE, optionsTable)
+  private static acquireBlank(proto: any): any {
+    let blank: any = proto[BLANK]
+    if (!proto.hasOwnProperty(BLANK)) {
+      blank = Object.setPrototypeOf({}, blank || {})
+      Utils.set(proto, BLANK, blank)
     }
-    return optionsTable
+    return blank
   }
 
-  static getOptionsTable(proto: any): any {
-    return proto[OPTIONS_TABLE] || /* istanbul ignore next */ BLANK_TABLE
+  static getBlank(proto: any): any {
+    return proto[BLANK] || /* istanbul ignore next */ DEFAULT_BLANK
   }
 
   static acquireHandle(obj: any): Handle {
@@ -323,16 +325,16 @@ export class Hooks implements ProxyHandler<Handle> {
 }
 
 function initRecordData(h: Handle, stateful: boolean, stateless: any, record: Record): void {
-  const optionsTable = Hooks.getOptionsTable(Object.getPrototypeOf(stateless))
+  const blank = Hooks.getBlank(Object.getPrototypeOf(stateless))
   const r = Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
   for (const field of Object.getOwnPropertyNames(stateless))
-    initRecordField(stateful, optionsTable, field, r, stateless)
+    initRecordField(stateful, blank, field, r, stateless)
   for (const field of Object.getOwnPropertySymbols(stateless)) /* istanbul ignore next */
-    initRecordField(stateful, optionsTable, field, r, stateless)
+    initRecordField(stateful, blank, field, r, stateless)
 }
 
-function initRecordField(stateful: boolean, optionsTable: any, field: FieldKey, r: Record, stateless: any): void {
-  if (stateful && optionsTable[field] !== false) {
+function initRecordField(stateful: boolean, blank: any, field: FieldKey, r: Record, stateless: any): void {
+  if (stateful && blank[field] !== false) {
     const value = stateless[field]
     r.data[field] = new Observable(value)
     Snapshot.markChanged(r, field, value, true)
