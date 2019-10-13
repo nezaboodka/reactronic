@@ -355,6 +355,11 @@ class CacheResult extends Observable implements Observer {
     const prev = this.record.prev.record.data[this.field]
     if (prev instanceof CacheResult && prev.invalid.renewing === this)
       prev.invalid.renewing = undefined
+    if (Hooks.performanceWarningThreshold > 0) {
+      this.observables.forEach((hint, value) => {
+        if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} times`, 0, ' *** WARNING ***')
+      })
+    }
   }
 
   trig(now: boolean, nothrow: boolean): void {
@@ -492,7 +497,6 @@ class CacheResult extends Observable implements Observer {
       value.observers.add(this)
       this.observables.set(value, hint)
       if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.field)} is subscribed to ${Hints.record(hint.record, hint.field, true)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
-      if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('█', ' ███', `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} time(s)`, 0, ' *** WARNING ***')
     }
     return result || value.replacement === record
   }
