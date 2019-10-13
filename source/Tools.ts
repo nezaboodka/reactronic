@@ -7,7 +7,7 @@ import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Hints } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
-import { Method } from './impl/Method'
+import { Method } from './impl/Computation'
 import { Action, Cache, Status, Kind, Reentrance, Trace } from './.index'
 
 export class Tools {
