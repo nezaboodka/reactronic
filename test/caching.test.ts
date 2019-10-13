@@ -4,10 +4,10 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Stateful, cached, Action, Tools as RT, trace, trigger } from '../source/.index'
+import { State, cached, Action, Tools as RT, trace, trigger } from '../source/.index'
 import { tracing } from './common'
 
-export class Demo extends Stateful {
+export class Demo extends State {
   title: string = 'Demo'
   unassigned?: any
 

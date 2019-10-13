@@ -6,8 +6,8 @@
 export { all, sleep } from './util/Utils'
 export { Options, Kind, Reentrance, Trace } from './Options'
 export { Tools } from './Tools'
-export { Stateful } from './impl/Hooks'
-export { stateless, stateful, action, trigger, cached,
+export { State } from './impl/Hooks'
+export { stateless, action, trigger, cached,
   cacheof, resolved, nonreactive, standalone, delay,
   reentrance, cachedArgs, status, trace } from './Tools'
 export { Action } from './Action'

@@ -3,10 +3,10 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful } from './impl/Hooks'
+import { State } from './impl/Hooks'
 import { StatusImpl } from './impl/StatusImpl'
 
-export abstract class Status extends Stateful {
+export abstract class Status extends State {
   abstract readonly busy: boolean
   abstract readonly workerCount: number
   abstract readonly workers: ReadonlySet<Worker>

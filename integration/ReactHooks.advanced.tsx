@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { Stateful, Action, Cache, stateless, trigger, cached, cacheof, standalone, Tools as RT, Trace } from '.index'
+import { State, Action, Cache, stateless, trigger, cached, cacheof, standalone, Tools as RT, Trace } from '.index'
 
 type ReactState = { rx: Rx, counter: number }
 
@@ -22,7 +22,7 @@ function renderReactively(render: (counter: number) => JSX.Element, trace?: Part
   return rx.jsx(render)
 }
 
-class Rx extends Stateful {
+class Rx extends State {
   @cached
   jsx(render: (counter: number) => JSX.Element): JSX.Element {
     return render(this.counter)

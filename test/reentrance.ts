@@ -3,15 +3,14 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { stateful, action, trigger, cached, cachedArgs, delay, status,
+import { State, action, trigger, cached, cachedArgs, delay, status,
   reentrance, Status, Reentrance, Tools as RT, all, sleep } from '../source/.index'
 export { tracing } from './common'
 
 export const output: string[] = []
 export const loading = Status.create('loading', 0)
 
-@stateful
-export class AsyncDemo {
+export class AsyncDemo extends State {
   url: string = 'reactronic'
   log: string[] = ['RTA']
 
@@ -24,7 +23,6 @@ export class AsyncDemo {
 }
 
 export class AsyncDemoView {
-  @stateful test: any
   constructor(readonly model: AsyncDemo) { }
 
   @trigger @delay(-1)
