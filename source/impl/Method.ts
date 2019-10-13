@@ -19,7 +19,7 @@ type Call = { reusable: boolean, cache: CacheResult, record: Record, context: Sn
 
 export class Method extends Cache<any> {
   private readonly handle: Handle
-  private readonly initial: CacheResult
+  private readonly preset: CacheResult
 
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().cache.options }
@@ -28,28 +28,28 @@ export class Method extends Cache<any> {
   get error(): boolean { return this.weak().cache.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reusable }
-  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.initial.field)})` : 'Cache.invalidate', Method.doInvalidate, this) }
+  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.preset.field)})` : 'Cache.invalidate', Method.doInvalidate, this) }
   pullValue(args?: any[]): any { return this.call(true, args).cache.value }
 
   constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
     super()
     this.handle = handle
-    this.initial = new CacheResult(INIT, field, options)
-    CacheResult.freeze(this.initial)
+    this.preset = new CacheResult(INIT, field, options)
+    CacheResult.freeze(this.preset)
   }
 
   private initialize(): CacheResult {
-    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.initial.field.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
-    const sidebyside = this.initial.options.reentrance === Reentrance.RunSideBySide
-    const token = this.initial.options.kind === Kind.Cached ? this : undefined
-    const result = Transaction.runEx<CacheResult>(hint, true, sidebyside, this.initial.options.trace, token, (): CacheResult => {
+    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.preset.field.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
+    const sidebyside = this.preset.options.reentrance === Reentrance.RunSideBySide
+    const token = this.preset.options.kind === Kind.Cached ? this : undefined
+    const result = Transaction.runEx<CacheResult>(hint, true, sidebyside, this.preset.options.trace, token, (): CacheResult => {
       const c = this.write().cache
       c.ret = undefined
       c.value = undefined
       c.invalid.since = -1
       return c
     })
-    this.initial.invalid.renewing = undefined
+    this.preset.invalid.renewing = undefined
     return result
   }
 
@@ -105,7 +105,7 @@ export class Method extends Cache<any> {
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
-    const c: CacheResult = r.data[this.initial.field] || this.initialize()
+    const c: CacheResult = r.data[this.preset.field] || this.initialize()
     const reusable = c.options.kind !== Kind.Action &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
@@ -115,9 +115,9 @@ export class Method extends Cache<any> {
 
   private write(): Call {
     const ctx = Snapshot.writable()
-    const field = this.initial.field
+    const field = this.preset.field
     const r: Record = ctx.write(this.handle, field, HANDLE, this)
-    let c: CacheResult = r.data[field] || this.initial
+    let c: CacheResult = r.data[field] || this.preset
     if (c.record !== r) {
       const renewing = new CacheResult(r, field, c)
       r.data[field] = renewing
@@ -165,7 +165,7 @@ export class Method extends Cache<any> {
     const call = this.read(undefined)
     const c: CacheResult = call.cache
     const r: Record = call.record
-    const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle)}.${this.initial.field.toString()})` : /* istanbul ignore next */ 'Cache.setup()'
+    const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle)}.${this.preset.field.toString()})` : /* istanbul ignore next */ 'Cache.setup()'
     return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
       const c2: CacheResult = call2.cache
