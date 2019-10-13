@@ -283,18 +283,18 @@ class Computation extends Observable implements Observer {
       this.args = args
     this.invalid.since = TOP_TIMESTAMP
     if (!this.error)
-      Method.runAs<void>(this, Computation.compute, proxy, this)
+      Method.runAs<void>(this, Computation.compute, this, proxy)
     else
       this.ret = Promise.reject(this.error)
   }
 
-  static compute(proxy: any, c: Computation): void {
-    c.enter()
+  static compute(self: Computation, proxy: any): void {
+    self.enter()
     try {
-      c.ret = c.options.body.call(proxy, ...c.args)
+      self.ret = self.options.body.call(proxy, ...self.args)
     }
     finally {
-      c.leaveOrAsync()
+      self.leaveOrAsync()
     }
   }
 
