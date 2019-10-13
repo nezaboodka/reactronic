@@ -233,7 +233,7 @@ export class Transaction extends Action {
   }
 
   private runTriggers(): void {
-    this.snapshot.triggers.map(t => t.validate(false, false))
+    this.snapshot.triggers.map(t => t.trig(false, false))
   }
 
   private static seal(t: Transaction, error?: Error, after?: Transaction): void {
