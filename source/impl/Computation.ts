@@ -19,6 +19,7 @@ type Call = { context: Snapshot, record: Record, result: Computation, reusable: 
 
 export class Method extends Cache<any> {
   private readonly handle: Handle
+  private readonly name: FieldKey
   private readonly preset: Computation
 
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
@@ -28,18 +29,19 @@ export class Method extends Cache<any> {
   get error(): boolean { return this.weak().result.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reusable }
-  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.preset.field)})` : 'invalidate()', Method.doInvalidate, this) }
+  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.name)})` : 'invalidate()', Method.invalidate, this) }
   pullValue(args?: any[]): any { return this.call(true, args).result.value }
 
-  constructor(handle: Handle, field: FieldKey, options: OptionsImpl) {
+  constructor(handle: Handle, name: FieldKey, options: OptionsImpl) {
     super()
     this.handle = handle
-    this.preset = new Computation(INIT, field, options)
+    this.name = name
+    this.preset = new Computation(INIT, name, options)
     Computation.freeze(this.preset)
   }
 
   private initialize(): Computation {
-    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.preset.field.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
+    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
     const sidebyside = this.preset.options.reentrance === Reentrance.RunSideBySide
     const token = this.preset.options.kind === Kind.Cached ? this : undefined
     const result = Transaction.runEx<Computation>(hint, true, sidebyside, this.preset.options.trace, token, (): Computation => {
@@ -58,7 +60,7 @@ export class Method extends Cache<any> {
     const ctx = call.context
     const c: Computation = call.result
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
-      const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${c.field.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}${c.invalid.hint ? `   <<   ${invalidationChain(c.invalid.hint, 0).join('   <<   ')}` : ''}` : /* istanbul ignore next */ 'Cache.run'
+      const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}${c.invalid.hint ? `   <<   ${invalidationChain(c.invalid.hint, 0).join('   <<   ')}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const cfg = c.options
       const spawn = weak || cfg.kind === Kind.Trigger ||
         (cfg.kind === Kind.Cached && call.record.snapshot !== call.context)
@@ -69,8 +71,8 @@ export class Method extends Cache<any> {
       if (!weak || ctx === ctx2 || (ctx2.applied && ctx.timestamp >= ctx2.timestamp))
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record)}.${call.result.field.toString()} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
-    Snapshot.markViewed(call.record, call.result.field, call.result, weak)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record)}.${this.name.toString()} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
+    Snapshot.markViewed(call.record, this.name, call.result, weak)
     return call
   }
 
@@ -98,14 +100,14 @@ export class Method extends Cache<any> {
 
   private weak(): Call {
     const call = this.read(undefined)
-    Snapshot.markViewed(call.record, call.result.field, call.result, true)
+    Snapshot.markViewed(call.record, this.name, call.result, true)
     return call
   }
 
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
-    const c: Computation = r.data[this.preset.field] || this.initialize()
+    const c: Computation = r.data[this.name] || this.initialize()
     const reusable = c.options.kind !== Kind.Action &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
@@ -115,7 +117,7 @@ export class Method extends Cache<any> {
 
   private write(): Call {
     const ctx = Snapshot.writable()
-    const f = this.preset.field
+    const f = this.name
     const r: Record = ctx.write(this.handle, f, HANDLE, this)
     let c: Computation = r.data[f] || this.preset
     if (c.record !== r) {
@@ -154,23 +156,22 @@ export class Method extends Cache<any> {
     return result
   }
 
-  static doInvalidate(self: Method): void {
+  static invalidate(self: Method): void {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c: Computation = call.result
-    c.invalidateDueTo(c, {record: INIT, field: c.field, times: 0}, ctx.timestamp, ctx.triggers)
+    c.invalidateDueTo(c, {record: INIT, field: self.name, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
   private reconfigure(options: Partial<Options>): Options {
     const call = this.read(undefined)
-    const c: Computation = call.result
     const r: Record = call.record
-    const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle)}.${this.preset.field.toString()})` : /* istanbul ignore next */ 'Cache.setup()'
+    const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle)}.${this.name.toString()})` : /* istanbul ignore next */ 'Cache.setup()'
     return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
       const c2: Computation = call2.result
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  w ', `${Hints.record(r)}.${c.field.toString()}.options = ...`)
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  w ', `${Hints.record(r)}.${this.name.toString()}.options = ...`)
       return c2.options
     })
   }
