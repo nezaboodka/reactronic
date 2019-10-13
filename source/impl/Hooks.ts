@@ -11,7 +11,7 @@ import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, FieldKey, Observable, Handle } from './Data'
 import { Snapshot, Hints, INIT, HANDLE, METHOD, UNMOUNT } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
-import { Status } from '../Status'
+import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
 import { Trace } from '../Trace'
 
@@ -57,7 +57,7 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   delay: -2, // never
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
-  status: null,
+  monitor: null,
   trace: undefined,
 })
 
@@ -66,7 +66,7 @@ const DEFAULT_STATEFUL_OPTIONS: Options = Object.freeze({
   delay: -2, // never
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
-  status: null,
+  monitor: null,
   trace: undefined,
 })
 
@@ -76,7 +76,7 @@ export class OptionsImpl implements Options {
   readonly delay: number
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly status: Status | null
+  readonly monitor: Monitor | null
   readonly trace?: Partial<Trace>
   static readonly STATEFUL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATEFUL_OPTIONS}, {}, false))
   static readonly STATELESS = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))
@@ -87,7 +87,7 @@ export class OptionsImpl implements Options {
     this.delay = merge(DEFAULT_STATELESS_OPTIONS.delay, existing.delay, patch.delay, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.cachedArgs = merge(DEFAULT_STATELESS_OPTIONS.cachedArgs, existing.cachedArgs, patch.cachedArgs, implicit)
-    this.status = merge(DEFAULT_STATELESS_OPTIONS.status, existing.status, patch.status, implicit)
+    this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
     this.trace = merge(DEFAULT_STATELESS_OPTIONS.trace, existing.trace, patch.trace, implicit)
     Object.freeze(this)
   }

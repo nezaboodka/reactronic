@@ -6,7 +6,7 @@
 import { F } from './util/Utils'
 import { Trace } from './Trace'
 import { Transaction } from './impl/Transaction'
-import { Worker } from './Status'
+import { Worker } from './Monitor'
 
 export abstract class Action implements Worker {
   static get current(): Action { return Transaction.current }

@@ -5,14 +5,14 @@
 
 import { Trace } from './Trace'
 export { Trace } from './Trace'
-import { Status } from './Status'
+import { Monitor } from './Monitor'
 
 export interface Options {
   readonly kind: Kind
   readonly delay: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly status: Status | null
+  readonly monitor: Monitor | null
   readonly trace?: Partial<Trace>
 }
 

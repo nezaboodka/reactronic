@@ -9,7 +9,7 @@ export { Tools } from './Tools'
 export { State } from './impl/Hooks'
 export { stateless, action, trigger, cached,
   cacheof, resolved, nonreactive, standalone, delay,
-  reentrance, cachedArgs, status, trace } from './Tools'
+  reentrance, cachedArgs, monitor, trace } from './Tools'
 export { Action } from './Action'
 export { Cache,  } from './Cache'
-export { Status } from './Status'
+export { Monitor } from './Monitor'

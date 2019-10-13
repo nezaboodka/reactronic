@@ -3,18 +3,18 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { State, action, trigger, cached, cachedArgs, delay, status,
-  reentrance, Status, Reentrance, Tools as RT, all, sleep } from '../source/.index'
+import { State, action, trigger, cached, cachedArgs, delay, monitor,
+  reentrance, Monitor, Reentrance, Tools as RT, all, sleep } from '../source/.index'
 export { tracing } from './common'
 
 export const output: string[] = []
-export const loading = Status.create('loading', 0)
+export const loading = Monitor.create('loading', 0)
 
 export class AsyncDemo extends State {
   url: string = 'reactronic'
   log: string[] = ['RTA']
 
-  @action @status(loading) @reentrance(Reentrance.PreventWithError)
+  @action @monitor(loading) @reentrance(Reentrance.PreventWithError)
   async load(url: string, delay: number): Promise<void> {
     this.url = url
     await all([sleep(delay)])

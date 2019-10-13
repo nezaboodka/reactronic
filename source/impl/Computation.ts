@@ -8,10 +8,10 @@ import { Dbg, misuse } from '../util/Dbg'
 import { Record, FieldKey, Observable, FieldHint, Observer, Handle } from './Data'
 import { Snapshot, Hints, INIT, HANDLE, METHOD, UNMOUNT } from './Snapshot'
 import { Transaction } from './Transaction'
-import { StatusImpl } from './StatusImpl'
+import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
 import { Options, Kind, Reentrance, Trace } from '../Options'
-import { Status, Worker } from '../Status'
+import { Monitor, Worker } from '../Monitor'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
@@ -298,8 +298,8 @@ class Computation extends Observable implements Observer {
   }
 
   enter(): void {
-    if (this.options.status)
-      this.statusEnter(this.options.status)
+    if (this.options.monitor)
+      this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', '‾\\', `${Hints.record(this.record, this.field)} - enter`)
     this.started = Date.now()
   }
@@ -329,23 +329,23 @@ class Computation extends Observable implements Observer {
     const ms: number = Date.now() - this.started
     this.started = 0
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', `${op}`, `${Hints.record(this.record, this.field)} ${message}`, ms, highlight)
-    if (this.options.status)
-      this.statusLeave(this.options.status)
+    if (this.options.monitor)
+      this.monitorLeave(this.options.monitor)
     // CacheResult.freeze(this)
   }
 
-  private statusEnter(mon: Status): void {
-    Method.runAs<void>(undefined, Transaction.runEx, 'Status.enter',
-      true, false, Dbg.isOn && Dbg.trace.status ? undefined : Dbg.global, undefined,
-      StatusImpl.enter, mon, this)
+  private monitorEnter(mon: Monitor): void {
+    Method.runAs<void>(undefined, Transaction.runEx, 'Monitor.enter',
+      true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+      MonitorImpl.enter, mon, this)
   }
 
-  private statusLeave(mon: Status): void {
+  private monitorLeave(mon: Monitor): void {
     Transaction.outside<void>(() => {
       const leave = (): void => {
-        Method.runAs<void>(undefined, Transaction.runEx, 'Status.leave',
-          true, false, Dbg.isOn && Dbg.trace.status ? undefined : Dbg.global, undefined,
-          StatusImpl.leave, mon, this)
+        Method.runAs<void>(undefined, Transaction.runEx, 'Monitor.leave',
+          true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+          MonitorImpl.leave, mon, this)
       }
       this.worker.whenFinished().then(leave, leave)
     })

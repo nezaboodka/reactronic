@@ -8,7 +8,7 @@ import { Dbg } from './util/Dbg'
 import { Hints } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Computation'
-import { Action, Cache, Status, Kind, Reentrance, Trace } from './.index'
+import { Action, Cache, Monitor, Kind, Reentrance, Trace } from './.index'
 
 export class Tools {
   // Configuration
@@ -81,8 +81,8 @@ export function cachedArgs(cachedArgs: boolean): F<any> {
   return options({cachedArgs})
 }
 
-export function status(status: Status | null): F<any> {
-  return options({status})
+export function monitor(monitor: Monitor | null): F<any> {
+  return options({monitor})
 }
 
 export function trace(trace: Partial<Trace>): F<any> {

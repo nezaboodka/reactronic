@@ -176,10 +176,10 @@ invocation of the corresponding function:
   - `Reentrance.CancelPrevious` - cancel previous action in favor of current one;
   - `Reentrance.RunSideBySide` - multiple simultaneous actions are allowed.
 
-**Status** is an object that holds the status of running functions,
-which it is attached to. A single status object can be shared between
+**Monitor** is an object that maintains the status of running functions,
+which it is attached to. A single monitor object can be shared between
 multiple actions, triggers, and cache functions, thus maintaining
-consolidated status for all of them (busy, actions, etc).
+consolidated status for all of them (busy, workers, etc).
 
 ## Notes
 
@@ -216,7 +216,7 @@ function cached(proto, prop, pd) // method only
 function delay(delay: number) // triggers only
 function reentrance(reentrance: Reentrance) // actions & triggers
 function cachedArgs(cachedArgs: boolean) // cached & triggers
-function status(status: Status | null)
+function monitor(monitor: Monitor | null)
 function trace(trace: Partial<Trace>)
 
 function cacheof<T>(method: F<T>): Cache<T>
@@ -224,14 +224,14 @@ function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined
 function nonreactive<T>(func: F<T>, ...args: any[]): T
 function standalone<T>(func: F<T>, ...args: any[]): T
 
-// Options, Kind, Reentrance, Status, Trace
+// Options, Kind, Reentrance, Monitor, Trace
 
 interface Options {
   readonly kind: Kind
   readonly delay: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly cachedArgs: boolean
-  readonly status: Status | null
+  readonly monitor: Monitor | null
   readonly trace?: Partial<Trace>
 }
 
@@ -250,13 +250,13 @@ enum Reentrance {
   RunSideBySide = -2, // multiple simultaneous actions are allowed
 }
 
-class Status {
+class Monitor {
   readonly busy: boolean
   readonly workerCount: number
   readonly workers: ReadonlySet<Worker>
   readonly animationFrameCount: number
   readonly delayBeforeIdle?: number // milliseconds
-  static create(hint?: string, delayBeforeIdle?: number): Status
+  static create(hint?: string, delayBeforeIdle?: number): Monitor
 }
 
 interface Worker {
@@ -273,7 +273,7 @@ interface Trace {
   readonly actions: boolean
   readonly methods: boolean
   readonly steps: boolean
-  readonly status: boolean
+  readonly monitors: boolean
   readonly reads: boolean
   readonly writes: boolean
   readonly changes: boolean

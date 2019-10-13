@@ -7,7 +7,7 @@ import { undef, F } from '../util/Utils'
 import { Dbg, misuse, error } from '../util/Dbg'
 import { Record } from './Data'
 import { Snapshot, Hints } from './Snapshot'
-import { Worker } from '../Status'
+import { Worker } from '../Monitor'
 import { Action } from '../Action'
 import { Trace } from '../Options'
 

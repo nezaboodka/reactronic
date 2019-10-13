@@ -4,9 +4,9 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { State } from './impl/Hooks'
-import { StatusImpl } from './impl/StatusImpl'
+import { MonitorImpl } from './impl/MonitorImpl'
 
-export abstract class Status extends State {
+export abstract class Monitor extends State {
   abstract readonly busy: boolean
   abstract readonly workerCount: number
   abstract readonly workers: ReadonlySet<Worker>
@@ -16,7 +16,7 @@ export abstract class Status extends State {
   abstract enter(worker: Worker): void
   abstract leave(worker: Worker): void
 
-  static create(hint?: string, delayBeforeIdle?: number): Status { return StatusImpl.create(hint, delayBeforeIdle) }
+  static create(hint?: string, delayBeforeIdle?: number): Monitor { return MonitorImpl.create(hint, delayBeforeIdle) }
 }
 
 export interface Worker {
