@@ -115,18 +115,18 @@ export class Method extends Cache<any> {
 
   private write(): Call {
     const ctx = Snapshot.writable()
-    const field = this.preset.field
-    const r: Record = ctx.write(this.handle, field, HANDLE, this)
-    let c: Computation = r.data[field] || this.preset
+    const f = this.preset.field
+    const r: Record = ctx.write(this.handle, f, HANDLE, this)
+    let c: Computation = r.data[f] || this.preset
     if (c.record !== r) {
-      const renewing = new Computation(r, field, c)
-      r.data[field] = renewing
+      const renewing = new Computation(r, f, c)
+      r.data[f] = renewing
       renewing.error = Method.checkForReentrance(c)
       if (!renewing.error)
         c.invalid.renewing = renewing
       c = renewing
       ctx.bump(r.prev.record.snapshot.timestamp)
-      Snapshot.markChanged(r, field, renewing, true)
+      Snapshot.markChanged(r, f, renewing, true)
     }
     return { context: ctx, record: r, result: c, reusable: true }
   }
