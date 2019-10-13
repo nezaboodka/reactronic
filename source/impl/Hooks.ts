@@ -19,7 +19,6 @@ import { Trace } from '../Trace'
 
 const BLANK: unique symbol = Symbol('R:BLANK')
 const TRIGGERS: unique symbol = Symbol('R:TRIGGERS')
-const CLASS_OPTIONS: unique symbol = Symbol('R:CLASS')
 
 const EMPTY_META = Object.freeze({})
 
@@ -249,9 +248,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const configurable: boolean = true
     const methodOptions = Hooks.setup(proto, method, pd.value, options, implicit)
     const get = function(this: any): any {
-      const p = Object.getPrototypeOf(this)
-      const blank = Hooks.getMeta<any>(p, BLANK)
-      const classOptions: OptionsImpl = blank[CLASS_OPTIONS] || (this instanceof State ? OptionsImpl.STATEFUL : OptionsImpl.STATELESS)
+      const classOptions: OptionsImpl = this instanceof State ? OptionsImpl.STATEFUL : OptionsImpl.STATELESS
       const h: Handle = classOptions.kind !== Kind.Stateless ? Utils.get<Handle>(this, HANDLE) : Hooks.acquireHandle(this)
       const value = Hooks.createCacheTrap(h, method, methodOptions)
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
