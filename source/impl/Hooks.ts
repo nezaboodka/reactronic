@@ -249,7 +249,8 @@ export class Hooks implements ProxyHandler<Handle> {
     const methodOptions = Hooks.setup(proto, method, pd.value, options, implicit)
     const get = function(this: any): any {
       const p = Object.getPrototypeOf(this)
-      const classOptions: OptionsImpl = Hooks.getOptions(p, CLASS_OPTIONS) || (this instanceof Stateful ? OptionsImpl.STATEFUL : OptionsImpl.STATELESS)
+      const blank = Hooks.getBlank(p)
+      const classOptions: OptionsImpl = blank[CLASS_OPTIONS] || (this instanceof Stateful ? OptionsImpl.STATEFUL : OptionsImpl.STATELESS)
       const h: Handle = classOptions.kind !== Kind.Stateless ? Utils.get<Handle>(this, HANDLE) : Hooks.acquireHandle(this)
       const value = Hooks.createCacheTrap(h, method, methodOptions)
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
