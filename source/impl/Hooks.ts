@@ -19,7 +19,7 @@ import { Trace } from '../Trace'
 
 export class Stateful {
   constructor() {
-    const h = Hooks.createHandle(true, this, undefined, new.target.name)
+    const h = Hooks.createHandle(this, undefined, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
       const triggers: Map<FieldKey, OptionsImpl> | undefined = Hooks.getOptionsTable(new.target.prototype)[CLASS_TRIGGERS]
       if (triggers)
@@ -303,7 +303,7 @@ export class Hooks implements ProxyHandler<Handle> {
     return h
   }
 
-  static createHandle(stateful: boolean, stateless: any, proxy: any, hint: string): Handle {
+  static createHandle(stateless: any, proxy: any, hint: string): Handle {
     const h = new Handle(stateless, proxy, Hooks.proxy, INIT, hint)
     Snapshot.writable().write(h, '<RT:HANDLE>', HANDLE)
     return h
