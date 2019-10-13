@@ -43,13 +43,13 @@ export abstract class State {
 }
 
 export function options(options: Partial<Options>): F<any> {
-  return function(proto: object, prop?: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
+  return function(proto: object, prop: PropertyKey, pd?: TypedPropertyDescriptor<F<any>>): any {
     if (prop && pd)
       return Hooks.decorateMethod(false, options, proto, prop, pd) /* istanbul ignore next */
-    else if (prop) /* istanbul ignore next */
-      return Hooks.decorateField(false, options, proto, prop)
     else /* istanbul ignore next */
-      return Hooks.decorateClass(false, options, proto)
+      return Hooks.decorateField(false, options, proto, prop)
+    // else /* istanbul ignore next */
+    //   return Hooks.decorateClass(false, options, proto)
   }
 }
 
@@ -179,28 +179,28 @@ export class Hooks implements ProxyHandler<Handle> {
     return result
   }
 
-  static decorateClass(implicit: boolean, options: Partial<Options>, origCtor: any): any {
-    let ctor: any = origCtor
-    const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
-    const triggers = Hooks.getMeta<any>(ctor.prototype, TRIGGERS)
-    if (stateful) {
-      ctor = class extends origCtor {
-        constructor(...args: any[]) {
-          super(...args)
-          const self: any = this
-          const h: Handle = self[HANDLE] || Hooks.createHandleByDecoratedClass(stateful, self, undefined, origCtor.name)
-          if (self.constructor === ctor)
-            h.hint = origCtor.name
-          if (!Hooks.triggersAutoStartDisabled)
-            for (const field in triggers)
-              (h.proxy[field][CACHE] as Cache<any>).invalidate()
-          return h.proxy
-        }
-      }
-      Hooks.setup(ctor.prototype, CLASS_OPTIONS, decoratedclass, options, implicit)
-    }
-    return ctor
-  }
+  // static decorateClass(implicit: boolean, options: Partial<Options>, origCtor: any): any {
+  //   let ctor: any = origCtor
+  //   const stateful = options.kind !== undefined && options.kind !== Kind.Stateless
+  //   const triggers = Hooks.getMeta<any>(ctor.prototype, TRIGGERS)
+  //   if (stateful) {
+  //     ctor = class extends origCtor {
+  //       constructor(...args: any[]) {
+  //         super(...args)
+  //         const self: any = this
+  //         const h: Handle = self[HANDLE] || Hooks.createHandleByDecoratedClass(stateful, self, undefined, origCtor.name)
+  //         if (self.constructor === ctor)
+  //           h.hint = origCtor.name
+  //         if (!Hooks.triggersAutoStartDisabled)
+  //           for (const field in triggers)
+  //             (h.proxy[field][CACHE] as Cache<any>).invalidate()
+  //         return h.proxy
+  //       }
+  //     }
+  //     Hooks.setup(ctor.prototype, CLASS_OPTIONS, decoratedclass, options, implicit)
+  //   }
+  //   return ctor
+  // }
 
   // /* istanbul ignore next */
   // static decorateClassOld(implicit: boolean, options: Partial<Options>, origCtor: any): any {
@@ -345,10 +345,10 @@ function decoratedfield(...args: any[]): never {
   throw misuse('decoratedfield should never be called')
 }
 
-/* istanbul ignore next */
-function decoratedclass(...args: any[]): never {
-  throw misuse('decoratedclass should never be called')
-}
+// /* istanbul ignore next */
+// function decoratedclass(...args: any[]): never {
+//   throw misuse('decoratedclass should never be called')
+// }
 
 export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
   static readonly global: CopyOnWriteProxy = new CopyOnWriteProxy()
