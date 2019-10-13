@@ -6,7 +6,7 @@
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, FieldKey, Observable, FieldHint, Observer, Handle } from './Data'
-import { Snapshot, Hints, INIT, HANDLE, CACHE, UNMOUNT } from './Snapshot'
+import { Snapshot, Hints, INIT, HANDLE, METHOD, UNMOUNT } from './Snapshot'
 import { Transaction } from './Transaction'
 import { StatusImpl } from './StatusImpl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -193,16 +193,16 @@ export class Method extends Cache<any> {
     return result
   }
 
-  static createCacheTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
-    const cache = new Method(h, field, options)
-    const cacheTrap: F<any> = (...args: any[]): any =>
-      cache.call(false, args).computation.ret
-    Utils.set(cacheTrap, CACHE, cache)
-    return cacheTrap
+  static createMethodTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
+    const method = new Method(h, field, options)
+    const methodTrap: F<any> = (...args: any[]): any =>
+      method.call(false, args).computation.ret
+    Utils.set(methodTrap, METHOD, method)
+    return methodTrap
   }
 
   static of(method: F<any>): Cache<any> {
-    const impl = Utils.get<Cache<any> | undefined>(method, CACHE)
+    const impl = Utils.get<Cache<any> | undefined>(method, METHOD)
     if (!impl)
       throw misuse('given method is not a reactronic cache')
     return impl
@@ -369,8 +369,8 @@ class Computation extends Observable implements Observer {
         try {
           const proxy: any = Utils.get<Handle>(this.record.data, HANDLE).proxy
           const trap: Function = Reflect.get(proxy, this.field, proxy)
-          const cache = Utils.get<Method>(trap, CACHE)
-          const call: Call = cache.call(false, undefined)
+          const method = Utils.get<Method>(trap, METHOD)
+          const call: Call = method.call(false, undefined)
           if (call.computation.ret instanceof Promise)
             call.computation.ret.catch(error => { /* nop */ }) // bad idea to hide an error
         }
@@ -542,7 +542,7 @@ class Computation extends Observable implements Observer {
     Snapshot.isConflicting = Computation.isConflicting // override
     Snapshot.propagateChanges = Computation.propagateChanges // override
     Snapshot.discardChanges = Computation.discardChanges // override
-    Hooks.createCacheTrap = Method.createCacheTrap // override
+    Hooks.createCacheTrap = Method.createMethodTrap // override
     Promise.prototype.then = fReactronicThen // override
   }
 }

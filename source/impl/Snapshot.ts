@@ -9,7 +9,7 @@ import { Context, Record, FieldKey, Observable, Handle, Observer } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
 export const HANDLE: unique symbol = Symbol('R:HANDLE')
-export const CACHE: unique symbol = Symbol('R:CACHE')
+export const METHOD: unique symbol = Symbol('R:METHOD')
 export const UNMOUNT: unique symbol = Symbol('R:UNMOUNT')
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1

@@ -9,7 +9,7 @@ import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, FieldKey, Observable, Handle } from './Data'
-import { Snapshot, Hints, INIT, HANDLE, CACHE, UNMOUNT } from './Snapshot'
+import { Snapshot, Hints, INIT, HANDLE, METHOD, UNMOUNT } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Status } from '../Status'
 import { Cache } from '../Cache'
@@ -31,7 +31,7 @@ export abstract class State {
     if (!Hooks.triggersAutoStartDisabled) {
       const triggers = Hooks.getMeta<any>(proto, TRIGGERS)
       for (const field in triggers)
-        (h.proxy[field][CACHE] as Cache<any>).invalidate()
+        (h.proxy[field][METHOD] as Cache<any>).invalidate()
     }
     return h.proxy
   }
