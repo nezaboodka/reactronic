@@ -224,8 +224,7 @@ export class Transaction extends Action {
       this.workers--
       if (this.sealed && this.workers === 0) {
         this.finish()
-        if (this.snapshot.triggers.length > 0)
-          this.runTriggers()
+        this.runTriggers()
       }
       Transaction.running = outer
     }
