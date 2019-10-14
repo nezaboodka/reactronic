@@ -87,8 +87,13 @@ export class Method extends Cache<any> {
   private initialize(spawn: boolean): Computation {
     const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
     return Transaction.runEx<Computation>(hint, spawn, false, undefined, undefined, (): Computation => {
-      const r: Record = Snapshot.writable().write(this.handle, this.name, HANDLE, this)
-      return r.data[this.name] = this.blank
+      let r: Record = Snapshot.readable().read(this.handle)
+      let c = r.data[this.name] as Computation
+      if (c.record === INIT) {
+        r = Snapshot.writable().write(this.handle, this.name, HANDLE, this)
+        c = r.data[this.name] = this.blank
+      }
+      return c
     })
   }
 
@@ -116,6 +121,8 @@ export class Method extends Cache<any> {
     const f = this.name
     const r: Record = ctx.write(this.handle, f, HANDLE, this)
     let c: Computation = r.data[f]
+    if (c.record === INIT)
+      c = this.initialize(r.snapshot !== ctx)
     if (c.record !== r) {
       const renewing = new Computation(r, f, c)
       r.data[f] = renewing
