@@ -137,7 +137,7 @@ export class Method extends Cache<any> {
     if (prev && prev !== c && !prev.worker.isCanceled)
       switch (c.options.reentrance) {
         case Reentrance.PreventWithError:
-          throw misuse(`${c.hint()} is not reentrant`)
+          throw misuse(`${c.hint()} is not reentrant over ${prev.hint()}`)
         case Reentrance.WaitAndRestart:
           result = new Error(`T${caller.id} (${caller.hint}) will be restarted after T${prev.worker.id} (${prev.worker.hint})`)
           caller.cancel(result, prev.worker)
