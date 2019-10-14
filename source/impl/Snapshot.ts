@@ -11,7 +11,9 @@ import { CopyOnWriteProxy } from './Hooks'
 export const HANDLE: unique symbol = Symbol('R:HANDLE')
 export const METHOD: unique symbol = Symbol('R:METHOD')
 export const UNMOUNT: unique symbol = Symbol('R:UNMOUNT')
-
+export const STATELESS: unique symbol = Symbol('R:STATELESS')
+export const BLANK: unique symbol = Symbol('R:BLANK')
+export const TRIGGERS: unique symbol = Symbol('R:TRIGGERS')
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 // Snapshot
@@ -77,15 +79,19 @@ export class Snapshot implements Context {
 
   write(h: Handle, field: FieldKey, value: any, token?: any): Record {
     let r: Record = this.tryRead(h)
-    this.guard(h, r, field, value, token)
-    if (r.snapshot !== this) {
-      const data = {...r.data}
-      Reflect.set(data, HANDLE, h)
-      r = new Record(this, h.head, data)
-      this.changeset.set(h, r)
-      h.changing = r
-      h.writers++
+    if (r.data[field] !== STATELESS) {
+      this.guard(h, r, field, value, token)
+      if (r.snapshot !== this) {
+        const data = {...field === HANDLE ? value : r.data}
+        Reflect.set(data, HANDLE, h)
+        r = new Record(this, h.head, data)
+        this.changeset.set(h, r)
+        h.changing = r
+        h.writers++
+      }
     }
+    else
+      r = INIT
     return r
   }
 

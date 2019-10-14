@@ -224,15 +224,15 @@ export class Transaction extends Action {
       this.workers--
       if (this.sealed && this.workers === 0) {
         this.finish()
-        this.runTriggers()
+        Transaction.outside(Transaction.runTriggers, this)
       }
       Transaction.running = outer
     }
     return result
   }
 
-  private runTriggers(): void {
-    this.snapshot.triggers.map(t => t.trig(false, false))
+  private static runTriggers(t: Transaction): void {
+    t.snapshot.triggers.map(x => x.trig(false, false))
   }
 
   private static seal(t: Transaction, error?: Error, after?: Transaction): void {

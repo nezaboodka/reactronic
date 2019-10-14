@@ -23,7 +23,8 @@ export class AsyncDemo extends State {
 }
 
 export class AsyncDemoView {
-  constructor(readonly model: AsyncDemo) { }
+  constructor(readonly model: AsyncDemo) {
+  }
 
   @trigger @delay(-1)
   async print(): Promise<void> {

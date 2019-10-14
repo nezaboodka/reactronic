@@ -44,14 +44,12 @@ export function standalone<T>(func: F<T>, ...args: any[]): T {
 
 // Decorators
 
-// export function stateful(proto: object, prop?: PropertyKey): any {
-//   const opt = { kind: Kind.Stateful }
-//   return prop ? Hooks.decorateField(true, opt, proto, prop) : Hooks.decorateClass(true, opt, proto)
-// }
+export function stateful(proto: object, prop: PropertyKey): any {
+  return Hooks.decorateField(true, proto, prop)
+}
 
 export function stateless(proto: object, prop: PropertyKey): any {
-  const opt = { kind: Kind.Stateless }
-  return Hooks.decorateField(true, opt, proto, prop)
+  return Hooks.decorateField(false, proto, prop)
 }
 
 export function action(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {

@@ -6,7 +6,7 @@
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, FieldKey, Observable, FieldHint, Observer, Handle } from './Data'
-import { Snapshot, Hints, INIT, HANDLE, METHOD, UNMOUNT } from './Snapshot'
+import { Snapshot, Hints, INIT, HANDLE, METHOD, UNMOUNT, BLANK, TRIGGERS } from './Snapshot'
 import { Transaction } from './Transaction'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -20,7 +20,6 @@ type Call = { context: Snapshot, record: Record, result: Computation, reusable: 
 export class Method extends Cache<any> {
   private readonly handle: Handle
   private readonly name: FieldKey
-  private readonly preset: Computation
 
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().result.options }
@@ -32,26 +31,22 @@ export class Method extends Cache<any> {
   invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.name)})` : 'invalidate()', Method.invalidate, this) }
   pullValue(args?: any[]): any { return this.call(true, args).result.value }
 
-  constructor(handle: Handle, name: FieldKey, options: OptionsImpl) {
+  constructor(handle: Handle, name: FieldKey) {
     super()
     this.handle = handle
     this.name = name
-    this.preset = new Computation(INIT, name, options)
-    Computation.freeze(this.preset)
   }
 
-  private initialize(): Computation {
+  private initialize(c: Computation, r: Record): Computation {
     const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
-    const sidebyside = this.preset.options.reentrance === Reentrance.RunSideBySide
-    const token = this.preset.options.kind === Kind.Cached ? this : undefined
-    const result = Transaction.runEx<Computation>(hint, true, sidebyside, this.preset.options.trace, token, (): Computation => {
-      const c = this.write().result
-      c.ret = undefined
-      c.value = undefined
-      c.invalid.since = -1
-      return c
+    const result = Transaction.runEx<Computation>(hint, r.prev.record !== INIT, false, undefined, undefined, (): Computation => {
+      const c2 = this.write().result
+      c2.ret = undefined
+      c2.value = undefined
+      c2.invalid.since = -1
+      return c2
     })
-    this.preset.invalid.renewing = undefined
+    c.invalid.renewing = undefined
     return result
   }
 
@@ -107,9 +102,11 @@ export class Method extends Cache<any> {
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
-    const c: Computation = r.data[this.name] || this.initialize()
+    let c: Computation = r.data[this.name]
+    if (c.record === INIT)
+      c = this.initialize(c, r)
     const reusable = c.options.kind !== Kind.Action &&
-      (ctx === c.record.snapshot || ctx.timestamp < c.invalid.since) &&
+      ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[UNMOUNT] !== undefined
     return { context: ctx, record: r, result: c, reusable }
@@ -119,7 +116,7 @@ export class Method extends Cache<any> {
     const ctx = Snapshot.writable()
     const f = this.name
     const r: Record = ctx.write(this.handle, f, HANDLE, this)
-    let c: Computation = r.data[f] || this.preset
+    let c: Computation = r.data[f]
     if (c.record !== r) {
       const renewing = new Computation(r, f, c)
       r.data[f] = renewing
@@ -194,12 +191,30 @@ export class Method extends Cache<any> {
     return result
   }
 
-  static createMethodTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
-    const method = new Method(h, field, options)
+  static createMethodTrap(h: Handle, field: FieldKey): F<any> {
+    const method = new Method(h, field)
     const methodTrap: F<any> = (...args: any[]): any =>
       method.call(false, args).result.ret
     Utils.set(methodTrap, METHOD, method)
     return methodTrap
+  }
+
+  static alterBlankValue(proto: any, field: FieldKey, body: Function | undefined, options: Partial<OptionsImpl>, implicit: boolean): void {
+    const blank: any = Hooks.acquireMeta(proto, BLANK)
+    let c: Computation | undefined = blank[field]
+    if (c)
+      c.options = new OptionsImpl(body, c.options, options, implicit)
+    else
+      c = blank[field] = new Computation(INIT, field, new OptionsImpl(body, OptionsImpl.INITIAL, options, implicit))
+    // Add to the list if a trigger
+    if (c.options.kind === Kind.Trigger && c.options.delay > -2) {
+      const triggers = Hooks.acquireMeta(proto, TRIGGERS)
+      triggers[field] = c
+    }
+    else if (c.options.kind === Kind.Trigger && c.options.delay > -2) {
+      const triggers = Hooks.getMeta<any>(proto, TRIGGERS)
+      delete triggers[field]
+    }
   }
 
   static of(method: F<any>): Cache<any> {
@@ -446,7 +461,7 @@ class Computation extends Observable implements Observer {
   private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
     const prev = record.prev.record
     const value = prev.data[field] as Observable
-    if (value !== undefined && value.replacement === undefined) {
+    if (value !== undefined && value instanceof Observable && value.replacement === undefined) {
       value.replacement = record
       const hint: FieldHint = { record, field, times: 0 }
       if (value instanceof Computation && (value.invalid.since === TOP_TIMESTAMP || value.invalid.since <= 0)) {
@@ -517,7 +532,7 @@ class Computation extends Observable implements Observer {
           triggers.push(this)
         else if (this.observers) // cascade invalidation
           this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, field: this.field, times: 0}, since, triggers))
-        if (!this.worker.isFinished)
+        if (!this.worker.isFinished && this !== value)
           this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)}`), null)
       }
       else if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', 'x', `${this.hint()} invalidation is skipped`)
@@ -543,7 +558,8 @@ class Computation extends Observable implements Observer {
     Snapshot.isConflicting = Computation.isConflicting // override
     Snapshot.propagateChanges = Computation.propagateChanges // override
     Snapshot.discardChanges = Computation.discardChanges // override
-    Hooks.createCacheTrap = Method.createMethodTrap // override
+    Hooks.createMethodTrap = Method.createMethodTrap // override
+    Hooks.alterBlankValue = Method.alterBlankValue // override
     Promise.prototype.then = fReactronicThen // override
   }
 }
