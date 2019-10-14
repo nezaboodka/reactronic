@@ -46,7 +46,6 @@ export class Method extends Cache<any> {
       c2.invalid.since = -1
       return c2
     })
-    c.invalid.renewing = undefined
     return result
   }
 
@@ -121,7 +120,7 @@ export class Method extends Cache<any> {
       const renewing = new Computation(r, f, c)
       r.data[f] = renewing
       renewing.error = Method.checkForReentrance(c)
-      if (!renewing.error)
+      if (!renewing.error && c.record !== INIT)
         c.invalid.renewing = renewing
       c = renewing
       ctx.bump(r.prev.record.snapshot.timestamp)
