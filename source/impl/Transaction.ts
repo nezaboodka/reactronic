@@ -180,7 +180,8 @@ export class Transaction extends Action {
       if (this.after !== Transaction.none) {
         if (this.after) {
           // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
-          await this.after.whenFinished()
+          if (this.after !== this)
+            await this.after.whenFinished()
           // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           return Transaction.runEx<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
         }
@@ -242,7 +243,7 @@ export class Transaction extends Action {
       if (Dbg.isOn && Dbg.trace.errors) {
         Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== Transaction.none)
-          Dbg.log('║', ' [!]', `will be restarted after T${after.id} (${after.hint})`)
+          Dbg.log('║', ' [!]', `T${t.id} (${t.hint}) will be restarted after T${after.id} (${after.hint})`)
       }
       Snapshot.discardChanges(t.snapshot)
     }

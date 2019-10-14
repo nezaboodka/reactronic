@@ -69,7 +69,7 @@ export class Method extends Cache<any> {
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
       if (call2.result.worker.isCanceled) {
         call2 = this.read(argsx) // re-read on retry
-        if (!call2.reusable) {
+        if (!call2.reusable /*&& !call2.result.invalid.renewing*/) {
           call2 = this.write()
           call2.result.compute(this.handle.proxy, argsx)
         }
@@ -108,12 +108,16 @@ export class Method extends Cache<any> {
     const f = this.name
     const r: Record = ctx.write(this.handle, f, HANDLE, this)
     let c: Computation = r.data[f]
+    if (c.record === INIT)
+      c = this.blank
     if (c.record !== r) {
       const renewing = new Computation(r, f, c)
       r.data[f] = renewing
       renewing.error = Method.checkForReentrance(c)
-      if (!renewing.error)
+      if (!renewing.error) {
         c.invalid.renewing = renewing
+        renewing.invalid.previous = c
+      }
       c = renewing
       ctx.bump(r.prev.record.snapshot.timestamp)
       Snapshot.markChanged(r, f, renewing, true)
@@ -244,7 +248,7 @@ class Computation extends Observable implements Observer {
   ret: any
   error: any
   started: number
-  readonly invalid: { since: number, hint?: FieldHint, renewing?: Computation }
+  readonly invalid: { since: number, hint?: FieldHint, renewing?: Computation, previous?: Computation }
   readonly observables: Map<Observable, FieldHint>
   readonly margin: number
 
@@ -266,7 +270,7 @@ class Computation extends Observable implements Observer {
     // this.ret = undefined
     // this.error = undefined
     this.started = 0
-    this.invalid = { since: 0, hint: undefined, renewing: undefined }
+    this.invalid = { since: 0, hint: undefined, renewing: undefined, previous: undefined }
     this.observables = new Map<Observable, FieldHint>()
     this.margin = Computation.current ? Computation.current.margin + 1 : 1
   }
@@ -360,9 +364,12 @@ class Computation extends Observable implements Observer {
   }
 
   finish(error?: any): void {
-    const prev = this.record.prev.record.data[this.field]
-    if (prev instanceof Computation && prev.invalid.renewing === this)
-      prev.invalid.renewing = undefined
+    const prev = this.invalid.previous
+    if (prev) {
+      if (prev.invalid.renewing === this)
+        prev.invalid.renewing = undefined
+      this.invalid.previous = undefined
+    }
     if (Hooks.performanceWarningThreshold > 0) {
       this.observables.forEach((hint, value) => {
         if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} times`, 0, ' *** WARNING ***')
@@ -504,7 +511,7 @@ class Computation extends Observable implements Observer {
       const hint: FieldHint = {record, field, times}
       value.observers.add(this)
       this.observables.set(value, hint)
-      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.field)} is subscribed to ${Hints.record(hint.record, hint.field, true)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
+      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.field)} is subscribed to ${Hints.record(hint.record, hint.field)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
     }
     return result || value.replacement === record
   }
