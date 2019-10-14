@@ -37,9 +37,9 @@ export class Method extends Cache<any> {
     this.name = name
   }
 
-  private initialize(c: Computation, r: Record): Computation {
+  private initialize(c: Computation, spawn: boolean): Computation {
     const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
-    const result = Transaction.runEx<Computation>(hint, r.prev.record !== INIT, false, undefined, undefined, (): Computation => {
+    const result = Transaction.runEx<Computation>(hint, spawn, false, undefined, undefined, (): Computation => {
       const c2 = this.write().result
       c2.ret = undefined
       c2.value = undefined
@@ -104,7 +104,7 @@ export class Method extends Cache<any> {
     const r: Record = ctx.tryRead(this.handle)
     let c: Computation = r.data[this.name]
     if (c.record === INIT)
-      c = this.initialize(c, r)
+      c = this.initialize(c, r.snapshot !== ctx)
     const reusable = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||

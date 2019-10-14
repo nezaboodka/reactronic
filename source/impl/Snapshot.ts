@@ -272,7 +272,7 @@ export class Hints {
 
   static handle(h: Handle | undefined, field?: FieldKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const obj = h === undefined
-      ? 'initial'
+      ? 'blank'
       : (typeless
         ? (stamp === undefined ? `#${h.id}` : `v${stamp}t${tran}#${h.id}`)
         : (stamp === undefined ? `#${h.id} ${h.hint}` : `v${stamp}t${tran}#${h.id} ${h.hint}`))
