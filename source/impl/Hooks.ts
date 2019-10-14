@@ -175,11 +175,11 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: FieldKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
-    Hooks.alterBlankValue(proto, method, pd.value, options, implicit)
+    const opts = Hooks.alterBlankValue(proto, method, pd.value, options, implicit)
     const get = function(this: any): any {
       const stateful = this instanceof State
       const h: Handle = stateful ? Utils.get<Handle>(this, HANDLE) : Hooks.acquireHandle(this)
-      const value = Hooks.createMethodTrap(h, method)
+      const value = Hooks.createMethodTrap(h, method, opts)
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
       return value
     }
@@ -223,12 +223,12 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static createMethodTrap = function(h: Handle, field: FieldKey): F<any> {
+  static createMethodTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
   }
 
   /* istanbul ignore next */
-  static alterBlankValue = function(proto: any, field: FieldKey, body: Function | undefined, options: Partial<OptionsImpl>, implicit: boolean): void {
+  static alterBlankValue = function(proto: any, field: FieldKey, body: Function | undefined, options: Partial<Options>, implicit: boolean): OptionsImpl {
     throw misuse('setupBlankValue should never be called')
   }
 }

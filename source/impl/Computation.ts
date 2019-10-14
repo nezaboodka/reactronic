@@ -20,6 +20,7 @@ type Call = { context: Snapshot, record: Record, result: Computation, reusable: 
 export class Method extends Cache<any> {
   private readonly handle: Handle
   private readonly name: FieldKey
+  private readonly blank: Computation
 
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().result.options }
@@ -31,22 +32,13 @@ export class Method extends Cache<any> {
   invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.name)})` : 'invalidate()', Method.invalidate, this) }
   pullValue(args?: any[]): any { return this.call(true, args).result.value }
 
-  constructor(handle: Handle, name: FieldKey) {
+  constructor(handle: Handle, name: FieldKey, options: OptionsImpl) {
     super()
+    const record = Snapshot.readable().read(handle)
     this.handle = handle
     this.name = name
-  }
-
-  private initialize(c: Computation, spawn: boolean): Computation {
-    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
-    const result = Transaction.runEx<Computation>(hint, spawn, false, undefined, undefined, (): Computation => {
-      const c2 = this.write().result
-      c2.ret = undefined
-      c2.value = undefined
-      c2.invalid.since = -1
-      return c2
-    })
-    return result
+    this.blank = new Computation(record, name, options)
+    this.blank.invalid.since = -1
   }
 
   call(weak: boolean, args: any[] | undefined): Call {
@@ -103,7 +95,7 @@ export class Method extends Cache<any> {
     const r: Record = ctx.tryRead(this.handle)
     let c: Computation = r.data[this.name]
     if (c.record === INIT)
-      c = this.initialize(c, r.snapshot !== ctx)
+      c = this.blank
     const reusable = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
@@ -120,7 +112,7 @@ export class Method extends Cache<any> {
       const renewing = new Computation(r, f, c)
       r.data[f] = renewing
       renewing.error = Method.checkForReentrance(c)
-      if (!renewing.error && c.record !== INIT)
+      if (!renewing.error)
         c.invalid.renewing = renewing
       c = renewing
       ctx.bump(r.prev.record.snapshot.timestamp)
@@ -190,15 +182,15 @@ export class Method extends Cache<any> {
     return result
   }
 
-  static createMethodTrap(h: Handle, field: FieldKey): F<any> {
-    const method = new Method(h, field)
+  static createMethodTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
+    const method = new Method(h, field, options)
     const methodTrap: F<any> = (...args: any[]): any =>
       method.call(false, args).result.ret
     Utils.set(methodTrap, METHOD, method)
     return methodTrap
   }
 
-  static alterBlankValue(proto: any, field: FieldKey, body: Function | undefined, options: Partial<OptionsImpl>, implicit: boolean): void {
+  static alterBlankValue(proto: any, field: FieldKey, body: Function | undefined, options: Partial<Options>, implicit: boolean): OptionsImpl {
     const blank: any = Hooks.acquireMeta(proto, BLANK)
     let c: Computation | undefined = blank[field]
     if (c)
@@ -214,6 +206,7 @@ export class Method extends Cache<any> {
       const triggers = Hooks.getMeta<any>(proto, TRIGGERS)
       delete triggers[field]
     }
+    return c.options
   }
 
   static of(method: F<any>): Cache<any> {
