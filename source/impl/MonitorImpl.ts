@@ -13,11 +13,11 @@ export class MonitorImpl extends Monitor {
   workerCount: number = 0
   workers = new Set<Worker>()
   animationFrameCount: number = 0
-  delayBeforeIdle?: number = undefined // milliseconds
-  private timeout: any = undefined
+  private readonly x: { delayBeforeIdle?: number, timeout: any } =
+    { delayBeforeIdle: undefined, timeout: undefined }
 
   enter(worker: Worker): void {
-    this.timeout = clear(this.timeout) // yes, on each enter
+    this.x.timeout = clear(this.x.timeout) // yes, on each enter
     if (this.workerCount === 0)
       this.busy = true
     this.workerCount++
@@ -32,17 +32,17 @@ export class MonitorImpl extends Monitor {
   }
 
   private idle(now: boolean): void {
-    if (now || this.delayBeforeIdle === undefined) {
+    if (now || this.x.delayBeforeIdle === undefined) {
       if (this.workerCount > 0 || this.workers.size > 0) /* istanbul ignore next */
         throw misuse('cannot reset monitor having active workers')
       this.busy = false
-      this.timeout = clear(this.timeout)
+      this.x.timeout = clear(this.x.timeout)
       this.animationFrameCount = 0
     }
     else
-      this.timeout = setTimeout(() =>
+      this.x.timeout = setTimeout(() =>
         Transaction.runEx<void>('Monitor.idle', true, false,
-          undefined, undefined, MonitorImpl.idle, this, true), this.delayBeforeIdle)
+          undefined, undefined, MonitorImpl.idle, this, true), this.x.delayBeforeIdle)
   }
 
   static create(hint?: string, prolonged?: number): MonitorImpl {
@@ -52,7 +52,7 @@ export class MonitorImpl extends Monitor {
   private static doCreate(hint?: string, delayBeforeIdle?: number): MonitorImpl {
     const m = new MonitorImpl()
     Hints.setHint(m, hint)
-    m.delayBeforeIdle = delayBeforeIdle
+    m.x.delayBeforeIdle = delayBeforeIdle
     return m
   }
 

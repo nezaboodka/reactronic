@@ -11,7 +11,6 @@ export abstract class Monitor extends State {
   abstract readonly workerCount: number
   abstract readonly workers: ReadonlySet<Worker>
   abstract readonly animationFrameCount: number
-  abstract readonly delayBeforeIdle?: number // milliseconds
 
   abstract enter(worker: Worker): void
   abstract leave(worker: Worker): void
