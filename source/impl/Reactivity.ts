@@ -20,7 +20,7 @@ type Call = { context: Snapshot, record: Record, result: CachedResult, reusable:
 export class ReactiveFunction extends Cache<any> {
   readonly handle: Handle
   readonly name: FieldKey
-  readonly initial: CachedResult
+  readonly blank: CachedResult
 
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().result.options }
@@ -36,7 +36,7 @@ export class ReactiveFunction extends Cache<any> {
     super()
     this.handle = handle
     this.name = name
-    this.initial = this.acquireInitial()
+    this.blank = this.initialize()
   }
 
   call(weak: boolean, args: any[] | undefined): Call {
@@ -82,7 +82,7 @@ export class ReactiveFunction extends Cache<any> {
     return call2
   }
 
-  private acquireInitial(): CachedResult {
+  private initialize(): CachedResult {
     const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
     const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
     return Transaction.runEx<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
@@ -111,7 +111,7 @@ export class ReactiveFunction extends Cache<any> {
     const r: Record = ctx.tryRead(this.handle)
     let c: CachedResult = r.data[this.name]
     if (c.record === INIT)
-      c = this.initial
+      c = this.blank
     const reusable = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
@@ -125,7 +125,7 @@ export class ReactiveFunction extends Cache<any> {
     const r: Record = ctx.write(this.handle, f, HANDLE, this)
     let c: CachedResult = r.data[f]
     if (c.record === INIT)
-      c = this.initial
+      c = this.blank
     if (c.record !== r) {
       const renewing = new CachedResult(r, f, c)
       r.data[f] = renewing
@@ -382,7 +382,7 @@ class CachedResult extends Observable implements Observer {
       if (prev.record === INIT) {
         const h = Utils.get<Handle>(this.record.data, HANDLE)
         const func = Utils.get<ReactiveFunction>(h.proxy[this.field], FUNCTION)
-        prev = func.initial
+        prev = func.blank
       }
       if (prev.invalid.renewing === this)
         prev.invalid.renewing = undefined
