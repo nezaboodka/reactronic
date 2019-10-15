@@ -175,15 +175,16 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: FieldKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
-    const opts = Hooks.alterBlank(proto, method, pd.value, options, implicit)
-    const get = function(this: any): any {
+    // Setup method trap
+    const opts = Hooks.alterBlank(proto, method, pd.value, true, configurable, options, implicit)
+    const trap = function(this: any): any {
       const stateful = this instanceof State
       const h: Handle = stateful ? Utils.get<Handle>(this, HANDLE) : Hooks.acquireHandle(this)
       const value = Hooks.createMethodTrap(h, method, opts)
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
       return value
     }
-    return Object.defineProperty(proto, method, { get, enumerable, configurable })
+    return Object.defineProperty(proto, method, { get: trap, enumerable, configurable })
   }
 
   static acquireMeta(proto: any, sym: symbol): any {
@@ -223,12 +224,17 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
+  static getInitialComputation = function(h: Handle, field: FieldKey): any {
+    throw misuse('getInitialComputation should never be called')
+  }
+
+  /* istanbul ignore next */
   static createMethodTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
   }
 
   /* istanbul ignore next */
-  static alterBlank = function(proto: any, field: FieldKey, body: Function | undefined, options: Partial<Options>, implicit: boolean): OptionsImpl {
+  static alterBlank = function(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     throw misuse('alterBlank should never be called')
   }
 }

@@ -34,11 +34,9 @@ export class Method extends Cache<any> {
 
   constructor(handle: Handle, name: FieldKey, options: OptionsImpl) {
     super()
-    const record = Snapshot.readable().read(handle)
     this.handle = handle
     this.name = name
-    this.initial = new Computation(record, name, options)
-    this.initial.invalid.since = -1
+    this.initial = this.initialize()
   }
 
   call(weak: boolean, args: any[] | undefined): Call {
@@ -84,14 +82,18 @@ export class Method extends Cache<any> {
     return call2
   }
 
-  private initialize(spawn: boolean): Computation {
+  private initialize(): Computation {
     const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
+    const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
     return Transaction.runEx<Computation>(hint, spawn, false, undefined, undefined, (): Computation => {
-      let r: Record = Snapshot.readable().read(this.handle)
-      let c = r.data[this.name] as Computation
+      const h = this.handle
+      const f = this.name
+      let r: Record = Snapshot.readable().read(h)
+      let c = r.data[f] as Computation
       if (c.record === INIT) {
-        r = Snapshot.writable().write(this.handle, this.name, HANDLE, this)
-        c = r.data[this.name] = this.initial
+        r = Snapshot.writable().write(h, f, HANDLE, this)
+        c = r.data[f] = new Computation(r, f, c)
+        c.invalid.since = -1 // indicates initial value
       }
       return c
     })
@@ -106,9 +108,7 @@ export class Method extends Cache<any> {
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
-    let c: Computation = r.data[this.name]
-    if (c.record === INIT)
-      c = this.initialize(r.snapshot !== ctx)
+    const c: Computation = r.data[this.name]
     const reusable = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
@@ -121,8 +121,6 @@ export class Method extends Cache<any> {
     const f = this.name
     const r: Record = ctx.write(this.handle, f, HANDLE, this)
     let c: Computation = r.data[f]
-    if (c.record === INIT)
-      c = this.initialize(r.snapshot !== ctx)
     if (c.record !== r) {
       const renewing = new Computation(r, f, c)
       r.data[f] = renewing
@@ -197,6 +195,11 @@ export class Method extends Cache<any> {
     return result
   }
 
+  static getInitialComputation(h: Handle, field: FieldKey): any {
+    const m = Utils.get<Method>(h.proxy[field], METHOD)
+    return m.initial
+  }
+
   static createMethodTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     const method = new Method(h, field, options)
     const methodTrap: F<any> = (...args: any[]): any =>
@@ -205,23 +208,30 @@ export class Method extends Cache<any> {
     return methodTrap
   }
 
-  static alterBlank(proto: any, field: FieldKey, body: Function | undefined, options: Partial<Options>, implicit: boolean): OptionsImpl {
-    const blank: any = Hooks.acquireMeta(proto, BLANK)
-    let c: Computation | undefined = blank[field]
-    if (c)
-      c.options = new OptionsImpl(body, c.options, options, implicit)
-    else
-      c = blank[field] = new Computation(INIT, field, new OptionsImpl(body, OptionsImpl.INITIAL, options, implicit))
-    // Add to the list if a trigger
-    if (c.options.kind === Kind.Trigger && c.options.delay > -2) {
-      const triggers = Hooks.acquireMeta(proto, TRIGGERS)
-      triggers[field] = c
+  static alterBlank(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+    // Setup blank
+    const blankObject: any = Hooks.acquireMeta(proto, BLANK)
+    const existing: Computation | undefined = blankObject[field]
+    const blankValue = new Computation(INIT, field, new OptionsImpl(body, existing ? existing.options : OptionsImpl.INITIAL, options, implicit))
+    const getInitial = function(this: any): any {
+      const h: Handle = Utils.get<Handle>(this, HANDLE)
+      return h ? Hooks.getInitialComputation(h, field) : blankValue
     }
-    else if (c.options.kind === Kind.Trigger && c.options.delay > -2) {
+    const setInitial = function(this: any, value: any): boolean {
+      Object.defineProperty(this, field, { value, enumerable, configurable })
+      return true
+    }
+    Object.defineProperty(blankObject, field, { get: getInitial, set: setInitial, enumerable, configurable })
+    // Add to the list if a trigger
+    if (blankValue.options.kind === Kind.Trigger && blankValue.options.delay > -2) {
+      const triggers = Hooks.acquireMeta(proto, TRIGGERS)
+      triggers[field] = blankValue
+    }
+    else if (blankValue.options.kind === Kind.Trigger && blankValue.options.delay > -2) {
       const triggers = Hooks.getMeta<any>(proto, TRIGGERS)
       delete triggers[field]
     }
-    return c.options
+    return blankValue.options
   }
 
   static of(method: F<any>): Cache<any> {
@@ -565,6 +575,7 @@ class Computation extends Observable implements Observer {
     Snapshot.isConflicting = Computation.isConflicting // override
     Snapshot.propagateChanges = Computation.propagateChanges // override
     Snapshot.discardChanges = Computation.discardChanges // override
+    Hooks.getInitialComputation = Method.getInitialComputation // override
     Hooks.createMethodTrap = Method.createMethodTrap // override
     Hooks.alterBlank = Method.alterBlank // override
     Promise.prototype.then = fReactronicThen // override
