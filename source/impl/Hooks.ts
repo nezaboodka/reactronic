@@ -97,7 +97,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const ctx = Snapshot.readable()
     const r: Record = ctx.read(h)
     result = r.data[field]
-    if (result instanceof Observable && !result.isComputation) {
+    if (result instanceof Observable && !result.isComputed) {
       Snapshot.markViewed(r, field, result, false)
       result = result.value
     }
@@ -224,11 +224,6 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static getInitialComputation = function(h: Handle, field: FieldKey): any {
-    throw misuse('getInitialComputation should never be called')
-  }
-
-  /* istanbul ignore next */
   static createMethodTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
   }
@@ -256,7 +251,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
     const v = observable.value
     if (Array.isArray(v)) {
       if (!Object.isFrozen(v)) {
-        if (!observable.isComputation)
+        if (!observable.isComputed)
           observable.value = new Proxy(CopyOnWriteArray.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Object.freeze(v) // just freeze without copy-on-write hooks
@@ -264,7 +259,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
     }
     else if (v instanceof Set) {
       if (!Object.isFrozen(v)) {
-        if (!observable.isComputation)
+        if (!observable.isComputed)
           observable.value = new Proxy(CopyOnWriteSet.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Utils.freezeSet(v) // just freeze without copy-on-write hooks
@@ -272,7 +267,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
     }
     else if (v instanceof Map) {
       if (!Object.isFrozen(v)) {
-        if (!observable.isComputation)
+        if (!observable.isComputed)
           observable.value = new Proxy(CopyOnWriteMap.seal(proxy, field, v), CopyOnWriteProxy.global)
         else
           Utils.freezeMap(v) // just freeze without copy-on-write hooks

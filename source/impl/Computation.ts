@@ -15,12 +15,12 @@ import { Monitor, Worker } from '../Monitor'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-type Call = { context: Snapshot, record: Record, result: Computation, reusable: boolean }
+type Call = { context: Snapshot, record: Record, result: CachedResult, reusable: boolean }
 
 export class Method extends Cache<any> {
   readonly handle: Handle
   readonly name: FieldKey
-  readonly initial: Computation
+  readonly initial: CachedResult
 
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().result.options }
@@ -42,7 +42,7 @@ export class Method extends Cache<any> {
   call(weak: boolean, args: any[] | undefined): Call {
     let call: Call = this.read(args)
     const ctx = call.context
-    const c: Computation = call.result
+    const c: CachedResult = call.result
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}${c.invalid.hint ? `   <<   ${invalidationChain(c.invalid.hint, 0).join('   <<   ')}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const cfg = c.options
@@ -82,17 +82,17 @@ export class Method extends Cache<any> {
     return call2
   }
 
-  private acquireInitial(): Computation {
+  private acquireInitial(): CachedResult {
     const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
     const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
-    return Transaction.runEx<Computation>(hint, spawn, false, undefined, this, (): Computation => {
+    return Transaction.runEx<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
       const h = this.handle
       const f = this.name
       let r: Record = Snapshot.readable().read(h)
-      let c = r.data[f] as Computation
+      let c = r.data[f] as CachedResult
       if (c.record === INIT) {
         r = Snapshot.writable().write(h, f, HANDLE, this)
-        c = r.data[f] = new Computation(r, f, c)
+        c = r.data[f] = new CachedResult(r, f, c)
         c.invalid.since = -1 // indicates initial value
         // Snapshot.markChanged(r, f, c, true)
       }
@@ -109,7 +109,7 @@ export class Method extends Cache<any> {
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
-    let c: Computation = r.data[this.name]
+    let c: CachedResult = r.data[this.name]
     if (c.record === INIT)
       c = this.initial
     const reusable = c.options.kind !== Kind.Action &&
@@ -123,11 +123,11 @@ export class Method extends Cache<any> {
     const ctx = Snapshot.writable()
     const f = this.name
     const r: Record = ctx.write(this.handle, f, HANDLE, this)
-    let c: Computation = r.data[f]
+    let c: CachedResult = r.data[f]
     if (c.record === INIT)
       c = this.initial
     if (c.record !== r) {
-      const renewing = new Computation(r, f, c)
+      const renewing = new CachedResult(r, f, c)
       r.data[f] = renewing
       renewing.error = Method.checkForReentrance(c)
       if (!renewing.error)
@@ -139,7 +139,7 @@ export class Method extends Cache<any> {
     return { context: ctx, record: r, result: c, reusable: true }
   }
 
-  private static checkForReentrance(c: Computation): Error | undefined {
+  private static checkForReentrance(c: CachedResult): Error | undefined {
     let result: Error | undefined = undefined
     const prev = c.invalid.renewing
     const caller = Transaction.current
@@ -165,7 +165,7 @@ export class Method extends Cache<any> {
   static invalidate(self: Method): void {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
-    const c: Computation = call.result
+    const c: CachedResult = call.result
     c.invalidateDueTo(c, {record: INIT, field: self.name, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
@@ -175,18 +175,18 @@ export class Method extends Cache<any> {
     const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle)}.${this.name.toString()})` : /* istanbul ignore next */ 'Cache.setup()'
     return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
-      const c2: Computation = call2.result
+      const c2: CachedResult = call2.result
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
       if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  w ', `${Hints.record(r)}.${this.name.toString()}.options = ...`)
       return c2.options
     })
   }
 
-  static runAs<T>(c: Computation | undefined, func: F<T>, ...args: any[]): T {
+  static runAs<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined
-    const outer = Computation.current
+    const outer = CachedResult.current
     try {
-      Computation.current = c
+      CachedResult.current = c
       result = func(...args)
     }
     catch (e) {
@@ -195,14 +195,9 @@ export class Method extends Cache<any> {
       throw e
     }
     finally {
-      Computation.current = outer
+      CachedResult.current = outer
     }
     return result
-  }
-
-  static getInitialComputation(h: Handle, field: FieldKey): any {
-    const m = Utils.get<Method>(h.proxy[field], METHOD)
-    return m.initial
   }
 
   static createMethodTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
@@ -216,8 +211,8 @@ export class Method extends Cache<any> {
   static alterBlank(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     // Setup blank
     const blank: any = Hooks.acquireMeta(proto, BLANK)
-    const existing: Computation | undefined = blank[field]
-    const value = new Computation(INIT, field, new OptionsImpl(body, existing ? existing.options : OptionsImpl.INITIAL, options, implicit))
+    const existing: CachedResult | undefined = blank[field]
+    const value = new CachedResult(INIT, field, new OptionsImpl(body, existing ? existing.options : OptionsImpl.INITIAL, options, implicit))
     blank[field] = value
     // Add to the list if a trigger
     if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
@@ -252,11 +247,11 @@ export class Method extends Cache<any> {
   }
 }
 
-// Computation
+// CachedResult
 
-class Computation extends Observable implements Observer {
-  static current?: Computation = undefined
-  static asyncTriggerBatch: Computation[] = []
+class CachedResult extends Observable implements Observer {
+  static current?: CachedResult = undefined
+  static asyncTriggerBatch: CachedResult[] = []
 
   readonly worker: Worker
   readonly record: Record
@@ -266,16 +261,16 @@ class Computation extends Observable implements Observer {
   ret: any
   error: any
   started: number
-  readonly invalid: { since: number, hint?: FieldHint, renewing?: Computation }
+  readonly invalid: { since: number, hint?: FieldHint, renewing?: CachedResult }
   readonly observables: Map<Observable, FieldHint>
   readonly margin: number
 
-  constructor(record: Record, field: FieldKey, init: Computation | OptionsImpl) {
+  constructor(record: Record, field: FieldKey, init: CachedResult | OptionsImpl) {
     super(undefined)
     this.worker = Transaction.current
     this.record = record
     this.field = field
-    if (init instanceof Computation) {
+    if (init instanceof CachedResult) {
       this.options = init.options
       this.args = init.args
       // this.value = init.value
@@ -290,21 +285,21 @@ class Computation extends Observable implements Observer {
     this.started = 0
     this.invalid = { since: 0, hint: undefined, renewing: undefined }
     this.observables = new Map<Observable, FieldHint>()
-    this.margin = Computation.current ? Computation.current.margin + 1 : 1
+    this.margin = CachedResult.current ? CachedResult.current.margin + 1 : 1
   }
 
   hint(): string { return `${Hints.record(this.record, this.field)}` }
 
-  get isComputation(): boolean { return true }
+  get isComputed(): boolean { return true }
 
   bind<T>(func: F<T>): F<T> {
-    const computationBound: F<T> = (...args: any[]): T => {
+    const cacheBound: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.record(this.record)}.${this.field.toString()} - step in  `, 0, '        │')
       const result = Method.runAs<T>(this, func, ...args)
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record)}.${this.field.toString()} - step out `, 0, this.started > 0 ? '        │' : '')
       return result
     }
-    return computationBound
+    return cacheBound
   }
 
   compute(proxy: any, args: any[] | undefined): void {
@@ -312,12 +307,12 @@ class Computation extends Observable implements Observer {
       this.args = args
     this.invalid.since = TOP_TIMESTAMP
     if (!this.error)
-      Method.runAs<void>(this, Computation.compute, this, proxy)
+      Method.runAs<void>(this, CachedResult.compute, this, proxy)
     else
       this.ret = Promise.reject(this.error)
   }
 
-  static compute(self: Computation, proxy: any): void {
+  static compute(self: CachedResult, proxy: any): void {
     self.enter()
     try {
       self.ret = self.options.body.call(proxy, ...self.args)
@@ -383,7 +378,7 @@ class Computation extends Observable implements Observer {
 
   finish(error?: any): void {
     let prev = this.record.prev.record.data[this.field]
-    if (prev instanceof Computation) {
+    if (prev instanceof CachedResult) {
       if (prev.record === INIT) {
         const h = Utils.get<Handle>(this.record.data, HANDLE)
         const m = Utils.get<Method>(h.proxy[this.field], METHOD)
@@ -424,20 +419,20 @@ class Computation extends Observable implements Observer {
   }
 
   private addToAsyncTriggerBatch(): void {
-    Computation.asyncTriggerBatch.push(this)
-    if (Computation.asyncTriggerBatch.length === 1)
-      setTimeout(Computation.processAsyncTriggerBatch, 0)
+    CachedResult.asyncTriggerBatch.push(this)
+    if (CachedResult.asyncTriggerBatch.length === 1)
+      setTimeout(CachedResult.processAsyncTriggerBatch, 0)
   }
 
   private static processAsyncTriggerBatch(): void {
-    const triggers = Computation.asyncTriggerBatch
-    Computation.asyncTriggerBatch = [] // reset
+    const triggers = CachedResult.asyncTriggerBatch
+    CachedResult.asyncTriggerBatch = [] // reset
     for (const t of triggers)
       t.trig(true, true)
   }
 
   private static markViewed(record: Record, field: FieldKey, value: Observable, weak: boolean): void {
-    const c: Computation | undefined = Computation.current // alias
+    const c: CachedResult | undefined = CachedResult.current // alias
     if (c && c.options.kind !== Kind.Action && field !== HANDLE) {
       const ctx = Snapshot.readable()
       ctx.bump(record.snapshot.timestamp)
@@ -459,24 +454,24 @@ class Computation extends Observable implements Observer {
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       if (!r.changes.has(UNMOUNT))
         r.changes.forEach(field =>
-          Computation.markPrevValueAsReplaced(timestamp, r, field, triggers))
+          CachedResult.markPrevValueAsReplaced(timestamp, r, field, triggers))
       else
         for (const field in r.prev.record.data)
-          Computation.markPrevValueAsReplaced(timestamp, r, field, triggers)
+          CachedResult.markPrevValueAsReplaced(timestamp, r, field, triggers)
     })
     // Subscribe to new observers and finish cache computations
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       if (!r.changes.has(UNMOUNT))
-        r.changes.forEach(field => Computation.finish(r, field, false))
+        r.changes.forEach(field => CachedResult.finish(r, field, false))
       else
         for (const field in r.prev.record.data)
-          Computation.finish(r, field, true)
+          CachedResult.finish(r, field, true)
     })
   }
 
   private static discardChanges(snapshot: Snapshot): void {
     snapshot.changeset.forEach((r: Record, h: Handle) =>
-      r.changes.forEach(field => Computation.finish(r, field, true)))
+      r.changes.forEach(field => CachedResult.finish(r, field, true)))
   }
 
   private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
@@ -485,7 +480,7 @@ class Computation extends Observable implements Observer {
     if (value !== undefined && value instanceof Observable && value.replacement === undefined) {
       value.replacement = record
       const hint: FieldHint = { record, field, times: 0 }
-      if (value instanceof Computation && (value.invalid.since === TOP_TIMESTAMP || value.invalid.since <= 0)) {
+      if (value instanceof CachedResult && (value.invalid.since === TOP_TIMESTAMP || value.invalid.since <= 0)) {
         value.invalid.hint = hint
         value.invalid.since = timestamp
         value.unsubscribeFromAll()
@@ -497,7 +492,7 @@ class Computation extends Observable implements Observer {
 
   private static finish(record: Record, field: FieldKey, cancel: boolean): void {
     const cache = record.data[field]
-    if (cache instanceof Computation && cache.record === record) {
+    if (cache instanceof CachedResult && cache.record === record) {
       if (cancel)
         cache.unsubscribeFromAll()
       cache.finish()
@@ -518,7 +513,7 @@ class Computation extends Observable implements Observer {
   private subscribeTo(record: Record, field: FieldKey, value: Observable, timestamp: number): boolean {
     let result = value.replacement === undefined
     if (result && timestamp !== -1)
-      result = !(value instanceof Computation && timestamp >= value.invalid.since)
+      result = !(value instanceof CachedResult && timestamp >= value.invalid.since)
     if (result) {
       // Performance tracking
       let times: number = 0
@@ -528,7 +523,7 @@ class Computation extends Observable implements Observer {
       }
       // Acquire observers
       if (!value.observers)
-        value.observers = new Set<Computation>()
+        value.observers = new Set<CachedResult>()
       // Two-way linking
       const hint: FieldHint = {record, field, times}
       value.observers.add(this)
@@ -540,7 +535,7 @@ class Computation extends Observable implements Observer {
 
   invalidateDueTo(value: Observable, hint: FieldHint, since: number, triggers: Observer[]): void {
     if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
-      const notSelfInvalidation = value.isComputation ||
+      const notSelfInvalidation = value.isComputed ||
         hint.record.snapshot !== this.record.snapshot ||
         !hint.record.changes.has(hint.field)
       if (notSelfInvalidation) {
@@ -563,23 +558,22 @@ class Computation extends Observable implements Observer {
   static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof Computation && oldValue.invalid.since !== -1
+      result = oldValue instanceof CachedResult && oldValue.invalid.since !== -1
     return result
   }
 
-  static freeze(c: Computation): void {
+  static freeze(c: CachedResult): void {
     Utils.freezeMap(c.observables)
     Object.freeze(c)
   }
 
   static init(): void {
     Dbg.getCurrentTrace = getCurrentTrace
-    Snapshot.markViewed = Computation.markViewed // override
-    Snapshot.markChanged = Computation.markChanged // override
-    Snapshot.isConflicting = Computation.isConflicting // override
-    Snapshot.propagateChanges = Computation.propagateChanges // override
-    Snapshot.discardChanges = Computation.discardChanges // override
-    Hooks.getInitialComputation = Method.getInitialComputation // override
+    Snapshot.markViewed = CachedResult.markViewed // override
+    Snapshot.markChanged = CachedResult.markChanged // override
+    Snapshot.isConflicting = CachedResult.isConflicting // override
+    Snapshot.propagateChanges = CachedResult.propagateChanges // override
+    Snapshot.discardChanges = CachedResult.discardChanges // override
     Hooks.createMethodTrap = Method.createMethodTrap // override
     Hooks.alterBlank = Method.alterBlank // override
     Promise.prototype.then = fReactronicThen // override
@@ -589,7 +583,7 @@ class Computation extends Observable implements Observer {
 function invalidationChain(hint: FieldHint, since: number): string[] {
   const result: string[] = []
   let value: Observable = hint.record.data[hint.field]
-  while (value instanceof Computation && value.invalid.hint) {
+  while (value instanceof CachedResult && value.invalid.hint) {
     result.push(Hints.record(hint.record, hint.field))
     hint = value.invalid.hint
     value = hint.record.data[hint.field]
@@ -607,7 +601,7 @@ function valueHint(value: any): string {
     result = `Set(${value.size})`
   else if (value instanceof Map)
     result = `Map(${value.size})`
-  else if (value instanceof Computation)
+  else if (value instanceof CachedResult)
     result = `<recompute:${Hints.record(value.record.prev.record, undefined, true)}>`
   else if (value === UNMOUNT)
     result = '<unmount>'
@@ -622,8 +616,8 @@ function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
   const t = Transaction.current
   let res = Dbg.merge(t.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : '', Dbg.global)
   res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
-  if (Computation.current)
-    res = Dbg.merge({margin2: Computation.current.margin}, undefined, undefined, res)
+  if (CachedResult.current)
+    res = Dbg.merge({margin2: CachedResult.current.margin}, undefined, undefined, res)
   if (local)
     res = Dbg.merge(local, undefined, undefined, res)
   return res
@@ -641,10 +635,10 @@ function fReactronicThen(this: any,
       resolve = resolveReturn
     if (!reject)
       reject = rejectRethrow
-    const computation = Computation.current
-    if (computation) {
-      resolve = computation.bind(resolve)
-      reject = computation.bind(reject)
+    const cache = CachedResult.current
+    if (cache) {
+      resolve = cache.bind(resolve)
+      reject = cache.bind(reject)
     }
     resolve = tran.bind(resolve, false)
     reject = tran.bind(reject, true)
@@ -662,4 +656,4 @@ export function rejectRethrow(error: any): never {
   throw error
 }
 
-Computation.init()
+CachedResult.init()
