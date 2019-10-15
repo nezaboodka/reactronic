@@ -85,7 +85,7 @@ export class Method extends Cache<any> {
   private acquireInitial(): Computation {
     const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
     const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
-    return Transaction.runEx<Computation>(hint, spawn, false, undefined, undefined, (): Computation => {
+    return Transaction.runEx<Computation>(hint, spawn, false, undefined, this, (): Computation => {
       const h = this.handle
       const f = this.name
       let r: Record = Snapshot.readable().read(h)
