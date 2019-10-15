@@ -5,14 +5,13 @@
 
 export interface Trace {
   readonly silent: boolean
-  readonly actions: boolean
+  readonly transactions: boolean
   readonly methods: boolean
   readonly steps: boolean
   readonly monitors: boolean
   readonly reads: boolean
   readonly writes: boolean
   readonly changes: boolean
-  readonly subscriptions: boolean
   readonly invalidations: boolean
   readonly errors: boolean
   readonly warnings: boolean

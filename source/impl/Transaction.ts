@@ -56,7 +56,7 @@ export class Transaction extends Action {
     const restore = Transaction.inspection
     try {
       Transaction.inspection = true
-      if (Dbg.isOn && Dbg.trace.actions) Dbg.log('', '  ', `T${this.id} (${this.hint}) is being inspected by T${Transaction.running.id} (${Transaction.running.hint})`)
+      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log('', '  ', `T${this.id} (${this.hint}) is being inspected by T${Transaction.running.id} (${Transaction.running.hint})`)
       return this.do(undefined, func, ...args)
     }
     finally {

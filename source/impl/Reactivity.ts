@@ -504,7 +504,7 @@ class CachedResult extends Observable implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this) // now unsubscribed
-      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', '  - ', `${Hints.record(this.record, this.field)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
+      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', '  - ', `${Hints.record(this.record, this.field)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
     })
     this.observables.clear() // now fully unlinked
   }
@@ -527,7 +527,7 @@ class CachedResult extends Observable implements Observer {
       const hint: FieldHint = {record, field, times}
       value.observers.add(this)
       this.observables.set(value, hint)
-      if ((Dbg.isOn && Dbg.trace.subscriptions || (this.options.trace && this.options.trace.subscriptions))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.field)} is subscribed to ${Hints.record(hint.record, hint.field)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
+      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.field)} is subscribed to ${Hints.record(hint.record, hint.field)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
     }
     return result || value.replacement === record
   }

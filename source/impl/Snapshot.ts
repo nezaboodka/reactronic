@@ -111,7 +111,7 @@ export class Snapshot implements Context {
       Snapshot.pending.push(this)
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this
-      if (Dbg.isOn && Dbg.trace.actions) Dbg.log('╔══', `v${this.stamp}`, `${this.hint}`)
+      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log('╔══', `v${this.stamp}`, `${this.hint}`)
     }
   }
 
@@ -190,7 +190,7 @@ export class Snapshot implements Context {
         }
       }
     })
-    if (Dbg.isOn && Dbg.trace.actions)
+    if (Dbg.isOn && Dbg.trace.transactions)
       Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
     !error ? Snapshot.propagateChanges(this) : Snapshot.discardChanges(this)
   }
