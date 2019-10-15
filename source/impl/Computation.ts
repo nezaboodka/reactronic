@@ -6,7 +6,7 @@
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, FieldKey, Observable, FieldHint, Observer, Handle } from './Data'
-import { Snapshot, Hints, INIT, HANDLE, METHOD, UNMOUNT, PRESET, TRIGGERS } from './Snapshot'
+import { Snapshot, Hints, INIT, HANDLE, METHOD, UNMOUNT, BLANK, TRIGGERS } from './Snapshot'
 import { Transaction } from './Transaction'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -20,7 +20,7 @@ type Call = { context: Snapshot, record: Record, result: Computation, reusable: 
 export class Method extends Cache<any> {
   private readonly handle: Handle
   private readonly name: FieldKey
-  private readonly blank: Computation
+  private readonly initial: Computation
 
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().result.options }
@@ -37,8 +37,8 @@ export class Method extends Cache<any> {
     const record = Snapshot.readable().read(handle)
     this.handle = handle
     this.name = name
-    this.blank = new Computation(record, name, options)
-    this.blank.invalid.since = -1
+    this.initial = new Computation(record, name, options)
+    this.initial.invalid.since = -1
   }
 
   call(weak: boolean, args: any[] | undefined): Call {
@@ -91,7 +91,7 @@ export class Method extends Cache<any> {
       let c = r.data[this.name] as Computation
       if (c.record === INIT) {
         r = Snapshot.writable().write(this.handle, this.name, HANDLE, this)
-        c = r.data[this.name] = this.blank
+        c = r.data[this.name] = this.initial
       }
       return c
     })
@@ -205,13 +205,13 @@ export class Method extends Cache<any> {
     return methodTrap
   }
 
-  static alterPreset(proto: any, field: FieldKey, body: Function | undefined, options: Partial<Options>, implicit: boolean): OptionsImpl {
-    const preset: any = Hooks.acquireMeta(proto, PRESET)
-    let c: Computation | undefined = preset[field]
+  static alterBlank(proto: any, field: FieldKey, body: Function | undefined, options: Partial<Options>, implicit: boolean): OptionsImpl {
+    const blank: any = Hooks.acquireMeta(proto, BLANK)
+    let c: Computation | undefined = blank[field]
     if (c)
       c.options = new OptionsImpl(body, c.options, options, implicit)
     else
-      c = preset[field] = new Computation(INIT, field, new OptionsImpl(body, OptionsImpl.INITIAL, options, implicit))
+      c = blank[field] = new Computation(INIT, field, new OptionsImpl(body, OptionsImpl.INITIAL, options, implicit))
     // Add to the list if a trigger
     if (c.options.kind === Kind.Trigger && c.options.delay > -2) {
       const triggers = Hooks.acquireMeta(proto, TRIGGERS)
@@ -566,7 +566,7 @@ class Computation extends Observable implements Observer {
     Snapshot.propagateChanges = Computation.propagateChanges // override
     Snapshot.discardChanges = Computation.discardChanges // override
     Hooks.createMethodTrap = Method.createMethodTrap // override
-    Hooks.alterPreset = Method.alterPreset // override
+    Hooks.alterBlank = Method.alterBlank // override
     Promise.prototype.then = fReactronicThen // override
   }
 }

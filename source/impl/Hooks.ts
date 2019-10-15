@@ -9,7 +9,7 @@ import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, FieldKey, Observable, Handle } from './Data'
-import { Snapshot, Hints, INIT, HANDLE, METHOD, STATELESS, PRESET, TRIGGERS } from './Snapshot'
+import { Snapshot, Hints, INIT, HANDLE, METHOD, STATELESS, BLANK, TRIGGERS } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
@@ -22,8 +22,8 @@ const EMPTY_META = Object.freeze({})
 export abstract class State {
   constructor() {
     const proto = new.target.prototype
-    const preset = Hooks.getMeta<any>(proto, PRESET)
-    const h = Hooks.createHandle(this, preset, new.target.name)
+    const blank = Hooks.getMeta<any>(proto, BLANK)
+    const h = Hooks.createHandle(this, blank, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
       const triggers = Hooks.getMeta<any>(proto, TRIGGERS)
       for (const field in triggers)
@@ -169,13 +169,13 @@ export class Hooks implements ProxyHandler<Handle> {
       return Object.defineProperty(proto, field, { get, set, enumerable, configurable })
     }
     else
-      Hooks.acquireMeta(proto, PRESET)[field] = STATELESS
+      Hooks.acquireMeta(proto, BLANK)[field] = STATELESS
   }
 
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: FieldKey, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
-    const opts = Hooks.alterPreset(proto, method, pd.value, options, implicit)
+    const opts = Hooks.alterBlank(proto, method, pd.value, options, implicit)
     const get = function(this: any): any {
       const stateful = this instanceof State
       const h: Handle = stateful ? Utils.get<Handle>(this, HANDLE) : Hooks.acquireHandle(this)
@@ -204,8 +204,8 @@ export class Hooks implements ProxyHandler<Handle> {
       throw misuse('only objects can be reactive')
     let h = Utils.get<Handle>(obj, HANDLE)
     if (!h) {
-      const preset = Hooks.getMeta<any>(Object.getPrototypeOf(obj), PRESET)
-      const init = new Record(INIT.snapshot, INIT, {...preset})
+      const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), BLANK)
+      const init = new Record(INIT.snapshot, INIT, {...blank})
       Utils.set(init.data, HANDLE, h)
       init.freeze()
       h = new Handle(obj, obj, Hooks.proxy, init, obj.constructor.name)
@@ -215,10 +215,10 @@ export class Hooks implements ProxyHandler<Handle> {
     return h
   }
 
-  static createHandle(stateless: any, preset: any, hint: string): Handle {
+  static createHandle(stateless: any, blank: any, hint: string): Handle {
     const ctx = Snapshot.writable()
     const h = new Handle(stateless, undefined, Hooks.proxy, INIT, hint)
-    ctx.write(h, HANDLE, preset)
+    ctx.write(h, HANDLE, blank)
     return h
   }
 
@@ -228,8 +228,8 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static alterPreset = function(proto: any, field: FieldKey, body: Function | undefined, options: Partial<Options>, implicit: boolean): OptionsImpl {
-    throw misuse('alterPreset should never be called')
+  static alterBlank = function(proto: any, field: FieldKey, body: Function | undefined, options: Partial<Options>, implicit: boolean): OptionsImpl {
+    throw misuse('alterBlank should never be called')
   }
 }
 

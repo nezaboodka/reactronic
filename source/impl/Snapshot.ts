@@ -12,7 +12,7 @@ export const HANDLE: unique symbol = Symbol('R:HANDLE')
 export const METHOD: unique symbol = Symbol('R:METHOD')
 export const UNMOUNT: unique symbol = Symbol('R:UNMOUNT')
 export const STATELESS: unique symbol = Symbol('R:STATELESS')
-export const PRESET: unique symbol = Symbol('R:PRESET')
+export const BLANK: unique symbol = Symbol('R:BLANK')
 export const TRIGGERS: unique symbol = Symbol('R:TRIGGERS')
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
@@ -271,7 +271,7 @@ export class Hints {
   }
 
   static handle(h: Handle | undefined, field?: FieldKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
-    const obj = h === undefined
+    const obj = (h === undefined)
       ? 'blank'
       : (typeless
         ? (stamp === undefined ? `#${h.id}` : `v${stamp}t${tran}#${h.id}`)
