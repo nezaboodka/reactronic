@@ -6,7 +6,7 @@
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, FieldKey, Observable, FieldHint, Observer, Handle } from './Data'
-import { Snapshot, Hints, INIT, HANDLE, METHOD, UNMOUNT, BLANK, TRIGGERS } from './Snapshot'
+import { Snapshot, Hints, INIT, HANDLE, METHOD, UNMOUNT, PRESET, TRIGGERS } from './Snapshot'
 import { Transaction } from './Transaction'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -205,13 +205,13 @@ export class Method extends Cache<any> {
     return methodTrap
   }
 
-  static alterBlankValue(proto: any, field: FieldKey, body: Function | undefined, options: Partial<Options>, implicit: boolean): OptionsImpl {
-    const blank: any = Hooks.acquireMeta(proto, BLANK)
-    let c: Computation | undefined = blank[field]
+  static alterPreset(proto: any, field: FieldKey, body: Function | undefined, options: Partial<Options>, implicit: boolean): OptionsImpl {
+    const preset: any = Hooks.acquireMeta(proto, PRESET)
+    let c: Computation | undefined = preset[field]
     if (c)
       c.options = new OptionsImpl(body, c.options, options, implicit)
     else
-      c = blank[field] = new Computation(INIT, field, new OptionsImpl(body, OptionsImpl.INITIAL, options, implicit))
+      c = preset[field] = new Computation(INIT, field, new OptionsImpl(body, OptionsImpl.INITIAL, options, implicit))
     // Add to the list if a trigger
     if (c.options.kind === Kind.Trigger && c.options.delay > -2) {
       const triggers = Hooks.acquireMeta(proto, TRIGGERS)
@@ -566,7 +566,7 @@ class Computation extends Observable implements Observer {
     Snapshot.propagateChanges = Computation.propagateChanges // override
     Snapshot.discardChanges = Computation.discardChanges // override
     Hooks.createMethodTrap = Method.createMethodTrap // override
-    Hooks.alterBlankValue = Method.alterBlankValue // override
+    Hooks.alterPreset = Method.alterPreset // override
     Promise.prototype.then = fReactronicThen // override
   }
 }
