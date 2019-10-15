@@ -67,7 +67,7 @@ export class Method extends Cache<any> {
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
       if (call2.result.worker.isCanceled) {
         call2 = this.read(argsx) // re-read on retry
-        if (!call2.reusable /*&& !call2.result.invalid.renewing*/) {
+        if (call2.result.options.kind === Kind.Action || (!call2.reusable && !call2.result.invalid.renewing)) {
           call2 = this.write()
           call2.result.compute(this.handle.proxy, argsx)
         }
