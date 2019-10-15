@@ -6,7 +6,7 @@
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, FieldKey, Observable, FieldHint, Observer, Handle } from './Data'
-import { Snapshot, Hints, INIT, HANDLE, METHOD, UNMOUNT, BLANK, TRIGGERS } from './Snapshot'
+import { Snapshot, Hints, INIT, HANDLE, FUNCTION, UNMOUNT, BLANK, TRIGGERS } from './Snapshot'
 import { Transaction } from './Transaction'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -17,7 +17,7 @@ import { Cache } from '../Cache'
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 type Call = { context: Snapshot, record: Record, result: CachedResult, reusable: boolean }
 
-export class Method extends Cache<any> {
+export class ReactiveFunction extends Cache<any> {
   readonly handle: Handle
   readonly name: FieldKey
   readonly initial: CachedResult
@@ -29,7 +29,7 @@ export class Method extends Cache<any> {
   get error(): boolean { return this.weak().result.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reusable }
-  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.name)})` : 'invalidate()', Method.invalidate, this) }
+  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.name)})` : 'invalidate()', ReactiveFunction.invalidate, this) }
   pullValue(args?: any[]): any { return this.call(true, args).result.value }
 
   constructor(handle: Handle, name: FieldKey, options: OptionsImpl) {
@@ -129,7 +129,7 @@ export class Method extends Cache<any> {
     if (c.record !== r) {
       const renewing = new CachedResult(r, f, c)
       r.data[f] = renewing
-      renewing.error = Method.checkForReentrance(c)
+      renewing.error = ReactiveFunction.checkForReentrance(c)
       if (!renewing.error)
         c.invalid.renewing = renewing
       c = renewing
@@ -162,7 +162,7 @@ export class Method extends Cache<any> {
     return result
   }
 
-  static invalidate(self: Method): void {
+  static invalidate(self: ReactiveFunction): void {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c: CachedResult = call.result
@@ -200,12 +200,12 @@ export class Method extends Cache<any> {
     return result
   }
 
-  static createMethodTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
-    const method = new Method(h, field, options)
-    const methodTrap: F<any> = (...args: any[]): any =>
-      method.call(false, args).result.ret
-    Utils.set(methodTrap, METHOD, method)
-    return methodTrap
+  static createReactiveFunctionTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
+    const func = new ReactiveFunction(h, field, options)
+    const funcTrap: F<any> = (...args: any[]): any =>
+      func.call(false, args).result.ret
+    Utils.set(funcTrap, FUNCTION, func)
+    return funcTrap
   }
 
   static alterBlank(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
@@ -227,15 +227,15 @@ export class Method extends Cache<any> {
   }
 
   static of(method: F<any>): Cache<any> {
-    const impl = Utils.get<Cache<any> | undefined>(method, METHOD)
-    if (!impl)
+    const func = Utils.get<Cache<any> | undefined>(method, FUNCTION)
+    if (!func)
       throw misuse('given method is not a reactronic cache')
-    return impl
+    return func
   }
 
   static unmount(...objects: any[]): Transaction {
     return Transaction.runEx('<unmount>', false, false,
-      undefined, undefined, Method.doUnmount, ...objects)
+      undefined, undefined, ReactiveFunction.doUnmount, ...objects)
   }
 
   private static doUnmount(...objects: any[]): Transaction {
@@ -295,7 +295,7 @@ class CachedResult extends Observable implements Observer {
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.record(this.record)}.${this.field.toString()} - step in  `, 0, '        │')
-      const result = Method.runAs<T>(this, func, ...args)
+      const result = ReactiveFunction.runAs<T>(this, func, ...args)
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record)}.${this.field.toString()} - step out `, 0, this.started > 0 ? '        │' : '')
       return result
     }
@@ -307,7 +307,7 @@ class CachedResult extends Observable implements Observer {
       this.args = args
     this.invalid.since = TOP_TIMESTAMP
     if (!this.error)
-      Method.runAs<void>(this, CachedResult.compute, this, proxy)
+      ReactiveFunction.runAs<void>(this, CachedResult.compute, this, proxy)
     else
       this.ret = Promise.reject(this.error)
   }
@@ -360,7 +360,7 @@ class CachedResult extends Observable implements Observer {
   }
 
   private monitorEnter(mon: Monitor): void {
-    Method.runAs<void>(undefined, Transaction.runEx, 'Monitor.enter',
+    ReactiveFunction.runAs<void>(undefined, Transaction.runEx, 'Monitor.enter',
       true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
       MonitorImpl.enter, mon, this)
   }
@@ -368,7 +368,7 @@ class CachedResult extends Observable implements Observer {
   private monitorLeave(mon: Monitor): void {
     Transaction.outside<void>(() => {
       const leave = (): void => {
-        Method.runAs<void>(undefined, Transaction.runEx, 'Monitor.leave',
+        ReactiveFunction.runAs<void>(undefined, Transaction.runEx, 'Monitor.leave',
           true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           MonitorImpl.leave, mon, this)
       }
@@ -381,8 +381,8 @@ class CachedResult extends Observable implements Observer {
     if (prev instanceof CachedResult) {
       if (prev.record === INIT) {
         const h = Utils.get<Handle>(this.record.data, HANDLE)
-        const m = Utils.get<Method>(h.proxy[this.field], METHOD)
-        prev = m.initial
+        const func = Utils.get<ReactiveFunction>(h.proxy[this.field], FUNCTION)
+        prev = func.initial
       }
       if (prev.invalid.renewing === this)
         prev.invalid.renewing = undefined
@@ -401,8 +401,8 @@ class CachedResult extends Observable implements Observer {
         try {
           const proxy: any = Utils.get<Handle>(this.record.data, HANDLE).proxy
           const trap: Function = Reflect.get(proxy, this.field, proxy)
-          const method = Utils.get<Method>(trap, METHOD)
-          const call: Call = method.call(false, undefined)
+          const func = Utils.get<ReactiveFunction>(trap, FUNCTION)
+          const call: Call = func.call(false, undefined)
           if (call.result.ret instanceof Promise)
             call.result.ret.catch(error => { /* nop */ }) // bad idea to hide an error
         }
@@ -574,8 +574,8 @@ class CachedResult extends Observable implements Observer {
     Snapshot.isConflicting = CachedResult.isConflicting // override
     Snapshot.propagateChanges = CachedResult.propagateChanges // override
     Snapshot.discardChanges = CachedResult.discardChanges // override
-    Hooks.createMethodTrap = Method.createMethodTrap // override
-    Hooks.alterBlank = Method.alterBlank // override
+    Hooks.createReactiveFunctionTrap = ReactiveFunction.createReactiveFunctionTrap // override
+    Hooks.alterBlank = ReactiveFunction.alterBlank // override
     Promise.prototype.then = fReactronicThen // override
   }
 }

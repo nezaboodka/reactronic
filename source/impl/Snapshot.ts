@@ -9,7 +9,7 @@ import { Context, Record, FieldKey, Observable, Handle, Observer } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
 export const HANDLE: unique symbol = Symbol('R:HANDLE')
-export const METHOD: unique symbol = Symbol('R:METHOD')
+export const FUNCTION: unique symbol = Symbol('R:FUNCTION')
 export const UNMOUNT: unique symbol = Symbol('R:UNMOUNT')
 export const STATELESS: unique symbol = Symbol('R:STATELESS')
 export const BLANK: unique symbol = Symbol('R:BLANK')

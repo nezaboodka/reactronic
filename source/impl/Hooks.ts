@@ -9,7 +9,7 @@ import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, FieldKey, Observable, Handle } from './Data'
-import { Snapshot, Hints, INIT, HANDLE, METHOD, STATELESS, BLANK, TRIGGERS } from './Snapshot'
+import { Snapshot, Hints, INIT, HANDLE, FUNCTION, STATELESS, BLANK, TRIGGERS } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
@@ -27,7 +27,7 @@ export abstract class State {
     if (!Hooks.triggersAutoStartDisabled) {
       const triggers = Hooks.getMeta<any>(proto, TRIGGERS)
       for (const field in triggers)
-        (h.proxy[field][METHOD] as Cache<any>).invalidate()
+        (h.proxy[field][FUNCTION] as Cache<any>).invalidate()
     }
     return h.proxy
   }
@@ -180,7 +180,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const trap = function(this: any): any {
       const stateful = this instanceof State
       const h: Handle = stateful ? Utils.get<Handle>(this, HANDLE) : Hooks.acquireHandle(this)
-      const value = Hooks.createMethodTrap(h, method, opts)
+      const value = Hooks.createReactiveFunctionTrap(h, method, opts)
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
       return value
     }
@@ -224,7 +224,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static createMethodTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
+  static createReactiveFunctionTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
   }
 

@@ -6,7 +6,7 @@
 import { F } from './util/Utils'
 import { Options } from './Options'
 import { Action } from './Action'
-import { Method } from './impl/Computation'
+import { ReactiveFunction } from './impl/Reactivity'
 
 export abstract class Cache<T> {
   abstract readonly options: Options
@@ -20,6 +20,6 @@ export abstract class Cache<T> {
   abstract invalidate(): void
   abstract pullValue(args?: any[]): T | undefined
 
-  static of<T>(method: F<T>): Cache<T> { return Method.of(method) }
-  static unmount(...objects: any[]): Action { return Method.unmount(...objects) }
+  static of<T>(method: F<T>): Cache<T> { return ReactiveFunction.of(method) }
+  static unmount(...objects: any[]): Action { return ReactiveFunction.unmount(...objects) }
 }
