@@ -260,7 +260,7 @@ export class Transaction extends Action {
     if (!this.sidebyside)
       throw error(`T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
     else if (Dbg.isOn && Dbg.trace.warnings)
-      Dbg.log('║', '  · ', `conflict is ignored - T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
+      Dbg.log('║', ' ', `conflict is ignored - T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
   }
 
   private finish(): void {

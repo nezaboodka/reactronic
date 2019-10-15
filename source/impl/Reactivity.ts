@@ -176,7 +176,7 @@ export class ReactiveFunction extends Cache<any> {
       const call2 = this.write()
       const c2: CachedResult = call2.result
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  w ', `${Hints.record(r)}.${this.name.toString()}.options = ...`)
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(r)}.${this.name.toString()}.options = ...`)
       return c2.options
     })
   }
@@ -443,7 +443,7 @@ class CachedResult extends Observable implements Observer {
 
   private static markChanged(r: Record, field: FieldKey, value: any, changed: boolean): void {
     changed ? r.changes.add(field) : r.changes.delete(field)
-    if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log('║', '  w ', `${Hints.record(r, field)} = ${valueHint(value)}`) : Dbg.log('║', '  w ', `${Hints.record(r, field)} = ${valueHint(value)}`, undefined, ' (same as previous)')
+    if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log('║', '  ♦', `${Hints.record(r, field)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.record(r, field)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
   private static propagateChanges(snapshot: Snapshot): void {
@@ -504,7 +504,7 @@ class CachedResult extends Observable implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this) // now unsubscribed
-      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', '  - ', `${Hints.record(this.record, this.field)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
+      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', '-', `${Hints.record(this.record, this.field)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
     })
     this.observables.clear() // now fully unlinked
   }
@@ -540,9 +540,9 @@ class CachedResult extends Observable implements Observer {
       if (notSelfInvalidation) {
         this.invalid.hint = hint
         this.invalid.since = since
-        this.unsubscribeFromAll()
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
         if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Snapshot.readable().applied ? ' ' : '║', isTrigger ? '█' : '▒', isTrigger && hint.record === this.record && hint.field === this.field ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
+        this.unsubscribeFromAll()
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
         else if (this.observers) // cascade invalidation
