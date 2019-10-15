@@ -19,8 +19,7 @@ type Call = { context: Snapshot, record: Record, result: CachedResult, reusable:
 
 export class ReactiveFunction extends Cache<any> {
   readonly handle: Handle
-  readonly name: FieldKey
-  readonly blank: CachedResult
+  readonly initial: CachedResult
 
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().result.options }
@@ -29,14 +28,13 @@ export class ReactiveFunction extends Cache<any> {
   get error(): boolean { return this.weak().result.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reusable }
-  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.name)})` : 'invalidate()', ReactiveFunction.invalidate, this) }
+  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.initial.field)})` : 'invalidate()', ReactiveFunction.invalidate, this) }
   pullValue(args?: any[]): any { return this.call(true, args).result.value }
 
   constructor(handle: Handle, name: FieldKey, options: OptionsImpl) {
     super()
     this.handle = handle
-    this.name = name
-    this.blank = this.initialize()
+    this.initial = this.initialize(name)
   }
 
   call(weak: boolean, args: any[] | undefined): Call {
@@ -44,7 +42,7 @@ export class ReactiveFunction extends Cache<any> {
     const ctx = call.context
     const c: CachedResult = call.result
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
-      const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
+      const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, this.initial.field)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const cfg = c.options
       const spawn = weak || cfg.kind === Kind.Trigger ||
         (cfg.kind === Kind.Cached && call.record.snapshot !== call.context)
@@ -55,8 +53,8 @@ export class ReactiveFunction extends Cache<any> {
       if (!weak || ctx === ctx2 || (ctx2.applied && ctx.timestamp >= ctx2.timestamp))
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record)}.${this.name.toString()} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
-    Snapshot.markViewed(call.record, this.name, call.result, weak)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.initial.field)} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
+    Snapshot.markViewed(call.record, this.initial.field, call.result, weak)
     return call
   }
 
@@ -82,17 +80,16 @@ export class ReactiveFunction extends Cache<any> {
     return call2
   }
 
-  private initialize(): CachedResult {
-    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
+  private initialize(name: FieldKey): CachedResult {
+    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, name)}/initialize` : /* istanbul ignore next */ 'Cache.init'
     const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
     return Transaction.runEx<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
       const h = this.handle
-      const f = this.name
       let r: Record = Snapshot.readable().read(h)
-      let c = r.data[f] as CachedResult
+      let c = r.data[name] as CachedResult
       if (c.record === INIT) {
-        r = Snapshot.writable().write(h, f, HANDLE, this)
-        c = r.data[f] = new CachedResult(r, f, c)
+        r = Snapshot.writable().write(h, name, HANDLE, this)
+        c = r.data[name] = new CachedResult(r, name, c)
         c.invalid.since = -1 // indicates blank value
       }
       return c
@@ -101,16 +98,16 @@ export class ReactiveFunction extends Cache<any> {
 
   private weak(): Call {
     const call = this.read(undefined)
-    Snapshot.markViewed(call.record, this.name, call.result, true)
+    Snapshot.markViewed(call.record, this.initial.field, call.result, true)
     return call
   }
 
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
-    let c: CachedResult = r.data[this.name]
+    let c: CachedResult = r.data[this.initial.field]
     if (c.record === INIT)
-      c = this.blank
+      c = this.initial
     const reusable = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
@@ -120,11 +117,11 @@ export class ReactiveFunction extends Cache<any> {
 
   private write(): Call {
     const ctx = Snapshot.writable()
-    const f = this.name
+    const f = this.initial.field
     const r: Record = ctx.write(this.handle, f, HANDLE, this)
     let c: CachedResult = r.data[f]
     if (c.record === INIT)
-      c = this.blank
+      c = this.initial
     if (c.record !== r) {
       const renewing = new CachedResult(r, f, c)
       r.data[f] = renewing
@@ -165,18 +162,18 @@ export class ReactiveFunction extends Cache<any> {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c: CachedResult = call.result
-    c.invalidateDueTo(c, {record: INIT, field: self.name, times: 0}, ctx.timestamp, ctx.triggers)
+    c.invalidateDueTo(c, {record: INIT, field: self.initial.field, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
   private reconfigure(options: Partial<Options>): Options {
     const call = this.read(undefined)
     const r: Record = call.record
-    const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle)}.${this.name.toString()})` : /* istanbul ignore next */ 'Cache.setup()'
+    const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle, this.initial.field)})` : /* istanbul ignore next */ 'Cache.setup()'
     return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
       const c2: CachedResult = call2.result
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(r)}.${this.name.toString()}.options = ...`)
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(r, this.initial.field)}.options = ...`)
       return c2.options
     })
   }
@@ -381,7 +378,7 @@ class CachedResult extends Observable implements Observer {
       if (prev.record === INIT) {
         const h = Utils.get<Handle>(this.record.data, HANDLE)
         const func = Utils.get<ReactiveFunction>(h.proxy[this.field], FUNCTION)
-        prev = func.blank
+        prev = func.initial
       }
       if (prev.invalid.renewing === this)
         prev.invalid.renewing = undefined
