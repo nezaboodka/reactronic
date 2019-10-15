@@ -65,16 +65,16 @@ export class ReactiveFunction extends Cache<any> {
     // TODO: Cleaner implementation is needed
     let call2 = call
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
-      if (call2.result.worker.isCanceled) {
+      if (!call2.result.worker.isCanceled) { // first call
+        call2 = this.write()
+        call2.result.compute(this.handle.proxy, argsx)
+      }
+      else { // retry call
         call2 = this.read(argsx) // re-read on retry
         if (call2.result.options.kind === Kind.Action || (!call2.reusable && !call2.result.invalid.renewing)) {
           call2 = this.write()
           call2.result.compute(this.handle.proxy, argsx)
         }
-      }
-      else {
-        call2 = this.write()
-        call2.result.compute(this.handle.proxy, argsx)
       }
       return call2.result.ret
     }, args)
@@ -93,8 +93,7 @@ export class ReactiveFunction extends Cache<any> {
       if (c.record === INIT) {
         r = Snapshot.writable().write(h, f, HANDLE, this)
         c = r.data[f] = new CachedResult(r, f, c)
-        c.invalid.since = -1 // indicates initial value
-        // Snapshot.markChanged(r, f, c, true)
+        c.invalid.since = -1 // indicates blank value
       }
       return c
     })
