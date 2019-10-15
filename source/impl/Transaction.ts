@@ -241,9 +241,9 @@ export class Transaction extends Action {
       t.error = error
       t.after = after
       if (Dbg.isOn && Dbg.trace.errors) {
-        Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
+        Dbg.log(Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== Transaction.none)
-          Dbg.log('║', ' [!]', `T${t.id} (${t.hint}) will be restarted after T${after.id} (${after.hint})`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', ' [!]', `T${t.id} (${t.hint}) will be restarted after T${after.id} (${after.hint})`)
       }
       Snapshot.discardChanges(t.snapshot)
     }
@@ -259,8 +259,8 @@ export class Transaction extends Action {
   private tryResolveConflicts(conflicts: Record[]): void {
     if (!this.sidebyside)
       throw error(`T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
-    else if (Dbg.isOn && Dbg.trace.warnings)
-      Dbg.log('║', ' ', `conflict is ignored - T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
+    else if (Dbg.isOn && Dbg.trace.changes)
+      Dbg.log(Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', ' ', `conflict is ignored - T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
   }
 
   private finish(): void {
