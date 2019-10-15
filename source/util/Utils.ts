@@ -42,6 +42,18 @@ export class Utils {
       target[field] = source[field]
     return target
   }
+
+  // static clone(obj: any): any {
+  //   const cloned = Object.create(Object.getPrototypeOf(obj))
+  //   const descriptors = Object.getOwnPropertyDescriptors(obj)
+  //   Object.defineProperties(cloned, descriptors)
+  //   return cloned
+  // }
+
+  // static copyAllFields(source: any, target: any): void {
+  //   const descriptors = Object.getOwnPropertyDescriptors(source)
+  //   Object.defineProperties(target, descriptors)
+  // }
 }
 
 /* istanbul ignore next */

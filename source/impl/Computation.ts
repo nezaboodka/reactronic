@@ -18,9 +18,9 @@ const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 type Call = { context: Snapshot, record: Record, result: Computation, reusable: boolean }
 
 export class Method extends Cache<any> {
-  private readonly handle: Handle
-  private readonly name: FieldKey
-  private readonly initial: Computation
+  readonly handle: Handle
+  readonly name: FieldKey
+  readonly initial: Computation
 
   setup(options: Partial<Options>): Options { return this.reconfigure(options) }
   get options(): Options { return this.weak().result.options }
@@ -36,7 +36,7 @@ export class Method extends Cache<any> {
     super()
     this.handle = handle
     this.name = name
-    this.initial = this.initialize()
+    this.initial = this.acquireInitial()
   }
 
   call(weak: boolean, args: any[] | undefined): Call {
@@ -82,7 +82,7 @@ export class Method extends Cache<any> {
     return call2
   }
 
-  private initialize(): Computation {
+  private acquireInitial(): Computation {
     const hint: string = Dbg.isOn ? `${Hints.handle(this.handle)}.${this.name.toString()}/initialize` : /* istanbul ignore next */ 'Cache.init'
     const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
     return Transaction.runEx<Computation>(hint, spawn, false, undefined, undefined, (): Computation => {
@@ -94,6 +94,7 @@ export class Method extends Cache<any> {
         r = Snapshot.writable().write(h, f, HANDLE, this)
         c = r.data[f] = new Computation(r, f, c)
         c.invalid.since = -1 // indicates initial value
+        // Snapshot.markChanged(r, f, c, true)
       }
       return c
     })
@@ -108,7 +109,9 @@ export class Method extends Cache<any> {
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
-    const c: Computation = r.data[this.name]
+    let c: Computation = r.data[this.name]
+    if (c.record === INIT)
+      c = this.initial
     const reusable = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
@@ -121,6 +124,8 @@ export class Method extends Cache<any> {
     const f = this.name
     const r: Record = ctx.write(this.handle, f, HANDLE, this)
     let c: Computation = r.data[f]
+    if (c.record === INIT)
+      c = this.initial
     if (c.record !== r) {
       const renewing = new Computation(r, f, c)
       r.data[f] = renewing
@@ -210,28 +215,20 @@ export class Method extends Cache<any> {
 
   static alterBlank(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     // Setup blank
-    const blankObject: any = Hooks.acquireMeta(proto, BLANK)
-    const existing: Computation | undefined = blankObject[field]
-    const blankValue = new Computation(INIT, field, new OptionsImpl(body, existing ? existing.options : OptionsImpl.INITIAL, options, implicit))
-    const getInitial = function(this: any): any {
-      const h: Handle = Utils.get<Handle>(this, HANDLE)
-      return h ? Hooks.getInitialComputation(h, field) : blankValue
-    }
-    const setInitial = function(this: any, value: any): boolean {
-      Object.defineProperty(this, field, { value, enumerable, configurable })
-      return true
-    }
-    Object.defineProperty(blankObject, field, { get: getInitial, set: setInitial, enumerable, configurable })
+    const blank: any = Hooks.acquireMeta(proto, BLANK)
+    const existing: Computation | undefined = blank[field]
+    const value = new Computation(INIT, field, new OptionsImpl(body, existing ? existing.options : OptionsImpl.INITIAL, options, implicit))
+    blank[field] = value
     // Add to the list if a trigger
-    if (blankValue.options.kind === Kind.Trigger && blankValue.options.delay > -2) {
+    if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
       const triggers = Hooks.acquireMeta(proto, TRIGGERS)
-      triggers[field] = blankValue
+      triggers[field] = value
     }
-    else if (blankValue.options.kind === Kind.Trigger && blankValue.options.delay > -2) {
+    else if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
       const triggers = Hooks.getMeta<any>(proto, TRIGGERS)
       delete triggers[field]
     }
-    return blankValue.options
+    return value.options
   }
 
   static of(method: F<any>): Cache<any> {
@@ -385,9 +382,16 @@ class Computation extends Observable implements Observer {
   }
 
   finish(error?: any): void {
-    const prev = this.record.prev.record.data[this.field]
-    if (prev instanceof Computation && prev.invalid.renewing === this)
-      prev.invalid.renewing === this
+    let prev = this.record.prev.record.data[this.field]
+    if (prev instanceof Computation) {
+      if (prev.record === INIT) {
+        const h = Utils.get<Handle>(this.record.data, HANDLE)
+        const m = Utils.get<Method>(h.proxy[this.field], METHOD)
+        prev = m.initial
+      }
+      if (prev.invalid.renewing === this)
+        prev.invalid.renewing = undefined
+    }
     if (Hooks.performanceWarningThreshold > 0) {
       this.observables.forEach((hint, value) => {
         if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} times`, 0, ' *** WARNING ***')
