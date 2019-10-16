@@ -175,7 +175,7 @@ export class ReactiveFunction extends Cache<any> {
     // TODO: Cleaner implementation is needed
     let call = existing
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
-      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(existing.record, this.name)}${existing.result.invalid.hint ? `   <<   ${invalidationChain(existing.result.invalid.hint, 0).join('   <<   ')}` : ''}`)
+      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(existing.record, this.name)}${existing.result.invalid.hint ? `   <<   ${chainHint(existing.result.invalid.hint).join('   <<   ')}` : ''}`)
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
         call.result.compute(this.handle.proxy, argsx)
@@ -583,15 +583,15 @@ class CachedResult extends Observable implements Observer {
   }
 }
 
-function invalidationChain(hint: FieldHint, since: number): string[] {
+function chainHint(cause: FieldHint): string[] {
   const result: string[] = []
-  let value: Observable = hint.record.data[hint.field]
+  let value: Observable = cause.record.data[cause.field]
   while (value instanceof CachedResult && value.invalid.hint) {
-    result.push(Hints.record(hint.record, hint.field))
-    hint = value.invalid.hint
-    value = hint.record.data[hint.field]
+    result.push(Hints.record(cause.record, cause.field))
+    cause = value.invalid.hint
+    value = cause.record.data[cause.field]
   }
-  result.push(Hints.record(hint.record, hint.field))
+  result.push(Hints.record(cause.record, cause.field))
   return result
 }
 
