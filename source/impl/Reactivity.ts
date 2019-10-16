@@ -15,7 +15,7 @@ import { Monitor, Worker } from '../Monitor'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'nothing')
+const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'nil')
 
 type Call = { context: Snapshot, record: Record, result: CachedResult, reuse: boolean }
 
@@ -176,6 +176,14 @@ export class ReactiveFunction extends Cache<any> {
     c.invalidateDueTo(c, {record: NIL, field: self.name, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
+  private static doUnmount(...objects: any[]): Transaction {
+    for (const x of objects) {
+      if (Utils.get<Handle>(x, SYM_HANDLE))
+        x[SYM_UNMOUNT] = SYM_UNMOUNT
+    }
+    return Transaction.current
+  }
+
   private alterOptions(options: Partial<Options>): Options {
     const call = this.read(undefined)
     const r: Record = call.record
@@ -187,14 +195,6 @@ export class ReactiveFunction extends Cache<any> {
       if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(r, this.name)}.options = ...`)
       return c2.options
     })
-  }
-
-  private static doUnmount(...objects: any[]): Transaction {
-    for (const x of objects) {
-      if (Utils.get<Handle>(x, SYM_HANDLE))
-        x[SYM_UNMOUNT] = SYM_UNMOUNT
-    }
-    return Transaction.current
   }
 }
 
