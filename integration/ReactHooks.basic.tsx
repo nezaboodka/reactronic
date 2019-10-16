@@ -29,7 +29,7 @@ class Rx extends State {
   @trigger
   keepFresh(): void {
     if (cacheof(this.jsx).invalid)
-      this.refresh({rx: this})
+      standalone(this.refresh, {rx: this})
   }
 
   @stateless refresh: (next: ReactState) => void = nop

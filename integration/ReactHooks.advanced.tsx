@@ -31,7 +31,7 @@ class Rx extends State {
   @trigger
   keepFresh(): void {
     if (cacheof(this.jsx).invalid)
-      this.refresh({rx: this, counter: this.counter + 1})
+      standalone(this.refresh, {rx: this, counter: this.counter + 1})
   }
 
   @stateless counter: number = 0
