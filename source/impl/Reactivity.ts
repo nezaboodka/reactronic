@@ -151,7 +151,7 @@ export class ReactiveFunction extends Cache<any> {
     // TODO: Cleaner implementation is needed
     let call = existing
     const ret = Transaction.runAs(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
-      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(existing.record, this.name)}${existing.result.invalid.hint ? `   <<   ${chainHint(existing.result.invalid.hint).join('   <<   ')}` : ''}`)
+      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(existing.record, this.name)}${existing.result.invalid.cause ? `   <<   ${chainHint(existing.result.invalid.cause).join('   <<   ')}` : ''}`)
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
         call.result.compute(this.handle.proxy, argsx)
@@ -208,7 +208,7 @@ class CachedResult extends Observable implements Observer {
   readonly method: ReactiveFunction
   readonly record: Record
   readonly observables: Map<Observable, FieldHint>
-  readonly invalid: { since: number, hint?: FieldHint, renewing?: CachedResult }
+  readonly invalid: { since: number, cause?: FieldHint, renewing?: CachedResult }
   options: OptionsImpl
   args: any[]
   ret: any
@@ -222,7 +222,7 @@ class CachedResult extends Observable implements Observer {
     this.method = method
     this.record = record
     this.observables = new Map<Observable, FieldHint>()
-    this.invalid = { since: 0, hint: undefined, renewing: undefined }
+    this.invalid = { since: 0, cause: undefined, renewing: undefined }
     if (init instanceof CachedResult) {
       this.options = init.options
       this.args = init.args
@@ -268,7 +268,7 @@ class CachedResult extends Observable implements Observer {
         cause.record.snapshot !== this.record.snapshot ||
         !cause.record.changes.has(cause.field)
       if (notSelfInvalidation) {
-        this.invalid.hint = cause
+        this.invalid.cause = cause
         this.invalid.since = since
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[SYM_UNMOUNT] === undefined
         if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === this.record && cause.field === this.method.name ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
@@ -455,14 +455,14 @@ class CachedResult extends Observable implements Observer {
     const value = prev.data[field] as Observable
     if (value !== undefined && value instanceof Observable && value.replacement === undefined) {
       value.replacement = record
-      const hint: FieldHint = { record, field, times: 0 }
+      const cause: FieldHint = { record, field, times: 0 }
       if (value instanceof CachedResult && (value.invalid.since === TOP_TIMESTAMP || value.invalid.since <= 0)) {
-        value.invalid.hint = hint
+        value.invalid.cause = cause
         value.invalid.since = timestamp
         value.unsubscribeFromAll()
       }
       if (value.observers)
-        value.observers.forEach(c => c.invalidateDueTo(value, hint, timestamp, triggers))
+        value.observers.forEach(c => c.invalidateDueTo(value, cause, timestamp, triggers))
     }
   }
 
@@ -574,9 +574,9 @@ class CachedResult extends Observable implements Observer {
 function chainHint(cause: FieldHint): string[] {
   const result: string[] = []
   let value: Observable = cause.record.data[cause.field]
-  while (value instanceof CachedResult && value.invalid.hint) {
+  while (value instanceof CachedResult && value.invalid.cause) {
     result.push(Hints.record(cause.record, cause.field))
-    cause = value.invalid.hint
+    cause = value.invalid.cause
     value = cause.record.data[cause.field]
   }
   result.push(Hints.record(cause.record, cause.field))
