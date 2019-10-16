@@ -43,12 +43,12 @@ export class ReactiveFunction extends Cache<any> {
     const c: CachedResult = call.result
     if (!call.reusable && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, this.initial.field)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
-      const cfg = c.options
-      const spawn = weak || cfg.kind === Kind.Trigger ||
-        (cfg.kind === Kind.Cached && call.record.snapshot !== call.context)
-      const sidebyside = cfg.reentrance === Reentrance.RunSideBySide
-      const token = cfg.kind === Kind.Cached ? this : undefined
-      const call2 = this.recompute(call, hint, spawn, sidebyside, cfg.trace, token, args)
+      const opt = c.options
+      const spawn = weak || opt.kind === Kind.Trigger ||
+        (opt.kind === Kind.Cached && call.record.snapshot !== call.context)
+      const sidebyside = opt.reentrance === Reentrance.RunSideBySide
+      const token = opt.kind === Kind.Cached ? this : undefined
+      const call2 = this.recompute(call, hint, spawn, sidebyside, opt.trace, token, args)
       const ctx2 = call2.result.record.snapshot
       if (!weak || ctx === ctx2 || (ctx2.applied && ctx.timestamp >= ctx2.timestamp))
         call = call2
