@@ -9,10 +9,6 @@ import { State, Action, Cache, stateless, trigger, cached, separate, Tools as RT
 type ReactState = { rx: Rx, counter: number }
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
-  return separate(renderReactively, render, trace)
-}
-
-function renderReactively(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(
     !trace ? createReactState : () => createReactState(trace))
   const rx = state.rx
