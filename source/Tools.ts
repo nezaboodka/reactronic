@@ -34,7 +34,7 @@ export function nonreactive<T>(func: F<T>, ...args: any[]): T {
   return ReactiveFunction.runAs<T>(undefined, func, ...args)
 }
 
-export function standalone<T>(func: F<T>, ...args: any[]): T {
+export function outside<T>(func: F<T>, ...args: any[]): T {
   return ReactiveFunction.runAs<T>(undefined, Action.outside, func, ...args)
 }
 

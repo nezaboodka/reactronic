@@ -120,7 +120,7 @@ functions (dependencies), which are used during their execution.
 class MyView extends React.Component<MyModel> {
   @trigger // called immediately in response to state changes
   keepFresh() {
-    if (cacheof(this.render).invalid)
+    if (Cache.of(this.render).invalid)
       this.setState({}) // telling React to re-render
   } // keepFresh is subscribed to render
 
@@ -219,10 +219,9 @@ function cachedArgs(cachedArgs: boolean) // cached & triggers
 function monitor(monitor: Monitor | null)
 function trace(trace: Partial<Trace>)
 
-function cacheof<T>(method: F<T>): Cache<T>
 function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined
 function nonreactive<T>(func: F<T>, ...args: any[]): T
-function standalone<T>(func: F<T>, ...args: any[]): T
+function outside<T>(func: F<T>, ...args: any[]): T
 
 // Options, Kind, Reentrance, Monitor, Trace
 

@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Action, Cache, Kind, nonreactive, standalone, Tools as RT } from '../source/.index'
+import { Action, Cache, Kind, nonreactive, outside, Tools as RT } from '../source/.index'
 import { tracing, nop } from './common'
 import { Person, Demo, DemoView, output } from './brief'
 
@@ -60,7 +60,7 @@ test('Main', t => {
       t.is(daddy.name, 'John Smith')
       t.is(daddy.age, 40)
       t.is(Action.outside(() => daddy.age), 38)
-      t.is(standalone(() => daddy.age), 38)
+      t.is(outside(() => daddy.age), 38)
       t.is(nonreactive(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = 'Jo' // set to the same value

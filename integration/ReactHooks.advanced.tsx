@@ -4,12 +4,12 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { State, Action, Cache, stateless, trigger, cached, standalone, Tools as RT, Trace } from '.index'
+import { State, Action, Cache, stateless, trigger, cached, outside, Tools as RT, Trace } from '.index'
 
 type ReactState = { rx: Rx, counter: number }
 
 export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
-  return standalone(renderReactively, render, trace)
+  return outside(renderReactively, render, trace)
 }
 
 function renderReactively(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
@@ -31,13 +31,13 @@ class Rx extends State {
   @trigger
   keepFresh(): void {
     if (Cache.of(this.jsx).invalid)
-      standalone(this.refresh, {rx: this, counter: this.counter + 1})
+      outside(this.refresh, {rx: this, counter: this.counter + 1})
   }
 
   @stateless counter: number = 0
   @stateless refresh: (next: ReactState) => void = nop
   @stateless readonly unmountEffect = (): (() => void) => {
-    return () => standalone(Cache.unmount, this)
+    return () => outside(Cache.unmount, this)
   }
 }
 
