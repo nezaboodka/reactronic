@@ -6,7 +6,7 @@
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, FieldKey, Observable, FieldHint, Observer, Handle } from './Data'
-import { Snapshot, Hints, INIT, HANDLE, FUNCTION, UNMOUNT, BLANK, TRIGGERS } from './Snapshot'
+import { Snapshot, Hints, INIT, SYM_HANDLE, SYM_METHOD, SYM_UNMOUNT, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
 import { Transaction } from './Transaction'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -64,7 +64,7 @@ export class ReactiveFunction extends Cache<any> {
     // TODO: Cleaner implementation is needed
     let call2 = call
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
-      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, call.result.func.name)}${call.result.invalid.hint ? `   <<   ${invalidationChain(call.result.invalid.hint, 0).join('   <<   ')}` : ''}`)
+      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, this.name)}${call.result.invalid.hint ? `   <<   ${invalidationChain(call.result.invalid.hint, 0).join('   <<   ')}` : ''}`)
       if (!call2.result.worker.isCanceled) { // first call
         call2 = this.write()
         call2.result.compute(this.handle.proxy, argsx)
@@ -91,7 +91,7 @@ export class ReactiveFunction extends Cache<any> {
       let r: Record = Snapshot.readable().read(h)
       let c = r.data[name] as CachedResult
       if (c.record === INIT) {
-        r = Snapshot.writable().write(h, name, HANDLE, this)
+        r = Snapshot.writable().write(h, name, SYM_HANDLE, this)
         c = r.data[name] = new CachedResult(this, r, c)
         c.invalid.since = -1 // indicates blank value
       }
@@ -114,14 +114,14 @@ export class ReactiveFunction extends Cache<any> {
     const reusable = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
-      r.data[UNMOUNT] !== undefined
+      r.data[SYM_UNMOUNT] !== undefined
     return { context: ctx, record: r, result: c, reusable }
   }
 
   private write(): Call {
     const ctx = Snapshot.writable()
     const f = this.name
-    const r: Record = ctx.write(this.handle, f, HANDLE, this)
+    const r: Record = ctx.write(this.handle, f, SYM_HANDLE, this)
     let c: CachedResult = r.data[f]
     if (c.record === INIT)
       c = this.initialize()
@@ -200,35 +200,35 @@ export class ReactiveFunction extends Cache<any> {
   }
 
   static createReactiveFunctionTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
-    const func = new ReactiveFunction(h, field)
-    const funcTrap: F<any> = (...args: any[]): any =>
-      func.call(false, args).result.ret
-    Utils.set(funcTrap, FUNCTION, func)
-    return funcTrap
+    const method = new ReactiveFunction(h, field)
+    const methodTrap: F<any> = (...args: any[]): any =>
+      method.call(false, args).result.ret
+    Utils.set(methodTrap, SYM_METHOD, method)
+    return methodTrap
   }
 
   static alterBlank(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     // Setup blank
-    const blank: any = Hooks.acquireMeta(proto, BLANK)
+    const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
     const existing: CachedResult | undefined = blank[field]
-    const func = existing ? existing.func : new ReactiveFunction(NOTHING, field)
+    const method = existing ? existing.method : new ReactiveFunction(NOTHING, field)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
-    const value =  new CachedResult(func, INIT, new OptionsImpl(body, opts, options, implicit))
+    const value =  new CachedResult(method, INIT, new OptionsImpl(body, opts, options, implicit))
     blank[field] = value
     // Add to the list if a trigger
     if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
-      const triggers = Hooks.acquireMeta(proto, TRIGGERS)
+      const triggers = Hooks.acquireMeta(proto, SYM_TRIGGERS)
       triggers[field] = value
     }
     else if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
-      const triggers = Hooks.getMeta<any>(proto, TRIGGERS)
+      const triggers = Hooks.getMeta<any>(proto, SYM_TRIGGERS)
       delete triggers[field]
     }
     return value.options
   }
 
   static of(method: F<any>): Cache<any> {
-    const func = Utils.get<Cache<any> | undefined>(method, FUNCTION)
+    const func = Utils.get<Cache<any> | undefined>(method, SYM_METHOD)
     if (!func)
       throw misuse('given method is not a reactronic cache')
     return func
@@ -241,8 +241,8 @@ export class ReactiveFunction extends Cache<any> {
 
   private static doUnmount(...objects: any[]): Transaction {
     for (const x of objects) {
-      if (Utils.get<Handle>(x, HANDLE))
-        x[UNMOUNT] = UNMOUNT
+      if (Utils.get<Handle>(x, SYM_HANDLE))
+        x[SYM_UNMOUNT] = SYM_UNMOUNT
     }
     return Transaction.current
   }
@@ -254,7 +254,7 @@ class CachedResult extends Observable implements Observer {
   static current?: CachedResult = undefined
   static asyncTriggerBatch: CachedResult[] = []
 
-  readonly func: ReactiveFunction
+  readonly method: ReactiveFunction
   readonly worker: Worker
   readonly record: Record
   options: OptionsImpl
@@ -266,9 +266,9 @@ class CachedResult extends Observable implements Observer {
   readonly observables: Map<Observable, FieldHint>
   readonly margin: number
 
-  constructor(func: ReactiveFunction, record: Record, init: CachedResult | OptionsImpl) {
+  constructor(method: ReactiveFunction, record: Record, init: CachedResult | OptionsImpl) {
     super(undefined)
-    this.func = func
+    this.method = method
     this.worker = Transaction.current
     this.record = record
     if (init instanceof CachedResult) {
@@ -289,15 +289,15 @@ class CachedResult extends Observable implements Observer {
     this.margin = CachedResult.current ? CachedResult.current.margin + 1 : 1
   }
 
-  hint(): string { return `${Hints.record(this.record, this.func.name)}` }
+  hint(): string { return `${Hints.record(this.record, this.method.name)}` }
 
   get isComputed(): boolean { return true }
 
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
-      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.record(this.record, this.func.name)} - step in  `, 0, '        │')
+      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.record(this.record, this.method.name)} - step in  `, 0, '        │')
       const result = ReactiveFunction.runAs<T>(this, func, ...args)
-      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record, this.func.name)} - step out `, 0, this.started > 0 ? '        │' : '')
+      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record, this.method.name)} - step out `, 0, this.started > 0 ? '        │' : '')
       return result
     }
     return cacheBound
@@ -326,7 +326,7 @@ class CachedResult extends Observable implements Observer {
   enter(): void {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', '‾\\', `${Hints.record(this.record, this.func.name)} - enter`)
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', '‾\\', `${Hints.record(this.record, this.method.name)} - enter`)
     this.started = Date.now()
   }
 
@@ -343,7 +343,7 @@ class CachedResult extends Observable implements Observer {
           this.leave('  □ ', '- finished ', 'ERR ──┘')
           throw error
         })
-      if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', '_/', `${Hints.record(this.record, this.func.name)} - leave... `, 0, 'ASYNC ──┐')
+      if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', '_/', `${Hints.record(this.record, this.method.name)} - leave... `, 0, 'ASYNC ──┐')
     }
     else {
       this.value = this.ret
@@ -354,7 +354,7 @@ class CachedResult extends Observable implements Observer {
   private leave(op: string, message: string, highlight: string | undefined = undefined): void {
     const ms: number = Date.now() - this.started
     this.started = 0
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', `${op}`, `${Hints.record(this.record, this.func.name)} ${message}`, ms, highlight)
+    if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', `${op}`, `${Hints.record(this.record, this.method.name)} ${message}`, ms, highlight)
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
     // CacheResult.freeze(this)
@@ -378,7 +378,7 @@ class CachedResult extends Observable implements Observer {
   }
 
   finish(error?: any): void {
-    const prev = this.record.prev.record.data[this.func.name]
+    const prev = this.record.prev.record.data[this.method.name]
     if (prev instanceof CachedResult) {
       // if (prev.record === INIT) {
       //   const h = Utils.get<Handle>(this.record.data, HANDLE)
@@ -400,10 +400,7 @@ class CachedResult extends Observable implements Observer {
     if (now || delay === -1) {
       if (!this.error && (this.options.kind === Kind.Action || !this.invalid.renewing)) {
         try {
-          // const proxy: any = Utils.get<Handle>(this.record.data, HANDLE).proxy
-          // const trap: Function = Reflect.get(proxy, this.func.name, proxy)
-          // const func = Utils.get<ReactiveFunction>(trap, FUNCTION)
-          const call: Call = this.func.call(false, undefined)
+          const call: Call = this.method.call(false, undefined)
           if (call.result.ret instanceof Promise)
             call.result.ret.catch(error => { /* nop */ }) // bad idea to hide an error
         }
@@ -434,7 +431,7 @@ class CachedResult extends Observable implements Observer {
 
   private static markViewed(record: Record, field: FieldKey, value: Observable, weak: boolean): void {
     const c: CachedResult | undefined = CachedResult.current // alias
-    if (c && c.options.kind !== Kind.Action && field !== HANDLE) {
+    if (c && c.options.kind !== Kind.Action && field !== SYM_HANDLE) {
       const ctx = Snapshot.readable()
       ctx.bump(record.snapshot.timestamp)
       const t = weak ? -1 : ctx.timestamp
@@ -453,7 +450,7 @@ class CachedResult extends Observable implements Observer {
     const triggers = snapshot.triggers
     // Mark previous values as replaced and invalidate existing observers
     snapshot.changeset.forEach((r: Record, h: Handle) => {
-      if (!r.changes.has(UNMOUNT))
+      if (!r.changes.has(SYM_UNMOUNT))
         r.changes.forEach(field =>
           CachedResult.markPrevValueAsReplaced(timestamp, r, field, triggers))
       else
@@ -462,7 +459,7 @@ class CachedResult extends Observable implements Observer {
     })
     // Subscribe to new observers and finish cache computations
     snapshot.changeset.forEach((r: Record, h: Handle) => {
-      if (!r.changes.has(UNMOUNT))
+      if (!r.changes.has(SYM_UNMOUNT))
         r.changes.forEach(field => CachedResult.finish(r, field, false))
       else
         for (const field in r.prev.record.data)
@@ -506,7 +503,7 @@ class CachedResult extends Observable implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this) // now unsubscribed
-      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', '-', `${Hints.record(this.record, this.func.name)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
+      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', '-', `${Hints.record(this.record, this.method.name)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
     })
     this.observables.clear() // now fully unlinked
   }
@@ -529,7 +526,7 @@ class CachedResult extends Observable implements Observer {
       const hint: FieldHint = {record, field, times}
       value.observers.add(this)
       this.observables.set(value, hint)
-      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.func.name)} is subscribed to ${Hints.record(hint.record, hint.field)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
+      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.method.name)} is subscribed to ${Hints.record(hint.record, hint.field)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
     }
     return result || value.replacement === record
   }
@@ -542,13 +539,13 @@ class CachedResult extends Observable implements Observer {
       if (notSelfInvalidation) {
         this.invalid.hint = hint
         this.invalid.since = since
-        const isTrigger = this.options.kind === Kind.Trigger && this.record.data[UNMOUNT] === undefined
-        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && hint.record === this.record && hint.field === this.func.name ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
+        const isTrigger = this.options.kind === Kind.Trigger && this.record.data[SYM_UNMOUNT] === undefined
+        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && hint.record === this.record && hint.field === this.method.name ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
         this.unsubscribeFromAll()
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
         else if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, field: this.func.name, times: 0}, since, triggers))
+          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, field: this.method.name, times: 0}, since, triggers))
         if (!this.worker.isFinished && this !== value)
           this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)}`), this.worker)
       }
@@ -604,7 +601,7 @@ function valueHint(value: any): string {
     result = `Map(${value.size})`
   else if (value instanceof CachedResult)
     result = `<recompute:${Hints.record(value.record.prev.record, undefined, true)}>`
-  else if (value === UNMOUNT)
+  else if (value === SYM_UNMOUNT)
     result = '<unmount>'
   else if (value !== undefined && value !== null)
     result = value.toString().slice(0, 20)

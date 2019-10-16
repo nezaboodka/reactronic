@@ -9,7 +9,7 @@ import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, FieldKey, Observable, Handle } from './Data'
-import { Snapshot, Hints, INIT, HANDLE, FUNCTION, STATELESS, BLANK, TRIGGERS } from './Snapshot'
+import { Snapshot, Hints, INIT, SYM_HANDLE, SYM_METHOD, SYM_STATELESS, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
@@ -22,18 +22,18 @@ const EMPTY_META = Object.freeze({})
 export abstract class State {
   constructor() {
     const proto = new.target.prototype
-    const blank = Hooks.getMeta<any>(proto, BLANK)
+    const blank = Hooks.getMeta<any>(proto, SYM_BLANK)
     const h = Hooks.createHandle(this, blank, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
-      const triggers = Hooks.getMeta<any>(proto, TRIGGERS)
+      const triggers = Hooks.getMeta<any>(proto, SYM_TRIGGERS)
       for (const field in triggers)
-        (h.proxy[field][FUNCTION] as Cache<any>).invalidate()
+        (h.proxy[field][SYM_METHOD] as Cache<any>).invalidate()
     }
     return h.proxy
   }
 
   [Symbol.toStringTag](): string {
-    const h = Utils.get<Handle>(this, HANDLE)
+    const h = Utils.get<Handle>(this, SYM_HANDLE)
     return Hints.handle(h)
   }
 }
@@ -101,7 +101,7 @@ export class Hooks implements ProxyHandler<Handle> {
       Snapshot.markViewed(r, field, result, false)
       result = result.value
     }
-    else if (field === HANDLE) {
+    else if (field === SYM_HANDLE) {
       // do nothing, just return handle
     }
     else { // value === STATELESS
@@ -169,7 +169,7 @@ export class Hooks implements ProxyHandler<Handle> {
       return Object.defineProperty(proto, field, { get, set, enumerable, configurable })
     }
     else
-      Hooks.acquireMeta(proto, BLANK)[field] = STATELESS
+      Hooks.acquireMeta(proto, SYM_BLANK)[field] = SYM_STATELESS
   }
 
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: FieldKey, pd: TypedPropertyDescriptor<F<any>>): any {
@@ -179,7 +179,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const opts = Hooks.alterBlank(proto, method, pd.value, true, configurable, options, implicit)
     const trap = function(this: any): any {
       const stateful = this instanceof State
-      const h: Handle = stateful ? Utils.get<Handle>(this, HANDLE) : Hooks.acquireHandle(this)
+      const h: Handle = stateful ? Utils.get<Handle>(this, SYM_HANDLE) : Hooks.acquireHandle(this)
       const value = Hooks.createReactiveFunctionTrap(h, method, opts)
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
       return value
@@ -203,14 +203,14 @@ export class Hooks implements ProxyHandler<Handle> {
   static acquireHandle(obj: any): Handle {
     if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
       throw misuse('only objects can be reactive')
-    let h = Utils.get<Handle>(obj, HANDLE)
+    let h = Utils.get<Handle>(obj, SYM_HANDLE)
     if (!h) {
-      const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), BLANK)
+      const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), SYM_BLANK)
       const init = new Record(INIT.snapshot, INIT, {...blank})
-      Utils.set(init.data, HANDLE, h)
+      Utils.set(init.data, SYM_HANDLE, h)
       init.freeze()
       h = new Handle(obj, obj, Hooks.proxy, init, obj.constructor.name)
-      Utils.set(obj, HANDLE, h)
+      Utils.set(obj, SYM_HANDLE, h)
       // Hooks.decorateField(false, {kind: Kind.Stateful}, obj, UNMOUNT)
     }
     return h
@@ -219,7 +219,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static createHandle(stateless: any, blank: any, hint: string): Handle {
     const ctx = Snapshot.writable()
     const h = new Handle(stateless, undefined, Hooks.proxy, INIT, hint)
-    ctx.write(h, HANDLE, blank)
+    ctx.write(h, SYM_HANDLE, blank)
     return h
   }
 

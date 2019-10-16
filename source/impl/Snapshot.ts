@@ -8,12 +8,12 @@ import { Dbg, misuse } from '../util/Dbg'
 import { Context, Record, FieldKey, Observable, Handle, Observer } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
-export const HANDLE: unique symbol = Symbol('R:HANDLE')
-export const FUNCTION: unique symbol = Symbol('R:FUNCTION')
-export const UNMOUNT: unique symbol = Symbol('R:UNMOUNT')
-export const STATELESS: unique symbol = Symbol('R:STATELESS')
-export const BLANK: unique symbol = Symbol('R:BLANK')
-export const TRIGGERS: unique symbol = Symbol('R:TRIGGERS')
+export const SYM_HANDLE: unique symbol = Symbol('R:HANDLE')
+export const SYM_METHOD: unique symbol = Symbol('R:METHOD')
+export const SYM_UNMOUNT: unique symbol = Symbol('R:UNMOUNT')
+export const SYM_STATELESS: unique symbol = Symbol('R:STATELESS')
+export const SYM_BLANK: unique symbol = Symbol('R:BLANK')
+export const SYM_TRIGGERS: unique symbol = Symbol('R:TRIGGERS')
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 // Snapshot
@@ -79,11 +79,11 @@ export class Snapshot implements Context {
 
   write(h: Handle, field: FieldKey, value: any, token?: any): Record {
     let r: Record = this.tryRead(h)
-    if (r.data[field] !== STATELESS) {
+    if (r.data[field] !== SYM_STATELESS) {
       this.guard(h, r, field, value, token)
       if (r.snapshot !== this) {
-        const data = {...field === HANDLE ? value : r.data}
-        Reflect.set(data, HANDLE, h)
+        const data = {...field === SYM_HANDLE ? value : r.data}
+        Reflect.set(data, SYM_HANDLE, h)
         r = new Record(this, h.head, data)
         this.changeset.set(h, r)
         h.changing = r
@@ -98,9 +98,9 @@ export class Snapshot implements Context {
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.applied)
       throw misuse(`stateful property ${Hints.handle(h, field)} can only be modified inside actions and triggers`)
-    if (field !== HANDLE && value !== HANDLE && this.caching !== undefined && token !== this.caching && (r.snapshot !== this || r.prev.record !== INIT))
+    if (field !== SYM_HANDLE && value !== SYM_HANDLE && this.caching !== undefined && token !== this.caching && (r.snapshot !== this || r.prev.record !== INIT))
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, field)}`)
-    if (r === INIT && field !== HANDLE && value !== HANDLE) /* istanbul ignore next */
+    if (r === INIT && field !== SYM_HANDLE && value !== SYM_HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hints.record(r, field)} doesn't exist in snapshot v${this.stamp}`)
   }
 
@@ -148,13 +148,13 @@ export class Snapshot implements Context {
     let counter: number = -1
     if (ours.prev.record !== head) {
       counter++
-      const unmounted: boolean = head.changes.has(UNMOUNT)
+      const unmounted: boolean = head.changes.has(SYM_UNMOUNT)
       const merged = {...head.data} // clone
       ours.changes.forEach(field => {
         counter++
         merged[field] = ours.data[field]
-        if (unmounted || field === UNMOUNT) {
-          if (unmounted !== (field === UNMOUNT)) {
+        if (unmounted || field === SYM_UNMOUNT) {
+          if (unmounted !== (field === SYM_UNMOUNT)) {
             if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, field)} <> ${Hints.record(head, field)}`, 0, ' *** CONFLICT ***')
             ours.conflicts.set(field, head)
           }
@@ -258,7 +258,7 @@ export class Snapshot implements Context {
 export class Hints {
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
-      const h = Utils.get<Handle>(obj, HANDLE)
+      const h = Utils.get<Handle>(obj, SYM_HANDLE)
       if (h)
         h.hint = hint
     }
@@ -266,7 +266,7 @@ export class Hints {
   }
 
   static getHint(obj: object): string | undefined {
-    const h = Utils.get<Handle>(obj, HANDLE)
+    const h = Utils.get<Handle>(obj, SYM_HANDLE)
     return h ? h.hint : undefined
   }
 
@@ -280,7 +280,7 @@ export class Hints {
   }
 
   static record(r: Record, field?: FieldKey, typeless?: boolean): string {
-    const h = Utils.get<Handle | undefined>(r.data, HANDLE)
+    const h = Utils.get<Handle | undefined>(r.data, SYM_HANDLE)
     return Hints.handle(h, field, r.snapshot.timestamp, r.snapshot.id, typeless)
   }
 
