@@ -17,7 +17,7 @@ import { Cache } from '../Cache'
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'nothing')
 
-type Call = { context: Snapshot, record: Record, result: CachedResult, reusable: boolean }
+type Call = { context: Snapshot, record: Record, result: CachedResult, reuse: boolean }
 
 export class ReactiveFunction extends Cache<any> {
   readonly handle: Handle
@@ -29,7 +29,7 @@ export class ReactiveFunction extends Cache<any> {
   get value(): any { return this.call(true, undefined).result.value }
   get error(): boolean { return this.weak().result.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
-  get invalid(): boolean { return !this.weak().reusable }
+  get invalid(): boolean { return !this.weak().reuse }
   invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.name)})` : 'invalidate()', ReactiveFunction.invalidate, this) }
   pullValue(args?: any[]): any { return this.call(true, args).result.value }
 
@@ -43,7 +43,7 @@ export class ReactiveFunction extends Cache<any> {
     let call: Call = this.read(args)
     const ctx = call.context
     const c: CachedResult = call.result
-    if (!call.reusable && (!weak || !c.invalid.renewing)) {
+    if (!call.reuse && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, this.name)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
@@ -102,11 +102,11 @@ export class ReactiveFunction extends Cache<any> {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
     const c: CachedResult = this.from(r.data[this.name])
-    const reusable = c.options.kind !== Kind.Action &&
+    const reuse = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[SYM_UNMOUNT] !== undefined
-    return { context: ctx, record: r, result: c, reusable }
+    return { context: ctx, record: r, result: c, reuse }
   }
 
   private write(): Call {
@@ -124,7 +124,7 @@ export class ReactiveFunction extends Cache<any> {
       ctx.bump(r.prev.record.snapshot.timestamp)
       Snapshot.markChanged(r, f, renewing, true)
     }
-    return { context: ctx, record: r, result: c, reusable: true }
+    return { context: ctx, record: r, result: c, reuse: true }
   }
 
   private from(c: CachedResult): CachedResult {
@@ -158,7 +158,7 @@ export class ReactiveFunction extends Cache<any> {
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
-        if (call.result.options.kind === Kind.Action || (!call.reusable && !call.result.invalid.renewing)) {
+        if (call.result.options.kind === Kind.Action || (!call.reuse && !call.result.invalid.renewing)) {
           call = this.write()
           call.result.compute(this.handle.proxy, argsx)
         }
