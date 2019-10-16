@@ -374,7 +374,7 @@ class CachedResult extends Observable implements Observer {
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', `${op}`, `${Hints.record(this.record, this.method.name)} ${message}`, ms, highlight)
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
-    // CacheResult.freeze(this)
+    // CachedResult.freeze(this)
   }
 
   private monitorEnter(mon: Monitor): void {
@@ -553,10 +553,10 @@ class CachedResult extends Observable implements Observer {
     return result
   }
 
-  static freeze(c: CachedResult): void {
-    Utils.freezeMap(c.observables)
-    Object.freeze(c)
-  }
+  // static freeze(c: CachedResult): void {
+  //   Utils.freezeMap(c.observables)
+  //   Object.freeze(c)
+  // }
 
   static init(): void {
     Dbg.getCurrentTrace = getCurrentTrace
