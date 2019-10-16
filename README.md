@@ -219,7 +219,7 @@ function reentrance(reentrance: Reentrance) // actions & triggers
 function monitor(monitor: Monitor | null)
 function trace(trace: Partial<Trace>)
 
-function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined
+function pullAvailableValue<T>(method: F<Promise<T>>, args?: any[]): T | undefined
 function nonreactive<T>(func: F<T>, ...args: any[]): T
 function separate<T>(func: F<T>, ...args: any[]): T
 
@@ -318,7 +318,7 @@ abstract class Cache<T> {
 
   setup(options: Partial<Options>): Options
   invalidate(): boolean
-  pullValue(args?: any[]): T | undefined
+  pullAvailableValue(args?: any[]): T | undefined
 
   static of<T>(method: F<T>): Cache<T>
   static unmount(...objects: any[]): Action

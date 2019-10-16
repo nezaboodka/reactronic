@@ -7,7 +7,7 @@ export { all, sleep } from './util/Utils'
 export { Options, Kind, Reentrance, Trace } from './Options'
 export { Tools } from './Tools'
 export { State } from './impl/Hooks'
-export { resolved, nonreactive, separate, stateless, action, trigger,
+export { pullAvailableValue, nonreactive, separate, stateless, action, trigger,
   cached, cachedArgs, delay, reentrance, monitor, trace } from './Tools'
 export { Action } from './Action'
 export { Cache } from './Cache'
