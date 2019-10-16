@@ -520,7 +520,7 @@ class CachedResult extends Observable implements Observer {
     return result || value.replacement === record
   }
 
-  private static createReactiveFunctionTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
+  private static createMethodTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     const method = new ReactiveFunction(h, field)
     const methodTrap: F<any> = (...args: any[]): any =>
       method.call(false, args).result.ret
@@ -528,7 +528,7 @@ class CachedResult extends Observable implements Observer {
     return methodTrap
   }
 
-  private static alterBlank(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+  private static applyOptions(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     // Setup blank
     const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
     const existing: CachedResult | undefined = blank[field]
@@ -567,8 +567,8 @@ class CachedResult extends Observable implements Observer {
     Snapshot.isConflicting = CachedResult.isConflicting // override
     Snapshot.propagateChanges = CachedResult.propagateChanges // override
     Snapshot.discardChanges = CachedResult.discardChanges // override
-    Hooks.createReactiveFunctionTrap = CachedResult.createReactiveFunctionTrap // override
-    Hooks.alterBlank = CachedResult.alterBlank // override
+    Hooks.createMethodTrap = CachedResult.createMethodTrap // override
+    Hooks.applyOptions = CachedResult.applyOptions // override
     Promise.prototype.then = fReactronicThen // override
   }
 }

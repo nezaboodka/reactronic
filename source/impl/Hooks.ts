@@ -176,11 +176,11 @@ export class Hooks implements ProxyHandler<Handle> {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
     // Setup method trap
-    const opts = Hooks.alterBlank(proto, method, pd.value, true, configurable, options, implicit)
+    const opts = Hooks.applyOptions(proto, method, pd.value, true, configurable, options, implicit)
     const trap = function(this: any): any {
       const stateful = this instanceof State
       const h: Handle = stateful ? Utils.get<Handle>(this, SYM_HANDLE) : Hooks.acquireHandle(this)
-      const value = Hooks.createReactiveFunctionTrap(h, method, opts)
+      const value = Hooks.createMethodTrap(h, method, opts)
       Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
       return value
     }
@@ -224,12 +224,12 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static createReactiveFunctionTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
+  static createMethodTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
   }
 
   /* istanbul ignore next */
-  static alterBlank = function(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+  static applyOptions = function(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     throw misuse('alterBlank should never be called')
   }
 }
