@@ -423,31 +423,32 @@ class CachedResult extends Observable implements Observer {
     if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log('║', '  ♦', `${Hints.record(r, field)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.record(r, field)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
-  private static propagateChanges(snapshot: Snapshot): void {
-    // Mark previous values as replaced and invalidate existing observers
-    snapshot.changeset.forEach((r: Record, h: Handle) => {
-      if (!r.changes.has(SYM_UNMOUNT))
-        r.changes.forEach(field =>
-          CachedResult.markPrevValueAsReplaced(
-            snapshot.timestamp, r, field, snapshot.triggers))
-      else
-        for (const field in r.prev.record.data)
-          CachedResult.markPrevValueAsReplaced(
-            snapshot.timestamp, r, field, snapshot.triggers)
-    })
-    // Subscribe to new observers and finish cache computations
-    snapshot.changeset.forEach((r: Record, h: Handle) => {
-      if (!r.changes.has(SYM_UNMOUNT))
-        r.changes.forEach(field => CachedResult.finalizeChange(r, field, false))
-      else
-        for (const field in r.prev.record.data)
-          CachedResult.finalizeChange(r, field, true)
-    })
-  }
-
-  private static discardChanges(snapshot: Snapshot): void {
-    snapshot.changeset.forEach((r: Record, h: Handle) =>
-      r.changes.forEach(field => CachedResult.finalizeChange(r, field, true)))
+  private static finalizeChanges(snapshot: Snapshot, error: Error | undefined): void {
+    if (!error) {
+      // Mark previous values as replaced and invalidate existing observers
+      snapshot.changeset.forEach((r: Record, h: Handle) => {
+        if (!r.changes.has(SYM_UNMOUNT))
+          r.changes.forEach(field =>
+            CachedResult.markPrevValueAsReplaced(
+              snapshot.timestamp, r, field, snapshot.triggers))
+        else
+          for (const field in r.prev.record.data)
+            CachedResult.markPrevValueAsReplaced(
+              snapshot.timestamp, r, field, snapshot.triggers)
+      })
+      // Subscribe to new observers and finish cache computations
+      snapshot.changeset.forEach((r: Record, h: Handle) => {
+        if (!r.changes.has(SYM_UNMOUNT))
+          r.changes.forEach(field => CachedResult.finalizeChange(r, field, false))
+        else
+          for (const field in r.prev.record.data)
+            CachedResult.finalizeChange(r, field, true)
+      })
+    }
+    else {
+      snapshot.changeset.forEach((r: Record, h: Handle) =>
+        r.changes.forEach(field => CachedResult.finalizeChange(r, field, true)))
+    }
   }
 
   private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
@@ -563,8 +564,7 @@ class CachedResult extends Observable implements Observer {
     Snapshot.markViewed = CachedResult.markViewed // override
     Snapshot.markChanged = CachedResult.markChanged // override
     Snapshot.isConflicting = CachedResult.isConflicting // override
-    Snapshot.propagateChanges = CachedResult.propagateChanges // override
-    Snapshot.discardChanges = CachedResult.discardChanges // override
+    Snapshot.finalizeChanges = CachedResult.finalizeChanges // override
     Hooks.createMethodTrap = CachedResult.createMethodTrap // override
     Hooks.applyOptions = CachedResult.applyOptions // override
     Promise.prototype.then = fReactronicThen // override
