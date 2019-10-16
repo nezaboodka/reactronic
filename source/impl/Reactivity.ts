@@ -469,6 +469,15 @@ class CachedResult extends Observable implements Observer {
     }
   }
 
+  private static finish(record: Record, field: FieldKey, cancel: boolean): void {
+    const cache = record.data[field]
+    if (cache instanceof CachedResult && cache.record === record) {
+      if (cancel)
+        cache.unsubscribeFromAll()
+      cache.finish()
+    }
+  }
+
   private finish(error?: any): void {
     const prev = this.record.prev.record.data[this.method.name]
     if (prev instanceof CachedResult && prev.invalid.renewing === this)
@@ -477,15 +486,6 @@ class CachedResult extends Observable implements Observer {
       this.observables.forEach((hint, value) => {
         if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} times`, 0, ' *** WARNING ***')
       })
-    }
-  }
-
-  private static finish(record: Record, field: FieldKey, cancel: boolean): void {
-    const cache = record.data[field]
-    if (cache instanceof CachedResult && cache.record === record) {
-      if (cancel)
-        cache.unsubscribeFromAll()
-      cache.finish()
     }
   }
 
