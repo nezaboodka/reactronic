@@ -67,7 +67,7 @@ export class ReactiveFunction extends Cache<any> {
     return func
   }
 
-  static runAs<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
+  static run<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined
     const outer = CachedResult.current
     try {
@@ -86,7 +86,7 @@ export class ReactiveFunction extends Cache<any> {
   }
 
   static unmount(...objects: any[]): Transaction {
-    return Transaction.runEx('<unmount>', false, false,
+    return Transaction.runAs('<unmount>', false, false,
       undefined, undefined, ReactiveFunction.doUnmount, ...objects)
   }
 
@@ -132,7 +132,7 @@ export class ReactiveFunction extends Cache<any> {
       const f = this.name
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, f)}/initialize` : /* istanbul ignore next */ 'Cache.init'
       const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
-      c = Transaction.runEx<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
+      c = Transaction.runAs<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
         const h = this.handle
         let r: Record = Snapshot.readable().read(h)
         let c2 = r.data[f] as CachedResult
@@ -150,7 +150,7 @@ export class ReactiveFunction extends Cache<any> {
   private compute(existing: Call, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
     // TODO: Cleaner implementation is needed
     let call = existing
-    const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
+    const ret = Transaction.runAs(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
       if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(existing.record, this.name)}${existing.result.invalid.hint ? `   <<   ${chainHint(existing.result.invalid.hint).join('   <<   ')}` : ''}`)
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
@@ -180,7 +180,7 @@ export class ReactiveFunction extends Cache<any> {
     const call = this.read(undefined)
     const r: Record = call.record
     const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle, this.name)})` : /* istanbul ignore next */ 'Cache.setup()'
-    return Transaction.runEx(hint, false, false, undefined, undefined, (): Options => {
+    return Transaction.runAs(hint, false, false, undefined, undefined, (): Options => {
       const call2 = this.write()
       const c2: CachedResult = call2.result
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
@@ -247,7 +247,7 @@ class CachedResult extends Observable implements Observer {
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.record(this.record, this.method.name)} - step in  `, 0, '        │')
-      const result = ReactiveFunction.runAs<T>(this, func, ...args)
+      const result = ReactiveFunction.run<T>(this, func, ...args)
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record, this.method.name)} - step out `, 0, this.started > 0 ? '        │' : '')
       return result
     }
@@ -259,7 +259,7 @@ class CachedResult extends Observable implements Observer {
       this.args = args
     this.invalid.since = TOP_TIMESTAMP
     if (!this.error)
-      ReactiveFunction.runAs<void>(this, CachedResult.compute, this, proxy)
+      ReactiveFunction.run<void>(this, CachedResult.compute, this, proxy)
     else
       this.ret = Promise.reject(this.error)
   }
@@ -380,7 +380,7 @@ class CachedResult extends Observable implements Observer {
   }
 
   private monitorEnter(mon: Monitor): void {
-    ReactiveFunction.runAs<void>(undefined, Transaction.runEx, 'Monitor.enter',
+    ReactiveFunction.run<void>(undefined, Transaction.runAs, 'Monitor.enter',
       true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
       MonitorImpl.enter, mon, this)
   }
@@ -388,7 +388,7 @@ class CachedResult extends Observable implements Observer {
   private monitorLeave(mon: Monitor): void {
     Transaction.off<void>(() => {
       const leave = (): void => {
-        ReactiveFunction.runAs<void>(undefined, Transaction.runEx, 'Monitor.leave',
+        ReactiveFunction.run<void>(undefined, Transaction.runAs, 'Monitor.leave',
           true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           MonitorImpl.leave, mon, this)
       }

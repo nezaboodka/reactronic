@@ -125,10 +125,10 @@ export class Transaction extends Action {
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
-    return Transaction.runEx<T>(hint, false, false, undefined, undefined, func, ...args)
+    return Transaction.runAs<T>(hint, false, false, undefined, undefined, func, ...args)
   }
 
-  static runEx<T>(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
+  static runAs<T>(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
     const t: Transaction = Transaction.acquire(hint, spawn, sidebyside, trace, token)
     const root = t !== Transaction.running
     t.guard()
@@ -183,7 +183,7 @@ export class Transaction extends Action {
           if (this.after !== this)
             await this.after.whenFinished()
           // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
-          return Transaction.runEx<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
+          return Transaction.runAs<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
         }
         else
           throw error

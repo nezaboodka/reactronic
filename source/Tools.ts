@@ -31,11 +31,11 @@ export function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined 
 }
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return ReactiveFunction.runAs<T>(undefined, func, ...args)
+  return ReactiveFunction.run<T>(undefined, func, ...args)
 }
 
 export function separate<T>(func: F<T>, ...args: any[]): T {
-  return ReactiveFunction.runAs<T>(undefined, Action.off, func, ...args)
+  return ReactiveFunction.run<T>(undefined, Action.off, func, ...args)
 }
 
 // Decorators
