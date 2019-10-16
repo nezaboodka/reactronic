@@ -56,7 +56,7 @@ export class Transaction extends Action {
     const restore = Transaction.inspection
     try {
       Transaction.inspection = true
-      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log('', '  ', `T${this.id} (${this.hint}) is being inspected by T${Transaction.running.id} (${Transaction.running.hint})`)
+      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log(' ', ' ', `T${this.id} (${this.hint}) is being inspected by T${Transaction.running.id} (${Transaction.running.hint})`)
       return this.do(undefined, func, ...args)
     }
     finally {
@@ -241,9 +241,9 @@ export class Transaction extends Action {
       t.error = error
       t.after = after
       if (Dbg.isOn && Dbg.trace.errors) {
-        Dbg.log(Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
+        Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== Transaction.none)
-          Dbg.log(Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', ' [!]', `T${t.id} (${t.hint}) will be restarted after T${after.id} (${after.hint})`)
+          Dbg.log('║', ' [!]', `T${t.id} (${t.hint}) will be restarted after T${after.id} (${after.hint})`)
       }
       Snapshot.discardChanges(t.snapshot)
     }
@@ -260,7 +260,7 @@ export class Transaction extends Action {
     if (!this.sidebyside)
       throw error(`T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
     else if (Dbg.isOn && Dbg.trace.changes)
-      Dbg.log(Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', ' ', `conflict is ignored - T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
+      Dbg.log('║', ' ', `conflict is ignored - T${this.id} (${this.hint}) conflicts with: ${Hints.conflicts(conflicts)}`)
   }
 
   private finish(): void {

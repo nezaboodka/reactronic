@@ -42,18 +42,18 @@ export class Dbg {
   static get trace(): Trace { return this.getCurrentTrace(undefined) }
   static getCurrentTrace = (local: Partial<Trace> | undefined): Trace => Dbg.global
 
-  static log(operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
-    Dbg.logAs(undefined, operation, marker, message, ms, highlight)
+  static log(bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
+    Dbg.logAs(undefined, bar, operation, message, ms, highlight)
   }
 
-  static logAs(trace: Partial<Trace> | undefined, operation: string, marker: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
+  static logAs(trace: Partial<Trace> | undefined, bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
     const t = Dbg.getCurrentTrace(trace)
     const margin1: string = '  '.repeat(t.margin1 >= 0 ? t.margin1 : 0)
     const margin2: string = '  '.repeat(t.margin2)
     const silent = (trace && trace.silent !== undefined) ? trace.silent : t.silent
     if (!silent) /* istanbul ignore next */
       console.log('\x1b[37m%s\x1b[0m \x1b[' + t.color + 'm%s %s%s\x1b[0m \x1b[' + t.color + 'm%s%s\x1b[0m \x1b[' + t.color + 'm%s\x1b[0m%s',
-        '#rt', t.prefix, margin1, operation, margin2, marker, message,
+        '#rt', t.prefix, t.transactions ? margin1 : '', t.transactions ? bar : bar.replace(/./g, ' '), margin2, operation, message,
         (highlight !== undefined ? `${highlight}` : '') + (ms > 2 ? `    [ ${ms}ms ]` : ''))
   }
 

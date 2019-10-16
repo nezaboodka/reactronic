@@ -62,7 +62,7 @@ export class ReactiveFunction extends Cache<any> {
     // TODO: Cleaner implementation is needed
     let call2 = call
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
-      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log(Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', ' (f)', `${Hints.record(call.record, call.result.field)}${call.result.invalid.hint ? `   <<   ${invalidationChain(call.result.invalid.hint, 0).join('   <<   ')}` : ''}`)
+      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, call.result.field)}${call.result.invalid.hint ? `   <<   ${invalidationChain(call.result.invalid.hint, 0).join('   <<   ')}` : ''}`)
       if (!call2.result.worker.isCanceled) { // first call
         call2 = this.write()
         call2.result.compute(this.handle.proxy, argsx)
@@ -547,7 +547,7 @@ class CachedResult extends Observable implements Observer {
         if (!this.worker.isFinished && this !== value)
           this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)}`), this.worker)
       }
-      else if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', 'x', `${this.hint()} invalidation is skipped`)
+      else if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, '║', 'x', `${this.hint()} invalidation is skipped`)
     }
   }
 
