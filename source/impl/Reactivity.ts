@@ -60,6 +60,38 @@ export class ReactiveFunction extends Cache<any> {
     return call
   }
 
+  static of(method: F<any>): Cache<any> {
+    const func = Utils.get<Cache<any> | undefined>(method, SYM_METHOD)
+    if (!func)
+      throw misuse('given method is not a reactronic cache')
+    return func
+  }
+
+  static runAs<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
+    let result: T | undefined = undefined
+    const outer = CachedResult.current
+    try {
+      CachedResult.current = c
+      result = func(...args)
+    }
+    catch (e) {
+      if (c)
+        c.error = e
+      throw e
+    }
+    finally {
+      CachedResult.current = outer
+    }
+    return result
+  }
+
+  static unmount(...objects: any[]): Transaction {
+    return Transaction.runEx('<unmount>', false, false,
+      undefined, undefined, ReactiveFunction.doUnmount, ...objects)
+  }
+
+  // Internal
+
   private weak(): Call {
     const call = this.read(undefined)
     Snapshot.markViewed(call.record, this.name, call.result, true)
@@ -179,64 +211,6 @@ export class ReactiveFunction extends Cache<any> {
       if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(r, this.name)}.options = ...`)
       return c2.options
     })
-  }
-
-  static runAs<T>(c: CachedResult | undefined, func: F<T>, ...args: any[]): T {
-    let result: T | undefined = undefined
-    const outer = CachedResult.current
-    try {
-      CachedResult.current = c
-      result = func(...args)
-    }
-    catch (e) {
-      if (c)
-        c.error = e
-      throw e
-    }
-    finally {
-      CachedResult.current = outer
-    }
-    return result
-  }
-
-  static createReactiveFunctionTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
-    const method = new ReactiveFunction(h, field)
-    const methodTrap: F<any> = (...args: any[]): any =>
-      method.call(false, args).result.ret
-    Utils.set(methodTrap, SYM_METHOD, method)
-    return methodTrap
-  }
-
-  static alterBlank(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
-    // Setup blank
-    const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
-    const existing: CachedResult | undefined = blank[field]
-    const method = existing ? existing.method : new ReactiveFunction(NOTHING, field)
-    const opts = existing ? existing.options : OptionsImpl.INITIAL
-    const value =  new CachedResult(method, INIT, new OptionsImpl(body, opts, options, implicit))
-    blank[field] = value
-    // Add to the list if a trigger
-    if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
-      const triggers = Hooks.acquireMeta(proto, SYM_TRIGGERS)
-      triggers[field] = value
-    }
-    else if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
-      const triggers = Hooks.getMeta<any>(proto, SYM_TRIGGERS)
-      delete triggers[field]
-    }
-    return value.options
-  }
-
-  static of(method: F<any>): Cache<any> {
-    const func = Utils.get<Cache<any> | undefined>(method, SYM_METHOD)
-    if (!func)
-      throw misuse('given method is not a reactronic cache')
-    return func
-  }
-
-  static unmount(...objects: any[]): Transaction {
-    return Transaction.runEx('<unmount>', false, false,
-      undefined, undefined, ReactiveFunction.doUnmount, ...objects)
   }
 
   private static doUnmount(...objects: any[]): Transaction {
@@ -532,6 +506,34 @@ class CachedResult extends Observable implements Observer {
     return result || value.replacement === record
   }
 
+  private static createReactiveFunctionTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
+    const method = new ReactiveFunction(h, field)
+    const methodTrap: F<any> = (...args: any[]): any =>
+      method.call(false, args).result.ret
+    Utils.set(methodTrap, SYM_METHOD, method)
+    return methodTrap
+  }
+
+  private static alterBlank(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+    // Setup blank
+    const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
+    const existing: CachedResult | undefined = blank[field]
+    const method = existing ? existing.method : new ReactiveFunction(NOTHING, field)
+    const opts = existing ? existing.options : OptionsImpl.INITIAL
+    const value =  new CachedResult(method, INIT, new OptionsImpl(body, opts, options, implicit))
+    blank[field] = value
+    // Add to the list if a trigger
+    if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
+      const triggers = Hooks.acquireMeta(proto, SYM_TRIGGERS)
+      triggers[field] = value
+    }
+    else if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
+      const triggers = Hooks.getMeta<any>(proto, SYM_TRIGGERS)
+      delete triggers[field]
+    }
+    return value.options
+  }
+
   invalidateDueTo(value: Observable, cause: FieldHint, since: number, triggers: Observer[]): void {
     if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
       const notSelfInvalidation = value.isComputed ||
@@ -573,8 +575,8 @@ class CachedResult extends Observable implements Observer {
     Snapshot.isConflicting = CachedResult.isConflicting // override
     Snapshot.propagateChanges = CachedResult.propagateChanges // override
     Snapshot.discardChanges = CachedResult.discardChanges // override
-    Hooks.createReactiveFunctionTrap = ReactiveFunction.createReactiveFunctionTrap // override
-    Hooks.alterBlank = ReactiveFunction.alterBlank // override
+    Hooks.createReactiveFunctionTrap = CachedResult.createReactiveFunctionTrap // override
+    Hooks.alterBlank = CachedResult.alterBlank // override
     Promise.prototype.then = fReactronicThen // override
   }
 }
