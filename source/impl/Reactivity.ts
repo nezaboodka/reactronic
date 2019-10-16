@@ -387,7 +387,7 @@ class CachedResult extends Observable implements Observer {
   }
 
   private monitorLeave(mon: Monitor): void {
-    Transaction.outside<void>(() => {
+    Transaction.off<void>(() => {
       const leave = (): void => {
         ReactiveFunction.runAs<void>(undefined, Transaction.runEx, 'Monitor.leave',
           true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,

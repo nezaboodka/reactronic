@@ -27,5 +27,5 @@ export abstract class Action implements Worker {
   static create(hint: string): Action { return new Transaction(hint) }
   static run<T>(hint: string, func: F<T>, ...args: any[]): T { return Transaction.run<T>(hint, func, ...args) }
   static runEx<T>(hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T { return Transaction.runEx<T>(hint, spawn, sidebyside, trace, token, func, ...args) }
-  static outside<T>(func: F<T>, ...args: any[]): T { return Transaction.outside<T>(func, ...args) }
+  static off<T>(func: F<T>, ...args: any[]): T { return Transaction.off<T>(func, ...args) }
 }

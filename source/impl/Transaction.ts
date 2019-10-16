@@ -135,7 +135,7 @@ export class Transaction extends Action {
     let result: any = t.do<T>(trace, func, ...args)
     if (root) {
       if (result instanceof Promise)
-        result = Transaction.outside(() => {
+        result = Transaction.off(() => {
           return t.wrapToRetry(t.postponed(result), func, ...args)
         })
       t.seal()
@@ -143,7 +143,7 @@ export class Transaction extends Action {
     return result
   }
 
-  static outside<T>(func: F<T>, ...args: any[]): T {
+  static off<T>(func: F<T>, ...args: any[]): T {
     const outer = Transaction.running
     try {
       Transaction.running = Transaction.none
@@ -225,7 +225,7 @@ export class Transaction extends Action {
       this.workers--
       if (this.sealed && this.workers === 0) {
         this.finish()
-        Transaction.outside(Transaction.recomputeTriggers, this)
+        Transaction.off(Transaction.recomputeTriggers, this)
       }
       Transaction.running = outer
     }

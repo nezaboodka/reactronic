@@ -221,7 +221,7 @@ function trace(trace: Partial<Trace>)
 
 function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined
 function nonreactive<T>(func: F<T>, ...args: any[]): T
-function outside<T>(func: F<T>, ...args: any[]): T
+function separate<T>(func: F<T>, ...args: any[]): T
 
 // Options, Kind, Reentrance, Monitor, Trace
 
@@ -254,7 +254,6 @@ class Monitor {
   readonly workerCount: number
   readonly workers: ReadonlySet<Worker>
   readonly animationFrameCount: number
-  readonly delayBeforeIdle?: number // milliseconds
   static create(hint?: string, delayBeforeIdle?: number): Monitor
 }
 
@@ -269,14 +268,13 @@ interface Worker {
 
 interface Trace {
   readonly silent: boolean
-  readonly actions: boolean
+  readonly transactions: boolean
   readonly methods: boolean
   readonly steps: boolean
   readonly monitors: boolean
   readonly reads: boolean
   readonly writes: boolean
   readonly changes: boolean
-  readonly subscriptions: boolean
   readonly invalidations: boolean
   readonly gc: boolean
 }
@@ -305,7 +303,7 @@ class Action implements Worker {
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
     trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T
-  static outside<T>(func: F<T>, ...args: any[]): T
+  static off<T>(func: F<T>, ...args: any[]): T
 }
 
 // Cache
