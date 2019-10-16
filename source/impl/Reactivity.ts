@@ -379,6 +379,7 @@ class CachedResult extends Observable implements Observer {
         const h = Utils.get<Handle>(this.record.data, HANDLE)
         const func = Utils.get<ReactiveFunction>(h.proxy[this.field], FUNCTION)
         prev = func.initial
+        console.log('(!) How is it possible?')
       }
       if (prev.invalid.renewing === this)
         prev.invalid.renewing = undefined
