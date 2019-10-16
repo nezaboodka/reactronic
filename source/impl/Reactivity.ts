@@ -6,7 +6,7 @@
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, FieldKey, Observable, FieldHint, Observer, Handle } from './Data'
-import { Snapshot, Hints, INIT, SYM_HANDLE, SYM_METHOD, SYM_UNMOUNT, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
+import { Snapshot, Hints, NIL, SYM_HANDLE, SYM_METHOD, SYM_UNMOUNT, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
 import { Transaction } from './Transaction'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -15,7 +15,7 @@ import { Monitor, Worker } from '../Monitor'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-const NOTHING = new Handle(undefined, undefined, Hooks.proxy, INIT, 'nothing')
+const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'nothing')
 
 type Call = { context: Snapshot, record: Record, result: CachedResult, reusable: boolean }
 
@@ -102,7 +102,7 @@ export class ReactiveFunction extends Cache<any> {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
     let c: CachedResult = r.data[this.name]
-    if (c.record === INIT)
+    if (c.record === NIL)
       c = this.initialize()
     const reusable = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
@@ -116,7 +116,7 @@ export class ReactiveFunction extends Cache<any> {
     const f = this.name
     const r: Record = ctx.write(this.handle, f, SYM_HANDLE, this)
     let c: CachedResult = r.data[f]
-    if (c.record === INIT)
+    if (c.record === NIL)
       c = this.initialize()
     if (c.record !== r) {
       const renewing = new CachedResult(this, r, c)
@@ -139,7 +139,7 @@ export class ReactiveFunction extends Cache<any> {
       const h = this.handle
       let r: Record = Snapshot.readable().read(h)
       let c = r.data[name] as CachedResult
-      if (c.record === INIT) {
+      if (c.record === NIL) {
         r = Snapshot.writable().write(h, name, SYM_HANDLE, this)
         c = r.data[name] = new CachedResult(this, r, c)
         c.invalid.since = -1 // indicates blank value
@@ -197,7 +197,7 @@ export class ReactiveFunction extends Cache<any> {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c: CachedResult = call.result
-    c.invalidateDueTo(c, {record: INIT, field: self.name, times: 0}, ctx.timestamp, ctx.triggers)
+    c.invalidateDueTo(c, {record: NIL, field: self.name, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
   private alterOptions(options: Partial<Options>): Options {
@@ -535,9 +535,9 @@ class CachedResult extends Observable implements Observer {
     // Setup blank
     const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
     const existing: CachedResult | undefined = blank[field]
-    const method = existing ? existing.method : new ReactiveFunction(NOTHING, field)
+    const method = existing ? existing.method : new ReactiveFunction(NIL_HANDLE, field)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
-    const value =  new CachedResult(method, INIT, new OptionsImpl(body, opts, options, implicit))
+    const value =  new CachedResult(method, NIL, new OptionsImpl(body, opts, options, implicit))
     blank[field] = value
     // Add to the list if a trigger
     if (value.options.kind === Kind.Trigger && value.options.delay > -2) {

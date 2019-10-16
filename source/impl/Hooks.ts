@@ -9,7 +9,7 @@ import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, FieldKey, Observable, Handle } from './Data'
-import { Snapshot, Hints, INIT, SYM_HANDLE, SYM_METHOD, SYM_STATELESS, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
+import { Snapshot, Hints, NIL, SYM_HANDLE, SYM_METHOD, SYM_STATELESS, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
@@ -115,7 +115,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   set(h: Handle, field: FieldKey, value: any, receiver: any): boolean {
     const r: Record = Snapshot.writable().write(h, field, value)
-    if (r !== INIT) {
+    if (r !== NIL) {
       const curr = r.data[field] as Observable
       const prev = r.prev.record.data[field] as Observable
       const changed = prev === undefined || prev.value !== value
@@ -206,7 +206,7 @@ export class Hooks implements ProxyHandler<Handle> {
     let h = Utils.get<Handle>(obj, SYM_HANDLE)
     if (!h) {
       const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), SYM_BLANK)
-      const init = new Record(INIT.snapshot, INIT, {...blank})
+      const init = new Record(NIL.snapshot, NIL, {...blank})
       Utils.set(init.data, SYM_HANDLE, h)
       init.freeze()
       h = new Handle(obj, obj, Hooks.proxy, init, obj.constructor.name)
@@ -218,7 +218,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static createHandle(stateless: any, blank: any, hint: string): Handle {
     const ctx = Snapshot.writable()
-    const h = new Handle(stateless, undefined, Hooks.proxy, INIT, hint)
+    const h = new Handle(stateless, undefined, Hooks.proxy, NIL, hint)
     ctx.write(h, SYM_HANDLE, blank)
     return h
   }

@@ -57,7 +57,7 @@ export class Snapshot implements Context {
 
   read(h: Handle): Record {
     const r = this.tryRead(h)
-    if (r === INIT) /* istanbul ignore next */
+    if (r === NIL) /* istanbul ignore next */
       throw misuse(`object ${Hints.handle(h)} doesn't exist in snapshot v${this.stamp}`)
     return r
   }
@@ -71,7 +71,7 @@ export class Snapshot implements Context {
     }
     if (!r) {
       r = h.head
-      while (r !== INIT && r.snapshot.timestamp > this.timestamp)
+      while (r !== NIL && r.snapshot.timestamp > this.timestamp)
         r = r.prev.record
     }
     return r
@@ -91,16 +91,16 @@ export class Snapshot implements Context {
       }
     }
     else
-      r = INIT
+      r = NIL
     return r
   }
 
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.applied)
       throw misuse(`stateful property ${Hints.handle(h, field)} can only be modified inside actions and triggers`)
-    if (field !== SYM_HANDLE && value !== SYM_HANDLE && this.caching !== undefined && token !== this.caching && (r.snapshot !== this || r.prev.record !== INIT))
+    if (field !== SYM_HANDLE && value !== SYM_HANDLE && this.caching !== undefined && token !== this.caching && (r.snapshot !== this || r.prev.record !== NIL))
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, field)}`)
-    if (r === INIT && field !== SYM_HANDLE && value !== SYM_HANDLE) /* istanbul ignore next */
+    if (r === NIL && field !== SYM_HANDLE && value !== SYM_HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hints.record(r, field)} doesn't exist in snapshot v${this.stamp}`)
   }
 
@@ -238,8 +238,8 @@ export class Snapshot implements Context {
   private unlinkHistory(): void {
     if (Dbg.isOn && Dbg.trace.gc) Dbg.log('', '[G]', `Dismiss history of v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== INIT) Dbg.log(' ', '  ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
-      r.prev.record = INIT // unlink history
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== NIL) Dbg.log(' ', '  ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
+      r.prev.record = NIL // unlink history
     })
   }
 
@@ -299,5 +299,5 @@ export class Hints {
   }
 }
 
-export const INIT = new Record(Snapshot.init, undefined, {})
-INIT.freeze()
+export const NIL = new Record(Snapshot.init, undefined, {})
+NIL.freeze()
