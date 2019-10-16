@@ -471,15 +471,8 @@ class CachedResult extends Observable implements Observer {
 
   private finish(error?: any): void {
     const prev = this.record.prev.record.data[this.method.name]
-    if (prev instanceof CachedResult) {
-      // if (prev.record === INIT) {
-      //   const h = Utils.get<Handle>(this.record.data, HANDLE)
-      //   const func = Utils.get<ReactiveFunction>(h.proxy[this.field], FUNCTION)
-      //   prev = func.initial
-      // }
-      if (prev.invalid.renewing === this)
-        prev.invalid.renewing = undefined
-    }
+    if (prev instanceof CachedResult && prev.invalid.renewing === this)
+      prev.invalid.renewing = undefined
     if (Hooks.performanceWarningThreshold > 0) {
       this.observables.forEach((hint, value) => {
         if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} times`, 0, ' *** WARNING ***')
