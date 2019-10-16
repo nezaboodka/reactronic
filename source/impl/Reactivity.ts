@@ -60,45 +60,6 @@ export class ReactiveFunction extends Cache<any> {
     return call
   }
 
-  compute(existing: Call, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
-    // TODO: Cleaner implementation is needed
-    let call = existing
-    const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
-      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(existing.record, this.name)}${existing.result.invalid.hint ? `   <<   ${invalidationChain(existing.result.invalid.hint, 0).join('   <<   ')}` : ''}`)
-      if (!call.result.worker.isCanceled) { // first call
-        call = this.write()
-        call.result.compute(this.handle.proxy, argsx)
-      }
-      else { // retry call
-        call = this.read(argsx) // re-read on retry
-        if (call.result.options.kind === Kind.Action || (!call.reusable && !call.result.invalid.renewing)) {
-          call = this.write()
-          call.result.compute(this.handle.proxy, argsx)
-        }
-      }
-      return call.result.ret
-    }, args)
-    call.result.ret = ret
-    return call
-  }
-
-  private initialize(): CachedResult {
-    const name = this.name
-    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, name)}/initialize` : /* istanbul ignore next */ 'Cache.init'
-    const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
-    return Transaction.runEx<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
-      const h = this.handle
-      let r: Record = Snapshot.readable().read(h)
-      let c = r.data[name] as CachedResult
-      if (c.record === INIT) {
-        r = Snapshot.writable().write(h, name, SYM_HANDLE, this)
-        c = r.data[name] = new CachedResult(this, r, c)
-        c.invalid.since = -1 // indicates blank value
-      }
-      return c
-    })
-  }
-
   private weak(): Call {
     const call = this.read(undefined)
     Snapshot.markViewed(call.record, this.name, call.result, true)
@@ -138,6 +99,23 @@ export class ReactiveFunction extends Cache<any> {
     return { context: ctx, record: r, result: c, reusable: true }
   }
 
+  private initialize(): CachedResult {
+    const name = this.name
+    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, name)}/initialize` : /* istanbul ignore next */ 'Cache.init'
+    const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
+    return Transaction.runEx<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
+      const h = this.handle
+      let r: Record = Snapshot.readable().read(h)
+      let c = r.data[name] as CachedResult
+      if (c.record === INIT) {
+        r = Snapshot.writable().write(h, name, SYM_HANDLE, this)
+        c = r.data[name] = new CachedResult(this, r, c)
+        c.invalid.since = -1 // indicates blank value
+      }
+      return c
+    })
+  }
+
   private static checkForReentrance(c: CachedResult): Error | undefined {
     let result: Error | undefined = undefined
     const prev = c.invalid.renewing
@@ -161,7 +139,29 @@ export class ReactiveFunction extends Cache<any> {
     return result
   }
 
-  static invalidate(self: ReactiveFunction): void {
+  private compute(existing: Call, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
+    // TODO: Cleaner implementation is needed
+    let call = existing
+    const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
+      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(existing.record, this.name)}${existing.result.invalid.hint ? `   <<   ${invalidationChain(existing.result.invalid.hint, 0).join('   <<   ')}` : ''}`)
+      if (!call.result.worker.isCanceled) { // first call
+        call = this.write()
+        call.result.compute(this.handle.proxy, argsx)
+      }
+      else { // retry call
+        call = this.read(argsx) // re-read on retry
+        if (call.result.options.kind === Kind.Action || (!call.reusable && !call.result.invalid.renewing)) {
+          call = this.write()
+          call.result.compute(this.handle.proxy, argsx)
+        }
+      }
+      return call.result.ret
+    }, args)
+    call.result.ret = ret
+    return call
+  }
+
+  private static invalidate(self: ReactiveFunction): void {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c: CachedResult = call.result
