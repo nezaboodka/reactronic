@@ -101,9 +101,7 @@ export class ReactiveFunction extends Cache<any> {
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
-    let c: CachedResult = r.data[this.name]
-    if (c.record === NIL)
-      c = this.initialize()
+    const c: CachedResult = this.from(r.data[this.name])
     const reusable = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
@@ -115,9 +113,7 @@ export class ReactiveFunction extends Cache<any> {
     const ctx = Snapshot.writable()
     const f = this.name
     const r: Record = ctx.write(this.handle, f, SYM_HANDLE, this)
-    let c: CachedResult = r.data[f]
-    if (c.record === NIL)
-      c = this.initialize()
+    let c: CachedResult = this.from(r.data[f])
     if (c.record !== r) {
       const renewing = new CachedResult(this, r, c)
       r.data[f] = renewing
@@ -131,21 +127,24 @@ export class ReactiveFunction extends Cache<any> {
     return { context: ctx, record: r, result: c, reusable: true }
   }
 
-  private initialize(): CachedResult {
-    const name = this.name
-    const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, name)}/initialize` : /* istanbul ignore next */ 'Cache.init'
-    const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
-    return Transaction.runEx<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
-      const h = this.handle
-      let r: Record = Snapshot.readable().read(h)
-      let c = r.data[name] as CachedResult
-      if (c.record === NIL) {
-        r = Snapshot.writable().write(h, name, SYM_HANDLE, this)
-        c = r.data[name] = new CachedResult(this, r, c)
-        c.invalid.since = -1 // indicates blank value
-      }
-      return c
-    })
+  private from(c: CachedResult): CachedResult {
+    if (c.record === NIL) {
+      const name = this.name
+      const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, name)}/initialize` : /* istanbul ignore next */ 'Cache.init'
+      const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
+      c = Transaction.runEx<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
+        const h = this.handle
+        let r: Record = Snapshot.readable().read(h)
+        let c2 = r.data[name] as CachedResult
+        if (c2.record === NIL) {
+          r = Snapshot.writable().write(h, name, SYM_HANDLE, this)
+          c2 = r.data[name] = new CachedResult(this, r, c2)
+          c2.invalid.since = -1 // indicates blank value
+        }
+        return c2
+      })
+    }
+    return c
   }
 
   private static checkForReentrance(c: CachedResult): Error | undefined {
