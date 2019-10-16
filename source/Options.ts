@@ -9,9 +9,9 @@ import { Monitor } from './Monitor'
 
 export interface Options {
   readonly kind: Kind
+  readonly cachedArgs: boolean
   readonly delay: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
-  readonly cachedArgs: boolean
   readonly monitor: Monitor | null
   readonly trace?: Partial<Trace>
 }

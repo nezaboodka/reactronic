@@ -213,9 +213,9 @@ function action(proto, prop, pd) // method only
 function trigger(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
+function cachedArgs(cachedArgs: boolean) // cached & triggers
 function delay(delay: number) // triggers only
 function reentrance(reentrance: Reentrance) // actions & triggers
-function cachedArgs(cachedArgs: boolean) // cached & triggers
 function monitor(monitor: Monitor | null)
 function trace(trace: Partial<Trace>)
 
@@ -227,9 +227,9 @@ function separate<T>(func: F<T>, ...args: any[]): T
 
 interface Options {
   readonly kind: Kind
+  readonly cachedArgs: boolean
   readonly delay: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
-  readonly cachedArgs: boolean
   readonly monitor: Monitor | null
   readonly trace?: Partial<Trace>
 }
