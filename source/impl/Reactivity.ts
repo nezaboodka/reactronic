@@ -373,14 +373,13 @@ class CachedResult extends Observable implements Observer {
   }
 
   finish(error?: any): void {
-    let prev = this.record.prev.record.data[this.field]
+    const prev = this.record.prev.record.data[this.field]
     if (prev instanceof CachedResult) {
-      if (prev.record === INIT) {
-        const h = Utils.get<Handle>(this.record.data, HANDLE)
-        const func = Utils.get<ReactiveFunction>(h.proxy[this.field], FUNCTION)
-        prev = func.initial
-        console.log('(!) How is it possible?')
-      }
+      // if (prev.record === INIT) {
+      //   const h = Utils.get<Handle>(this.record.data, HANDLE)
+      //   const func = Utils.get<ReactiveFunction>(h.proxy[this.field], FUNCTION)
+      //   prev = func.initial
+      // }
       if (prev.invalid.renewing === this)
         prev.invalid.renewing = undefined
     }
