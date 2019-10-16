@@ -17,7 +17,7 @@ export class MonitorImpl extends Monitor {
     { delayBeforeIdle: undefined, timeout: undefined }
 
   enter(worker: Worker): void {
-    this.x.timeout = clear(this.x.timeout) // yes, on each enter
+    this.x.timeout = MonitorImpl.clear(this.x.timeout) // yes, on each enter
     if (this.workerCount === 0)
       this.busy = true
     this.workerCount++
@@ -31,29 +31,8 @@ export class MonitorImpl extends Monitor {
       this.idle(false)
   }
 
-  private idle(now: boolean): void {
-    if (now || this.x.delayBeforeIdle === undefined) {
-      if (this.workerCount > 0 || this.workers.size > 0) /* istanbul ignore next */
-        throw misuse('cannot reset monitor having active workers')
-      this.busy = false
-      this.x.timeout = clear(this.x.timeout)
-      this.animationFrameCount = 0
-    }
-    else
-      this.x.timeout = setTimeout(() =>
-        Transaction.runEx<void>('Monitor.idle', true, false,
-          undefined, undefined, MonitorImpl.idle, this, true), this.x.delayBeforeIdle)
-  }
-
   static create(hint?: string, prolonged?: number): MonitorImpl {
     return Transaction.run('Monitor.create', MonitorImpl.doCreate, hint, prolonged)
-  }
-
-  private static doCreate(hint?: string, delayBeforeIdle?: number): MonitorImpl {
-    const m = new MonitorImpl()
-    Hints.setHint(m, hint)
-    m.x.delayBeforeIdle = delayBeforeIdle
-    return m
   }
 
   static enter(mon: Monitor, worker: Worker): void {
@@ -64,12 +43,35 @@ export class MonitorImpl extends Monitor {
     mon.leave(worker)
   }
 
-  static idle(mon: MonitorImpl, now: boolean): void {
+  // Internal
+
+  private static doCreate(hint?: string, delayBeforeIdle?: number): MonitorImpl {
+    const m = new MonitorImpl()
+    Hints.setHint(m, hint)
+    m.x.delayBeforeIdle = delayBeforeIdle
+    return m
+  }
+
+  private idle(now: boolean): void {
+    if (now || this.x.delayBeforeIdle === undefined) {
+      if (this.workerCount > 0 || this.workers.size > 0) /* istanbul ignore next */
+        throw misuse('cannot reset monitor having active workers')
+      this.busy = false
+      this.x.timeout = MonitorImpl.clear(this.x.timeout)
+      this.animationFrameCount = 0
+    }
+    else
+      this.x.timeout = setTimeout(() =>
+        Transaction.runEx<void>('Monitor.idle', true, false,
+          undefined, undefined, MonitorImpl.idle, this, true), this.x.delayBeforeIdle)
+  }
+
+  private static idle(mon: MonitorImpl, now: boolean): void {
     mon.idle(now)
   }
-}
 
-function clear(timeout: any): undefined {
-  clearTimeout(timeout)
-  return undefined
+  private static clear(timeout: any): undefined {
+    clearTimeout(timeout)
+    return undefined
+  }
 }
