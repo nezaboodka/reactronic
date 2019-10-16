@@ -219,7 +219,7 @@ function reentrance(reentrance: Reentrance) // actions & triggers
 function monitor(monitor: Monitor | null)
 function trace(trace: Partial<Trace>)
 
-function pullAvailableResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined
+function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined
 function nonreactive<T>(func: F<T>, ...args: any[]): T
 function separate<T>(func: F<T>, ...args: any[]): T
 
