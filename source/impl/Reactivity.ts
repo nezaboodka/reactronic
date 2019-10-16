@@ -50,7 +50,7 @@ export class ReactiveFunction extends Cache<any> {
         (opt.kind === Kind.Cached && call.record.snapshot !== call.context)
       const sidebyside = opt.reentrance === Reentrance.RunSideBySide
       const token = opt.kind === Kind.Cached ? this : undefined
-      const call2 = this.recompute(call, hint, spawn, sidebyside, opt.trace, token, args)
+      const call2 = this.compute(call, hint, spawn, sidebyside, opt.trace, token, args)
       const ctx2 = call2.result.record.snapshot
       if (!weak || ctx === ctx2 || (ctx2.applied && ctx.timestamp >= ctx2.timestamp))
         call = call2
@@ -60,26 +60,26 @@ export class ReactiveFunction extends Cache<any> {
     return call
   }
 
-  recompute(call: Call, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
+  compute(existing: Call, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
     // TODO: Cleaner implementation is needed
-    let call2 = call
+    let call = existing
     const ret = Transaction.runEx(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
-      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, this.name)}${call.result.invalid.hint ? `   <<   ${invalidationChain(call.result.invalid.hint, 0).join('   <<   ')}` : ''}`)
-      if (!call2.result.worker.isCanceled) { // first call
-        call2 = this.write()
-        call2.result.compute(this.handle.proxy, argsx)
+      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(existing.record, this.name)}${existing.result.invalid.hint ? `   <<   ${invalidationChain(existing.result.invalid.hint, 0).join('   <<   ')}` : ''}`)
+      if (!call.result.worker.isCanceled) { // first call
+        call = this.write()
+        call.result.compute(this.handle.proxy, argsx)
       }
       else { // retry call
-        call2 = this.read(argsx) // re-read on retry
-        if (call2.result.options.kind === Kind.Action || (!call2.reusable && !call2.result.invalid.renewing)) {
-          call2 = this.write()
-          call2.result.compute(this.handle.proxy, argsx)
+        call = this.read(argsx) // re-read on retry
+        if (call.result.options.kind === Kind.Action || (!call.reusable && !call.result.invalid.renewing)) {
+          call = this.write()
+          call.result.compute(this.handle.proxy, argsx)
         }
       }
-      return call2.result.ret
+      return call.result.ret
     }, args)
-    call2.result.ret = ret
-    return call2
+    call.result.ret = ret
+    return call
   }
 
   private initialize(): CachedResult {
@@ -395,7 +395,7 @@ class CachedResult extends Observable implements Observer {
     }
   }
 
-  trig(now: boolean, nothrow: boolean): void {
+  recompute(now: boolean, nothrow: boolean): void {
     const delay = this.options.delay
     if (now || delay === -1) {
       if (!this.error && (this.options.kind === Kind.Action || !this.invalid.renewing)) {
@@ -413,7 +413,7 @@ class CachedResult extends Observable implements Observer {
     else if (delay === 0)
       this.addToAsyncTriggerBatch()
     else if (delay > 0) // ignore disabled triggers (delay -2)
-      setTimeout(() => this.trig(true, true), delay)
+      setTimeout(() => this.recompute(true, true), delay)
   }
 
   private addToAsyncTriggerBatch(): void {
@@ -426,7 +426,7 @@ class CachedResult extends Observable implements Observer {
     const triggers = CachedResult.asyncTriggerBatch
     CachedResult.asyncTriggerBatch = [] // reset
     for (const t of triggers)
-      t.trig(true, true)
+      t.recompute(true, true)
   }
 
   private static markViewed(record: Record, field: FieldKey, value: Observable, weak: boolean): void {
@@ -531,23 +531,23 @@ class CachedResult extends Observable implements Observer {
     return result || value.replacement === record
   }
 
-  invalidateDueTo(value: Observable, hint: FieldHint, since: number, triggers: Observer[]): void {
+  invalidateDueTo(value: Observable, cause: FieldHint, since: number, triggers: Observer[]): void {
     if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
       const notSelfInvalidation = value.isComputed ||
-        hint.record.snapshot !== this.record.snapshot ||
-        !hint.record.changes.has(hint.field)
+        cause.record.snapshot !== this.record.snapshot ||
+        !cause.record.changes.has(cause.field)
       if (notSelfInvalidation) {
-        this.invalid.hint = hint
+        this.invalid.hint = cause
         this.invalid.since = since
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[SYM_UNMOUNT] === undefined
-        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && hint.record === this.record && hint.field === this.method.name ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(hint.record, hint.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
+        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === this.record && cause.field === this.method.name ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
         this.unsubscribeFromAll()
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
         else if (this.observers) // cascade invalidation
           this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, field: this.method.name, times: 0}, since, triggers))
         if (!this.worker.isFinished && this !== value)
-          this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(hint.record, hint.field)}`), this.worker)
+          this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.field)}`), this.worker)
       }
       else if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, '║', 'x', `${this.hint()} invalidation is skipped`)
     }
