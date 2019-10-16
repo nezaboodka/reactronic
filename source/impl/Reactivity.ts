@@ -117,7 +117,7 @@ export class ReactiveFunction extends Cache<any> {
     if (c.record !== r) {
       const renewing = new CachedResult(this, r, c)
       r.data[f] = renewing
-      renewing.error = ReactiveFunction.checkForReentrance(c)
+      renewing.error = c.checkForReentrance()
       if (!renewing.error)
         c.invalid.renewing = renewing
       c = renewing
@@ -145,29 +145,6 @@ export class ReactiveFunction extends Cache<any> {
       })
     }
     return c
-  }
-
-  private static checkForReentrance(c: CachedResult): Error | undefined {
-    let result: Error | undefined = undefined
-    const prev = c.invalid.renewing
-    const caller = Transaction.current
-    if (prev && prev !== c && !prev.worker.isCanceled)
-      switch (c.options.reentrance) {
-        case Reentrance.PreventWithError:
-          throw misuse(`${c.hint()} is not reentrant over ${prev.hint()}`)
-        case Reentrance.WaitAndRestart:
-          result = new Error(`T${caller.id} (${caller.hint}) will be restarted after T${prev.worker.id} (${prev.worker.hint})`)
-          caller.cancel(result, prev.worker)
-          // TODO: "c.invalid.renewing = caller" in order serialize all the actions
-          break
-        case Reentrance.CancelPrevious:
-          prev.worker.cancel(new Error(`T${prev.worker.id} (${prev.worker.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
-          c.invalid.renewing = undefined // allow
-          break
-        case Reentrance.RunSideBySide:
-          break // do nothing
-      }
-    return result
   }
 
   private compute(existing: Call, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
@@ -328,6 +305,29 @@ class CachedResult extends Observable implements Observer {
       this.addToAsyncTriggerBatch()
     else if (delay > 0) // ignore disabled triggers (delay -2)
       setTimeout(() => this.recompute(true, true), delay)
+  }
+
+  checkForReentrance(): Error | undefined {
+    let result: Error | undefined = undefined
+    const prev = this.invalid.renewing
+    const caller = Transaction.current
+    if (prev && prev !== this && !prev.worker.isCanceled)
+      switch (this.options.reentrance) {
+        case Reentrance.PreventWithError:
+          throw misuse(`${this.hint()} is not reentrant over ${prev.hint()}`)
+        case Reentrance.WaitAndRestart:
+          result = new Error(`T${caller.id} (${caller.hint}) will be restarted after T${prev.worker.id} (${prev.worker.hint})`)
+          caller.cancel(result, prev.worker)
+          // TODO: "c.invalid.renewing = caller" in order serialize all the actions
+          break
+        case Reentrance.CancelPrevious:
+          prev.worker.cancel(new Error(`T${prev.worker.id} (${prev.worker.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
+          this.invalid.renewing = undefined // allow
+          break
+        case Reentrance.RunSideBySide:
+          break // do nothing
+      }
+    return result
   }
 
   // Internal
