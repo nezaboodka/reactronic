@@ -67,7 +67,7 @@ export class Record {
 // Handle
 
 export class Handle {
-  private static id: number = 20
+  private static id: number = 19
 
   readonly id: number
   readonly stateless: any
