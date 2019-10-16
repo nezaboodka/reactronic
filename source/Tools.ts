@@ -26,7 +26,7 @@ export class Tools {
 
 // Operators
 
-export function pullAvailableValue<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
+export function pullAvailableResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
   return Cache.of(method as any as F<T>).pullAvailableValue(args) // overcome type safety
 }
 
