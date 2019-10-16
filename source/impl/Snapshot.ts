@@ -23,7 +23,6 @@ export class Snapshot implements Context {
   static headStamp: number = 1
   static pending: Snapshot[] = []
   static oldest: Snapshot | undefined = undefined
-  static readonly init: Snapshot = new Snapshot('<init>', undefined)
 
   readonly id: number
   readonly hint: string
@@ -244,9 +243,9 @@ export class Snapshot implements Context {
   }
 
   static _init(): void {
-    Snapshot.init.acquire(Snapshot.init)
-    Snapshot.init.apply()
-    Snapshot.init.collect()
+    NIL_SNAPSHOT.acquire(NIL_SNAPSHOT)
+    NIL_SNAPSHOT.apply()
+    NIL_SNAPSHOT.collect()
     Snapshot.lastId = 100
     Snapshot.headStamp = 101
     Snapshot.oldest = undefined
@@ -299,5 +298,6 @@ export class Hints {
   }
 }
 
-export const NIL = new Record(Snapshot.init, undefined, {})
+const NIL_SNAPSHOT = new Snapshot('<nil>', undefined)
+export const NIL = new Record(NIL_SNAPSHOT, undefined, {})
 NIL.freeze()
