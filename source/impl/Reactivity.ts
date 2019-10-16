@@ -31,7 +31,7 @@ export class ReactiveFunction extends Cache<any> {
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reuse }
   invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.name)})` : 'invalidate()', ReactiveFunction.invalidate, this) }
-  pullValue(args?: any[]): any { return this.call(true, args).result.value }
+  pullAvailableValue(args?: any[]): any { return this.call(true, args).result.value }
 
   constructor(handle: Handle, name: FieldKey) {
     super()
