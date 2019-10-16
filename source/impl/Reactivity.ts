@@ -424,16 +424,16 @@ class CachedResult extends Observable implements Observer {
   }
 
   private static propagateChanges(snapshot: Snapshot): void {
-    const timestamp = snapshot.timestamp
-    const triggers = snapshot.triggers
     // Mark previous values as replaced and invalidate existing observers
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       if (!r.changes.has(SYM_UNMOUNT))
         r.changes.forEach(field =>
-          CachedResult.markPrevValueAsReplaced(timestamp, r, field, triggers))
+          CachedResult.markPrevValueAsReplaced(
+            snapshot.timestamp, r, field, snapshot.triggers))
       else
         for (const field in r.prev.record.data)
-          CachedResult.markPrevValueAsReplaced(timestamp, r, field, triggers)
+          CachedResult.markPrevValueAsReplaced(
+            snapshot.timestamp, r, field, snapshot.triggers)
     })
     // Subscribe to new observers and finish cache computations
     snapshot.changeset.forEach((r: Record, h: Handle) => {
