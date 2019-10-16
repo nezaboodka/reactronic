@@ -26,12 +26,8 @@ export class Tools {
 
 // Operators
 
-export function cacheof<T>(method: F<T>): Cache<T> {
-  return Cache.of<T>(method)
-}
-
 export function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return cacheof(method as any as F<T>).pullValue(args) // overcome type safety
+  return Cache.of(method as any as F<T>).pullValue(args) // overcome type safety
 }
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {

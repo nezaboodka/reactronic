@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Action, Cache, Tools as RT, Kind, cacheof, nonreactive, standalone } from '../source/.index'
+import { Action, Cache, Kind, nonreactive, standalone, Tools as RT } from '../source/.index'
 import { tracing, nop } from './common'
 import { Person, Demo, DemoView, output } from './brief'
 
@@ -32,7 +32,7 @@ test('Main', t => {
   const app = Action.run('app', () => new DemoView(new Demo()))
   try {
     t.notThrows(() => DemoView.test())
-    const rendering = cacheof(app.render)
+    const rendering = Cache.of(app.render)
     t.is(rendering.invalid, false)
     t.is(rendering.args.length, 1)
     t.is(rendering.value.length, 1)
@@ -110,9 +110,9 @@ test('Main', t => {
     // t.is(daddy.name, "John")
     // t.is(daddy.age, 38)
     // Check protection and error handling
-    t.throws(() => { cacheof(daddy.setParent).setup({monitor: null}) },
+    t.throws(() => { Cache.of(daddy.setParent).setup({monitor: null}) },
       'given method is not a reactronic cache')
-    t.throws(() => { console.log(cacheof(daddy.setParent).options.monitor) },
+    t.throws(() => { console.log(Cache.of(daddy.setParent).options.monitor) },
       'given method is not a reactronic cache')
     const action2 = Action.create('action2')
     t.throws(() => action2.run(() => { throw new Error('test') }), 'test')

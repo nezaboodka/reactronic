@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { State, action, cached, trigger, cacheof } from '.index'
+import { State, Cache, action, cached, trigger } from '.index'
 
 class Model extends State {
   // state
@@ -23,7 +23,7 @@ class Model extends State {
 class View extends React.Component<Model> {
   @trigger
   keepFresh(): void {
-    if (cacheof(this.render).invalid)
+    if (Cache.of(this.render).invalid)
       this.setState({}) // ask React
   }
 

@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { State, Action, Cache, stateless, trigger, cached, cacheof, standalone } from '.index'
+import { State, Action, Cache, stateless, trigger, cached, standalone } from '.index'
 
 type ReactState = { rx: Rx }
 
@@ -28,7 +28,7 @@ class Rx extends State {
 
   @trigger
   keepFresh(): void {
-    if (cacheof(this.jsx).invalid)
+    if (Cache.of(this.jsx).invalid)
       standalone(this.refresh, {rx: this})
   }
 

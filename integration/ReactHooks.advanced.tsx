@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { State, Action, Cache, stateless, trigger, cached, cacheof, standalone, Tools as RT, Trace } from '.index'
+import { State, Action, Cache, stateless, trigger, cached, standalone, Tools as RT, Trace } from '.index'
 
 type ReactState = { rx: Rx, counter: number }
 
@@ -30,7 +30,7 @@ class Rx extends State {
 
   @trigger
   keepFresh(): void {
-    if (cacheof(this.jsx).invalid)
+    if (Cache.of(this.jsx).invalid)
       standalone(this.refresh, {rx: this, counter: this.counter + 1})
   }
 
@@ -52,8 +52,8 @@ function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
   if (hint)
     RT.setTraceHint(rx, hint)
   if (trace) {
-    cacheof(rx.jsx).setup({trace})
-    cacheof(rx.keepFresh).setup({trace})
+    Cache.of(rx.jsx).setup({trace})
+    Cache.of(rx.keepFresh).setup({trace})
   }
   return rx
 }

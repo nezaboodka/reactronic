@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Action, Cache, Reentrance, Tools as RT, cacheof, all, sleep } from '../source/.index'
+import { Action, Cache, Reentrance, Tools as RT, all, sleep } from '../source/.index'
 import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -31,7 +31,7 @@ const expected: string[] = [
 test('Reentrance.RunSideBySide', async t => {
   RT.setTrace(tracing.noisy)
   const app = Action.run('app', () => new AsyncDemoView(new AsyncDemo()))
-  cacheof(app.model.load).setup({reentrance: Reentrance.RunSideBySide})
+  Cache.of(app.model.load).setup({reentrance: Reentrance.RunSideBySide})
   try {
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))

@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Action, Cache, Reentrance, Tools as RT, cacheof, resolved, sleep } from '../source/.index'
+import { Action, Cache, Reentrance, resolved, Tools as RT, sleep } from '../source/.index'
 import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -27,7 +27,7 @@ const expected: string[] = [
 test('Reentrance.PreventWithError', async t => {
   RT.setTrace(tracing.noisy)
   const app = Action.run('app', () => new AsyncDemoView(new AsyncDemo()))
-  cacheof(app.model.load).setup({reentrance: Reentrance.PreventWithError})
+  Cache.of(app.model.load).setup({reentrance: Reentrance.PreventWithError})
   try {
     await app.print() // trigger first run
     const first = app.model.load(requests[0].url, requests[0].delay)
