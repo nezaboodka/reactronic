@@ -205,24 +205,21 @@ class CachedResult extends Observable implements Observer {
   static asyncTriggerBatch: CachedResult[] = []
 
   get isComputed(): boolean { return true }
-  readonly margin: number
   readonly method: ReactiveFunction
-  readonly worker: Worker
   readonly record: Record
   readonly observables: Map<Observable, FieldHint>
   readonly invalid: { since: number, hint?: FieldHint, renewing?: CachedResult }
-
   options: OptionsImpl
   args: any[]
   ret: any
   error: any
+  readonly margin: number
+  readonly worker: Worker
   started: number
 
   constructor(method: ReactiveFunction, record: Record, init: CachedResult | OptionsImpl) {
     super(undefined)
-    this.margin = CachedResult.current ? CachedResult.current.margin + 1 : 1
     this.method = method
-    this.worker = Transaction.current
     this.record = record
     this.observables = new Map<Observable, FieldHint>()
     this.invalid = { since: 0, hint: undefined, renewing: undefined }
@@ -238,6 +235,8 @@ class CachedResult extends Observable implements Observer {
     }
     // this.ret = undefined
     // this.error = undefined
+    this.margin = CachedResult.current ? CachedResult.current.margin + 1 : 1
+    this.worker = Transaction.current
     this.started = 0
   }
 
