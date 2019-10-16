@@ -23,7 +23,7 @@ export class ReactiveFunction extends Cache<any> {
   readonly handle: Handle
   readonly name: FieldKey
 
-  setup(options: Partial<Options>): Options { return this.reconfigure(options) }
+  setup(options: Partial<Options>): Options { return this.alterOptions(options) }
   get options(): Options { return this.weak().result.options }
   get args(): ReadonlyArray<any> { return this.weak().result.args }
   get value(): any { return this.call(true, undefined).result.value }
@@ -168,7 +168,7 @@ export class ReactiveFunction extends Cache<any> {
     c.invalidateDueTo(c, {record: INIT, field: self.name, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
-  private reconfigure(options: Partial<Options>): Options {
+  private alterOptions(options: Partial<Options>): Options {
     const call = this.read(undefined)
     const r: Record = call.record
     const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle, this.name)})` : /* istanbul ignore next */ 'Cache.setup()'
