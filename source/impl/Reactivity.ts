@@ -288,7 +288,52 @@ class CachedResult extends Observable implements Observer {
       this.ret = Promise.reject(this.error)
   }
 
-  static compute(self: CachedResult, proxy: any): void {
+  invalidateDueTo(value: Observable, cause: FieldHint, since: number, triggers: Observer[]): void {
+    if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
+      const notSelfInvalidation = value.isComputed ||
+        cause.record.snapshot !== this.record.snapshot ||
+        !cause.record.changes.has(cause.field)
+      if (notSelfInvalidation) {
+        this.invalid.hint = cause
+        this.invalid.since = since
+        const isTrigger = this.options.kind === Kind.Trigger && this.record.data[SYM_UNMOUNT] === undefined
+        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === this.record && cause.field === this.method.name ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
+        this.unsubscribeFromAll()
+        if (isTrigger) // stop cascade invalidation on trigger
+          triggers.push(this)
+        else if (this.observers) // cascade invalidation
+          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, field: this.method.name, times: 0}, since, triggers))
+        if (!this.worker.isFinished && this !== value)
+          this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.field)}`), this.worker)
+      }
+      else if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, '║', 'x', `${this.hint()} invalidation is skipped`)
+    }
+  }
+
+  recompute(now: boolean, nothrow: boolean): void {
+    const delay = this.options.delay
+    if (now || delay === -1) {
+      if (!this.error && (this.options.kind === Kind.Action || !this.invalid.renewing)) {
+        try {
+          const call: Call = this.method.call(false, undefined)
+          if (call.result.ret instanceof Promise)
+            call.result.ret.catch(error => { /* nop */ }) // bad idea to hide an error
+        }
+        catch (e) {
+          if (!nothrow)
+            throw e
+        }
+      }
+    }
+    else if (delay === 0)
+      this.addToAsyncTriggerBatch()
+    else if (delay > 0) // ignore disabled triggers (delay -2)
+      setTimeout(() => this.recompute(true, true), delay)
+  }
+
+  // Internal
+
+  private static compute(self: CachedResult, proxy: any): void {
     self.enter()
     try {
       self.ret = self.options.body.call(proxy, ...self.args)
@@ -298,14 +343,14 @@ class CachedResult extends Observable implements Observer {
     }
   }
 
-  enter(): void {
+  private enter(): void {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', '‾\\', `${Hints.record(this.record, this.method.name)} - enter`)
     this.started = Date.now()
   }
 
-  leaveOrAsync(): void {
+  private leaveOrAsync(): void {
     if (this.ret instanceof Promise) {
       this.ret = this.ret.then(
         value => {
@@ -350,45 +395,6 @@ class CachedResult extends Observable implements Observer {
       }
       this.worker.whenFinished().then(leave, leave)
     })
-  }
-
-  finish(error?: any): void {
-    const prev = this.record.prev.record.data[this.method.name]
-    if (prev instanceof CachedResult) {
-      // if (prev.record === INIT) {
-      //   const h = Utils.get<Handle>(this.record.data, HANDLE)
-      //   const func = Utils.get<ReactiveFunction>(h.proxy[this.field], FUNCTION)
-      //   prev = func.initial
-      // }
-      if (prev.invalid.renewing === this)
-        prev.invalid.renewing = undefined
-    }
-    if (Hooks.performanceWarningThreshold > 0) {
-      this.observables.forEach((hint, value) => {
-        if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} times`, 0, ' *** WARNING ***')
-      })
-    }
-  }
-
-  recompute(now: boolean, nothrow: boolean): void {
-    const delay = this.options.delay
-    if (now || delay === -1) {
-      if (!this.error && (this.options.kind === Kind.Action || !this.invalid.renewing)) {
-        try {
-          const call: Call = this.method.call(false, undefined)
-          if (call.result.ret instanceof Promise)
-            call.result.ret.catch(error => { /* nop */ }) // bad idea to hide an error
-        }
-        catch (e) {
-          if (!nothrow)
-            throw e
-        }
-      }
-    }
-    else if (delay === 0)
-      this.addToAsyncTriggerBatch()
-    else if (delay > 0) // ignore disabled triggers (delay -2)
-      setTimeout(() => this.recompute(true, true), delay)
   }
 
   private addToAsyncTriggerBatch(): void {
@@ -463,6 +469,24 @@ class CachedResult extends Observable implements Observer {
     }
   }
 
+  private finish(error?: any): void {
+    const prev = this.record.prev.record.data[this.method.name]
+    if (prev instanceof CachedResult) {
+      // if (prev.record === INIT) {
+      //   const h = Utils.get<Handle>(this.record.data, HANDLE)
+      //   const func = Utils.get<ReactiveFunction>(h.proxy[this.field], FUNCTION)
+      //   prev = func.initial
+      // }
+      if (prev.invalid.renewing === this)
+        prev.invalid.renewing = undefined
+    }
+    if (Hooks.performanceWarningThreshold > 0) {
+      this.observables.forEach((hint, value) => {
+        if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} times`, 0, ' *** WARNING ***')
+      })
+    }
+  }
+
   private static finish(record: Record, field: FieldKey, cancel: boolean): void {
     const cache = record.data[field]
     if (cache instanceof CachedResult && cache.record === record) {
@@ -534,29 +558,7 @@ class CachedResult extends Observable implements Observer {
     return value.options
   }
 
-  invalidateDueTo(value: Observable, cause: FieldHint, since: number, triggers: Observer[]): void {
-    if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
-      const notSelfInvalidation = value.isComputed ||
-        cause.record.snapshot !== this.record.snapshot ||
-        !cause.record.changes.has(cause.field)
-      if (notSelfInvalidation) {
-        this.invalid.hint = cause
-        this.invalid.since = since
-        const isTrigger = this.options.kind === Kind.Trigger && this.record.data[SYM_UNMOUNT] === undefined
-        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === this.record && cause.field === this.method.name ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
-        this.unsubscribeFromAll()
-        if (isTrigger) // stop cascade invalidation on trigger
-          triggers.push(this)
-        else if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, field: this.method.name, times: 0}, since, triggers))
-        if (!this.worker.isFinished && this !== value)
-          this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.field)}`), this.worker)
-      }
-      else if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, '║', 'x', `${this.hint()} invalidation is skipped`)
-    }
-  }
-
-  static isConflicting(oldValue: any, newValue: any): boolean {
+  private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
       result = oldValue instanceof CachedResult && oldValue.invalid.since !== -1
@@ -592,7 +594,6 @@ function invalidationChain(hint: FieldHint, since: number): string[] {
   result.push(Hints.record(hint.record, hint.field))
   return result
 }
-
 
 function valueHint(value: any): string {
   let result: string = ''
