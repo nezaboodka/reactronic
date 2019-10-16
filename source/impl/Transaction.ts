@@ -136,7 +136,7 @@ export class Transaction extends Action {
     if (root) {
       if (result instanceof Promise)
         result = Transaction.off(() => {
-          return t.wrapToRetry(t.postponed(result), func, ...args)
+          return t.wrapToRetry(t.wrapToWaitUntilFinish(result), func, ...args)
         })
       t.seal()
     }
@@ -193,7 +193,7 @@ export class Transaction extends Action {
     }
   }
 
-  private async postponed<T>(p: Promise<T>): Promise<T> {
+  private async wrapToWaitUntilFinish<T>(p: Promise<T>): Promise<T> {
     const result = await p
     await this.whenFinished()
     return result
