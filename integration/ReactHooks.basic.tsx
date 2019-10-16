@@ -34,7 +34,7 @@ class Rx extends State {
 
   @stateless refresh: (next: ReactState) => void = nop
   @stateless readonly unmountEffect = (): (() => void) => {
-    return () => separate(Cache.unmount, this)
+    return (): void => { separate(Cache.unmount, this) }
   }
 }
 

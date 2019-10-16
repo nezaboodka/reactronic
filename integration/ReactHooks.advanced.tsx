@@ -37,7 +37,7 @@ class Rx extends State {
   @stateless counter: number = 0
   @stateless refresh: (next: ReactState) => void = nop
   @stateless readonly unmountEffect = (): (() => void) => {
-    return () => separate(Cache.unmount, this)
+    return (): void => { separate(Cache.unmount, this) }
   }
 }
 
