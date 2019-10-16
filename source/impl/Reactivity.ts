@@ -204,6 +204,7 @@ class CachedResult extends Observable implements Observer {
   static current?: CachedResult = undefined
   static asyncTriggerBatch: CachedResult[] = []
 
+  get isComputed(): boolean { return true }
   readonly margin: number
   readonly method: ReactiveFunction
   readonly worker: Worker
@@ -241,8 +242,6 @@ class CachedResult extends Observable implements Observer {
   }
 
   hint(): string { return `${Hints.record(this.record, this.method.name)}` }
-
-  get isComputed(): boolean { return true }
 
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
