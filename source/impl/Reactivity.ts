@@ -254,23 +254,27 @@ class CachedResult extends Observable implements Observer {
   static current?: CachedResult = undefined
   static asyncTriggerBatch: CachedResult[] = []
 
+  readonly margin: number
   readonly method: ReactiveFunction
   readonly worker: Worker
   readonly record: Record
+  readonly observables: Map<Observable, FieldHint>
+  readonly invalid: { since: number, hint?: FieldHint, renewing?: CachedResult }
+
   options: OptionsImpl
   args: any[]
   ret: any
   error: any
   started: number
-  readonly invalid: { since: number, hint?: FieldHint, renewing?: CachedResult }
-  readonly observables: Map<Observable, FieldHint>
-  readonly margin: number
 
   constructor(method: ReactiveFunction, record: Record, init: CachedResult | OptionsImpl) {
     super(undefined)
+    this.margin = CachedResult.current ? CachedResult.current.margin + 1 : 1
     this.method = method
     this.worker = Transaction.current
     this.record = record
+    this.observables = new Map<Observable, FieldHint>()
+    this.invalid = { since: 0, hint: undefined, renewing: undefined }
     if (init instanceof CachedResult) {
       this.options = init.options
       this.args = init.args
@@ -284,9 +288,6 @@ class CachedResult extends Observable implements Observer {
     // this.ret = undefined
     // this.error = undefined
     this.started = 0
-    this.invalid = { since: 0, hint: undefined, renewing: undefined }
-    this.observables = new Map<Observable, FieldHint>()
-    this.margin = CachedResult.current ? CachedResult.current.margin + 1 : 1
   }
 
   hint(): string { return `${Hints.record(this.record, this.method.name)}` }
