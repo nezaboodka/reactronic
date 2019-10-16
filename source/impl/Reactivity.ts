@@ -440,16 +440,16 @@ class CachedResult extends Observable implements Observer {
     // Subscribe to new observers and finish cache computations
     snapshot.changeset.forEach((r: Record, h: Handle) => {
       if (!r.changes.has(SYM_UNMOUNT))
-        r.changes.forEach(field => CachedResult.finish(r, field, false))
+        r.changes.forEach(field => CachedResult.finalizeChange(r, field, false))
       else
         for (const field in r.prev.record.data)
-          CachedResult.finish(r, field, true)
+          CachedResult.finalizeChange(r, field, true)
     })
   }
 
   private static discardChanges(snapshot: Snapshot): void {
     snapshot.changeset.forEach((r: Record, h: Handle) =>
-      r.changes.forEach(field => CachedResult.finish(r, field, true)))
+      r.changes.forEach(field => CachedResult.finalizeChange(r, field, true)))
   }
 
   private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
@@ -468,23 +468,21 @@ class CachedResult extends Observable implements Observer {
     }
   }
 
-  private static finish(record: Record, field: FieldKey, cancel: boolean): void {
+  private static finalizeChange(record: Record, field: FieldKey, cancel: boolean): void {
     const cache = record.data[field]
     if (cache instanceof CachedResult && cache.record === record) {
       if (cancel)
         cache.unsubscribeFromAll()
-      cache.finish()
-    }
-  }
-
-  private finish(error?: any): void {
-    const prev = this.record.prev.record.data[this.method.name]
-    if (prev instanceof CachedResult && prev.invalid.renewing === this)
-      prev.invalid.renewing = undefined
-    if (Hooks.performanceWarningThreshold > 0) {
-      this.observables.forEach((hint, value) => {
-        if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${this.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} times`, 0, ' *** WARNING ***')
-      })
+      // Clear renewing status of previous cached result
+      const prev = cache.record.prev.record.data[field]
+      if (prev instanceof CachedResult && prev.invalid.renewing === cache)
+        prev.invalid.renewing = undefined
+      // Performance tracking
+      if (Hooks.performanceWarningThreshold > 0) {
+        cache.observables.forEach((hint, value) => {
+          if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${cache.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} times`, 0, ' *** WARNING ***')
+        })
+      }
     }
   }
 
