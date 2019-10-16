@@ -129,16 +129,16 @@ export class ReactiveFunction extends Cache<any> {
 
   private from(c: CachedResult): CachedResult {
     if (c.record === NIL) {
-      const name = this.name
-      const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, name)}/initialize` : /* istanbul ignore next */ 'Cache.init'
+      const f = this.name
+      const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, f)}/initialize` : /* istanbul ignore next */ 'Cache.init'
       const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
       c = Transaction.runEx<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
         const h = this.handle
         let r: Record = Snapshot.readable().read(h)
-        let c2 = r.data[name] as CachedResult
+        let c2 = r.data[f] as CachedResult
         if (c2.record === NIL) {
-          r = Snapshot.writable().write(h, name, SYM_HANDLE, this)
-          c2 = r.data[name] = new CachedResult(this, r, c2)
+          r = Snapshot.writable().write(h, f, SYM_HANDLE, this)
+          c2 = r.data[f] = new CachedResult(this, r, c2)
           c2.invalid.since = -1 // indicates blank value
         }
         return c2
