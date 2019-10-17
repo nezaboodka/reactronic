@@ -23,7 +23,7 @@ export class ReactiveFunction extends Cache<any> {
   readonly handle: Handle
   readonly name: FieldKey
 
-  setup(options: Partial<Options>): Options { return this.alterOptions(options) }
+  setup(options: Partial<Options>): Options { return this.adjustOptions(options) }
   get options(): Options { return this.weak().result.options }
   get args(): ReadonlyArray<any> { return this.weak().result.args }
   get value(): any { return this.call(true, undefined).result.value }
@@ -184,7 +184,7 @@ export class ReactiveFunction extends Cache<any> {
     return Transaction.current
   }
 
-  private alterOptions(options: Partial<Options>): Options {
+  private adjustOptions(options: Partial<Options>): Options {
     const call = this.read(undefined)
     const r: Record = call.record
     const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle, this.name)})` : /* istanbul ignore next */ 'Cache.setup()'
@@ -527,7 +527,7 @@ class CachedResult extends Observable implements Observer {
     return methodTrap
   }
 
-  private static applyOptions(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+  private static adjustOptions(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     // Setup blank
     const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
     const existing: CachedResult | undefined = blank[field]
@@ -566,7 +566,7 @@ class CachedResult extends Observable implements Observer {
     Snapshot.isConflicting = CachedResult.isConflicting // override
     Snapshot.finalizeChanges = CachedResult.finalizeChanges // override
     Hooks.createMethodTrap = CachedResult.createMethodTrap // override
-    Hooks.applyOptions = CachedResult.applyOptions // override
+    Hooks.adjustOptions = CachedResult.adjustOptions // override
     Promise.prototype.then = fReactronicThen // override
   }
 }
