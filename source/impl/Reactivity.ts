@@ -423,31 +423,38 @@ class CachedResult extends Observable implements Observer {
     if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log('║', '  ♦', `${Hints.record(r, field)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.record(r, field)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
+  private static isConflicting(oldValue: any, newValue: any): boolean {
+    let result = oldValue !== newValue
+    if (result)
+      result = oldValue instanceof CachedResult && oldValue.invalid.since !== -1
+    return result
+  }
+
   private static finalizeChanges(snapshot: Snapshot, error: Error | undefined): void {
     if (!error) {
       // Mark previous values as replaced and invalidate existing observers
+      const since = snapshot.timestamp
+      const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(SYM_UNMOUNT))
-          r.changes.forEach(field =>
-            CachedResult.markPrevValueAsReplaced(
-              snapshot.timestamp, r, field, snapshot.triggers))
+          r.changes.forEach(f =>
+            CachedResult.markPrevValueAsReplaced(since, r, f, triggers))
         else
-          for (const field in r.prev.record.data)
-            CachedResult.markPrevValueAsReplaced(
-              snapshot.timestamp, r, field, snapshot.triggers)
+          for (const f in r.prev.record.data)
+            CachedResult.markPrevValueAsReplaced(since, r, f, triggers)
       })
       // Finalize cache computations
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(SYM_UNMOUNT))
-          r.changes.forEach(field => CachedResult.finalizeChange(r, field, false))
+          r.changes.forEach(f => CachedResult.finalizeFieldChange(r, f, false))
         else
-          for (const field in r.prev.record.data)
-            CachedResult.finalizeChange(r, field, true)
+          for (const f in r.prev.record.data)
+            CachedResult.finalizeFieldChange(r, f, true)
       })
     }
     else {
       snapshot.changeset.forEach((r: Record, h: Handle) =>
-        r.changes.forEach(field => CachedResult.finalizeChange(r, field, true)))
+        r.changes.forEach(f => CachedResult.finalizeFieldChange(r, f, true)))
     }
   }
 
@@ -467,7 +474,7 @@ class CachedResult extends Observable implements Observer {
     }
   }
 
-  private static finalizeChange(record: Record, field: FieldKey, cancel: boolean): void {
+  private static finalizeFieldChange(record: Record, field: FieldKey, cancel: boolean): void {
     const cache = record.data[field]
     if (cache instanceof CachedResult && cache.record === record) {
       if (cancel)
@@ -545,13 +552,6 @@ class CachedResult extends Observable implements Observer {
       delete triggers[field]
     }
     return value.options
-  }
-
-  private static isConflicting(oldValue: any, newValue: any): boolean {
-    let result = oldValue !== newValue
-    if (result)
-      result = oldValue instanceof CachedResult && oldValue.invalid.since !== -1
-    return result
   }
 
   // static freeze(c: CachedResult): void {
