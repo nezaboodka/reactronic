@@ -292,7 +292,7 @@ class Action implements Worker {
   run<T>(func: F<T>, ...args: any[]): T
   wrap<T>(func: F<T>): F<T>
   apply(): void
-  seal(): this // t1.seal().whenFinished().then(fulfill, reject)
+  seal(): this // a1.seal().whenFinished().then(fulfill, reject)
   cancel(error?: Error, retryAfter?: Action): this
   isCanceled: boolean
   isFinished: boolean
