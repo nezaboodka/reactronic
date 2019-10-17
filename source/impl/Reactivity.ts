@@ -46,8 +46,9 @@ export class ReactiveFunction extends Cache<any> {
     if (!call.reuse && (!weak || !c.invalid.renewing)) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, this.name)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const opt = c.options
+      // TODO: To think if check for trigger is needed at all...
       const spawn = weak || opt.kind === Kind.Trigger ||
-        (opt.kind === Kind.Cached && call.record.prev.record !== NIL)
+        (opt.kind === Kind.Cached && (call.record.prev.record !== NIL || call.record.snapshot.applied))
       const sidebyside = opt.reentrance === Reentrance.RunSideBySide
       const token = opt.kind === Kind.Cached ? this : undefined
       const call2 = this.compute(call, hint, spawn, sidebyside, opt.trace, token, args)
@@ -132,7 +133,7 @@ export class ReactiveFunction extends Cache<any> {
     let c: CachedResult = r.data[f]
     if (c.method !== this) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, f)}/initialize` : /* istanbul ignore next */ 'Cache.init'
-      const spawn: boolean = r.prev.record !== NIL // Snapshot.readable().read(this.handle).snapshot.applied
+      const spawn: boolean = r.prev.record !== NIL || r.snapshot.applied
       c = Transaction.runAs<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
         const h = this.handle
         let r2: Record = Snapshot.readable().read(h)
