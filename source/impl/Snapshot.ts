@@ -184,7 +184,7 @@ export class Snapshot implements Context {
           const fields: string[] = []
           r.changes.forEach(field => fields.push(field.toString()))
           const s = fields.join(', ')
-          Dbg.log('║', '√', `${Hints.record(r)}(${s}) is applied on top of ${Hints.record(r.prev.record)}`)
+          Dbg.log('║', '√', `${Hints.record(r)}(${s}) is ${r.prev.record === NIL ? 'constructed' : `applied on top of ${Hints.record(r.prev.record)}`}`)
         }
       }
     })
@@ -270,7 +270,7 @@ export class Hints {
 
   static handle(h: Handle | undefined, field?: FieldKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const obj = (h === undefined)
-      ? 'blank'
+      ? 'nil'
       : (typeless
         ? (stamp === undefined ? `#${h.id}` : `v${stamp}t${tran}#${h.id}`)
         : (stamp === undefined ? `#${h.id} ${h.hint}` : `v${stamp}t${tran}#${h.id} ${h.hint}`))

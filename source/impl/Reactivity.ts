@@ -132,7 +132,7 @@ export class ReactiveFunction extends Cache<any> {
     let c: CachedResult = r.data[f]
     if (c.method !== this) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, f)}/initialize` : /* istanbul ignore next */ 'Cache.init'
-      const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
+      const spawn: boolean = r.prev.record !== NIL // Snapshot.readable().read(this.handle).snapshot.applied
       c = Transaction.runAs<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
         const h = this.handle
         let r2: Record = Snapshot.readable().read(h)
@@ -141,6 +141,7 @@ export class ReactiveFunction extends Cache<any> {
           r2 = Snapshot.writable().write(h, f, SYM_HANDLE, this)
           c2 = r2.data[f] = new CachedResult(this, r2, c2)
           c2.invalid.since = -1 // indicates blank value
+          Snapshot.markChanged(r2, f, c2, true)
         }
         return c2
       })
@@ -152,15 +153,16 @@ export class ReactiveFunction extends Cache<any> {
     // TODO: Cleaner implementation is needed
     let call = existing
     const ret = Transaction.runAs(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
-      if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(existing.record, this.name)}${existing.result.invalid.cause ? `   <<   ${chainHint(existing.result.invalid.cause).join('   <<   ')}` : ''}`)
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
+        if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, this.name)}${existing.result.invalid.cause ? `   <<   ${chainHint(existing.result.invalid.cause).join('   <<   ')}` : ''}`)
         call.result.compute(this.handle.proxy, argsx)
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
         if (call.result.options.kind === Kind.Action || (!call.reuse && !call.result.invalid.renewing)) {
           call = this.write()
+          if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, this.name)}${existing.result.invalid.cause ? `   <<   ${chainHint(existing.result.invalid.cause).join('   <<   ')}` : ''}`)
           call.result.compute(this.handle.proxy, argsx)
         }
       }
