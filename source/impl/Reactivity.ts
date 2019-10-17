@@ -310,17 +310,16 @@ class CachedResult extends Observable implements Observer {
     let error: Error | undefined = undefined
     const rival = head.invalid.renewing
     if (rival && rival !== this && !rival.worker.isCanceled) {
-      const caller = Transaction.current
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
           throw misuse(`${head.hint()} is not reentrant over ${rival.hint()}`)
         case Reentrance.WaitAndRestart:
-          error = new Error(`T${caller.id} (${caller.hint}) will be restarted after T${rival.worker.id} (${rival.worker.hint})`)
-          caller.cancel(error, rival.worker)
+          error = new Error(`T${this.worker.id} (${this.worker.hint}) will be restarted after T${rival.worker.id} (${rival.worker.hint})`)
+          this.worker.cancel(error, rival.worker)
           // TODO: "c.invalid.renewing = caller" in order serialize all the actions
           break
         case Reentrance.CancelPrevious:
-          rival.worker.cancel(new Error(`T${rival.worker.id} (${rival.worker.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
+          rival.worker.cancel(new Error(`T${rival.worker.id} (${rival.worker.hint}) is canceled by T${this.worker.id} (${this.worker.hint}) and will be silently ignored`), null)
           head.invalid.renewing = undefined // allow
           break
         case Reentrance.RunSideBySide:
