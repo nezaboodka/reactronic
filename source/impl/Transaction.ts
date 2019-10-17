@@ -245,7 +245,7 @@ export class Transaction extends Action {
         if (after && after !== Transaction.none)
           Dbg.log('║', ' [!]', `T${t.id} (${t.hint}) will be restarted after T${after.id} (${after.hint})`)
       }
-      Snapshot.finalizeChanges(t.snapshot, error)
+      Snapshot.finalizeChangeset(t.snapshot, error)
     }
     t.sealed = true
   }

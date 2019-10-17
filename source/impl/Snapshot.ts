@@ -51,7 +51,7 @@ export class Snapshot implements Context {
   static markChanged: (record: Record, field: FieldKey, value: any, changed: boolean) => void = undef
   static markViewed: (record: Record, field: FieldKey, value: Observable, weak: boolean) => void = undef
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
-  static finalizeChanges = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
+  static finalizeChangeset = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
   read(h: Handle): Record {
     const r = this.tryRead(h)
@@ -190,7 +190,7 @@ export class Snapshot implements Context {
     })
     if (Dbg.isOn && Dbg.trace.transactions)
       Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
-    Snapshot.finalizeChanges(this, error)
+    Snapshot.finalizeChangeset(this, error)
   }
 
   collect(): void {

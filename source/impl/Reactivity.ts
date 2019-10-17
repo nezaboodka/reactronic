@@ -430,7 +430,7 @@ class CachedResult extends Observable implements Observer {
     return result
   }
 
-  private static finalizeChanges(snapshot: Snapshot, error: Error | undefined): void {
+  private static finalizeChangeset(snapshot: Snapshot, error: Error | undefined): void {
     if (!error) {
       // Mark previous values as replaced and invalidate existing observers
       const since = snapshot.timestamp
@@ -563,7 +563,7 @@ class CachedResult extends Observable implements Observer {
     Snapshot.markViewed = CachedResult.markViewed // override
     Snapshot.markChanged = CachedResult.markChanged // override
     Snapshot.isConflicting = CachedResult.isConflicting // override
-    Snapshot.finalizeChanges = CachedResult.finalizeChanges // override
+    Snapshot.finalizeChangeset = CachedResult.finalizeChangeset // override
     Hooks.createMethodTrap = CachedResult.createMethodTrap // override
     Hooks.adjustOptions = CachedResult.adjustOptions // override
     Promise.prototype.then = fReactronicThen // override
