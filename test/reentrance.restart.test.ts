@@ -22,8 +22,8 @@ const expected: string[] = [
   '[...] Log: RTA, google.com/300',
   '[...] Url: microsoft.com',
   '[...] Log: RTA, google.com/300, microsoft.com/200',
-  '[...] Url: nezaboodka.com',
-  '[...] Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500',
+  '[...] Url: microsoft.com',
+  '[...] Log: RTA, google.com/300, microsoft.com/200',
   'Url: nezaboodka.com',
   'Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500',
 ]

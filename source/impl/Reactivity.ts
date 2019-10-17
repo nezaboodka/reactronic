@@ -47,7 +47,7 @@ export class ReactiveFunction extends Cache<any> {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, this.name)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
-        (opt.kind === Kind.Cached && call.record.snapshot !== call.context)
+        (opt.kind === Kind.Cached && call.record.prev.record !== NIL)
       const sidebyside = opt.reentrance === Reentrance.RunSideBySide
       const token = opt.kind === Kind.Cached ? this : undefined
       const call2 = this.compute(call, hint, spawn, sidebyside, opt.trace, token, args)
