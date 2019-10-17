@@ -115,14 +115,12 @@ export class ReactiveFunction extends Cache<any> {
     const r: Record = ctx.write(this.handle, f, SYM_HANDLE, this)
     let c: CachedResult = this.from(r)
     if (c.record !== r) {
-      const renewing = new CachedResult(this, r, c)
-      r.data[f] = renewing
-      renewing.error = c.checkForReentrance()
-      if (!renewing.error)
-        c.invalid.renewing = renewing
-      c = renewing
+      const c2 = new CachedResult(this, r, c)
+      r.data[f] = c2
+      c2.reenterOver(c)
+      c = c2
       ctx.bump(r.prev.record.snapshot.timestamp)
-      Snapshot.markChanged(r, f, renewing, true)
+      Snapshot.markChanged(r, f, c2, true)
     }
     return { context: ctx, record: r, result: c, reuse: true }
   }
@@ -308,27 +306,31 @@ class CachedResult extends Observable implements Observer {
       setTimeout(() => this.recompute(true, true), delay)
   }
 
-  checkForReentrance(): Error | undefined {
-    let result: Error | undefined = undefined
-    const prev = this.invalid.renewing
-    const caller = Transaction.current
-    if (prev && prev !== this && !prev.worker.isCanceled)
-      switch (this.options.reentrance) {
+  reenterOver(head: CachedResult): void {
+    let error: Error | undefined = undefined
+    const earlier = head.invalid.renewing
+    if (earlier && earlier !== head && !earlier.worker.isCanceled) {
+      const caller = Transaction.current
+      switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
-          throw misuse(`${this.hint()} is not reentrant over ${prev.hint()}`)
+          throw misuse(`${head.hint()} is not reentrant over ${earlier.hint()}`)
         case Reentrance.WaitAndRestart:
-          result = new Error(`T${caller.id} (${caller.hint}) will be restarted after T${prev.worker.id} (${prev.worker.hint})`)
-          caller.cancel(result, prev.worker)
+          error = new Error(`T${caller.id} (${caller.hint}) will be restarted after T${earlier.worker.id} (${earlier.worker.hint})`)
+          caller.cancel(error, earlier.worker)
           // TODO: "c.invalid.renewing = caller" in order serialize all the actions
           break
         case Reentrance.CancelPrevious:
-          prev.worker.cancel(new Error(`T${prev.worker.id} (${prev.worker.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
-          this.invalid.renewing = undefined // allow
+          earlier.worker.cancel(new Error(`T${earlier.worker.id} (${earlier.worker.hint}) is canceled by T${caller.id} (${caller.hint}) and will be silently ignored`), null)
+          head.invalid.renewing = undefined // allow
           break
         case Reentrance.RunSideBySide:
           break // do nothing
       }
-    return result
+    }
+    if (!error)
+      head.invalid.renewing = this
+    else
+      this.error = error
   }
 
   // Internal
