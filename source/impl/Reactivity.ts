@@ -436,7 +436,7 @@ class CachedResult extends Observable implements Observer {
             CachedResult.markPrevValueAsReplaced(
               snapshot.timestamp, r, field, snapshot.triggers)
       })
-      // Subscribe to new observers and finish cache computations
+      // Finalize cache computations
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(SYM_UNMOUNT))
           r.changes.forEach(field => CachedResult.finalizeChange(r, field, false))
