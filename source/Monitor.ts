@@ -12,9 +12,6 @@ export abstract class Monitor extends State {
   abstract readonly workers: ReadonlySet<Worker>
   abstract readonly animationFrameCount: number
 
-  abstract enter(worker: Worker): void
-  abstract leave(worker: Worker): void
-
   static create(hint?: string, delayBeforeIdle?: number): Monitor { return MonitorImpl.create(hint, delayBeforeIdle) }
 }
 

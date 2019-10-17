@@ -35,11 +35,11 @@ export class MonitorImpl extends Monitor {
     return Transaction.run('Monitor.create', MonitorImpl.doCreate, hint, prolonged)
   }
 
-  static enter(mon: Monitor, worker: Worker): void {
+  static enter(mon: MonitorImpl, worker: Worker): void {
     mon.enter(worker)
   }
 
-  static leave(mon: Monitor, worker: Worker): void {
+  static leave(mon: MonitorImpl, worker: Worker): void {
     mon.leave(worker)
   }
 
