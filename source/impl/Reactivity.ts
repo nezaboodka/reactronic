@@ -101,7 +101,7 @@ export class ReactiveFunction extends Cache<any> {
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
-    const c: CachedResult = this.from(r.data[this.name])
+    const c: CachedResult = this.from(r)
     const reuse = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.cachedArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
@@ -113,7 +113,7 @@ export class ReactiveFunction extends Cache<any> {
     const ctx = Snapshot.writable()
     const f = this.name
     const r: Record = ctx.write(this.handle, f, SYM_HANDLE, this)
-    let c: CachedResult = this.from(r.data[f])
+    let c: CachedResult = this.from(r)
     if (c.record !== r) {
       const renewing = new CachedResult(this, r, c)
       r.data[f] = renewing
@@ -127,18 +127,19 @@ export class ReactiveFunction extends Cache<any> {
     return { context: ctx, record: r, result: c, reuse: true }
   }
 
-  private from(c: CachedResult): CachedResult {
-    if (c.record === NIL) {
-      const f = this.name
+  private from(r: Record): CachedResult {
+    const f = this.name
+    let c: CachedResult = r.data[f]
+    if (c.method !== this) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, f)}/initialize` : /* istanbul ignore next */ 'Cache.init'
       const spawn: boolean = Snapshot.readable().read(this.handle).snapshot.applied
       c = Transaction.runAs<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
         const h = this.handle
-        let r: Record = Snapshot.readable().read(h)
-        let c2 = r.data[f] as CachedResult
-        if (c2.record === NIL) {
-          r = Snapshot.writable().write(h, f, SYM_HANDLE, this)
-          c2 = r.data[f] = new CachedResult(this, r, c2)
+        let r2: Record = Snapshot.readable().read(h)
+        let c2 = r2.data[f] as CachedResult
+        if (c2.method !== this) {
+          r2 = Snapshot.writable().write(h, f, SYM_HANDLE, this)
+          c2 = r2.data[f] = new CachedResult(this, r2, c2)
           c2.invalid.since = -1 // indicates blank value
         }
         return c2
