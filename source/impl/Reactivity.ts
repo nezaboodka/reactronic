@@ -490,10 +490,10 @@ class CachedResult extends Observable implements Observer {
     this.observables.forEach((hint, value) => {
       const observers = value.observers
       if (observers)
-        observers.delete(this) // now unsubscribed
+        observers.delete(this)
       if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', '-', `${Hints.record(this.record, this.method.name)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
     })
-    this.observables.clear() // now fully unlinked
+    this.observables.clear()
   }
 
   private subscribeTo(record: Record, field: FieldKey, value: Observable, timestamp: number): boolean {
