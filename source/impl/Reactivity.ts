@@ -442,7 +442,7 @@ class CachedResult extends Observable implements Observer {
           for (const f in r.prev.record.data)
             CachedResult.markPrevValueAsReplaced(since, r, f, triggers)
       })
-      // Finalize cache computations
+      // Finalize change of each field
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(SYM_UNMOUNT))
           r.changes.forEach(f => CachedResult.finalizeFieldChange(r, f, false))
@@ -566,7 +566,7 @@ class CachedResult extends Observable implements Observer {
     Snapshot.finalizeChangeset = CachedResult.finalizeChangeset // override
     Hooks.createMethodTrap = CachedResult.createMethodTrap // override
     Hooks.adjustOptions = CachedResult.adjustOptions // override
-    Promise.prototype.then = fReactronicThen // override
+    Promise.prototype.then = reactronicHookedThen // override
   }
 }
 
@@ -612,9 +612,9 @@ function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
   return res
 }
 
-const fOriginalPromiseThen = Promise.prototype.then
+const ORIGINAL_PROMISE_THEN = Promise.prototype.then
 
-function fReactronicThen(this: any,
+function reactronicHookedThen(this: any,
   resolve?: ((value: any) => any | PromiseLike<any>) | undefined | null,
   reject?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
@@ -632,7 +632,7 @@ function fReactronicThen(this: any,
     resolve = tran.bind(resolve, false)
     reject = tran.bind(reject, true)
   }
-  return fOriginalPromiseThen.call(this, resolve, reject)
+  return ORIGINAL_PROMISE_THEN.call(this, resolve, reject)
 }
 
 /* istanbul ignore next */
