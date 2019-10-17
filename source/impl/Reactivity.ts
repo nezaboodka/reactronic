@@ -437,8 +437,7 @@ class CachedResult extends Observable implements Observer {
       const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(SYM_UNMOUNT))
-          r.changes.forEach(f =>
-            CachedResult.markPrevValueAsReplaced(since, r, f, triggers))
+          r.changes.forEach(f => CachedResult.markPrevValueAsReplaced(since, r, f, triggers))
         else
           for (const f in r.prev.record.data)
             CachedResult.markPrevValueAsReplaced(since, r, f, triggers)
