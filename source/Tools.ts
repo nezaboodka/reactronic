@@ -27,7 +27,7 @@ export class Tools {
 // Operators
 
 export function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return Cache.of(method as any as F<T>).pullAvailableValue(args) // overcome type safety
+  return Cache.of(method as any as F<T>).pullResult(args) // overcome type safety
 }
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {

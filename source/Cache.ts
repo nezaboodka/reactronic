@@ -18,7 +18,7 @@ export abstract class Cache<T> {
 
   abstract setup(options: Partial<Options>): Options
   abstract invalidate(): void
-  abstract pullAvailableValue(args?: any[]): T | undefined
+  abstract pullResult(args?: any[]): T | undefined
 
   static of<T>(method: F<T>): Cache<T> { return ReactiveFunction.of(method) }
   static unmount(...objects: any[]): Action { return ReactiveFunction.unmount(...objects) }
