@@ -436,7 +436,7 @@ class CachedResult extends Observable implements Observer {
 
   private static finalizeChangeset(snapshot: Snapshot, error: Error | undefined): void {
     if (!error) {
-      // Mark previous values as replaced and invalidate existing observers
+      // Mark previous values as replaced, invalidate observers, and reset renewing status
       const since = snapshot.timestamp
       const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, h: Handle) => {
