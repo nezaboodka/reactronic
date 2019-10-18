@@ -29,7 +29,7 @@ export class Snapshot implements Context {
   get timestamp(): number { return this.stamp }
   private stamp: number
   private bumper: number
-  readonly caching: any
+  readonly token: any
   readonly changeset: Map<Handle, Record>
   readonly triggers: Observer[]
   applied: boolean
@@ -39,7 +39,7 @@ export class Snapshot implements Context {
     this.hint = hint
     this.stamp = UNDEFINED_TIMESTAMP
     this.bumper = 1
-    this.caching = caching
+    this.token = caching
     this.changeset = new Map<Handle, Record>()
     this.triggers = []
     this.applied = false
@@ -96,7 +96,7 @@ export class Snapshot implements Context {
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.applied)
       throw misuse(`stateful property ${Hints.handle(h, field)} can only be modified inside actions and triggers`)
-    if (field !== SYM_HANDLE && value !== SYM_HANDLE && this.caching !== undefined && token !== this.caching && (r.snapshot !== this || r.prev.record !== NIL))
+    if (field !== SYM_HANDLE && value !== SYM_HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, field)}`)
     if (r === NIL && field !== SYM_HANDLE && value !== SYM_HANDLE) /* istanbul ignore next */
       throw misuse(`object ${Hints.record(r, field)} doesn't exist in snapshot v${this.stamp}`)
@@ -104,7 +104,7 @@ export class Snapshot implements Context {
 
   acquire(outer: Snapshot): void {
     if (!this.applied && this.stamp === UNDEFINED_TIMESTAMP) {
-      const ahead = this.caching === undefined || outer.stamp === UNDEFINED_TIMESTAMP
+      const ahead = this.token === undefined || outer.stamp === UNDEFINED_TIMESTAMP
       this.stamp = ahead ? Snapshot.headStamp : outer.stamp
       Snapshot.pending.push(this)
       if (Snapshot.oldest === undefined)
@@ -132,7 +132,7 @@ export class Snapshot implements Context {
           if (Dbg.isOn && Dbg.trace.changes) Dbg.log('╠╝', '', `${Hints.record(r)} is merged with ${Hints.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
-      if (this.caching === undefined) {
+      if (this.token === undefined) {
         this.bumper = this.stamp
         this.stamp = ++Snapshot.headStamp
       }

@@ -183,7 +183,7 @@ export class Transaction extends Action {
           if (this.after !== this)
             await this.after.whenFinished()
           // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
-          return Transaction.runAs<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.caching, func, ...args)
+          return Transaction.runAs<T>(this.hint, true, this.sidebyside, this.trace, this.snapshot.token, func, ...args)
         }
         else
           throw error
