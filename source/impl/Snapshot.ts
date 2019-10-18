@@ -249,9 +249,11 @@ export class Snapshot implements Context {
   }
 
   static _init(): void {
-    NIL_SNAPSHOT.acquire(NIL_SNAPSHOT)
-    NIL_SNAPSHOT.apply()
-    NIL_SNAPSHOT.collect()
+    const nil = NIL.snapshot as Snapshot // workaround
+    nil.acquire(nil)
+    nil.apply()
+    nil.collect()
+    Snapshot.freezeRecord(NIL)
     Snapshot.lastId = 100
     Snapshot.headStamp = 101
     Snapshot.oldest = undefined
@@ -304,6 +306,4 @@ export class Hints {
   }
 }
 
-const NIL_SNAPSHOT = new Snapshot('<nil>', undefined)
-export const NIL = Snapshot.freezeRecord(new Record(NIL_SNAPSHOT, undefined, {}))
-
+export const NIL = new Record(new Snapshot('<nil>', undefined), undefined, {})
