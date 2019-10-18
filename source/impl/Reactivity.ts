@@ -462,18 +462,17 @@ class CachedResult extends Observable implements Observer {
   }
 
   private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
-    const prev = record.prev.record
-    const value = prev.data[field] as Observable
-    if (value !== undefined && value instanceof Observable && value.replacement === undefined) {
-      value.replacement = record
+    const prev = record.prev.record.data[field] as Observable
+    if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
+      prev.replacement = record
       const cause: FieldHint = { record, field, times: 0 }
-      if (value instanceof CachedResult && (value.invalid.since === TOP_TIMESTAMP || value.invalid.since <= 0)) {
-        value.invalid.cause = cause
-        value.invalid.since = timestamp
-        value.unsubscribeFromAll()
+      if (prev instanceof CachedResult && (prev.invalid.since === TOP_TIMESTAMP || prev.invalid.since <= 0)) {
+        prev.invalid.cause = cause
+        prev.invalid.since = timestamp
+        prev.unsubscribeFromAll()
       }
-      if (value.observers)
-        value.observers.forEach(c => c.invalidateDueTo(value, cause, timestamp, triggers))
+      if (prev.observers)
+        prev.observers.forEach(c => c.invalidateDueTo(prev, cause, timestamp, triggers))
     }
   }
 
