@@ -121,15 +121,15 @@ export class Snapshot implements Context {
   rebase(): Record[] | undefined { // return conflicts
     let conflicts: Record[] | undefined = undefined
     if (this.changeset.size > 0) {
-      this.changeset.forEach((r: Record, h: Handle) => {
-        const merged = Snapshot.rebaseRecord(r, h.head)
-        if (merged >= 0) {
-          if (r.conflicts.size > 0) {
+      this.changeset.forEach((ours: Record, h: Handle) => {
+        if (ours.prev.record !== h.head) {
+          const merged = Snapshot.merge(ours, h.head)
+          if (ours.conflicts.size > 0) {
             if (!conflicts)
               conflicts = []
-            conflicts.push(r)
+            conflicts.push(ours)
           }
-          if (Dbg.isOn && Dbg.trace.changes) Dbg.log('╠╝', '', `${Hints.record(r)} is merged with ${Hints.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log('╠╝', '', `${Hints.record(ours)} is merged with ${Hints.record(h.head)} among ${merged} properties with ${ours.conflicts.size} conflicts.`)
         }
       })
       if (this.token === undefined) {
@@ -142,31 +142,28 @@ export class Snapshot implements Context {
     return conflicts
   }
 
-  private static rebaseRecord(ours: Record, head: Record): number {
-    let counter: number = -1
-    if (ours.prev.record !== head) {
+  private static merge(ours: Record, head: Record): number {
+    let counter: number = 0
+    const unmounted: boolean = head.changes.has(SYM_UNMOUNT)
+    const merged = {...head.data} // clone
+    ours.changes.forEach(field => {
       counter++
-      const unmounted: boolean = head.changes.has(SYM_UNMOUNT)
-      const merged = {...head.data} // clone
-      ours.changes.forEach(field => {
-        counter++
-        merged[field] = ours.data[field]
-        if (unmounted || field === SYM_UNMOUNT) {
-          if (unmounted !== (field === SYM_UNMOUNT)) {
-            if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, field)} <> ${Hints.record(head, field)}`, 0, ' *** CONFLICT ***')
-            ours.conflicts.set(field, head)
-          }
+      merged[field] = ours.data[field]
+      if (unmounted || field === SYM_UNMOUNT) {
+        if (unmounted !== (field === SYM_UNMOUNT)) {
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, field)} <> ${Hints.record(head, field)}`, 0, ' *** CONFLICT ***')
+          ours.conflicts.set(field, head)
         }
-        else {
-          const conflict = Snapshot.isConflicting(head.data[field], ours.prev.record.data[field])
-          if (conflict)
-            ours.conflicts.set(field, head)
-          if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, field)} ${conflict ? '<>' : '=='} ${Hints.record(head, field)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
-        }
-      })
-      Utils.copyAllFields(merged, ours.data) // overwrite with merged copy
-      ours.prev.record = head // rebase is completed
-    }
+      }
+      else {
+        const conflict = Snapshot.isConflicting(head.data[field], ours.prev.record.data[field])
+        if (conflict)
+          ours.conflicts.set(field, head)
+        if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, field)} ${conflict ? '<>' : '=='} ${Hints.record(head, field)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
+      }
+    })
+    Utils.copyAllFields(merged, ours.data) // overwrite with merged copy
+    ours.prev.record = head // rebase is completed
     return counter
   }
 
