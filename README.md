@@ -119,13 +119,13 @@ functions (dependencies), which are used during their execution.
 ``` tsx
 class MyView extends React.Component<{model: MyModel}> {
   @trigger // called immediately in response to state changes
-  keepFresh() {
+  keepFresh(): void {
     if (Cache.of(this.render).invalid)
       this.setState({}) // ask React to re-render
   } // keepFresh is subscribed to render
 
   @cached
-  render() {
+  render(): JSX.Element {
     const m = this.props.model
     return (
       <div>
@@ -135,7 +135,7 @@ class MyView extends React.Component<{model: MyModel}> {
     )
   } // render is subscribed to "url" and "content"
 
-  componentWillUnmount() {
+  componentWillUnmount(): void {
     Cache.unmount(this) // deactivate "keepFresh" and "render"
   }
 }

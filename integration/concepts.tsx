@@ -20,20 +20,25 @@ class Model extends State {
   }
 }
 
-class View extends React.Component<Model> {
+class View extends React.Component<{model: Model}> {
   @trigger
   keepFresh(): void {
     if (Cache.of(this.render).invalid)
-      this.setState({}) // ask React
+      this.setState({}) // request re-render
   }
 
   @cached
   render(): JSX.Element {
+    const m = this.props.model
     return (
       <div>
-        <div>{this.props.url}</div>
-        <div>{this.props.content}</div>
+        <div>{m.url}</div>
+        <div>{m.content}</div>
       </div>)
+  }
+
+  componentWillUnmount(): void {
+    Cache.unmount(this)
   }
 }
 
