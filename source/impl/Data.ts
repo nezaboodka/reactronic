@@ -3,8 +3,6 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Utils } from '../util/Utils'
-
 // Context
 
 export interface Context {
@@ -55,12 +53,6 @@ export class Record {
     this.changes = new Set<FieldKey>()
     this.conflicts = new Map<FieldKey, Record>()
     Object.freeze(this)
-  }
-
-  freeze(): void {
-    Object.freeze(this.data)
-    Utils.freezeSet(this.changes)
-    Utils.freezeMap(this.conflicts)
   }
 }
 

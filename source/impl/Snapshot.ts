@@ -174,7 +174,7 @@ export class Snapshot implements Context {
     this.applied = true
     this.changeset.forEach((r: Record, h: Handle) => {
       r.changes.forEach(field => CopyOnWriteProxy.seal(r.data[field], h.proxy, field))
-      r.freeze()
+      Snapshot.freezeRecord(r)
       h.writers--
       if (h.writers === 0)
         h.changing = undefined
@@ -198,6 +198,13 @@ export class Snapshot implements Context {
     Object.freeze(this.triggers)
     Object.freeze(this)
     this.triggerGarbageCollection()
+  }
+
+  static freezeRecord(r: Record): Record {
+    Object.freeze(r.data)
+    Utils.freezeSet(r.changes)
+    Utils.freezeMap(r.conflicts)
+    return r
   }
 
   // static undo(s: Snapshot): void {
@@ -298,5 +305,5 @@ export class Hints {
 }
 
 const NIL_SNAPSHOT = new Snapshot('<nil>', undefined)
-export const NIL = new Record(NIL_SNAPSHOT, undefined, {})
-NIL.freeze()
+export const NIL = Snapshot.freezeRecord(new Record(NIL_SNAPSHOT, undefined, {}))
+

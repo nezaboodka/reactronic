@@ -208,7 +208,7 @@ export class Hooks implements ProxyHandler<Handle> {
       const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), SYM_BLANK)
       const init = new Record(NIL.snapshot, NIL, {...blank})
       Utils.set(init.data, SYM_HANDLE, h)
-      init.freeze()
+      Snapshot.freezeRecord(init)
       h = new Handle(obj, obj, Hooks.proxy, init, obj.constructor.name)
       Utils.set(obj, SYM_HANDLE, h)
       // Hooks.decorateField(false, {kind: Kind.Stateful}, obj, UNMOUNT)
