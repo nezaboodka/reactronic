@@ -121,15 +121,15 @@ export class Snapshot implements Context {
   rebase(): Record[] | undefined { // return conflicts
     let conflicts: Record[] | undefined = undefined
     if (this.changeset.size > 0) {
-      this.changeset.forEach((ours: Record, h: Handle) => {
-        if (ours.prev.record !== h.head) {
-          const merged = Snapshot.merge(ours, h.head)
-          if (ours.conflicts.size > 0) {
+      this.changeset.forEach((r: Record, h: Handle) => {
+        if (r.prev.record !== h.head) {
+          const merged = Snapshot.merge(r, h.head)
+          if (r.conflicts.size > 0) {
             if (!conflicts)
               conflicts = []
-            conflicts.push(ours)
+            conflicts.push(r)
           }
-          if (Dbg.isOn && Dbg.trace.changes) Dbg.log('╠╝', '', `${Hints.record(ours)} is merged with ${Hints.record(h.head)} among ${merged} properties with ${ours.conflicts.size} conflicts.`)
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log('╠╝', '', `${Hints.record(r)} is merged with ${Hints.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
       if (this.token === undefined) {
