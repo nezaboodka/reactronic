@@ -441,18 +441,10 @@ class CachedResult extends Observable implements Observer {
       const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(SYM_UNMOUNT))
-          r.changes.forEach(f => CachedResult.markPrevValueAsReplaced(since, r, f, triggers))
+          r.changes.forEach(f => CachedResult.completeFieldChange(since, r, f, triggers, false))
         else
           for (const f in r.prev.record.data)
-            CachedResult.markPrevValueAsReplaced(since, r, f, triggers)
-      })
-      // Finalize change of each field
-      snapshot.changeset.forEach((r: Record, h: Handle) => {
-        if (!r.changes.has(SYM_UNMOUNT))
-          r.changes.forEach(f => CachedResult.finalizeFieldChange(r, f, false))
-        else
-          for (const f in r.prev.record.data)
-            CachedResult.finalizeFieldChange(r, f, true)
+            CachedResult.completeFieldChange(since, r, f, triggers, true)
       })
     }
     else {
@@ -461,7 +453,7 @@ class CachedResult extends Observable implements Observer {
     }
   }
 
-  private static markPrevValueAsReplaced(timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
+  private static completeFieldChange(timestamp: number, record: Record, field: FieldKey, triggers: Observer[], unsubscribe: boolean): void {
     const prev = record.prev.record.data[field] as Observable
     if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
       prev.replacement = record
@@ -474,6 +466,7 @@ class CachedResult extends Observable implements Observer {
       if (prev.observers)
         prev.observers.forEach(c => c.invalidateDueTo(prev, cause, timestamp, triggers))
     }
+    CachedResult.finalizeFieldChange(record, field, unsubscribe)
   }
 
   private static finalizeFieldChange(record: Record, field: FieldKey, unsubscribe: boolean): void {
