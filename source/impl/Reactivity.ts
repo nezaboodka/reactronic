@@ -476,10 +476,10 @@ class CachedResult extends Observable implements Observer {
     }
   }
 
-  private static finalizeFieldChange(record: Record, field: FieldKey, cancel: boolean): void {
+  private static finalizeFieldChange(record: Record, field: FieldKey, unsubscribe: boolean): void {
     const cache = record.data[field]
     if (cache instanceof CachedResult && cache.record === record) {
-      if (cancel)
+      if (unsubscribe)
         cache.unsubscribeFromAll()
       // Clear renewing status of previous cached result
       const prev = cache.record.prev.record.data[field]
