@@ -9,7 +9,7 @@ export interface Context {
   readonly id: number
   readonly hint: string
   readonly timestamp: number
-  readonly applied: boolean
+  readonly completed: boolean
 }
 
 // Observables & Observer

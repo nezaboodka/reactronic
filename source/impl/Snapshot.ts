@@ -32,7 +32,7 @@ export class Snapshot implements Context {
   readonly token: any
   readonly changeset: Map<Handle, Record>
   readonly triggers: Observer[]
-  applied: boolean
+  completed: boolean
 
   constructor(hint: string, caching: any) {
     this.id = ++Snapshot.lastId
@@ -42,7 +42,7 @@ export class Snapshot implements Context {
     this.token = caching
     this.changeset = new Map<Handle, Record>()
     this.triggers = []
-    this.applied = false
+    this.completed = false
   }
 
   // To be redefined by Action and Cache implementations
@@ -94,7 +94,7 @@ export class Snapshot implements Context {
   }
 
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
-    if (this.applied)
+    if (this.completed)
       throw misuse(`stateful property ${Hints.handle(h, field)} can only be modified inside actions and triggers`)
     if (field !== SYM_HANDLE && value !== SYM_HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, field)}`)
@@ -103,7 +103,7 @@ export class Snapshot implements Context {
   }
 
   acquire(outer: Snapshot): void {
-    if (!this.applied && this.stamp === UNDEFINED_TIMESTAMP) {
+    if (!this.completed && this.stamp === UNDEFINED_TIMESTAMP) {
       const ahead = this.token === undefined || outer.stamp === UNDEFINED_TIMESTAMP
       this.stamp = ahead ? Snapshot.headStamp : outer.stamp
       Snapshot.pending.push(this)
@@ -170,8 +170,8 @@ export class Snapshot implements Context {
     return counter
   }
 
-  apply(error?: any): void {
-    this.applied = true
+  complete(error?: any): void {
+    this.completed = true
     this.changeset.forEach((r: Record, h: Handle) => {
       r.changes.forEach(field => CopyOnWriteProxy.seal(r.data[field], h.proxy, field))
       Snapshot.freezeRecord(r)
@@ -230,7 +230,7 @@ export class Snapshot implements Context {
         const p = Snapshot.pending
         p.sort((a, b) => a.stamp - b.stamp)
         let i: number = 0
-        while (i < p.length && p[i].applied) {
+        while (i < p.length && p[i].completed) {
           p[i].unlinkHistory()
           i++
         }
@@ -251,7 +251,7 @@ export class Snapshot implements Context {
   static _init(): void {
     const nil = NIL.snapshot as Snapshot // workaround
     nil.acquire(nil)
-    nil.apply()
+    nil.complete()
     nil.collect()
     Snapshot.freezeRecord(NIL)
     Snapshot.lastId = 100

@@ -47,12 +47,12 @@ export class ReactiveFunction extends Cache<any> {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, this.name)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
-        (opt.kind === Kind.Cached && (call.record.snapshot.applied || call.record.prev.record !== NIL))
+        (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
       const sidebyside = opt.reentrance === Reentrance.RunSideBySide
       const token = opt.kind === Kind.Cached ? this : undefined
       const call2 = this.compute(call, hint, spawn, sidebyside, opt.trace, token, args)
       const ctx2 = call2.result.record.snapshot
-      if (!weak || ctx === ctx2 || (ctx2.applied && ctx.timestamp >= ctx2.timestamp))
+      if (!weak || ctx === ctx2 || (ctx2.completed && ctx.timestamp >= ctx2.timestamp))
         call = call2
     }
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.name)} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
@@ -130,7 +130,7 @@ export class ReactiveFunction extends Cache<any> {
     let c: CachedResult = r.data[f]
     if (c.method !== this) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, f)}/initialize` : /* istanbul ignore next */ 'Cache.init'
-      const spawn = r.snapshot.applied || r.prev.record !== NIL
+      const spawn = r.snapshot.completed || r.prev.record !== NIL
       c = Transaction.runAs<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
         const h = this.handle
         let r2: Record = Snapshot.readable().read(h)
@@ -272,7 +272,7 @@ class CachedResult extends Observable implements Observer {
         this.invalid.cause = cause
         this.invalid.since = since
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[SYM_UNMOUNT] === undefined
-        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
+        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
         this.unsubscribeFromAll()
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
@@ -501,7 +501,7 @@ class CachedResult extends Observable implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this)
-      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().applied ? '║' : ' ', '-', `${Hints.record(this.record, this.method.name)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
+      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.name)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
     })
     this.observables.clear()
   }

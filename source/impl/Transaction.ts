@@ -265,7 +265,7 @@ export class Transaction extends Action {
 
   private finish(): void {
     // It's critical to have no exceptions in this block
-    this.snapshot.apply(this.error)
+    this.snapshot.complete(this.error)
     this.snapshot.collect()
     if (this.promise) {
       if (this.error && !this.after)
@@ -300,7 +300,7 @@ export class Transaction extends Action {
     Snapshot.readable = Transaction.readableSnapshot // override
     Snapshot.writable = Transaction.writableSnapshot // override
     Transaction.none.sealed = true
-    Transaction.none.snapshot.apply()
+    Transaction.none.snapshot.complete()
     Snapshot._init()
   }
 }
