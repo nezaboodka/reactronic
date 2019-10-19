@@ -441,10 +441,10 @@ class CachedResult extends Observable implements Observer {
       const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(SYM_UNMOUNT))
-          r.changes.forEach(f => CachedResult.completeFieldChange(since, r, f, triggers, false))
+          r.changes.forEach(f => CachedResult.completeFieldChange(false, since, r, f, triggers))
         else
           for (const f in r.prev.record.data)
-            CachedResult.completeFieldChange(since, r, f, triggers, true)
+            CachedResult.completeFieldChange(true, since, r, f, triggers)
       })
     }
     else {
@@ -453,7 +453,7 @@ class CachedResult extends Observable implements Observer {
     }
   }
 
-  private static completeFieldChange(timestamp: number, record: Record, field: FieldKey, triggers: Observer[], unsubscribe: boolean): void {
+  private static completeFieldChange(unsubscribe: boolean, timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
     const prev = record.prev.record.data[field] as Observable
     if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
       prev.replacement = record
