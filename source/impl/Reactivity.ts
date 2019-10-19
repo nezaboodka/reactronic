@@ -435,41 +435,39 @@ class CachedResult extends Observable implements Observer {
   }
 
   private static finalizeChangeset(snapshot: Snapshot, error: Error | undefined): void {
+    const since = snapshot.timestamp
     if (!error) {
       // Mark previous values as replaced, invalidate observers, and reset renewing status
-      const since = snapshot.timestamp
       const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(SYM_UNMOUNT))
-          r.changes.forEach(f => CachedResult.completeFieldChange(false, since, r, f, triggers))
+          r.changes.forEach(f => CachedResult.finalizeFieldChange(false, since, r, f, triggers))
         else
           for (const f in r.prev.record.data)
-            CachedResult.completeFieldChange(true, since, r, f, triggers)
+            CachedResult.finalizeFieldChange(true, since, r, f, triggers)
       })
     }
     else {
       snapshot.changeset.forEach((r: Record, h: Handle) =>
-        r.changes.forEach(f => CachedResult.finalizeFieldChange(r, f, true)))
+        r.changes.forEach(f => CachedResult.finalizeFieldChange(true, since, r, f)))
     }
   }
 
-  private static completeFieldChange(unsubscribe: boolean, timestamp: number, record: Record, field: FieldKey, triggers: Observer[]): void {
-    const prev = record.prev.record.data[field] as Observable
-    if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
-      prev.replacement = record
-      const cause: FieldHint = { record, field, times: 0 }
-      if (prev instanceof CachedResult && (prev.invalid.since === TOP_TIMESTAMP || prev.invalid.since <= 0)) {
-        prev.invalid.cause = cause
-        prev.invalid.since = timestamp
-        prev.unsubscribeFromAll()
+  private static finalizeFieldChange(unsubscribe: boolean, timestamp: number, record: Record, field: FieldKey, triggers?: Observer[]): void {
+    if (triggers) {
+      const prev = record.prev.record.data[field] as Observable
+      if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
+        prev.replacement = record
+        const cause: FieldHint = { record, field, times: 0 }
+        if (prev instanceof CachedResult && (prev.invalid.since === TOP_TIMESTAMP || prev.invalid.since <= 0)) {
+          prev.invalid.cause = cause
+          prev.invalid.since = timestamp
+          prev.unsubscribeFromAll()
+        }
+        if (prev.observers)
+          prev.observers.forEach(c => c.invalidateDueTo(prev, cause, timestamp, triggers))
       }
-      if (prev.observers)
-        prev.observers.forEach(c => c.invalidateDueTo(prev, cause, timestamp, triggers))
     }
-    CachedResult.finalizeFieldChange(record, field, unsubscribe)
-  }
-
-  private static finalizeFieldChange(record: Record, field: FieldKey, unsubscribe: boolean): void {
     const cache = record.data[field]
     if (cache instanceof CachedResult && cache.record === record) {
       if (unsubscribe)
