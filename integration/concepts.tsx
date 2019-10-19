@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { State, Cache, action, cached, trigger } from '.index'
+import { State, Cache, action, cached, trigger, separate } from '.index'
 
 class Model extends State {
   // state
@@ -24,7 +24,7 @@ class View extends React.Component<{model: Model}> {
   @trigger
   keepFresh(): void {
     if (Cache.of(this.render).invalid)
-      this.setState({}) // request re-render
+      separate(() => this.setState({}))
   }
 
   @cached
@@ -38,7 +38,7 @@ class View extends React.Component<{model: Model}> {
   }
 
   componentWillUnmount(): void {
-    Cache.unmount(this)
+    separate(Cache.unmount, this)
   }
 }
 
