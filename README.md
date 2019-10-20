@@ -110,11 +110,10 @@ the whole chain of asynchronous operations is fully completed.
 Trigger is a function that is immediately called in response to
 state changes. Cache is a computed value having an associated
 function that is called on-demand to renew the value if it was
-invalidated.
-
-Trigger and cached functions are instrumented with hooks to
-seamlessly subscribe to those state objects and other cached
-functions (dependencies), which are used during their execution.
+invalidated. Trigger and cached functions are instrumented with
+hooks to seamlessly subscribe to those state objects and other
+cached functions (dependencies), which are used during their
+execution.
 
 ``` tsx
 class MyView extends Component<{model: MyModel}> {
