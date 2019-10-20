@@ -14,19 +14,19 @@ export class Component<P> extends React.Component<P> {
 
   @trigger
   keepFresh(): void {
-    if (Cache.of(this.render).invalid)
+    if (this.shouldComponentUpdate())
       separate(() => this.setState({}))
-  } // keepFresh is subscribed to render
+  }
 
   shouldComponentUpdate(): boolean {
     return Cache.of(this.render).invalid
   }
 
   componentDidMount(): void {
-    this.keepFresh() // initial trigger run
+    this.keepFresh()
   }
 
   componentWillUnmount(): void {
-    separate(Cache.unmount, this) // deactivate "keepFresh" and "render"
+    separate(Cache.unmount, this)
   }
 }
