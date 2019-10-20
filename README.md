@@ -117,13 +117,7 @@ seamlessly subscribe to those state objects and other cached
 functions (dependencies), which are used during their execution.
 
 ``` tsx
-class MyView extends React.Component<{model: MyModel}> {
-  @trigger // called immediately in response to state changes
-  keepFresh(): void {
-    if (Cache.of(this.render).invalid)
-      this.setState({}) // ask React to re-render
-  } // keepFresh is subscribed to render
-
+class MyView extends Component<{model: MyModel}> {
   @cached
   render(): JSX.Element {
     const m = this.props.model
@@ -134,9 +128,25 @@ class MyView extends React.Component<{model: MyModel}> {
       </div>
     )
   } // render is subscribed to "url" and "content"
+}
+
+export class Component<P> extends React.Component<P> {
+  @trigger // called immediately in response to state changes
+  keepFresh(): void {
+    if (Cache.of(this.render).invalid)
+      separate(() => this.setState({})) // ask React to re-render
+  } // keepFresh is subscribed to render
+
+  componentDidMount(): void {
+    this.keepFresh() // initial trigger run
+  }
 
   componentWillUnmount(): void {
-    Cache.unmount(this) // deactivate "keepFresh" and "render"
+    separate(Cache.unmount, this)
+  }
+
+  shouldComponentUpdate(): boolean {
+    return Cache.of(this.render).invalid
   }
 }
 ```
