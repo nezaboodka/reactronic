@@ -131,9 +131,13 @@ class MyView extends Component<{model: MyModel}> {
 export class Component<P> extends React.Component<P> {
   @trigger // called immediately in response to state changes
   keepFresh(): void {
-    if (Cache.of(this.render).invalid)
+    if (this.shouldComponentUpdate())
       separate(() => this.setState({})) // ask React to re-render
   } // keepFresh is subscribed to render
+
+  shouldComponentUpdate(): boolean {
+    return Cache.of(this.render).invalid
+  }
 
   componentDidMount(): void {
     this.keepFresh() // initial trigger run
@@ -141,10 +145,6 @@ export class Component<P> extends React.Component<P> {
 
   componentWillUnmount(): void {
     separate(Cache.unmount, this)
-  }
-
-  shouldComponentUpdate(): boolean {
-    return Cache.of(this.render).invalid
   }
 }
 ```
