@@ -120,11 +120,10 @@ functions (dependencies), which are used during their execution.
 class MyView extends Component<{model: MyModel}> {
   @cached
   render(): JSX.Element {
-    const m = this.props.model
     return (
       <div>
-        <h1>{m.url}</h1>
-        <div>{m.content}</div>
+        <h1>{this.props.model.url}</h1>
+        <div>{this.props.model.content}</div>
       </div>
     )
   } // render is subscribed to "url" and "content"
