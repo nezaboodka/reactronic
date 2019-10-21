@@ -48,9 +48,9 @@ test('Reentrance.WaitAndRestart', async t => {
   finally {
     t.is(loading.workerCount, 0)
     t.is(loading.workers.size, 0)
-    await sleep(400)
+    await sleep(1000)
     await Cache.unmount(app, app.model).whenFinished()
-    await sleep(400)
+    await sleep(1000)
   } /* istanbul ignore next */
   if (!RT.trace.silent) {
     console.log('\nResults:\n')
