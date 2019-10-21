@@ -4,7 +4,8 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { State, Cache, action, cached, trigger, separate } from '.index'
+import { State, action, cached } from '.index'
+import { Component } from './React'
 
 class Model extends State {
   url: string = 'https://nezaboodka.com'
@@ -19,7 +20,7 @@ class Model extends State {
   }
 }
 
-class View extends React.Component<{model: Model}> {
+class View extends Component<{model: Model}> {
   @cached
   render(): JSX.Element {
     const m = this.props.model
@@ -28,24 +29,6 @@ class View extends React.Component<{model: Model}> {
         <div>{m.url}</div>
         <div>{m.content}</div>
       </div>)
-  }
-
-  @trigger
-  keepFresh(): void {
-    if (Cache.of(this.render).invalid)
-      separate(() => this.setState({}))
-  }
-
-  shouldComponentUpdate(): boolean {
-    return Cache.of(this.render).invalid
-  }
-
-  componentDidMount(): void {
-    this.keepFresh()
-  }
-
-  componentWillUnmount(): void {
-    separate(Cache.unmount, this)
   }
 }
 
