@@ -7,7 +7,6 @@ import * as React from 'react'
 import { State, Cache, action, cached, trigger, separate } from '.index'
 
 class Model extends State {
-  // state
   url: string = 'https://nezaboodka.com'
   content: string = ''
   timestamp: number = Date.now()
