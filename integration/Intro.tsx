@@ -21,12 +21,6 @@ class Model extends State {
 }
 
 class View extends React.Component<{model: Model}> {
-  @trigger
-  keepFresh(): void {
-    if (Cache.of(this.render).invalid)
-      separate(() => this.setState({}))
-  }
-
   @cached
   render(): JSX.Element {
     const m = this.props.model
@@ -35,6 +29,20 @@ class View extends React.Component<{model: Model}> {
         <div>{m.url}</div>
         <div>{m.content}</div>
       </div>)
+  }
+
+  @trigger
+  keepFresh(): void {
+    if (Cache.of(this.render).invalid)
+      separate(() => this.setState({}))
+  }
+
+  shouldComponentUpdate(): boolean {
+    return Cache.of(this.render).invalid
+  }
+
+  componentDidMount(): void {
+    this.keepFresh()
   }
 
   componentWillUnmount(): void {
