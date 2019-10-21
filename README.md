@@ -127,7 +127,9 @@ class MyView extends Component<{model: MyModel}> {
     )
   } // render is subscribed to "url" and "content"
 }
+```
 
+``` tsx
 export class Component<P> extends React.Component<P> {
   @cached
   render(): JSX.Element {
