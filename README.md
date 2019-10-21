@@ -136,7 +136,7 @@ export class Component<P> extends React.Component<P> {
 
   @trigger // called immediately in response to state changes
   keepFresh(): void {
-    if (this.shouldComponentUpdate())
+    if (Cache.of(this.render).invalid)
       separate(() => this.setState({})) // ask React to re-render
   } // keepFresh is subscribed to render
 
