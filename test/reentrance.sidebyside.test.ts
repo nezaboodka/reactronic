@@ -20,10 +20,9 @@ const expected: string[] = [
   '[...] Log: RTA',
   '[...] Url: nezaboodka.com',
   '[...] Log: RTA, nezaboodka.com/100',
-  '[...] Url: microsoft.com',
-  '[...] Log: RTA, microsoft.com/200',
-  'Url: google.com',
-  'Log: RTA, google.com/300',
+  'Error: T115 (#22 AsyncDemo.load/microsoft.com) conflicts with: v110t109#22 AsyncDemo.load',
+  'Url: nezaboodka.com',
+  'Log: RTA, nezaboodka.com/100',
 ]
 
 test('Reentrance.RunSideBySide', async t => {

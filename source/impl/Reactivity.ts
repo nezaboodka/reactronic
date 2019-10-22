@@ -48,7 +48,7 @@ export class ReactiveFunction extends Cache<any> {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
-      const sidebyside = opt.reentrance === Reentrance.RunSideBySide
+      const sidebyside = false // opt.reentrance === Reentrance.RunSideBySide
       const token = opt.kind === Kind.Cached ? this : undefined
       const call2 = this.compute(call, hint, spawn, sidebyside, opt.trace, token, args)
       const ctx2 = call2.result.record.snapshot
