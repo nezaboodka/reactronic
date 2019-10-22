@@ -116,9 +116,7 @@ export class ReactiveFunction extends Cache<any> {
     let c: CachedResult = this.from(r)
     if (c.record !== r) {
       const c2 = new CachedResult(this, r, c)
-      r.data[f] = c2
-      c2.reenterOver(c)
-      c = c2
+      c = r.data[f] = c2.reenterOver(c)
       ctx.bump(r.prev.record.snapshot.timestamp)
       Snapshot.markChanged(r, f, c2, true)
     }
@@ -306,7 +304,7 @@ class CachedResult extends Observable implements Observer {
       setTimeout(() => this.recompute(true, true), delay)
   }
 
-  reenterOver(head: CachedResult): void {
+  reenterOver(head: CachedResult): this {
     let error: Error | undefined = undefined
     const rival = head.invalid.renewing
     if (rival && rival !== this && !rival.worker.isCanceled) {
@@ -330,6 +328,7 @@ class CachedResult extends Observable implements Observer {
       head.invalid.renewing = this
     else
       this.error = error
+    return this
   }
 
   // Internal
