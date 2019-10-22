@@ -48,9 +48,8 @@ export class ReactiveFunction extends Cache<any> {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
-      const sidebyside = false // opt.reentrance === Reentrance.RunSideBySide
       const token = opt.kind === Kind.Cached ? this : undefined
-      const call2 = this.compute(call, hint, spawn, sidebyside, opt.trace, token, args)
+      const call2 = this.compute(call, hint, spawn, opt.trace, token, args)
       const ctx2 = call2.result.record.snapshot
       if (!weak || ctx === ctx2 || (ctx2.completed && ctx.timestamp >= ctx2.timestamp))
         call = call2
@@ -86,7 +85,7 @@ export class ReactiveFunction extends Cache<any> {
   }
 
   static unmount(...objects: any[]): void {
-    return Transaction.runAs('<unmount>', false, false,
+    return Transaction.runAs('<unmount>', false,
       undefined, undefined, Snapshot.unmount, ...objects)
   }
 
@@ -129,7 +128,7 @@ export class ReactiveFunction extends Cache<any> {
     if (c.method !== this) {
       const hint: string = Dbg.isOn ? `${Hints.handle(this.handle, f)}/initialize` : /* istanbul ignore next */ 'Cache.init'
       const spawn = r.snapshot.completed || r.prev.record !== NIL
-      c = Transaction.runAs<CachedResult>(hint, spawn, false, undefined, this, (): CachedResult => {
+      c = Transaction.runAs<CachedResult>(hint, spawn, undefined, this, (): CachedResult => {
         const h = this.handle
         let r2: Record = Snapshot.readable().read(h)
         let c2 = r2.data[f] as CachedResult
@@ -145,10 +144,10 @@ export class ReactiveFunction extends Cache<any> {
     return c
   }
 
-  private compute(existing: Call, hint: string, spawn: boolean, sidebyside: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
+  private compute(existing: Call, hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
     // TODO: Cleaner implementation is needed
     let call = existing
-    const ret = Transaction.runAs(hint, spawn, sidebyside, trace, token, (argsx: any[] | undefined): any => {
+    const ret = Transaction.runAs(hint, spawn, trace, token, (argsx: any[] | undefined): any => {
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
         if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, this.name)}${existing.result.invalid.cause ? `   <<   ${chainHint(existing.result.invalid.cause).join('   <<   ')}` : ''}`)
@@ -179,7 +178,7 @@ export class ReactiveFunction extends Cache<any> {
     const call = self.read(undefined)
     const r: Record = call.record
     const hint: string = Dbg.isOn ? `setup(${Hints.handle(self.handle, self.name)})` : /* istanbul ignore next */ 'Cache.setup()'
-    return Transaction.runAs(hint, false, false, undefined, undefined, (): Options => {
+    return Transaction.runAs(hint, false, undefined, undefined, (): Options => {
       const call2 = self.write()
       const c2: CachedResult = call2.result
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
@@ -374,7 +373,7 @@ class CachedResult extends Observable implements Observer {
 
   private monitorEnter(mon: Monitor): void {
     ReactiveFunction.run<void>(undefined, Transaction.runAs, 'Monitor.enter',
-      true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+      true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
       MonitorImpl.enter, mon, this)
   }
 
@@ -382,7 +381,7 @@ class CachedResult extends Observable implements Observer {
     Transaction.off<void>(() => {
       const leave = (): void => {
         ReactiveFunction.run<void>(undefined, Transaction.runAs, 'Monitor.leave',
-          true, false, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+          true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
           MonitorImpl.leave, mon, this)
       }
       this.worker.whenFinished().then(leave, leave)

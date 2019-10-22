@@ -27,7 +27,7 @@ const expected: string[] = [
 
 test('Reentrance.RunSideBySide', async t => {
   RT.setTrace(tracing.noisy)
-  const app = Action.runAs('app', false, false, undefined, undefined, () => new AsyncDemoView(new AsyncDemo()))
+  const app = Action.runAs('app', false, undefined, undefined, () => new AsyncDemoView(new AsyncDemo()))
   Cache.of(app.model.load).setup({reentrance: Reentrance.RunSideBySide})
   try {
     await app.print() // trigger first run

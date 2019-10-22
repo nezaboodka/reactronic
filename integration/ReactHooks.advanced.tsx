@@ -39,7 +39,7 @@ class Rx extends State {
 
 function createReactState(trace?: Partial<Trace>): ReactState {
   const hint = RT.isTraceOn ? getComponentName() : '<rx>'
-  const rx = Action.runAs<Rx>(hint, false, false, trace, undefined, createRx, hint, trace)
+  const rx = Action.runAs<Rx>(hint, false, trace, undefined, createRx, hint, trace)
   return {rx, counter: 0}
 }
 

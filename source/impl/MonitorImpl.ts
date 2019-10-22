@@ -62,7 +62,7 @@ export class MonitorImpl extends Monitor {
     }
     else
       this.x.timeout = setTimeout(() =>
-        Transaction.runAs<void>('Monitor.idle', true, false,
+        Transaction.runAs<void>('Monitor.idle', true,
           undefined, undefined, MonitorImpl.idle, this, true), this.x.delayBeforeIdle)
   }
 

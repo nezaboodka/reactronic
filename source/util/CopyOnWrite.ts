@@ -17,10 +17,10 @@ export class CopyOnWrite<T> {
     readonly clone: (value: T) => T) {
   }
 
-  sizing(receiver: any): number {
-    const v: T = this.owner[this.prop]
-    return v === receiver ? this.size : this.getSize(v)
-  }
+  // sizing(receiver: any): number {
+  //   const v: T = this.owner[this.prop]
+  //   return v === receiver ? this.size : this.getSize(v)
+  // }
 
   readable(receiver: any): T {
     let v: T = this.owner[this.prop]
@@ -61,7 +61,7 @@ export function W<T>(self: any): T {
   return binding !== undefined ? binding.writable(self) : self
 }
 
-export function S<T>(self: any): number {
-  const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
-  return binding !== undefined ? binding.sizing(self) : -1
-}
+// export function S<T>(self: any): number {
+//   const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
+//   return binding !== undefined ? binding.sizing(self) : -1
+// }
