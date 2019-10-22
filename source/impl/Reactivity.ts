@@ -23,7 +23,7 @@ export class ReactiveFunction extends Cache<any> {
   readonly handle: Handle
   readonly name: FieldKey
 
-  setup(options: Partial<Options>): Options { return this.adjustOptions(options) }
+  setup(options: Partial<Options>): Options { return ReactiveFunction.setup(this, options) }
   get options(): Options { return this.weak().result.options }
   get args(): ReadonlyArray<any> { return this.weak().result.args }
   get value(): any { return this.call(true, undefined).result.value }
@@ -175,15 +175,15 @@ export class ReactiveFunction extends Cache<any> {
     c.invalidateDueTo(c, {record: NIL, field: self.name, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
-  private adjustOptions(options: Partial<Options>): Options {
-    const call = this.read(undefined)
+  private static setup(self: ReactiveFunction, options: Partial<Options>): Options {
+    const call = self.read(undefined)
     const r: Record = call.record
-    const hint: string = Dbg.isOn ? `setup(${Hints.handle(this.handle, this.name)})` : /* istanbul ignore next */ 'Cache.setup()'
+    const hint: string = Dbg.isOn ? `setup(${Hints.handle(self.handle, self.name)})` : /* istanbul ignore next */ 'Cache.setup()'
     return Transaction.runAs(hint, false, false, undefined, undefined, (): Options => {
-      const call2 = this.write()
+      const call2 = self.write()
       const c2: CachedResult = call2.result
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(r, this.name)}.options = ...`)
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(r, self.name)}.options = ...`)
       return c2.options
     })
   }
