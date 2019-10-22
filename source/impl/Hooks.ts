@@ -32,6 +32,7 @@ export abstract class State {
     return h.proxy
   }
 
+  /* istanbul ignore next */
   [Symbol.toStringTag](): string {
     const h = Utils.get<Handle>(this, SYM_HANDLE)
     return Hints.handle(h)
