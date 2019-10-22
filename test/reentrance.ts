@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { State, action, trigger, cached, cachedArgs, delay, monitor,
-  reentrance, Monitor, Reentrance, Tools as RT, all, sleep } from '../source/.index'
+  reentrance, Action, Monitor, Reentrance, Tools as RT, all, sleep } from '../source/.index'
 export { tracing } from './common'
 
 export const output: string[] = []
@@ -29,9 +29,11 @@ export class AsyncDemoView {
   @trigger @delay(-1)
   async print(): Promise<void> {
     const lines: string[] = await this.render()
-    for (const x of lines) {
-      output.push(x) /* istanbul ignore next */
-      if (RT.isTraceOn && !RT.trace.silent) console.log(x)
+    if (!Action.current.isCanceled) {
+      for (const x of lines) {
+        output.push(x) /* istanbul ignore next */
+        if (RT.isTraceOn && !RT.trace.silent) console.log(x)
+      }
     }
   }
 
