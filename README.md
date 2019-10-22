@@ -341,7 +341,7 @@ abstract class Cache<T> {
   pullAvailableValue(args?: any[]): T | undefined
 
   static of<T>(method: F<T>): Cache<T>
-  static unmount(...objects: any[]): Action
+  static unmount(...objects: any[]): void
 }
 
 // Tools

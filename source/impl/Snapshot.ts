@@ -94,6 +94,20 @@ export class Snapshot implements Context {
     return r
   }
 
+  static unmount(...objects: any[]): void {
+    const ctx = Snapshot.writable()
+    for (const x of objects) {
+      const h = Utils.get<Handle>(x, SYM_HANDLE)
+      if (h) {
+        const r: Record = ctx.write(h, SYM_UNMOUNT, SYM_UNMOUNT)
+        if (r !== NIL) {
+          r.data[SYM_UNMOUNT] = SYM_UNMOUNT
+          Snapshot.markChanged(r, SYM_UNMOUNT, SYM_UNMOUNT, true)
+        }
+      }
+    }
+  }
+
   private guard(h: Handle, r: Record, field: FieldKey, value: any, token: any): void {
     if (this.completed)
       throw misuse(`stateful property ${Hints.handle(h, field)} can only be modified inside actions and triggers`)

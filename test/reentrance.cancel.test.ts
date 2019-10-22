@@ -20,8 +20,6 @@ const expected: string[] = [
   '[...] Log: RTA',
   'Url: nezaboodka.com',
   'Log: RTA, nezaboodka.com/500',
-  'Url: nezaboodka.com',
-  'Log: RTA, nezaboodka.com/500',
 ]
 
 test('Reentrance.CancelPrevious', async t => {
@@ -42,9 +40,8 @@ test('Reentrance.CancelPrevious', async t => {
   finally {
     t.is(loading.workerCount, 0)
     t.is(loading.workers.size, 0)
-    await sleep(400)
-    await Cache.unmount(app, app.model).whenFinished()
-    await sleep(400)
+    await sleep(100)
+    Cache.unmount(app, app.model)
   } /* istanbul ignore next */
   if (RT.isTraceOn && !RT.trace.silent) {
     console.log('\nResults:\n')

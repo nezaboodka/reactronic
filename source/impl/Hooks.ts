@@ -247,30 +247,32 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
     return a[field] = value
   }
 
-  static seal(observable: Observable, proxy: any, field: FieldKey): void {
-    const v = observable.value
-    if (Array.isArray(v)) {
-      if (!Object.isFrozen(v)) {
-        if (!observable.isComputed)
-          observable.value = new Proxy(CopyOnWriteArray.seal(proxy, field, v), CopyOnWriteProxy.global)
-        else
-          Object.freeze(v) // just freeze without copy-on-write hooks
+  static seal(observable: Observable | symbol, proxy: any, field: FieldKey): void {
+    if (observable instanceof Observable) {
+      const v = observable.value
+      if (Array.isArray(v)) {
+        if (!Object.isFrozen(v)) {
+          if (!observable.isComputed)
+            observable.value = new Proxy(CopyOnWriteArray.seal(proxy, field, v), CopyOnWriteProxy.global)
+          else
+            Object.freeze(v) // just freeze without copy-on-write hooks
+        }
       }
-    }
-    else if (v instanceof Set) {
-      if (!Object.isFrozen(v)) {
-        if (!observable.isComputed)
-          observable.value = new Proxy(CopyOnWriteSet.seal(proxy, field, v), CopyOnWriteProxy.global)
-        else
-          Utils.freezeSet(v) // just freeze without copy-on-write hooks
+      else if (v instanceof Set) {
+        if (!Object.isFrozen(v)) {
+          if (!observable.isComputed)
+            observable.value = new Proxy(CopyOnWriteSet.seal(proxy, field, v), CopyOnWriteProxy.global)
+          else
+            Utils.freezeSet(v) // just freeze without copy-on-write hooks
+        }
       }
-    }
-    else if (v instanceof Map) {
-      if (!Object.isFrozen(v)) {
-        if (!observable.isComputed)
-          observable.value = new Proxy(CopyOnWriteMap.seal(proxy, field, v), CopyOnWriteProxy.global)
-        else
-          Utils.freezeMap(v) // just freeze without copy-on-write hooks
+      else if (v instanceof Map) {
+        if (!Object.isFrozen(v)) {
+          if (!observable.isComputed)
+            observable.value = new Proxy(CopyOnWriteMap.seal(proxy, field, v), CopyOnWriteProxy.global)
+          else
+            Utils.freezeMap(v) // just freeze without copy-on-write hooks
+        }
       }
     }
   }

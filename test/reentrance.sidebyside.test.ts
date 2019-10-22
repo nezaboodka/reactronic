@@ -24,8 +24,6 @@ const expected: string[] = [
   '[...] Log: RTA, microsoft.com/200',
   'Url: google.com',
   'Log: RTA, google.com/300',
-  'Url: google.com',
-  'Log: RTA, google.com/300',
 ]
 
 test('Reentrance.RunSideBySide', async t => {
@@ -46,9 +44,8 @@ test('Reentrance.RunSideBySide', async t => {
   finally {
     t.is(loading.workerCount, 0)
     t.is(loading.workers.size, 0)
-    await sleep(400)
-    await Cache.unmount(app, app.model).whenFinished()
-    await sleep(400)
+    await sleep(100)
+    Cache.unmount(app, app.model)
   } /* istanbul ignore next */
   if (RT.isTraceOn && !RT.trace.silent)
     for (const x of output)

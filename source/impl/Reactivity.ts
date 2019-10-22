@@ -85,9 +85,9 @@ export class ReactiveFunction extends Cache<any> {
     return result
   }
 
-  static unmount(...objects: any[]): Transaction {
+  static unmount(...objects: any[]): void {
     return Transaction.runAs('<unmount>', false, false,
-      undefined, undefined, ReactiveFunction.doUnmount, ...objects)
+      undefined, undefined, Snapshot.unmount, ...objects)
   }
 
   // Internal
@@ -173,14 +173,6 @@ export class ReactiveFunction extends Cache<any> {
     const call = self.read(undefined)
     const c: CachedResult = call.result
     c.invalidateDueTo(c, {record: NIL, field: self.name, times: 0}, ctx.timestamp, ctx.triggers)
-  }
-
-  private static doUnmount(...objects: any[]): Transaction {
-    for (const x of objects) {
-      if (Utils.get<Handle>(x, SYM_HANDLE))
-        x[SYM_UNMOUNT] = SYM_UNMOUNT
-    }
-    return Transaction.current
   }
 
   private adjustOptions(options: Partial<Options>): Options {
