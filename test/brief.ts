@@ -94,6 +94,7 @@ export class DemoView extends State {
 
 // Person
 
+/* istanbul ignore next */
 export class Person extends State {
   id: string | null = null
   name: string | null = null
