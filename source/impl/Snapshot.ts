@@ -5,6 +5,7 @@
 
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
+import { Kind } from '../Options'
 import { Context, Record, FieldKey, Observable, Handle, Observer } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
@@ -49,7 +50,7 @@ export class Snapshot implements Context {
   static readable: () => Snapshot = undef
   static writable: () => Snapshot = undef
   static markChanged: (record: Record, field: FieldKey, value: any, changed: boolean) => void = undef
-  static markViewed: (record: Record, field: FieldKey, value: Observable, weak: boolean) => void = undef
+  static markViewed: (record: Record, field: FieldKey, value: Observable, kind: Kind, weak: boolean) => void = undef
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
   static finalizeChangeset = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 

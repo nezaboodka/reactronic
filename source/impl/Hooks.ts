@@ -47,7 +47,7 @@ export function options(options: Partial<Options>): F<any> {
 // Options
 
 const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
-  kind: Kind.None,
+  kind: Kind.Field,
   delay: -2, // never
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
@@ -98,7 +98,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const r: Record = ctx.read(h)
     result = r.data[field]
     if (result instanceof Observable && !result.isComputed) {
-      Snapshot.markViewed(r, field, result, false)
+      Snapshot.markViewed(r, field, result, Kind.Field, false)
       result = result.value
     }
     else if (field === SYM_HANDLE) {

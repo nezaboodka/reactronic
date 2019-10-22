@@ -56,7 +56,7 @@ export class ReactiveFunction extends Cache<any> {
         call = call2
     }
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.name)} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
-    Snapshot.markViewed(call.record, this.name, call.result, weak)
+    Snapshot.markViewed(call.record, this.name, call.result, call.result.options.kind, weak)
     return call
   }
 
@@ -94,7 +94,7 @@ export class ReactiveFunction extends Cache<any> {
 
   private weak(): Call {
     const call = this.read(undefined)
-    Snapshot.markViewed(call.record, this.name, call.result, true)
+    Snapshot.markViewed(call.record, this.name, call.result, call.result.options.kind, true)
     return call
   }
 
@@ -410,9 +410,9 @@ class CachedResult extends Observable implements Observer {
       t.recompute(true, true)
   }
 
-  private static markViewed(record: Record, field: FieldKey, value: Observable, weak: boolean): void {
+  private static markViewed(record: Record, field: FieldKey, value: Observable, kind: Kind, weak: boolean): void {
     const c: CachedResult | undefined = CachedResult.current // alias
-    if (c && c.options.kind !== Kind.Action && field !== SYM_HANDLE) {
+    if (kind !== Kind.Action && c && c.options.kind !== Kind.Action && field !== SYM_HANDLE) {
       const ctx = Snapshot.readable()
       ctx.bump(record.snapshot.timestamp)
       const t = weak ? -1 : ctx.timestamp
