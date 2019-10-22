@@ -229,6 +229,7 @@ NPM: `npm install reactronic`
 ```typescript
 // Decorators & Operators
 
+function state(proto, prop) // field only
 function stateless(proto, prop) // field only
 function action(proto, prop, pd) // method only
 function trigger(proto, prop, pd) // method only

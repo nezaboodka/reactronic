@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { State, action, trigger, cached, cachedArgs, delay, monitor,
+import { State, state, action, trigger, cached, cachedArgs, delay, monitor,
   reentrance, Action, Monitor, Reentrance, Tools as RT, all, sleep } from '../source/.index'
 export { tracing } from './common'
 
@@ -23,6 +23,8 @@ export class AsyncDemo extends State {
 }
 
 export class AsyncDemoView {
+  @state statefulField: string = 'stateful field'
+
   constructor(readonly model: AsyncDemo) {
   }
 

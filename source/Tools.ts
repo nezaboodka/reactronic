@@ -40,7 +40,7 @@ export function separate<T>(func: F<T>, ...args: any[]): T {
 
 // Decorators
 
-export function stateful(proto: object, prop: PropertyKey): any {
+export function state(proto: object, prop: PropertyKey): any {
   return Hooks.decorateField(true, proto, prop)
 }
 
