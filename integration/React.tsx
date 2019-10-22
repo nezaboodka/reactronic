@@ -6,7 +6,7 @@
 import * as React from 'react'
 import { trigger, cached, separate, Cache } from '.index'
 
-export class Component<P> extends React.Component<P> {
+export class ReactiveComponent<P> extends React.Component<P> {
   @cached
   render(): JSX.Element {
     return <div>to be overridden in derived class</div>

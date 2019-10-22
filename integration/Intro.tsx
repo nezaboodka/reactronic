@@ -5,7 +5,7 @@
 
 import * as React from 'react'
 import { State, action, cached } from '.index'
-import { Component } from './React'
+import { ReactiveComponent } from './React'
 
 class Model extends State {
   url: string = 'https://nezaboodka.com'
@@ -20,7 +20,7 @@ class Model extends State {
   }
 }
 
-class View extends Component<{model: Model}> {
+class View extends ReactiveComponent<{model: Model}> {
   @cached
   render(): JSX.Element {
     const m = this.props.model
