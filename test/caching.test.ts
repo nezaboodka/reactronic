@@ -27,6 +27,16 @@ export class Demo extends State {
   produceSideEffect(): void {
     this.title = 'should fail on this line'
   }
+
+  @cached
+  cachedMap(): Map<string, any> {
+    return new Map<string, any>()
+  }
+
+  @cached
+  cachedSet(): Set<string> {
+    return new Set<string>()
+  }
 }
 
 test('Main', t => {
@@ -39,4 +49,6 @@ test('Main', t => {
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
   t.throws(() => demo.produceSideEffect(), 'cache must have no side effects: #21 Demo.produceSideEffect should not change v103t104#21 Demo.title')
   t.throws(() => console.log(demo.unassigned), 'unassigned properties are not supported: v1t103#21 Demo.unassigned is used by T1 (<none>)')
+  t.is(demo.cachedMap().size, 0)
+  t.is(demo.cachedSet().size, 0)
 })

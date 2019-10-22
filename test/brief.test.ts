@@ -52,6 +52,8 @@ test('Main', t => {
     action1.run(() => {
       t.throws(() => action1.apply(), 'cannot apply action having active actions')
       app.model.shared = app.shared = action1.hint
+      daddy.id = 'field restored during transaction'
+      daddy.id = null // restore
       daddy.age += 2 // causes no execution of DemoApp.render
       daddy.name = 'John Smith' // causes execution of DemoApp.render upon apply
       daddy.children[0].name = 'Barry' // Barry
