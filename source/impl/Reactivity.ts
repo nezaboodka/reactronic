@@ -118,7 +118,7 @@ export class ReactiveFunction extends Cache<any> {
       const c2 = new CachedResult(this, r, c)
       c = r.data[f] = c2.reenterOver(c)
       ctx.bump(r.prev.record.snapshot.timestamp)
-      Snapshot.markChanged(r, f, c2, true)
+      Snapshot.markChanged(r, f, c, true)
     }
     return { context: ctx, record: r, result: c, reuse: true }
   }
