@@ -17,11 +17,10 @@ export interface Options {
 }
 
 export enum Kind {
-  Stateless = 0,
-  Stateful = 1,
-  Action = 2,
-  Trigger = 3,
-  Cached = 4,
+  None = 0,
+  Action = 1,
+  Trigger = 2,
+  Cached = 3,
 }
 
 export enum Reentrance {

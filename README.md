@@ -256,18 +256,17 @@ interface Options {
 }
 
 enum Kind {
-  Stateless = 0,
-  Stateful = 1,
-  Action = 2,
-  Trigger = 3,
-  Cached = 4,
+  None = 0,
+  Action = 1,
+  Trigger = 2,
+  Cached = 3
 }
 
 enum Reentrance {
   PreventWithError = 1, // fail with error if there is an existing action in progress (default)
   WaitAndRestart = 0, // wait for existing action to finish and then restart reentrant one
   CancelPrevious = -1, // cancel previous action in favor of recent one
-  RunSideBySide = -2, // multiple simultaneous actions are allowed
+  RunSideBySide = -2 // multiple simultaneous actions are allowed
 }
 
 class Monitor {

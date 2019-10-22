@@ -47,7 +47,7 @@ export function options(options: Partial<Options>): F<any> {
 // Options
 
 const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
-  kind: Kind.Stateless,
+  kind: Kind.None,
   delay: -2, // never
   reentrance: Reentrance.PreventWithError,
   cachedArgs: false,
