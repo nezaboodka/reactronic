@@ -78,31 +78,34 @@ export class Transaction extends Action {
     return this
   }
 
-  bind<T>(func: F<T>, secondary: boolean): F<T> {
+  bind<T>(func: F<T>, error: boolean): F<T> {
     this.guard()
     const self = this
     const inspect = Transaction.inspection
     if (!inspect)
-      self.run(Transaction.boundEnter, self, secondary)
+      self.run(Transaction.boundEnter, self, error)
     else
-      self.inspect(Transaction.boundEnter, self, secondary)
+      self.inspect(Transaction.boundEnter, self, error)
     const transactionBound: F<T> = (...args: any[]): T => {
       if (!inspect)
-        return self.do<T>(undefined, Transaction.boundLeave, self, func, ...args)
+        return self.do<T>(undefined, Transaction.boundLeave, self, error, func, ...args)
       else
-        return self.inspect<T>(Transaction.boundLeave, self, func, ...args)
+        return self.inspect<T>(Transaction.boundLeave, self, error, func, ...args)
     }
     return transactionBound
   }
 
-  private static boundEnter<T>(t: Transaction, secondary: boolean): void {
-    if (!secondary)
+  private static boundEnter<T>(t: Transaction, error: boolean): void {
+    if (!error)
       t.workers++
   }
 
-  private static boundLeave<T>(t: Transaction, func: F<T>, ...args: any[]): T {
+  private static boundLeave<T>(t: Transaction, error: boolean, func: F<T>, ...args: any[]): T {
     t.workers--
-    return func(...args)
+    const result = func(...args)
+    // if (t.error && !error)
+    //   throw t.error
+    return result
   }
 
   cancel(error: Error, restartAfter?: Worker | null): this {
