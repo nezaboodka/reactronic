@@ -26,12 +26,12 @@ export class Method extends Cache<any> {
   setup(options: Partial<Options>): Options { return Method.setup(this, options) }
   get options(): Options { return this.weak().result.options }
   get args(): ReadonlyArray<any> { return this.weak().result.args }
-  get value(): any { return this.call(true, undefined).result.value }
+  get value(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.weak().result.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reuse }
   invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.handle(this.handle, this.name)})` : 'invalidate()', Method.invalidate, this) }
-  pullResult(args?: any[]): any { return this.call(true, args).result.value }
+  pullResult(args?: any[]): any { return this.call(true, args).value }
 
   constructor(handle: Handle, name: FieldKey) {
     super()
@@ -39,7 +39,7 @@ export class Method extends Cache<any> {
     this.name = name
   }
 
-  call(weak: boolean, args: any[] | undefined): Call {
+  call(weak: boolean, args: any[] | undefined): CallResult {
     let call: Call = this.read(args)
     const ctx = call.context
     const c: CallResult = call.result
@@ -56,7 +56,7 @@ export class Method extends Cache<any> {
     }
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.name)} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
     Snapshot.markViewed(call.record, this.name, call.result, call.result.options.kind, weak)
-    return call
+    return call.result
   }
 
   static of(method: F<any>): Cache<any> {
@@ -279,9 +279,9 @@ class CallResult extends Observable implements Observer {
     if (now || delay === -1) {
       if (!this.error && (this.options.kind === Kind.Action || !this.invalid.renewing)) {
         try {
-          const call: Call = this.method.call(false, undefined)
-          if (call.result.ret instanceof Promise)
-            call.result.ret.catch(error => { /* nop */ }) // bad idea to hide an error
+          const result: CallResult = this.method.call(false, undefined)
+          if (result.ret instanceof Promise)
+            result.ret.catch(error => { /* nop */ }) // bad idea to hide an error
         }
         catch (e) {
           if (!nothrow)
@@ -512,7 +512,7 @@ class CallResult extends Observable implements Observer {
   private static createMethodTrap(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
     const method = new Method(h, field)
     const methodTrap: F<any> = (...args: any[]): any =>
-      method.call(false, args).result.ret
+      method.call(false, args).ret
     Utils.set(methodTrap, SYM_METHOD, method)
     return methodTrap
   }
