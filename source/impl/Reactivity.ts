@@ -43,7 +43,7 @@ export class Method extends Cache<any> {
     let call: Call = this.read(args)
     const ctx = call.context
     const c: CallResult = call.result
-    if (!call.reuse && (!weak || !c.invalid.renewing)) {
+    if (!call.reuse && (!weak || !c.invalid.recomputing)) {
       const hint: string = Dbg.isOn ? `${Hints.instance(this.instance, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
@@ -156,7 +156,7 @@ export class Method extends Cache<any> {
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
-        if (call.result.options.kind === Kind.Action || (!call.reuse && !call.result.invalid.renewing)) {
+        if (call.result.options.kind === Kind.Action || (!call.reuse && !call.result.invalid.recomputing)) {
           call = this.write()
           if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, this.member)}${existing.result.invalid.cause ? `   <<   ${chainHint(existing.result.invalid.cause).join('   <<   ')}` : ''}`)
           call.result.compute(this.instance.proxy, argsx)
@@ -199,7 +199,7 @@ class CallResult extends Observable implements Observer {
   readonly method: Method
   readonly record: Record
   readonly observables: Map<Observable, FieldHint>
-  readonly invalid: { since: number, cause?: FieldHint, renewing?: CallResult }
+  readonly invalid: { since: number, cause?: FieldHint, recomputing?: CallResult }
   options: OptionsImpl
   args: any[]
   ret: any
@@ -213,7 +213,7 @@ class CallResult extends Observable implements Observer {
     this.method = method
     this.record = record
     this.observables = new Map<Observable, FieldHint>()
-    this.invalid = { since: 0, cause: undefined, renewing: undefined }
+    this.invalid = { since: 0, cause: undefined, recomputing: undefined }
     if (init instanceof CallResult) {
       this.options = init.options
       this.args = init.args
@@ -278,7 +278,7 @@ class CallResult extends Observable implements Observer {
   recompute(now: boolean, nothrow: boolean): void {
     const delay = this.options.delay
     if (now || delay === -1) {
-      if (!this.error && (this.options.kind === Kind.Action || !this.invalid.renewing)) {
+      if (!this.error && (this.options.kind === Kind.Action || !this.invalid.recomputing)) {
         try {
           const result: CallResult = this.method.call(false, undefined)
           if (result.ret instanceof Promise)
@@ -298,7 +298,7 @@ class CallResult extends Observable implements Observer {
 
   reenterOver(head: CallResult): this {
     let error: Error | undefined = undefined
-    const rival = head.invalid.renewing
+    const rival = head.invalid.recomputing
     if (rival && rival !== this && !rival.worker.isCanceled) {
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
@@ -306,18 +306,18 @@ class CallResult extends Observable implements Observer {
         case Reentrance.WaitAndRestart:
           error = new Error(`T${this.worker.id} (${this.worker.hint}) will be restarted after T${rival.worker.id} (${rival.worker.hint})`)
           this.worker.cancel(error, rival.worker)
-          // TODO: "c.invalid.renewing = caller" in order serialize all the actions
+          // TODO: "c.invalid.recomputing = caller" in order serialize all the actions
           break
         case Reentrance.CancelPrevious:
           rival.worker.cancel(new Error(`T${rival.worker.id} (${rival.worker.hint}) is canceled by T${this.worker.id} (${this.worker.hint}) and will be silently ignored`), null)
-          head.invalid.renewing = undefined // allow
+          head.invalid.recomputing = undefined // allow
           break
         case Reentrance.RunSideBySide:
           break // do nothing
       }
     }
     if (!error)
-      head.invalid.renewing = this
+      head.invalid.recomputing = this
     else
       this.error = error
     return this
@@ -428,7 +428,7 @@ class CallResult extends Observable implements Observer {
   private static finalizeChangeset(snapshot: Snapshot, error: Error | undefined): void {
     const since = snapshot.timestamp
     if (!error) {
-      // Mark previous values as replaced, invalidate observers, and reset renewing status
+      // Mark previous values as replaced, invalidate observers, and reset recomputing status
       const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, o: Instance) => {
         if (!r.changes.has(SYM_UNMOUNT))
@@ -463,10 +463,10 @@ class CallResult extends Observable implements Observer {
     if (cache instanceof CallResult && cache.record === record) {
       if (unsubscribe)
         cache.unsubscribeFromAll()
-      // Clear renewing status of previous cached result
+      // Clear recomputing status of previous cached result
       const prev = cache.record.prev.record.data[field]
-      if (prev instanceof CallResult && prev.invalid.renewing === cache)
-        prev.invalid.renewing = undefined
+      if (prev instanceof CallResult && prev.invalid.recomputing === cache)
+        prev.invalid.recomputing = undefined
       // Performance tracking
       if (Hooks.performanceWarningThreshold > 0) {
         cache.observables.forEach((hint, value) => {
