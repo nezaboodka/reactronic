@@ -5,9 +5,9 @@
 
 import * as React from 'react'
 import { State, action, cached } from '.index'
-import { ReactiveComponent } from './React'
+import { Component } from './Component'
 
-class Model extends State {
+class MyModel extends State {
   url: string = 'https://nezaboodka.com'
   content: string = ''
   timestamp: number = Date.now()
@@ -20,7 +20,7 @@ class Model extends State {
   }
 }
 
-class View extends ReactiveComponent<{model: Model}> {
+class MyView extends Component<{model: MyModel}> {
   @cached
   render(): JSX.Element {
     const m = this.props.model
@@ -32,4 +32,4 @@ class View extends ReactiveComponent<{model: Model}> {
   }
 }
 
-export const dummy = View
+export const dummy = MyView
