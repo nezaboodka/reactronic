@@ -177,7 +177,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
     // Setup method trap
-    const opts = Hooks.adjustOptions(proto, method, pd.value, true, configurable, options, implicit)
+    const opts = Hooks.applyOptions(proto, method, pd.value, true, configurable, options, implicit)
     const trap = function(this: any): any {
       const stateful = this instanceof State
       const h: Handle = stateful ? Utils.get<Handle>(this, SYM_HANDLE) : Hooks.acquireHandle(this)
@@ -230,7 +230,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static adjustOptions = function(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+  static applyOptions = function(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     throw misuse('alterBlank should never be called')
   }
 }

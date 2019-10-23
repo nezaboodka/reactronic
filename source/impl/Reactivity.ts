@@ -517,7 +517,7 @@ class CallResult extends Observable implements Observer {
     return methodTrap
   }
 
-  private static adjustOptions(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+  private static applyOptions(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     // Setup blank
     const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
     const existing: CallResult | undefined = blank[field]
@@ -549,7 +549,7 @@ class CallResult extends Observable implements Observer {
     Snapshot.isConflicting = CallResult.isConflicting // override
     Snapshot.finalizeChangeset = CallResult.finalizeChangeset // override
     Hooks.createMethodTrap = CallResult.createMethodTrap // override
-    Hooks.adjustOptions = CallResult.adjustOptions // override
+    Hooks.applyOptions = CallResult.applyOptions // override
     Promise.prototype.then = reactronicHookedThen // override
   }
 }
