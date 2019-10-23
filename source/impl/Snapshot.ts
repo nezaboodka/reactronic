@@ -9,12 +9,12 @@ import { Kind } from '../Options'
 import { Context, Record, FieldKey, Observable, Instance, Observer } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
-export const SYM_INSTANCE: unique symbol = Symbol('R:INSTANCE')
-export const SYM_METHOD: unique symbol = Symbol('R:METHOD')
-export const SYM_UNMOUNT: unique symbol = Symbol('R:UNMOUNT')
-export const SYM_STATELESS: unique symbol = Symbol('R:STATELESS')
-export const SYM_BLANK: unique symbol = Symbol('R:BLANK')
-export const SYM_TRIGGERS: unique symbol = Symbol('R:TRIGGERS')
+export const SYM_INSTANCE: unique symbol = Symbol('r-instance')
+export const SYM_METHOD: unique symbol = Symbol('r-method')
+export const SYM_UNMOUNT: unique symbol = Symbol('r-unmount')
+export const SYM_STATELESS: unique symbol = Symbol('r-stateless')
+export const SYM_BLANK: unique symbol = Symbol('r-blank')
+export const SYM_TRIGGERS: unique symbol = Symbol('r-triggers')
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 // Snapshot
