@@ -133,7 +133,7 @@ class MyView extends Component<{model: MyModel}> {
 export class Component<P> extends React.Component<P> {
   @cached
   render(): JSX.Element {
-    return <div>to be overridden in derived class</div>
+    throw new Error('render method is undefined')
   }
 
   @trigger // called immediately in response to state changes
