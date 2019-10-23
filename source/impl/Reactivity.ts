@@ -55,8 +55,9 @@ export class Method extends Cache<any> {
         call = call2
     }
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.member)} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
-    Snapshot.markViewed(call.record, this.member, call.result, call.result.options.kind, weak)
-    return call.result
+    const result = call.result
+    Snapshot.markViewed(call.record, this.member, result, result.options.kind, weak)
+    return result
   }
 
   static of(method: F<any>): Cache<any> {
