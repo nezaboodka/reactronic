@@ -8,8 +8,8 @@ import { misuse } from '../util/Dbg'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
-import { Record, FieldKey, Observable, Handle } from './Data'
-import { Snapshot, Hints, NIL, SYM_HANDLE, SYM_METHOD, SYM_STATELESS, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
+import { Record, FieldKey, Observable, Instance } from './Data'
+import { Snapshot, Hints, NIL, SYM_INSTANCE, SYM_METHOD, SYM_STATELESS, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
@@ -23,19 +23,19 @@ export abstract class State {
   constructor() {
     const proto = new.target.prototype
     const blank = Hooks.getMeta<any>(proto, SYM_BLANK)
-    const h = Hooks.createHandle(this, blank, new.target.name)
+    const o = Hooks.createInstance(this, blank, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
       const triggers = Hooks.getMeta<any>(proto, SYM_TRIGGERS)
       for (const field in triggers)
-        (h.proxy[field][SYM_METHOD] as Cache<any>).invalidate()
+        (o.proxy[field][SYM_METHOD] as Cache<any>).invalidate()
     }
-    return h.proxy
+    return o.proxy
   }
 
   /* istanbul ignore next */
   [Symbol.toStringTag](): string {
-    const h = Utils.get<Handle>(this, SYM_HANDLE)
-    return Hints.handle(h)
+    const o = Utils.get<Instance>(this, SYM_INSTANCE)
+    return Hints.instance(o)
   }
 }
 
@@ -84,68 +84,68 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 
 // Hooks
 
-export class Hooks implements ProxyHandler<Handle> {
+export class Hooks implements ProxyHandler<Instance> {
   static triggersAutoStartDisabled: boolean = false
   static performanceWarningThreshold: number = 10
   static readonly proxy: Hooks = new Hooks()
 
-  getPrototypeOf(h: Handle): object | null {
-    return Reflect.getPrototypeOf(h.stateless)
+  getPrototypeOf(o: Instance): object | null {
+    return Reflect.getPrototypeOf(o.stateless)
   }
 
-  get(h: Handle, field: FieldKey, receiver: any): any {
+  get(o: Instance, f: FieldKey, receiver: any): any {
     let result: any
     const ctx = Snapshot.readable()
-    const r: Record = ctx.read(h)
-    result = r.data[field]
+    const r: Record = ctx.read(o)
+    result = r.data[f]
     if (result instanceof Observable && !result.isComputed) {
-      Snapshot.markViewed(r, field, result, Kind.Field, false)
+      Snapshot.markViewed(r, f, result, Kind.Field, false)
       result = result.value
     }
-    else if (field === SYM_HANDLE) {
-      // do nothing, just return handle
+    else if (f === SYM_INSTANCE) {
+      // do nothing, just return instance
     }
     else { // value === STATELESS
-      result = Reflect.get(h.stateless, field, receiver)
-      if (result === undefined && field !== Symbol.toPrimitive)
+      result = Reflect.get(o.stateless, f, receiver)
+      if (result === undefined && f !== Symbol.toPrimitive)
         // Record.markViewed(r, field, false); // treat undefined fields as stateful
-        throw misuse(`unassigned properties are not supported: ${Hints.record(r, field)} is used by T${ctx.id} (${ctx.hint})`)
+        throw misuse(`unassigned properties are not supported: ${Hints.record(r, f)} is used by T${ctx.id} (${ctx.hint})`)
     }
     return result
   }
 
-  set(h: Handle, field: FieldKey, value: any, receiver: any): boolean {
-    const r: Record = Snapshot.writable().write(h, field, value)
+  set(o: Instance, f: FieldKey, value: any, receiver: any): boolean {
+    const r: Record = Snapshot.writable().write(o, f, value)
     if (r !== NIL) {
-      const curr = r.data[field] as Observable
-      const prev = r.prev.record.data[field] as Observable
+      const curr = r.data[f] as Observable
+      const prev = r.prev.record.data[f] as Observable
       const changed = prev === undefined || prev.value !== value
       if (changed) {
         if (prev === curr)
-          r.data[field] = new Observable(value)
+          r.data[f] = new Observable(value)
         else
           curr.value = value
       }
       else if (prev !== curr)
-        r.data[field] = prev // restore previous value
-      Snapshot.markChanged(r, field, value, changed)
+        r.data[f] = prev // restore previous value
+      Snapshot.markChanged(r, f, value, changed)
     }
     else
-      h.stateless[field] = value
+      o.stateless[f] = value
     return true
   }
 
-  getOwnPropertyDescriptor(h: Handle, field: FieldKey): PropertyDescriptor | undefined {
-    const r: Record = Snapshot.readable().read(h)
-    const pd = Reflect.getOwnPropertyDescriptor(r.data, field)
+  getOwnPropertyDescriptor(o: Instance, f: FieldKey): PropertyDescriptor | undefined {
+    const r: Record = Snapshot.readable().read(o)
+    const pd = Reflect.getOwnPropertyDescriptor(r.data, f)
     if (pd)
       pd.configurable = pd.writable = true
     return pd
   }
 
-  ownKeys(h: Handle): FieldKey[] {
+  ownKeys(o: Instance): FieldKey[] {
     // TODO: Better implementation to avoid filtering
-    const r: Record = Snapshot.readable().read(h)
+    const r: Record = Snapshot.readable().read(o)
     const result = []
     for (const field of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[field]
@@ -155,22 +155,22 @@ export class Hooks implements ProxyHandler<Handle> {
     return result
   }
 
-  static decorateField(stateful: boolean, proto: any, field: FieldKey): any {
+  static decorateField(stateful: boolean, proto: any, f: FieldKey): any {
     if (stateful) {
       const get = function(this: any): any {
-        const h: Handle = Hooks.acquireHandle(this)
-        return Hooks.proxy.get(h, field, this)
+        const o = Hooks.acquireInstance(this)
+        return Hooks.proxy.get(o, f, this)
       }
       const set = function(this: any, value: any): boolean {
-        const h: Handle = Hooks.acquireHandle(this)
-        return Hooks.proxy.set(h, field, value, this)
+        const o = Hooks.acquireInstance(this)
+        return Hooks.proxy.set(o, f, value, this)
       }
       const enumerable = true
       const configurable = false
-      return Object.defineProperty(proto, field, { get, set, enumerable, configurable })
+      return Object.defineProperty(proto, f, { get, set, enumerable, configurable })
     }
     else
-      Hooks.acquireMeta(proto, SYM_BLANK)[field] = SYM_STATELESS
+      Hooks.acquireMeta(proto, SYM_BLANK)[f] = SYM_STATELESS
   }
 
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: FieldKey, pd: TypedPropertyDescriptor<F<any>>): any {
@@ -180,9 +180,9 @@ export class Hooks implements ProxyHandler<Handle> {
     const opts = Hooks.applyOptions(proto, method, pd.value, true, configurable, options, implicit)
     const trap = function(this: any): any {
       const stateful = this instanceof State
-      const h: Handle = stateful ? Utils.get<Handle>(this, SYM_HANDLE) : Hooks.acquireHandle(this)
-      const value = Hooks.createMethodTrap(h, method, opts)
-      Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
+      const o = stateful ? Utils.get<Instance>(this, SYM_INSTANCE) : Hooks.acquireInstance(this)
+      const value = Hooks.createMethodTrap(o, method, opts)
+      Object.defineProperty(o.stateless, method, { value, enumerable, configurable })
       return value
     }
     return Object.defineProperty(proto, method, { get: trap, enumerable, configurable })
@@ -201,36 +201,36 @@ export class Hooks implements ProxyHandler<Handle> {
     return proto[sym] || /* istanbul ignore next */ EMPTY_META
   }
 
-  static acquireHandle(obj: any): Handle {
+  static acquireInstance(obj: any): Instance {
     if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
       throw misuse('only objects can be reactive')
-    let h = Utils.get<Handle>(obj, SYM_HANDLE)
-    if (!h) {
+    let o = Utils.get<Instance>(obj, SYM_INSTANCE)
+    if (!o) {
       const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), SYM_BLANK)
-      const init = new Record(NIL.snapshot, NIL, {...blank})
-      Utils.set(init.data, SYM_HANDLE, h)
-      Snapshot.freezeRecord(init)
-      h = new Handle(obj, obj, Hooks.proxy, init, obj.constructor.name)
-      Utils.set(obj, SYM_HANDLE, h)
+      const initial = new Record(NIL.snapshot, NIL, {...blank})
+      Utils.set(initial.data, SYM_INSTANCE, o)
+      Snapshot.freezeRecord(initial)
+      o = new Instance(obj, obj, Hooks.proxy, initial, obj.constructor.name)
+      Utils.set(obj, SYM_INSTANCE, o)
       // Hooks.decorateField(false, {kind: Kind.Stateful}, obj, UNMOUNT)
     }
-    return h
+    return o
   }
 
-  static createHandle(stateless: any, blank: any, hint: string): Handle {
+  static createInstance(stateless: any, blank: any, hint: string): Instance {
     const ctx = Snapshot.writable()
-    const h = new Handle(stateless, undefined, Hooks.proxy, NIL, hint)
-    ctx.write(h, SYM_HANDLE, blank)
-    return h
+    const o = new Instance(stateless, undefined, Hooks.proxy, NIL, hint)
+    ctx.write(o, SYM_INSTANCE, blank)
+    return o
   }
 
   /* istanbul ignore next */
-  static createMethodTrap = function(h: Handle, field: FieldKey, options: OptionsImpl): F<any> {
+  static createMethodTrap = function(o: Instance, f: FieldKey, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
   }
 
   /* istanbul ignore next */
-  static applyOptions = function(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+  static applyOptions = function(proto: any, f: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     throw misuse('alterBlank should never be called')
   }
 }
