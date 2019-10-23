@@ -519,7 +519,7 @@ class CallResult extends Observable implements Observer {
   }
 
   private static applyOptions(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
-    // Setup blank
+    // Setup options
     const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
     const existing: CallResult | undefined = blank[field]
     const method = existing ? existing.method : new Method(NO_INSTANCE, field)
