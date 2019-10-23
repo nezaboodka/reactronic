@@ -10,5 +10,5 @@ export { State } from './impl/Hooks'
 export { resolved, nonreactive, separate, state, stateless, action, trigger,
   cached, cachedArgs, delay, reentrance, monitor, trace } from './Tools'
 export { Action } from './Action'
+export { Monitor, Worker } from './Monitor'
 export { Cache } from './Cache'
-export { Monitor } from './Monitor'
