@@ -6,9 +6,7 @@
 import * as React from 'react'
 import { State, Action, Cache, stateless, trigger, cached, separate, Tools as RT, Trace } from '.index'
 
-type ReactState = { rx: Rx, counter: number }
-
-export function reactiveRender(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
+export function reactive(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(
     !trace ? createReactState : () => createReactState(trace))
   const rx = state.rx
@@ -17,6 +15,10 @@ export function reactiveRender(render: (counter: number) => JSX.Element, trace?:
   React.useEffect(rx.unmountEffect, [])
   return rx.jsx(render)
 }
+
+// Internal
+
+type ReactState = { rx: Rx, counter: number }
 
 class Rx extends State {
   @cached

@@ -6,15 +6,17 @@
 import * as React from 'react'
 import { State, Action, Cache, stateless, trigger, cached, separate } from '.index'
 
-type ReactState = { rx: Rx }
-
-export function reactiveRender(render: () => JSX.Element): JSX.Element {
+export function reactive(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
   const rx = state.rx
   rx.refresh = refresh // just in case React will change refresh on each rendering
   React.useEffect(rx.unmountEffect, [])
   return rx.jsx(render)
 }
+
+// Internal
+
+type ReactState = { rx: Rx }
 
 class Rx extends State {
   @cached
