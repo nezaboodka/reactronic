@@ -31,11 +31,11 @@ export interface Observer {
 
 // Record
 
-export type FieldKey = PropertyKey
+export type Member = PropertyKey
 
 export interface FieldHint {
   readonly record: Record
-  readonly field: FieldKey
+  readonly member: Member
   readonly times: number
 }
 
@@ -43,15 +43,15 @@ export class Record {
   readonly snapshot: Context
   readonly prev: { record: Record }
   readonly data: any
-  readonly changes: Set<FieldKey>
-  readonly conflicts: Map<FieldKey, Record>
+  readonly changes: Set<Member>
+  readonly conflicts: Map<Member, Record>
 
   constructor(snapshot: Context, prev: Record | undefined, data: object) {
     this.snapshot = snapshot
     this.prev = { record: prev || this } // loopback if prev is undefined
     this.data = data
-    this.changes = new Set<FieldKey>()
-    this.conflicts = new Map<FieldKey, Record>()
+    this.changes = new Set<Member>()
+    this.conflicts = new Map<Member, Record>()
     Object.freeze(this)
   }
 }

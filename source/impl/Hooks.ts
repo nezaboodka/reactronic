@@ -8,7 +8,7 @@ import { misuse } from '../util/Dbg'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
-import { Record, FieldKey, Observable, Instance } from './Data'
+import { Record, Member, Observable, Instance } from './Data'
 import { Snapshot, Hints, NIL, SYM_INSTANCE, SYM_METHOD, SYM_STATELESS, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Monitor } from '../Monitor'
@@ -26,8 +26,8 @@ export abstract class State {
     const o = Hooks.createInstance(this, blank, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
       const triggers = Hooks.getMeta<any>(proto, SYM_TRIGGERS)
-      for (const field in triggers)
-        (o.proxy[field][SYM_METHOD] as Cache<any>).invalidate()
+      for (const member in triggers)
+        (o.proxy[member][SYM_METHOD] as Cache<any>).invalidate()
     }
     return o.proxy
   }
@@ -93,87 +93,87 @@ export class Hooks implements ProxyHandler<Instance> {
     return Reflect.getPrototypeOf(o.stateless)
   }
 
-  get(o: Instance, f: FieldKey, receiver: any): any {
+  get(o: Instance, m: Member, receiver: any): any {
     let result: any
     const ctx = Snapshot.readable()
     const r: Record = ctx.read(o)
-    result = r.data[f]
+    result = r.data[m]
     if (result instanceof Observable && !result.isComputed) {
-      Snapshot.markViewed(r, f, result, Kind.Field, false)
+      Snapshot.markViewed(r, m, result, Kind.Field, false)
       result = result.value
     }
-    else if (f === SYM_INSTANCE) {
+    else if (m === SYM_INSTANCE) {
       // do nothing, just return instance
     }
     else { // value === STATELESS
-      result = Reflect.get(o.stateless, f, receiver)
-      if (result === undefined && f !== Symbol.toPrimitive)
-        // Record.markViewed(r, field, false); // treat undefined fields as stateful
-        throw misuse(`unassigned properties are not supported: ${Hints.record(r, f)} is used by T${ctx.id} (${ctx.hint})`)
+      result = Reflect.get(o.stateless, m, receiver)
+      if (result === undefined && m !== Symbol.toPrimitive)
+        // Record.markViewed(r, m, false); // treat undefined fields as stateful
+        throw misuse(`unassigned properties are not supported: ${Hints.record(r, m)} is used by T${ctx.id} (${ctx.hint})`)
     }
     return result
   }
 
-  set(o: Instance, f: FieldKey, value: any, receiver: any): boolean {
-    const r: Record = Snapshot.writable().write(o, f, value)
+  set(o: Instance, m: Member, value: any, receiver: any): boolean {
+    const r: Record = Snapshot.writable().write(o, m, value)
     if (r !== NIL) {
-      const curr = r.data[f] as Observable
-      const prev = r.prev.record.data[f] as Observable
+      const curr = r.data[m] as Observable
+      const prev = r.prev.record.data[m] as Observable
       const changed = prev === undefined || prev.value !== value
       if (changed) {
         if (prev === curr)
-          r.data[f] = new Observable(value)
+          r.data[m] = new Observable(value)
         else
           curr.value = value
       }
       else if (prev !== curr)
-        r.data[f] = prev // restore previous value
-      Snapshot.markChanged(r, f, value, changed)
+        r.data[m] = prev // restore previous value
+      Snapshot.markChanged(r, m, value, changed)
     }
     else
-      o.stateless[f] = value
+      o.stateless[m] = value
     return true
   }
 
-  getOwnPropertyDescriptor(o: Instance, f: FieldKey): PropertyDescriptor | undefined {
+  getOwnPropertyDescriptor(o: Instance, m: Member): PropertyDescriptor | undefined {
     const r: Record = Snapshot.readable().read(o)
-    const pd = Reflect.getOwnPropertyDescriptor(r.data, f)
+    const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
     if (pd)
       pd.configurable = pd.writable = true
     return pd
   }
 
-  ownKeys(o: Instance): FieldKey[] {
+  ownKeys(o: Instance): Member[] {
     // TODO: Better implementation to avoid filtering
     const r: Record = Snapshot.readable().read(o)
     const result = []
-    for (const field of Object.getOwnPropertyNames(r.data)) {
-      const value = r.data[field]
+    for (const m of Object.getOwnPropertyNames(r.data)) {
+      const value = r.data[m]
       if (typeof(value) !== 'object' || value.constructor.name !== 'CacheResult')
-        result.push(field)
+        result.push(m)
     }
     return result
   }
 
-  static decorateField(stateful: boolean, proto: any, f: FieldKey): any {
+  static decorateField(stateful: boolean, proto: any, m: Member): any {
     if (stateful) {
       const get = function(this: any): any {
         const o = Hooks.acquireInstance(this)
-        return Hooks.proxy.get(o, f, this)
+        return Hooks.proxy.get(o, m, this)
       }
       const set = function(this: any, value: any): boolean {
         const o = Hooks.acquireInstance(this)
-        return Hooks.proxy.set(o, f, value, this)
+        return Hooks.proxy.set(o, m, value, this)
       }
       const enumerable = true
       const configurable = false
-      return Object.defineProperty(proto, f, { get, set, enumerable, configurable })
+      return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Hooks.acquireMeta(proto, SYM_BLANK)[f] = SYM_STATELESS
+      Hooks.acquireMeta(proto, SYM_BLANK)[m] = SYM_STATELESS
   }
 
-  static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: FieldKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: Member, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
     // Setup method trap
@@ -224,12 +224,12 @@ export class Hooks implements ProxyHandler<Instance> {
   }
 
   /* istanbul ignore next */
-  static createMethodTrap = function(o: Instance, f: FieldKey, options: OptionsImpl): F<any> {
+  static createMethodTrap = function(o: Instance, m: Member, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
   }
 
   /* istanbul ignore next */
-  static applyOptions = function(proto: any, f: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+  static applyOptions = function(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     throw misuse('alterBlank should never be called')
   }
 }
@@ -237,23 +237,23 @@ export class Hooks implements ProxyHandler<Instance> {
 export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
   static readonly global: CopyOnWriteProxy = new CopyOnWriteProxy()
 
-  get(binding: CopyOnWrite<any>, field: FieldKey, receiver: any): any {
+  get(binding: CopyOnWrite<any>, m: Member, receiver: any): any {
     const a: any = binding.readable(receiver)
-    return a[field]
+    return a[m]
   }
 
-  set(binding: CopyOnWrite<any>, field: FieldKey, value: any, receiver: any): boolean {
+  set(binding: CopyOnWrite<any>, m: Member, value: any, receiver: any): boolean {
     const a: any = binding.writable(receiver)
-    return a[field] = value
+    return a[m] = value
   }
 
-  static seal(observable: Observable | symbol, proxy: any, field: FieldKey): void {
+  static seal(observable: Observable | symbol, proxy: any, m: Member): void {
     if (observable instanceof Observable) {
       const v = observable.value
       if (Array.isArray(v)) {
         if (!Object.isFrozen(v)) {
           if (!observable.isComputed)
-            observable.value = new Proxy(CopyOnWriteArray.seal(proxy, field, v), CopyOnWriteProxy.global)
+            observable.value = new Proxy(CopyOnWriteArray.seal(proxy, m, v), CopyOnWriteProxy.global)
           else
             Object.freeze(v) // just freeze without copy-on-write hooks
         }
@@ -261,7 +261,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
       else if (v instanceof Set) {
         if (!Object.isFrozen(v)) {
           if (!observable.isComputed)
-            observable.value = new Proxy(CopyOnWriteSet.seal(proxy, field, v), CopyOnWriteProxy.global)
+            observable.value = new Proxy(CopyOnWriteSet.seal(proxy, m, v), CopyOnWriteProxy.global)
           else
             Utils.freezeSet(v) // just freeze without copy-on-write hooks
         }
@@ -269,7 +269,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
       else if (v instanceof Map) {
         if (!Object.isFrozen(v)) {
           if (!observable.isComputed)
-            observable.value = new Proxy(CopyOnWriteMap.seal(proxy, field, v), CopyOnWriteProxy.global)
+            observable.value = new Proxy(CopyOnWriteMap.seal(proxy, m, v), CopyOnWriteProxy.global)
           else
             Utils.freezeMap(v) // just freeze without copy-on-write hooks
         }

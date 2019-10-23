@@ -36,10 +36,10 @@ export class Utils {
   }
 
   static copyAllFields(source: any, target: any): any {
-    for (const field of Object.getOwnPropertyNames(source))
-      target[field] = source[field]
-    for (const field of Object.getOwnPropertySymbols(source))
-      target[field] = source[field]
+    for (const m of Object.getOwnPropertyNames(source))
+      target[m] = source[m]
+    for (const m of Object.getOwnPropertySymbols(source))
+      target[m] = source[m]
     return target
   }
 

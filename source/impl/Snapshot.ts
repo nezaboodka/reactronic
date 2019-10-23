@@ -6,7 +6,7 @@
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Kind } from '../Options'
-import { Context, Record, FieldKey, Observable, Instance, Observer } from './Data'
+import { Context, Record, Member, Observable, Instance, Observer } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
 export const SYM_INSTANCE: unique symbol = Symbol('r-instance')
@@ -49,8 +49,8 @@ export class Snapshot implements Context {
   // To be redefined by Action and Cache implementations
   static readable: () => Snapshot = undef
   static writable: () => Snapshot = undef
-  static markChanged: (record: Record, field: FieldKey, value: any, changed: boolean) => void = undef
-  static markViewed: (record: Record, field: FieldKey, value: Observable, kind: Kind, weak: boolean) => void = undef
+  static markChanged: (r: Record, m: Member, value: any, changed: boolean) => void = undef
+  static markViewed: (r: Record, m: Member, value: Observable, kind: Kind, weak: boolean) => void = undef
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
   static finalizeChangeset = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
@@ -76,12 +76,12 @@ export class Snapshot implements Context {
     return r
   }
 
-  write(o: Instance, field: FieldKey, value: any, token?: any): Record {
+  write(o: Instance, m: Member, value: any, token?: any): Record {
     let r: Record = this.tryRead(o)
-    if (r.data[field] !== SYM_STATELESS) {
-      this.guard(o, r, field, value, token)
+    if (r.data[m] !== SYM_STATELESS) {
+      this.guard(o, r, m, value, token)
       if (r.snapshot !== this) {
-        const data = {...field === SYM_INSTANCE ? value : r.data}
+        const data = {...m === SYM_INSTANCE ? value : r.data}
         Reflect.set(data, SYM_INSTANCE, o)
         r = new Record(this, o.head, data)
         this.changeset.set(o, r)
@@ -108,13 +108,13 @@ export class Snapshot implements Context {
     }
   }
 
-  private guard(o: Instance, r: Record, f: FieldKey, value: any, token: any): void {
+  private guard(o: Instance, r: Record, m: Member, value: any, token: any): void {
     if (this.completed)
-      throw misuse(`stateful property ${Hints.instance(o, f)} can only be modified inside actions and triggers`)
-    if (f !== SYM_INSTANCE && value !== SYM_INSTANCE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
-      throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, f)}`)
-    if (r === NIL && f !== SYM_INSTANCE && value !== SYM_INSTANCE) /* istanbul ignore next */
-      throw misuse(`object ${Hints.record(r, f)} doesn't exist in snapshot v${this.stamp}`)
+      throw misuse(`stateful property ${Hints.instance(o, m)} can only be modified inside actions and triggers`)
+    if (m !== SYM_INSTANCE && value !== SYM_INSTANCE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
+      throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
+    if (r === NIL && m !== SYM_INSTANCE && value !== SYM_INSTANCE) /* istanbul ignore next */
+      throw misuse(`object ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp}`)
   }
 
   acquire(outer: Snapshot): void {
@@ -161,20 +161,20 @@ export class Snapshot implements Context {
     let counter: number = 0
     const unmounted: boolean = head.changes.has(SYM_UNMOUNT)
     const merged = {...head.data} // clone
-    ours.changes.forEach(field => {
+    ours.changes.forEach(m => {
       counter++
-      merged[field] = ours.data[field]
-      if (unmounted || field === SYM_UNMOUNT) {
-        if (unmounted !== (field === SYM_UNMOUNT)) {
-          if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, field)} <> ${Hints.record(head, field)}`, 0, ' *** CONFLICT ***')
-          ours.conflicts.set(field, head)
+      merged[m] = ours.data[m]
+      if (unmounted || m === SYM_UNMOUNT) {
+        if (unmounted !== (m === SYM_UNMOUNT)) {
+          if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, m)} <> ${Hints.record(head, m)}`, 0, ' *** CONFLICT ***')
+          ours.conflicts.set(m, head)
         }
       }
       else {
-        const conflict = Snapshot.isConflicting(head.data[field], ours.prev.record.data[field])
+        const conflict = Snapshot.isConflicting(head.data[m], ours.prev.record.data[m])
         if (conflict)
-          ours.conflicts.set(field, head)
-        if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, field)} ${conflict ? '<>' : '=='} ${Hints.record(head, field)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
+          ours.conflicts.set(m, head)
+        if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, m)} ${conflict ? '<>' : '=='} ${Hints.record(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
       }
     })
     Utils.copyAllFields(merged, ours.data) // overwrite with merged copy
@@ -185,7 +185,7 @@ export class Snapshot implements Context {
   complete(error?: any): void {
     this.completed = true
     this.changeset.forEach((r: Record, o: Instance) => {
-      r.changes.forEach(field => CopyOnWriteProxy.seal(r.data[field], o.proxy, field))
+      r.changes.forEach(m => CopyOnWriteProxy.seal(r.data[m], o.proxy, m))
       Snapshot.freezeRecord(r)
       o.writers--
       if (o.writers === 0)
@@ -194,7 +194,7 @@ export class Snapshot implements Context {
         o.head = r
         if (Dbg.isOn && Dbg.trace.changes) {
           const fields: string[] = []
-          r.changes.forEach(field => fields.push(field.toString()))
+          r.changes.forEach(m => fields.push(m.toString()))
           const s = fields.join(', ')
           Dbg.log('║', '√', `${Hints.record(r)}(${s}) is ${r.prev.record === NIL ? 'constructed' : `applied on top of ${Hints.record(r.prev.record)}`}`)
         }
@@ -221,15 +221,15 @@ export class Snapshot implements Context {
 
   // static undo(s: Snapshot): void {
   //   s.changeset.forEach((r: Record, o: Instance) => {
-  //     r.changes.forEach(field => {
+  //     r.changes.forEach(m => {
   //       if (r.prev.record !== INIT) {
-  //         const prevValue: any = r.prev.record.data[field];
+  //         const prevValue: any = r.prev.record.data[m];
   //         const ctx = Snapshot.write();
-  //         const t: Record = ctx.write(h, field, prevValue);
+  //         const t: Record = ctx.write(h, m, prevValue);
   //         if (t.snapshot === ctx) {
-  //           t.data[field] = prevValue;
-  //           const v: any = t.prev.record.data[field];
-  //           Record.markChanged(t, field, v !== prevValue, prevValue);
+  //           t.data[m] = prevValue;
+  //           const v: any = t.prev.record.data[m];
+  //           Record.markChanged(t, m, v !== prevValue, prevValue);
   //         }
   //       }
   //     });
@@ -289,32 +289,32 @@ export class Hints {
     return o ? o.hint : undefined
   }
 
-  static instance(o: Instance | undefined, field?: FieldKey | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
+  static instance(o: Instance | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const obj = (o === undefined)
       ? 'nil'
       : (typeless
         ? (stamp === undefined ? `#${o.id}` : `v${stamp}t${tran}#${o.id}`)
         : (stamp === undefined ? `#${o.id} ${o.hint}` : `v${stamp}t${tran}#${o.id} ${o.hint}`))
-    return field !== undefined ? `${obj}.${field.toString()}` : obj
+    return m !== undefined ? `${obj}.${m.toString()}` : obj
   }
 
-  static record(r: Record, field?: FieldKey, typeless?: boolean): string {
+  static record(r: Record, m?: Member, typeless?: boolean): string {
     const o = Utils.get<Instance | undefined>(r.data, SYM_INSTANCE)
-    return Hints.instance(o, field, r.snapshot.timestamp, r.snapshot.id, typeless)
+    return Hints.instance(o, m, r.snapshot.timestamp, r.snapshot.id, typeless)
   }
 
   static conflicts(conflicts: Record[]): string {
     return conflicts.map(ours => {
       const items: string[] = []
-      ours.conflicts.forEach((theirs: Record, field: FieldKey) => {
-        items.push(Hints.conflictingFieldHint(field, ours, theirs))
+      ours.conflicts.forEach((theirs: Record, m: Member) => {
+        items.push(Hints.conflictingFieldHint(m, ours, theirs))
       })
       return items.join(', ')
     }).join(', ')
   }
 
-  static conflictingFieldHint(field: FieldKey, ours: Record, theirs: Record): string {
-    return Hints.record(theirs, field)
+  static conflictingFieldHint(m: Member, ours: Record, theirs: Record): string {
+    return Hints.record(theirs, m)
   }
 }
 

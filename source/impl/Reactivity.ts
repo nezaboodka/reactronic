@@ -5,7 +5,7 @@
 
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Record, FieldKey, Observable, FieldHint, Observer, Instance } from './Data'
+import { Record, Member, Observable, FieldHint, Observer, Instance } from './Data'
 import { Snapshot, Hints, NIL, SYM_INSTANCE, SYM_METHOD, SYM_UNMOUNT, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
 import { Transaction } from './Transaction'
 import { MonitorImpl } from './MonitorImpl'
@@ -21,7 +21,7 @@ type Call = { context: Snapshot, record: Record, result: CallResult, reuse: bool
 
 export class Method extends Cache<any> {
   readonly instance: Instance
-  readonly member: FieldKey
+  readonly member: Member
 
   setup(options: Partial<Options>): Options { return Method.setup(this, options) }
   get options(): Options { return this.weak().result.options }
@@ -33,7 +33,7 @@ export class Method extends Cache<any> {
   invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.instance(this.instance, this.member)})` : 'invalidate()', Method.invalidate, this) }
   pullResult(args?: any[]): any { return this.call(true, args).value }
 
-  constructor(instance: Instance, member: FieldKey) {
+  constructor(instance: Instance, member: Member) {
     super()
     this.instance = instance
     this.member = member
@@ -111,33 +111,33 @@ export class Method extends Cache<any> {
 
   private write(): Call {
     const ctx = Snapshot.writable()
-    const f = this.member
-    const r: Record = ctx.write(this.instance, f, SYM_INSTANCE, this)
+    const m = this.member
+    const r: Record = ctx.write(this.instance, m, SYM_INSTANCE, this)
     let c: CallResult = this.from(r)
     if (c.record !== r) {
       const c2 = new CallResult(this, r, c)
-      c = r.data[f] = c2.reenterOver(c)
+      c = r.data[m] = c2.reenterOver(c)
       ctx.bump(r.prev.record.snapshot.timestamp)
-      Snapshot.markChanged(r, f, c, true)
+      Snapshot.markChanged(r, m, c, true)
     }
     return { context: ctx, record: r, result: c, reuse: true }
   }
 
   private from(r: Record): CallResult {
-    const f = this.member
-    let c: CallResult = r.data[f]
+    const m = this.member
+    let c: CallResult = r.data[m]
     if (c.method !== this) {
-      const hint: string = Dbg.isOn ? `${Hints.instance(this.instance, f)}/initialize` : /* istanbul ignore next */ 'Cache.init'
+      const hint: string = Dbg.isOn ? `${Hints.instance(this.instance, m)}/initialize` : /* istanbul ignore next */ 'Cache.init'
       const spawn = r.snapshot.completed || r.prev.record !== NIL
       c = Transaction.runAs<CallResult>(hint, spawn, undefined, this, (): CallResult => {
         const o = this.instance
         let r2: Record = Snapshot.readable().read(o)
-        let c2 = r2.data[f] as CallResult
+        let c2 = r2.data[m] as CallResult
         if (c2.method !== this) {
-          r2 = Snapshot.writable().write(o, f, SYM_INSTANCE, this)
-          c2 = r2.data[f] = new CallResult(this, r2, c2)
+          r2 = Snapshot.writable().write(o, m, SYM_INSTANCE, this)
+          c2 = r2.data[m] = new CallResult(this, r2, c2)
           c2.invalid.since = -1 // indicates blank value
-          Snapshot.markChanged(r2, f, c2, true)
+          Snapshot.markChanged(r2, m, c2, true)
         }
         return c2
       })
@@ -172,7 +172,7 @@ export class Method extends Cache<any> {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c: CallResult = call.result
-    c.invalidateDueTo(c, {record: NIL, field: self.member, times: 0}, ctx.timestamp, ctx.triggers)
+    c.invalidateDueTo(c, {record: NIL, member: self.member, times: 0}, ctx.timestamp, ctx.triggers)
   }
 
   private static setup(self: Method, options: Partial<Options>): Options {
@@ -257,19 +257,19 @@ class CallResult extends Observable implements Observer {
     if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
       const notSelfInvalidation = value.isComputed ||
         cause.record.snapshot !== this.record.snapshot ||
-        !cause.record.changes.has(cause.field)
+        !cause.record.changes.has(cause.member)
       if (notSelfInvalidation) {
         this.invalid.cause = cause
         this.invalid.since = since
         const isTrigger = this.options.kind === Kind.Trigger && this.record.data[SYM_UNMOUNT] === undefined
-        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.field)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
+        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
         this.unsubscribeFromAll()
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
         else if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, field: this.method.member, times: 0}, since, triggers))
+          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, member: this.method.member, times: 0}, since, triggers))
         if (!this.worker.isFinished && this !== value)
-          this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.field)}`), this.worker)
+          this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), this.worker)
       }
       else if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, '║', 'x', `${this.hint()} invalidation is skipped`)
     }
@@ -402,20 +402,20 @@ class CallResult extends Observable implements Observer {
       t.recompute(true, true)
   }
 
-  private static markViewed(record: Record, field: FieldKey, value: Observable, kind: Kind, weak: boolean): void {
+  private static markViewed(r: Record, m: Member, value: Observable, kind: Kind, weak: boolean): void {
     const c: CallResult | undefined = CallResult.current // alias
-    if (kind !== Kind.Action && c && c.options.kind !== Kind.Action && field !== SYM_INSTANCE) {
+    if (kind !== Kind.Action && c && c.options.kind !== Kind.Action && m !== SYM_INSTANCE) {
       const ctx = Snapshot.readable()
-      ctx.bump(record.snapshot.timestamp)
+      ctx.bump(r.snapshot.timestamp)
       const t = weak ? -1 : ctx.timestamp
-      if (!c.subscribeTo(record, field, value, t))
-        c.invalidateDueTo(value, {record, field, times: 0}, ctx.timestamp, ctx.triggers)
+      if (!c.subscribeTo(r, m, value, t))
+        c.invalidateDueTo(value, {record: r, member: m, times: 0}, ctx.timestamp, ctx.triggers)
     }
   }
 
-  private static markChanged(r: Record, field: FieldKey, value: any, changed: boolean): void {
-    changed ? r.changes.add(field) : r.changes.delete(field)
-    if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log('║', '  ♦', `${Hints.record(r, field)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.record(r, field)} = ${valueHint(value)}`, undefined, ' (same as previous)')
+  private static markChanged(r: Record, m: Member, value: any, changed: boolean): void {
+    changed ? r.changes.add(m) : r.changes.delete(m)
+    if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log('║', '  ♦', `${Hints.record(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.record(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -432,24 +432,24 @@ class CallResult extends Observable implements Observer {
       const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, o: Instance) => {
         if (!r.changes.has(SYM_UNMOUNT))
-          r.changes.forEach(f => CallResult.finalizeFieldChange(false, since, r, f, triggers))
+          r.changes.forEach(m => CallResult.finalizeFieldChange(false, since, r, m, triggers))
         else
-          for (const f in r.prev.record.data)
-            CallResult.finalizeFieldChange(true, since, r, f, triggers)
+          for (const m in r.prev.record.data)
+            CallResult.finalizeFieldChange(true, since, r, m, triggers)
       })
     }
     else {
       snapshot.changeset.forEach((r: Record, o: Instance) =>
-        r.changes.forEach(f => CallResult.finalizeFieldChange(true, since, r, f)))
+        r.changes.forEach(m => CallResult.finalizeFieldChange(true, since, r, m)))
     }
   }
 
-  private static finalizeFieldChange(unsubscribe: boolean, timestamp: number, record: Record, field: FieldKey, triggers?: Observer[]): void {
+  private static finalizeFieldChange(unsubscribe: boolean, timestamp: number, r: Record, m: Member, triggers?: Observer[]): void {
     if (triggers) {
-      const prev = record.prev.record.data[field] as Observable
+      const prev = r.prev.record.data[m] as Observable
       if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
-        prev.replacement = record
-        const cause: FieldHint = { record, field, times: 0 }
+        prev.replacement = r
+        const cause: FieldHint = { record: r, member: m, times: 0 }
         if (prev instanceof CallResult && (prev.invalid.since === TOP_TIMESTAMP || prev.invalid.since <= 0)) {
           prev.invalid.cause = cause
           prev.invalid.since = timestamp
@@ -459,18 +459,18 @@ class CallResult extends Observable implements Observer {
           prev.observers.forEach(c => c.invalidateDueTo(prev, cause, timestamp, triggers))
       }
     }
-    const cache = record.data[field]
-    if (cache instanceof CallResult && cache.record === record) {
+    const cache = r.data[m]
+    if (cache instanceof CallResult && cache.record === r) {
       if (unsubscribe)
         cache.unsubscribeFromAll()
       // Clear recomputing status of previous cached result
-      const prev = cache.record.prev.record.data[field]
+      const prev = cache.record.prev.record.data[m]
       if (prev instanceof CallResult && prev.invalid.recomputing === cache)
         prev.invalid.recomputing = undefined
       // Performance tracking
       if (Hooks.performanceWarningThreshold > 0) {
         cache.observables.forEach((hint, value) => {
-          if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${cache.hint()} uses ${Hints.record(hint.record, hint.field)} ${hint.times} times`, 0, ' *** WARNING ***')
+          if (hint.times > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${cache.hint()} uses ${Hints.record(hint.record, hint.member)} ${hint.times} times`, 0, ' *** WARNING ***')
         })
       }
     }
@@ -482,12 +482,12 @@ class CallResult extends Observable implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this)
-      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.member)} is unsubscribed from ${Hints.record(hint.record, hint.field, true)}`)
+      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.member)} is unsubscribed from ${Hints.record(hint.record, hint.member, true)}`)
     })
     this.observables.clear()
   }
 
-  private subscribeTo(record: Record, field: FieldKey, value: Observable, timestamp: number): boolean {
+  private subscribeTo(r: Record, m: Member, value: Observable, timestamp: number): boolean {
     let result = value.replacement === undefined
     if (result && timestamp !== -1)
       result = !(value instanceof CallResult && timestamp >= value.invalid.since)
@@ -502,38 +502,38 @@ class CallResult extends Observable implements Observer {
       if (!value.observers)
         value.observers = new Set<CallResult>()
       // Two-way linking
-      const hint: FieldHint = {record, field, times}
+      const hint: FieldHint = {record: r, member: m, times}
       value.observers.add(this)
       this.observables.set(value, hint)
-      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.method.member)} is subscribed to ${Hints.record(hint.record, hint.field)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
+      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.method.member)} is subscribed to ${Hints.record(hint.record, hint.member)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
     }
-    return result || value.replacement === record
+    return result || value.replacement === r
   }
 
-  private static createMethodTrap(h: Instance, field: FieldKey, options: OptionsImpl): F<any> {
-    const method = new Method(h, field)
+  private static createMethodTrap(o: Instance, m: Member, options: OptionsImpl): F<any> {
+    const method = new Method(o, m)
     const methodTrap: F<any> = (...args: any[]): any =>
       method.call(false, args).ret
     Utils.set(methodTrap, SYM_METHOD, method)
     return methodTrap
   }
 
-  private static applyOptions(proto: any, field: FieldKey, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+  private static applyOptions(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     // Setup options
     const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
-    const existing: CallResult | undefined = blank[field]
-    const method = existing ? existing.method : new Method(NO_INSTANCE, field)
+    const existing: CallResult | undefined = blank[m]
+    const method = existing ? existing.method : new Method(NO_INSTANCE, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
     const value =  new CallResult(method, NIL, new OptionsImpl(body, opts, options, implicit))
-    blank[field] = value
+    blank[m] = value
     // Add to the list if it's a trigger
     if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
       const triggers = Hooks.acquireMeta(proto, SYM_TRIGGERS)
-      triggers[field] = value
+      triggers[m] = value
     }
     else if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
       const triggers = Hooks.getMeta<any>(proto, SYM_TRIGGERS)
-      delete triggers[field]
+      delete triggers[m]
     }
     return value.options
   }
@@ -557,13 +557,13 @@ class CallResult extends Observable implements Observer {
 
 function chainHint(cause: FieldHint): string[] {
   const result: string[] = []
-  let value: Observable = cause.record.data[cause.field]
+  let value: Observable = cause.record.data[cause.member]
   while (value instanceof CallResult && value.invalid.cause) {
-    result.push(Hints.record(cause.record, cause.field))
+    result.push(Hints.record(cause.record, cause.member))
     cause = value.invalid.cause
-    value = cause.record.data[cause.field]
+    value = cause.record.data[cause.member]
   }
-  result.push(Hints.record(cause.record, cause.field))
+  result.push(Hints.record(cause.record, cause.member))
   return result
 }
 
