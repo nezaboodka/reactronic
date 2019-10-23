@@ -130,7 +130,7 @@ class MyView extends Component<{model: MyModel}> {
 ```
 
 ``` tsx
-export class Component<P> extends React.Component<P> {
+class Component<P> extends React.Component<P> {
   @cached
   render(): JSX.Element {
     throw new Error('render method is undefined')
