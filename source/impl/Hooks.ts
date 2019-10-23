@@ -179,8 +179,7 @@ export class Hooks implements ProxyHandler<Instance> {
     // Setup method trap
     const opts = Hooks.applyOptions(proto, method, pd.value, true, configurable, options, implicit)
     const trap = function(this: any): any {
-      const stateful = this instanceof State
-      const o = stateful ? Utils.get<Instance>(this, SYM_INSTANCE) : Hooks.acquireInstance(this)
+      const o = this instanceof State ? Utils.get<Instance>(this, SYM_INSTANCE) : Hooks.acquireInstance(this)
       const value = Hooks.createMethodTrap(o, method, opts)
       Object.defineProperty(o.stateless, method, { value, enumerable, configurable })
       return value
