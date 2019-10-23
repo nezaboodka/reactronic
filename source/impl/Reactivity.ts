@@ -526,7 +526,7 @@ class CallResult extends Observable implements Observer {
     const opts = existing ? existing.options : OptionsImpl.INITIAL
     const value =  new CallResult(method, NIL, new OptionsImpl(body, opts, options, implicit))
     blank[field] = value
-    // Add to the list if a trigger
+    // Add to the list if it's a trigger
     if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
       const triggers = Hooks.acquireMeta(proto, SYM_TRIGGERS)
       triggers[field] = value
