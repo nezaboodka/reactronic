@@ -25,7 +25,7 @@ export class Observable {
 export interface Observer {
   hint(notran?: boolean): string
   readonly invalid: { since: number }
-  invalidateDueTo(value: Observable, cause: FieldHint, since: number, triggers: Observer[]): void
+  invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void
   recompute(now: boolean, nothrow: boolean): void
 }
 
@@ -33,7 +33,7 @@ export interface Observer {
 
 export type Member = PropertyKey
 
-export interface FieldHint {
+export interface MemberHint {
   readonly record: Record
   readonly member: Member
   readonly times: number

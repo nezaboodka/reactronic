@@ -35,7 +35,7 @@ export class Utils {
     }
   }
 
-  static copyAllFields(source: any, target: any): any {
+  static copyAllMembers(source: any, target: any): any {
     for (const m of Object.getOwnPropertyNames(source))
       target[m] = source[m]
     for (const m of Object.getOwnPropertySymbols(source))
@@ -50,7 +50,7 @@ export class Utils {
   //   return cloned
   // }
 
-  // static copyAllFields(source: any, target: any): void {
+  // static copyAllMembers(source: any, target: any): void {
   //   const descriptors = Object.getOwnPropertyDescriptors(source)
   //   Object.defineProperties(target, descriptors)
   // }

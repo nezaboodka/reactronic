@@ -5,7 +5,7 @@
 
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Record, Member, Observable, FieldHint, Observer, Instance } from './Data'
+import { Record, Member, Observable, MemberHint, Observer, Instance } from './Data'
 import { Snapshot, Hints, NIL, SYM_INSTANCE, SYM_METHOD, SYM_UNMOUNT, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
 import { Transaction } from './Transaction'
 import { MonitorImpl } from './MonitorImpl'
@@ -198,8 +198,8 @@ class CallResult extends Observable implements Observer {
   get isComputed(): boolean { return true }
   readonly method: Method
   readonly record: Record
-  readonly observables: Map<Observable, FieldHint>
-  readonly invalid: { since: number, cause?: FieldHint, recomputing?: CallResult }
+  readonly observables: Map<Observable, MemberHint>
+  readonly invalid: { since: number, cause?: MemberHint, recomputing?: CallResult }
   options: OptionsImpl
   args: any[]
   ret: any
@@ -212,7 +212,7 @@ class CallResult extends Observable implements Observer {
     super(undefined)
     this.method = method
     this.record = record
-    this.observables = new Map<Observable, FieldHint>()
+    this.observables = new Map<Observable, MemberHint>()
     this.invalid = { since: 0, cause: undefined, recomputing: undefined }
     if (init instanceof CallResult) {
       this.options = init.options
@@ -253,7 +253,7 @@ class CallResult extends Observable implements Observer {
       this.ret = Promise.reject(this.error)
   }
 
-  invalidateDueTo(value: Observable, cause: FieldHint, since: number, triggers: Observer[]): void {
+  invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void {
     if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
       const notSelfInvalidation = value.isComputed ||
         cause.record.snapshot !== this.record.snapshot ||
@@ -432,24 +432,24 @@ class CallResult extends Observable implements Observer {
       const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, o: Instance) => {
         if (!r.changes.has(SYM_UNMOUNT))
-          r.changes.forEach(m => CallResult.finalizeFieldChange(false, since, r, m, triggers))
+          r.changes.forEach(m => CallResult.finalizeChange(false, since, r, m, triggers))
         else
           for (const m in r.prev.record.data)
-            CallResult.finalizeFieldChange(true, since, r, m, triggers)
+            CallResult.finalizeChange(true, since, r, m, triggers)
       })
     }
     else {
       snapshot.changeset.forEach((r: Record, o: Instance) =>
-        r.changes.forEach(m => CallResult.finalizeFieldChange(true, since, r, m)))
+        r.changes.forEach(m => CallResult.finalizeChange(true, since, r, m)))
     }
   }
 
-  private static finalizeFieldChange(unsubscribe: boolean, timestamp: number, r: Record, m: Member, triggers?: Observer[]): void {
+  private static finalizeChange(unsubscribe: boolean, timestamp: number, r: Record, m: Member, triggers?: Observer[]): void {
     if (triggers) {
       const prev = r.prev.record.data[m] as Observable
       if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
         prev.replacement = r
-        const cause: FieldHint = { record: r, member: m, times: 0 }
+        const cause: MemberHint = { record: r, member: m, times: 0 }
         if (prev instanceof CallResult && (prev.invalid.since === TOP_TIMESTAMP || prev.invalid.since <= 0)) {
           prev.invalid.cause = cause
           prev.invalid.since = timestamp
@@ -502,7 +502,7 @@ class CallResult extends Observable implements Observer {
       if (!value.observers)
         value.observers = new Set<CallResult>()
       // Two-way linking
-      const hint: FieldHint = {record: r, member: m, times}
+      const hint: MemberHint = {record: r, member: m, times}
       value.observers.add(this)
       this.observables.set(value, hint)
       if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.method.member)} is subscribed to ${Hints.record(hint.record, hint.member)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
@@ -555,7 +555,7 @@ class CallResult extends Observable implements Observer {
   }
 }
 
-function chainHint(cause: FieldHint): string[] {
+function chainHint(cause: MemberHint): string[] {
   const result: string[] = []
   let value: Observable = cause.record.data[cause.member]
   while (value instanceof CallResult && value.invalid.cause) {

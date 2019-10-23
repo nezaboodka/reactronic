@@ -177,7 +177,7 @@ export class Snapshot implements Context {
         if (Dbg.isOn && Dbg.trace.changes) Dbg.log('║╠', '', `${Hints.record(ours, m)} ${conflict ? '<>' : '=='} ${Hints.record(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
       }
     })
-    Utils.copyAllFields(merged, ours.data) // overwrite with merged copy
+    Utils.copyAllMembers(merged, ours.data) // overwrite with merged copy
     ours.prev.record = head // rebase is completed
     return counter
   }
@@ -193,9 +193,9 @@ export class Snapshot implements Context {
       if (!error) {
         o.head = r
         if (Dbg.isOn && Dbg.trace.changes) {
-          const fields: string[] = []
-          r.changes.forEach(m => fields.push(m.toString()))
-          const s = fields.join(', ')
+          const members: string[] = []
+          r.changes.forEach(m => members.push(m.toString()))
+          const s = members.join(', ')
           Dbg.log('║', '√', `${Hints.record(r)}(${s}) is ${r.prev.record === NIL ? 'constructed' : `applied on top of ${Hints.record(r.prev.record)}`}`)
         }
       }
@@ -307,13 +307,13 @@ export class Hints {
     return conflicts.map(ours => {
       const items: string[] = []
       ours.conflicts.forEach((theirs: Record, m: Member) => {
-        items.push(Hints.conflictingFieldHint(m, ours, theirs))
+        items.push(Hints.conflictingMemberHint(m, ours, theirs))
       })
       return items.join(', ')
     }).join(', ')
   }
 
-  static conflictingFieldHint(m: Member, ours: Record, theirs: Record): string {
+  static conflictingMemberHint(m: Member, ours: Record, theirs: Record): string {
     return Hints.record(theirs, m)
   }
 }
