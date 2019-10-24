@@ -280,9 +280,9 @@ class CallResult extends Observable implements Observer {
     if (now || delay === -1) {
       if (!this.error && (this.options.kind === Kind.Action || !this.invalid.recomputing)) {
         try {
-          const result: CallResult = this.method.call(false, undefined)
-          if (result.ret instanceof Promise)
-            result.ret.catch(error => { /* nop */ }) // bad idea to hide an error
+          const c: CallResult = this.method.call(false, undefined)
+          if (c.ret instanceof Promise)
+            c.ret.catch(error => { /* nop */ }) // bad idea to hide an error
         }
         catch (e) {
           if (!nothrow)
