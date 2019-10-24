@@ -382,7 +382,7 @@ class CallResult extends Observable implements Observer {
     Transaction.off<void>(() => {
       const leave = (): void => {
         Method.run<void>(undefined, Transaction.runAs, 'Monitor.leave',
-          true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+          true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.OFF, undefined,
           MonitorImpl.leave, mon, this)
       }
       this.worker.whenFinished().then(leave, leave)
