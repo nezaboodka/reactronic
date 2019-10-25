@@ -31,6 +31,8 @@ test('Reentrance.CancelPrevious', async t => {
     const responses = requests.map(x => app.model.load(x.url, x.delay))
     t.is(loading.workerCount, 3)
     t.is(loading.workers.size, 3)
+    loading.workers.forEach(w =>
+      t.assert(w.hint.indexOf('#22 AsyncDemo.load/') === 0))
     await all(responses)
   }
   catch (error) { /* istanbul ignore next */
