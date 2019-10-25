@@ -375,7 +375,7 @@ class CallResult extends Observable implements Observer {
   private monitorEnter(mon: Monitor): void {
     Method.run<void>(undefined, Transaction.runAs, 'Monitor.enter',
       true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
-      MonitorImpl.enter, mon, this)
+      MonitorImpl.enter, mon, this.worker)
   }
 
   private monitorLeave(mon: Monitor): void {
@@ -383,7 +383,7 @@ class CallResult extends Observable implements Observer {
       const leave = (): void => {
         Method.run<void>(undefined, Transaction.runAs, 'Monitor.leave',
           true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.OFF, undefined,
-          MonitorImpl.leave, mon, this)
+          MonitorImpl.leave, mon, this.worker)
       }
       this.worker.whenFinished().then(leave, leave)
     })
