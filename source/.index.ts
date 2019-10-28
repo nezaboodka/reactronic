@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 export { all, sleep } from './util/Utils'
-export { Options, Kind, Reentrance, Trace } from './Options'
+export { Options, Kind, Reentrance, Trace, TraceLevel } from './Options'
 export { Tools } from './Tools'
 export { State } from './impl/Hooks'
 export { resolved, nonreactive, separate, state, stateless, action, trigger,

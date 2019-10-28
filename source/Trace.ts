@@ -21,3 +21,65 @@ export interface Trace {
   readonly margin1: number
   readonly margin2: number
 }
+
+export class TraceLevel {
+
+  static Off: Trace | undefined = undefined
+
+  static Basic: Trace = {
+    silent: false,
+    transactions: true,
+    methods: true,
+    steps: false,
+    monitors: true,
+    reads: false,
+    writes: false,
+    changes: true,
+    invalidations: true,
+    errors: true,
+    warnings: true,
+    gc: false,
+    color: 37,
+    prefix: '',
+    margin1: 0,
+    margin2: 0,
+  }
+
+  static Minimal: Trace = {
+    silent: false,
+    transactions: false,
+    methods: false,
+    steps: false,
+    monitors: false,
+    reads: false,
+    writes: false,
+    changes: false,
+    invalidations: true,
+    errors: true,
+    warnings: true,
+    gc: false,
+    color: 37,
+    prefix: '',
+    margin1: 0,
+    margin2: 0,
+  }
+
+  static Noisy: Trace = {
+    silent: false,
+    transactions: true,
+    methods: true,
+    steps: true,
+    monitors: true,
+    reads: true,
+    writes: true,
+    changes: true,
+    invalidations: true,
+    errors: true,
+    warnings: true,
+    gc: false,
+    color: 37,
+    prefix: '',
+    margin1: 0,
+    margin2: 0,
+  }
+}
