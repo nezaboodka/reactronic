@@ -6,51 +6,51 @@
 import * as React from 'react'
 import { State, Action, Cache, stateless, trigger, cached, separate, Tools as RT, Trace } from '.index'
 
-export function reactive(render: (counter: number) => JSX.Element, trace?: Partial<Trace>): JSX.Element {
-  const [state, refresh] = React.useState<ReactState>(
+export function reactive(render: (counter: number) => JSX.Element, trace?: Partial<Trace>, action?: Action): JSX.Element {
+  const [state, refresh] = React.useState<ReactState<JSX.Element>>(
     !trace ? createReactState : () => createReactState(trace))
   const rx = state.rx
   rx.counter = state.counter
   rx.refresh = refresh // just in case React will change refresh on each rendering
-  React.useEffect(rx.unmountEffect, [])
-  return rx.jsx(render)
+  React.useEffect(rx.unmount, [])
+  return rx.view(render, action)
 }
 
 // Internal
 
-type ReactState = { rx: Rx, counter: number }
+type ReactState<V> = { rx: Rx<V>, counter: number }
 
-class Rx extends State {
+class Rx<V> extends State {
   @cached
-  jsx(render: (counter: number) => JSX.Element): JSX.Element {
-    return render(this.counter)
+  view(generate: (counter: number) => V, action?: Action): V {
+    return action ? action.inspect(() => generate(this.counter)) : generate(this.counter)
   }
 
   @trigger
   keepFresh(): void {
-    if (Cache.of(this.jsx).invalid)
+    if (Cache.of(this.view).invalid)
       separate(this.refresh, {rx: this, counter: this.counter + 1})
   }
 
   @stateless counter: number = 0
-  @stateless refresh: (next: ReactState) => void = nop
-  @stateless readonly unmountEffect = (): (() => void) => {
+  @stateless refresh: (next: ReactState<V>) => void = nop
+  @stateless readonly unmount = (): (() => void) => {
     return (): void => { separate(Cache.unmount, this) }
   }
 }
 
-function createReactState(trace?: Partial<Trace>): ReactState {
+function createReactState<V>(trace?: Partial<Trace>): ReactState<V> {
   const hint = RT.isTraceOn ? getComponentName() : '<rx>'
-  const rx = Action.runAs<Rx>(hint, false, trace, undefined, createRx, hint, trace)
+  const rx = Action.runAs<Rx<V>>(hint, false, trace, undefined, createRx, hint, trace)
   return {rx, counter: 0}
 }
 
-function createRx(hint: string | undefined, trace: Trace | undefined): Rx {
-  const rx = new Rx()
+function createRx<V>(hint: string | undefined, trace: Trace | undefined): Rx<V> {
+  const rx = new Rx<V>()
   if (hint)
     RT.setTraceHint(rx, hint)
   if (trace) {
-    Cache.of(rx.jsx).setup({trace})
+    Cache.of(rx.view).setup({trace})
     Cache.of(rx.keepFresh).setup({trace})
   }
   return rx
@@ -66,8 +66,8 @@ function getComponentName(): string {
   const stack = error.stack || ''
   Error.stackTraceLimit = restore
   const lines = stack.split('\n')
-  const i = lines.findIndex(x => x.indexOf('.reactiveRender') >= 0) || 6
+  const i = lines.findIndex(x => x.indexOf(reactive.name) >= 0) || 6
   let result: string = lines[i + 1] || ''
   result = (result.match(/^\s*at\s*(\S+)/) || [])[1]
-  return `<${result}>`
+  return result !== undefined ? `<${result}>` : '<Rx>'
 }
