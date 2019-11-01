@@ -11,6 +11,12 @@
     "build/": true,
   },
   "typescript.tsdk": "node_modules\\typescript\\lib",
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact",
+  ],
   "cSpell.ignorePaths": [
     "node_modules",
     "**/node_modules",
