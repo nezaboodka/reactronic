@@ -26,8 +26,8 @@ export class Tools {
 
 // Operators
 
-export function getStaleWhileRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return Cache.of(method as any as F<T>).getStaleWhileRevalidate(args) // overcome type safety
+export function getStaleResultWhileRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
+  return Cache.of(method as any as F<T>).getStaleResultWhileRevalidate(args) // overcome type safety
 }
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {

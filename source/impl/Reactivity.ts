@@ -31,7 +31,7 @@ export class Method extends Cache<any> {
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reuse }
   invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.ref(this.ref, this.member)})` : 'invalidate()', Method.invalidate, this) }
-  getStaleWhileRevalidate(args?: any[]): any { return this.call(true, args).value }
+  getStaleResultWhileRevalidate(args?: any[]): any { return this.call(true, args).value }
 
   constructor(ref: ObjectRef, member: Member) {
     super()
