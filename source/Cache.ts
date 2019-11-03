@@ -17,7 +17,7 @@ export abstract class Cache<T> {
 
   abstract setup(options: Partial<Options>): Options
   abstract invalidate(): void
-  abstract getStaleResultWhileRevalidate(args?: any[]): T | undefined
+  abstract getCachedResultAndRevalidate(args?: any[]): T | undefined
 
   static of<T>(method: F<T>): Cache<T> { return Method.of(method) }
   static unmount(...objects: any[]): void { Method.unmount(...objects) }
