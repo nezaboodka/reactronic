@@ -226,15 +226,15 @@ export class Transaction extends Action {
       this.workers--
       if (this.sealed && this.workers === 0) {
         this.finish()
-        Transaction.off(Transaction.recomputeTriggers, this)
+        Transaction.off(Transaction.revalidateTriggers, this)
       }
       Transaction.running = outer
     }
     return result
   }
 
-  private static recomputeTriggers(t: Transaction): void {
-    t.snapshot.triggers.map(x => x.recompute(false, false))
+  private static revalidateTriggers(t: Transaction): void {
+    t.snapshot.triggers.map(x => x.revalidate(false, false))
   }
 
   private static seal(t: Transaction, error?: Error, after?: Transaction): void {

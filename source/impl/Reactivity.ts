@@ -275,7 +275,7 @@ class CallResult extends Observable implements Observer {
     }
   }
 
-  recompute(now: boolean, nothrow: boolean): void {
+  revalidate(now: boolean, nothrow: boolean): void {
     const delay = this.options.delay
     if (now || delay === -1) {
       if (!this.error && (this.options.kind === Kind.Action || !this.invalid.recomputing)) {
@@ -293,7 +293,7 @@ class CallResult extends Observable implements Observer {
     else if (delay === 0)
       this.addToAsyncTriggerBatch()
     else if (delay > 0) // ignore disabled triggers (delay -2)
-      setTimeout(() => this.recompute(true, true), delay)
+      setTimeout(() => this.revalidate(true, true), delay)
   }
 
   reenterOver(head: CallResult): this {
@@ -399,7 +399,7 @@ class CallResult extends Observable implements Observer {
     const triggers = CallResult.asyncTriggerBatch
     CallResult.asyncTriggerBatch = [] // reset
     for (const t of triggers)
-      t.recompute(true, true)
+      t.revalidate(true, true)
   }
 
   private static markViewed(r: Record, m: Member, value: Observable, kind: Kind, weak: boolean): void {

@@ -26,7 +26,7 @@ export interface Observer {
   hint(notran?: boolean): string
   readonly invalid: { since: number }
   invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void
-  recompute(now: boolean, nothrow: boolean): void
+  revalidate(now: boolean, nothrow: boolean): void
 }
 
 // Record
