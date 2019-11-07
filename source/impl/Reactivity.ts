@@ -5,8 +5,8 @@
 
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Record, Member, Observable, MemberHint, Observer, ObjectRef } from './Data'
-import { Snapshot, Hints, NIL, SYM_INSTANCE, SYM_METHOD, SYM_UNMOUNT, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
+import { Record, Member, Observable, MemberHint, Observer } from './Data'
+import { Snapshot, ReObject, Hints, NIL, SYM_OBJECT, SYM_METHOD, SYM_UNMOUNT, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
 import { Transaction } from './Transaction'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -15,12 +15,12 @@ import { Monitor, Worker } from '../Monitor'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-const NIL_REF = new ObjectRef(undefined, undefined, Hooks.proxy, NIL, 'nil')
+const NIL_INSTANCE = new ReObject(undefined, undefined, Hooks.proxy, NIL, 'nil')
 
 type Call = { context: Snapshot, record: Record, result: CallResult, reuse: boolean }
 
 export class Method extends Cache<any> {
-  readonly ref: ObjectRef
+  readonly instance: ReObject
   readonly member: Member
 
   setup(options: Partial<Options>): Options { return Method.setup(this, options) }
@@ -30,12 +30,12 @@ export class Method extends Cache<any> {
   get error(): boolean { return this.weak().result.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reuse }
-  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.ref(this.ref, this.member)})` : 'invalidate()', Method.invalidate, this) }
+  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.obj(this.instance, this.member)})` : 'invalidate()', Method.invalidate, this) }
   getCachedResultAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
-  constructor(ref: ObjectRef, member: Member) {
+  constructor(instance: ReObject, member: Member) {
     super()
-    this.ref = ref
+    this.instance = instance
     this.member = member
   }
 
@@ -44,7 +44,7 @@ export class Method extends Cache<any> {
     const ctx = call.context
     const c: CallResult = call.result
     if (!call.reuse && (!weak || !c.invalid.recomputing)) {
-      const hint: string = Dbg.isOn ? `${Hints.ref(this.ref, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
+      const hint: string = Dbg.isOn ? `${Hints.obj(this.instance, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
@@ -100,7 +100,7 @@ export class Method extends Cache<any> {
 
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
-    const r: Record = ctx.tryRead(this.ref)
+    const r: Record = ctx.tryRead(this.instance)
     const c: CallResult = this.from(r)
     const reuse = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
@@ -112,7 +112,7 @@ export class Method extends Cache<any> {
   private write(): Call {
     const ctx = Snapshot.writable()
     const m = this.member
-    const r: Record = ctx.write(this.ref, m, SYM_INSTANCE, this)
+    const r: Record = ctx.write(this.instance, m, SYM_OBJECT, this)
     let c: CallResult = this.from(r)
     if (c.record !== r) {
       const c2 = new CallResult(this, r, c)
@@ -127,14 +127,14 @@ export class Method extends Cache<any> {
     const m = this.member
     let c: CallResult = r.data[m]
     if (c.method !== this) {
-      const hint: string = Dbg.isOn ? `${Hints.ref(this.ref, m)}/initialize` : /* istanbul ignore next */ 'Cache.init'
+      const hint: string = Dbg.isOn ? `${Hints.obj(this.instance, m)}/initialize` : /* istanbul ignore next */ 'Cache.init'
       const spawn = r.snapshot.completed || r.prev.record !== NIL
       c = Transaction.runAs<CallResult>(hint, spawn, undefined, this, (): CallResult => {
-        const ref = this.ref
-        let r2: Record = Snapshot.readable().read(ref)
+        const o = this.instance
+        let r2: Record = Snapshot.readable().read(o)
         let c2 = r2.data[m] as CallResult
         if (c2.method !== this) {
-          r2 = Snapshot.writable().write(ref, m, SYM_INSTANCE, this)
+          r2 = Snapshot.writable().write(o, m, SYM_OBJECT, this)
           c2 = r2.data[m] = new CallResult(this, r2, c2)
           c2.invalid.since = -1 // indicates blank value
           Snapshot.markChanged(r2, m, c2, true)
@@ -152,14 +152,14 @@ export class Method extends Cache<any> {
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
         if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, this.member)}${existing.result.invalid.cause ? `   <<   ${chainHint(existing.result.invalid.cause).join('   <<   ')}` : ''}`)
-        call.result.compute(this.ref.proxy, argsx)
+        call.result.compute(this.instance.proxy, argsx)
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
         if (call.result.options.kind === Kind.Action || (!call.reuse && !call.result.invalid.recomputing)) {
           call = this.write()
           if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, this.member)}${existing.result.invalid.cause ? `   <<   ${chainHint(existing.result.invalid.cause).join('   <<   ')}` : ''}`)
-          call.result.compute(this.ref.proxy, argsx)
+          call.result.compute(this.instance.proxy, argsx)
         }
       }
       return call.result.ret
@@ -178,7 +178,7 @@ export class Method extends Cache<any> {
   private static setup(self: Method, options: Partial<Options>): Options {
     const call = self.read(undefined)
     const r: Record = call.record
-    const hint: string = Dbg.isOn ? `setup(${Hints.ref(self.ref, self.member)})` : /* istanbul ignore next */ 'Cache.setup()'
+    const hint: string = Dbg.isOn ? `setup(${Hints.obj(self.instance, self.member)})` : /* istanbul ignore next */ 'Cache.setup()'
     return Transaction.runAs(hint, false, undefined, undefined, (): Options => {
       const call2 = self.write()
       const c2: CallResult = call2.result
@@ -404,7 +404,7 @@ class CallResult extends Observable implements Observer {
 
   private static markViewed(r: Record, m: Member, value: Observable, kind: Kind, weak: boolean): void {
     const c: CallResult | undefined = CallResult.current // alias
-    if (kind !== Kind.Action && c && c.options.kind !== Kind.Action && m !== SYM_INSTANCE) {
+    if (kind !== Kind.Action && c && c.options.kind !== Kind.Action && m !== SYM_OBJECT) {
       const ctx = Snapshot.readable()
       ctx.bump(r.snapshot.timestamp)
       const t = weak ? -1 : ctx.timestamp
@@ -430,7 +430,7 @@ class CallResult extends Observable implements Observer {
     if (!error) {
       // Mark previous values as replaced, invalidate observers, and reset recomputing status
       const triggers = snapshot.triggers
-      snapshot.changeset.forEach((r: Record, ref: ObjectRef) => {
+      snapshot.changeset.forEach((r: Record, o: ReObject) => {
         if (!r.changes.has(SYM_UNMOUNT))
           r.changes.forEach(m => CallResult.finalizeChange(false, since, r, m, triggers))
         else
@@ -439,7 +439,7 @@ class CallResult extends Observable implements Observer {
       })
     }
     else {
-      snapshot.changeset.forEach((r: Record, ref: ObjectRef) =>
+      snapshot.changeset.forEach((r: Record, o: ReObject) =>
         r.changes.forEach(m => CallResult.finalizeChange(true, since, r, m)))
     }
   }
@@ -510,8 +510,8 @@ class CallResult extends Observable implements Observer {
     return result || value.replacement === r
   }
 
-  private static createMethodTrap(ref: ObjectRef, m: Member, options: OptionsImpl): F<any> {
-    const method = new Method(ref, m)
+  private static createMethodTrap(o: ReObject, m: Member, options: OptionsImpl): F<any> {
+    const method = new Method(o, m)
     const methodTrap: F<any> = (...args: any[]): any =>
       method.call(false, args).ret
     Utils.set(methodTrap, SYM_METHOD, method)
@@ -522,7 +522,7 @@ class CallResult extends Observable implements Observer {
     // Setup options
     const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
     const existing: CallResult | undefined = blank[m]
-    const method = existing ? existing.method : new Method(NIL_REF, m)
+    const method = existing ? existing.method : new Method(NIL_INSTANCE, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
     const value =  new CallResult(method, NIL, new OptionsImpl(body, opts, options, implicit))
     blank[m] = value
@@ -588,7 +588,7 @@ function valueHint(value: any): string {
 
 function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
   const t = Transaction.current
-  let res = Dbg.merge(t.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Snapshot.lastId.toString().replace(/[0-9]/g, '-')}`, Dbg.global)
+  let res = Dbg.merge(t.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Snapshot.idGen.toString().replace(/[0-9]/g, '-')}`, Dbg.global)
   res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
   if (CallResult.current)
     res = Dbg.merge({margin2: CallResult.current.margin}, undefined, undefined, res)

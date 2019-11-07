@@ -56,10 +56,10 @@ export class Record {
   }
 }
 
-// ObjectRef
+// Ref
 
-export class ObjectRef {
-  private static id: number = 19
+export class Ref {
+  private static idGen: number = 19
 
   readonly id: number
   readonly stateless: any
@@ -69,10 +69,10 @@ export class ObjectRef {
   writers: number
   hint: string
 
-  constructor(stateless: any, proxy: any, handler: ProxyHandler<ObjectRef>, head: Record, hint: string) {
-    this.id = ++ObjectRef.id
+  constructor(stateless: any, proxy: any, handler: ProxyHandler<Ref>, head: Record, hint: string) {
+    this.id = ++Ref.idGen
     this.stateless = stateless
-    this.proxy = proxy || new Proxy<ObjectRef>(this, handler)
+    this.proxy = proxy || new Proxy<Ref>(this, handler)
     this.head = head
     this.changing = undefined
     this.writers = 0

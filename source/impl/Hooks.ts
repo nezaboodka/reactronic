@@ -8,8 +8,8 @@ import { misuse } from '../util/Dbg'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
-import { Record, Member, Observable, ObjectRef } from './Data'
-import { Snapshot, Hints, NIL, SYM_INSTANCE, SYM_METHOD, SYM_STATELESS, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
+import { Record, Member, Observable } from './Data'
+import { Snapshot, ReObject, Hints, NIL, SYM_OBJECT, SYM_METHOD, SYM_STATELESS, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
@@ -34,8 +34,8 @@ export abstract class State {
 
   /* istanbul ignore next */
   [Symbol.toStringTag](): string {
-    const ref = Utils.get<ObjectRef>(this, SYM_INSTANCE)
-    return Hints.ref(ref)
+    const o = Utils.get<ReObject>(this, SYM_OBJECT)
+    return Hints.obj(o)
   }
 }
 
@@ -84,29 +84,29 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 
 // Hooks
 
-export class Hooks implements ProxyHandler<ObjectRef> {
+export class Hooks implements ProxyHandler<ReObject> {
   static triggersAutoStartDisabled: boolean = false
   static performanceWarningThreshold: number = 10
   static readonly proxy: Hooks = new Hooks()
 
-  getPrototypeOf(ref: ObjectRef): object | null {
-    return Reflect.getPrototypeOf(ref.stateless)
+  getPrototypeOf(o: ReObject): object | null {
+    return Reflect.getPrototypeOf(o.stateless)
   }
 
-  get(ref: ObjectRef, m: Member, receiver: any): any {
+  get(o: ReObject, m: Member, receiver: any): any {
     let result: any
     const ctx = Snapshot.readable()
-    const r: Record = ctx.read(ref)
+    const r: Record = ctx.read(o)
     result = r.data[m]
     if (result instanceof Observable && !result.isComputed) {
       Snapshot.markViewed(r, m, result, Kind.Field, false)
       result = result.value
     }
-    else if (m === SYM_INSTANCE) {
+    else if (m === SYM_OBJECT) {
       // do nothing, just return instance
     }
     else { // value === STATELESS
-      result = Reflect.get(ref.stateless, m, receiver)
+      result = Reflect.get(o.stateless, m, receiver)
       if (result === undefined && m !== Symbol.toPrimitive)
         // Record.markViewed(r, m, false); // treat undefined fields as stateful
         throw misuse(`unassigned properties are not supported: ${Hints.record(r, m)} is used by T${ctx.id} (${ctx.hint})`)
@@ -114,8 +114,8 @@ export class Hooks implements ProxyHandler<ObjectRef> {
     return result
   }
 
-  set(ref: ObjectRef, m: Member, value: any, receiver: any): boolean {
-    const r: Record = Snapshot.writable().write(ref, m, value)
+  set(o: ReObject, m: Member, value: any, receiver: any): boolean {
+    const r: Record = Snapshot.writable().write(o, m, value)
     if (r !== NIL) {
       const curr = r.data[m] as Observable
       const prev = r.prev.record.data[m] as Observable
@@ -131,21 +131,21 @@ export class Hooks implements ProxyHandler<ObjectRef> {
       Snapshot.markChanged(r, m, value, changed)
     }
     else
-      ref.stateless[m] = value
+      o.stateless[m] = value
     return true
   }
 
-  getOwnPropertyDescriptor(ref: ObjectRef, m: Member): PropertyDescriptor | undefined {
-    const r: Record = Snapshot.readable().read(ref)
+  getOwnPropertyDescriptor(o: ReObject, m: Member): PropertyDescriptor | undefined {
+    const r: Record = Snapshot.readable().read(o)
     const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
     if (pd)
       pd.configurable = pd.writable = true
     return pd
   }
 
-  ownKeys(ref: ObjectRef): Member[] {
+  ownKeys(o: ReObject): Member[] {
     // TODO: Better implementation to avoid filtering
-    const r: Record = Snapshot.readable().read(ref)
+    const r: Record = Snapshot.readable().read(o)
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
@@ -179,9 +179,9 @@ export class Hooks implements ProxyHandler<ObjectRef> {
     // Setup method trap
     const opts = Hooks.applyOptions(proto, method, pd.value, true, configurable, options, implicit)
     const trap = function(this: any): any {
-      const ref = this instanceof State ? Utils.get<ObjectRef>(this, SYM_INSTANCE) : Hooks.acquireInstance(this)
-      const value = Hooks.createMethodTrap(ref, method, opts)
-      Object.defineProperty(ref.stateless, method, { value, enumerable, configurable })
+      const o = this instanceof State ? Utils.get<ReObject>(this, SYM_OBJECT) : Hooks.acquireInstance(this)
+      const value = Hooks.createMethodTrap(o, method, opts)
+      Object.defineProperty(o.stateless, method, { value, enumerable, configurable })
       return value
     }
     return Object.defineProperty(proto, method, { get: trap, enumerable, configurable })
@@ -200,31 +200,31 @@ export class Hooks implements ProxyHandler<ObjectRef> {
     return proto[sym] || /* istanbul ignore next */ EMPTY_META
   }
 
-  static acquireInstance(obj: any): ObjectRef {
+  static acquireInstance(obj: any): ReObject {
     if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
       throw misuse('only objects can be reactive')
-    let ref = Utils.get<ObjectRef>(obj, SYM_INSTANCE)
-    if (!ref) {
+    let o = Utils.get<ReObject>(obj, SYM_OBJECT)
+    if (!o) {
       const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), SYM_BLANK)
       const initial = new Record(NIL.snapshot, NIL, {...blank})
-      Utils.set(initial.data, SYM_INSTANCE, ref)
+      Utils.set(initial.data, SYM_OBJECT, o)
       Snapshot.freezeRecord(initial)
-      ref = new ObjectRef(obj, obj, Hooks.proxy, initial, obj.constructor.name)
-      Utils.set(obj, SYM_INSTANCE, ref)
+      o = new ReObject(obj, obj, Hooks.proxy, initial, obj.constructor.name)
+      Utils.set(obj, SYM_OBJECT, o)
       // Hooks.decorateField(false, {kind: Kind.Stateful}, obj, UNMOUNT)
     }
-    return ref
+    return o
   }
 
-  static createInstance(stateless: any, blank: any, hint: string): ObjectRef {
+  static createInstance(stateless: any, blank: any, hint: string): ReObject {
     const ctx = Snapshot.writable()
-    const ref = new ObjectRef(stateless, undefined, Hooks.proxy, NIL, hint)
-    ctx.write(ref, SYM_INSTANCE, blank)
-    return ref
+    const o = new ReObject(stateless, undefined, Hooks.proxy, NIL, hint)
+    ctx.write(o, SYM_OBJECT, blank)
+    return o
   }
 
   /* istanbul ignore next */
-  static createMethodTrap = function(ref: ObjectRef, m: Member, options: OptionsImpl): F<any> {
+  static createMethodTrap = function(o: ReObject, m: Member, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
   }
 
