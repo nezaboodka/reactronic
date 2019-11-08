@@ -12,7 +12,6 @@ import { CopyOnWriteProxy } from './Hooks'
 export const SYM_OBJECT: unique symbol = Symbol('r-object')
 export const SYM_METHOD: unique symbol = Symbol('r-method')
 export const SYM_UNMOUNT: unique symbol = Symbol('r-unmount')
-export const SYM_STATELESS: unique symbol = Symbol('r-stateless')
 export const SYM_BLANK: unique symbol = Symbol('r-blank')
 export const SYM_TRIGGERS: unique symbol = Symbol('r-triggers')
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
@@ -24,6 +23,13 @@ export class RObject extends Ref {
     return Snapshot.readable().read(this).data
   }
 }
+
+// RStateless
+
+class RStateless {
+}
+
+export const STATELESS: object = Object.freeze(new RStateless())
 
 // Snapshot
 
@@ -86,7 +92,7 @@ export class Snapshot implements Context {
 
   write(o: RObject, m: Member, value: any, token?: any): Record {
     let r: Record = this.tryRead(o)
-    if (r.data[m] !== SYM_STATELESS) {
+    if (r.data[m] !== STATELESS) {
       this.guard(o, r, m, value, token)
       if (r.snapshot !== this) {
         const data = {...m === SYM_OBJECT ? value : r.data}

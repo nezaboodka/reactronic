@@ -9,7 +9,7 @@ import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, Member, Observable } from './Data'
-import { Snapshot, RObject, Hints, NIL, SYM_OBJECT, SYM_METHOD, SYM_STATELESS, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
+import { Snapshot, RObject, Hints, NIL, SYM_OBJECT, SYM_METHOD, SYM_BLANK, SYM_TRIGGERS, STATELESS } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
@@ -170,7 +170,7 @@ export class Hooks implements ProxyHandler<RObject> {
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Hooks.acquireMeta(proto, SYM_BLANK)[m] = SYM_STATELESS
+      Hooks.acquireMeta(proto, SYM_BLANK)[m] = STATELESS
   }
 
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: Member, pd: TypedPropertyDescriptor<F<any>>): any {
