@@ -17,9 +17,9 @@ export const SYM_BLANK: unique symbol = Symbol('r-blank')
 export const SYM_TRIGGERS: unique symbol = Symbol('r-triggers')
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
-// ReObject
+// RObject
 
-export class ReObject extends Ref {
+export class RObject extends Ref {
   get data(): any {
     return Snapshot.readable().read(this).data
   }
@@ -39,7 +39,7 @@ export class Snapshot implements Context {
   private stamp: number
   private bumper: number
   readonly token: any
-  readonly changeset: Map<ReObject, Record>
+  readonly changeset: Map<RObject, Record>
   readonly triggers: Observer[]
   completed: boolean
 
@@ -49,7 +49,7 @@ export class Snapshot implements Context {
     this.stamp = UNDEFINED_TIMESTAMP
     this.bumper = 1
     this.token = caching
-    this.changeset = new Map<ReObject, Record>()
+    this.changeset = new Map<RObject, Record>()
     this.triggers = []
     this.completed = false
   }
@@ -62,14 +62,14 @@ export class Snapshot implements Context {
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
   static finalizeChangeset = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
-  read(o: ReObject): Record {
+  read(o: RObject): Record {
     const r = this.tryRead(o)
     if (r === NIL) /* istanbul ignore next */
       throw misuse(`object ${Hints.obj(o)} doesn't exist in snapshot v${this.stamp}`)
     return r
   }
 
-  tryRead(o: ReObject): Record {
+  tryRead(o: RObject): Record {
     let r: Record | undefined = o.changing
     if (r && r.snapshot !== this) {
       r = this.changeset.get(o)
@@ -84,7 +84,7 @@ export class Snapshot implements Context {
     return r
   }
 
-  write(o: ReObject, m: Member, value: any, token?: any): Record {
+  write(o: RObject, m: Member, value: any, token?: any): Record {
     let r: Record = this.tryRead(o)
     if (r.data[m] !== SYM_STATELESS) {
       this.guard(o, r, m, value, token)
@@ -105,7 +105,7 @@ export class Snapshot implements Context {
   static unmount(...objects: any[]): void {
     const ctx = Snapshot.writable()
     for (const x of objects) {
-      const o = Utils.get<ReObject>(x, SYM_OBJECT)
+      const o = Utils.get<RObject>(x, SYM_OBJECT)
       if (o) {
         const r: Record = ctx.write(o, SYM_UNMOUNT, SYM_UNMOUNT)
         if (r !== NIL) {
@@ -116,7 +116,7 @@ export class Snapshot implements Context {
     }
   }
 
-  private guard(o: ReObject, r: Record, m: Member, value: any, token: any): void {
+  private guard(o: RObject, r: Record, m: Member, value: any, token: any): void {
     if (this.completed)
       throw misuse(`stateful property ${Hints.obj(o, m)} can only be modified inside actions and triggers`)
     if (m !== SYM_OBJECT && value !== SYM_OBJECT && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
@@ -144,7 +144,7 @@ export class Snapshot implements Context {
   rebase(): Record[] | undefined { // return conflicts
     let conflicts: Record[] | undefined = undefined
     if (this.changeset.size > 0) {
-      this.changeset.forEach((r: Record, o: ReObject) => {
+      this.changeset.forEach((r: Record, o: RObject) => {
         if (r.prev.record !== o.head) {
           const merged = Snapshot.merge(r, o.head)
           if (r.conflicts.size > 0) {
@@ -192,7 +192,7 @@ export class Snapshot implements Context {
 
   complete(error?: any): void {
     this.completed = true
-    this.changeset.forEach((r: Record, o: ReObject) => {
+    this.changeset.forEach((r: Record, o: RObject) => {
       r.changes.forEach(m => CopyOnWriteProxy.seal(r.data[m], o.proxy, m))
       Snapshot.freezeRecord(r)
       o.writers--
@@ -262,7 +262,7 @@ export class Snapshot implements Context {
 
   private unlinkHistory(): void {
     if (Dbg.isOn && Dbg.trace.gc) Dbg.log('', '[G]', `Dismiss history of v${this.stamp}t${this.id} (${this.hint})`)
-    this.changeset.forEach((r: Record, o: ReObject) => {
+    this.changeset.forEach((r: Record, o: RObject) => {
       if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== NIL) Dbg.log(' ', '  ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
       r.prev.record = NIL // unlink history
     })
@@ -285,7 +285,7 @@ export class Snapshot implements Context {
 export class Hints {
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
-      const o = Utils.get<ReObject>(obj, SYM_OBJECT)
+      const o = Utils.get<RObject>(obj, SYM_OBJECT)
       if (o)
         o.hint = hint
     }
@@ -293,11 +293,11 @@ export class Hints {
   }
 
   static getHint(obj: object): string | undefined {
-    const o = Utils.get<ReObject>(obj, SYM_OBJECT)
+    const o = Utils.get<RObject>(obj, SYM_OBJECT)
     return o ? o.hint : undefined
   }
 
-  static obj(o: ReObject | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
+  static obj(o: RObject | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const s = (o === undefined)
       ? 'nil'
       : (typeless
@@ -307,7 +307,7 @@ export class Hints {
   }
 
   static record(r: Record, m?: Member, typeless?: boolean): string {
-    const o = Utils.get<ReObject | undefined>(r.data, SYM_OBJECT)
+    const o = Utils.get<RObject | undefined>(r.data, SYM_OBJECT)
     return Hints.obj(o, m, r.snapshot.timestamp, r.snapshot.id, typeless)
   }
 

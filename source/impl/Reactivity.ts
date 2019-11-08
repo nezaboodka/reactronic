@@ -6,7 +6,7 @@
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, Member, Observable, MemberHint, Observer } from './Data'
-import { Snapshot, ReObject, Hints, NIL, SYM_OBJECT, SYM_METHOD, SYM_UNMOUNT, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
+import { Snapshot, RObject, Hints, NIL, SYM_OBJECT, SYM_METHOD, SYM_UNMOUNT, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
 import { Transaction } from './Transaction'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -15,12 +15,12 @@ import { Monitor, Worker } from '../Monitor'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-const NIL_INSTANCE = new ReObject(undefined, undefined, Hooks.proxy, NIL, 'nil')
+const NIL_INSTANCE = new RObject(undefined, undefined, Hooks.proxy, NIL, 'nil')
 
 type Call = { context: Snapshot, record: Record, result: CallResult, reuse: boolean }
 
 export class Method extends Cache<any> {
-  readonly instance: ReObject
+  readonly instance: RObject
   readonly member: Member
 
   setup(options: Partial<Options>): Options { return Method.setup(this, options) }
@@ -33,7 +33,7 @@ export class Method extends Cache<any> {
   invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.obj(this.instance, this.member)})` : 'invalidate()', Method.invalidate, this) }
   getCachedResultAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
-  constructor(instance: ReObject, member: Member) {
+  constructor(instance: RObject, member: Member) {
     super()
     this.instance = instance
     this.member = member
@@ -430,7 +430,7 @@ class CallResult extends Observable implements Observer {
     if (!error) {
       // Mark previous values as replaced, invalidate observers, and reset recomputing status
       const triggers = snapshot.triggers
-      snapshot.changeset.forEach((r: Record, o: ReObject) => {
+      snapshot.changeset.forEach((r: Record, o: RObject) => {
         if (!r.changes.has(SYM_UNMOUNT))
           r.changes.forEach(m => CallResult.finalizeChange(false, since, r, m, triggers))
         else
@@ -439,7 +439,7 @@ class CallResult extends Observable implements Observer {
       })
     }
     else {
-      snapshot.changeset.forEach((r: Record, o: ReObject) =>
+      snapshot.changeset.forEach((r: Record, o: RObject) =>
         r.changes.forEach(m => CallResult.finalizeChange(true, since, r, m)))
     }
   }
@@ -510,7 +510,7 @@ class CallResult extends Observable implements Observer {
     return result || value.replacement === r
   }
 
-  private static createMethodTrap(o: ReObject, m: Member, options: OptionsImpl): F<any> {
+  private static createMethodTrap(o: RObject, m: Member, options: OptionsImpl): F<any> {
     const method = new Method(o, m)
     const methodTrap: F<any> = (...args: any[]): any =>
       method.call(false, args).ret
