@@ -19,8 +19,19 @@ const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 // RObject
 
 export class RObject extends Ref {
-  get data(): any {
-    return Snapshot.readable().read(this).data
+  get ['<state>'](): any {
+    const result: any = {}
+    const d = Snapshot.readable().read(this).data
+    for (const m in d) {
+      const v = d[m]
+      if (v instanceof Observable)
+        result[m] = v.value
+      else if (v === STATELESS)
+        result[m] = this.stateless[m]
+      else
+        result[m] = v
+    }
+    return result
   }
 }
 
