@@ -82,4 +82,23 @@ export class TraceLevel {
     margin1: 0,
     margin2: 0,
   }
+
+  static Suppress: Trace = {
+    silent: true,
+    transactions: false,
+    methods: false,
+    steps: false,
+    monitors: false,
+    reads: false,
+    writes: false,
+    changes: false,
+    invalidations: false,
+    errors: true,
+    warnings: true,
+    gc: false,
+    color: 37,
+    prefix: '',
+    margin1: 0,
+    margin2: 0,
+  }
 }
