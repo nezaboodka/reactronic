@@ -32,7 +32,7 @@
     // Other
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "jsx": "react"
+    "jsx": "react",
   },
   // "include": [
   //   "source/**/*.ts",

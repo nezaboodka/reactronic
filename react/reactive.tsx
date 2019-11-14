@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { State, Action, Cache, stateless, trigger, cached, separate, Tools as RT, Trace } from '.index'
+import { State, Action, Cache, stateless, trigger, cached, separate, Tools as RT, Trace } from 'reactronic'
 
 export function reactive(render: (counter: number) => JSX.Element, trace?: Partial<Trace>, action?: Action): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(

@@ -8,7 +8,7 @@ import { Dbg } from './util/Dbg'
 import { Hints } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
-import { Action, Cache, Monitor, Kind, Reentrance, Trace } from './.index'
+import { Action, Cache, Monitor, Kind, Reentrance, Trace } from 'reactronic'
 
 export class Tools {
   // Configuration

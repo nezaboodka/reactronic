@@ -4,5 +4,5 @@ export default {
   babel: false,
   verbose: true,
   files: ['test/**/*.test.ts'],
-  require: ['ts-node/register'],
+  require: ['ts-node/register', 'tsconfig-paths/register'],
 }

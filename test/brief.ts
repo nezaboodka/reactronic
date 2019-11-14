@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { State, stateless, action, trigger, cached, cachedArgs, Tools as RT } from '../source/.index'
+import { State, stateless, action, trigger, cached, cachedArgs, Tools as RT } from 'reactronic'
 
 export const output: string[] = []
 

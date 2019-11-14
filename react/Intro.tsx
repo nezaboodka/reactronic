@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { State, action, cached } from '.index'
+import { State, action, cached } from 'reactronic'
 import { Component } from './Component'
 
 class MyModel extends State {

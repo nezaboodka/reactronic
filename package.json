@@ -2,8 +2,8 @@
   "name": "reactronic",
   "version": "0.19.426",
   "description": "Reactronic - Transactionally Reactive State Management",
-  "main": "build/dist/source/.index.js",
-  "types": "build/dist/source/.index.d.ts",
+  "main": "build/dist/source/reactronic.js",
+  "types": "build/dist/source/reactronic.d.ts",
   "files": [
     "build/dist/source/**/*.*"
   ],
@@ -34,6 +34,7 @@
     "@types/react": "16.9.9",
     "typescript": "3.6.3",
     "ts-node": "8.4.1",
+    "tsconfig-paths": "3.9.0",
     "eslint": "6.5.1",
     "@typescript-eslint/parser": "2.5.0",
     "@typescript-eslint/eslint-plugin": "2.5.0",

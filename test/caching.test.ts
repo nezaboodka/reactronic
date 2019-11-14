@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { State, cached, Action, Tools as RT, trace, trigger } from '../source/.index'
+import { State, cached, Action, Tools as RT, trace, trigger } from 'reactronic'
 import { tracing } from './common'
 
 export class Demo extends State {

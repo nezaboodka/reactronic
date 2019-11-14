@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Trace } from '../source/.index'
+import { Trace } from 'reactronic'
 
 export const tracing: { friendly: Trace, noisy: Trace, off: undefined } = {
   friendly: {
