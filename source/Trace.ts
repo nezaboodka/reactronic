@@ -26,7 +26,26 @@ export class TraceLevel {
 
   static Off: Trace | undefined = undefined
 
-  static Basic: Trace = {
+  static Warnings: Trace = {
+    silent: false,
+    transactions: false,
+    methods: false,
+    steps: false,
+    monitors: false,
+    reads: false,
+    writes: false,
+    changes: false,
+    invalidations: false,
+    errors: true,
+    warnings: true,
+    gc: false,
+    color: 37,
+    prefix: '',
+    margin1: 0,
+    margin2: 0,
+  }
+
+  static Normal: Trace = {
     silent: false,
     transactions: true,
     methods: true,
