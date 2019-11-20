@@ -139,7 +139,7 @@ class Component<P> extends React.Component<P> {
   @trigger // called immediately in response to state changes
   pulse(): void {
     if (Cache.of(this.render).invalid)
-      escape(() => this.setState({})) // ask React to re-render
+      external(() => this.setState({})) // ask React to re-render
   } // pulse is subscribed to render
 
   shouldComponentUpdate(): boolean {
@@ -151,7 +151,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    escape(Cache.unmount, this)
+    external(Cache.unmount, this)
   }
 }
 ```
@@ -242,7 +242,7 @@ function monitor(monitor: Monitor | null)
 function trace(trace: Partial<Trace>)
 
 function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
-function escape<T>(func: F<T>, ...args: any[]): T
+function external<T>(func: F<T>, ...args: any[]): T
 function passive<T>(func: F<T>, ...args: any[]): T
 
 // Options, Kind, Reentrance, Monitor, Trace

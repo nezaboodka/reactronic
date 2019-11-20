@@ -7,7 +7,7 @@ export { all, sleep } from './util/Utils'
 export { Options, Kind, Reentrance, Trace, TraceLevel } from './Options'
 export { Tools } from './Tools'
 export { State } from './impl/Hooks'
-export { getCachedAndRevalidate, escape, passive, state, stateless, action, trigger,
+export { getCachedAndRevalidate, external, passive, state, stateless, action, trigger,
   cached, cachedArgs, delay, reentrance, monitor, trace } from './Tools'
 export { Action } from './Action'
 export { Monitor, Worker } from './Monitor'
