@@ -124,6 +124,6 @@ export class TraceLevel {
 
 declare global {
   interface Window {
-    WHY: string
+    rWhy: string
   }
 }

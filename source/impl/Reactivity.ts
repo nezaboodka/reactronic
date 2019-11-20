@@ -560,14 +560,14 @@ class CallResult extends Observable implements Observer {
     Hooks.applyOptions = CallResult.applyOptions // override
     Promise.prototype.then = reactronicHookedThen // override
     try {
-      Object.defineProperty(globalThis, 'WHY', {
+      Object.defineProperty(globalThis, 'rWhy', {
         get: Method.why, configurable: false, enumerable: false,
       })    }
     catch (e) {
       // ignore
     }
     try {
-      Object.defineProperty(global, 'WHY', {
+      Object.defineProperty(global, 'rWhy', {
         get: Method.why, configurable: false, enumerable: false,
       })    }
     catch (e) {
