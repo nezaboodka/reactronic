@@ -1,5 +1,8 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
+  parserOptions: {
+      'project': './tsconfig.json',
+  },
   plugins: ['@typescript-eslint'],
   extends: ['plugin:@typescript-eslint/recommended'],
   'rules': {
@@ -11,6 +14,7 @@ module.exports = {
     'no-trailing-spaces': 'error',
     'no-unexpected-multiline': 'error',
     'object-shorthand': ['error', 'always'],
+    '@typescript-eslint/no-floating-promises': 'error',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-unused-vars': 'off',
     '@typescript-eslint/no-inferrable-types': 'off',
