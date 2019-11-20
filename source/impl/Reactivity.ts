@@ -90,6 +90,11 @@ export class Method extends Cache<any> {
       undefined, undefined, Snapshot.unmount, ...objects)
   }
 
+  static why(): string {
+    const c = CallResult.current
+    return c ? `${Hints.record(c.record, c.method.member)}${c.invalid.cause ? `   <<   ${chainHint(c.invalid.cause).join('   <<   ')}` : ''}` : ''
+  }
+
   // Internal
 
   private weak(): Call {
@@ -218,6 +223,7 @@ class CallResult extends Observable implements Observer {
       this.options = init.options
       this.args = init.args
       // this.value = init.value
+      this.invalid.cause = init.invalid.cause
     }
     else { // init instanceof OptionsImpl
       this.options = init
@@ -251,6 +257,7 @@ class CallResult extends Observable implements Observer {
       Method.run<void>(this, CallResult.compute, this, proxy)
     else
       this.ret = Promise.reject(this.error)
+    this.invalid.cause = undefined
   }
 
   invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void {
@@ -552,6 +559,20 @@ class CallResult extends Observable implements Observer {
     Hooks.createMethodTrap = CallResult.createMethodTrap // override
     Hooks.applyOptions = CallResult.applyOptions // override
     Promise.prototype.then = reactronicHookedThen // override
+    try {
+      Object.defineProperty(globalThis, 'WHY', {
+        get: Method.why, configurable: false, enumerable: false,
+      })    }
+    catch (e) {
+      // ignore
+    }
+    try {
+      Object.defineProperty(global, 'WHY', {
+        get: Method.why, configurable: false, enumerable: false,
+      })    }
+    catch (e) {
+      // ignore
+    }
   }
 }
 

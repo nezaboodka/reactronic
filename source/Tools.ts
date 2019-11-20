@@ -22,6 +22,7 @@ export class Tools {
   static setTrace(t: Trace | undefined): void { Dbg.global = t || Dbg.OFF; Dbg.isOn = t !== undefined }
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Hints.setHint(obj, name) }
   static getTraceHint<T extends object>(obj: T): string | undefined { return Hints.getHint(obj) }
+  static why(): string { return Method.why() }
 }
 
 // Operators

@@ -121,3 +121,9 @@ export class TraceLevel {
     margin2: 0,
   }
 }
+
+declare global {
+  interface Window {
+    WHY: string
+  }
+}
