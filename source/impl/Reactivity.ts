@@ -31,7 +31,7 @@ export class Method extends Cache<any> {
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reuse }
   invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.obj(this.instance, this.member)})` : 'invalidate()', Method.invalidate, this) }
-  getCachedResultAndRevalidate(args?: any[]): any { return this.call(true, args).value }
+  getCachedAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
   constructor(instance: RObject, member: Member) {
     super()

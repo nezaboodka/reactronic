@@ -137,31 +137,31 @@ class Component<P> extends React.Component<P> {
   }
 
   @trigger // called immediately in response to state changes
-  keepFresh(): void {
+  pulse(): void {
     if (Cache.of(this.render).invalid)
-      separate(() => this.setState({})) // ask React to re-render
-  } // keepFresh is subscribed to render
+      escape(() => this.setState({})) // ask React to re-render
+  } // pulse is subscribed to render
 
   shouldComponentUpdate(): boolean {
     return Cache.of(this.render).invalid
   }
 
   componentDidMount(): void {
-    this.keepFresh() // initial trigger run
+    this.pulse() // initial trigger run
   }
 
   componentWillUnmount(): void {
-    separate(Cache.unmount, this)
+    escape(Cache.unmount, this)
   }
 }
 ```
 
-In the example above, `keepFresh` trigger is transparently subscribed
+In the example above, `pulse` trigger is transparently subscribed
 to the cached function `render`. In turn, the `render` function is
 subscribed to the `url` and `content` properties of a corresponding
 `MyModel` object. Once `url` or `content` values are changed, the
 `render` cache becomes invalid and causes invalidation and immediate
-re-execution of `keepFresh` trigger. While executed, the `keepFresh`
+re-execution of `pulse` trigger. While executed, the `pulse`
 trigger function enqueues re-rendering request to React, which calls
 `render` function causing it to renew its cached value.
 
@@ -241,9 +241,9 @@ function reentrance(reentrance: Reentrance) // actions & triggers
 function monitor(monitor: Monitor | null)
 function trace(trace: Partial<Trace>)
 
-function resolved<T>(method: F<Promise<T>>, args?: any[]): T | undefined
-function nonreactive<T>(func: F<T>, ...args: any[]): T
-function separate<T>(func: F<T>, ...args: any[]): T
+function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
+function escape<T>(func: F<T>, ...args: any[]): T
+function passive<T>(func: F<T>, ...args: any[]): T
 
 // Options, Kind, Reentrance, Monitor, Trace
 

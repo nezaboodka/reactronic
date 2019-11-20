@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Action, Cache, Reentrance, getCachedResultAndRevalidate, Tools as RT, sleep } from 'reactronic'
+import { Action, Cache, Reentrance, getCachedAndRevalidate, Tools as RT, sleep } from 'reactronic'
 import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -43,7 +43,7 @@ test('Reentrance.PreventWithError', async t => {
   finally {
     t.is(loading.workerCount, 0)
     t.is(loading.workers.size, 0)
-    const r = getCachedResultAndRevalidate(app.render)
+    const r = getCachedAndRevalidate(app.render)
     t.is(r && r.length, 2)
     await sleep(100)
     Cache.unmount(app, app.model)

@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { State, Action, Cache, stateless, trigger, cached, separate } from 'reactronic'
+import { State, Action, Cache, stateless, trigger, cached, escape as escape } from 'reactronic'
 
 export function reactive(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -12,7 +12,7 @@ export function reactive(render: () => JSX.Element): JSX.Element {
   rx.counter = state.counter
   rx.refresh = refresh // just in case React will change refresh on each rendering
   React.useEffect(rx.unmount, [])
-  return rx.view(render)
+  return rx.render(render)
 }
 
 // Internal
@@ -21,20 +21,20 @@ type ReactState = { rx: Rx, counter: number }
 
 class Rx extends State {
   @cached
-  view(generate: () => JSX.Element): JSX.Element {
-    return generate()
+  render(render: () => JSX.Element): JSX.Element {
+    return render()
   }
 
   @trigger
-  keepFresh(): void {
-    if (Cache.of(this.view).invalid)
-      separate(this.refresh, {rx: this, counter: this.counter + 1})
+  pulse(): void {
+    if (Cache.of(this.render).invalid)
+      escape(this.refresh, {rx: this, counter: this.counter + 1})
   }
 
   @stateless counter: number = 0
   @stateless refresh: (next: ReactState) => void = nop
   @stateless readonly unmount = (): (() => void) => {
-    return (): void => { separate(Cache.unmount, this) }
+    return (): void => { escape(Cache.unmount, this) }
   }
 }
 

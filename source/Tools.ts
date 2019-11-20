@@ -27,15 +27,15 @@ export class Tools {
 
 // Operators
 
-export function getCachedResultAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return Cache.of(method as any as F<T>).getCachedResultAndRevalidate(args) // overcome type safety
+export function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
+  return Cache.of(method as any as F<T>).getCachedAndRevalidate(args) // overcome type safety
 }
 
-export function nonreactive<T>(func: F<T>, ...args: any[]): T {
+export function passive<T>(func: F<T>, ...args: any[]): T {
   return Method.run<T>(undefined, func, ...args)
 }
 
-export function separate<T>(func: F<T>, ...args: any[]): T {
+export function escape<T>(func: F<T>, ...args: any[]): T {
   return Method.run<T>(undefined, Action.off, func, ...args)
 }
 
