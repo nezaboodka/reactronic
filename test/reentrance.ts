@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { State, state, action, trigger, cached, cachedArgs, delay, monitor,
+import { State, state, action, trigger, cached, provokingArgs, delay, monitor,
   reentrance, Action, Monitor, Reentrance, Tools as RT, all, sleep } from 'reactronic'
 export { tracing } from './common'
 
@@ -39,7 +39,7 @@ export class AsyncDemoView {
     }
   }
 
-  @cached @cachedArgs(false)
+  @cached @provokingArgs(false)
   async render(): Promise<string[]> {
     const result: string[] = []
     result.push(`${loading.busy ? '[...] ' : ''}Url: ${this.model.url}`)

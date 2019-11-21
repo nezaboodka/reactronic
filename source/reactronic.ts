@@ -8,7 +8,7 @@ export { Options, Kind, Reentrance, Trace, TraceLevel } from './Options'
 export { Tools } from './Tools'
 export { State } from './impl/Hooks'
 export { getCachedAndRevalidate, isolated, passive, state, stateless, action, trigger,
-  cached, cachedArgs, delay, reentrance, monitor, trace } from './Tools'
+  cached, provokingArgs, delay, reentrance, monitor, trace } from './Tools'
 export { Action } from './Action'
 export { Monitor, Worker } from './Monitor'
 export { Cache } from './Cache'
