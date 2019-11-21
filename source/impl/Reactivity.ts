@@ -109,7 +109,7 @@ export class Method extends Cache<any> {
     const c: CallResult = this.from(r)
     const reuse = c.options.kind !== Kind.Action &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
-      (!c.options.provokingArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
+      (!c.options.incentiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[SYM_UNMOUNT] !== undefined
     return { context: ctx, record: r, result: c, reuse }
   }

@@ -9,7 +9,7 @@ import { Monitor } from './Monitor'
 
 export interface Options {
   readonly kind: Kind
-  readonly provokingArgs: boolean
+  readonly incentiveArgs: boolean
   readonly delay: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null

@@ -64,8 +64,8 @@ export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescri
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
-export function provokingArgs(provokingArgs: boolean): F<any> {
-  return options({provokingArgs})
+export function incentiveArgs(incentiveArgs: boolean): F<any> {
+  return options({incentiveArgs})
 }
 
 export function delay(delay: number): F<any> {
