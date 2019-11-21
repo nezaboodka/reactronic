@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { trigger, cached, external, Cache } from 'reactronic'
+import { trigger, cached, isolated, Cache } from 'reactronic'
 
 export class Component<P> extends React.Component<P> {
   @cached
@@ -15,7 +15,7 @@ export class Component<P> extends React.Component<P> {
   @trigger
   pulse(): void {
     if (this.shouldComponentUpdate())
-      external(() => this.setState({}))
+      isolated(() => this.setState({}))
   }
 
   shouldComponentUpdate(): boolean {
@@ -27,6 +27,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    external(Cache.unmount, this)
+    isolated(Cache.unmount, this)
   }
 }
