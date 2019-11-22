@@ -109,6 +109,7 @@ export class Hooks implements ProxyHandler<RObject> {
       result = Reflect.get(o.stateless, m, receiver)
       if (result === undefined && m !== Symbol.toPrimitive && m !== '$$typeof')
         // Record.markViewed(r, m, false); // treat undefined fields as stateful
+        // Dbg.log('', '', `unassigned property is used: ${Hints.record(r, m)} is used by T${ctx.id} (${ctx.hint})`, undefined, ' make sure it is not stateful property')
         throw misuse(`unassigned properties are not supported: ${Hints.record(r, m)} is used by T${ctx.id} (${ctx.hint})`)
     }
     return result
