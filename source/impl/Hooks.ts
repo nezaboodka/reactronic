@@ -107,7 +107,7 @@ export class Hooks implements ProxyHandler<RObject> {
     }
     else { // value === STATELESS
       result = Reflect.get(o.stateless, m, receiver)
-      if (result === undefined && m !== Symbol.toPrimitive)
+      if (result === undefined && m !== Symbol.toPrimitive && m !== '$$typeof')
         // Record.markViewed(r, m, false); // treat undefined fields as stateful
         throw misuse(`unassigned properties are not supported: ${Hints.record(r, m)} is used by T${ctx.id} (${ctx.hint})`)
     }
