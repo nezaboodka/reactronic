@@ -51,7 +51,7 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   kind: Kind.Field,
   delay: -2, // never
   reentrance: Reentrance.PreventWithError,
-  incentiveArgs: false,
+  urgingArgs: false,
   monitor: null,
   trace: undefined,
 })
@@ -59,7 +59,7 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
 export class OptionsImpl implements Options {
   readonly body: Function
   readonly kind: Kind
-  readonly incentiveArgs: boolean
+  readonly urgingArgs: boolean
   readonly delay: number
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null
@@ -69,7 +69,7 @@ export class OptionsImpl implements Options {
   constructor(body: Function | undefined, existing: OptionsImpl, patch: Partial<OptionsImpl>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body
     this.kind = merge(DEFAULT_STATELESS_OPTIONS.kind, existing.kind, patch.kind, implicit)
-    this.incentiveArgs = merge(DEFAULT_STATELESS_OPTIONS.incentiveArgs, existing.incentiveArgs, patch.incentiveArgs, implicit)
+    this.urgingArgs = merge(DEFAULT_STATELESS_OPTIONS.urgingArgs, existing.urgingArgs, patch.urgingArgs, implicit)
     this.delay = merge(DEFAULT_STATELESS_OPTIONS.delay, existing.delay, patch.delay, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
