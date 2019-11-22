@@ -242,8 +242,8 @@ function monitor(monitor: Monitor | null)
 function trace(trace: Partial<Trace>)
 
 function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
+function nonreactive<T>(func: F<T>, ...args: any[]): T
 function isolated<T>(func: F<T>, ...args: any[]): T
-function passive<T>(func: F<T>, ...args: any[]): T
 
 // Options, Kind, Reentrance, Monitor, Trace
 

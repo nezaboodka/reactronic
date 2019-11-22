@@ -31,12 +31,12 @@ export function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): 
   return Cache.of(method as any as F<T>).getCachedAndRevalidate(args) // overcome type safety
 }
 
-export function isolated<T>(func: F<T>, ...args: any[]): T {
-  return Method.run<T>(undefined, Action.off, func, ...args)
+export function nonreactive<T>(func: F<T>, ...args: any[]): T {
+  return Method.run<T>(undefined, func, ...args)
 }
 
-export function passive<T>(func: F<T>, ...args: any[]): T {
-  return Method.run<T>(undefined, func, ...args)
+export function isolated<T>(func: F<T>, ...args: any[]): T {
+  return Method.run<T>(undefined, Action.off, func, ...args)
 }
 
 // Decorators
