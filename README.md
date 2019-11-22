@@ -267,7 +267,8 @@ enum Reentrance {
   PreventWithError = 1, // fail with error if there is an existing action in progress (default)
   WaitAndRestart = 0, // wait for existing action to finish and then restart reentrant one
   CancelPrevious = -1, // cancel previous action in favor of recent one
-  RunSideBySide = -2 // multiple simultaneous actions are allowed
+  OverwritePrevious = -2, // allow previous to complete, but overwrite it with ignoring any conflicts
+  RunSideBySide = -3 // multiple simultaneous actions are allowed
 }
 
 class Monitor {
