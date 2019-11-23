@@ -44,12 +44,11 @@ export class Method extends Cache<any> {
     const ctx = call.context
     const c: CallResult = call.result
     if (!call.reuse && (!weak || !c.invalid.recomputing)) {
-      const hint: string = Dbg.isOn ? `${Hints.obj(this.instance, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ 'Cache.run'
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
       const token = opt.kind === Kind.Cached ? this : undefined
-      const call2 = this.compute(call, hint, spawn, opt.trace, token, args)
+      const call2 = this.compute(call, spawn, opt.trace, token, args)
       const ctx2 = call2.result.record.snapshot
       if (!weak || ctx === ctx2 || (ctx2.completed && ctx.timestamp >= ctx2.timestamp))
         call = call2
@@ -150,8 +149,9 @@ export class Method extends Cache<any> {
     return c
   }
 
-  private compute(existing: Call, hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
+  private compute(existing: Call, spawn: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
     // TODO: Cleaner implementation is needed
+    const hint: string = Dbg.isOn ? `${Hints.obj(this.instance, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.instance, this.member)}`
     let call = existing
     const ret = Transaction.runAs(hint, spawn, trace, token, (argsx: any[] | undefined): any => {
       if (!call.result.worker.isCanceled) { // first call
