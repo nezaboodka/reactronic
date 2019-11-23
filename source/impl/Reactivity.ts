@@ -92,7 +92,7 @@ export class Method extends Cache<any> {
 
   static why(): string {
     const c = CallResult.current
-    return c ? `${Hints.record(c.record, c.method.member)}${c.invalid.cause ? `   <<   ${chainHint(c.invalid.cause).join('   <<   ')}` : ''}` : ''
+    return c ? c.why() : 'because'
   }
 
   // Internal
@@ -156,14 +156,14 @@ export class Method extends Cache<any> {
     const ret = Transaction.runAs(hint, spawn, trace, token, (argsx: any[] | undefined): any => {
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
-        if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, this.member)}${existing.result.invalid.cause ? `   <<   ${chainHint(existing.result.invalid.cause).join('   <<   ')}` : ''}`)
+        if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${call.result.why()}`)
         call.result.compute(this.instance.proxy, argsx)
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
         if (call.result.options.kind === Kind.Action || (!call.reuse && !call.result.invalid.recomputing)) {
           call = this.write()
-          if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${Hints.record(call.record, this.member)}${existing.result.invalid.cause ? `   <<   ${chainHint(existing.result.invalid.cause).join('   <<   ')}` : ''}`)
+          if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${call.result.why()}`)
           call.result.compute(this.instance.proxy, argsx)
         }
       }
@@ -238,6 +238,8 @@ class CallResult extends Observable implements Observer {
   }
 
   hint(): string { return `${Hints.record(this.record, this.method.member)}` }
+  why(): string { return `${Hints.record(this.record, this.method.member)}${this.invalid.cause ? `   <<   ${propagationHint(this.invalid.cause).join('   <<   ')}` : ''}` }
+
 
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
@@ -577,7 +579,7 @@ class CallResult extends Observable implements Observer {
   }
 }
 
-function chainHint(cause: MemberHint): string[] {
+function propagationHint(cause: MemberHint): string[] {
   const result: string[] = []
   let value: Observable = cause.record.data[cause.member]
   while (value instanceof CallResult && value.invalid.cause) {
