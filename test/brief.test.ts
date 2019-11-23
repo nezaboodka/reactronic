@@ -24,8 +24,8 @@ const expected: string[] = [
 test('Main', t => {
   RT.triggersAutoStartDisabled = !RT.triggersAutoStartDisabled
   RT.triggersAutoStartDisabled = false
-  RT.performanceWarningThreshold = RT.performanceWarningThreshold + 1
-  RT.performanceWarningThreshold = 3
+  RT.repetitiveReadWarningThreshold = RT.repetitiveReadWarningThreshold + 1
+  RT.repetitiveReadWarningThreshold = 3
   RT.setTrace(tracing.off)
   RT.setTrace(tracing.noisy)
   // Simple actions

@@ -14,8 +14,8 @@ export class Tools {
   // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
   static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }
-  static get performanceWarningThreshold(): number { return Hooks.performanceWarningThreshold }
-  static set performanceWarningThreshold(value: number) { Hooks.performanceWarningThreshold = value }
+  static get repetitiveReadWarningThreshold(): number { return Hooks.repetitiveReadWarningThreshold }
+  static set repetitiveReadWarningThreshold(value: number) { Hooks.repetitiveReadWarningThreshold = value }
   // Tracing
   static get isTraceOn(): boolean { return Dbg.isOn }
   static get trace(): Trace { return Dbg.trace }
