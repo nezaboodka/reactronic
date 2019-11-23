@@ -206,6 +206,7 @@ class CallResult extends Observable implements Observer {
   readonly observables: Map<Observable, MemberHint>
   readonly invalid: { since: number, cause?: MemberHint, recomputing?: CallResult }
   options: OptionsImpl
+  cause: MemberHint | undefined
   args: any[]
   ret: any
   error: any
@@ -213,21 +214,22 @@ class CallResult extends Observable implements Observer {
   readonly worker: Worker
   started: number
 
-  constructor(method: Method, record: Record, init: CallResult | OptionsImpl) {
+  constructor(method: Method, record: Record, prev: CallResult | OptionsImpl) {
     super(undefined)
     this.method = method
     this.record = record
     this.observables = new Map<Observable, MemberHint>()
     this.invalid = { since: 0, cause: undefined, recomputing: undefined }
-    if (init instanceof CallResult) {
-      this.options = init.options
-      this.args = init.args
+    if (prev instanceof CallResult) {
+      this.options = prev.options
+      this.args = prev.args
       // this.value = init.value
-      this.invalid.cause = init.invalid.cause
+      this.cause = prev.invalid.cause
     }
     else { // init instanceof OptionsImpl
-      this.options = init
+      this.options = prev
       this.args = []
+      this.cause = undefined
       // this.value = undefined
     }
     // this.ret = undefined
@@ -238,7 +240,7 @@ class CallResult extends Observable implements Observer {
   }
 
   hint(): string { return `${Hints.record(this.record, this.method.member)}` }
-  why(): string { return `${Hints.record(this.record, this.method.member)}${this.invalid.cause ? `   <<   ${propagationHint(this.invalid.cause).join('   <<   ')}` : ''}` }
+  why(): string { return `${Hints.record(this.record, this.method.member)}${this.cause ? `   <<   ${propagationHint(this.cause).join('   <<   ')}` : '   <<   first on-demand call'}` }
 
 
   bind<T>(func: F<T>): F<T> {
@@ -259,7 +261,6 @@ class CallResult extends Observable implements Observer {
       Method.run<void>(this, CallResult.compute, this, proxy)
     else
       this.ret = Promise.reject(this.error)
-    this.invalid.cause = undefined
   }
 
   invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void {
