@@ -351,6 +351,7 @@ abstract class Cache<T> {
 class Tools {
   static triggersAutoStartDisabled: boolean
   static repetitiveReadWarningThreshold: number
+  static performanceWarningThreshold: number
   static readonly isTraceOn: boolean
   static readonly trace: Trace
   static setTrace(t: Trace | undefined)

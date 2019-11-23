@@ -374,6 +374,7 @@ class CallResult extends Observable implements Observer {
     const ms: number = Date.now() - this.started
     this.started = 0
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', `${op}`, `${Hints.record(this.record, this.method.member)} ${message}`, ms, highlight)
+    if (Hooks.performanceWarningThreshold > 0 && ms > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', `${Hints.record(this.record, this.method.member)} - took too long`, ms, '    *** WARNING ***')
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
     // CachedResult.freeze(this)
