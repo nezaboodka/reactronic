@@ -241,7 +241,7 @@ export class Transaction extends Action {
     if (!t.error && error) {
       t.error = error
       t.after = after
-      if (Dbg.isOn && Dbg.trace.errors) {
+      if (Dbg.isOn && Dbg.trace.transactions) {
         Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== Transaction.none)
           Dbg.log('║', ' [!]', `T${t.id} (${t.hint}) will be restarted after T${after.id} (${after.hint})`)
