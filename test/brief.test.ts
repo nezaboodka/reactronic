@@ -62,7 +62,7 @@ test('Main', t => {
       daddy.children[2].name = 'Steven Smith' // Steve
       t.is(daddy.name, 'John Smith')
       t.is(daddy.age, 40)
-      t.is(Action.off(() => daddy.age), 38)
+      t.is(Action.isolated(() => daddy.age), 38)
       t.is(isolated(() => daddy.age), 38)
       t.is(nonreactive(() => daddy.age), 40)
       t.is(daddy.children.length, 3)

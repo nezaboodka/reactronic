@@ -38,7 +38,7 @@ export function nonreactive<T>(func: F<T>, ...args: any[]): T {
 }
 
 export function isolated<T>(func: F<T>, ...args: any[]): T {
-  return Method.run<T>(undefined, Action.off, func, ...args)
+  return Method.run<T>(undefined, Action.isolated, func, ...args)
 }
 
 // Decorators
