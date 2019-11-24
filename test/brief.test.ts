@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Action, Cache, Kind, nonreactive, isolated, Tools as RT } from 'reactronic'
+import { Action, Cache, Kind, nonreactive, isolated, Reactronic as R } from 'reactronic'
 import { tracing, nop } from './common'
 import { Person, Demo, DemoView, output } from './brief'
 
@@ -22,12 +22,12 @@ const expected: string[] = [
 ]
 
 test('Main', t => {
-  RT.triggersAutoStartDisabled = !RT.triggersAutoStartDisabled
-  RT.triggersAutoStartDisabled = false
-  RT.repetitiveReadWarningThreshold = RT.repetitiveReadWarningThreshold + 1
-  RT.repetitiveReadWarningThreshold = 3
-  RT.setTrace(tracing.off)
-  RT.setTrace(tracing.noisy)
+  R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled
+  R.triggersAutoStartDisabled = false
+  R.repetitiveReadWarningThreshold = R.repetitiveReadWarningThreshold + 1
+  R.repetitiveReadWarningThreshold = 3
+  R.setTrace(tracing.off)
+  R.setTrace(tracing.noisy)
   // Simple actions
   const app = Action.run('app', () => new DemoView(new Demo()))
   try {
@@ -131,9 +131,9 @@ test('Main', t => {
     // Other
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)
-    t.is(RT.getTraceHint(app), 'DemoView')
-    RT.setTraceHint(app, 'App')
-    t.is(RT.getTraceHint(app), 'App')
+    t.is(R.getTraceHint(app), 'DemoView')
+    R.setTraceHint(app, 'App')
+    t.is(R.getTraceHint(app), 'App')
     t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'loadUsers', 'backup', 'title', 'users', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
   }
@@ -142,7 +142,7 @@ test('Main', t => {
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (RT.isTraceOn && !RT.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (R.isTraceOn && !R.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

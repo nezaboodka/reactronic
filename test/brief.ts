@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { State, stateless, action, trigger, cached, urgingArgs, Tools as RT } from 'reactronic'
+import { State, stateless, action, trigger, cached, urgingArgs, Reactronic as R } from 'reactronic'
 
 export const output: string[] = []
 
@@ -59,7 +59,7 @@ export class DemoView extends State {
     const lines = this.render(0)
     lines.forEach(x => {
       output.push(x) /* istanbul ignore next */
-      if (RT.isTraceOn && !RT.trace.silent) console.log(x)
+      if (R.isTraceOn && !R.trace.silent) console.log(x)
     })
   }
 

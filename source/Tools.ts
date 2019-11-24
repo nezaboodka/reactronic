@@ -10,7 +10,7 @@ import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
 import { Action, Cache, Monitor, Kind, Reentrance, Trace } from 'reactronic'
 
-export class Tools {
+export class Reactronic {
   // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
   static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }

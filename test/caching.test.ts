@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { State, cached, Action, Tools as RT, trace, trigger, action } from 'reactronic'
+import { State, cached, Action, Reactronic as R, trace, trigger, action } from 'reactronic'
 import { tracing } from './common'
 
 export class Demo extends State {
@@ -45,7 +45,7 @@ export class Demo extends State {
 }
 
 test('Main', t => {
-  RT.setTrace(tracing.noisy)
+  R.setTrace(tracing.noisy)
   const demo = Action.run('caching', () => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')

@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Action, Cache, Reentrance, Tools as RT, all, sleep } from 'reactronic'
+import { Action, Cache, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
 import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -26,7 +26,7 @@ const expected: string[] = [
 ]
 
 test('Reentrance.RunSideBySide', async t => {
-  RT.setTrace(tracing.noisy)
+  R.setTrace(tracing.noisy)
   const app = Action.runAs('app', false, undefined, undefined, () => new AsyncDemoView(new AsyncDemo()))
   Cache.of(app.model.load).setup({reentrance: Reentrance.RunSideBySide})
   try {
@@ -38,7 +38,7 @@ test('Reentrance.RunSideBySide', async t => {
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
-    if (RT.isTraceOn && !RT.trace.silent) console.log(error.toString())
+    if (R.isTraceOn && !R.trace.silent) console.log(error.toString())
   }
   finally {
     t.is(loading.workerCount, 0)
@@ -46,12 +46,12 @@ test('Reentrance.RunSideBySide', async t => {
     await sleep(100)
     Cache.unmount(app, app.model)
   } /* istanbul ignore next */
-  if (RT.isTraceOn && !RT.trace.silent)
+  if (R.isTraceOn && !R.trace.silent)
     for (const x of output)
       console.log(x)
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (RT.isTraceOn && !RT.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (R.isTraceOn && !R.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

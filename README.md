@@ -346,9 +346,9 @@ abstract class Cache<T> {
   static unmount(...objects: any[]): void
 }
 
-// Tools
+// Reactronic
 
-class Tools {
+class Reactronic {
   static triggersAutoStartDisabled: boolean
   static repetitiveReadWarningThreshold: number
   static performanceWarningThreshold: number

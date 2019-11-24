@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { State, state, action, trigger, cached, urgingArgs, delay, monitor,
-  reentrance, Action, Monitor, Reentrance, Tools as RT, all, sleep } from 'reactronic'
+  reentrance, Action, Monitor, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
 export { tracing } from './common'
 
 export const output: string[] = []
@@ -34,7 +34,7 @@ export class AsyncDemoView {
     if (!Action.current.isCanceled) {
       for (const x of lines) {
         output.push(x) /* istanbul ignore next */
-        if (RT.isTraceOn && !RT.trace.silent) console.log(x)
+        if (R.isTraceOn && !R.trace.silent) console.log(x)
       }
     }
   }
