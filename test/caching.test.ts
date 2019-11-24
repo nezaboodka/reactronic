@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { State, cached, Action, Tools as RT, trace, trigger } from 'reactronic'
+import { State, cached, Action, Tools as RT, trace, trigger, action } from 'reactronic'
 import { tracing } from './common'
 
 export class Demo extends State {
@@ -16,6 +16,11 @@ export class Demo extends State {
     const stamp = new Date().toUTCString()
     const t = this.title.toLowerCase()
     this.title = `${t} - ${stamp}`
+  }
+
+  @action
+  setUnassigned(value: any): void {
+    this.unassigned = value
   }
 
   @cached
@@ -48,7 +53,8 @@ test('Main', t => {
   })
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
   t.throws(() => demo.produceSideEffect(), 'cache must have no side effects: #21 Demo.produceSideEffect should not change v103t104#21 Demo.title')
-  t.throws(() => console.log(demo.unassigned), 'unassigned properties are not supported: v1t103#21 Demo.unassigned is used by T1 (<none>)')
+  // t.throws(() => demo.setUnassigned('test'), 'stateful property must be initialized during object creation: Demo.unassigned')
+  t.is(demo.unassigned, undefined)
   t.is(demo.cachedMap().size, 0)
   t.is(demo.cachedSet().size, 0)
 })

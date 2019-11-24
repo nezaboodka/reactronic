@@ -106,13 +106,8 @@ export class Hooks implements ProxyHandler<RObject> {
     else if (m === SYM_OBJECT) {
       // do nothing, just return instance
     }
-    else { // value === STATELESS
+    else // result === STATELESS
       result = Reflect.get(o.stateless, m, receiver)
-      if (result === undefined && m !== Symbol.toPrimitive && m !== '$$typeof')
-        // Record.markViewed(r, m, false); // treat undefined fields as stateful
-        // Dbg.log('', '', `unassigned property is used: ${Hints.record(r, m)} is used by T${ctx.id} (${ctx.hint})`, undefined, ' make sure it is not stateful property')
-        throw misuse(`unassigned properties are not supported: ${Hints.record(r, m)} is used by T${ctx.id} (${ctx.hint})`)
-    }
     return result
   }
 
@@ -120,17 +115,21 @@ export class Hooks implements ProxyHandler<RObject> {
     const r: Record = Snapshot.writable().write(o, m, value)
     if (r !== NIL) {
       const curr = r.data[m] as Observable
-      const prev = r.prev.record.data[m] as Observable
-      const changed = prev === undefined || prev.value !== value
-      if (changed) {
-        if (prev === curr)
-          r.data[m] = new Observable(value)
-        else
-          curr.value = value
+      if (curr !== undefined || r.prev.record.snapshot === NIL.snapshot) {
+        const prev = r.prev.record.data[m] as Observable
+        const changed = prev === undefined || prev.value !== value
+        if (changed) {
+          if (prev === curr)
+            r.data[m] = new Observable(value)
+          else
+            curr.value = value
+        }
+        else if (prev !== curr)
+          r.data[m] = prev // restore previous value
+        Snapshot.markChanged(r, m, value, changed)
       }
-      else if (prev !== curr)
-        r.data[m] = prev // restore previous value
-      Snapshot.markChanged(r, m, value, changed)
+      else
+        Reflect.set(Object.getPrototypeOf(o.stateless), m, value, receiver)
     }
     else
       o.stateless[m] = value
