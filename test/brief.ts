@@ -11,10 +11,17 @@ export class Demo extends State {
   @stateless shared: string = 'for testing purposes'
   title: string = 'Demo'
   users: Person[] = []
+  usersWithoutLast: Person[] = []
 
   @action
   loadUsers(): void {
     this._loadUsers()
+  }
+
+  @trigger
+  protected backup(): void {
+    this.usersWithoutLast = this.users.slice()
+    this.usersWithoutLast.pop()
   }
 
   private _loadUsers(): void {
@@ -64,7 +71,7 @@ export class DemoView extends State {
   @cached
   filteredUsers(): Person[] {
     const m = this.model
-    let result: Person[] = m.users
+    let result: Person[] = m.users.slice()
     if (this.userFilter.length > 0) {
       result = []
       for (const x of m.users)

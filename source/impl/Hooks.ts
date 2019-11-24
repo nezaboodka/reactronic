@@ -239,6 +239,10 @@ export class Hooks implements ProxyHandler<RObject> {
 export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
   static readonly global: CopyOnWriteProxy = new CopyOnWriteProxy()
 
+  getPrototypeOf(binding: CopyOnWrite<any>): object | null {
+    return Object.getPrototypeOf(binding.value)
+  }
+
   get(binding: CopyOnWrite<any>, m: Member, receiver: any): any {
     const a: any = binding.readable(receiver)
     return a[m]
@@ -252,8 +256,11 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
   static seal(observable: Observable | symbol, proxy: any, m: Member): void {
     if (observable instanceof Observable) {
       const v = observable.value
-      if (Array.isArray(v)) {
-        if (!Object.isFrozen(v)) {
+      if (Array.isArray(v) || v instanceof Array) {
+        if (v instanceof CopyOnWriteArray && !Array.isArray(v)) {
+          throw misuse(`${Hints.getHint(proxy)}.${m.toString()} collection cannot be reused from another property without cloning`)
+        }
+        else if (!Object.isFrozen(v)) {
           if (!observable.isComputed)
             observable.value = new Proxy(CopyOnWriteArray.seal(proxy, m, v), CopyOnWriteProxy.global)
           else
@@ -261,7 +268,10 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
         }
       }
       else if (v instanceof Set) {
-        if (!Object.isFrozen(v)) {
+        /*if (v instanceof CopyOnWriteSet) {
+          throw misuse(`${Hints.getHint(proxy)}.${m.toString()} collection cannot be reused from another property without cloning`)
+        }
+        else*/ if (!Object.isFrozen(v)) {
           if (!observable.isComputed)
             observable.value = new Proxy(CopyOnWriteSet.seal(proxy, m, v), CopyOnWriteProxy.global)
           else
@@ -269,7 +279,10 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
         }
       }
       else if (v instanceof Map) {
-        if (!Object.isFrozen(v)) {
+        /*if (v instanceof CopyOnWriteMap) {
+          throw misuse(`${Hints.getHint(proxy)}.${m.toString()} collection cannot be reused from another property without cloning`)
+        }
+        else*/ if (!Object.isFrozen(v)) {
           if (!observable.isComputed)
             observable.value = new Proxy(CopyOnWriteMap.seal(proxy, m, v), CopyOnWriteProxy.global)
           else

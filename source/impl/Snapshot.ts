@@ -278,7 +278,7 @@ export class Snapshot implements Context {
   }
 
   private unlinkHistory(): void {
-    if (Dbg.isOn && Dbg.trace.gc) Dbg.log('', '[G]', `Dismiss history of v${this.stamp}t${this.id} (${this.hint})`)
+    if (Dbg.isOn && Dbg.trace.gc) Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: Record, o: RObject) => {
       if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== NIL) Dbg.log(' ', '  ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
       r.prev.record = NIL // unlink history

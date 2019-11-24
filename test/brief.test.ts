@@ -37,6 +37,7 @@ test('Main', t => {
     t.is(rendering.args.length, 1)
     t.is(rendering.value.length, 1)
     app.model.loadUsers()
+    t.is(app.model.users.length - 1, app.model.usersWithoutLast.length)
     t.is(rendering.value.length, 2)
     const daddy: Person = app.model.users[0]
     t.is(daddy.name, 'John')
@@ -133,7 +134,7 @@ test('Main', t => {
     t.is(RT.getTraceHint(app), 'DemoView')
     RT.setTraceHint(app, 'App')
     t.is(RT.getTraceHint(app), 'App')
-    t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'loadUsers', 'title', 'users'])
+    t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'loadUsers', 'backup', 'title', 'users', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
   }
   finally { // cleanup
