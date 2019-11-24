@@ -212,7 +212,6 @@ export class Hooks implements ProxyHandler<RObject> {
       Snapshot.freezeRecord(initial)
       o = new RObject(obj, obj, Hooks.proxy, initial, obj.constructor.name)
       Utils.set(obj, SYM_OBJECT, o)
-      // Hooks.decorateField(false, {kind: Kind.Stateful}, obj, UNMOUNT)
     }
     return o
   }
