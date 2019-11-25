@@ -9,7 +9,6 @@ import { State, Action, Cache, stateless, trigger, cached, isolated } from 'reac
 export function reactive(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
   const rx = state.rx
-  rx.counter = state.counter
   rx.refresh = refresh // just in case React will change refresh on each rendering
   React.useEffect(rx.unmount, [])
   return rx.render(render)
@@ -17,7 +16,7 @@ export function reactive(render: () => JSX.Element): JSX.Element {
 
 // Internal
 
-type ReactState = { rx: Rx, counter: number }
+type ReactState = { rx: Rx }
 
 class Rx extends State {
   @cached
@@ -28,10 +27,9 @@ class Rx extends State {
   @trigger
   pulse(): void {
     if (Cache.of(this.render).invalid)
-      isolated(this.refresh, {rx: this, counter: this.counter + 1})
+      isolated(this.refresh, {rx: this})
   }
 
-  @stateless counter: number = 0
   @stateless refresh: (next: ReactState) => void = nop
   @stateless readonly unmount = (): (() => void) => {
     return (): void => { isolated(Cache.unmount, this) }
@@ -40,7 +38,7 @@ class Rx extends State {
 
 function createReactState<V>(): ReactState {
   const rx = Action.runAs<Rx>('<rx>', false, undefined, undefined, createRx)
-  return {rx, counter: 0}
+  return {rx}
 }
 
 function createRx<V>(): Rx {

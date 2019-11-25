@@ -6,33 +6,33 @@
 import * as React from 'react'
 import { State, Action, Cache, stateless, trigger, cached, isolated, Reactronic as R, Trace } from 'reactronic'
 
-export function reactive(render: (counter: number) => JSX.Element, trace?: Partial<Trace>, action?: Action): JSX.Element {
+export function reactive(render: (cycle: number) => JSX.Element, trace?: Partial<Trace>, action?: Action): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
     !trace ? createReactState : () => createReactState(trace))
   const rx = state.rx
-  rx.counter = state.counter
+  rx.cycle = state.cycle
   rx.refresh = refresh // just in case React will change refresh on each rendering
   React.useEffect(rx.unmount, [])
-  return rx.view(render, action)
+  return rx.render(render, action)
 }
 
 // Internal
 
-type ReactState<V> = { rx: Rx<V>, counter: number }
+type ReactState<V> = { rx: Rx<V>, cycle: number }
 
 class Rx<V> extends State {
   @cached
-  view(generate: (counter: number) => V, action?: Action): V {
-    return action ? action.inspect(() => generate(this.counter)) : generate(this.counter)
+  render(generate: (cycle: number) => V, action?: Action): V {
+    return action ? action.inspect(() => generate(this.cycle)) : generate(this.cycle)
   }
 
   @trigger
-  keepFresh(): void {
-    if (Cache.of(this.view).invalid)
-      isolated(this.refresh, {rx: this, counter: this.counter + 1})
+  pulse(): void {
+    if (Cache.of(this.render).invalid)
+      isolated(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
-  @stateless counter: number = 0
+  @stateless cycle: number = 0
   @stateless refresh: (next: ReactState<V>) => void = nop
   @stateless readonly unmount = (): (() => void) => {
     return (): void => { isolated(Cache.unmount, this) }
@@ -42,7 +42,7 @@ class Rx<V> extends State {
 function createReactState<V>(trace?: Partial<Trace>): ReactState<V> {
   const hint = R.isTraceOn ? getComponentName() : '<rx>'
   const rx = Action.runAs<Rx<V>>(hint, false, trace, undefined, createRx, hint, trace)
-  return {rx, counter: 0}
+  return {rx, cycle: 0}
 }
 
 function createRx<V>(hint: string | undefined, trace: Trace | undefined): Rx<V> {
@@ -50,8 +50,8 @@ function createRx<V>(hint: string | undefined, trace: Trace | undefined): Rx<V> 
   if (hint)
     R.setTraceHint(rx, hint)
   if (trace) {
-    Cache.of(rx.view).setup({trace})
-    Cache.of(rx.keepFresh).setup({trace})
+    Cache.of(rx.render).setup({trace})
+    Cache.of(rx.pulse).setup({trace})
   }
   return rx
 }
