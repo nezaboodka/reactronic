@@ -25,7 +25,7 @@ class Rx extends State {
   }
 
   @trigger
-  pulse(): void {
+  protected pulse(): void {
     if (Cache.of(this.render).invalid)
       isolated(this.refresh, {rx: this})
   }
@@ -34,15 +34,15 @@ class Rx extends State {
   @stateless readonly unmount = (): (() => void) => {
     return (): void => { isolated(Cache.unmount, this) }
   }
+
+  static create<V>(): Rx {
+    return new Rx()
+  }
 }
 
 function createReactState<V>(): ReactState {
-  const rx = Action.runAs<Rx>('<rx>', false, undefined, undefined, createRx)
+  const rx = Action.runAs<Rx>('<rx>', false, undefined, undefined, Rx.create)
   return {rx}
-}
-
-function createRx<V>(): Rx {
-  return new Rx()
 }
 
 function nop(...args: any[]): void {
