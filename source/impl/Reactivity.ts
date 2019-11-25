@@ -312,7 +312,7 @@ class CallResult extends Observable implements Observer {
     if (rival && rival !== this && !rival.worker.isCanceled) {
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
-          throw misuse(`${head.hint()} is not reentrant over ${rival.hint()}`)
+          throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${rival.hint()} (${rival.why()})`)
         case Reentrance.WaitAndRestart:
           error = new Error(`T${this.worker.id} (${this.worker.hint}) will be restarted after T${rival.worker.id} (${rival.worker.hint})`)
           this.worker.cancel(error, rival.worker)
