@@ -325,7 +325,7 @@ class Action implements Worker {
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
     trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T
-  static off<T>(func: F<T>, ...args: any[]): T
+  static isolated<T>(func: F<T>, ...args: any[]): T
 }
 
 // Cache
@@ -340,7 +340,7 @@ abstract class Cache<T> {
 
   setup(options: Partial<Options>): Options
   invalidate(): boolean
-  getStaleResultWhileRevalidate(args?: any[]): T | undefined
+  getCachedAndRevalidate(args?: any[]): T | undefined
 
   static of<T>(method: F<T>): Cache<T>
   static unmount(...objects: any[]): void
