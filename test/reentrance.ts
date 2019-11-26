@@ -42,9 +42,9 @@ export class AsyncDemoView {
   @cached @urgingArgs(false)
   async render(): Promise<string[]> {
     const result: string[] = []
-    result.push(`${loading.busy ? '[...] ' : ''}Url: ${this.model.url}`)
+    result.push(`${loading.isActive ? '[...] ' : ''}Url: ${this.model.url}`)
     await sleep(10)
-    result.push(`${loading.busy ? '[...] ' : ''}Log: ${this.model.log.join(', ')}`)
+    result.push(`${loading.isActive ? '[...] ' : ''}Log: ${this.model.log.join(', ')}`)
     return result
   }
 }

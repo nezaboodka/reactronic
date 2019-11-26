@@ -9,17 +9,16 @@ import { Transaction } from './Transaction'
 import { Monitor, Worker } from '../Monitor'
 
 export class MonitorImpl extends Monitor {
-  busy: boolean = false
+  isActive: boolean = false
   workerCount: number = 0
   workers = new Set<Worker>()
-  animationFrameCount: number = 0
   private readonly x: { delayBeforeIdle?: number, timeout: any } =
     { delayBeforeIdle: undefined, timeout: undefined }
 
   enter(worker: Worker): void {
     this.x.timeout = MonitorImpl.clear(this.x.timeout) // yes, on each enter
     if (this.workerCount === 0)
-      this.busy = true
+      this.isActive = true
     this.workerCount++
     this.workers.add(worker)
   }
@@ -56,9 +55,8 @@ export class MonitorImpl extends Monitor {
     if (now || this.x.delayBeforeIdle === undefined) {
       if (this.workerCount > 0 || this.workers.size > 0) /* istanbul ignore next */
         throw misuse('cannot reset monitor having active workers')
-      this.busy = false
+      this.isActive = false
       this.x.timeout = MonitorImpl.clear(this.x.timeout)
-      this.animationFrameCount = 0
     }
     else
       this.x.timeout = setTimeout(() =>

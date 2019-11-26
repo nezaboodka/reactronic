@@ -7,10 +7,9 @@ import { State } from './impl/Hooks'
 import { MonitorImpl } from './impl/MonitorImpl'
 
 export abstract class Monitor extends State {
-  abstract readonly busy: boolean
+  abstract readonly isActive: boolean
   abstract readonly workerCount: number
   abstract readonly workers: ReadonlySet<Worker>
-  abstract readonly animationFrameCount: number
 
   static create(hint?: string, delayBeforeIdle?: number): Monitor { return MonitorImpl.create(hint, delayBeforeIdle) }
 }
