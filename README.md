@@ -272,10 +272,9 @@ enum Reentrance {
 }
 
 class Monitor {
-  readonly busy: boolean
+  readonly isActive: boolean
   readonly workerCount: number
   readonly workers: ReadonlySet<Worker>
-  readonly animationFrameCount: number
   static create(hint?: string, delayBeforeIdle?: number): Monitor
 }
 
