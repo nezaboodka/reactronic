@@ -9,6 +9,7 @@ import { Monitor } from './Monitor'
 
 export interface Options {
   readonly kind: Kind
+  readonly priority: number
   readonly urgingArgs: boolean
   readonly delay: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance

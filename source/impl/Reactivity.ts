@@ -43,7 +43,7 @@ export class Method extends Cache<any> {
     let call: Call = this.read(args)
     const ctx = call.context
     const c: CallResult = call.result
-    if (!call.reuse && (!weak || !c.invalid.recomputing)) {
+    if (!call.reuse && call.record.data[SYM_UNMOUNT] === undefined && (!weak || !c.invalid.recomputing)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
@@ -240,8 +240,8 @@ class CallResult extends Observable implements Observer {
   }
 
   hint(): string { return `${Hints.record(this.record, this.method.member)}` }
+  priority(): number { return this.options.priority }
   why(): string { return `${Hints.record(this.record, this.method.member)}${this.cause ? `   <<   ${propagationHint(this.cause).join('   <<   ')}` : '   <<   first on-demand call'}` }
-
 
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
@@ -271,7 +271,7 @@ class CallResult extends Observable implements Observer {
       if (notSelfInvalidation) {
         this.invalid.cause = cause
         this.invalid.since = since
-        const isTrigger = this.options.kind === Kind.Trigger && this.record.data[SYM_UNMOUNT] === undefined
+        const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[SYM_UNMOUNT] === undefined*/
         if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ' and will run automatically' : ''}`)
         this.unsubscribeFromAll()
         if (isTrigger) // stop cascade invalidation on trigger
@@ -448,11 +448,16 @@ class CallResult extends Observable implements Observer {
           for (const m in r.prev.record.data)
             CallResult.finalizeChange(true, since, r, m, triggers)
       })
+      triggers.sort(CallResult.compareTriggersByPriority)
     }
     else {
       snapshot.changeset.forEach((r: Record, o: RObject) =>
         r.changes.forEach(m => CallResult.finalizeChange(true, since, r, m)))
     }
+  }
+
+  private static compareTriggersByPriority(a: Observer, b: Observer): number {
+    return a.priority() - b.priority()
   }
 
   private static finalizeChange(unsubscribe: boolean, timestamp: number, r: Record, m: Member, triggers?: Observer[]): void {

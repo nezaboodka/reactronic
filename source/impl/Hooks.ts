@@ -49,6 +49,7 @@ export function options(options: Partial<Options>): F<any> {
 
 const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   kind: Kind.Field,
+  priority: 0,
   delay: -2, // never
   reentrance: Reentrance.PreventWithError,
   urgingArgs: false,
@@ -59,6 +60,7 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
 export class OptionsImpl implements Options {
   readonly body: Function
   readonly kind: Kind
+  readonly priority: number
   readonly urgingArgs: boolean
   readonly delay: number
   readonly reentrance: Reentrance
@@ -69,6 +71,7 @@ export class OptionsImpl implements Options {
   constructor(body: Function | undefined, existing: OptionsImpl, patch: Partial<OptionsImpl>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body
     this.kind = merge(DEFAULT_STATELESS_OPTIONS.kind, existing.kind, patch.kind, implicit)
+    this.priority = merge(DEFAULT_STATELESS_OPTIONS.priority, existing.priority, patch.priority, implicit)
     this.urgingArgs = merge(DEFAULT_STATELESS_OPTIONS.urgingArgs, existing.urgingArgs, patch.urgingArgs, implicit)
     this.delay = merge(DEFAULT_STATELESS_OPTIONS.delay, existing.delay, patch.delay, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)

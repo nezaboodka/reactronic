@@ -66,6 +66,10 @@ export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescri
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
+export function priority(priority: number): F<any> {
+  return options({priority})
+}
+
 export function urgingArgs(urgingArgs: boolean): F<any> {
   return options({urgingArgs})
 }
