@@ -3,11 +3,11 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { State, stateless, action, trigger, cached, urgingArgs, Reactronic as R } from 'reactronic'
+import { Stateful, stateless, action, trigger, cached, urgingArgs, Reactronic as R } from 'reactronic'
 
 export const output: string[] = []
 
-export class Demo extends State {
+export class Demo extends Stateful {
   @stateless shared: string = 'for testing purposes'
   title: string = 'Demo'
   users: Person[] = []
@@ -44,7 +44,7 @@ export class Demo extends State {
   }
 }
 
-export class DemoView extends State {
+export class DemoView extends Stateful {
   @stateless shared: string = 'for testing purposes'
   @stateless readonly model: Demo
   userFilter: string = 'Jo'
@@ -102,7 +102,7 @@ export class DemoView extends State {
 // Person
 
 /* istanbul ignore next */
-export class Person extends State {
+export class Person extends Stateful {
   id: string | null = null
   name: string | null = null
   age: number = 0

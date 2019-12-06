@@ -3,14 +3,14 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { State, state, action, trigger, cached, urgingArgs, delay, monitor,
+import { Stateful, state, action, trigger, cached, urgingArgs, delay, monitor,
   reentrance, Action, Monitor, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
 export { tracing } from './common'
 
 export const output: string[] = []
 export const loading = Monitor.create('loading', 0)
 
-export class AsyncDemo extends State {
+export class AsyncDemo extends Stateful {
   url: string = 'reactronic'
   log: string[] = ['RTA']
 

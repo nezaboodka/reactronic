@@ -46,7 +46,7 @@ All state objects are transparently hooked to track access to
 their properties, both on reads and writes.
 
 ``` typescript
-class MyModel extends State {
+class MyModel extends Stateful {
   url: string = "https://github.com/nezaboodka/reactronic"
   content: string = "transactionally reactive state management"
   timestamp: Date = Date.now()
@@ -54,7 +54,7 @@ class MyModel extends State {
 ```
 
 In the example above, the class `MyModel` is based on Reactronic's
-`State` class and all its properties `url`, `content`, and `timestamp`
+`Stateful` class and all its properties `url`, `content`, and `timestamp`
 are hooked.
 
 ### Action
@@ -65,7 +65,7 @@ to provide transparent atomicity (by implicit context switching
 and isolation).
 
 ``` typescript
-class MyModel extends State {
+class MyModel extends Stateful {
   // ...
   @action
   async load(url: string): Promise<void> {
@@ -229,7 +229,6 @@ NPM: `npm install reactronic`
 ```typescript
 // Decorators & Operators
 
-function state(proto, prop) // field only
 function stateless(proto, prop) // field only
 function action(proto, prop, pd) // method only
 function trigger(proto, prop, pd) // method only

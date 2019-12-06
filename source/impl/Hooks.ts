@@ -19,7 +19,7 @@ import { Trace } from '../Trace'
 
 const EMPTY_META = Object.freeze({})
 
-export abstract class State {
+export abstract class Stateful {
   constructor() {
     const proto = new.target.prototype
     const blank = Hooks.getMeta<any>(proto, SYM_BLANK)
@@ -183,7 +183,7 @@ export class Hooks implements ProxyHandler<RObject> {
     // Setup method trap
     const opts = Hooks.applyOptions(proto, method, pd.value, true, configurable, options, implicit)
     const trap = function(this: any): any {
-      const o = this instanceof State ? Utils.get<RObject>(this, SYM_OBJECT) : Hooks.acquireInstance(this)
+      const o = this instanceof Stateful ? Utils.get<RObject>(this, SYM_OBJECT) : Hooks.acquireInstance(this)
       const value = Hooks.createMethodTrap(o, method, opts)
       Object.defineProperty(o.stateless, method, { value, enumerable, configurable })
       return value

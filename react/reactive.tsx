@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { State, Action, Cache, stateless, trigger, cached, isolated, Reactronic as R, Trace } from 'reactronic'
+import { Stateful, Action, Cache, stateless, trigger, cached, isolated, Reactronic as R, Trace } from 'reactronic'
 
 export function reactive(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<Trace>, action?: Action): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -20,7 +20,7 @@ export function reactive(render: (cycle: number) => JSX.Element, name?: string, 
 
 type ReactState<V> = { rx: Rx<V>, cycle: number }
 
-class Rx<V> extends State {
+class Rx<V> extends Stateful {
   @cached
   render(generate: (cycle: number) => V, action?: Action): V {
     return action ? action.inspect(() => generate(this.cycle)) : generate(this.cycle)

@@ -3,10 +3,10 @@
 // Copyright (C) 2016-2019 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { State } from './impl/Hooks'
+import { Stateful } from './impl/Hooks'
 import { MonitorImpl } from './impl/MonitorImpl'
 
-export abstract class Monitor extends State {
+export abstract class Monitor extends Stateful {
   abstract readonly isActive: boolean
   abstract readonly workerCount: number
   abstract readonly workers: ReadonlySet<Worker>

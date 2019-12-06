@@ -4,10 +4,10 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { State, action, cached } from 'reactronic'
+import { Stateful, action, cached } from 'reactronic'
 import { Component } from './Component'
 
-class MyModel extends State {
+class MyModel extends Stateful {
   url: string = 'https://nezaboodka.com'
   content: string = ''
   timestamp: number = Date.now()
