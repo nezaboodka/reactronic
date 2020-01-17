@@ -52,6 +52,8 @@ test('Main', t => {
   const demo = Action.run('caching', () => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')
+    // d.title = 'Demo+'
+    // t.is(d.cachedTitle(), 'Demo+')
     return d
   })
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
