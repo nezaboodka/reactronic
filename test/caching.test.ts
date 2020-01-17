@@ -7,7 +7,7 @@ import test from 'ava'
 import { Stateful, cached, Action, Reactronic as R, trace, trigger, action } from 'reactronic'
 import { tracing } from './common'
 
-export class Demo extends Stateful {
+export class DemoBase extends Stateful {
   title: string = 'Demo'
   unassigned?: any
 
@@ -42,6 +42,9 @@ export class Demo extends Stateful {
   cachedSet(): Set<string> {
     return new Set<string>()
   }
+}
+
+export class Demo extends DemoBase {
 }
 
 test('Main', t => {
