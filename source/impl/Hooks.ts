@@ -102,7 +102,7 @@ export class Hooks implements ProxyHandler<RObject> {
     const ctx = Snapshot.readable()
     const r: Record = ctx.read(o)
     result = r.data[m]
-    if (result instanceof Observable && !result.isComputed) {
+    if (result instanceof Observable && result.isField) {
       Snapshot.markViewed(r, m, result, Kind.Field, false)
       result = result.value
     }
@@ -262,7 +262,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
           throw misuse(`${Hints.getHint(proxy)}.${m.toString()} collection cannot be reused from another property without cloning`)
         }
         else if (!Object.isFrozen(v)) {
-          if (!observable.isComputed)
+          if (observable.isField)
             observable.value = new Proxy(CopyOnWriteArray.seal(proxy, m, v), CopyOnWriteProxy.global)
           else
             Object.freeze(v) // just freeze without copy-on-write hooks
@@ -273,7 +273,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
           throw misuse(`${Hints.getHint(proxy)}.${m.toString()} collection cannot be reused from another property without cloning`)
         }
         else*/ if (!Object.isFrozen(v)) {
-          if (!observable.isComputed)
+          if (observable.isField)
             observable.value = new Proxy(CopyOnWriteSet.seal(proxy, m, v), CopyOnWriteProxy.global)
           else
             Utils.freezeSet(v) // just freeze without copy-on-write hooks
@@ -284,7 +284,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
           throw misuse(`${Hints.getHint(proxy)}.${m.toString()} collection cannot be reused from another property without cloning`)
         }
         else*/ if (!Object.isFrozen(v)) {
-          if (!observable.isComputed)
+          if (observable.isField)
             observable.value = new Proxy(CopyOnWriteMap.seal(proxy, m, v), CopyOnWriteProxy.global)
           else
             Utils.freezeMap(v) // just freeze without copy-on-write hooks

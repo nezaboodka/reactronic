@@ -200,7 +200,7 @@ class CallResult extends Observable implements Observer {
   static current?: CallResult = undefined
   static asyncTriggerBatch: CallResult[] = []
 
-  get isComputed(): boolean { return true }
+  get isField(): boolean { return false }
   readonly method: Method
   readonly record: Record
   readonly observables: Map<Observable, MemberHint>
@@ -265,7 +265,7 @@ class CallResult extends Observable implements Observer {
 
   invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void {
     if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
-      const notSelfInvalidation = value.isComputed ||
+      const notSelfInvalidation = !value.isField ||
         cause.record.snapshot !== this.record.snapshot ||
         !cause.record.changes.has(cause.member)
       if (notSelfInvalidation) {
