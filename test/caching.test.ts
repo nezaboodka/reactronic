@@ -4,10 +4,11 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Stateful, cached, Action, Reactronic as R, trace, trigger, action } from 'reactronic'
+import { Stateful, cached, Action, Reactronic as R, trace, trigger, action, stateless } from 'reactronic'
 import { tracing } from './common'
 
 export class DemoBase extends Stateful {
+  @stateless raw: string = 'stateless data'
   title: string = 'Demo'
   unassigned?: any
 
@@ -30,6 +31,7 @@ export class DemoBase extends Stateful {
 
   @cached @trace({})
   produceSideEffect(): void {
+    this.raw = 'should not fail on this line'
     this.title = 'should fail on this line'
   }
 
@@ -60,6 +62,7 @@ test('Main', t => {
   t.throws(() => demo.produceSideEffect(), 'cache must have no side effects: #21 Demo.produceSideEffect should not change v103t104#21 Demo.title')
   // t.throws(() => demo.setUnassigned('test'), 'stateful property must be initialized during object creation: Demo.unassigned')
   t.is(demo.unassigned, undefined)
+  t.is(demo.raw, 'should not fail on this line')
   t.is(demo.cachedMap().size, 0)
   t.is(demo.cachedSet().size, 0)
 })
