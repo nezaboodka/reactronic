@@ -486,7 +486,7 @@ class CallResult extends Observable implements Observer {
       // Performance tracking
       if (Hooks.repetitiveReadWarningThreshold > 0) {
         cache.observables.forEach((hint, value) => {
-          if (hint.times > Hooks.repetitiveReadWarningThreshold) Dbg.log('', '[!]', `${cache.hint()} uses ${Hints.record(hint.record, hint.member)} ${hint.times} times`, 0, ' *** WARNING ***')
+          if (hint.times > Hooks.repetitiveReadWarningThreshold) Dbg.log('', '[!]', `${cache.hint()} uses ${Hints.record(hint.record, hint.member)} ${hint.times} times (consider remembering it in local variable)`, 0, ' *** WARNING ***')
         })
       }
     }
