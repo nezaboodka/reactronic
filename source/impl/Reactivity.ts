@@ -308,18 +308,23 @@ class CallResult extends Observable implements Observer {
 
   reenterOver(head: CallResult): this {
     let error: Error | undefined = undefined
-    const rival = head.invalid.recomputing
-    if (rival && rival !== this && !rival.worker.isCanceled) {
+    const existing = head.invalid.recomputing
+    if (existing && existing !== this && !existing.worker.isCanceled) {
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
-          throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${rival.hint()} (${rival.why()})`)
+          throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${existing.hint()} (${existing.why()})`)
         case Reentrance.WaitAndRestart:
-          error = new Error(`T${this.worker.id} (${this.worker.hint}) will be restarted after T${rival.worker.id} (${rival.worker.hint})`)
-          this.worker.cancel(error, rival.worker)
+          error = new Error(`T${this.worker.id} (${this.worker.hint}) will be restarted after T${existing.worker.id} (${existing.worker.hint})`)
+          this.worker.cancel(error, existing.worker)
           // TODO: "c.invalid.recomputing = caller" in order serialize all the actions
           break
+        case Reentrance.CancelAndWaitPrevious:
+          error = new Error(`T${this.worker.id} (${this.worker.hint}) will be restarted after T${existing.worker.id} (${existing.worker.hint})`)
+          this.worker.cancel(error, existing.worker)
+          existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by T${this.worker.id} (${this.worker.hint})`), null)
+          break
         case Reentrance.CancelPrevious:
-          rival.worker.cancel(new Error(`T${rival.worker.id} (${rival.worker.hint}) is canceled by T${this.worker.id} (${this.worker.hint}) and will be silently ignored`), null)
+          existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by T${this.worker.id} (${this.worker.hint})`), null)
           head.invalid.recomputing = undefined // allow
           break
         case Reentrance.RunSideBySide:

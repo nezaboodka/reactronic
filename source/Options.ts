@@ -25,9 +25,10 @@ export enum Kind {
 }
 
 export enum Reentrance {
-  PreventWithError = 1, // fail with error if there is an existing action in progress (default)
-  WaitAndRestart = 0, // wait for existing action to finish and then restart reentrant one
-  CancelPrevious = -1, // cancel previous action in favor of recent one
-  OverwritePrevious = -2, // allow previous to complete, but overwrite it with ignoring any conflicts
-  RunSideBySide = -3, // multiple simultaneous actions are allowed
+  PreventWithError = 1, // fail with error if there is an existing call in progress (default)
+  WaitAndRestart = 0, // wait for existing call to finish and then restart reentrant one
+  CancelPrevious = -1, // cancel previous call in favor of recent one
+  CancelAndWaitPrevious = -2, // cancel previous call in favor of recent one (but wait until canceling is completed)
+  OverwritePrevious = -3, // allow previous to complete, but overwrite it with ignoring any conflicts
+  RunSideBySide = -4, // multiple simultaneous actions are allowed
 }
