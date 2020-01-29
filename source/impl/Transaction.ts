@@ -164,8 +164,8 @@ export class Transaction extends Action {
   }
 
   private guard(): void {
-    if (this.error) // prevent from continuing canceled action
-      throw error(this.error.message, this.error)
+    // if (this.error) // prevent from continuing canceled action
+    //   throw error(this.error.message, this.error)
     if (this.sealed && Transaction.running !== this)
       throw misuse('cannot run action that is already sealed')
   }
