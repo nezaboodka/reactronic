@@ -194,7 +194,7 @@ export class Hooks implements ProxyHandler<RObject> {
   static acquireMeta(proto: any, sym: symbol): any {
     let meta: any = proto[sym]
     if (!proto.hasOwnProperty(sym)) {
-      meta = Object.setPrototypeOf({}, meta || {})
+      meta = {...meta} // clone meta from parent class
       Utils.set(proto, sym, meta)
     }
     return meta
