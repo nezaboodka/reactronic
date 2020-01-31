@@ -286,8 +286,10 @@ class CallResult extends Observable implements Observer {
   }
 
   revalidate(now: boolean, nothrow: boolean): void {
-    const delay = this.options.delay
-    if (now || delay === -1) {
+    const t = this.options.throttling
+    const interval = Date.now() + this.started // "started" is stored as negative value after trigger completion
+    const hold = t ? t - interval : 0 // "started" is stored as negative value after trigger completion
+    if (now || hold < 0) {
       if (!this.error && (this.options.kind === Kind.Action || !this.invalid.recomputing)) {
         try {
           const c: CallResult = this.method.call(false, undefined)
@@ -305,10 +307,12 @@ class CallResult extends Observable implements Observer {
         }
       }
     }
-    else if (delay === 0)
-      this.addToAsyncTriggerBatch()
-    else if (delay > 0) // ignore disabled triggers (delay -2)
-      setTimeout(() => this.revalidate(true, true), delay)
+    else if (t < Number.MAX_SAFE_INTEGER) {
+      if (hold > 0)
+        setTimeout(() => this.revalidate(true, true), hold)
+      else
+        this.addToAsyncTriggerBatch()
+    }
   }
 
   reenterOver(head: CallResult): this {
@@ -385,7 +389,7 @@ class CallResult extends Observable implements Observer {
 
   private leave(op: string, message: string, highlight: string | undefined = undefined): void {
     const ms: number = Date.now() - this.started
-    this.started = 0
+    this.started = -this.started
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', `${op}`, `${Hints.record(this.record, this.method.member)} ${message}`, ms, highlight)
     if (Hooks.performanceWarningThreshold > 0 && ms > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', this.why(), ms, '    *** took too long ***')
     if (this.options.monitor)
@@ -553,11 +557,11 @@ class CallResult extends Observable implements Observer {
     const value =  new CallResult(method, NIL, new OptionsImpl(body, opts, options, implicit))
     blank[m] = value
     // Add to the list if it's a trigger
-    if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
+    if (value.options.kind === Kind.Trigger && value.options.throttling < Number.MAX_SAFE_INTEGER) {
       const triggers = Hooks.acquireMeta(proto, SYM_TRIGGERS)
       triggers[m] = value
     }
-    else if (value.options.kind === Kind.Trigger && value.options.delay > -2) {
+    else if (value.options.kind === Kind.Trigger && value.options.throttling < Number.MAX_SAFE_INTEGER) {
       const triggers = Hooks.getMeta<any>(proto, SYM_TRIGGERS)
       delete triggers[m]
     }

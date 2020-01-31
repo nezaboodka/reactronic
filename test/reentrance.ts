@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, state, action, trigger, cached, urgingArgs, delay, monitor,
+import { Stateful, state, action, trigger, cached, urgingArgs, throttling, monitor,
   reentrance, Action, Monitor, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
 export { tracing } from './common'
 
@@ -28,7 +28,7 @@ export class AsyncDemoView {
   constructor(readonly model: AsyncDemo) {
   }
 
-  @trigger @delay(-1)
+  @trigger @throttling(-1)
   async print(): Promise<void> {
     const lines: string[] = await this.render()
     if (!Action.current.isCanceled) {

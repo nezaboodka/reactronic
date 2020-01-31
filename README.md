@@ -183,12 +183,12 @@ one.
 
 There are multiple options to configure behavior of transactional reactivity.
 
-**Delay** option defines a period between trigger invalidation and
-invocation of the corresponding function:
+**Throttling** option defines how often trigger is revalidated:
 
-  - `(ms)` - delay in milliseconds;
-  - `-1` - run trigger immediately once action is applied;
-  - `-2` - never run trigger (disabled trigger).
+  - `(ms)` - minimal delay in milliseconds between trigger revalidation;
+  - `-1` - run trigger immediately once action is applied (synchronously);
+  - `0` - run trigger immediately via event loop (asynchronously with zero timeout);
+  - `Number.MAX_SAFE_INTEGER+` - never run trigger (disabled trigger).
 
 **Reentrance** option defines how to handle reentrant calls of actions and triggers:
 
@@ -235,7 +235,7 @@ function trigger(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
 function urgingArgs(urgingArgs: boolean) // cached & triggers
-function delay(delay: number) // triggers only
+function throttling(throttling: number) // triggers only
 function reentrance(reentrance: Reentrance) // actions & triggers
 function monitor(monitor: Monitor | null)
 function trace(trace: Partial<Trace>)
@@ -249,7 +249,7 @@ function isolated<T>(func: F<T>, ...args: any[]): T
 interface Options {
   readonly kind: Kind
   readonly urgingArgs: boolean
-  readonly delay: number // milliseconds, -1 is immediately, -2 is never
+  readonly throttling: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null
   readonly trace?: Partial<Trace>

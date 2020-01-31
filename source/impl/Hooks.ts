@@ -50,7 +50,7 @@ export function options(options: Partial<Options>): F<any> {
 const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   kind: Kind.Field,
   priority: 0,
-  delay: -2, // never
+  throttling: Number.MAX_SAFE_INTEGER, // never revalidate
   reentrance: Reentrance.PreventWithError,
   urgingArgs: false,
   monitor: null,
@@ -62,7 +62,7 @@ export class OptionsImpl implements Options {
   readonly kind: Kind
   readonly priority: number
   readonly urgingArgs: boolean
-  readonly delay: number
+  readonly throttling: number
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null
   readonly trace?: Partial<Trace>
@@ -73,7 +73,7 @@ export class OptionsImpl implements Options {
     this.kind = merge(DEFAULT_STATELESS_OPTIONS.kind, existing.kind, patch.kind, implicit)
     this.priority = merge(DEFAULT_STATELESS_OPTIONS.priority, existing.priority, patch.priority, implicit)
     this.urgingArgs = merge(DEFAULT_STATELESS_OPTIONS.urgingArgs, existing.urgingArgs, patch.urgingArgs, implicit)
-    this.delay = merge(DEFAULT_STATELESS_OPTIONS.delay, existing.delay, patch.delay, implicit)
+    this.throttling = merge(DEFAULT_STATELESS_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
     this.trace = merge(DEFAULT_STATELESS_OPTIONS.trace, existing.trace, patch.trace, implicit)
