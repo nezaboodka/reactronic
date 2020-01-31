@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, action, trigger, cached, urgingArgs, Reactronic as R } from 'reactronic'
+import { Stateful, stateless, action, trigger, cached, incentiveArgs, Reactronic as R } from 'reactronic'
 
 export const output: string[] = []
 
@@ -81,7 +81,7 @@ export class DemoView extends Stateful {
     return result
   }
 
-  @cached @urgingArgs(true)
+  @cached @incentiveArgs(true)
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
     const r: string[] = []

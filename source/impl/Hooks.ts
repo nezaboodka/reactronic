@@ -52,7 +52,7 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   priority: 0,
   throttling: Number.MAX_SAFE_INTEGER, // never revalidate
   reentrance: Reentrance.PreventWithError,
-  urgingArgs: false,
+  incentiveArgs: false,
   monitor: null,
   trace: undefined,
 })
@@ -61,7 +61,7 @@ export class OptionsImpl implements Options {
   readonly body: Function
   readonly kind: Kind
   readonly priority: number
-  readonly urgingArgs: boolean
+  readonly incentiveArgs: boolean
   readonly throttling: number
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null
@@ -72,7 +72,7 @@ export class OptionsImpl implements Options {
     this.body = body !== undefined ? body : existing.body
     this.kind = merge(DEFAULT_STATELESS_OPTIONS.kind, existing.kind, patch.kind, implicit)
     this.priority = merge(DEFAULT_STATELESS_OPTIONS.priority, existing.priority, patch.priority, implicit)
-    this.urgingArgs = merge(DEFAULT_STATELESS_OPTIONS.urgingArgs, existing.urgingArgs, patch.urgingArgs, implicit)
+    this.incentiveArgs = merge(DEFAULT_STATELESS_OPTIONS.incentiveArgs, existing.incentiveArgs, patch.incentiveArgs, implicit)
     this.throttling = merge(DEFAULT_STATELESS_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)

@@ -234,7 +234,7 @@ function action(proto, prop, pd) // method only
 function trigger(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
-function urgingArgs(urgingArgs: boolean) // cached & triggers
+function incentiveArgs(incentiveArgs: boolean) // cached & triggers
 function throttling(throttling: number) // triggers only
 function reentrance(reentrance: Reentrance) // actions & triggers
 function monitor(monitor: Monitor | null)
@@ -248,7 +248,7 @@ function isolated<T>(func: F<T>, ...args: any[]): T
 
 interface Options {
   readonly kind: Kind
-  readonly urgingArgs: boolean
+  readonly incentiveArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null

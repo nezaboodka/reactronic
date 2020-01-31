@@ -70,8 +70,8 @@ export function priority(priority: number): F<any> {
   return options({priority})
 }
 
-export function urgingArgs(urgingArgs: boolean): F<any> {
-  return options({urgingArgs})
+export function incentiveArgs(incentiveArgs: boolean): F<any> {
+  return options({incentiveArgs})
 }
 
 export function throttling(throttling: number): F<any> {
