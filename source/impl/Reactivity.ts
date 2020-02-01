@@ -246,8 +246,11 @@ class CallResult extends Observable implements Observer {
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.record(this.record, this.method.member)} - step in  `, 0, '        │')
+      const started = Date.now()
       const result = Method.run<T>(this, func, ...args)
+      const ms = Date.now() - started
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record, this.method.member)} - step out `, 0, this.started > 0 ? '        │' : '')
+      if (Hooks.mainThreadBlockingWarningThreshold > 0 && ms > Hooks.mainThreadBlockingWarningThreshold) Dbg.log('', '[!]', this.why(), ms, '    *** blocks main thread ***')
       return result
     }
     return cacheBound
@@ -371,27 +374,32 @@ class CallResult extends Observable implements Observer {
       this.ret = this.ret.then(
         value => {
           this.value = value
-          this.leave('  □ ', '- finished ', ' OK ──┘')
+          this.leave(false, '  □ ', '- finished ', ' OK ──┘')
           return value
         },
         error => {
           this.error = error
-          this.leave('  □ ', '- finished ', 'ERR ──┘')
+          this.leave(false, '  □ ', '- finished ', 'ERR ──┘')
           throw error
         })
       if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', '_/', `${Hints.record(this.record, this.method.member)} - leave... `, 0, 'ASYNC ──┐')
     }
     else {
       this.value = this.ret
-      this.leave('_/', '- leave')
+      this.leave(true, '_/', '- leave')
     }
   }
 
-  private leave(op: string, message: string, highlight: string | undefined = undefined): void {
+  private leave(main: boolean, op: string, message: string, highlight: string | undefined = undefined): void {
     const ms: number = Date.now() - this.started
     this.started = -this.started
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', `${op}`, `${Hints.record(this.record, this.method.member)} ${message}`, ms, highlight)
-    if (Hooks.performanceWarningThreshold > 0 && ms > Hooks.performanceWarningThreshold) Dbg.log('', '[!]', this.why(), ms, '    *** took too long ***')
+    if (main) {
+      if (Hooks.mainThreadBlockingWarningThreshold > 0 && ms > Hooks.mainThreadBlockingWarningThreshold) Dbg.log('', '[!]', this.why(), ms, '    *** blocks main thread ***')
+    }
+    else {
+      if (Hooks.asyncActionDurationWarningThreshold > 0 && ms > Hooks.asyncActionDurationWarningThreshold) Dbg.log('', '[!]', this.why(), ms, '    *** took too long ***')
+    }
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
     // CachedResult.freeze(this)

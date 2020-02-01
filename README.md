@@ -349,7 +349,8 @@ abstract class Cache<T> {
 class Reactronic {
   static triggersAutoStartDisabled: boolean
   static repetitiveReadWarningThreshold: number
-  static performanceWarningThreshold: number
+  static mainThreadBlockingWarningThreshold: number
+  static asyncActionDurationWarningThreshold: number
   static readonly isTraceOn: boolean
   static readonly trace: Trace
   static setTrace(t: Trace | undefined)
