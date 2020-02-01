@@ -192,10 +192,11 @@ There are multiple options to configure behavior of transactional reactivity.
 
 **Reentrance** option defines how to handle reentrant calls of actions and triggers:
 
-  - `Reentrance.PreventWithError` - fail with error if there is an existing action in progress;
-  - `Reentrance.WaitAndRestart` - wait for previous action to finish and then restart current one;
-  - `Reentrance.CancelPrevious` - cancel previous action in favor of current one;
-  - `Reentrance.RunSideBySide` - multiple simultaneous actions are allowed.
+  - `Reentrance.PreventWithError` - fail with error if there is an existing call in progress;
+  - `Reentrance.WaitAndRestart` - wait for previous call to finish and then restart current one;
+  - `Reentrance.CancelPrevious` - cancel previous call in favor of recent one;
+  - `CancelAndWaitPrevious` - cancel previous call in favor of recent one (but wait until canceling is completed)
+  - `Reentrance.RunSideBySide` - multiple simultaneous calls are allowed.
 
 **Monitor** is an object that maintains the status of running functions,
 which it is attached to. A single monitor object can be shared between
@@ -249,7 +250,7 @@ function isolated<T>(func: F<T>, ...args: any[]): T
 interface Options {
   readonly kind: Kind
   readonly incentiveArgs: boolean
-  readonly throttling: number // milliseconds, -1 is immediately, -2 is never
+  readonly throttling: number // milliseconds, -1 is immediately (synchronously)
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null
   readonly trace?: Partial<Trace>
@@ -263,11 +264,12 @@ enum Kind {
 }
 
 enum Reentrance {
-  PreventWithError = 1, // fail with error if there is an existing action in progress (default)
-  WaitAndRestart = 0, // wait for existing action to finish and then restart reentrant one
-  CancelPrevious = -1, // cancel previous action in favor of recent one
+  PreventWithError = 1, // fail with error if there is an existing call in progress (default)
+  WaitAndRestart = 0, // wait for existing call to finish and then restart current one
+  CancelPrevious = -1, // cancel previous call in favor of recent one
+  CancelAndWaitPrevious = -2, // cancel previous call in favor of recent one (but wait until canceling is completed)
   OverwritePrevious = -2, // allow previous to complete, but overwrite it with ignoring any conflicts
-  RunSideBySide = -3 // multiple simultaneous actions are allowed
+  RunSideBySide = -3 // multiple simultaneous calls are allowed
 }
 
 class Monitor {
@@ -349,8 +351,8 @@ abstract class Cache<T> {
 class Reactronic {
   static triggersAutoStartDisabled: boolean
   static repetitiveReadWarningThreshold: number
-  static mainThreadBlockingWarningThreshold: number
-  static asyncActionDurationWarningThreshold: number
+  static mainThreadBlockingWarningThreshold: number // default 16.6 (60fps)
+  static asyncActionDurationWarningThreshold: number // default 150 ms
   static readonly isTraceOn: boolean
   static readonly trace: Trace
   static setTrace(t: Trace | undefined)
