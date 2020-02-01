@@ -250,7 +250,7 @@ class CallResult extends Observable implements Observer {
       const result = Method.run<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record, this.method.member)} - step out `, 0, this.started > 0 ? '        │' : '')
-      if (Hooks.mainThreadBlockingWarningThreshold > 0 && ms > Hooks.mainThreadBlockingWarningThreshold) Dbg.log('', '[!]', this.why(), ms, '    *** blocks main thread ***')
+      if (ms > Hooks.mainThreadBlockingWarningThreshold) Dbg.log('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
       return result
     }
     return cacheBound
@@ -394,12 +394,7 @@ class CallResult extends Observable implements Observer {
     const ms: number = Date.now() - this.started
     this.started = -this.started
     if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', `${op}`, `${Hints.record(this.record, this.method.member)} ${message}`, ms, highlight)
-    if (main) {
-      if (Hooks.mainThreadBlockingWarningThreshold > 0 && ms > Hooks.mainThreadBlockingWarningThreshold) Dbg.log('', '[!]', this.why(), ms, '    *** blocks main thread ***')
-    }
-    else {
-      if (Hooks.asyncActionDurationWarningThreshold > 0 && ms > Hooks.asyncActionDurationWarningThreshold) Dbg.log('', '[!]', this.why(), ms, '    *** took too long ***')
-    }
+    if (ms > Hooks.mainThreadBlockingWarningThreshold) Dbg.log('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
     // CachedResult.freeze(this)
