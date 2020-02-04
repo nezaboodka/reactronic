@@ -49,7 +49,7 @@ export class Record {
 
   constructor(snapshot: Context, prev: Record | undefined, data: object) {
     this.snapshot = snapshot
-    this.prev = { record: prev || this } // loopback if prev is undefined
+    this.prev = { record: prev || this } // undefined prev means initialization of NIL
     this.data = data
     this.changes = new Set<Member>()
     this.conflicts = new Map<Member, Record>()

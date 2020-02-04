@@ -49,6 +49,10 @@ export class Snapshot implements Context {
   static stampGen: number = 1
   static pending: Snapshot[] = []
   static oldest: Snapshot | undefined = undefined
+  static garbageCollectionSummaryInterval: number = Number.MAX_SAFE_INTEGER
+  static lastGarbageCollectionSummaryTimestamp: number = Date.now()
+  static totalRObjectCount: number = 0
+  static totalRecordCount: number = 0
 
   readonly id: number
   readonly hint: string
@@ -217,6 +221,14 @@ export class Snapshot implements Context {
         o.changing = undefined
       if (!error) {
         o.head = r
+        if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
+          Snapshot.totalRecordCount++
+          // console.log('rec++')
+          if (r.prev.record === NIL) {
+            Snapshot.totalRObjectCount++
+            // console.log('obj++')
+          }
+        }
         if (Dbg.isOn && Dbg.trace.changes) {
           const members: string[] = []
           r.changes.forEach(m => members.push(m.toString()))
@@ -273,6 +285,11 @@ export class Snapshot implements Context {
         }
         Snapshot.pending = p.slice(i)
         Snapshot.oldest = Snapshot.pending[0] // undefined is OK
+        const now = Date.now()
+        if (now - Snapshot.lastGarbageCollectionSummaryTimestamp > Snapshot.garbageCollectionSummaryInterval) {
+          Dbg.log('', '[G]', `Total object/record count: ${Snapshot.totalRObjectCount}/${Snapshot.totalRecordCount}`)
+          Snapshot.lastGarbageCollectionSummaryTimestamp = now
+        }
       }
     }
   }
@@ -281,6 +298,16 @@ export class Snapshot implements Context {
     if (Dbg.isOn && Dbg.trace.gc) Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: Record, o: RObject) => {
       if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== NIL) Dbg.log(' ', '  ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
+      if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
+        if (r.prev.record !== NIL) {
+          Snapshot.totalRecordCount--
+          // console.log('rec--')
+        }
+        if (r.changes.has(SYM_UNMOUNT)) {
+          Snapshot.totalRObjectCount--
+          // console.log('obj--')
+        }
+      }
       r.prev.record = NIL // unlink history
     })
   }

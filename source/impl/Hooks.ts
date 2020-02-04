@@ -232,11 +232,13 @@ export class Hooks implements ProxyHandler<RObject> {
       Hooks.repetitiveReadWarningThreshold = options && options.repetitiveReadWarningThreshold !== undefined ? options.repetitiveReadWarningThreshold : 10
       Hooks.mainThreadBlockingWarningThreshold = options && options.mainThreadBlockingWarningThreshold !== undefined ? options.mainThreadBlockingWarningThreshold : 16.6
       Hooks.asyncActionDurationWarningThreshold = options && options.asyncActionDurationWarningThreshold !== undefined ? options.asyncActionDurationWarningThreshold : 150
+      Snapshot.garbageCollectionSummaryInterval = options && options.garbageCollectionSummaryInterval !== undefined ? options.garbageCollectionSummaryInterval : 100
     }
     else {
       Hooks.repetitiveReadWarningThreshold = Number.MAX_SAFE_INTEGER
       Hooks.mainThreadBlockingWarningThreshold = Number.MAX_SAFE_INTEGER
       Hooks.asyncActionDurationWarningThreshold = Number.MAX_SAFE_INTEGER
+      Snapshot.garbageCollectionSummaryInterval = Number.MAX_SAFE_INTEGER
     }
   }
 
