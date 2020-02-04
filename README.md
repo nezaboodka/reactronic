@@ -301,6 +301,12 @@ interface Trace {
   readonly gc: boolean
 }
 
+interface ProfilingOptions {
+  repetitiveReadWarningThreshold: number // default: 10 times
+  mainThreadBlockingWarningThreshold: number // default: 16.6 ms
+  asyncActionDurationWarningThreshold: number // default: 150 ms
+}
+
 // Action
 
 type F<T> = (...args: any[]) => T
@@ -350,14 +356,12 @@ abstract class Cache<T> {
 
 class Reactronic {
   static triggersAutoStartDisabled: boolean
-  static repetitiveReadWarningThreshold: number
-  static mainThreadBlockingWarningThreshold: number // default 16.6 (60fps)
-  static asyncActionDurationWarningThreshold: number // default 150 ms
   static readonly isTraceOn: boolean
   static readonly trace: Trace
   static setTrace(t: Trace | undefined)
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void
   static getTraceHint<T extends object>(obj: T): string | undefined
+  static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void
 }
 
 ```

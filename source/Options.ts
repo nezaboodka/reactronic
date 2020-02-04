@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Trace } from './Trace'
-export { Trace, TraceLevel } from './Trace'
+export { Trace, ProfilingOptions, TraceLevel } from './Trace'
 import { Monitor } from './Monitor'
 
 export interface Options {

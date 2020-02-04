@@ -13,7 +13,7 @@ import { Snapshot, RObject, Hints, NIL, SYM_OBJECT, SYM_METHOD, SYM_BLANK, SYM_T
 import { Options, Kind, Reentrance } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
-import { Trace } from '../Trace'
+import { Trace, ProfilingOptions } from '../Trace'
 
 // State
 
@@ -89,9 +89,9 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 
 export class Hooks implements ProxyHandler<RObject> {
   static triggersAutoStartDisabled: boolean = false
-  static repetitiveReadWarningThreshold: number = 10
-  static mainThreadBlockingWarningThreshold: number = 16.6 // 60fps
-  static asyncActionDurationWarningThreshold: number = 150
+  static repetitiveReadWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
+  static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
+  static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static readonly proxy: Hooks = new Hooks()
 
   getPrototypeOf(o: RObject): object | null {
@@ -225,6 +225,19 @@ export class Hooks implements ProxyHandler<RObject> {
     const o = new RObject(stateless, undefined, Hooks.proxy, NIL, hint)
     ctx.write(o, SYM_OBJECT, blank)
     return o
+  }
+
+  static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void {
+    if (enabled) {
+      Hooks.repetitiveReadWarningThreshold = options && options.repetitiveReadWarningThreshold !== undefined ? options.repetitiveReadWarningThreshold : 10
+      Hooks.mainThreadBlockingWarningThreshold = options && options.mainThreadBlockingWarningThreshold !== undefined ? options.mainThreadBlockingWarningThreshold : 16.6
+      Hooks.asyncActionDurationWarningThreshold = options && options.asyncActionDurationWarningThreshold !== undefined ? options.asyncActionDurationWarningThreshold : 150
+    }
+    else {
+      Hooks.repetitiveReadWarningThreshold = Number.MAX_SAFE_INTEGER
+      Hooks.mainThreadBlockingWarningThreshold = Number.MAX_SAFE_INTEGER
+      Hooks.asyncActionDurationWarningThreshold = Number.MAX_SAFE_INTEGER
+    }
   }
 
   /* istanbul ignore next */

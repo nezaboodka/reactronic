@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 export { all, sleep } from './util/Utils'
-export { Options, Kind, Reentrance, Trace, TraceLevel } from './Options'
+export { Options, Kind, Reentrance, Trace, ProfilingOptions, TraceLevel } from './Options'
 export { Reactronic } from './Tools'
 export { Stateful } from './impl/Hooks'
 export { getCachedAndRevalidate, nonreactive, isolated, state, stateless, action, trigger,

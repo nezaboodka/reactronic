@@ -24,8 +24,7 @@ const expected: string[] = [
 test('Main', t => {
   R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled
   R.triggersAutoStartDisabled = false
-  R.repetitiveReadWarningThreshold = R.repetitiveReadWarningThreshold + 1
-  R.repetitiveReadWarningThreshold = 3
+  R.setProfilingMode(true, { repetitiveReadWarningThreshold: 3 })
   R.setTrace(tracing.off)
   R.setTrace(tracing.noisy)
   // Simple actions

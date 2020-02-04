@@ -8,24 +8,19 @@ import { Dbg } from './util/Dbg'
 import { Hints } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
-import { Action, Cache, Monitor, Kind, Reentrance, Trace } from 'reactronic'
+import { Action, Cache, Monitor, Kind, Reentrance, Trace, ProfilingOptions } from 'reactronic'
 
 export class Reactronic {
   // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
   static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }
-  static get repetitiveReadWarningThreshold(): number { return Hooks.repetitiveReadWarningThreshold }
-  static set repetitiveReadWarningThreshold(value: number) { Hooks.repetitiveReadWarningThreshold = value }
-  static get mainThreadBlockingWarningThreshold(): number { return Hooks.mainThreadBlockingWarningThreshold }
-  static set mainThreadBlockingWarningThreshold(value: number) { Hooks.mainThreadBlockingWarningThreshold = value }
-  static get asyncActionDurationWarningThreshold(): number { return Hooks.asyncActionDurationWarningThreshold }
-  static set asyncActionDurationWarningThreshold(value: number) { Hooks.asyncActionDurationWarningThreshold = value }
   // Tracing
   static get isTraceOn(): boolean { return Dbg.isOn }
   static get trace(): Trace { return Dbg.trace }
   static setTrace(t: Trace | undefined): void { Dbg.global = t || Dbg.OFF; Dbg.isOn = t !== undefined }
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Hints.setHint(obj, name) }
   static getTraceHint<T extends object>(obj: T): string | undefined { return Hints.getHint(obj) }
+  static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(enabled, options) }
   static why(): string { return Method.why() }
 }
 

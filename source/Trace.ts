@@ -22,6 +22,12 @@ export interface Trace {
   readonly margin2: number
 }
 
+export interface ProfilingOptions {
+  repetitiveReadWarningThreshold: number // default: 10 times
+  mainThreadBlockingWarningThreshold: number // default: 16.6 ms
+  asyncActionDurationWarningThreshold: number // default: 150 ms
+}
+
 export class TraceLevel {
 
   static Off: Trace | undefined = undefined
