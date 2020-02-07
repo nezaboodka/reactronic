@@ -113,9 +113,9 @@ test('Main', t => {
     // t.is(daddy.age, 38)
     // Check protection and error handling
     t.throws(() => { Cache.of(daddy.setParent).setup({monitor: null}) },
-      'given method is not a reactronic cache')
+      'given method is not decorated as reactronic one: setParent')
     t.throws(() => { console.log(Cache.of(daddy.setParent).options.monitor) },
-      'given method is not a reactronic cache')
+      'given method is not decorated as reactronic one: setParent')
     const action2 = Action.create('action2')
     t.throws(() => action2.run(() => { throw new Error('test') }), 'test')
     t.throws(() => action2.apply(),

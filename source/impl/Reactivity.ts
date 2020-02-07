@@ -62,7 +62,7 @@ export class Method extends Cache<any> {
   static of(method: F<any>): Cache<any> {
     const func = Utils.get<Cache<any> | undefined>(method, SYM_METHOD)
     if (!func)
-      throw misuse('given method is not a reactronic cache')
+      throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return func
   }
 
