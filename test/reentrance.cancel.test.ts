@@ -25,6 +25,7 @@ const expected: string[] = [
 test('Reentrance.CancelPrevious', async t => {
   R.setTrace(tracing.noisy)
   const app = Action.run('app', () => new AsyncDemoView(new AsyncDemo()))
+  Cache.of(app.print).setup({ priority: 0 })
   Cache.of(app.model.load).setup({reentrance: Reentrance.CancelPrevious})
   try {
     await app.print() // trigger first run
