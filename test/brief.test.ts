@@ -50,7 +50,7 @@ test('Main', t => {
     // Multi-part actions
     const action1 = Tran.create('action1')
     action1.run(() => {
-      t.throws(() => action1.apply(), 'cannot apply action having active actions')
+      t.throws(() => action1.apply(), 'cannot apply transaction having active functions running')
       app.model.shared = app.shared = action1.hint
       daddy.id = 'field restored during transaction'
       daddy.id = null // restore
@@ -70,7 +70,7 @@ test('Main', t => {
     t.is(app.model.shared, action1.hint)
     t.is(daddy.name, 'John')
     t.is(action1.inspect(() => daddy.name), 'John Smith')
-    t.throws(() => action1.inspect(() => { daddy.name = 'Forbidden' }), 'cannot make changes during action inspection')
+    t.throws(() => action1.inspect(() => { daddy.name = 'Forbidden' }), 'cannot make changes during transaction inspection')
     t.is(daddy.age, 38)
     t.is(daddy.children.length, 3)
     t.is(rendering.invalid, false)
@@ -106,8 +106,8 @@ test('Main', t => {
       if (daddy.emails)
         daddy.emails.push('dad@mail.com')
     }, 'stateful property #26 Person.emails can only be modified inside actions and triggers')
-    t.throws(() => action1.run(/* istanbul ignore next */ () => { /* nope */ }), 'cannot run action that is already sealed')
-    // // Undo action
+    t.throws(() => action1.run(/* istanbul ignore next */ () => { /* nope */ }), 'cannot run transaction that is already sealed')
+    // // Undo transaction
     // tran1.undo()
     // t.is(daddy.name, "John")
     // t.is(daddy.age, 38)
@@ -119,14 +119,14 @@ test('Main', t => {
     const action2 = Tran.create('action2')
     t.throws(() => action2.run(() => { throw new Error('test') }), 'test')
     t.throws(() => action2.apply(),
-      'cannot apply action that is already canceled: Error: test')
+      'cannot apply transaction that is already canceled: Error: test')
     const action3 = Tran.create('action3')
     t.throws(() => action3.run(() => {
       action3.cancel(new Error('test'))
       action3.run(nop)
     }), 'test')
     t.throws(() => action3.apply(),
-      'cannot apply action that is already canceled: Error: test')
+      'cannot apply transaction that is already canceled: Error: test')
     // Other
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)

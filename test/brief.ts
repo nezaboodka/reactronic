@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, action, trigger, cached, incentiveArgs, Reactronic as R } from 'reactronic'
+import { Stateful, stateless, transaction, trigger, cached, incentiveArgs, Reactronic as R } from 'reactronic'
 
 export const output: string[] = []
 
@@ -13,7 +13,7 @@ export class Demo extends Stateful {
   users: Person[] = []
   usersWithoutLast: Person[] = []
 
-  @action
+  @transaction
   loadUsers(): void {
     this._loadUsers()
   }
@@ -63,7 +63,7 @@ export class DemoView extends Stateful {
     })
   }
 
-  // @action @trace(tracing.noisy)
+  // @transaction @trace(tracing.noisy)
   // subPrint(): void {
   //   this.render().forEach(x => output.push(x));
   // }

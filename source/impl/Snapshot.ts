@@ -75,7 +75,7 @@ export class Snapshot implements Context {
     this.completed = false
   }
 
-  // To be redefined by Action and Cache implementations
+  // To be redefined by Transaction and Cache implementations
   static readable: () => Snapshot = undef
   static writable: () => Snapshot = undef
   static markChanged: (r: Record, m: Member, value: any, changed: boolean) => void = undef

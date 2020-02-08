@@ -64,9 +64,9 @@ export class TransactionImpl extends Transaction {
 
   apply(): void {
     if (this.workers > 0)
-      throw misuse('cannot apply action having active actions')
+      throw misuse('cannot apply transaction having active functions running')
     if (this.error)
-      throw misuse(`cannot apply action that is already canceled: ${this.error}`)
+      throw misuse(`cannot apply transaction that is already canceled: ${this.error}`)
     this.seal() // apply immediately, because pending === 0
   }
 
@@ -164,10 +164,10 @@ export class TransactionImpl extends Transaction {
   }
 
   private guard(): void {
-    // if (this.error) // prevent from continuing canceled action
+    // if (this.error) // prevent from continuing canceled transaction
     //   throw error(this.error.message, this.error)
     if (this.sealed && TransactionImpl.running !== this)
-      throw misuse('cannot run action that is already sealed')
+      throw misuse('cannot run transaction that is already sealed')
   }
 
   private async wrapToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T | undefined> {
@@ -290,7 +290,7 @@ export class TransactionImpl extends Transaction {
 
   private static writableSnapshot(): Snapshot {
     if (TransactionImpl.inspection)
-      throw misuse('cannot make changes during action inspection')
+      throw misuse('cannot make changes during transaction inspection')
     return TransactionImpl.running.snapshot
   }
 

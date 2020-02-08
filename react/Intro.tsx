@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { Stateful, action, cached } from 'reactronic'
+import { Stateful, transaction, cached } from 'reactronic'
 import { Component } from './Component'
 
 class MyModel extends Stateful {
@@ -12,7 +12,7 @@ class MyModel extends Stateful {
   content: string = ''
   timestamp: number = Date.now()
 
-  @action
+  @transaction
   async goto(url: string): Promise<void> {
     this.url = url
     this.content = await (await fetch(url)).text()

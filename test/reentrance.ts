@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, state, action, trigger, cached, incentiveArgs, throttling, monitor,
+import { Stateful, state, transaction, trigger, cached, incentiveArgs, throttling, monitor,
   reentrance, Transaction as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
 export { tracing } from './common'
 
@@ -14,7 +14,7 @@ export class AsyncDemo extends Stateful {
   url: string = 'reactronic'
   log: string[] = ['RTA']
 
-  @action @monitor(loading) @reentrance(Reentrance.PreventWithError)
+  @transaction @monitor(loading) @reentrance(Reentrance.PreventWithError)
   async load(url: string, delay: number): Promise<void> {
     this.url = url
     await all([sleep(delay)])

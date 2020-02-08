@@ -7,7 +7,7 @@ export { all, sleep } from './util/Utils'
 export { Options, Kind, Reentrance, Trace, ProfilingOptions, TraceLevel } from './Options'
 export { Reactronic } from './Tools'
 export { Stateful } from './impl/Hooks'
-export { getCachedAndRevalidate, nonreactive, isolated, state, stateless, action, trigger,
+export { getCachedAndRevalidate, nonreactive, isolated, state, stateless, transaction, trigger,
   cached, priority, incentiveArgs, throttling, reentrance, monitor, trace } from './Tools'
 export { Transaction } from './Transaction'
 export { Monitor, Worker } from './Monitor'

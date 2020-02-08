@@ -6,14 +6,14 @@
 import * as React from 'react'
 import { Stateful, Transaction, Cache, stateless, trigger, cached, isolated, Reactronic as R, Trace } from 'reactronic'
 
-export function reactive(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<Trace>, action?: Transaction): JSX.Element {
+export function reactive(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<Trace>, tran?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
     (!name && !trace) ? createReactState : () => createReactState(name, trace))
   const rx = state.rx
   rx.cycle = state.cycle
   rx.refresh = refresh // just in case React will change refresh on each rendering
   React.useEffect(rx.unmount, [])
-  return rx.render(render, action)
+  return rx.render(render, tran)
 }
 
 // Internal
@@ -22,8 +22,8 @@ type ReactState<V> = { rx: Rx<V>, cycle: number }
 
 class Rx<V> extends Stateful {
   @cached
-  render(generate: (cycle: number) => V, action?: Transaction): V {
-    return action ? action.inspect(() => generate(this.cycle)) : generate(this.cycle)
+  render(generate: (cycle: number) => V, tran?: Transaction): V {
+    return tran ? tran.inspect(() => generate(this.cycle)) : generate(this.cycle)
   }
 
   @trigger

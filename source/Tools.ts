@@ -48,8 +48,8 @@ export function stateless(proto: object, prop: PropertyKey): any {
   return Hooks.decorateField(false, proto, prop)
 }
 
-export function action(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const opt = { kind: Kind.Action }
+export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  const opt = { kind: Kind.Transaction }
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 

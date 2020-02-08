@@ -106,7 +106,7 @@ export class Method extends Cache<any> {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.instance)
     const c: CallResult = this.from(r)
-    const reuse = c.options.kind !== Kind.Action &&
+    const reuse = c.options.kind !== Kind.Transaction &&
       ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
       (!c.options.incentiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[SYM_UNMOUNT] !== undefined
@@ -161,7 +161,7 @@ export class Method extends Cache<any> {
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
-        if (call.result.options.kind === Kind.Action || (!call.reuse && !call.result.invalid.recomputing)) {
+        if (call.result.options.kind === Kind.Transaction || (!call.reuse && !call.result.invalid.recomputing)) {
           call = this.write()
           if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${call.result.why()}`)
           call.result.compute(this.instance.proxy, argsx)
@@ -241,7 +241,7 @@ class CallResult extends Observable implements Observer {
 
   hint(): string { return `${Hints.record(this.record, this.method.member)}` }
   priority(): number { return this.options.priority }
-  why(): string { return `${Hints.record(this.record, this.method.member)}${this.cause ? `   <<   ${propagationHint(this.cause).join('   <<   ')}` : (this.method.options.kind === Kind.Action ? '   <<   action' : '   <<   first on-demand call')}` }
+  why(): string { return `${Hints.record(this.record, this.method.member)}${this.cause ? `   <<   ${propagationHint(this.cause).join('   <<   ')}` : (this.method.options.kind === Kind.Transaction ? '   <<   transaction' : '   <<   first on-demand call')}` }
 
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
@@ -293,7 +293,7 @@ class CallResult extends Observable implements Observer {
     const interval = Date.now() + this.started // "started" is stored as negative value after trigger completion
     const hold = t ? t - interval : 0 // "started" is stored as negative value after trigger completion
     if (now || hold < 0) {
-      if (!this.error && (this.options.kind === Kind.Action || !this.invalid.recomputing)) {
+      if (!this.error && (this.options.kind === Kind.Transaction || !this.invalid.recomputing)) {
         try {
           const c: CallResult = this.method.call(false, undefined)
           if (c.ret instanceof Promise)
@@ -432,7 +432,7 @@ class CallResult extends Observable implements Observer {
 
   private static markViewed(r: Record, m: Member, value: Observable, kind: Kind, weak: boolean): void {
     const c: CallResult | undefined = CallResult.current // alias
-    if (kind !== Kind.Action && c && c.options.kind !== Kind.Action && m !== SYM_OBJECT) {
+    if (kind !== Kind.Transaction && c && c.options.kind !== Kind.Transaction && m !== SYM_OBJECT) {
       const ctx = Snapshot.readable()
       ctx.bump(r.snapshot.timestamp)
       const t = weak ? -1 : ctx.timestamp

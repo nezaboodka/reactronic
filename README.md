@@ -28,8 +28,8 @@ between visual components (observers) and state objects (observables).
 Transactional reactivity is based on four fundamental concepts:
 
   - **State** - a set of objects that store data of an application;
-  - **Action** - a function that changes state objects in an atomic (transactional) way;
-  - **Trigger** - a function that is called automatically in response to state changes made by an action;
+  - **Transaction** - a function that changes state objects in transactional (atomic) way;
+  - **Trigger** - a function that is called automatically in response to state changes made by a transaction;
   - **Cache** - a computed value having associated function that is called on-demand to renew the value if it was invalidated.
 
 The following picture illustrates relationships between the concepts
@@ -57,17 +57,17 @@ In the example above, the class `MyModel` is based on Reactronic's
 `Stateful` class and all its properties `url`, `content`, and `timestamp`
 are hooked.
 
-### Action
+### Transaction
 
-Action is a function that changes state objects in an atomic
-(transactional) way. Such a function is instrumented with hooks
+Transaction is a function that changes state objects in transactional
+(atomic) way. Such a function is instrumented with hooks
 to provide transparent atomicity (by implicit context switching
 and isolation).
 
 ``` typescript
 class MyModel extends Stateful {
   // ...
-  @action
+  @transaction
   async load(url: string): Promise<void> {
     this.url = url
     this.content = await fetch(url)
@@ -76,33 +76,33 @@ class MyModel extends Stateful {
 }
 ```
 
-In the example above, the function `load` is an action that makes
+In the example above, the function `load` is a transaction that makes
 changes to `url`, `content` and `timestamp` properties. While the
-action is running, the changes are visible only inside the action
-itself. The new values become atomically visible outside of the
-action only upon its completion.
+transaction is running, the changes are visible only inside the
+transaction itself. The new values become atomically visible outside
+of the transaction only upon its completion.
 
 Atomicity is achieved by making changes in an isolated data
-snapshot that is not visible outside of the running action
+snapshot that is not visible outside of the running transaction
 until it is fully finished and applied. Multiple objects
 and their properties can be changed with full respect
 to the all-or-nothing principle. To do so, separate data
-snapshot is automatically maintained for each action.
+snapshot is automatically maintained for each transaction.
 That is a logical snapshot that does not create a full copy
 of all the data.
 
-Compensating actions are not needed in case of the action
-failure, because all the changes made by the action in its
-logical snapshot are simply discarded. In case the action
+Compensating actions are not needed in case of the transaction
+failure, because all the changes made by the transaction in its
+logical snapshot are simply discarded. In case the transaction
 is successfully applied, affected caches are invalidated
 and corresponding caching functions are re-executed in a proper
 order (but only when all the data changes are fully applied).
 
 Asynchronous operations (promises) are supported out of the box
-during action execution. The action may consist of a set of
-asynchronous calls prolonging the action until completion of
+during transaction execution. The transaction may consist of a set of
+asynchronous calls prolonging the transaction until completion of
 all of them. An asynchronous call may spawn other
-asynchronous calls, which prolong action execution until
+asynchronous calls, which prolong transaction execution until
 the whole chain of asynchronous operations is fully completed.
 
 ### Trigger & Cache
@@ -186,7 +186,7 @@ There are multiple options to configure behavior of transactional reactivity.
 **Throttling** option defines how often trigger is revalidated:
 
   - `(ms)` - minimal delay in milliseconds between trigger revalidation;
-  - `-1` - run trigger immediately once action is applied (synchronously);
+  - `-1` - run trigger immediately once transaction is applied (synchronously);
   - `0` - run trigger immediately via event loop (asynchronously with zero timeout);
   - `Number.MAX_SAFE_INTEGER+` - never run trigger (disabled trigger).
 
@@ -231,7 +231,7 @@ NPM: `npm install reactronic`
 // Decorators & Operators
 
 function stateless(proto, prop) // field only
-function action(proto, prop, pd) // method only
+function transaction(proto, prop, pd) // method only
 function trigger(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
@@ -258,7 +258,7 @@ interface Options {
 
 enum Kind {
   Field = 0,
-  Action = 1,
+  Transaction = 1,
   Trigger = 2,
   Cached = 3
 }
@@ -284,7 +284,7 @@ interface Worker {
   readonly hint: string
   isCanceled: boolean
   isFinished: boolean
-  cancel(error?: Error, retryAfter?: Action): this
+  cancel(error?: Error, retryAfter?: Transaction): this
   whenFinished(): Promise<void>
 }
 
@@ -307,12 +307,12 @@ interface ProfilingOptions {
   asyncActionDurationWarningThreshold: number // default: 150 ms
 }
 
-// Action
+// Transaction
 
 type F<T> = (...args: any[]) => T
 
-class Action implements Worker {
-  static readonly current: Action
+class Transaction implements Worker {
+  static readonly current: Transaction
 
   readonly id: number
   readonly hint: string
@@ -321,13 +321,13 @@ class Action implements Worker {
   wrap<T>(func: F<T>): F<T>
   apply(): void
   seal(): this // a1.seal().whenFinished().then(fulfill, reject)
-  cancel(error?: Error, retryAfter?: Action): this
+  cancel(error?: Error, retryAfter?: Transaction): this
   isCanceled: boolean
   isFinished: boolean
   whenFinished(): Promise<void>
   join<T>(p: Promise<T>): Promise<T>
 
-  static create(hint: string): Action
+  static create(hint: string): Transaction
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
     trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T

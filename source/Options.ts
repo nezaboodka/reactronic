@@ -19,7 +19,7 @@ export interface Options {
 
 export enum Kind {
   Field = 0,
-  Action = 1,
+  Transaction = 1,
   Trigger = 2,
   Cached = 3,
 }
