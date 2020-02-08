@@ -5,7 +5,7 @@
 
 import { misuse } from '../util/Dbg'
 import { Hints } from './Snapshot'
-import { Transaction } from './TransactionImpl'
+import { TransactionImpl } from './TransactionImpl'
 import { Monitor, Worker } from '../Monitor'
 
 export class MonitorImpl extends Monitor {
@@ -31,7 +31,7 @@ export class MonitorImpl extends Monitor {
   }
 
   static create(hint?: string, prolonged?: number): MonitorImpl {
-    return Transaction.run('Monitor.create', MonitorImpl.doCreate, hint, prolonged)
+    return TransactionImpl.run('Monitor.create', MonitorImpl.doCreate, hint, prolonged)
   }
 
   static enter(mon: MonitorImpl, worker: Worker): void {
@@ -60,7 +60,7 @@ export class MonitorImpl extends Monitor {
     }
     else
       this.x.timeout = setTimeout(() =>
-        Transaction.runAs<void>('Monitor.idle', true,
+        TransactionImpl.runAs<void>('Monitor.idle', true,
           undefined, undefined, MonitorImpl.idle, this, true), this.x.delayBeforeIdle)
   }
 

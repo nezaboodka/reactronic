@@ -11,9 +11,9 @@ import { Worker } from '../Monitor'
 import { Action } from '../Transaction'
 import { Trace } from '../Options'
 
-export class Transaction extends Action {
-  private static readonly none: Transaction = new Transaction('<none>')
-  private static running: Transaction = Transaction.none
+export class TransactionImpl extends Action {
+  private static readonly none: TransactionImpl = new TransactionImpl('<none>')
+  private static running: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false
 
   readonly trace?: Partial<Trace> // assigned in constructor
@@ -22,7 +22,7 @@ export class Transaction extends Action {
   private workers: number
   private sealed: boolean
   private error?: Error
-  private after?: Transaction
+  private after?: TransactionImpl
   private promise?: Promise<void>
   private resolve: (value?: void) => void
   private reject: (reason: any) => void
@@ -30,7 +30,7 @@ export class Transaction extends Action {
   constructor(hint: string, trace?: Partial<Trace>, token?: any) {
     super()
     this.trace = trace
-    this.margin = Transaction.running ? Transaction.running.margin + 1 : -1
+    this.margin = TransactionImpl.running ? TransactionImpl.running.margin + 1 : -1
     this.snapshot = new Snapshot(hint, token)
     this.workers = 0
     this.sealed = false
@@ -41,7 +41,7 @@ export class Transaction extends Action {
     this.reject = undef
   }
 
-  static get current(): Transaction { return Transaction.running }
+  static get current(): TransactionImpl { return TransactionImpl.running }
   get id(): number { return this.snapshot.id }
   get hint(): string { return this.snapshot.hint }
 
@@ -51,14 +51,14 @@ export class Transaction extends Action {
   }
 
   inspect<T>(func: F<T>, ...args: any[]): T {
-    const restore = Transaction.inspection
+    const restore = TransactionImpl.inspection
     try {
-      Transaction.inspection = true
-      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log(' ', ' ', `T${this.id} (${this.hint}) is being inspected by T${Transaction.running.id} (${Transaction.running.hint})`)
+      TransactionImpl.inspection = true
+      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log(' ', ' ', `T${this.id} (${this.hint}) is being inspected by T${TransactionImpl.running.id} (${TransactionImpl.running.hint})`)
       return this.do(undefined, func, ...args)
     }
     finally {
-      Transaction.inspection = restore
+      TransactionImpl.inspection = restore
     }
   }
 
@@ -72,33 +72,33 @@ export class Transaction extends Action {
 
   seal(): this { // t1.seal().whenFinished().then(onfulfilled, onrejected)
     if (!this.sealed)
-      this.run(Transaction.seal, this)
+      this.run(TransactionImpl.seal, this)
     return this
   }
 
   bind<T>(func: F<T>, error: boolean): F<T> {
     this.guard()
     const self = this
-    const inspect = Transaction.inspection
+    const inspect = TransactionImpl.inspection
     if (!inspect)
-      self.run(Transaction.boundEnter, self, error)
+      self.run(TransactionImpl.boundEnter, self, error)
     else
-      self.inspect(Transaction.boundEnter, self, error)
+      self.inspect(TransactionImpl.boundEnter, self, error)
     const transactionBound: F<T> = (...args: any[]): T => {
       if (!inspect)
-        return self.do<T>(undefined, Transaction.boundLeave, self, error, func, ...args)
+        return self.do<T>(undefined, TransactionImpl.boundLeave, self, error, func, ...args)
       else
-        return self.inspect<T>(Transaction.boundLeave, self, error, func, ...args)
+        return self.inspect<T>(TransactionImpl.boundLeave, self, error, func, ...args)
     }
     return transactionBound
   }
 
-  private static boundEnter<T>(t: Transaction, error: boolean): void {
+  private static boundEnter<T>(t: TransactionImpl, error: boolean): void {
     if (!error)
       t.workers++
   }
 
-  private static boundLeave<T>(t: Transaction, error: boolean, func: F<T>, ...args: any[]): T {
+  private static boundLeave<T>(t: TransactionImpl, error: boolean, func: F<T>, ...args: any[]): T {
     t.workers--
     const result = func(...args)
     // if (t.error && !error)
@@ -107,8 +107,8 @@ export class Transaction extends Action {
   }
 
   cancel(error: Error, restartAfter?: Worker | null): this {
-    this.do(undefined, Transaction.seal, this, error,
-      restartAfter === null ? Transaction.none : restartAfter)
+    this.do(undefined, TransactionImpl.seal, this, error,
+      restartAfter === null ? TransactionImpl.none : restartAfter)
     return this
   }
 
@@ -126,17 +126,17 @@ export class Transaction extends Action {
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
-    return Transaction.runAs<T>(hint, false, undefined, undefined, func, ...args)
+    return TransactionImpl.runAs<T>(hint, false, undefined, undefined, func, ...args)
   }
 
   static runAs<T>(hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
-    const t: Transaction = Transaction.acquire(hint, spawn, trace, token)
-    const root = t !== Transaction.running
+    const t: TransactionImpl = TransactionImpl.acquire(hint, spawn, trace, token)
+    const root = t !== TransactionImpl.running
     t.guard()
     let result: any = t.do<T>(trace, func, ...args)
     if (root) {
       if (result instanceof Promise)
-        result = Transaction.isolated(() => {
+        result = TransactionImpl.isolated(() => {
           return t.wrapToRetry(t.wrapToWaitUntilFinish(result), func, ...args)
         })
       t.seal()
@@ -145,28 +145,28 @@ export class Transaction extends Action {
   }
 
   static isolated<T>(func: F<T>, ...args: any[]): T {
-    const outer = Transaction.running
+    const outer = TransactionImpl.running
     try {
-      Transaction.running = Transaction.none
+      TransactionImpl.running = TransactionImpl.none
       return func(...args)
     }
     finally {
-      Transaction.running = outer
+      TransactionImpl.running = outer
     }
   }
 
   // Internal
 
-  private static acquire(hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any): Transaction {
-    return spawn || Transaction.running.isFinished
-      ? new Transaction(hint, trace, token)
-      : Transaction.running
+  private static acquire(hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any): TransactionImpl {
+    return spawn || TransactionImpl.running.isFinished
+      ? new TransactionImpl(hint, trace, token)
+      : TransactionImpl.running
   }
 
   private guard(): void {
     // if (this.error) // prevent from continuing canceled action
     //   throw error(this.error.message, this.error)
-    if (this.sealed && Transaction.running !== this)
+    if (this.sealed && TransactionImpl.running !== this)
       throw misuse('cannot run action that is already sealed')
   }
 
@@ -178,13 +178,13 @@ export class Transaction extends Action {
       return result
     }
     catch (error) {
-      if (this.after !== Transaction.none) {
+      if (this.after !== TransactionImpl.none) {
         if (this.after) {
           // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
           if (this.after !== this)
             await this.after.whenFinished()
           // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
-          return Transaction.runAs<T>(this.hint, true, this.trace, this.snapshot.token, func, ...args)
+          return TransactionImpl.runAs<T>(this.hint, true, this.trace, this.snapshot.token, func, ...args)
         }
         else
           throw error
@@ -204,9 +204,9 @@ export class Transaction extends Action {
 
   private do<T>(trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
     let result: T
-    const outer = Transaction.running
+    const outer = TransactionImpl.running
     try {
-      Transaction.running = this
+      TransactionImpl.running = this
       this.workers++
       this.snapshot.acquire(outer.snapshot)
       result = func(...args)
@@ -218,7 +218,7 @@ export class Transaction extends Action {
       }
     }
     catch (e) {
-      if (!Transaction.inspection)
+      if (!TransactionImpl.inspection)
         this.cancel(e)
       throw e
     }
@@ -226,24 +226,24 @@ export class Transaction extends Action {
       this.workers--
       if (this.sealed && this.workers === 0) {
         this.finish()
-        Transaction.isolated(Transaction.revalidateTriggers, this)
+        TransactionImpl.isolated(TransactionImpl.revalidateTriggers, this)
       }
-      Transaction.running = outer
+      TransactionImpl.running = outer
     }
     return result
   }
 
-  private static revalidateTriggers(t: Transaction): void {
+  private static revalidateTriggers(t: TransactionImpl): void {
     t.snapshot.triggers.map(x => x.revalidate(false, false))
   }
 
-  private static seal(t: Transaction, error?: Error, after?: Transaction): void {
+  private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {
     if (!t.error && error) {
       t.error = error
       t.after = after
       if (Dbg.isOn && Dbg.trace.transactions) {
         Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
-        if (after && after !== Transaction.none)
+        if (after && after !== TransactionImpl.none)
           Dbg.log('║', ' [!]', `T${t.id} (${t.hint}) will be restarted after T${after.id} (${after.hint})`)
       }
       Snapshot.finalizeChangeset(t.snapshot, error)
@@ -285,22 +285,22 @@ export class Transaction extends Action {
   }
 
   private static readableSnapshot(): Snapshot {
-    return Transaction.running.snapshot
+    return TransactionImpl.running.snapshot
   }
 
   private static writableSnapshot(): Snapshot {
-    if (Transaction.inspection)
+    if (TransactionImpl.inspection)
       throw misuse('cannot make changes during action inspection')
-    return Transaction.running.snapshot
+    return TransactionImpl.running.snapshot
   }
 
   static _init(): void {
-    Snapshot.readable = Transaction.readableSnapshot // override
-    Snapshot.writable = Transaction.writableSnapshot // override
-    Transaction.none.sealed = true
-    Transaction.none.snapshot.complete()
+    Snapshot.readable = TransactionImpl.readableSnapshot // override
+    Snapshot.writable = TransactionImpl.writableSnapshot // override
+    TransactionImpl.none.sealed = true
+    TransactionImpl.none.snapshot.complete()
     Snapshot._init()
   }
 }
 
-Transaction._init()
+TransactionImpl._init()

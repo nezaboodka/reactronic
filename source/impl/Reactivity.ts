@@ -7,7 +7,7 @@ import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, Member, Observable, MemberHint, Observer } from './Data'
 import { Snapshot, RObject, Hints, NIL, SYM_OBJECT, SYM_METHOD, SYM_UNMOUNT, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
-import { Transaction } from './TransactionImpl'
+import { TransactionImpl } from './TransactionImpl'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
 import { Options, Kind, Reentrance, Trace } from '../Options'
@@ -30,7 +30,7 @@ export class Method extends Cache<any> {
   get error(): boolean { return this.weak().result.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reuse }
-  invalidate(): void { Transaction.run(Dbg.isOn ? `invalidate(${Hints.obj(this.instance, this.member)})` : 'invalidate()', Method.invalidate, this) }
+  invalidate(): void { TransactionImpl.run(Dbg.isOn ? `invalidate(${Hints.obj(this.instance, this.member)})` : 'invalidate()', Method.invalidate, this) }
   getCachedAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
   constructor(instance: RObject, member: Member) {
@@ -53,7 +53,7 @@ export class Method extends Cache<any> {
       if (!weak || ctx === ctx2 || (ctx2.completed && ctx.timestamp >= ctx2.timestamp))
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.member)} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
+    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(TransactionImpl.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.member)} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
     const result = call.result
     Snapshot.markViewed(call.record, this.member, result, result.options.kind, weak)
     return result
@@ -85,7 +85,7 @@ export class Method extends Cache<any> {
   }
 
   static unmount(...objects: any[]): void {
-    return Transaction.runAs('<unmount>', false,
+    return TransactionImpl.runAs('<unmount>', false,
       undefined, undefined, Snapshot.unmount, ...objects)
   }
 
@@ -133,7 +133,7 @@ export class Method extends Cache<any> {
     if (c.method !== this) {
       const hint: string = Dbg.isOn ? `${Hints.obj(this.instance, m)}/initialize` : /* istanbul ignore next */ 'Cache.init'
       const spawn = r.snapshot.completed || r.prev.record !== NIL
-      c = Transaction.runAs<CallResult>(hint, spawn, undefined, this, (): CallResult => {
+      c = TransactionImpl.runAs<CallResult>(hint, spawn, undefined, this, (): CallResult => {
         const o = this.instance
         let r2: Record = Snapshot.readable().read(o)
         let c2 = r2.data[m] as CallResult
@@ -153,7 +153,7 @@ export class Method extends Cache<any> {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.instance, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.instance, this.member)}`
     let call = existing
-    const ret = Transaction.runAs(hint, spawn, trace, token, (argsx: any[] | undefined): any => {
+    const ret = TransactionImpl.runAs(hint, spawn, trace, token, (argsx: any[] | undefined): any => {
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
         if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${call.result.why()}`)
@@ -184,7 +184,7 @@ export class Method extends Cache<any> {
     const call = self.read(undefined)
     const r: Record = call.record
     const hint: string = Dbg.isOn ? `setup(${Hints.obj(self.instance, self.member)})` : /* istanbul ignore next */ 'Cache.setup()'
-    return Transaction.runAs(hint, false, undefined, undefined, (): Options => {
+    return TransactionImpl.runAs(hint, false, undefined, undefined, (): Options => {
       const call2 = self.write()
       const c2: CallResult = call2.result
       c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
@@ -235,7 +235,7 @@ class CallResult extends Observable implements Observer {
     // this.ret = undefined
     // this.error = undefined
     this.margin = CallResult.current ? CallResult.current.margin + 1 : 1
-    this.worker = Transaction.current
+    this.worker = TransactionImpl.current
     this.started = 0
   }
 
@@ -401,15 +401,15 @@ class CallResult extends Observable implements Observer {
   }
 
   private monitorEnter(mon: Monitor): void {
-    Method.run<void>(undefined, Transaction.runAs, 'Monitor.enter',
+    Method.run<void>(undefined, TransactionImpl.runAs, 'Monitor.enter',
       true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
       MonitorImpl.enter, mon, this.worker)
   }
 
   private monitorLeave(mon: Monitor): void {
-    Transaction.isolated<void>(() => {
+    TransactionImpl.isolated<void>(() => {
       const leave = (): void => {
-        Method.run<void>(undefined, Transaction.runAs, 'Monitor.leave',
+        Method.run<void>(undefined, TransactionImpl.runAs, 'Monitor.leave',
           true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.OFF, undefined,
           MonitorImpl.leave, mon, this.worker)
       }
@@ -634,7 +634,7 @@ function valueHint(value: any): string {
 }
 
 function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
-  const t = Transaction.current
+  const t = TransactionImpl.current
   let res = Dbg.merge(t.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Snapshot.idGen.toString().replace(/[0-9]/g, '-')}`, Dbg.global)
   res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
   if (CallResult.current)
@@ -650,7 +650,7 @@ function reactronicHookedThen(this: any,
   resolve?: ((value: any) => any | PromiseLike<any>) | undefined | null,
   reject?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
-  const tran = Transaction.current
+  const tran = TransactionImpl.current
   if (!tran.isFinished) {
     if (!resolve)
       resolve = resolveReturn
