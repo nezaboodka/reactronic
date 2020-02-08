@@ -8,10 +8,10 @@ import { Dbg, misuse, error } from '../util/Dbg'
 import { Record } from './Data'
 import { Snapshot, Hints } from './Snapshot'
 import { Worker } from '../Monitor'
-import { Action } from '../Transaction'
+import { Transaction } from '../Transaction'
 import { Trace } from '../Options'
 
-export class TransactionImpl extends Action {
+export class TransactionImpl extends Transaction {
   private static readonly none: TransactionImpl = new TransactionImpl('<none>')
   private static running: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false

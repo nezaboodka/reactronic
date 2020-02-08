@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Action, Cache, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
+import { Transaction as Tran, Cache, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
 import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -24,7 +24,7 @@ const expected: string[] = [
 
 test('Reentrance.CancelAndWaitPrevious', async t => {
   R.setTrace(tracing.noisy)
-  const app = Action.run('app', () => new AsyncDemoView(new AsyncDemo()))
+  const app = Tran.run('app', () => new AsyncDemoView(new AsyncDemo()))
   Cache.of(app.model.load).setup({reentrance: Reentrance.CancelAndWaitPrevious})
   try {
     await app.print() // trigger first run

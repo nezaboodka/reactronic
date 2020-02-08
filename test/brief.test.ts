@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Action, Cache, Kind, nonreactive, isolated, Reactronic as R } from 'reactronic'
+import { Transaction as Tran, Cache, Kind, nonreactive, isolated, Reactronic as R } from 'reactronic'
 import { tracing, nop } from './common'
 import { Person, Demo, DemoView, output } from './brief'
 
@@ -28,7 +28,7 @@ test('Main', t => {
   R.setTrace(tracing.off)
   R.setTrace(tracing.noisy)
   // Simple actions
-  const app = Action.run('app', () => new DemoView(new Demo()))
+  const app = Tran.run('app', () => new DemoView(new Demo()))
   try {
     t.notThrows(() => DemoView.test())
     const rendering = Cache.of(app.render)
@@ -48,7 +48,7 @@ test('Main', t => {
     rendering.invalidate()
     t.not(rendering.stamp, stamp)
     // Multi-part actions
-    const action1 = Action.create('action1')
+    const action1 = Tran.create('action1')
     action1.run(() => {
       t.throws(() => action1.apply(), 'cannot apply action having active actions')
       app.model.shared = app.shared = action1.hint
@@ -61,7 +61,7 @@ test('Main', t => {
       daddy.children[2].name = 'Steven Smith' // Steve
       t.is(daddy.name, 'John Smith')
       t.is(daddy.age, 40)
-      t.is(Action.isolated(() => daddy.age), 38)
+      t.is(Tran.isolated(() => daddy.age), 38)
       t.is(isolated(() => daddy.age), 38)
       t.is(nonreactive(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
@@ -116,11 +116,11 @@ test('Main', t => {
       'given method is not decorated as reactronic one: setParent')
     t.throws(() => { console.log(Cache.of(daddy.setParent).options.monitor) },
       'given method is not decorated as reactronic one: setParent')
-    const action2 = Action.create('action2')
+    const action2 = Tran.create('action2')
     t.throws(() => action2.run(() => { throw new Error('test') }), 'test')
     t.throws(() => action2.apply(),
       'cannot apply action that is already canceled: Error: test')
-    const action3 = Action.create('action3')
+    const action3 = Tran.create('action3')
     t.throws(() => action3.run(() => {
       action3.cancel(new Error('test'))
       action3.run(nop)

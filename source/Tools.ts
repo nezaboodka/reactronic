@@ -8,7 +8,7 @@ import { Dbg } from './util/Dbg'
 import { Hints } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
-import { Action, Cache, Monitor, Kind, Reentrance, Trace, ProfilingOptions } from 'reactronic'
+import { Transaction, Cache, Monitor, Kind, Reentrance, Trace, ProfilingOptions } from 'reactronic'
 
 export class Reactronic {
   // Configuration
@@ -35,7 +35,7 @@ export function nonreactive<T>(func: F<T>, ...args: any[]): T {
 }
 
 export function isolated<T>(func: F<T>, ...args: any[]): T {
-  return Method.run<T>(undefined, Action.isolated, func, ...args)
+  return Method.run<T>(undefined, Transaction.isolated, func, ...args)
 }
 
 // Decorators

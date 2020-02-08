@@ -4,9 +4,9 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { Stateful, Action, Cache, stateless, trigger, cached, isolated, Reactronic as R, Trace } from 'reactronic'
+import { Stateful, Transaction, Cache, stateless, trigger, cached, isolated, Reactronic as R, Trace } from 'reactronic'
 
-export function reactive(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<Trace>, action?: Action): JSX.Element {
+export function reactive(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<Trace>, action?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
     (!name && !trace) ? createReactState : () => createReactState(name, trace))
   const rx = state.rx
@@ -22,7 +22,7 @@ type ReactState<V> = { rx: Rx<V>, cycle: number }
 
 class Rx<V> extends Stateful {
   @cached
-  render(generate: (cycle: number) => V, action?: Action): V {
+  render(generate: (cycle: number) => V, action?: Transaction): V {
     return action ? action.inspect(() => generate(this.cycle)) : generate(this.cycle)
   }
 
@@ -52,7 +52,7 @@ class Rx<V> extends Stateful {
 
 function createReactState<V>(name?: string, trace?: Partial<Trace>): ReactState<V> {
   const hint = name || (R.isTraceOn ? getComponentName() : '<rx>')
-  const rx = Action.runAs<Rx<V>>(hint, false, trace, undefined, Rx.create, hint, trace)
+  const rx = Transaction.runAs<Rx<V>>(hint, false, trace, undefined, Rx.create, hint, trace)
   return {rx, cycle: 0}
 }
 

@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { Stateful, Action, Cache, stateless, trigger, cached, isolated } from 'reactronic'
+import { Stateful, Transaction, Cache, stateless, trigger, cached, isolated } from 'reactronic'
 
 export function reactive(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -41,7 +41,7 @@ class Rx extends Stateful {
 }
 
 function createReactState<V>(): ReactState {
-  const rx = Action.runAs<Rx>('<rx>', false, undefined, undefined, Rx.create)
+  const rx = Transaction.runAs<Rx>('<rx>', false, undefined, undefined, Rx.create)
   return {rx}
 }
 

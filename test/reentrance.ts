@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Stateful, state, action, trigger, cached, incentiveArgs, throttling, monitor,
-  reentrance, Action, Monitor, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
+  reentrance, Transaction as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
 export { tracing } from './common'
 
 export const output: string[] = []
@@ -31,7 +31,7 @@ export class AsyncDemoView {
   @trigger @throttling(-1)
   async print(): Promise<void> {
     const lines: string[] = await this.render()
-    if (!Action.current.isCanceled) {
+    if (!Tran.current.isCanceled) {
       for (const x of lines) {
         output.push(x) /* istanbul ignore next */
         if (R.isTraceOn && !R.trace.silent) console.log(x)
