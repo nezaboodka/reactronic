@@ -5,7 +5,7 @@
 
 import { F } from './util/Utils'
 import { Trace } from './Trace'
-import { Transaction } from './impl/Transaction'
+import { Transaction } from './impl/TransactionImpl'
 import { Worker } from './Monitor'
 
 export abstract class Action implements Worker {

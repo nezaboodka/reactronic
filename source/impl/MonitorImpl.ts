@@ -5,7 +5,7 @@
 
 import { misuse } from '../util/Dbg'
 import { Hints } from './Snapshot'
-import { Transaction } from './Transaction'
+import { Transaction } from './TransactionImpl'
 import { Monitor, Worker } from '../Monitor'
 
 export class MonitorImpl extends Monitor {
