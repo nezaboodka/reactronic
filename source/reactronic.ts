@@ -9,6 +9,6 @@ export { Reactronic } from './Tools'
 export { Stateful } from './impl/Hooks'
 export { getCachedAndRevalidate, nonreactive, isolated, state, stateless, action, trigger,
   cached, priority, incentiveArgs, throttling, reentrance, monitor, trace } from './Tools'
-export { Action } from './Action'
+export { Action } from './Transaction'
 export { Monitor, Worker } from './Monitor'
 export { Cache } from './Cache'

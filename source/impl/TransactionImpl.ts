@@ -8,7 +8,7 @@ import { Dbg, misuse, error } from '../util/Dbg'
 import { Record } from './Data'
 import { Snapshot, Hints } from './Snapshot'
 import { Worker } from '../Monitor'
-import { Action } from '../Action'
+import { Action } from '../Transaction'
 import { Trace } from '../Options'
 
 export class Transaction extends Action {
