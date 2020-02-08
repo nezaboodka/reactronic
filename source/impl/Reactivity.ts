@@ -241,7 +241,7 @@ class CallResult extends Observable implements Observer {
 
   hint(): string { return `${Hints.record(this.record, this.method.member)}` }
   priority(): number { return this.options.priority }
-  why(): string { return `${Hints.record(this.record, this.method.member)}${this.cause ? `   <<   ${propagationHint(this.cause).join('   <<   ')}` : '   <<   first on-demand call'}` }
+  why(): string { return `${Hints.record(this.record, this.method.member)}${this.cause ? `   <<   ${propagationHint(this.cause).join('   <<   ')}` : (this.method.options.kind === Kind.Action ? '   <<   action' : '   <<   first on-demand call')}` }
 
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
