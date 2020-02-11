@@ -66,6 +66,14 @@ export class Method extends Cache<any> {
     return func
   }
 
+  static reprioritize(priority: number): void {
+    const c = CallResult.current
+    if (c && !c.worker.isFinished) {
+      c.options = new OptionsImpl(c.options.body, c.options, { priority }, false) // TODO: optimize a little bit
+      if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(c.record, c.method.member)}.options = ...`)
+    }
+  }
+
   static run<T>(c: CallResult | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined
     const outer = CallResult.current

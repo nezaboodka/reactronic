@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, transaction, trigger, cached, incentiveArgs, Reactronic as R } from 'reactronic'
+import { Stateful, stateless, transaction, trigger, Cache, cached, incentiveArgs, Reactronic as R } from 'reactronic'
 
 export const output: string[] = []
 
@@ -61,6 +61,7 @@ export class DemoView extends Stateful {
       output.push(x) /* istanbul ignore next */
       if (R.isTraceOn && !R.trace.silent) console.log(x)
     })
+    Cache.reprioritize(123)
   }
 
   // @transaction @trace(tracing.noisy)

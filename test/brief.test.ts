@@ -30,6 +30,7 @@ test('Main', t => {
   // Simple actions
   const app = Tran.run('app', () => new DemoView(new Demo()))
   try {
+    t.is(Cache.of(app.print).options.priority, 123)
     t.notThrows(() => DemoView.test())
     const rendering = Cache.of(app.render)
     t.is(rendering.invalid, false)
