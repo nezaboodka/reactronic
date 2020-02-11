@@ -24,8 +24,11 @@ const expected: string[] = [
 
 test('Reentrance.CancelAndWaitPrevious', async t => {
   R.setTrace(tracing.noisy)
-  const app = Tran.run('app', () => new AsyncDemoView(new AsyncDemo()))
-  Cache.of(app.model.load).setup({reentrance: Reentrance.CancelAndWaitPrevious})
+  const app = Tran.run('app', () => {
+    const a = new AsyncDemoView(new AsyncDemo())
+    Cache.of(a.model.load).setup({reentrance: Reentrance.CancelAndWaitPrevious})
+    return a
+  })
   try {
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))

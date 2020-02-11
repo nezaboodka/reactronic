@@ -20,15 +20,18 @@ const expected: string[] = [
   '[...] Log: RTA',
   '[...] Url: nezaboodka.com',
   '[...] Log: RTA, nezaboodka.com/100',
-  'Error: T115 (#22 AsyncDemo.load/microsoft.com) conflicts with: v110t109#22 AsyncDemo.load',
+  'Error: T113 (#22 AsyncDemo.load/microsoft.com) conflicts with: v109t107#22 AsyncDemo.load',
   'Url: nezaboodka.com',
   'Log: RTA, nezaboodka.com/100',
 ]
 
 test('Reentrance.RunSideBySide', async t => {
   R.setTrace(tracing.noisy)
-  const app = Tran.runAs('app', false, undefined, undefined, () => new AsyncDemoView(new AsyncDemo()))
-  Cache.of(app.model.load).setup({reentrance: Reentrance.RunSideBySide})
+  const app = Tran.runAs('app', false, undefined, undefined, () => {
+    const a = new AsyncDemoView(new AsyncDemo())
+    Cache.of(a.model.load).setup({reentrance: Reentrance.RunSideBySide})
+    return a
+  })
   try {
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))

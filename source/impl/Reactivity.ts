@@ -176,16 +176,11 @@ export class Method extends Cache<any> {
   }
 
   private static setup(self: Method, options: Partial<Options>): Options {
-    const call = self.read(undefined)
-    const r: Record = call.record
-    const hint: string = Dbg.isOn ? `setup(${Hints.obj(self.instance, self.member)})` : /* istanbul ignore next */ 'Cache.setup()'
-    return TransactionImpl.runAs(hint, false, undefined, undefined, (): Options => {
-      const call2 = self.write()
-      const c2: CallResult = call2.result
-      c2.options = new OptionsImpl(c2.options.body, c2.options, options, false)
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(r, self.member)}.options = ...`)
-      return c2.options
-    })
+    const call = self.write()
+    const c: CallResult = call.result
+    c.options = new OptionsImpl(c.options.body, c.options, options, false)
+    if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(call.record, self.member)}.options = ...`)
+    return c.options
   }
 }
 

@@ -24,8 +24,11 @@ const expected: string[] = [
 
 test('Reentrance.PreventWithError', async t => {
   R.setTrace(tracing.noisy)
-  const app = Tran.run('app', () => new AsyncDemoView(new AsyncDemo()))
-  Cache.of(app.model.load).setup({reentrance: Reentrance.PreventWithError})
+  const app = Tran.run('app', () => {
+    const a = new AsyncDemoView(new AsyncDemo())
+    Cache.of(a.model.load).setup({reentrance: Reentrance.PreventWithError})
+    return a
+  })
   try {
     t.is(app.statefulField, 'stateful field')
     t.throws(() => app.statefulField = 'test', 'stateful property #23 AsyncDemoView.statefulField can only be modified inside actions and triggers')
