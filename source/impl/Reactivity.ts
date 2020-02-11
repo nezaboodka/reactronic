@@ -84,11 +84,6 @@ export class Method extends Cache<any> {
     return result
   }
 
-  static unmount(...objects: any[]): void {
-    return TransactionImpl.runAs('<unmount>', false,
-      undefined, undefined, Snapshot.unmount, ...objects)
-  }
-
   static why(): string {
     const c = CallResult.current
     return c ? c.why() : 'because'

@@ -349,7 +349,7 @@ abstract class Cache<T> {
   getCachedAndRevalidate(args?: any[]): T | undefined
 
   static of<T>(method: F<T>): Cache<T>
-  static unmount(...objects: any[]): void
+  static unmount(obj: any): void
 }
 
 // Reactronic

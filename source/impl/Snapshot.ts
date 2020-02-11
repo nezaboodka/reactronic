@@ -123,16 +123,14 @@ export class Snapshot implements Context {
     return r
   }
 
-  static unmount(...objects: any[]): void {
+  static unmount(obj: any): void {
     const ctx = Snapshot.writable()
-    for (const x of objects) {
-      const o = Utils.get<RObject>(x, SYM_OBJECT)
-      if (o) {
-        const r: Record = ctx.write(o, SYM_UNMOUNT, SYM_UNMOUNT)
-        if (r !== NIL) {
-          r.data[SYM_UNMOUNT] = SYM_UNMOUNT
-          Snapshot.markChanged(r, SYM_UNMOUNT, SYM_UNMOUNT, true)
-        }
+    const o = Utils.get<RObject>(obj, SYM_OBJECT)
+    if (o) {
+      const r: Record = ctx.write(o, SYM_UNMOUNT, SYM_UNMOUNT)
+      if (r !== NIL) {
+        r.data[SYM_UNMOUNT] = SYM_UNMOUNT
+        Snapshot.markChanged(r, SYM_UNMOUNT, SYM_UNMOUNT, true)
       }
     }
   }

@@ -46,7 +46,10 @@ test('Reentrance.PreventWithError', async t => {
     const r = getCachedAndRevalidate(app.render)
     t.is(r && r.length, 2)
     await sleep(100)
-    Cache.unmount(app, app.model)
+    Tran.run('cleanup', () => {
+      Cache.unmount(app)
+      Cache.unmount(app.model)
+    })
   } /* istanbul ignore next */
   if (R.isTraceOn && !R.trace.silent)
     for (const x of output)

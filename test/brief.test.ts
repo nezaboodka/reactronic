@@ -136,8 +136,11 @@ test('Main', t => {
     t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'loadUsers', 'backup', 'title', 'users', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
   }
-  finally { // cleanup
-    Cache.unmount(app, app.model)
+  finally {
+    Tran.run('cleanup', () => {
+      Cache.unmount(app)
+      Cache.unmount(app.model)
+    })
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */

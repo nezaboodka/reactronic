@@ -43,7 +43,10 @@ test('Reentrance.CancelAndWaitPrevious', async t => {
     t.is(loading.workerCount, 0)
     t.is(loading.workers.size, 0)
     await sleep(100)
-    Cache.unmount(app, app.model)
+    Tran.run('cleanup', () => {
+      Cache.unmount(app)
+      Cache.unmount(app.model)
+    })
   } /* istanbul ignore next */
   if (R.isTraceOn && !R.trace.silent) {
     console.log('\nResults:\n')
