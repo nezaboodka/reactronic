@@ -21,6 +21,6 @@ export abstract class Cache<T> {
   abstract getCachedAndRevalidate(args?: any[]): T | undefined
 
   static of<T>(method: F<T>): Cache<T> { return Method.of(method) }
-  static reprioritize(priority: number): void { Method.reprioritize(priority) }
+  static setup(options: Partial<Options>): Options { return Method.setupImpl(undefined, options) }
   static unmount(obj: any): void { Snapshot.unmount(obj) }
 }

@@ -61,7 +61,7 @@ export class DemoView extends Stateful {
       output.push(x) /* istanbul ignore next */
       if (R.isTraceOn && !R.trace.silent) console.log(x)
     })
-    Cache.reprioritize(123)
+    Cache.setup({ priority: 123 })
   }
 
   // @transaction @trace(tracing.noisy)

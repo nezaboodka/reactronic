@@ -23,7 +23,7 @@ export class Method extends Cache<any> {
   readonly instance: RObject
   readonly member: Member
 
-  setup(options: Partial<Options>): Options { return Method.setup(this, options) }
+  setup(options: Partial<Options>): Options { return Method.setupImpl(this, options) }
   get options(): Options { return this.weak().result.options }
   get args(): ReadonlyArray<any> { return this.weak().result.args }
   get value(): any { return this.call(true, undefined).value }
@@ -66,12 +66,17 @@ export class Method extends Cache<any> {
     return func
   }
 
-  static reprioritize(priority: number): void {
-    const c = CallResult.current
-    if (c && !c.worker.isFinished) {
-      c.options = new OptionsImpl(c.options.body, c.options, { priority }, false) // TODO: optimize a little bit
-      if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(c.record, c.method.member)}.options = ...`)
-    }
+  static setupImpl(self: Method | undefined, options: Partial<Options>): Options {
+    let c: CallResult | undefined
+    if (self)
+      c = self.write().result
+    else
+      c = CallResult.current
+    if (!c || c.worker.isFinished)
+      throw misuse('a method is expected with reactronic decorator')
+    c.options = new OptionsImpl(c.options.body, c.options, options, false)
+    if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(c.record, c.method.member)}.options = ...`)
+    return c.options
   }
 
   static run<T>(c: CallResult | undefined, func: F<T>, ...args: any[]): T {
@@ -181,14 +186,6 @@ export class Method extends Cache<any> {
     const call = self.read(undefined)
     const c: CallResult = call.result
     c.invalidateDueTo(c, {record: NIL, member: self.member, times: 0}, ctx.timestamp, ctx.triggers)
-  }
-
-  private static setup(self: Method, options: Partial<Options>): Options {
-    const call = self.write()
-    const c: CallResult = call.result
-    c.options = new OptionsImpl(c.options.body, c.options, options, false)
-    if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(call.record, self.member)}.options = ...`)
-    return c.options
   }
 }
 
