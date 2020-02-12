@@ -19,7 +19,7 @@ export class Reactronic {
   static get trace(): Trace { return Dbg.trace }
   static setTrace(t: Trace | undefined): void { Dbg.global = t || Dbg.OFF; Dbg.isOn = t !== undefined }
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Hints.setHint(obj, name) }
-  static getTraceHint<T extends object>(obj: T): string | undefined { return Hints.getHint(obj) }
+  static getTraceHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Hints.getHint(obj, full) }
   static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(enabled, options) }
   static why(): string { return Method.why() }
 }

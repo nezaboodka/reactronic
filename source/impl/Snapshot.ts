@@ -334,9 +334,9 @@ export class Hints {
     return obj
   }
 
-  static getHint(obj: object): string | undefined {
+  static getHint(obj: object, full: boolean = false): string | undefined {
     const o = Utils.get<RObject>(obj, SYM_OBJECT)
-    return o ? o.hint : undefined
+    return o ? (full ? `${o.hint}#${o.id}` : o.hint) : undefined
   }
 
   static obj(o: RObject | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
