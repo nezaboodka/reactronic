@@ -271,7 +271,7 @@ export class TransactionImpl extends Transaction {
       else
         this.resolve()
     }
-    Object.freeze(this)
+    if (Dbg.isOn) Object.freeze(this)
   }
 
   private acquirePromise(): Promise<void> {

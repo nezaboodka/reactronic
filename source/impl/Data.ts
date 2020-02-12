@@ -3,6 +3,8 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
+import { Dbg } from '../util/Dbg'
+
 // Context
 
 export interface Context {
@@ -53,7 +55,7 @@ export class Record {
     this.data = data
     this.changes = new Set<Member>()
     this.conflicts = new Map<Member, Record>()
-    Object.freeze(this)
+    if (Dbg.isOn) Object.freeze(this)
   }
 }
 

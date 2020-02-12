@@ -213,7 +213,7 @@ export class Snapshot implements Context {
     this.completed = true
     this.changeset.forEach((r: Record, o: RObject) => {
       r.changes.forEach(m => CopyOnWriteProxy.seal(r.data[m], o.proxy, m))
-      Snapshot.freezeRecord(r)
+      if (Dbg.isOn) Snapshot.freezeRecord(r)
       o.writers--
       if (o.writers === 0)
         o.changing = undefined
@@ -241,9 +241,11 @@ export class Snapshot implements Context {
   }
 
   collect(): void {
-    Utils.freezeMap(this.changeset)
-    Object.freeze(this.triggers)
-    Object.freeze(this)
+    if (Dbg.isOn) {
+      Utils.freezeMap(this.changeset)
+      Object.freeze(this.triggers)
+      Object.freeze(this)
+    }
     this.triggerGarbageCollection()
   }
 

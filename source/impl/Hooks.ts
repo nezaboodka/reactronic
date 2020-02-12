@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Utils, undef, F } from '../util/Utils'
-import { misuse } from '../util/Dbg'
+import { Dbg, misuse } from '../util/Dbg'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
@@ -77,7 +77,7 @@ export class OptionsImpl implements Options {
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
     this.trace = merge(DEFAULT_STATELESS_OPTIONS.trace, existing.trace, patch.trace, implicit)
-    Object.freeze(this)
+    if (Dbg.isOn) Object.freeze(this)
   }
 }
 
@@ -213,7 +213,7 @@ export class Hooks implements ProxyHandler<RObject> {
       const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), SYM_BLANK)
       const initial = new Record(NIL.snapshot, NIL, {...blank})
       Utils.set(initial.data, SYM_OBJECT, o)
-      Snapshot.freezeRecord(initial)
+      if (Dbg.isOn) Snapshot.freezeRecord(initial)
       o = new RObject(obj, obj, Hooks.proxy, initial, obj.constructor.name)
       Utils.set(obj, SYM_OBJECT, o)
     }
