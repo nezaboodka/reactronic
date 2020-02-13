@@ -21,7 +21,7 @@ export class TransactionImpl extends Transaction {
   private readonly snapshot: Snapshot // assigned in constructor
   private workers: number
   private sealed: boolean
-  private error?: Error
+  private canceled?: Error
   private after?: TransactionImpl
   private promise?: Promise<void>
   private resolve: (value?: void) => void
@@ -34,7 +34,7 @@ export class TransactionImpl extends Transaction {
     this.snapshot = new Snapshot(hint, token)
     this.workers = 0
     this.sealed = false
-    this.error = undefined
+    this.canceled = undefined
     this.after = undefined
     this.promise = undefined
     this.resolve = undef
@@ -44,6 +44,7 @@ export class TransactionImpl extends Transaction {
   static get current(): TransactionImpl { return TransactionImpl.running }
   get id(): number { return this.snapshot.id }
   get hint(): string { return this.snapshot.hint }
+  get error(): Error | undefined { return this.canceled }
 
   run<T>(func: F<T>, ...args: any[]): T {
     this.guard()
@@ -65,8 +66,8 @@ export class TransactionImpl extends Transaction {
   apply(): void {
     if (this.workers > 0)
       throw misuse('cannot apply transaction having active functions running')
-    if (this.error)
-      throw misuse(`cannot apply transaction that is already canceled: ${this.error}`)
+    if (this.canceled)
+      throw misuse(`cannot apply transaction that is already canceled: ${this.canceled}`)
     this.seal() // apply immediately, because pending === 0
   }
 
@@ -113,7 +114,7 @@ export class TransactionImpl extends Transaction {
   }
 
   get isCanceled(): boolean {
-    return this.error !== undefined
+    return this.canceled !== undefined
   }
 
   get isFinished(): boolean {
@@ -173,8 +174,8 @@ export class TransactionImpl extends Transaction {
   private async wrapToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T | undefined> {
     try {
       const result = await p
-      if (this.error)
-        throw this.error
+      if (this.canceled)
+        throw this.canceled
       return result
     }
     catch (error) {
@@ -211,10 +212,10 @@ export class TransactionImpl extends Transaction {
       this.snapshot.acquire(outer.snapshot)
       result = func(...args)
       if (this.sealed && this.workers === 1) {
-        if (!this.error)
+        if (!this.canceled)
           this.checkForConflicts() // merge with concurrent actions
         else if (!this.after)
-          throw this.error
+          throw this.canceled
       }
     }
     catch (e) {
@@ -238,8 +239,8 @@ export class TransactionImpl extends Transaction {
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {
-    if (!t.error && error) {
-      t.error = error
+    if (!t.canceled && error) {
+      t.canceled = error
       t.after = after
       if (Dbg.isOn && Dbg.trace.transactions) {
         Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
@@ -263,11 +264,11 @@ export class TransactionImpl extends Transaction {
 
   private finish(): void {
     // It's critical to have no exceptions in this block
-    this.snapshot.complete(this.error)
+    this.snapshot.complete(this.canceled)
     this.snapshot.collect()
     if (this.promise) {
-      if (this.error && !this.after)
-        this.reject(this.error)
+      if (this.canceled && !this.after)
+        this.reject(this.canceled)
       else
         this.resolve()
     }
