@@ -54,7 +54,7 @@ export class Demo extends DemoBase {
 }
 
 test('Main', t => {
-  R.setLoggingMode(log.noisy)
+  R.setLoggingMode(true, log.noisy)
   const demo = Tran.run('caching', () => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')

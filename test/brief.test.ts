@@ -25,8 +25,8 @@ test('Main', t => {
   R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled
   R.triggersAutoStartDisabled = false
   R.setProfilingMode(true, { repetitiveReadWarningThreshold: 3 })
-  R.setLoggingMode(log.off)
-  R.setLoggingMode(log.noisy)
+  R.setLoggingMode(false, log.off)
+  R.setLoggingMode(true, log.noisy)
   // Simple actions
   const app = Tran.run('app', () => new DemoView(new Demo()))
   try {

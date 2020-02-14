@@ -23,7 +23,7 @@ const expected: string[] = [
 ]
 
 test('Reentrance.CancelPrevious', async t => {
-  R.setLoggingMode(log.noisy)
+  R.setLoggingMode(true, log.noisy)
   const app = Tran.run('app', () => {
     const a = new AsyncDemoView(new AsyncDemo())
     Cache.of(a.print).setup({ priority: 0 })

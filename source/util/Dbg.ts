@@ -18,7 +18,7 @@ export function misuse(message: string): Error {
 // Dbg
 
 export class Dbg {
-  static OFF: LoggingOptions = {
+  static DefaultLevel: LoggingOptions = {
     silent: false,
     errors: false,
     warnings: false,
@@ -38,9 +38,23 @@ export class Dbg {
   }
 
   static isOn: boolean = false
-  static global: LoggingOptions = Dbg.OFF
+  static global: LoggingOptions = Dbg.DefaultLevel
   static get logging(): LoggingOptions { return this.getMergedLoggingOptions(undefined) }
   static getMergedLoggingOptions = (local: Partial<LoggingOptions> | undefined): LoggingOptions => Dbg.global
+
+  static setLoggingMode(enabled: boolean, options?: LoggingOptions): void {
+    Dbg.isOn = enabled
+    Dbg.global = options || Dbg.DefaultLevel
+    if (enabled) {
+      Dbg.log('', '', 'Reactronic logging is enabled:')
+      const t = Dbg.global as any
+      for (const opt in t)
+        Dbg.log('', '', `  ${opt}: ${t[opt]}`)
+      Dbg.log('', '', 'Method-level logging can be configured with @logging decorator')
+    }
+    else
+      Dbg.log('', '', 'Reactronic logging is disabled')
+  }
 
   static log(bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
     Dbg.logAs(undefined, bar, operation, message, ms, highlight)
@@ -53,7 +67,7 @@ export class Dbg {
     const silent = (options && options.silent !== undefined) ? options.silent : t.silent
     if (!silent) /* istanbul ignore next */
       console.log('\x1b[37m%s\x1b[0m \x1b[' + t.color + 'm%s %s%s\x1b[0m \x1b[' + t.color + 'm%s%s\x1b[0m \x1b[' + t.color + 'm%s\x1b[0m%s',
-        '#rt', t.prefix, t.transactions ? margin1 : '', t.transactions ? bar : bar.replace(/./g, ' '), margin2, operation, message,
+        '', t.prefix, t.transactions ? margin1 : '', t.transactions ? bar : bar.replace(/./g, ' '), margin2, operation, message,
         (highlight !== undefined ? `${highlight}` : '') + (ms > 2 ? `    [ ${ms}ms ]` : ''))
   }
 

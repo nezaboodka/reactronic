@@ -26,7 +26,7 @@ const expected: string[] = [
 ]
 
 test('Reentrance.RunSideBySide', async t => {
-  R.setLoggingMode(log.noisy)
+  R.setLoggingMode(true, log.noisy)
   const app = Tran.runAs('app', false, undefined, undefined, () => {
     const a = new AsyncDemoView(new AsyncDemo())
     Cache.of(a.model.load).setup({reentrance: Reentrance.RunSideBySide})
