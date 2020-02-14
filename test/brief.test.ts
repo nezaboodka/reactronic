@@ -4,8 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction as Tran, Cache, Kind, nonreactive, isolated, Reactronic as R } from 'reactronic'
-import { log, nop } from './common'
+import { Transaction as Tran, Cache, Kind, nonreactive, isolated, Reactronic as R, LogLevel } from 'reactronic'
 import { Person, Demo, DemoView, output } from './brief'
 
 const expected: string[] = [
@@ -25,8 +24,8 @@ test('Main', t => {
   R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled
   R.triggersAutoStartDisabled = false
   R.setProfilingMode(true, { repetitiveReadWarningThreshold: 3 })
-  R.setLoggingMode(false, log.off)
-  R.setLoggingMode(true, log.noisy)
+  R.setLoggingMode(false, LogLevel.Suppress)
+  R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
   // Simple actions
   const app = Tran.run('app', () => new DemoView(new Demo()))
   try {
@@ -149,3 +148,6 @@ test('Main', t => {
     t.is(output[i], expected[i])
   }
 })
+
+/* istanbul ignore next */
+export function nop(): void { /* do nothing */ }

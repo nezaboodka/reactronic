@@ -4,8 +4,8 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction as Tran, Cache, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
-import { AsyncDemo, AsyncDemoView, loading, output, log } from './reentrance'
+import { Transaction as Tran, Cache, Reentrance, Reactronic as R, LogLevel, all, sleep } from 'reactronic'
+import { AsyncDemo, AsyncDemoView, loading, output } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: 'google.com', delay: 300 },
@@ -27,7 +27,7 @@ const expected: string[] = [
 ]
 
 test('Reentrance.WaitAndRestart', async t => {
-  R.setLoggingMode(true, log.noisy)
+  R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
   const app = Tran.run('app', () => {
     const a = new AsyncDemoView(new AsyncDemo())
     Cache.of(a.model.load).setup({reentrance: Reentrance.WaitAndRestart})

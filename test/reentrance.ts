@@ -5,7 +5,6 @@
 
 import { Stateful, state, transaction, trigger, cached, incentiveArgs, throttling, monitor,
   reentrance, Transaction as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
-export { log } from './common'
 
 export const output: string[] = []
 export const loading = Monitor.create('loading', 0)

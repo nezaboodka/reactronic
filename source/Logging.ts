@@ -29,11 +29,15 @@ export interface ProfilingOptions {
   garbageCollectionSummaryInterval: number // default: 3000 ms
 }
 
-export class LogLevel {
+export const LogLevel: {
+  Error: LoggingOptions,
+  Light: LoggingOptions,
+  Info: LoggingOptions,
+  Debug: LoggingOptions,
+  Suppress: LoggingOptions,
+} = {
 
-  static Off: LoggingOptions | undefined = undefined
-
-  static Warnings: LoggingOptions = {
+  Error: {
     silent: false,
     transactions: false,
     methods: false,
@@ -50,28 +54,9 @@ export class LogLevel {
     prefix: '',
     margin1: 0,
     margin2: 0,
-  }
+  },
 
-  static Normal: LoggingOptions = {
-    silent: false,
-    transactions: true,
-    methods: true,
-    steps: false,
-    monitors: true,
-    reads: false,
-    writes: false,
-    changes: true,
-    invalidations: true,
-    errors: true,
-    warnings: true,
-    gc: false,
-    color: 37,
-    prefix: '',
-    margin1: 0,
-    margin2: 0,
-  }
-
-  static Minimal: LoggingOptions = {
+  Light: {
     silent: false,
     transactions: false,
     methods: false,
@@ -88,9 +73,28 @@ export class LogLevel {
     prefix: '',
     margin1: 0,
     margin2: 0,
-  }
+  },
 
-  static Noisy: LoggingOptions = {
+  Info: {
+    silent: false,
+    transactions: true,
+    methods: true,
+    steps: false,
+    monitors: true,
+    reads: false,
+    writes: false,
+    changes: true,
+    invalidations: true,
+    errors: true,
+    warnings: true,
+    gc: false,
+    color: 37,
+    prefix: '',
+    margin1: 0,
+    margin2: 0,
+  },
+
+  Debug: {
     silent: false,
     transactions: true,
     methods: true,
@@ -107,9 +111,9 @@ export class LogLevel {
     prefix: '',
     margin1: 0,
     margin2: 0,
-  }
+  },
 
-  static Suppress: LoggingOptions = {
+  Suppress: {
     silent: true,
     transactions: false,
     methods: false,
@@ -126,7 +130,7 @@ export class LogLevel {
     prefix: '',
     margin1: 0,
     margin2: 0,
-  }
+  },
 }
 
 declare global {
