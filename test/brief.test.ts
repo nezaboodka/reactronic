@@ -24,7 +24,7 @@ test('Main', t => {
   R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled
   R.triggersAutoStartDisabled = false
   R.setProfilingMode(true, { repetitiveReadWarningThreshold: 3 })
-  R.setLoggingMode(false, LogLevel.Suppress)
+  R.setLoggingMode(false)
   R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
   // Simple actions
   const app = Tran.run('app', () => new DemoView(new Demo()))
@@ -106,13 +106,13 @@ test('Main', t => {
       if (daddy.emails)
         daddy.emails.push('dad@mail.com')
     }, 'stateful property #26 Person.emails can only be modified inside actions and triggers')
-    t.throws(() => action1.run(/* istanbul ignore next */ () => { /* nope */ }), 'cannot run transaction that is already sealed')
+    t.throws(() => action1.run(/* istanbul ignore next */() => { /* nope */ }), 'cannot run transaction that is already sealed')
     // // Undo transaction
     // tran1.undo()
     // t.is(daddy.name, "John")
     // t.is(daddy.age, 38)
     // Check protection and error handling
-    t.throws(() => { Cache.of(daddy.setParent).setup({monitor: null}) },
+    t.throws(() => { Cache.of(daddy.setParent).setup({ monitor: null }) },
       'given method is not decorated as reactronic one: setParent')
     t.throws(() => { console.log(Cache.of(daddy.setParent).options.monitor) },
       'given method is not decorated as reactronic one: setParent')
