@@ -9,14 +9,14 @@ import { Record } from './Data'
 import { Snapshot, Hints } from './Snapshot'
 import { Worker } from '../Monitor'
 import { Transaction } from '../Transaction'
-import { Trace } from '../Options'
+import { LoggingOptions } from '../Options'
 
 export class TransactionImpl extends Transaction {
   private static readonly none: TransactionImpl = new TransactionImpl('<none>')
   private static running: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false
 
-  readonly trace?: Partial<Trace> // assigned in constructor
+  readonly logging?: Partial<LoggingOptions> // assigned in constructor
   readonly margin: number
   private readonly snapshot: Snapshot // assigned in constructor
   private workers: number
@@ -27,9 +27,9 @@ export class TransactionImpl extends Transaction {
   private resolve: (value?: void) => void
   private reject: (reason: any) => void
 
-  constructor(hint: string, trace?: Partial<Trace>, token?: any) {
+  constructor(hint: string, logging?: Partial<LoggingOptions>, token?: any) {
     super()
-    this.trace = trace
+    this.logging = logging
     this.margin = TransactionImpl.running ? TransactionImpl.running.margin + 1 : -1
     this.snapshot = new Snapshot(hint, token)
     this.workers = 0
@@ -55,7 +55,7 @@ export class TransactionImpl extends Transaction {
     const restore = TransactionImpl.inspection
     try {
       TransactionImpl.inspection = true
-      if (Dbg.isOn && Dbg.trace.transactions) Dbg.log(' ', ' ', `T${this.id} (${this.hint}) is being inspected by T${TransactionImpl.running.id} (${TransactionImpl.running.hint})`)
+      if (Dbg.isOn && Dbg.logging.transactions) Dbg.log(' ', ' ', `T${this.id} (${this.hint}) is being inspected by T${TransactionImpl.running.id} (${TransactionImpl.running.hint})`)
       return this.do(undefined, func, ...args)
     }
     finally {
@@ -130,11 +130,11 @@ export class TransactionImpl extends Transaction {
     return TransactionImpl.runAs<T>(hint, false, undefined, undefined, func, ...args)
   }
 
-  static runAs<T>(hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T {
-    const t: TransactionImpl = TransactionImpl.acquire(hint, spawn, trace, token)
+  static runAs<T>(hint: string, spawn: boolean, logging: Partial<LoggingOptions> | undefined, token: any, func: F<T>, ...args: any[]): T {
+    const t: TransactionImpl = TransactionImpl.acquire(hint, spawn, logging, token)
     const root = t !== TransactionImpl.running
     t.guard()
-    let result: any = t.do<T>(trace, func, ...args)
+    let result: any = t.do<T>(logging, func, ...args)
     if (root) {
       if (result instanceof Promise)
         result = TransactionImpl.isolated(() => {
@@ -158,9 +158,9 @@ export class TransactionImpl extends Transaction {
 
   // Internal
 
-  private static acquire(hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any): TransactionImpl {
+  private static acquire(hint: string, spawn: boolean, logging: Partial<LoggingOptions> | undefined, token: any): TransactionImpl {
     return spawn || TransactionImpl.running.isFinished
-      ? new TransactionImpl(hint, trace, token)
+      ? new TransactionImpl(hint, logging, token)
       : TransactionImpl.running
   }
 
@@ -181,11 +181,11 @@ export class TransactionImpl extends Transaction {
     catch (error) {
       if (this.after !== TransactionImpl.none) {
         if (this.after) {
-          // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
+          // if (Dbg.logging.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
           if (this.after !== this)
             await this.after.whenFinished()
-          // if (Dbg.trace.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
-          return TransactionImpl.runAs<T>(this.hint, true, this.trace, this.snapshot.token, func, ...args)
+          // if (Dbg.logging.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
+          return TransactionImpl.runAs<T>(this.hint, true, this.logging, this.snapshot.token, func, ...args)
         }
         else
           throw error
@@ -203,7 +203,7 @@ export class TransactionImpl extends Transaction {
 
   // Internal
 
-  private do<T>(trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T {
+  private do<T>(logging: Partial<LoggingOptions> | undefined, func: F<T>, ...args: any[]): T {
     let result: T
     const outer = TransactionImpl.running
     try {
@@ -242,7 +242,7 @@ export class TransactionImpl extends Transaction {
     if (!t.canceled && error) {
       t.canceled = error
       t.after = after
-      if (Dbg.isOn && Dbg.trace.transactions) {
+      if (Dbg.isOn && Dbg.logging.transactions) {
         Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== TransactionImpl.none)
           Dbg.log('║', ' [!]', `T${t.id} (${t.hint}) will be restarted after T${after.id} (${after.hint})`)

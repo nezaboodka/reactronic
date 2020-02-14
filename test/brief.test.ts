@@ -5,7 +5,7 @@
 
 import test from 'ava'
 import { Transaction as Tran, Cache, Kind, nonreactive, isolated, Reactronic as R } from 'reactronic'
-import { tracing, nop } from './common'
+import { log, nop } from './common'
 import { Person, Demo, DemoView, output } from './brief'
 
 const expected: string[] = [
@@ -25,8 +25,8 @@ test('Main', t => {
   R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled
   R.triggersAutoStartDisabled = false
   R.setProfilingMode(true, { repetitiveReadWarningThreshold: 3 })
-  R.setTrace(tracing.off)
-  R.setTrace(tracing.noisy)
+  R.setLoggingMode(log.off)
+  R.setLoggingMode(log.noisy)
   // Simple actions
   const app = Tran.run('app', () => new DemoView(new Demo()))
   try {
@@ -131,9 +131,9 @@ test('Main', t => {
     // Other
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)
-    t.is(R.getTraceHint(app), 'DemoView')
-    R.setTraceHint(app, 'App')
-    t.is(R.getTraceHint(app), 'App')
+    t.is(R.getLoggingHint(app), 'DemoView')
+    R.setLoggingHint(app, 'App')
+    t.is(R.getLoggingHint(app), 'App')
     t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'loadUsers', 'backup', 'title', 'users', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
   }
@@ -145,7 +145,7 @@ test('Main', t => {
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (R.isTraceOn && !R.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (R.isLogging && !R.loggingOptions.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

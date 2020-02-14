@@ -3,9 +3,9 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Trace } from 'reactronic'
+import { LoggingOptions } from 'reactronic'
 
-export const tracing: { friendly: Trace, noisy: Trace, off: undefined } = {
+export const log: { friendly: LoggingOptions, noisy: LoggingOptions, off: undefined } = {
   friendly: {
     silent: process.env.AVA_DEBUG === undefined,
     transactions: true,

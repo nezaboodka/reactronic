@@ -3,8 +3,8 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Trace } from './Trace'
-export { Trace, ProfilingOptions, TraceLevel } from './Trace'
+import { LoggingOptions } from './Logging'
+export { LoggingOptions, ProfilingOptions, LogLevel } from './Logging'
 import { Monitor } from './Monitor'
 
 export interface Options {
@@ -14,7 +14,7 @@ export interface Options {
   readonly throttling: number // milliseconds, -1 is immediately, -2 is never
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null
-  readonly trace?: Partial<Trace>
+  readonly logging?: Partial<LoggingOptions>
 }
 
 export enum Kind {

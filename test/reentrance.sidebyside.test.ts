@@ -5,7 +5,7 @@
 
 import test from 'ava'
 import { Transaction as Tran, Cache, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
-import { AsyncDemo, AsyncDemoView, loading, output, tracing } from './reentrance'
+import { AsyncDemo, AsyncDemoView, loading, output, log } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: 'nezaboodka.com', delay: 100 },
@@ -26,7 +26,7 @@ const expected: string[] = [
 ]
 
 test('Reentrance.RunSideBySide', async t => {
-  R.setTrace(tracing.noisy)
+  R.setLoggingMode(log.noisy)
   const app = Tran.runAs('app', false, undefined, undefined, () => {
     const a = new AsyncDemoView(new AsyncDemo())
     Cache.of(a.model.load).setup({reentrance: Reentrance.RunSideBySide})
@@ -41,7 +41,7 @@ test('Reentrance.RunSideBySide', async t => {
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
-    if (R.isTraceOn && !R.trace.silent) console.log(error.toString())
+    if (R.isLogging && !R.loggingOptions.silent) console.log(error.toString())
   }
   finally {
     t.is(loading.workerCount, 0)
@@ -52,12 +52,12 @@ test('Reentrance.RunSideBySide', async t => {
       Cache.unmount(app.model)
     })
   } /* istanbul ignore next */
-  if (R.isTraceOn && !R.trace.silent)
+  if (R.isLogging && !R.loggingOptions.silent)
     for (const x of output)
       console.log(x)
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (R.isTraceOn && !R.trace.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (R.isLogging && !R.loggingOptions.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

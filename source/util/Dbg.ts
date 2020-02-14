@@ -3,10 +3,10 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Trace } from '../Trace'
+import { LoggingOptions } from '../Logging'
 
 export function error(message: string, cause: Error | undefined): Error {
-  if (Dbg.isOn && Dbg.trace.errors) Dbg.log('█', ' ███', message, undefined, ' *** ERROR ***')
+  if (Dbg.isOn && Dbg.logging.errors) Dbg.log('█', ' ███', message, undefined, ' *** ERROR ***')
   return new Error(message)
 }
 
@@ -18,7 +18,7 @@ export function misuse(message: string): Error {
 // Dbg
 
 export class Dbg {
-  static OFF: Trace = {
+  static OFF: LoggingOptions = {
     silent: false,
     errors: false,
     warnings: false,
@@ -38,26 +38,26 @@ export class Dbg {
   }
 
   static isOn: boolean = false
-  static global: Trace = Dbg.OFF
-  static get trace(): Trace { return this.getCurrentTrace(undefined) }
-  static getCurrentTrace = (local: Partial<Trace> | undefined): Trace => Dbg.global
+  static global: LoggingOptions = Dbg.OFF
+  static get logging(): LoggingOptions { return this.getMergedLoggingOptions(undefined) }
+  static getMergedLoggingOptions = (local: Partial<LoggingOptions> | undefined): LoggingOptions => Dbg.global
 
   static log(bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
     Dbg.logAs(undefined, bar, operation, message, ms, highlight)
   }
 
-  static logAs(trace: Partial<Trace> | undefined, bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
-    const t = Dbg.getCurrentTrace(trace)
+  static logAs(options: Partial<LoggingOptions> | undefined, bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
+    const t = Dbg.getMergedLoggingOptions(options)
     const margin1: string = '  '.repeat(t.margin1 >= 0 ? t.margin1 : 0)
     const margin2: string = '  '.repeat(t.margin2)
-    const silent = (trace && trace.silent !== undefined) ? trace.silent : t.silent
+    const silent = (options && options.silent !== undefined) ? options.silent : t.silent
     if (!silent) /* istanbul ignore next */
       console.log('\x1b[37m%s\x1b[0m \x1b[' + t.color + 'm%s %s%s\x1b[0m \x1b[' + t.color + 'm%s%s\x1b[0m \x1b[' + t.color + 'm%s\x1b[0m%s',
         '#rt', t.prefix, t.transactions ? margin1 : '', t.transactions ? bar : bar.replace(/./g, ' '), margin2, operation, message,
         (highlight !== undefined ? `${highlight}` : '') + (ms > 2 ? `    [ ${ms}ms ]` : ''))
   }
 
-  static merge(t: Partial<Trace> | undefined, color: number | undefined, prefix: string | undefined, existing: Trace): Trace {
+  static merge(t: Partial<LoggingOptions> | undefined, color: number | undefined, prefix: string | undefined, existing: LoggingOptions): LoggingOptions {
     const result = !t ? { ...existing } : {
       silent: t.silent !== undefined ? t.silent : existing.silent,
       transactions: t.transactions !== undefined ? t.transactions : existing.transactions,

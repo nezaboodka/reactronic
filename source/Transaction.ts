@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { F } from './util/Utils'
-import { Trace } from './Trace'
+import { LoggingOptions } from './Logging'
 import { TransactionImpl } from './impl/TransactionImpl'
 import { Worker } from './Monitor'
 
@@ -27,6 +27,6 @@ export abstract class Transaction implements Worker {
 
   static create(hint: string): Transaction { return new TransactionImpl(hint) }
   static run<T>(hint: string, func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(hint, func, ...args) }
-  static runAs<T>(hint: string, spawn: boolean, trace: Partial<Trace> | undefined, token: any, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(hint, spawn, trace, token, func, ...args) }
+  static runAs<T>(hint: string, spawn: boolean, logging: Partial<LoggingOptions> | undefined, token: any, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(hint, spawn, logging, token, func, ...args) }
   static isolated<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.isolated<T>(func, ...args) }
 }

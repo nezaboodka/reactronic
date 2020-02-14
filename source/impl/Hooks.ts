@@ -13,7 +13,7 @@ import { Snapshot, RObject, Hints, NIL, SYM_OBJECT, SYM_METHOD, SYM_BLANK, SYM_T
 import { Options, Kind, Reentrance } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
-import { Trace, ProfilingOptions } from '../Trace'
+import { LoggingOptions, ProfilingOptions } from '../Logging'
 
 // State
 
@@ -54,7 +54,7 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   reentrance: Reentrance.PreventWithError,
   incentiveArgs: false,
   monitor: null,
-  trace: undefined,
+  logging: undefined,
 })
 
 export class OptionsImpl implements Options {
@@ -65,7 +65,7 @@ export class OptionsImpl implements Options {
   readonly throttling: number
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null
-  readonly trace?: Partial<Trace>
+  readonly logging?: Partial<LoggingOptions>
   static readonly INITIAL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))
 
   constructor(body: Function | undefined, existing: OptionsImpl, patch: Partial<OptionsImpl>, implicit: boolean) {
@@ -76,7 +76,7 @@ export class OptionsImpl implements Options {
     this.throttling = merge(DEFAULT_STATELESS_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
-    this.trace = merge(DEFAULT_STATELESS_OPTIONS.trace, existing.trace, patch.trace, implicit)
+    this.logging = merge(DEFAULT_STATELESS_OPTIONS.logging, existing.logging, patch.logging, implicit)
     if (Dbg.isOn) Object.freeze(this)
   }
 }

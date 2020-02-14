@@ -4,8 +4,8 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Stateful, cached, Transaction as Tran, Reactronic as R, trace, trigger, transaction, stateless } from 'reactronic'
-import { tracing } from './common'
+import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, trigger, transaction, stateless } from 'reactronic'
+import { log } from './common'
 
 export class DemoBase extends Stateful {
   @stateless raw: string = 'stateless data'
@@ -29,7 +29,7 @@ export class DemoBase extends Stateful {
     return this.title
   }
 
-  @cached @trace({})
+  @cached @logging({})
   produceSideEffect(): void {
     this.raw = 'should not fail on this line'
     this.title = 'should fail on this line'
@@ -54,7 +54,7 @@ export class Demo extends DemoBase {
 }
 
 test('Main', t => {
-  R.setTrace(tracing.noisy)
+  R.setLoggingMode(log.noisy)
   const demo = Tran.run('caching', () => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')

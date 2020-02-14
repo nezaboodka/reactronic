@@ -59,12 +59,12 @@ export class DemoView extends Stateful {
     const lines = this.render(0)
     lines.forEach(x => {
       output.push(x) /* istanbul ignore next */
-      if (R.isTraceOn && !R.trace.silent) console.log(x)
+      if (R.isLogging && !R.loggingOptions.silent) console.log(x)
     })
     Cache.setup({ priority: 123 })
   }
 
-  // @transaction @trace(tracing.noisy)
+  // @transaction @logging(log.noisy)
   // subPrint(): void {
   //   this.render().forEach(x => output.push(x));
   // }

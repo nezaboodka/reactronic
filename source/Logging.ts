@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-export interface Trace {
+export interface LoggingOptions {
   readonly silent: boolean
   readonly transactions: boolean
   readonly methods: boolean
@@ -29,11 +29,11 @@ export interface ProfilingOptions {
   garbageCollectionSummaryInterval: number // default: 3000 ms
 }
 
-export class TraceLevel {
+export class LogLevel {
 
-  static Off: Trace | undefined = undefined
+  static Off: LoggingOptions | undefined = undefined
 
-  static Warnings: Trace = {
+  static Warnings: LoggingOptions = {
     silent: false,
     transactions: false,
     methods: false,
@@ -52,7 +52,7 @@ export class TraceLevel {
     margin2: 0,
   }
 
-  static Normal: Trace = {
+  static Normal: LoggingOptions = {
     silent: false,
     transactions: true,
     methods: true,
@@ -71,7 +71,7 @@ export class TraceLevel {
     margin2: 0,
   }
 
-  static Minimal: Trace = {
+  static Minimal: LoggingOptions = {
     silent: false,
     transactions: false,
     methods: false,
@@ -90,7 +90,7 @@ export class TraceLevel {
     margin2: 0,
   }
 
-  static Noisy: Trace = {
+  static Noisy: LoggingOptions = {
     silent: false,
     transactions: true,
     methods: true,
@@ -109,7 +109,7 @@ export class TraceLevel {
     margin2: 0,
   }
 
-  static Suppress: Trace = {
+  static Suppress: LoggingOptions = {
     silent: true,
     transactions: false,
     methods: false,

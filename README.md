@@ -239,13 +239,13 @@ function incentiveArgs(incentiveArgs: boolean) // cached & triggers
 function throttling(throttling: number) // triggers only
 function reentrance(reentrance: Reentrance) // actions & triggers
 function monitor(monitor: Monitor | null)
-function trace(trace: Partial<Trace>)
+function logging(logging: Partial<LoggingOptions>)
 
 function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
 function nonreactive<T>(func: F<T>, ...args: any[]): T
 function isolated<T>(func: F<T>, ...args: any[]): T
 
-// Options, Kind, Reentrance, Monitor, Trace
+// Options, Kind, Reentrance, Monitor, LoggingOptions, ProfilingOptions
 
 interface Options {
   readonly kind: Kind
@@ -253,7 +253,7 @@ interface Options {
   readonly throttling: number // milliseconds, -1 is immediately (synchronously)
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null
-  readonly trace?: Partial<Trace>
+  readonly logging?: Partial<LoggingOptions>
 }
 
 enum Kind {
@@ -288,7 +288,7 @@ interface Worker {
   whenFinished(): Promise<void>
 }
 
-interface Trace {
+interface LoggingOptions {
   readonly silent: boolean
   readonly transactions: boolean
   readonly methods: boolean
@@ -298,6 +298,8 @@ interface Trace {
   readonly writes: boolean
   readonly changes: boolean
   readonly invalidations: boolean
+  readonly errors: boolean
+  readonly warnings: boolean
   readonly gc: boolean
 }
 
@@ -330,7 +332,7 @@ class Transaction implements Worker {
   static create(hint: string): Transaction
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
-    trace: Partial<Trace> | undefined, func: F<T>, ...args: any[]): T
+    logging: Partial<LoggingOptions | undefined, func: F<T>, ...args: any[]): T
   static isolated<T>(func: F<T>, ...args: any[]): T
 }
 
@@ -356,11 +358,11 @@ abstract class Cache<T> {
 
 class Reactronic {
   static triggersAutoStartDisabled: boolean
-  static readonly isTraceOn: boolean
-  static readonly trace: Trace
-  static setTrace(t: Trace | undefined)
-  static setTraceHint<T extends object>(obj: T, name: string | undefined): void
-  static getTraceHint<T extends object>(obj: T): string | undefined
+  static readonly isLogging: boolean
+  static readonly loggingOptions: LoggingOptions
+  static setLoggingMode(enabled: boolean, options?: LoggingOptions)
+  static setLoggingHint<T extends object>(obj: T, name: string | undefined): void
+  static getLoggingHint<T extends object>(obj: T): string | undefined
   static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void
 }
 

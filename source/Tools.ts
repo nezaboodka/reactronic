@@ -8,18 +8,18 @@ import { Dbg } from './util/Dbg'
 import { Hints } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
-import { Transaction, Cache, Monitor, Kind, Reentrance, Trace, ProfilingOptions } from 'reactronic'
+import { Transaction, Cache, Monitor, Kind, Reentrance, LoggingOptions, ProfilingOptions } from 'reactronic'
 
 export class Reactronic {
   // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
   static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }
-  // Tracing
-  static get isTraceOn(): boolean { return Dbg.isOn }
-  static get trace(): Trace { return Dbg.trace }
-  static setTrace(t: Trace | undefined): void { Dbg.global = t || Dbg.OFF; Dbg.isOn = t !== undefined }
-  static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Hints.setHint(obj, name) }
-  static getTraceHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Hints.getHint(obj, full) }
+  // Logging
+  static get isLogging(): boolean { return Dbg.isOn }
+  static get loggingOptions(): LoggingOptions { return Dbg.logging }
+  static setLoggingMode(t: LoggingOptions | undefined): void { Dbg.global = t || Dbg.OFF; Dbg.isOn = t !== undefined }
+  static setLoggingHint<T extends object>(obj: T, name: string | undefined): void { Hints.setHint(obj, name) }
+  static getLoggingHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Hints.getHint(obj, full) }
   static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(enabled, options) }
   static why(): string { return Method.why() }
 }
@@ -83,6 +83,6 @@ export function monitor(monitor: Monitor | null): F<any> {
   return options({monitor})
 }
 
-export function trace(trace: Partial<Trace>): F<any> {
-  return options({trace})
+export function logging(logging: Partial<LoggingOptions>): F<any> {
+  return options({logging})
 }

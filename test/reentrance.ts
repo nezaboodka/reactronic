@@ -5,7 +5,7 @@
 
 import { Stateful, state, transaction, trigger, cached, incentiveArgs, throttling, monitor,
   reentrance, Transaction as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
-export { tracing } from './common'
+export { log } from './common'
 
 export const output: string[] = []
 export const loading = Monitor.create('loading', 0)
@@ -34,7 +34,7 @@ export class AsyncDemoView {
     if (!Tran.current.isCanceled) {
       for (const x of lines) {
         output.push(x) /* istanbul ignore next */
-        if (R.isTraceOn && !R.trace.silent) console.log(x)
+        if (R.isLogging && !R.loggingOptions.silent) console.log(x)
       }
     }
   }

@@ -10,7 +10,7 @@ import { Snapshot, RObject, Hints, NIL, SYM_OBJECT, SYM_METHOD, SYM_UNMOUNT, SYM
 import { TransactionImpl } from './TransactionImpl'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
-import { Options, Kind, Reentrance, Trace } from '../Options'
+import { Options, Kind, Reentrance, LoggingOptions } from '../Options'
 import { Monitor, Worker } from '../Monitor'
 import { Cache } from '../Cache'
 
@@ -48,12 +48,12 @@ export class Method extends Cache<any> {
       const spawn = weak || opt.kind === Kind.Trigger ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
       const token = opt.kind === Kind.Cached ? this : undefined
-      const call2 = this.compute(call, spawn, opt.trace, token, args)
+      const call2 = this.compute(call, spawn, opt.logging, token, args)
       const ctx2 = call2.result.record.snapshot
       if (!weak || ctx === ctx2 || (ctx2.completed && ctx.timestamp >= ctx2.timestamp))
         call = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true)) Dbg.log(TransactionImpl.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.member)} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
+    else if (Dbg.isOn && Dbg.logging.methods && (c.options.logging === undefined || c.options.logging.methods === undefined || c.options.logging.methods === true)) Dbg.log(TransactionImpl.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.member)} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
     const result = call.result
     Snapshot.markViewed(call.record, this.member, result, result.options.kind, weak)
     return result
@@ -75,7 +75,7 @@ export class Method extends Cache<any> {
     if (!c || c.worker.isFinished)
       throw misuse('a method is expected with reactronic decorator')
     c.options = new OptionsImpl(c.options.body, c.options, options, false)
-    if (Dbg.isOn && Dbg.trace.writes) Dbg.log('║', '  ♦', `${Hints.record(c.record, c.method.member)}.options = ...`)
+    if (Dbg.isOn && Dbg.logging.writes) Dbg.log('║', '  ♦', `${Hints.record(c.record, c.method.member)}.options = ...`)
     return c.options
   }
 
@@ -157,21 +157,21 @@ export class Method extends Cache<any> {
     return c
   }
 
-  private compute(existing: Call, spawn: boolean, trace: Partial<Trace> | undefined, token: any, args: any[] | undefined): Call {
+  private compute(existing: Call, spawn: boolean, logging: Partial<LoggingOptions> | undefined, token: any, args: any[] | undefined): Call {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.instance, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.instance, this.member)}`
     let call = existing
-    const ret = TransactionImpl.runAs(hint, spawn, trace, token, (argsx: any[] | undefined): any => {
+    const ret = TransactionImpl.runAs(hint, spawn, logging, token, (argsx: any[] | undefined): any => {
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
-        if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${call.result.why()}`)
+        if (Dbg.isOn && (Dbg.logging.transactions || Dbg.logging.methods || Dbg.logging.invalidations)) Dbg.log('║', ' (f)', `${call.result.why()}`)
         call.result.compute(this.instance.proxy, argsx)
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
         if (call.result.options.kind === Kind.Transaction || (!call.reuse && !call.result.invalid.recomputing)) {
           call = this.write()
-          if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations)) Dbg.log('║', ' (f)', `${call.result.why()}`)
+          if (Dbg.isOn && (Dbg.logging.transactions || Dbg.logging.methods || Dbg.logging.invalidations)) Dbg.log('║', ' (f)', `${call.result.why()}`)
           call.result.compute(this.instance.proxy, argsx)
         }
       }
@@ -240,11 +240,11 @@ class CallResult extends Observable implements Observer {
 
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
-      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.record(this.record, this.method.member)} - step in  `, 0, '        │')
+      if (Dbg.isOn && Dbg.logging.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.record(this.record, this.method.member)} - step in  `, 0, '        │')
       const started = Date.now()
       const result = Method.run<T>(this, func, ...args)
       const ms = Date.now() - started
-      if (Dbg.isOn && Dbg.trace.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record, this.method.member)} - step out `, 0, this.started > 0 ? '        │' : '')
+      if (Dbg.isOn && Dbg.logging.steps && this.ret) Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record, this.method.member)} - step out `, 0, this.started > 0 ? '        │' : '')
       if (ms > Hooks.mainThreadBlockingWarningThreshold) Dbg.log('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
       return result
     }
@@ -270,7 +270,7 @@ class CallResult extends Observable implements Observer {
         this.invalid.cause = cause
         this.invalid.since = since
         const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[SYM_UNMOUNT] === undefined*/
-        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+        if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations)) Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.readable().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
@@ -279,7 +279,7 @@ class CallResult extends Observable implements Observer {
         if (!this.worker.isFinished && this !== value)
           this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), this.worker)
       }
-      else if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations)) Dbg.logAs(this.options.trace, '║', 'x', `${this.hint()} self-invalidation is skipped`)
+      else if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations)) Dbg.logAs(this.options.logging, '║', 'x', `${this.hint()} self-invalidation is skipped`)
     }
   }
 
@@ -360,7 +360,7 @@ class CallResult extends Observable implements Observer {
   private enter(): void {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', '‾\\', `${Hints.record(this.record, this.method.member)} - enter`)
+    if (Dbg.isOn && Dbg.logging.methods) Dbg.log('║', '‾\\', `${Hints.record(this.record, this.method.member)} - enter`)
     this.started = Date.now()
   }
 
@@ -377,7 +377,7 @@ class CallResult extends Observable implements Observer {
           this.leave(false, '  □ ', '- finished ', 'ERR ──┘')
           throw error
         })
-      if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', '_/', `${Hints.record(this.record, this.method.member)} - leave... `, 0, 'ASYNC ──┐')
+      if (Dbg.isOn && Dbg.logging.methods) Dbg.log('║', '_/', `${Hints.record(this.record, this.method.member)} - leave... `, 0, 'ASYNC ──┐')
     }
     else {
       this.value = this.ret
@@ -388,7 +388,7 @@ class CallResult extends Observable implements Observer {
   private leave(main: boolean, op: string, message: string, highlight: string | undefined = undefined): void {
     const ms: number = Date.now() - this.started
     this.started = -this.started
-    if (Dbg.isOn && Dbg.trace.methods) Dbg.log('║', `${op}`, `${Hints.record(this.record, this.method.member)} ${message}`, ms, highlight)
+    if (Dbg.isOn && Dbg.logging.methods) Dbg.log('║', `${op}`, `${Hints.record(this.record, this.method.member)} ${message}`, ms, highlight)
     if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) Dbg.log('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
@@ -397,7 +397,7 @@ class CallResult extends Observable implements Observer {
 
   private monitorEnter(mon: Monitor): void {
     Method.run<void>(undefined, TransactionImpl.runAs, 'Monitor.enter',
-      true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global, undefined,
+      true, Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.global, undefined,
       MonitorImpl.enter, mon, this.worker)
   }
 
@@ -405,7 +405,7 @@ class CallResult extends Observable implements Observer {
     TransactionImpl.isolated<void>(() => {
       const leave = (): void => {
         Method.run<void>(undefined, TransactionImpl.runAs, 'Monitor.leave',
-          true, Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.OFF, undefined,
+          true, Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.OFF, undefined,
           MonitorImpl.leave, mon, this.worker)
       }
       this.worker.whenFinished().then(leave, leave)
@@ -438,7 +438,7 @@ class CallResult extends Observable implements Observer {
 
   private static markChanged(r: Record, m: Member, value: any, changed: boolean): void {
     changed ? r.changes.add(m) : r.changes.delete(m)
-    if (Dbg.isOn && Dbg.trace.writes) changed ? Dbg.log('║', '  ♦', `${Hints.record(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.record(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
+    if (Dbg.isOn && Dbg.logging.writes) changed ? Dbg.log('║', '  ♦', `${Hints.record(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.record(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -510,7 +510,7 @@ class CallResult extends Observable implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this)
-      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.readable().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.member)} is unsubscribed from ${Hints.record(hint.record, hint.member, true)}`)
+      if ((Dbg.isOn && Dbg.logging.reads || (this.options.logging && this.options.logging.reads))) Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.readable().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.member)} is unsubscribed from ${Hints.record(hint.record, hint.member, true)}`)
     })
     this.observables.clear()
   }
@@ -533,7 +533,7 @@ class CallResult extends Observable implements Observer {
       const hint: MemberHint = {record: r, member: m, times}
       value.observers.add(this)
       this.observables.set(value, hint)
-      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.method.member)} is subscribed to ${Hints.record(hint.record, hint.member)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
+      if ((Dbg.isOn && Dbg.logging.reads || (this.options.logging && this.options.logging.reads))) Dbg.logAs(this.options.logging, '║', '  ∞ ', `${Hints.record(this.record, this.method.member)} is subscribed to ${Hints.record(hint.record, hint.member)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
     }
     return result || value.replacement === r
   }
@@ -572,7 +572,7 @@ class CallResult extends Observable implements Observer {
   // }
 
   static init(): void {
-    Dbg.getCurrentTrace = getCurrentTrace
+    Dbg.getMergedLoggingOptions = getMergedLoggingOptions
     Snapshot.markViewed = CallResult.markViewed // override
     Snapshot.markChanged = CallResult.markChanged // override
     Snapshot.isConflicting = CallResult.isConflicting // override
@@ -628,9 +628,9 @@ function valueHint(value: any): string {
   return result
 }
 
-function getCurrentTrace(local: Partial<Trace> | undefined): Trace {
+function getMergedLoggingOptions(local: Partial<LoggingOptions> | undefined): LoggingOptions {
   const t = TransactionImpl.current
-  let res = Dbg.merge(t.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Snapshot.idGen.toString().replace(/[0-9]/g, '-')}`, Dbg.global)
+  let res = Dbg.merge(t.logging, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Snapshot.idGen.toString().replace(/[0-9]/g, '-')}`, Dbg.global)
   res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
   if (CallResult.current)
     res = Dbg.merge({margin2: CallResult.current.margin}, undefined, undefined, res)
