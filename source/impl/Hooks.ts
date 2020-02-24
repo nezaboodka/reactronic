@@ -98,6 +98,11 @@ export class Hooks implements ProxyHandler<RObject> {
     return Reflect.getPrototypeOf(o.stateless)
   }
 
+  has(o: RObject, m: Member): boolean {
+    const r: Record = Snapshot.readable().read(o)
+    return m in r.data || m in o.stateless
+  }
+
   get(o: RObject, m: Member, receiver: any): any {
     let result: any
     const ctx = Snapshot.readable()

@@ -39,6 +39,8 @@ test('Main', t => {
     t.is(app.model.users.length - 1, app.model.usersWithoutLast.length)
     t.is(rendering.value.length, 2)
     const daddy: Person = app.model.users[0]
+    t.is(daddy.hasOwnProperty('name'), true)
+    t.is('name' in daddy, true)
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(rendering.invalid, false)
