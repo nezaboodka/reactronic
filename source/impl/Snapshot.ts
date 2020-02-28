@@ -175,17 +175,12 @@ export class Snapshot implements Context {
         }
       })
       if (this.token === undefined) {
-        if (this.stamp > 100) {
+        if (this.bumper > 100) { // if transaction ever touched existing objects
           this.bumper = this.stamp // not needed? (just for debug)
           this.stamp = ++Snapshot.stampGen
         }
-        else {
-          const stamp = this.stamp
-          this.stamp = this.bumper + 1 // downgrade timestamp, but place above used data stamps
-          if (this.stamp > Snapshot.stampGen)
-            Snapshot.stampGen = this.stamp
-          this.bumper = stamp // not needed? (just for debug)
-        }
+        else
+          this.stamp = this.bumper + 1
       }
       else
         this.stamp = this.bumper // downgrade timestamp of renewed cache
