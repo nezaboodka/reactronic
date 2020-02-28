@@ -68,7 +68,7 @@ export class Snapshot implements Context {
     this.id = ++Snapshot.idGen
     this.hint = hint
     this.stamp = UNDEFINED_TIMESTAMP
-    this.bumper = 1
+    this.bumper = 100
     this.token = caching
     this.changeset = new Map<RObject, Record>()
     this.triggers = []
@@ -175,8 +175,17 @@ export class Snapshot implements Context {
         }
       })
       if (this.token === undefined) {
-        this.bumper = this.stamp
-        this.stamp = ++Snapshot.stampGen
+        if (this.stamp > 100) {
+          this.bumper = this.stamp // not needed? (just for debug)
+          this.stamp = ++Snapshot.stampGen
+        }
+        else {
+          const stamp = this.stamp
+          this.stamp = this.bumper + 1 // downgrade timestamp, but place above used data stamps
+          if (this.stamp > Snapshot.stampGen)
+            Snapshot.stampGen = this.stamp
+          this.bumper = stamp // not needed? (just for debug)
+        }
       }
       else
         this.stamp = this.bumper // downgrade timestamp of renewed cache
