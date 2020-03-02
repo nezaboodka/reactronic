@@ -155,7 +155,8 @@ export class Snapshot implements Context {
     }
   }
 
-  bump(timestamp: number): void {
+  bumpDueTo(r: Record): void {
+    const timestamp = r.snapshot.timestamp
     if (timestamp > this.bumper)
       this.bumper = timestamp
   }

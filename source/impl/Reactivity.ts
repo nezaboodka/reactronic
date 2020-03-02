@@ -129,7 +129,7 @@ export class Method extends Cache<any> {
     if (c.record !== r) {
       const c2 = new CallResult(this, r, c)
       c = r.data[m] = c2.reenterOver(c)
-      ctx.bump(r.prev.record.snapshot.timestamp)
+      ctx.bumpDueTo(r.prev.record)
       Snapshot.markChanged(r, m, c, true)
     }
     return { context: ctx, record: r, result: c, reuse: true }
@@ -429,7 +429,7 @@ class CallResult extends Observable implements Observer {
     const c: CallResult | undefined = CallResult.current // alias
     if (kind !== Kind.Transaction && c && c.options.kind !== Kind.Transaction && m !== SYM_OBJECT) {
       const ctx = Snapshot.readable()
-      ctx.bump(r.snapshot.timestamp)
+      ctx.bumpDueTo(r)
       const t = weak ? -1 : ctx.timestamp
       if (!c.subscribeTo(r, m, value, t))
         c.invalidateDueTo(value, {record: r, member: m, times: 0}, ctx.timestamp, ctx.triggers)
