@@ -426,13 +426,15 @@ class CallResult extends Observable implements Observer {
   }
 
   private static markViewed(r: Record, m: Member, value: Observable, kind: Kind, weak: boolean): void {
-    const c: CallResult | undefined = CallResult.current // alias
-    if (kind !== Kind.Transaction && c && c.options.kind !== Kind.Transaction && m !== SYM_OBJECT) {
-      const ctx = Snapshot.readable()
-      ctx.bumpDueTo(r)
-      const t = weak ? -1 : ctx.timestamp
-      if (!c.subscribeTo(r, m, value, t))
-        c.invalidateDueTo(value, {record: r, member: m, times: 0}, ctx.timestamp, ctx.triggers)
+    if (kind !== Kind.Transaction) {
+      const c: CallResult | undefined = CallResult.current // alias
+      if (c && c.options.kind !== Kind.Transaction && m !== SYM_OBJECT) {
+        const ctx = Snapshot.readable()
+        ctx.bumpDueTo(r)
+        const t = weak ? -1 : ctx.timestamp
+        if (!c.subscribeTo(r, m, value, t))
+          c.invalidateDueTo(value, {record: r, member: m, times: 0}, ctx.timestamp, ctx.triggers)
+      }
     }
   }
 
