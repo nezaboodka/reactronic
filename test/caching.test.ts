@@ -62,7 +62,7 @@ test('Main', t => {
     return d
   })
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
-  t.throws(() => demo.produceSideEffect(), 'cache must have no side effects: #21 Demo.produceSideEffect should not change v104t105#21 Demo.title')
+  t.throws(() => demo.produceSideEffect(), 'cache must have no side effects: #21 Demo.produceSideEffect should not change v103t105#21 Demo.title')
   // t.throws(() => demo.setUnassigned('test'), 'stateful property must be initialized during object creation: Demo.unassigned')
   t.is(demo.raw, 'should not fail on this line')
   t.is(demo.unassigned, undefined)
