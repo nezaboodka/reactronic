@@ -373,7 +373,7 @@ export class Hints {
   }
 
   static conflictingMemberHint(m: Member, ours: Record, theirs: Record): string {
-    return Hints.record(theirs, m)
+    return `${theirs.snapshot.hint} on ${Hints.record(theirs, m)}`
   }
 }
 
