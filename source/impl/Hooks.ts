@@ -138,7 +138,7 @@ export class Hooks implements ProxyHandler<RObject> {
         Snapshot.markChanged(r, m, value, changed)
       }
       else
-        Reflect.set(Object.getPrototypeOf(o.stateless), m, value, receiver)
+        Reflect.set(o.stateless, m, value, receiver)
     }
     else
       o.stateless[m] = value
