@@ -225,17 +225,21 @@ export class TransactionImpl extends Transaction {
     }
     finally { // it's critical to have no exceptions in this block
       this.workers--
-      if (this.sealed && this.workers === 0) {
-        this.finish()
-        TransactionImpl.isolated(TransactionImpl.revalidateTriggers, this)
+      try { // temporary
+        if (this.sealed && this.workers === 0) {
+          this.finish()
+          TransactionImpl.isolated(TransactionImpl.revalidateTriggers, this)
+        }
       }
-      TransactionImpl.running = outer
+      finally {
+        TransactionImpl.running = outer
+      }
     }
     return result
   }
 
   private static revalidateTriggers(t: TransactionImpl): void {
-    t.snapshot.triggers.map(x => x.revalidate(false, false))
+    t.snapshot.triggers.map(x => x.revalidate(false, true))
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {
