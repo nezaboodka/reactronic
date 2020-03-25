@@ -86,7 +86,7 @@ export class Snapshot implements Context {
   read(o: RObject): Record {
     const r = this.tryRead(o)
     if (r === NIL) /* istanbul ignore next */
-      throw misuse(`object ${Hints.obj(o)} doesn't exist in snapshot v${this.stamp}`)
+      throw misuse(`object ${Hints.obj(o)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
 
@@ -141,7 +141,7 @@ export class Snapshot implements Context {
     if (m !== SYM_OBJECT && value !== SYM_OBJECT && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
     if (r === NIL && m !== SYM_OBJECT && value !== SYM_OBJECT) /* istanbul ignore next */
-      throw misuse(`object ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp}`)
+      throw misuse(`member ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
   }
 
   acquire(outer: Snapshot): void {
