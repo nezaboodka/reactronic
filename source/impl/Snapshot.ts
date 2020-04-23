@@ -9,11 +9,11 @@ import { Kind } from '../Options'
 import { Context, Record, Member, Observable, Handle, Observer } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
-export const SYM_OBJECT: unique symbol = Symbol('r-object')
-export const SYM_METHOD: unique symbol = Symbol('r-method')
-export const SYM_UNMOUNT: unique symbol = Symbol('r-unmount')
-export const SYM_BLANK: unique symbol = Symbol('r-blank')
-export const SYM_TRIGGERS: unique symbol = Symbol('r-triggers')
+export const SYM_OBJECT: unique symbol = Symbol('rObject')
+export const SYM_METHOD: unique symbol = Symbol('rMethod')
+export const SYM_UNMOUNT: unique symbol = Symbol('rUnmount')
+export const SYM_BLANK: unique symbol = Symbol('rBlank')
+export const SYM_TRIGGERS: unique symbol = Symbol('rTriggers')
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 // RObject
