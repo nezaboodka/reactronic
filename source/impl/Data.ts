@@ -59,9 +59,9 @@ export class Record {
   }
 }
 
-// Slot
+// Handle
 
-export class Slot {
+export class Handle {
   private static idGen: number = 19
 
   readonly id: number
@@ -72,10 +72,10 @@ export class Slot {
   writers: number
   hint: string
 
-  constructor(stateless: any, proxy: any, handler: ProxyHandler<Slot>, head: Record, hint: string) {
-    this.id = ++Slot.idGen
+  constructor(stateless: any, proxy: any, handler: ProxyHandler<Handle>, head: Record, hint: string) {
+    this.id = ++Handle.idGen
     this.stateless = stateless
-    this.proxy = proxy || new Proxy<Slot>(this, handler)
+    this.proxy = proxy || new Proxy<Handle>(this, handler)
     this.head = head
     this.changing = undefined
     this.writers = 0

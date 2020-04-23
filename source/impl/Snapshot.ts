@@ -6,7 +6,7 @@
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Kind } from '../Options'
-import { Context, Record, Member, Observable, Slot, Observer } from './Data'
+import { Context, Record, Member, Observable, Handle, Observer } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
 export const SYM_OBJECT: unique symbol = Symbol('r-object')
@@ -18,7 +18,7 @@ const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 // RObject
 
-export class RObject extends Slot {
+export class RObject extends Handle {
   get ['<this @ context>'](): any {
     const result: any = {}
     const d = Snapshot.readable().read(this).data
