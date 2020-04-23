@@ -26,6 +26,7 @@ test('Main', t => {
   R.setProfilingMode(true, { repetitiveReadWarningThreshold: 3 })
   R.setLoggingMode(false)
   R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
+  R.why() // dummy
   // Simple actions
   const app = Tran.run('app', () => new DemoView(new Demo()))
   try {

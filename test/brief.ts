@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, transaction, trigger, Cache, cached, incentiveArgs, Reactronic as R } from 'reactronic'
+import { Stateful, stateless, transaction, trigger, Cache, cached, incentiveArgs, priority, Reactronic as R } from 'reactronic'
 
 export const output: string[] = []
 
@@ -18,7 +18,7 @@ export class Demo extends Stateful {
     this._loadUsers()
   }
 
-  @trigger
+  @trigger @priority(1)
   protected backup(): void {
     this.usersWithoutLast = this.users.slice()
     this.usersWithoutLast.pop()

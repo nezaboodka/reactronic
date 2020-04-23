@@ -3,6 +3,8 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
+/* istanbul ignore file */
+
 import { Stateful } from './impl/Hooks'
 
 export abstract class Buffer<T> extends Stateful {
