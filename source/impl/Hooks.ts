@@ -77,7 +77,8 @@ export class OptionsImpl implements Options {
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
     this.logging = merge(DEFAULT_STATELESS_OPTIONS.logging, existing.logging, patch.logging, implicit)
-    if (Dbg.isOn) Object.freeze(this)
+    if (Dbg.isOn)
+      Object.freeze(this)
   }
 }
 
@@ -218,7 +219,8 @@ export class Hooks implements ProxyHandler<RObject> {
       const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), SYM_BLANK)
       const initial = new Record(NIL.snapshot, NIL, {...blank})
       Utils.set(initial.data, SYM_OBJECT, o)
-      if (Dbg.isOn) Snapshot.freezeRecord(initial)
+      if (Dbg.isOn)
+        Snapshot.freezeRecord(initial)
       o = new RObject(obj, obj, Hooks.proxy, initial, obj.constructor.name)
       Utils.set(obj, SYM_OBJECT, o)
     }

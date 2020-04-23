@@ -55,7 +55,8 @@ export class TransactionImpl extends Transaction {
     const restore = TransactionImpl.inspection
     try {
       TransactionImpl.inspection = true
-      if (Dbg.isOn && Dbg.logging.transactions) Dbg.log(' ', ' ', `T${this.id} (${this.hint}) is being inspected by T${TransactionImpl.running.id} (${TransactionImpl.running.hint})`)
+      if (Dbg.isOn && Dbg.logging.transactions)
+        Dbg.log(' ', ' ', `T${this.id} (${this.hint}) is being inspected by T${TransactionImpl.running.id} (${TransactionImpl.running.hint})`)
       return this.do(undefined, func, ...args)
     }
     finally {
@@ -273,7 +274,8 @@ export class TransactionImpl extends Transaction {
       else
         this.resolve()
     }
-    if (Dbg.isOn) Object.freeze(this)
+    if (Dbg.isOn)
+      Object.freeze(this)
   }
 
   private acquirePromise(): Promise<void> {

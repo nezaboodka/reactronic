@@ -151,7 +151,8 @@ export class Snapshot implements Context {
       Snapshot.pending.push(this)
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this
-      if (Dbg.isOn && Dbg.logging.transactions) Dbg.log('╔══', `v${this.stamp}`, `${this.hint}`)
+      if (Dbg.isOn && Dbg.logging.transactions)
+        Dbg.log('╔══', `v${this.stamp}`, `${this.hint}`)
     }
   }
 
@@ -174,7 +175,8 @@ export class Snapshot implements Context {
               conflicts = []
             conflicts.push(r)
           }
-          if (Dbg.isOn && Dbg.logging.changes) Dbg.log('╠╝', '', `${Hints.record(r)} is merged with ${Hints.record(o.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
+          if (Dbg.isOn && Dbg.logging.changes)
+            Dbg.log('╠╝', '', `${Hints.record(r)} is merged with ${Hints.record(o.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
       if (this.token === undefined) {
@@ -200,7 +202,8 @@ export class Snapshot implements Context {
       merged[m] = ours.data[m]
       if (unmounted || m === SYM_UNMOUNT) {
         if (unmounted !== (m === SYM_UNMOUNT)) {
-          if (Dbg.isOn && Dbg.logging.changes) Dbg.log('║╠', '', `${Hints.record(ours, m)} <> ${Hints.record(head, m)}`, 0, ' *** CONFLICT ***')
+          if (Dbg.isOn && Dbg.logging.changes)
+            Dbg.log('║╠', '', `${Hints.record(ours, m)} <> ${Hints.record(head, m)}`, 0, ' *** CONFLICT ***')
           ours.conflicts.set(m, head)
         }
       }
@@ -208,7 +211,8 @@ export class Snapshot implements Context {
         const conflict = Snapshot.isConflicting(head.data[m], ours.prev.record.data[m])
         if (conflict)
           ours.conflicts.set(m, head)
-        if (Dbg.isOn && Dbg.logging.changes) Dbg.log('║╠', '', `${Hints.record(ours, m)} ${conflict ? '<>' : '=='} ${Hints.record(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
+        if (Dbg.isOn && Dbg.logging.changes)
+          Dbg.log('║╠', '', `${Hints.record(ours, m)} ${conflict ? '<>' : '=='} ${Hints.record(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
       }
     })
     Utils.copyAllMembers(merged, ours.data) // overwrite with merged copy
@@ -220,7 +224,8 @@ export class Snapshot implements Context {
     this.completed = true
     this.changeset.forEach((r: Record, o: RObject) => {
       r.changes.forEach(m => CopyOnWriteProxy.seal(r.data[m], o.proxy, m))
-      if (Dbg.isOn) Snapshot.freezeRecord(r)
+      if (Dbg.isOn)
+        Snapshot.freezeRecord(r)
       o.writers--
       if (o.writers === 0)
         o.changing = undefined
@@ -302,9 +307,11 @@ export class Snapshot implements Context {
   }
 
   private unlinkHistory(): void {
-    if (Dbg.isOn && Dbg.logging.gc) Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
+    if (Dbg.isOn && Dbg.logging.gc)
+      Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: Record, o: RObject) => {
-      if (Dbg.isOn && Dbg.logging.gc && r.prev.record !== NIL) Dbg.log(' ', '  ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
+      if (Dbg.isOn && Dbg.logging.gc && r.prev.record !== NIL)
+        Dbg.log(' ', '  ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
         if (r.prev.record !== NIL) {
           Snapshot.totalRecordCount--

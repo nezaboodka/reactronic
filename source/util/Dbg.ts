@@ -6,7 +6,8 @@
 import { LoggingOptions } from '../Logging'
 
 export function error(message: string, cause: Error | undefined): Error {
-  if (Dbg.isOn && Dbg.logging.errors) Dbg.log('█', ' ███', message, undefined, ' *** ERROR ***')
+  if (Dbg.isOn && Dbg.logging.errors)
+    Dbg.log('█', ' ███', message, undefined, ' *** ERROR ***')
   return new Error(message)
 }
 

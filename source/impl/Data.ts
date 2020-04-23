@@ -55,7 +55,8 @@ export class Record {
     this.data = data
     this.changes = new Set<Member>()
     this.conflicts = new Map<Member, Record>()
-    if (Dbg.isOn) Object.freeze(this)
+    if (Dbg.isOn)
+      Object.freeze(this)
   }
 }
 
