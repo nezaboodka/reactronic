@@ -19,7 +19,7 @@ const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 // RObject
 
 export class RObject extends Handle {
-  get ['<this @ context>'](): any {
+  get ['<snapshot>'](): any {
     const result: any = {}
     const d = Snapshot.readable().read(this).data
     for (const m in d) {
