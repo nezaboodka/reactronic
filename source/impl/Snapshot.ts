@@ -252,6 +252,8 @@ export class Snapshot implements Context {
       if (h.writers === 0)
         h.changing = undefined
       if (!error) {
+        // if (this.timestamp < h.head.snapshot.timestamp)
+        //   console.log(`!!! timestamp downgrade detected ${h.head.snapshot.timestamp} -> ${this.timestamp} !!!`)
         h.head = r
         if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Snapshot.totalRecordCount++
@@ -363,20 +365,6 @@ export class Snapshot implements Context {
 // Hints
 
 export class Hints {
-  static setHint<T>(obj: T, hint: string | undefined): T {
-    if (hint) {
-      const h = Utils.get<Handle>(obj, SYM_HANDLE)
-      if (h)
-        h.hint = hint
-    }
-    return obj
-  }
-
-  static getHint(obj: object, full: boolean = false): string | undefined {
-    const h = Utils.get<Handle>(obj, SYM_HANDLE)
-    return h ? (full ? `${h.hint}#${h.id}` : h.hint) : undefined
-  }
-
   static obj(h: Handle | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const s = (h === undefined)
       ? 'nil'

@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { misuse } from '../util/Dbg'
-import { Hints } from './Snapshot'
+import { Hooks } from './Hooks'
 import { TransactionImpl } from './TransactionImpl'
 import { Monitor, Worker } from '../Monitor'
 
@@ -46,7 +46,7 @@ export class MonitorImpl extends Monitor {
 
   private static doCreate(hint?: string, delayBeforeIdle?: number): MonitorImpl {
     const m = new MonitorImpl()
-    Hints.setHint(m, hint)
+    Hooks.setHint(m, hint)
     m.x.delayBeforeIdle = delayBeforeIdle
     return m
   }

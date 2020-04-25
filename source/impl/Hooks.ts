@@ -249,6 +249,19 @@ export class Hooks implements ProxyHandler<Handle> {
     }
   }
 
+  static setHint<T>(obj: T, hint: string | undefined): T {
+    if (hint) {
+      const h = Hooks.acquireHandle(obj)
+      h.hint = hint
+    }
+    return obj
+  }
+
+  static getHint(obj: object, full: boolean = false): string | undefined {
+    const h = Utils.get<Handle>(obj, SYM_HANDLE)
+    return h ? (full ? `${h.hint}#${h.id}` : h.hint) : undefined
+  }
+
   /* istanbul ignore next */
   static createMethodTrap = function(h: Handle, m: Member, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
@@ -282,7 +295,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
       const v = observable.value
       if (Array.isArray(v) || v instanceof Array) {
         if (v instanceof CopyOnWriteArray && !Array.isArray(v)) {
-          throw misuse(`${Hints.getHint(proxy)}.${m.toString()} collection cannot be reused from another property without cloning`)
+          throw misuse(`${Hooks.getHint(proxy)}.${m.toString()} collection cannot be reused from another property without cloning`)
         }
         else if (!Object.isFrozen(v)) {
           if (observable.isField)

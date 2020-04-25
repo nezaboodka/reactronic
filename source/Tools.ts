@@ -5,7 +5,6 @@
 
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
-import { Hints } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
 import { Transaction, Cache, Monitor, Kind, Reentrance, LoggingOptions, ProfilingOptions } from 'reactronic'
@@ -18,8 +17,8 @@ export class Reactronic {
   static get isLogging(): boolean { return Dbg.isOn }
   static get loggingOptions(): LoggingOptions { return Dbg.logging }
   static setLoggingMode(enabled: boolean, options?: LoggingOptions): void { Dbg.setLoggingMode(enabled, options) }
-  static setLoggingHint<T extends object>(obj: T, name: string | undefined): void { Hints.setHint(obj, name) }
-  static getLoggingHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Hints.getHint(obj, full) }
+  static setLoggingHint<T extends object>(obj: T, name: string | undefined): void { Hooks.setHint(obj, name) }
+  static getLoggingHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Hooks.getHint(obj, full) }
   static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(enabled, options) }
   static why(): string { return Method.why() }
 }
