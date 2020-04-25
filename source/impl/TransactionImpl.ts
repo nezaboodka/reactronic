@@ -226,12 +226,14 @@ export class TransactionImpl extends Transaction {
     }
     finally { // it's critical to have no exceptions in this block
       this.workers--
-      TransactionImpl.running = outer
       if (this.sealed && this.workers === 0) {
         this.finish()
+        TransactionImpl.running = outer
         if (!this.canceled)
           TransactionImpl.isolated(TransactionImpl.revalidateTriggers, this)
       }
+      else
+        TransactionImpl.running = outer
     }
     return result
   }
