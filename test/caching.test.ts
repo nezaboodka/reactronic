@@ -63,7 +63,7 @@ test('Main', t => {
   })
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
   t.throws(() => demo.produceSideEffect(), 'cache must have no side effects: #21 Demo.produceSideEffect should not change v103t105#21 Demo.title')
-  // t.throws(() => demo.setUnassigned('test'), 'stateful property must be initialized during object creation: Demo.unassigned')
+  // t.throws(() => demo.setUnassigned('test'), 'uninitialized member is detected: v103t107#21 Demo.unassigned')
   t.is(demo.raw, 'should not fail on this line')
   t.is(demo.unassigned, undefined)
   t.is(demo.cachedMap().size, 0)

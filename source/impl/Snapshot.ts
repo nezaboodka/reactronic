@@ -117,8 +117,9 @@ export class Snapshot implements Context {
 
   write(h: Handle, m: Member, value: any, token?: any): Record {
     let r: Record = this.tryRead(h)
-    if (r.data[m] !== SYM_STATELESS) {
-      this.guard(h, r, m, value, token)
+    const existing = r.data[m]
+    if (existing !== SYM_STATELESS) {
+      this.guard(h, r, m, existing, value, token)
       if (r.snapshot !== this) {
         const data = {...m === SYM_HANDLE ? value : r.data}
         Reflect.set(data, SYM_HANDLE, h)
@@ -145,13 +146,24 @@ export class Snapshot implements Context {
     }
   }
 
-  private guard(h: Handle, r: Record, m: Member, value: any, token: any): void {
+  private guard(h: Handle, r: Record, m: Member, existing: any, value: any, token: any): void {
     if (this.completed)
       throw misuse(`stateful property ${Hints.obj(h, m)} can only be modified inside actions and triggers`)
-    if (m !== SYM_HANDLE && value !== SYM_HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
-      throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
-    if (r === NIL && m !== SYM_HANDLE && value !== SYM_HANDLE) /* istanbul ignore next */
-      throw misuse(`member ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
+    // if (m !== SYM_HANDLE && value !== SYM_HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
+    //   throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
+    // if (r === NIL && m !== SYM_HANDLE && value !== SYM_HANDLE) /* istanbul ignore next */
+    //   throw misuse(`member ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
+    if (m !== SYM_HANDLE && value !== SYM_HANDLE) {
+      if (r.snapshot !== this || r.prev.record !== NIL) {
+        if (this.token !== undefined && token !== this.token)
+          throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
+        // TODO: Detect uninitialized members
+        // if (existing === undefined)
+        //   throw misuse(`uninitialized member is detected: ${Hints.record(r, m)}`)
+      }
+      if (r === NIL)
+        throw misuse(`member ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
+    }
   }
 
   acquire(outer: Snapshot): void {
