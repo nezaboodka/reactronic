@@ -245,8 +245,25 @@ class CallResult extends Observable implements Observer {
 
   hint(): string { return `${Hints.record(this.record, this.method.member)}` }
   priority(): number { return this.options.priority }
-  why(): string { return `${Hints.record(this.record, this.method.member)}${this.cause ? `   <<   ${propagationHint(this.cause).join('   <<   ')}` : (this.method.options.kind === Kind.Transaction ? '   <<   transaction' : '   <<   first on-demand call')}` }
-  deps(): string[] { throw misuse('not implemented yet') }
+
+  why(): string {
+    let ms: number = Date.now()
+    const prev = this.record.prev.record.data[this.method.member]
+    if (prev instanceof CallResult)
+      ms = Math.abs(this.started) - Math.abs(prev.started)
+    let cause: string
+    if (this.cause)
+      cause = `   <<   ${propagationHint(this.cause).join('   <<   ')}`
+    else if (this.method.options.kind === Kind.Transaction)
+      cause = '   <<   transaction'
+    else
+      cause = '   <<   first on-demand call'
+    return `${Hints.record(this.record, this.method.member)}${cause} (${ms}ms since last call)`
+  }
+
+  deps(): string[] {
+    throw misuse('not implemented yet')
+  }
 
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {

@@ -33,10 +33,10 @@ test('Main', t => {
   })
   R.setLoggingMode(false)
   R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
-  R.why() // dummy
   // Simple actions
   const app = Tran.run('app', () => new DemoView(new Demo()))
   try {
+    t.is(R.why(), 'Reactronic.why should be called from inside of reactive method')
     t.is(Cache.of(app.print).options.priority, 123)
     t.notThrows(() => DemoView.test())
     const rendering = Cache.of(app.render)
