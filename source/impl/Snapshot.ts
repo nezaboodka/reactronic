@@ -6,10 +6,10 @@
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Kind } from '../Options'
-import { Context, Record, Member, Observable, Handle, Observer } from './Data'
+import { Context, Record, Member, Handle, Observable, Observer } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
-export const SYM_OBJECT: unique symbol = Symbol('rObject')
+export const SYM_HANDLE: unique symbol = Symbol('rHandle')
 export const SYM_METHOD: unique symbol = Symbol('rMethod')
 export const SYM_UNMOUNT: unique symbol = Symbol('rUnmount')
 export const SYM_BLANK: unique symbol = Symbol('rBlank')
@@ -17,10 +17,9 @@ export const SYM_TRIGGERS: unique symbol = Symbol('rTriggers')
 export const SYM_STATELESS: unique symbol = Symbol('rStateless')
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
-// RObject
-
-export class RObject extends Handle {
-  get ['<snapshot>'](): any {
+Object.defineProperty(Handle.prototype, '<snapshot>', {
+  configurable: false, enumerable: false,
+  get(): any {
     const result: any = {}
     const d = Snapshot.readable().read(this).data
     for (const m in d) {
@@ -33,8 +32,25 @@ export class RObject extends Handle {
         result[m] = v
     }
     return result
-  }
-}
+  },
+})
+
+// export class RxObject extends Handle {
+//   get ['<snapshot>'](): any {
+//     const result: any = {}
+//     const d = Snapshot.readable().read(this).data
+//     for (const m in d) {
+//       const v = d[m]
+//       if (v instanceof Observable)
+//         result[m] = v.value
+//       else if (v === SYM_STATELESS)
+//         result[m] = this.stateless[m]
+//       else
+//         result[m] = v
+//     }
+//     return result
+//   }
+// }
 
 // Snapshot
 
@@ -54,7 +70,7 @@ export class Snapshot implements Context {
   private stamp: number
   private bumper: number
   readonly token: any
-  readonly changeset: Map<RObject, Record>
+  readonly changeset: Map<Handle, Record>
   readonly triggers: Observer[]
   completed: boolean
 
@@ -64,7 +80,7 @@ export class Snapshot implements Context {
     this.stamp = UNDEFINED_TIMESTAMP
     this.bumper = 100
     this.token = caching
-    this.changeset = new Map<RObject, Record>()
+    this.changeset = new Map<Handle, Record>()
     this.triggers = []
     this.completed = false
   }
@@ -77,39 +93,39 @@ export class Snapshot implements Context {
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
   static finalizeChangeset = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
-  read(o: RObject): Record {
-    const r = this.tryRead(o)
+  read(h: Handle): Record {
+    const r = this.tryRead(h)
     if (r === NIL) /* istanbul ignore next */
-      throw misuse(`object ${Hints.obj(o)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
+      throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
 
-  tryRead(o: RObject): Record {
-    let r: Record | undefined = o.changing
+  tryRead(h: Handle): Record {
+    let r: Record | undefined = h.changing
     if (r && r.snapshot !== this) {
-      r = this.changeset.get(o)
+      r = this.changeset.get(h)
       if (r)
-        o.changing = r // remember last changing record
+        h.changing = r // remember last changing record
     }
     if (!r) {
-      r = o.head
+      r = h.head
       while (r !== NIL && r.snapshot.timestamp > this.timestamp)
         r = r.prev.record
     }
     return r
   }
 
-  write(o: RObject, m: Member, value: any, token?: any): Record {
-    let r: Record = this.tryRead(o)
+  write(h: Handle, m: Member, value: any, token?: any): Record {
+    let r: Record = this.tryRead(h)
     if (r.data[m] !== SYM_STATELESS) {
-      this.guard(o, r, m, value, token)
+      this.guard(h, r, m, value, token)
       if (r.snapshot !== this) {
-        const data = {...m === SYM_OBJECT ? value : r.data}
-        Reflect.set(data, SYM_OBJECT, o)
+        const data = {...m === SYM_HANDLE ? value : r.data}
+        Reflect.set(data, SYM_HANDLE, h)
         r = new Record(this, r, data)
-        this.changeset.set(o, r)
-        o.changing = r
-        o.writers++
+        this.changeset.set(h, r)
+        h.changing = r
+        h.writers++
       }
     }
     else
@@ -119,9 +135,9 @@ export class Snapshot implements Context {
 
   static unmount(obj: any): void {
     const ctx = Snapshot.writable()
-    const o = Utils.get<RObject>(obj, SYM_OBJECT)
-    if (o) {
-      const r: Record = ctx.write(o, SYM_UNMOUNT, SYM_UNMOUNT)
+    const h = Utils.get<Handle>(obj, SYM_HANDLE)
+    if (h) {
+      const r: Record = ctx.write(h, SYM_UNMOUNT, SYM_UNMOUNT)
       if (r !== NIL) {
         r.data[SYM_UNMOUNT] = SYM_UNMOUNT
         Snapshot.markChanged(r, SYM_UNMOUNT, SYM_UNMOUNT, true)
@@ -129,12 +145,12 @@ export class Snapshot implements Context {
     }
   }
 
-  private guard(o: RObject, r: Record, m: Member, value: any, token: any): void {
+  private guard(h: Handle, r: Record, m: Member, value: any, token: any): void {
     if (this.completed)
-      throw misuse(`stateful property ${Hints.obj(o, m)} can only be modified inside actions and triggers`)
-    if (m !== SYM_OBJECT && value !== SYM_OBJECT && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
+      throw misuse(`stateful property ${Hints.obj(h, m)} can only be modified inside actions and triggers`)
+    if (m !== SYM_HANDLE && value !== SYM_HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
       throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
-    if (r === NIL && m !== SYM_OBJECT && value !== SYM_OBJECT) /* istanbul ignore next */
+    if (r === NIL && m !== SYM_HANDLE && value !== SYM_HANDLE) /* istanbul ignore next */
       throw misuse(`member ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
   }
 
@@ -161,16 +177,16 @@ export class Snapshot implements Context {
   rebase(): Record[] | undefined { // return conflicts
     let conflicts: Record[] | undefined = undefined
     if (this.changeset.size > 0) {
-      this.changeset.forEach((r: Record, o: RObject) => {
-        if (r.prev.record !== o.head) {
-          const merged = Snapshot.merge(r, o.head)
+      this.changeset.forEach((r: Record, h: Handle) => {
+        if (r.prev.record !== h.head) {
+          const merged = Snapshot.merge(r, h.head)
           if (r.conflicts.size > 0) {
             if (!conflicts)
               conflicts = []
             conflicts.push(r)
           }
           if (Dbg.isOn && Dbg.logging.changes)
-            Dbg.log('╠╝', '', `${Hints.record(r)} is merged with ${Hints.record(o.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
+            Dbg.log('╠╝', '', `${Hints.record(r)} is merged with ${Hints.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
       if (this.token === undefined) {
@@ -216,15 +232,15 @@ export class Snapshot implements Context {
 
   complete(error?: any): void {
     this.completed = true
-    this.changeset.forEach((r: Record, o: RObject) => {
-      r.changes.forEach(m => CopyOnWriteProxy.seal(r.data[m], o.proxy, m))
+    this.changeset.forEach((r: Record, h: Handle) => {
+      r.changes.forEach(m => CopyOnWriteProxy.seal(r.data[m], h.proxy, m))
       if (Dbg.isOn)
         Snapshot.freezeRecord(r)
-      o.writers--
-      if (o.writers === 0)
-        o.changing = undefined
+      h.writers--
+      if (h.writers === 0)
+        h.changing = undefined
       if (!error) {
-        o.head = r
+        h.head = r
         if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Snapshot.totalRecordCount++
           // console.log('rec++')
@@ -263,7 +279,7 @@ export class Snapshot implements Context {
   }
 
   // static undo(s: Snapshot): void {
-  //   s.changeset.forEach((r: Record, o: Instance) => {
+  //   s.changeset.forEach((r: Record, h: RxObject) => {
   //     r.changes.forEach(m => {
   //       if (r.prev.record !== INIT) {
   //         const prevValue: any = r.prev.record.data[m];
@@ -303,7 +319,7 @@ export class Snapshot implements Context {
   private unlinkHistory(): void {
     if (Dbg.isOn && Dbg.logging.gc)
       Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
-    this.changeset.forEach((r: Record, o: RObject) => {
+    this.changeset.forEach((r: Record, h: Handle) => {
       if (Dbg.isOn && Dbg.logging.gc && r.prev.record !== NIL)
         Dbg.log(' ', '  ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
@@ -337,30 +353,30 @@ export class Snapshot implements Context {
 export class Hints {
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
-      const o = Utils.get<RObject>(obj, SYM_OBJECT)
-      if (o)
-        o.hint = hint
+      const h = Utils.get<Handle>(obj, SYM_HANDLE)
+      if (h)
+        h.hint = hint
     }
     return obj
   }
 
   static getHint(obj: object, full: boolean = false): string | undefined {
-    const o = Utils.get<RObject>(obj, SYM_OBJECT)
-    return o ? (full ? `${o.hint}#${o.id}` : o.hint) : undefined
+    const h = Utils.get<Handle>(obj, SYM_HANDLE)
+    return h ? (full ? `${h.hint}#${h.id}` : h.hint) : undefined
   }
 
-  static obj(o: RObject | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
-    const s = (o === undefined)
+  static obj(h: Handle | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
+    const s = (h === undefined)
       ? 'nil'
       : (typeless
-        ? (stamp === undefined ? `#${o.id}` : `v${stamp}t${tran}#${o.id}`)
-        : (stamp === undefined ? `#${o.id} ${o.hint}` : `v${stamp}t${tran}#${o.id} ${o.hint}`))
+        ? (stamp === undefined ? `#${h.id}` : `v${stamp}t${tran}#${h.id}`)
+        : (stamp === undefined ? `#${h.id} ${h.hint}` : `v${stamp}t${tran}#${h.id} ${h.hint}`))
     return m !== undefined ? `${s}.${m.toString()}` : s
   }
 
   static record(r: Record, m?: Member, typeless?: boolean): string {
-    const o = Utils.get<RObject | undefined>(r.data, SYM_OBJECT)
-    return Hints.obj(o, m, r.snapshot.timestamp, r.snapshot.id, typeless)
+    const h = Utils.get<Handle | undefined>(r.data, SYM_HANDLE)
+    return Hints.obj(h, m, r.snapshot.timestamp, r.snapshot.id, typeless)
   }
 
   static conflicts(conflicts: Record[]): string {

@@ -8,8 +8,8 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
-import { Record, Member, Observable } from './Data'
-import { Snapshot, RObject, Hints, NIL, SYM_OBJECT, SYM_METHOD, SYM_BLANK, SYM_TRIGGERS, SYM_STATELESS } from './Snapshot'
+import { Record, Member, Handle, Observable } from './Data'
+import { Snapshot, Hints, NIL, SYM_HANDLE, SYM_METHOD, SYM_BLANK, SYM_TRIGGERS, SYM_STATELESS } from './Snapshot'
 import { Options, Kind, Reentrance } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
@@ -23,19 +23,19 @@ export abstract class Stateful {
   constructor() {
     const proto = new.target.prototype
     const blank = Hooks.getMeta<any>(proto, SYM_BLANK)
-    const o = Hooks.createInstance(this, blank, new.target.name)
+    const h = Hooks.createHandle(this, blank, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
       const triggers = Hooks.getMeta<any>(proto, SYM_TRIGGERS)
       for (const member in triggers)
-        (o.proxy[member][SYM_METHOD] as Cache<any>).invalidate()
+        (h.proxy[member][SYM_METHOD] as Cache<any>).invalidate()
     }
-    return o.proxy
+    return h.proxy
   }
 
   /* istanbul ignore next */
   [Symbol.toStringTag](): string {
-    const o = Utils.get<RObject>(this, SYM_OBJECT)
-    return Hints.obj(o)
+    const h = Utils.get<Handle>(this, SYM_HANDLE)
+    return Hints.obj(h)
   }
 }
 
@@ -88,41 +88,41 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 
 // Hooks
 
-export class Hooks implements ProxyHandler<RObject> {
+export class Hooks implements ProxyHandler<Handle> {
   static triggersAutoStartDisabled: boolean = false
   static repetitiveReadWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static readonly proxy: Hooks = new Hooks()
 
-  getPrototypeOf(o: RObject): object | null {
-    return Reflect.getPrototypeOf(o.stateless)
+  getPrototypeOf(h: Handle): object | null {
+    return Reflect.getPrototypeOf(h.stateless)
   }
 
-  has(o: RObject, m: Member): boolean {
-    const r: Record = Snapshot.readable().read(o)
-    return m in r.data || m in o.stateless
+  has(h: Handle, m: Member): boolean {
+    const r: Record = Snapshot.readable().read(h)
+    return m in r.data || m in h.stateless
   }
 
-  get(o: RObject, m: Member, receiver: any): any {
+  get(h: Handle, m: Member, receiver: any): any {
     let result: any
     const ctx = Snapshot.readable()
-    const r: Record = ctx.read(o)
+    const r: Record = ctx.read(h)
     result = r.data[m]
     if (result instanceof Observable && result.isField) {
       Snapshot.markViewed(r, m, result, Kind.Field, false)
       result = result.value
     }
-    else if (m === SYM_OBJECT) {
+    else if (m === SYM_HANDLE) {
       // do nothing, just return instance
     }
     else // result === STATELESS
-      result = Reflect.get(o.stateless, m, receiver)
+      result = Reflect.get(h.stateless, m, receiver)
     return result
   }
 
-  set(o: RObject, m: Member, value: any, receiver: any): boolean {
-    const r: Record = Snapshot.writable().write(o, m, value)
+  set(h: Handle, m: Member, value: any, receiver: any): boolean {
+    const r: Record = Snapshot.writable().write(h, m, value)
     if (r !== NIL) {
       const curr = r.data[m] as Observable
       if (curr !== undefined || r.prev.record.snapshot === NIL.snapshot) {
@@ -139,24 +139,24 @@ export class Hooks implements ProxyHandler<RObject> {
         Snapshot.markChanged(r, m, value, changed)
       }
       else
-        Reflect.set(o.stateless, m, value, receiver)
+        Reflect.set(h.stateless, m, value, receiver)
     }
     else
-      o.stateless[m] = value
+      h.stateless[m] = value
     return true
   }
 
-  getOwnPropertyDescriptor(o: RObject, m: Member): PropertyDescriptor | undefined {
-    const r: Record = Snapshot.readable().read(o)
+  getOwnPropertyDescriptor(h: Handle, m: Member): PropertyDescriptor | undefined {
+    const r: Record = Snapshot.readable().read(h)
     const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
     if (pd)
       pd.configurable = pd.writable = true
     return pd
   }
 
-  ownKeys(o: RObject): Member[] {
+  ownKeys(h: Handle): Member[] {
     // TODO: Better implementation to avoid filtering
-    const r: Record = Snapshot.readable().read(o)
+    const r: Record = Snapshot.readable().read(h)
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
@@ -169,12 +169,12 @@ export class Hooks implements ProxyHandler<RObject> {
   static decorateField(stateful: boolean, proto: any, m: Member): any {
     if (stateful) {
       const get = function(this: any): any {
-        const o = Hooks.acquireInstance(this)
-        return Hooks.proxy.get(o, m, this)
+        const h = Hooks.acquireHandle(this)
+        return Hooks.proxy.get(h, m, this)
       }
       const set = function(this: any, value: any): boolean {
-        const o = Hooks.acquireInstance(this)
-        return Hooks.proxy.set(o, m, value, this)
+        const h = Hooks.acquireHandle(this)
+        return Hooks.proxy.set(h, m, value, this)
       }
       const enumerable = true
       const configurable = false
@@ -190,9 +190,9 @@ export class Hooks implements ProxyHandler<RObject> {
     // Setup method trap
     const opts = Hooks.applyOptions(proto, method, pd.value, true, configurable, options, implicit)
     const trap = function(this: any): any {
-      const o = this instanceof Stateful ? Utils.get<RObject>(this, SYM_OBJECT) : Hooks.acquireInstance(this)
-      const value = Hooks.createMethodTrap(o, method, opts)
-      Object.defineProperty(o.stateless, method, { value, enumerable, configurable })
+      const h = Hooks.acquireHandle(this)
+      const value = Hooks.createMethodTrap(h, method, opts)
+      Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
       return value
     }
     return Object.defineProperty(proto, method, { get: trap, enumerable, configurable })
@@ -211,27 +211,27 @@ export class Hooks implements ProxyHandler<RObject> {
     return proto[sym] || /* istanbul ignore next */ EMPTY_META
   }
 
-  static acquireInstance(obj: any): RObject {
-    if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
-      throw misuse('only objects can be reactive')
-    let o = Utils.get<RObject>(obj, SYM_OBJECT)
-    if (!o) {
+  static acquireHandle(obj: any): Handle {
+    let h = obj[SYM_HANDLE]
+    if (!h) {
+      if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
+        throw misuse('only objects can be reactive')
       const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), SYM_BLANK)
       const initial = new Record(NIL.snapshot, NIL, {...blank})
-      Utils.set(initial.data, SYM_OBJECT, o)
+      Utils.set(initial.data, SYM_HANDLE, h)
       if (Dbg.isOn)
         Snapshot.freezeRecord(initial)
-      o = new RObject(obj, obj, Hooks.proxy, initial, obj.constructor.name)
-      Utils.set(obj, SYM_OBJECT, o)
+      h = new Handle(obj, obj, Hooks.proxy, initial, obj.constructor.name)
+      Utils.set(obj, SYM_HANDLE, h)
     }
-    return o
+    return h
   }
 
-  static createInstance(stateless: any, blank: any, hint: string): RObject {
+  static createHandle(stateless: any, blank: any, hint: string): Handle {
     const ctx = Snapshot.writable()
-    const o = new RObject(stateless, undefined, Hooks.proxy, NIL, hint)
-    ctx.write(o, SYM_OBJECT, blank)
-    return o
+    const h = new Handle(stateless, undefined, Hooks.proxy, NIL, hint)
+    ctx.write(h, SYM_HANDLE, blank)
+    return h
   }
 
   static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void {
@@ -250,7 +250,7 @@ export class Hooks implements ProxyHandler<RObject> {
   }
 
   /* istanbul ignore next */
-  static createMethodTrap = function(o: RObject, m: Member, options: OptionsImpl): F<any> {
+  static createMethodTrap = function(h: Handle, m: Member, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
   }
 
