@@ -104,6 +104,11 @@ export class Method extends Cache<any> {
     return c ? c.why() : 'Reactronic.why should be called from inside of reactive method'
   }
 
+  static deps(): string[] {
+    const c = CallResult.current
+    return c ? c.deps() : ['Reactronic.deps should be called from inside of reactive method']
+  }
+
   // Internal
 
   private weak(): Call {
@@ -241,6 +246,7 @@ class CallResult extends Observable implements Observer {
   hint(): string { return `${Hints.record(this.record, this.method.member)}` }
   priority(): number { return this.options.priority }
   why(): string { return `${Hints.record(this.record, this.method.member)}${this.cause ? `   <<   ${propagationHint(this.cause).join('   <<   ')}` : (this.method.options.kind === Kind.Transaction ? '   <<   transaction' : '   <<   first on-demand call')}` }
+  deps(): string[] { throw misuse('not implemented yet') }
 
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
