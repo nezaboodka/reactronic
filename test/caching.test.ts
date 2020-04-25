@@ -9,7 +9,7 @@ import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, LogLev
 export class DemoBase extends Stateful {
   @stateless raw: string = 'stateless data'
   title: string = 'Demo'
-  unassigned?: any
+  uninitialized?: any
 
   @trigger
   normalizeTitle(): void {
@@ -19,8 +19,8 @@ export class DemoBase extends Stateful {
   }
 
   @transaction
-  setUnassigned(value: any): void {
-    this.unassigned = value
+  setUninitialized(value: any): void {
+    this.uninitialized = value
   }
 
   @cached
@@ -63,9 +63,9 @@ test('Main', t => {
   })
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
   t.throws(() => demo.produceSideEffect(), 'cache must have no side effects: #21 Demo.produceSideEffect should not change v103t105#21 Demo.title')
-  // t.throws(() => demo.setUnassigned('test'), 'uninitialized member is detected: v103t107#21 Demo.unassigned')
+  // t.throws(() => demo.setUnassigned('test'), 'uninitialized member is detected: v103t107#21 Demo.uninitialized')
   t.is(demo.raw, 'should not fail on this line')
-  t.is(demo.unassigned, undefined)
+  t.is(demo.uninitialized, undefined)
   t.is(demo.cachedMap().size, 0)
   t.is(demo.cachedSet().size, 0)
 })
