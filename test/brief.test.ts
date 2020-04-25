@@ -23,7 +23,14 @@ const expected: string[] = [
 test('Main', t => {
   R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled
   R.triggersAutoStartDisabled = false
-  R.setProfilingMode(true, { repetitiveReadWarningThreshold: 3 })
+  R.setProfilingMode(false)
+  R.setProfilingMode(true, {})
+  R.setProfilingMode(true, {
+    repetitiveReadWarningThreshold: 3, // default: 10 times
+    mainThreadBlockingWarningThreshold: 10, // default: 16.6 ms
+    asyncActionDurationWarningThreshold: 100, // default: 150 ms
+    garbageCollectionSummaryInterval: 2000, // default: 3000 ms
+  })
   R.setLoggingMode(false)
   R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
   R.why() // dummy
