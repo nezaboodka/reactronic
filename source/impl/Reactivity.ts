@@ -101,7 +101,7 @@ export class Method extends Cache<any> {
 
   static why(): string {
     const c = CallResult.current
-    return c ? c.why() : 'because'
+    return c ? c.why() : 'Reactronic.why should be called from inside of reactive method'
   }
 
   // Internal
