@@ -11,7 +11,7 @@ export interface Options {
   readonly kind: Kind
   readonly priority: number
   readonly incentiveArgs: boolean
-  readonly throttling: number // milliseconds, -1 is immediately, -2 is never
+  readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null
   readonly logging?: Partial<LoggingOptions>

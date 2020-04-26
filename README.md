@@ -183,12 +183,16 @@ one.
 
 There are multiple options to configure behavior of transactional reactivity.
 
+**Priority** options defines order of triggers re-validation:
+
+  - (TBD)
+
 **Throttling** option defines how often trigger is revalidated:
 
   - `(ms)` - minimal delay in milliseconds between trigger revalidation;
   - `-1` - run trigger immediately once transaction is applied (synchronously);
   - `0` - run trigger immediately via event loop (asynchronously with zero timeout);
-  - `Number.MAX_SAFE_INTEGER+` - never run trigger (disabled trigger).
+  - `>= Number.MAX_SAFE_INTEGER` - never run trigger (disabled trigger).
 
 **Reentrance** option defines how to handle reentrant calls of actions and triggers:
 
@@ -250,7 +254,7 @@ function isolated<T>(func: F<T>, ...args: any[]): T
 interface Options {
   readonly kind: Kind
   readonly incentiveArgs: boolean
-  readonly throttling: number // milliseconds, -1 is immediately (synchronously)
+  readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null
   readonly logging?: Partial<LoggingOptions>
