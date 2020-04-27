@@ -62,26 +62,26 @@ export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescri
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
-export function priority(priority: number): F<any> {
-  return options({priority})
+export function priority(value: number): F<any> {
+  return options({priority: value})
 }
 
-export function incentiveArgs(incentiveArgs: boolean): F<any> {
-  return options({incentiveArgs})
+export function sensitiveArgs(value: boolean): F<any> {
+  return options({sensitiveArgs: value})
 }
 
-export function throttling(throttling: number): F<any> {
-  return options({throttling})
+export function throttling(milliseconds: number): F<any> {
+  return options({throttling: milliseconds})
 }
 
-export function reentrance(reentrance: Reentrance): F<any> {
-  return options({reentrance})
+export function reentrance(value: Reentrance): F<any> {
+  return options({reentrance: value})
 }
 
-export function monitor(monitor: Monitor | null): F<any> {
-  return options({monitor})
+export function monitor(value: Monitor | null): F<any> {
+  return options({monitor: value})
 }
 
-export function logging(logging: Partial<LoggingOptions>): F<any> {
-  return options({logging})
+export function logging(value: Partial<LoggingOptions>): F<any> {
+  return options({logging: value})
 }

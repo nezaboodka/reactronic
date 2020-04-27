@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, state, transaction, trigger, cached, incentiveArgs, throttling, monitor,
+import { Stateful, state, transaction, trigger, cached, sensitiveArgs, throttling, monitor,
   reentrance, Transaction as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
 
 export const output: string[] = []
@@ -38,7 +38,7 @@ export class AsyncDemoView {
     }
   }
 
-  @cached @incentiveArgs(false)
+  @cached @sensitiveArgs(false)
   async render(): Promise<string[]> {
     const result: string[] = []
     result.push(`${loading.isActive ? '[...] ' : ''}Url: ${this.model.url}`)

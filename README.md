@@ -239,11 +239,11 @@ function transaction(proto, prop, pd) // method only
 function trigger(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
-function incentiveArgs(incentiveArgs: boolean) // cached & triggers
-function throttling(throttling: number) // triggers only
-function reentrance(reentrance: Reentrance) // actions & triggers
-function monitor(monitor: Monitor | null)
-function logging(logging: Partial<LoggingOptions>)
+function sensitiveArgs(value: boolean) // cached & triggers
+function throttling(milliseconds: number) // triggers only
+function reentrance(value: Reentrance) // actions & triggers
+function monitor(value: Monitor | null)
+function logging(value: Partial<LoggingOptions>)
 
 function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
 function nonreactive<T>(func: F<T>, ...args: any[]): T
@@ -253,7 +253,7 @@ function isolated<T>(func: F<T>, ...args: any[]): T
 
 interface Options {
   readonly kind: Kind
-  readonly incentiveArgs: boolean
+  readonly sensitiveArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
   readonly monitor: Monitor | null
