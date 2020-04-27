@@ -50,7 +50,7 @@ export function options(options: Partial<Options>): F<any> {
 const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   kind: Kind.Field,
   priority: 0,
-  stateChanging: false,
+  noSideEffects: false,
   sensitiveArgs: false,
   throttling: Number.MAX_SAFE_INTEGER, // never revalidate
   reentrance: Reentrance.PreventWithError,
@@ -62,7 +62,7 @@ export class OptionsImpl implements Options {
   readonly body: Function
   readonly kind: Kind
   readonly priority: number
-  readonly stateChanging: boolean
+  readonly noSideEffects: boolean
   readonly sensitiveArgs: boolean
   readonly throttling: number
   readonly reentrance: Reentrance
@@ -74,7 +74,7 @@ export class OptionsImpl implements Options {
     this.body = body !== undefined ? body : existing.body
     this.kind = merge(DEFAULT_STATELESS_OPTIONS.kind, existing.kind, patch.kind, implicit)
     this.priority = merge(DEFAULT_STATELESS_OPTIONS.priority, existing.priority, patch.priority, implicit)
-    this.stateChanging = merge(DEFAULT_STATELESS_OPTIONS.stateChanging, existing.stateChanging, patch.stateChanging, implicit)
+    this.noSideEffects = merge(DEFAULT_STATELESS_OPTIONS.noSideEffects, existing.noSideEffects, patch.noSideEffects, implicit)
     this.sensitiveArgs = merge(DEFAULT_STATELESS_OPTIONS.sensitiveArgs, existing.sensitiveArgs, patch.sensitiveArgs, implicit)
     this.throttling = merge(DEFAULT_STATELESS_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)

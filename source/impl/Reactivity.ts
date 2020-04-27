@@ -47,7 +47,7 @@ export class Method extends Cache<any> {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
-      const token = opt.stateChanging ? undefined : this
+      const token = opt.noSideEffects ? this : undefined
       const call2 = this.compute(call, spawn, opt.logging, token, args)
       const ctx2 = call2.result.record.snapshot
       if (!weak || ctx === ctx2 || (ctx2.completed && ctx.timestamp >= ctx2.timestamp))

@@ -10,7 +10,7 @@ import { Monitor } from './Monitor'
 export interface Options {
   readonly kind: Kind
   readonly priority: number
-  readonly stateChanging: boolean
+  readonly noSideEffects: boolean
   readonly sensitiveArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance

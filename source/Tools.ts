@@ -48,17 +48,17 @@ export function stateless(proto: object, prop: PropertyKey): any {
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const opt = { kind: Kind.Transaction, stateChanging: true }
+  const opt = { kind: Kind.Transaction }
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
 export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const opt = { kind: Kind.Trigger, stateChanging: true, throttling: -1 } // immediate trigger
+  const opt = { kind: Kind.Trigger, throttling: -1 } // immediate trigger
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
 export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const opt = { kind: Kind.Cached, stateChanging: false }
+  const opt = { kind: Kind.Cached, noSideEffects: true }
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
@@ -66,8 +66,8 @@ export function priority(value: number): F<any> {
   return options({priority: value})
 }
 
-export function stateChanging(value: boolean): F<any> {
-  return options({stateChanging: value})
+export function noSideEffects(value: boolean): F<any> {
+  return options({noSideEffects: value})
 }
 
 export function sensitiveArgs(value: boolean): F<any> {

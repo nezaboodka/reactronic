@@ -150,13 +150,13 @@ export class Snapshot implements Context {
     if (this.completed)
       throw misuse(`stateful property ${Hints.obj(h, m)} can only be modified inside actions and triggers`)
     // if (m !== SYM_HANDLE && value !== SYM_HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
-    //   throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
+    //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
     // if (r === NIL && m !== SYM_HANDLE && value !== SYM_HANDLE) /* istanbul ignore next */
     //   throw misuse(`member ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     if (m !== SYM_HANDLE && value !== SYM_HANDLE) {
       if (r.snapshot !== this || r.prev.record !== NIL) {
         if (this.token !== undefined && token !== this.token)
-          throw misuse(`cache must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
+          throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
         // TODO: Detect uninitialized members
         // if (existing === undefined)
         //   throw misuse(`uninitialized member is detected: ${Hints.record(r, m)}`)
