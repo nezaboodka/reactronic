@@ -156,7 +156,7 @@ export class Snapshot implements Context {
     if (m !== SYM_HANDLE && value !== SYM_HANDLE) {
       if (r.snapshot !== this || r.prev.record !== NIL) {
         if (this.token !== undefined && token !== this.token)
-          throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
+          throw misuse(`${this.hint} should not have side effects (trying to change ${Hints.record(r, m)})`)
         // TODO: Detect uninitialized members
         // if (existing === undefined)
         //   throw misuse(`uninitialized member is detected: ${Hints.record(r, m)}`)
