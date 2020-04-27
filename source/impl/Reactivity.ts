@@ -257,8 +257,8 @@ class CallResult extends Observable implements Observer {
     else if (this.method.options.kind === Kind.Transaction)
       cause = '   <<   transaction'
     else
-      cause = '   <<   first on-demand call'
-    return `${Hints.record(this.record, this.method.member)}${cause} (${ms}ms since last call)`
+      cause = `   <<   first on-demand call by ${this.record.snapshot.hint}`
+    return `${Hints.record(this.record, this.method.member)}${cause}   (${ms}ms since previous revalidation)`
   }
 
   deps(): string[] {
@@ -644,6 +644,7 @@ function propagationHint(cause: MemberHint): string[] {
     value = cause.record.data[cause.member]
   }
   result.push(Hints.record(cause.record, cause.member))
+  result.push(cause.record.snapshot.hint)
   return result
 }
 
