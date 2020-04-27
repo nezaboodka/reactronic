@@ -239,7 +239,7 @@ function transaction(proto, prop, pd) // method only
 function trigger(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
-function stateChanging(value: boolean) // transaction & cached & trigger
+function noSideEffects(value: boolean) // transaction & cached & trigger
 function sensitiveArgs(value: boolean) // cached & trigger
 function throttling(milliseconds: number) // trigger only
 function reentrance(value: Reentrance) // transaction & trigger
@@ -254,7 +254,7 @@ function isolated<T>(func: F<T>, ...args: any[]): T
 
 interface Options {
   readonly kind: Kind
-  readonly stateChanging: boolean
+  readonly noSideEffects: boolean
   readonly sensitiveArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
