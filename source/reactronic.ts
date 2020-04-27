@@ -8,7 +8,7 @@ export { Options, Kind, Reentrance, LoggingOptions, ProfilingOptions, LogLevel }
 export { Reactronic } from './Tools'
 export { Stateful } from './impl/Hooks'
 export { getCachedAndRevalidate, nonreactive, isolated, state, stateless, transaction, trigger,
-  cached, priority, sensitiveArgs, throttling, reentrance, monitor, logging } from './Tools'
+  cached, priority, stateChanging, sensitiveArgs, throttling, reentrance, monitor, logging } from './Tools'
 export { Transaction } from './Transaction'
 export { Monitor, Worker } from './Monitor'
 export { Cache } from './Cache'
