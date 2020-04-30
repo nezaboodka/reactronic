@@ -130,7 +130,7 @@ export class Hooks implements ProxyHandler<Handle> {
       const curr = r.data[m] as Observable
       if (curr !== undefined || r.prev.record.snapshot === NIL.snapshot) {
         const prev = r.prev.record.data[m] as Observable
-        const changed = prev === undefined || prev.value !== value
+        const changed = prev === undefined || prev.value !== value || h.events
         if (changed) {
           if (prev === curr)
             r.data[m] = new Observable(value)
