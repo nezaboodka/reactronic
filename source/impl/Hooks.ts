@@ -265,6 +265,12 @@ export class Hooks implements ProxyHandler<Handle> {
     return h ? (full ? `${h.hint}#${h.id}` : h.hint) : undefined
   }
 
+  static setEventsMode<T>(obj: T, enabled: boolean): T {
+    const h = Hooks.acquireHandle(obj)
+    h.events = enabled
+    return obj
+  }
+
   /* istanbul ignore next */
   static createMethodTrap = function(h: Handle, m: Member, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')

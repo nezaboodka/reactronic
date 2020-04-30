@@ -52,6 +52,7 @@ export class DemoView extends Stateful {
   constructor(model: Demo) {
     super()
     this.model = model
+    R.setEventsMode(this, false)
   }
 
   @trigger

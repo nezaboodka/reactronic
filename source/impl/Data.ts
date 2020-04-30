@@ -72,6 +72,7 @@ export class Handle {
   changing?: Record
   writers: number
   hint: string
+  events: boolean
 
   constructor(stateless: any, proxy: any, handler: ProxyHandler<Handle>, head: Record, hint: string) {
     this.id = ++Handle.idGen
@@ -81,5 +82,6 @@ export class Handle {
     this.changing = undefined
     this.writers = 0
     this.hint = hint
+    this.events = false
   }
 }

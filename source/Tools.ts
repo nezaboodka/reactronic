@@ -11,6 +11,7 @@ import { Transaction, Cache, Monitor, Kind, Reentrance, LoggingOptions, Profilin
 
 export class Reactronic {
   // Configuration
+  static setEventsMode<T extends object>(obj: T, enabled: boolean): void { Hooks.setEventsMode(obj, enabled) }
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
   static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }
   // Logging
