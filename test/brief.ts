@@ -52,7 +52,7 @@ export class DemoView extends Stateful {
   constructor(model: Demo) {
     super()
     this.model = model
-    R.setEventsMode(this, false)
+    R.configureObject(this, false)
   }
 
   @trigger
@@ -62,7 +62,7 @@ export class DemoView extends Stateful {
       output.push(x) /* istanbul ignore next */
       if (R.isLogging && !R.loggingOptions.silent) console.log(x)
     })
-    R.setupCache({ priority: 123 })
+    R.configureCache({ priority: 123 })
   }
 
   // @transaction @logging(log.noisy)

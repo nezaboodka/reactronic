@@ -13,7 +13,7 @@ export abstract class Cache<T> {
   abstract readonly stamp: number
   abstract readonly invalid: boolean
 
-  abstract setup(options: Partial<Options>): Options
+  abstract configure(options: Partial<Options>): Options
   abstract invalidate(): void
   abstract getCachedAndRevalidate(args?: any[]): T | undefined
 }

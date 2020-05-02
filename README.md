@@ -138,12 +138,12 @@ class Component<P> extends React.Component<P> {
 
   @trigger // called immediately in response to state changes
   pulse(): void {
-    if (Cache.of(this.render).invalid)
+    if (Reactronic.getCache(this.render).invalid)
       isolated(() => this.setState({})) // ask React to re-render
   } // pulse is subscribed to render
 
   shouldComponentUpdate(): boolean {
-    return Cache.of(this.render).invalid
+    return Reactronic.getCache(this.render).invalid
   }
 
   componentDidMount(): void {
@@ -352,17 +352,19 @@ abstract class Cache<T> {
   readonly stamp: number
   readonly invalid: boolean
 
-  setup(options: Partial<Options>): Options
+  configure(options: Partial<Options>): Options
   invalidate(): boolean
   getCachedAndRevalidate(args?: any[]): T | undefined
-
-  static of<T>(method: F<T>): Cache<T>
-  static unmount(obj: any): void
 }
 
 // Reactronic
 
 class Reactronic {
+  static why(): string
+  static getCache<T>(method: F<T>): Cache<T>
+  static configureCache(options: Partial<Options>): Options
+  static configureObject<T extends object>(obj: T, enabled: boolean): void
+  static unmount(obj: any): void
   static triggersAutoStartDisabled: boolean
   static readonly isLogging: boolean
   static readonly loggingOptions: LoggingOptions

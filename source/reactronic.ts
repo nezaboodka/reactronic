@@ -12,9 +12,9 @@ import { Transaction, Cache, Monitor, Kind, Reentrance, Options, LoggingOptions,
 
 export class Reactronic {
   static why(): string { return Method.why() }
-  static getCache<T>(method: F<T>): Cache<T> { return Method.of(method) }
-  static setupCache(options: Partial<Options>): Options { return Method.setupImpl(undefined, options) }
-  static setEventsMode<T extends object>(obj: T, enabled: boolean): void { Hooks.setEventsMode(obj, enabled) }
+  static getCache<T>(method: F<T>): Cache<T> { return Method.getCache(method) }
+  static configureCache(options: Partial<Options>): Options { return Method.configureImpl(undefined, options) }
+  static configureObject<T extends object>(obj: T, enabled: boolean): void { Hooks.setEventsMode(obj, enabled) }
   static unmount(obj: any): void { Snapshot.unmount(obj) }
   // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }

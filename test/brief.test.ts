@@ -122,7 +122,7 @@ test('Main', t => {
     // t.is(daddy.name, "John")
     // t.is(daddy.age, 38)
     // Check protection and error handling
-    t.throws(() => { R.getCache(daddy.setParent).setup({ monitor: null }) },
+    t.throws(() => { R.getCache(daddy.setParent).configure({ monitor: null }) },
       'given method is not decorated as reactronic one: setParent')
     t.throws(() => { console.log(R.getCache(daddy.setParent).options.monitor) },
       'given method is not decorated as reactronic one: setParent')

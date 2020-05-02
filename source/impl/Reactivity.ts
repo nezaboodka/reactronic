@@ -23,7 +23,7 @@ export class Method extends Cache<any> {
   readonly handle: Handle
   readonly member: Member
 
-  setup(options: Partial<Options>): Options { return Method.setupImpl(this, options) }
+  configure(options: Partial<Options>): Options { return Method.configureImpl(this, options) }
   get options(): Options { return this.weak().result.options }
   get args(): ReadonlyArray<any> { return this.weak().result.args }
   get value(): any { return this.call(true, undefined).value }
@@ -60,14 +60,14 @@ export class Method extends Cache<any> {
     return result
   }
 
-  static of(method: F<any>): Cache<any> {
+  static getCache(method: F<any>): Cache<any> {
     const func = Utils.get<Cache<any> | undefined>(method, SYM_METHOD)
     if (!func)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return func
   }
 
-  static setupImpl(self: Method | undefined, options: Partial<Options>): Options {
+  static configureImpl(self: Method | undefined, options: Partial<Options>): Options {
     let c: CallResult | undefined
     if (self)
       c = self.write().result
@@ -585,7 +585,7 @@ class CallResult extends Observable implements Observer {
   }
 
   private static applyOptions(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
-    // Setup options
+    // Configure options
     const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
     const existing: CallResult | undefined = blank[m]
     const method = existing ? existing.method : new Method(NIL_HANDLE, m)

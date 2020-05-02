@@ -43,8 +43,8 @@ class Rx<V> extends Stateful {
     if (hint)
       R.setLoggingHint(rx, hint)
     if (logging) {
-      R.getCache(rx.render).setup({logging})
-      R.getCache(rx.pulse).setup({logging})
+      R.getCache(rx.render).configure({logging})
+      R.getCache(rx.pulse).configure({logging})
     }
     return rx
   }

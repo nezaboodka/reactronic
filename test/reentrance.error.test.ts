@@ -26,7 +26,7 @@ test('Reentrance.PreventWithError', async t => {
   R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
   const app = Tran.run('app', () => {
     const a = new AsyncDemoView(new AsyncDemo())
-    R.getCache(a.model.load).setup({reentrance: Reentrance.PreventWithError})
+    R.getCache(a.model.load).configure({reentrance: Reentrance.PreventWithError})
     return a
   })
   try {
