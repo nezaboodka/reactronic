@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, LogLevel, trigger, transaction, stateless } from 'reactronic'
+import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, LogLevel, trigger, transaction, stateless } from 'api'
 
 export class DemoBase extends Stateful {
   @stateless raw: string = 'stateless data'

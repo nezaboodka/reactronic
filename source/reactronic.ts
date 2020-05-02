@@ -3,12 +3,94 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-export { all, sleep } from './util/Utils'
-export { Options, Kind, Reentrance, LoggingOptions, ProfilingOptions, LogLevel } from './Options'
-export { Reactronic } from './Tools'
-export { Stateful } from './impl/Hooks'
-export { getCachedAndRevalidate, nonreactive, isolated, state, stateless, transaction, trigger,
-  cached, priority, noSideEffects, sensitiveArgs, throttling, reentrance, monitor, logging } from './Tools'
-export { Transaction } from './Transaction'
-export { Monitor, Worker } from './Monitor'
-export { Cache } from './Cache'
+import { F } from './util/Utils'
+import { Dbg } from './util/Dbg'
+import { Snapshot } from 'impl/Snapshot'
+import { Hooks, options } from './impl/Hooks'
+import { Method } from './impl/Reactivity'
+import { Transaction, Cache, Monitor, Kind, Reentrance, Options, LoggingOptions, ProfilingOptions } from 'api'
+
+export class Reactronic {
+  static why(): string { return Method.why() }
+  static getCache<T>(method: F<T>): Cache<T> { return Method.of(method) }
+  static setupCache(options: Partial<Options>): Options { return Method.setupImpl(undefined, options) }
+  static setEventsMode<T extends object>(obj: T, enabled: boolean): void { Hooks.setEventsMode(obj, enabled) }
+  static unmount(obj: any): void { Snapshot.unmount(obj) }
+  // Configuration
+  static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
+  static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }
+  // Logging
+  static get isLogging(): boolean { return Dbg.isOn }
+  static get loggingOptions(): LoggingOptions { return Dbg.logging }
+  static setLoggingMode(enabled: boolean, options?: LoggingOptions): void { Dbg.setLoggingMode(enabled, options) }
+  static setLoggingHint<T extends object>(obj: T, name: string | undefined): void { Hooks.setHint(obj, name) }
+  static getLoggingHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Hooks.getHint(obj, full) }
+  static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(enabled, options) }
+}
+
+// Operators
+
+export function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
+  return Reactronic.getCache(method as any as F<T>).getCachedAndRevalidate(args) // overcome type safety
+}
+
+export function nonreactive<T>(func: F<T>, ...args: any[]): T {
+  return Method.run<T>(undefined, func, ...args)
+}
+
+export function isolated<T>(func: F<T>, ...args: any[]): T {
+  return Method.run<T>(undefined, Transaction.isolated, func, ...args)
+}
+
+// Decorators
+
+export function state(proto: object, prop: PropertyKey): any {
+  return Hooks.decorateField(true, proto, prop)
+}
+
+export function stateless(proto: object, prop: PropertyKey): any {
+  return Hooks.decorateField(false, proto, prop)
+}
+
+export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  const opt = { kind: Kind.Transaction }
+  return Hooks.decorateMethod(true, opt, proto, prop, pd)
+}
+
+export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  const opt = { kind: Kind.Trigger, throttling: -1 } // immediate trigger
+  return Hooks.decorateMethod(true, opt, proto, prop, pd)
+}
+
+export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  const opt = { kind: Kind.Cached, noSideEffects: true }
+  return Hooks.decorateMethod(true, opt, proto, prop, pd)
+}
+
+export function priority(value: number): F<any> {
+  return options({priority: value})
+}
+
+export function noSideEffects(value: boolean): F<any> {
+  return options({noSideEffects: value})
+}
+
+export function sensitiveArgs(value: boolean): F<any> {
+  return options({sensitiveArgs: value})
+}
+
+export function throttling(milliseconds: number): F<any> {
+  return options({throttling: milliseconds})
+}
+
+export function reentrance(value: Reentrance): F<any> {
+  return options({reentrance: value})
+}
+
+export function monitor(value: Monitor | null): F<any> {
+  return options({monitor: value})
+}
+
+export function logging(value: Partial<LoggingOptions>): F<any> {
+  return options({logging: value})
+}

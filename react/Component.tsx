@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { trigger, cached, isolated, Reactronic } from 'reactronic'
+import { trigger, cached, isolated, Reactronic } from 'api' // from 'reactronic'
 
 export class Component<P> extends React.Component<P> {
   @cached

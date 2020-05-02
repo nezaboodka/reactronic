@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Stateful, state, transaction, trigger, cached, sensitiveArgs, throttling, monitor,
-  reentrance, Transaction as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'reactronic'
+  reentrance, Transaction as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'api'
 
 export const output: string[] = []
 export const loading = Monitor.create('loading', 0)

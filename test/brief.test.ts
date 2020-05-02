@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction as Tran, Kind, nonreactive, isolated, Reactronic as R, LogLevel } from 'reactronic'
+import { Transaction as Tran, Kind, nonreactive, isolated, Reactronic as R, LogLevel } from 'api'
 import { Person, Demo, DemoView, output } from './brief'
 
 const expected: string[] = [

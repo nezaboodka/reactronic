@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, Reactronic as R } from 'reactronic'
+import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, Reactronic as R } from 'api'
 
 export const output: string[] = []
 

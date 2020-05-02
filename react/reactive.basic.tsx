@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { Stateful, Transaction, stateless, trigger, cached, isolated, Reactronic } from 'reactronic'
+import { Stateful, Transaction, stateless, trigger, cached, isolated, Reactronic } from 'api' // from 'reactronic'
 
 export function reactive(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)

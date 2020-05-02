@@ -2,8 +2,8 @@
   "name": "reactronic",
   "version": "0.20.48",
   "description": "Reactronic - Transactionally Reactive State Management",
-  "main": "build/dist/source/reactronic.js",
-  "types": "build/dist/source/reactronic.d.ts",
+  "main": "build/dist/source/api.js",
+  "types": "build/dist/source/api.d.ts",
   "files": [
     "build/dist/source/**/*.*"
   ],
