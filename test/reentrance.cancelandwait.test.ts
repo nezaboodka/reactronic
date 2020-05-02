@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction as Tran, Cache, Reentrance, Reactronic as R, all, sleep, LogLevel } from 'reactronic'
+import { Transaction as Tran, Reentrance, Reactronic as R, all, sleep, LogLevel } from 'reactronic'
 import { AsyncDemo, AsyncDemoView, loading, output } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
@@ -26,7 +26,7 @@ test('Reentrance.CancelAndWaitPrevious', async t => {
   R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
   const app = Tran.run('app', () => {
     const a = new AsyncDemoView(new AsyncDemo())
-    Cache.of(a.model.load).setup({reentrance: Reentrance.CancelAndWaitPrevious})
+    R.getCache(a.model.load).setup({reentrance: Reentrance.CancelAndWaitPrevious})
     return a
   })
   try {
@@ -47,8 +47,8 @@ test('Reentrance.CancelAndWaitPrevious', async t => {
     t.is(loading.workers.size, 0)
     await sleep(100)
     Tran.run('cleanup', () => {
-      Cache.unmount(app)
-      Cache.unmount(app.model)
+      R.unmount(app)
+      R.unmount(app.model)
     })
   } /* istanbul ignore next */
   if (R.isLogging && !R.loggingOptions.silent) {

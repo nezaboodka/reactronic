@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction as Tran, Cache, Kind, nonreactive, isolated, Reactronic as R, LogLevel } from 'reactronic'
+import { Transaction as Tran, Kind, nonreactive, isolated, Reactronic as R, LogLevel } from 'reactronic'
 import { Person, Demo, DemoView, output } from './brief'
 
 const expected: string[] = [
@@ -37,9 +37,9 @@ test('Main', t => {
   const app = Tran.run('app', () => new DemoView(new Demo()))
   try {
     t.is(R.why(), 'Reactronic.why should be called from inside of reactive method')
-    t.is(Cache.of(app.print).options.priority, 123)
+    t.is(R.getCache(app.print).options.priority, 123)
     t.notThrows(() => DemoView.test())
-    const rendering = Cache.of(app.render)
+    const rendering = R.getCache(app.render)
     t.is(rendering.invalid, false)
     t.is(rendering.args.length, 1)
     t.is(rendering.value.length, 1)
@@ -122,9 +122,9 @@ test('Main', t => {
     // t.is(daddy.name, "John")
     // t.is(daddy.age, 38)
     // Check protection and error handling
-    t.throws(() => { Cache.of(daddy.setParent).setup({ monitor: null }) },
+    t.throws(() => { R.getCache(daddy.setParent).setup({ monitor: null }) },
       'given method is not decorated as reactronic one: setParent')
-    t.throws(() => { console.log(Cache.of(daddy.setParent).options.monitor) },
+    t.throws(() => { console.log(R.getCache(daddy.setParent).options.monitor) },
       'given method is not decorated as reactronic one: setParent')
     const action2 = Tran.create('action2')
     t.throws(() => action2.run(() => { throw new Error('test') }), 'test')
@@ -148,8 +148,8 @@ test('Main', t => {
   }
   finally {
     Tran.run('cleanup', () => {
-      Cache.unmount(app)
-      Cache.unmount(app.model)
+      R.unmount(app)
+      R.unmount(app.model)
     })
   }
   const n: number = Math.max(output.length, expected.length)

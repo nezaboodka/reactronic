@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { trigger, cached, isolated, Cache } from 'reactronic'
+import { trigger, cached, isolated, Reactronic } from 'reactronic'
 
 export class Component<P> extends React.Component<P> {
   @cached
@@ -19,7 +19,7 @@ export class Component<P> extends React.Component<P> {
   }
 
   shouldComponentUpdate(): boolean {
-    return Cache.of(this.render).invalid
+    return Reactronic.getCache(this.render).invalid
   }
 
   componentDidMount(): void {
@@ -27,6 +27,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    isolated(Cache.unmount, this)
+    isolated(Reactronic.unmount, this)
   }
 }

@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, transaction, trigger, Cache, cached, sensitiveArgs, priority, Reactronic as R } from 'reactronic'
+import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, Reactronic as R } from 'reactronic'
 
 export const output: string[] = []
 
@@ -62,7 +62,7 @@ export class DemoView extends Stateful {
       output.push(x) /* istanbul ignore next */
       if (R.isLogging && !R.loggingOptions.silent) console.log(x)
     })
-    Cache.setup({ priority: 123 })
+    R.setupCache({ priority: 123 })
   }
 
   // @transaction @logging(log.noisy)

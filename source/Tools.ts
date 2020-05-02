@@ -5,13 +5,18 @@
 
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
+import { Snapshot } from 'impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
-import { Transaction, Cache, Monitor, Kind, Reentrance, LoggingOptions, ProfilingOptions } from 'reactronic'
+import { Transaction, Cache, Monitor, Kind, Reentrance, Options, LoggingOptions, ProfilingOptions } from 'reactronic'
 
 export class Reactronic {
-  // Configuration
+  static why(): string { return Method.why() }
+  static getCache<T>(method: F<T>): Cache<T> { return Method.of(method) }
+  static setupCache(options: Partial<Options>): Options { return Method.setupImpl(undefined, options) }
   static setEventsMode<T extends object>(obj: T, enabled: boolean): void { Hooks.setEventsMode(obj, enabled) }
+  static unmount(obj: any): void { Snapshot.unmount(obj) }
+  // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
   static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }
   // Logging
@@ -21,13 +26,12 @@ export class Reactronic {
   static setLoggingHint<T extends object>(obj: T, name: string | undefined): void { Hooks.setHint(obj, name) }
   static getLoggingHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Hooks.getHint(obj, full) }
   static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(enabled, options) }
-  static why(): string { return Method.why() }
 }
 
 // Operators
 
 export function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return Cache.of(method as any as F<T>).getCachedAndRevalidate(args) // overcome type safety
+  return Reactronic.getCache(method as any as F<T>).getCachedAndRevalidate(args) // overcome type safety
 }
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {

@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { Stateful, Transaction, Cache, stateless, trigger, cached, isolated, Reactronic as R, LoggingOptions } from 'reactronic'
+import { Stateful, Transaction, stateless, trigger, cached, isolated, Reactronic as R, LoggingOptions } from 'reactronic'
 
 export function reactive(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, tran?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -28,14 +28,14 @@ class Rx<V> extends Stateful {
 
   @trigger
   protected pulse(): void {
-    if (Cache.of(this.render).invalid)
+    if (R.getCache(this.render).invalid)
       isolated(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
   @stateless cycle: number = 0
   @stateless refresh: (next: ReactState<V>) => void = nop
   @stateless readonly unmount = (): (() => void) => {
-    return (): void => { isolated(Cache.unmount, this) }
+    return (): void => { isolated(R.unmount, this) }
   }
 
   static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): Rx<V> {
@@ -43,8 +43,8 @@ class Rx<V> extends Stateful {
     if (hint)
       R.setLoggingHint(rx, hint)
     if (logging) {
-      Cache.of(rx.render).setup({logging})
-      Cache.of(rx.pulse).setup({logging})
+      R.getCache(rx.render).setup({logging})
+      R.getCache(rx.pulse).setup({logging})
     }
     return rx
   }

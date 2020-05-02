@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import * as React from 'react'
-import { Stateful, Transaction, Cache, stateless, trigger, cached, isolated } from 'reactronic'
+import { Stateful, Transaction, stateless, trigger, cached, isolated, Reactronic } from 'reactronic'
 
 export function reactive(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -26,13 +26,13 @@ class Rx extends Stateful {
 
   @trigger
   protected pulse(): void {
-    if (Cache.of(this.render).invalid)
+    if (Reactronic.getCache(this.render).invalid)
       isolated(this.refresh, {rx: this})
   }
 
   @stateless refresh: (next: ReactState) => void = nop
   @stateless readonly unmount = (): (() => void) => {
-    return (): void => { isolated(Cache.unmount, this) }
+    return (): void => { isolated(Reactronic.unmount, this) }
   }
 
   static create<V>(): Rx {
