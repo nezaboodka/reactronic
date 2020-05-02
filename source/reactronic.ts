@@ -5,7 +5,7 @@
 
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
-import { Snapshot } from 'impl/Snapshot'
+import { Snapshot } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
 import { Transaction, Cache, Monitor, Kind, Reentrance, Options, LoggingOptions, ProfilingOptions } from 'api'
