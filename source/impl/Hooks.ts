@@ -10,7 +10,7 @@ import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Record, Member, Handle, Observable } from './Data'
 import { Snapshot, Hints, NIL, SYM_HANDLE, SYM_METHOD, SYM_BLANK, SYM_TRIGGERS, SYM_STATELESS } from './Snapshot'
-import { Options, Kind, Reentrance } from '../Options'
+import { Options, Kind, Reentrance, ObjectOptions } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
 import { LoggingOptions, ProfilingOptions } from '../Logging'
@@ -130,7 +130,7 @@ export class Hooks implements ProxyHandler<Handle> {
       const curr = r.data[m] as Observable
       if (curr !== undefined || r.prev.record.snapshot === NIL.snapshot) {
         const prev = r.prev.record.data[m] as Observable
-        const changed = prev === undefined || prev.value !== value || h.events
+        const changed = prev === undefined || prev.value !== value || h.noEqualityCheckOnWrite
         if (changed) {
           if (prev === curr)
             r.data[m] = new Observable(value)
@@ -265,9 +265,10 @@ export class Hooks implements ProxyHandler<Handle> {
     return h ? (full ? `${h.hint}#${h.id}` : h.hint) : undefined
   }
 
-  static setEventsMode<T>(obj: T, enabled: boolean): T {
+  static setObjectOptions<T>(obj: T, options: Partial<ObjectOptions>): T {
     const h = Hooks.acquireHandle(obj)
-    h.events = enabled
+    if (options.noEqualityCheckOnWrite !== undefined)
+      h.noEqualityCheckOnWrite = options.noEqualityCheckOnWrite
     return obj
   }
 

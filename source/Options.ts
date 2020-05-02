@@ -33,3 +33,7 @@ export enum Reentrance {
   OverwritePrevious = -3, // allow previous to complete, but overwrite it with ignoring any conflicts
   RunSideBySide = -4, // multiple simultaneous actions are allowed
 }
+
+export interface ObjectOptions {
+  readonly noEqualityCheckOnWrite: boolean
+}

@@ -250,7 +250,7 @@ function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | und
 function nonreactive<T>(func: F<T>, ...args: any[]): T
 function isolated<T>(func: F<T>, ...args: any[]): T
 
-// Options, Kind, Reentrance, Monitor, LoggingOptions, ProfilingOptions
+// Options, ObjectOptions, Kind, Reentrance, Monitor, LoggingOptions, ProfilingOptions
 
 interface Options {
   readonly kind: Kind
@@ -276,6 +276,10 @@ enum Reentrance {
   CancelAndWaitPrevious = -2, // cancel previous call in favor of recent one (but wait until canceling is completed)
   OverwritePrevious = -2, // allow previous to complete, but overwrite it with ignoring any conflicts
   RunSideBySide = -3 // multiple simultaneous calls are allowed
+}
+
+export interface ObjectOptions {
+  readonly noEqualityCheckOnWrite: boolean
 }
 
 class Monitor {
@@ -338,7 +342,7 @@ class Transaction implements Worker {
   static create(hint: string): Transaction
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
-    logging: Partial<LoggingOptions | undefined, func: F<T>, ...args: any[]): T
+    logging: Partial<LoggingOptions | undefined>, func: F<T>, ...args: any[]): T
   static isolated<T>(func: F<T>, ...args: any[]): T
 }
 
@@ -363,7 +367,7 @@ class Reactronic {
   static why(): string
   static getCache<T>(method: F<T>): Cache<T>
   static configureCache(options: Partial<Options>): Options
-  static configureObject<T extends object>(obj: T, enabled: boolean): void
+  static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void
   static unmount(obj: any): void
   static triggersAutoStartDisabled: boolean
   static readonly isLogging: boolean

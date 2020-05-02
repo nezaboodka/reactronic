@@ -8,13 +8,13 @@ import { Dbg } from './util/Dbg'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
-import { Transaction, Cache, Monitor, Kind, Reentrance, Options, LoggingOptions, ProfilingOptions } from 'api'
+import { Transaction, Cache, Monitor, Kind, Reentrance, Options, ObjectOptions, LoggingOptions, ProfilingOptions } from 'api'
 
 export class Reactronic {
   static why(): string { return Method.why() }
   static getCache<T>(method: F<T>): Cache<T> { return Method.getCache(method) }
   static configureCache(options: Partial<Options>): Options { return Method.configureImpl(undefined, options) }
-  static configureObject<T extends object>(obj: T, enabled: boolean): void { Hooks.setEventsMode(obj, enabled) }
+  static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   static unmount(obj: any): void { Snapshot.unmount(obj) }
   // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
