@@ -52,7 +52,7 @@ export class DemoView extends Stateful {
   constructor(model: Demo) {
     super()
     this.model = model
-    R.configureObject(this, { noEqualityCheckOnWrite: false })
+    R.configureObject(this, { sensitiveWrites: false })
   }
 
   @trigger

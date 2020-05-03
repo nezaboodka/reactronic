@@ -35,5 +35,5 @@ export enum Reentrance {
 }
 
 export interface ObjectOptions {
-  readonly noEqualityCheckOnWrite: boolean
+  readonly sensitiveWrites: boolean
 }

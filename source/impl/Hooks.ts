@@ -130,7 +130,7 @@ export class Hooks implements ProxyHandler<Handle> {
       const curr = r.data[m] as Observable
       if (curr !== undefined || r.prev.record.snapshot === NIL.snapshot) {
         const prev = r.prev.record.data[m] as Observable
-        const changed = prev === undefined || prev.value !== value || h.noEqualityCheckOnWrite
+        const changed = prev === undefined || prev.value !== value || h.sensitiveWrites
         if (changed) {
           if (prev === curr)
             r.data[m] = new Observable(value)
@@ -267,8 +267,8 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static setObjectOptions<T>(obj: T, options: Partial<ObjectOptions>): T {
     const h = Hooks.acquireHandle(obj)
-    if (options.noEqualityCheckOnWrite !== undefined)
-      h.noEqualityCheckOnWrite = options.noEqualityCheckOnWrite
+    if (options.sensitiveWrites !== undefined)
+      h.sensitiveWrites = options.sensitiveWrites
     return obj
   }
 
