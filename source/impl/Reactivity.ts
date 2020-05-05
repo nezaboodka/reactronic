@@ -351,7 +351,7 @@ class CallResult extends Observable implements Observer {
   reenterOver(head: CallResult): this {
     let error: Error | undefined = undefined
     const existing = head.invalid.recomputing
-    if (existing && existing !== this && !existing.worker.isFinished) {
+    if (existing) {
       if (Dbg.isOn && Dbg.logging.invalidations)
         Dbg.log('║', ' [!]', `${Hints.record(this.record, this.method.member)} trying to re-enter over ${Hints.record(existing.record, existing.method.member)}`)
       switch (head.options.reentrance) {
