@@ -47,7 +47,7 @@
     {
       "label": "Install Modules  -  npm",
       "type": "shell",
-      "command": "npm install && yarn install",
+      "command": "npm install; yarn install",
       "isBackground": true,
       "group": "build",
       "problemMatcher": [],
