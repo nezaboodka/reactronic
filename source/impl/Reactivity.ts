@@ -177,9 +177,7 @@ export class Method extends Cache<any> {
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
-        const res = call.result
-        const inv = res.invalid
-        if (res.options.kind === Kind.Transaction || (!call.reuse && (!inv.recomputing || inv.recomputing.worker.isCanceled))) {
+        if (call.result.options.kind === Kind.Transaction || !call.reuse) {
           call = this.write()
           if (Dbg.isOn && (Dbg.logging.transactions || Dbg.logging.methods || Dbg.logging.invalidations))
             Dbg.log('║', ' (f)', `${call.result.why()}`)
