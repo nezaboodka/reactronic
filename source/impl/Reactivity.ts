@@ -43,7 +43,8 @@ export class Method extends Cache<any> {
     let call: Call = this.read(args)
     const ctx = call.context
     const c: CallResult = call.result
-    if (!call.reuse && call.record.data[SYM_UNMOUNT] === undefined && (!weak || !c.revalidation)) {
+    if (!call.reuse && call.record.data[SYM_UNMOUNT] === undefined
+      && (!weak || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
@@ -325,7 +326,8 @@ class CallResult extends Observable implements Observer {
     const interval = Date.now() + this.started // "started" is stored as negative value after trigger completion
     const hold = t ? t - interval : 0 // "started" is stored as negative value after trigger completion
     if (now || hold < 0) {
-      if (!this.error && (this.options.kind === Kind.Transaction || !this.revalidation)) {
+      if (!this.error && (this.options.kind === Kind.Transaction ||
+        !this.revalidation || this.revalidation.worker.isCanceled)) {
         try {
           const c: CallResult = this.method.call(false, undefined)
           if (c.ret instanceof Promise)
@@ -353,7 +355,7 @@ class CallResult extends Observable implements Observer {
   reenterOver(head: CallResult): this {
     let error: Error | undefined = undefined
     const existing = head.revalidation
-    if (existing) {
+    if (existing && !existing.worker.isFinished) {
       if (Dbg.isOn && Dbg.logging.invalidations)
         Dbg.log('║', ' [!]', `${Hints.record(this.record, this.method.member)} trying to re-enter over ${Hints.record(existing.record, existing.method.member)}`)
       switch (head.options.reentrance) {
@@ -362,7 +364,6 @@ class CallResult extends Observable implements Observer {
         case Reentrance.WaitAndRestart:
           error = new Error(`T${this.worker.id} (${this.worker.hint}) will be restarted after T${existing.worker.id} (${existing.worker.hint})`)
           this.worker.cancel(error, existing.worker)
-          // TODO: "c.invalid.recomputing = caller" in order serialize all the actions
           break
         case Reentrance.CancelAndWaitPrevious:
           error = new Error(`T${this.worker.id} (${this.worker.hint}) will be restarted after T${existing.worker.id} (${existing.worker.hint})`)
@@ -371,7 +372,6 @@ class CallResult extends Observable implements Observer {
           break
         case Reentrance.CancelPrevious:
           existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by T${this.worker.id} (${this.worker.hint})`), null)
-          head.revalidation = undefined // allow
           break
         case Reentrance.RunSideBySide:
           break // do nothing
@@ -537,9 +537,9 @@ class CallResult extends Observable implements Observer {
       if (unsubscribe)
         cache.unsubscribeFromAll()
       // Clear recomputing status of previous cached result
-      const prev = cache.record.prev.record.data[m]
-      if (prev instanceof CallResult && prev.revalidation === cache)
-        prev.revalidation = undefined
+      // const prev = cache.record.prev.record.data[m]
+      // if (prev instanceof CallResult && prev.revalidation === cache)
+      //   prev.revalidation = undefined
       // Performance tracking
       if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
         cache.observables.forEach((hint, value) => {

@@ -18,8 +18,8 @@ const expected: string[] = [
   'Log: RTA',
   '[...] Url: reactronic',
   '[...] Log: RTA',
-  'Url: microsoft.com',
-  'Log: RTA, microsoft.com/200',
+  'Url: nezaboodka.com',
+  'Log: RTA, nezaboodka.com/500',
 ]
 
 test('Reentrance.CancelAndWaitPrevious', async t => {
@@ -32,8 +32,8 @@ test('Reentrance.CancelAndWaitPrevious', async t => {
   try {
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
-    t.is(loading.workerCount, 2)
-    t.is(loading.workers.size, 2)
+    t.is(loading.workerCount, 1)
+    t.is(loading.workers.size, 1)
     loading.workers.forEach(w =>
       t.assert(w.hint.indexOf('#22 AsyncDemo.load/') === 0))
     await all(responses)
