@@ -177,7 +177,9 @@ export class Method extends Cache<any> {
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
-        if (call.result.options.kind === Kind.Transaction || (!call.reuse && !call.result.invalid.recomputing)) {
+        const res = call.result
+        const inv = res.invalid
+        if (res.options.kind === Kind.Transaction || (!call.reuse && (!inv.recomputing || inv.recomputing.worker.isCanceled))) {
           call = this.write()
           if (Dbg.isOn && (Dbg.logging.transactions || Dbg.logging.methods || Dbg.logging.invalidations))
             Dbg.log('║', ' (f)', `${call.result.why()}`)
@@ -307,8 +309,9 @@ class CallResult extends Observable implements Observer {
           triggers.push(this)
         else if (this.observers) // cascade invalidation
           this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, member: this.method.member, times: 0}, since, triggers))
-        if (!this.worker.isFinished && this !== value)
-          this.worker.cancel(new Error(`T${this.worker.id} (${this.worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), this.worker)
+        const w = this.worker
+        if (!w.isFinished && this !== value)
+          w.cancel(new Error(`T${w.id} (${w.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), w)
       }
       else if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
         Dbg.logAs(this.options.logging, '║', 'x', `${this.hint()} self-invalidation is skipped`)
