@@ -183,8 +183,9 @@ export class TransactionImpl extends Transaction {
       if (this.after !== TransactionImpl.none) {
         if (this.after) {
           // if (Dbg.logging.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
-          if (this.after !== this)
-            await this.after.whenFinished()
+          // if (this.after !== this)
+          //   await this.after.whenFinished()
+          await this.after.whenFinished()
           // if (Dbg.logging.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           return TransactionImpl.runAs<T>(this.hint, true, this.logging, this.snapshot.token, func, ...args)
         }
