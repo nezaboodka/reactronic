@@ -27,7 +27,7 @@ export class Observable {
 export interface Observer {
   hint(notran?: boolean): string
   priority(): number
-  readonly invalid: { since: number }
+  readonly invalidatedSince: number
   invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void
   revalidate(now: boolean, nothrow: boolean): void
 }

@@ -43,7 +43,7 @@ export class Method extends Cache<any> {
     let call: Call = this.read(args)
     const ctx = call.context
     const c: CallResult = call.result
-    if (!call.reuse && call.record.data[SYM_UNMOUNT] === undefined && (!weak || !c.invalid.recomputing)) {
+    if (!call.reuse && call.record.data[SYM_UNMOUNT] === undefined && (!weak || !c.revalidation)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
@@ -122,7 +122,7 @@ export class Method extends Cache<any> {
     const r: Record = ctx.tryRead(this.handle)
     const c: CallResult = this.from(r)
     const reuse = c.options.kind !== Kind.Transaction &&
-      ((ctx === c.record.snapshot && c.invalid.since !== -1) || ctx.timestamp < c.invalid.since) &&
+      ((ctx === c.record.snapshot && c.invalidatedSince !== -1) || ctx.timestamp < c.invalidatedSince) &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[SYM_UNMOUNT] !== undefined
     return { context: ctx, record: r, result: c, reuse }
@@ -155,7 +155,7 @@ export class Method extends Cache<any> {
         if (c2.method !== this) {
           r2 = Snapshot.writable().write(h, m, SYM_HANDLE, this)
           c2 = r2.data[m] = new CallResult(this, r2, c2)
-          c2.invalid.since = -1 // indicates blank value
+          c2.invalidatedSince = -1 // indicates blank value
           Snapshot.markChanged(r2, m, c2, true)
         }
         return c2
@@ -208,7 +208,6 @@ class CallResult extends Observable implements Observer {
   readonly method: Method
   readonly record: Record
   readonly observables: Map<Observable, MemberHint>
-  readonly invalid: { since: number, cause?: MemberHint, recomputing?: CallResult }
   options: OptionsImpl
   cause: MemberHint | undefined
   args: any[]
@@ -217,18 +216,20 @@ class CallResult extends Observable implements Observer {
   readonly margin: number
   readonly worker: Worker
   started: number
+  invalidatedDueTo: MemberHint | undefined
+  invalidatedSince: number
+  revalidation: CallResult | undefined
 
   constructor(method: Method, record: Record, prev: CallResult | OptionsImpl) {
     super(undefined)
     this.method = method
     this.record = record
     this.observables = new Map<Observable, MemberHint>()
-    this.invalid = { since: 0, cause: undefined, recomputing: undefined }
     if (prev instanceof CallResult) {
       this.options = prev.options
       this.args = prev.args
       // this.value = init.value
-      this.cause = prev.invalid.cause
+      this.cause = prev.invalidatedDueTo
     }
     else { // init instanceof OptionsImpl
       this.options = prev
@@ -241,6 +242,9 @@ class CallResult extends Observable implements Observer {
     this.margin = CallResult.current ? CallResult.current.margin + 1 : 1
     this.worker = TransactionImpl.current
     this.started = 0
+    this.invalidatedSince = 0
+    this.invalidatedDueTo = undefined
+    this.revalidation = undefined
   }
 
   hint(): string { return `${Hints.record(this.record, this.method.member)}` }
@@ -284,7 +288,7 @@ class CallResult extends Observable implements Observer {
   compute(proxy: any, args: any[] | undefined): void {
     if (args)
       this.args = args
-    this.invalid.since = TOP_TIMESTAMP
+    this.invalidatedSince = TOP_TIMESTAMP
     if (!this.error)
       Method.run<void>(this, CallResult.compute, this, proxy)
     else
@@ -292,13 +296,13 @@ class CallResult extends Observable implements Observer {
   }
 
   invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void {
-    if (this.invalid.since === TOP_TIMESTAMP || this.invalid.since <= 0) {
+    if (this.invalidatedSince === TOP_TIMESTAMP || this.invalidatedSince <= 0) {
       const notSelfInvalidation = !value.isField ||
         cause.record.snapshot !== this.record.snapshot ||
         !cause.record.changes.has(cause.member)
       if (notSelfInvalidation) {
-        this.invalid.cause = cause
-        this.invalid.since = since
+        this.invalidatedDueTo = cause
+        this.invalidatedSince = since
         const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[SYM_UNMOUNT] === undefined*/
         if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
           Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.readable().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
@@ -321,7 +325,7 @@ class CallResult extends Observable implements Observer {
     const interval = Date.now() + this.started // "started" is stored as negative value after trigger completion
     const hold = t ? t - interval : 0 // "started" is stored as negative value after trigger completion
     if (now || hold < 0) {
-      if (!this.error && (this.options.kind === Kind.Transaction || !this.invalid.recomputing)) {
+      if (!this.error && (this.options.kind === Kind.Transaction || !this.revalidation)) {
         try {
           const c: CallResult = this.method.call(false, undefined)
           if (c.ret instanceof Promise)
@@ -348,7 +352,7 @@ class CallResult extends Observable implements Observer {
 
   reenterOver(head: CallResult): this {
     let error: Error | undefined = undefined
-    const existing = head.invalid.recomputing
+    const existing = head.revalidation
     if (existing) {
       if (Dbg.isOn && Dbg.logging.invalidations)
         Dbg.log('║', ' [!]', `${Hints.record(this.record, this.method.member)} trying to re-enter over ${Hints.record(existing.record, existing.method.member)}`)
@@ -367,14 +371,14 @@ class CallResult extends Observable implements Observer {
           break
         case Reentrance.CancelPrevious:
           existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by T${this.worker.id} (${this.worker.hint})`), null)
-          head.invalid.recomputing = undefined // allow
+          head.revalidation = undefined // allow
           break
         case Reentrance.RunSideBySide:
           break // do nothing
       }
     }
     if (!error)
-      head.invalid.recomputing = this
+      head.revalidation = this
     else
       this.error = error
     return this
@@ -485,7 +489,7 @@ class CallResult extends Observable implements Observer {
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof CallResult && oldValue.invalid.since !== -1
+      result = oldValue instanceof CallResult && oldValue.invalidatedSince !== -1
     return result
   }
 
@@ -519,9 +523,9 @@ class CallResult extends Observable implements Observer {
       if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
         prev.replacement = r
         const cause: MemberHint = { record: r, member: m, times: 0 }
-        if (prev instanceof CallResult && (prev.invalid.since === TOP_TIMESTAMP || prev.invalid.since <= 0)) {
-          prev.invalid.cause = cause
-          prev.invalid.since = timestamp
+        if (prev instanceof CallResult && (prev.invalidatedSince === TOP_TIMESTAMP || prev.invalidatedSince <= 0)) {
+          prev.invalidatedDueTo = cause
+          prev.invalidatedSince = timestamp
           prev.unsubscribeFromAll()
         }
         if (prev.observers)
@@ -534,8 +538,8 @@ class CallResult extends Observable implements Observer {
         cache.unsubscribeFromAll()
       // Clear recomputing status of previous cached result
       const prev = cache.record.prev.record.data[m]
-      if (prev instanceof CallResult && prev.invalid.recomputing === cache)
-        prev.invalid.recomputing = undefined
+      if (prev instanceof CallResult && prev.revalidation === cache)
+        prev.revalidation = undefined
       // Performance tracking
       if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
         cache.observables.forEach((hint, value) => {
@@ -559,7 +563,7 @@ class CallResult extends Observable implements Observer {
   private subscribeTo(r: Record, m: Member, value: Observable, timestamp: number): boolean {
     let result = value.replacement === undefined
     if (result && timestamp !== -1)
-      result = !(value instanceof CallResult && timestamp >= value.invalid.since)
+      result = !(value instanceof CallResult && timestamp >= value.invalidatedSince)
     if (result) {
       // Performance tracking
       let times: number = 0
@@ -641,9 +645,9 @@ class CallResult extends Observable implements Observer {
 function propagationHint(cause: MemberHint): string[] {
   const result: string[] = []
   let value: Observable = cause.record.data[cause.member]
-  while (value instanceof CallResult && value.invalid.cause) {
+  while (value instanceof CallResult && value.invalidatedDueTo) {
     result.push(Hints.record(cause.record, cause.member))
-    cause = value.invalid.cause
+    cause = value.invalidatedDueTo
     value = cause.record.data[cause.member]
   }
   result.push(Hints.record(cause.record, cause.member))
