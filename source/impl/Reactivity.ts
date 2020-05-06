@@ -55,7 +55,7 @@ export class Method extends Cache<any> {
         call = call2
     }
     else if (Dbg.isOn && Dbg.logging.methods && (c.options.logging === undefined || c.options.logging.methods === undefined || c.options.logging.methods === true))
-      Dbg.log(TransactionImpl.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.member)} result is reused from T${call.result.worker.id} ${call.result.worker.hint}`)
+      Dbg.log(TransactionImpl.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.member)} result is reused from [T${call.result.worker.id} ${call.result.worker.hint}]`)
     const result = call.result
     Snapshot.markViewed(call.record, this.member, result, result.options.kind, weak)
     return result
@@ -314,7 +314,7 @@ class CallResult extends Observable implements Observer {
           this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, member: this.method.member, times: 0}, since, triggers))
         const worker = this.worker
         if (!worker.isFinished && this !== value) // restart after itself if canceled
-          worker.cancel(new Error(`T${worker.id} (${worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
+          worker.cancel(new Error(`[T${worker.id} ${worker.hint}] is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
       }
       else if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
         Dbg.logAs(this.options.logging, '║', 'x', `${this.hint()} self-invalidation is skipped (ignore triggering on ${Hints.record(cause.record, cause.member)})`)
@@ -362,20 +362,20 @@ class CallResult extends Observable implements Observer {
         case Reentrance.PreventWithError:
           if (!existing.worker.isCanceled)
             throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${existing.hint()} (${existing.why()})`)
-          error = new Error(`T${this.worker.id} (${this.worker.hint}) is on hold/PreventWithError due to canceled T${existing.worker.id} (${existing.worker.hint})`)
+          error = new Error(`[T${this.worker.id} ${this.worker.hint}] is on hold/PreventWithError due to canceled [T${existing.worker.id} ${existing.worker.hint}]`)
           this.worker.cancel(error, existing.worker)
           break
         case Reentrance.WaitAndRestart:
-          error = new Error(`T${this.worker.id} (${this.worker.hint}) is on hold/WaitAndRestart due to active T${existing.worker.id} (${existing.worker.hint})`)
+          error = new Error(`[T${this.worker.id} ${this.worker.hint}] is on hold/WaitAndRestart due to active [${existing.worker.id} ${existing.worker.hint}]`)
           this.worker.cancel(error, existing.worker)
           break
         case Reentrance.CancelAndWaitPrevious:
-          error = new Error(`T${this.worker.id} (${this.worker.hint}) is on hold/CancelAndWaitPrevious due to active T${existing.worker.id} (${existing.worker.hint})`)
+          error = new Error(`[T${this.worker.id} ${this.worker.hint}] is on hold/CancelAndWaitPrevious due to active [T${existing.worker.id} ${existing.worker.hint}]`)
           this.worker.cancel(error, existing.worker)
-          existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by re-entering T${this.worker.id} (${this.worker.hint})`), null)
+          existing.worker.cancel(new Error(`[T${existing.worker.id} ${existing.worker.hint}] is canceled due to re-entering [T${this.worker.id} ${this.worker.hint}]`), null)
           break
         case Reentrance.CancelPrevious:
-          existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by re-entering T${this.worker.id} (${this.worker.hint})`), null)
+          existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled due to re-entering T${this.worker.id} (${this.worker.hint})`), null)
           break
         case Reentrance.RunSideBySide:
           break // do nothing
