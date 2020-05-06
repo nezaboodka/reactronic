@@ -31,7 +31,7 @@ export interface ProfilingOptions {
 
 export const LogLevel: {
   Error: LoggingOptions,
-  Light: LoggingOptions,
+  Minimal: LoggingOptions,
   Info: LoggingOptions,
   Debug: LoggingOptions,
   Suppress: LoggingOptions,
@@ -56,9 +56,9 @@ export const LogLevel: {
     margin2: 0,
   },
 
-  Light: {
+  Minimal: {
     silent: false,
-    transactions: false,
+    transactions: true,
     methods: false,
     steps: false,
     monitors: false,
