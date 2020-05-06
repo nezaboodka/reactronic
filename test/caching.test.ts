@@ -67,7 +67,7 @@ test('Main', t => {
     return d
   })
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
-  t.throws(() => demo.produceSideEffect(), '#21 Demo.produceSideEffect should not have side effects (trying to change v103t105#21 Demo.title)')
+  t.throws(() => demo.produceSideEffect(), 'Demo.produceSideEffect #21 should not have side effects (trying to change Demo.title #21t105v103)')
   // t.throws(() => demo.setUninitialized('someValue'), 'uninitialized member is detected: v103t107#21 Demo.uninitialized')
   t.is(demo.raw, 'should not fail on this line')
   t.is(demo.uninitialized, undefined)

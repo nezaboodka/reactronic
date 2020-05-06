@@ -366,17 +366,15 @@ export class Snapshot implements Context {
 
 export class Hints {
   static obj(h: Handle | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
-    const instance = (h === undefined)
-      ? 'nil'
-      : (typeless
-        ? (stamp === undefined ? `#${h.id}` : `v${stamp}t${tran}#${h.id}`)
-        : (stamp === undefined ? `#${h.id} ${h.hint}` : `v${stamp}t${tran}#${h.id} ${h.hint}`))
-    return m !== undefined ? `${instance}.${m.toString()}` : instance
+    const member = m !== undefined ? `.${m.toString()}` : ''
+    return h === undefined
+      ? `nil${member}`
+      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${tran}v${stamp}`
   }
 
-  static record(r: Record, m?: Member, typeless?: boolean): string {
+  static record(r: Record, m?: Member): string {
     const h = Utils.get<Handle | undefined>(r.data, SYM_HANDLE)
-    return Hints.obj(h, m, r.snapshot.timestamp, r.snapshot.id, typeless)
+    return Hints.obj(h, m, r.snapshot.timestamp, r.snapshot.id)
   }
 
   static conflicts(conflicts: Record[]): string {

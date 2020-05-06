@@ -35,7 +35,7 @@ test('Reentrance.CancelAndWaitPrevious', async t => {
     t.is(loading.workerCount, 1)
     t.is(loading.workers.size, 1)
     loading.workers.forEach(w =>
-      t.assert(w.hint.indexOf('#22 AsyncDemo.load/') === 0))
+      t.assert(w.hint.indexOf('AsyncDemo.load #22 - ') === 0))
     await all(responses)
   }
   catch (error) { /* istanbul ignore next */

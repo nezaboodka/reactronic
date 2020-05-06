@@ -20,7 +20,7 @@ const expected: string[] = [
   '[...] Log: RTA',
   '[...] Url: nezaboodka.com',
   '[...] Log: RTA, nezaboodka.com/100',
-  'Error: T113[#22 AsyncDemo.load/microsoft.com] conflicts with: #22 AsyncDemo.load/nezaboodka.com on v104t107#22 AsyncDemo.load',
+  'Error: T113[AsyncDemo.load #22 - microsoft.com] conflicts with: AsyncDemo.load #22 - nezaboodka.com on AsyncDemo.load #22t107v104',
   'Url: nezaboodka.com',
   'Log: RTA, nezaboodka.com/100',
 ]

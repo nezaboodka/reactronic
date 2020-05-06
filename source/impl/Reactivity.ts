@@ -167,7 +167,7 @@ export class Method extends Cache<any> {
 
   private compute(existing: Call, spawn: boolean, logging: Partial<LoggingOptions> | undefined, token: any, args: any[] | undefined): Call {
     // TODO: Cleaner implementation is needed
-    const hint: string = Dbg.isOn ? `${Hints.obj(this.handle, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? `/${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.handle, this.member)}`
+    const hint: string = Dbg.isOn ? `${Hints.obj(this.handle, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.handle, this.member)}`
     let call = existing
     const ret = TransactionImpl.runAs(hint, spawn, logging, token, (argsx: any[] | undefined): any => {
       if (!call.result.worker.isCanceled) { // first call
@@ -563,7 +563,7 @@ class CallResult extends Observable implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this)
-      if ((Dbg.isOn && Dbg.logging.reads || (this.options.logging && this.options.logging.reads))) Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.readable().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.member)} is unsubscribed from ${Hints.record(hint.record, hint.member, true)}`)
+      if ((Dbg.isOn && Dbg.logging.reads || (this.options.logging && this.options.logging.reads))) Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.readable().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.member)} is unsubscribed from ${Hints.record(hint.record, hint.member)}`)
     })
     this.observables.clear()
   }
@@ -672,7 +672,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof CallResult)
-    result = `<recompute:${Hints.record(value.record.prev.record, undefined, true)}>`
+    result = `<recompute:${Hints.record(value.record.prev.record)}>`
   else if (value === SYM_UNMOUNT)
     result = '<unmount>'
   else if (value !== undefined && value !== null)
