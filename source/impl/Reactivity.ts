@@ -314,7 +314,7 @@ class CallResult extends Observable implements Observer {
           this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, member: this.method.member, times: 0}, since, triggers))
         const w = this.worker
         if (!w.isFinished && this !== value)
-          w.cancel(new Error(`T${w.id} (${w.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), w)
+          w.cancel(new Error(`T${w.id} (${w.hint}) should be restarted due to invalidation by ${Hints.record(cause.record, cause.member)}`), w)
       }
       else if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
         Dbg.logAs(this.options.logging, '║', 'x', `${this.hint()} self-invalidation is skipped`)
