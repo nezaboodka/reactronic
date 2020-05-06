@@ -5,7 +5,7 @@
 
 import test from 'ava'
 import { Transaction as Tran, Reentrance, getCachedAndRevalidate, Reactronic as R, LogLevel, sleep } from 'api'
-import { AsyncDemo, AsyncDemoView, loading, output } from './reentrance'
+import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: 'nezaboodka.com', delay: 500 },
@@ -35,8 +35,8 @@ test('Reentrance.PreventWithError', async t => {
     await app.print() // trigger first run
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
-    t.is(loading.workerCount, 1)
-    t.is(loading.workers.size, 1)
+    t.is(busy.workerCount, 1)
+    t.is(busy.workers.size, 1)
     await first
   }
   catch (error) { /* istanbul ignore next */
@@ -44,8 +44,8 @@ test('Reentrance.PreventWithError', async t => {
     if (R.isLogging && !R.loggingOptions.silent) console.log(error.toString())
   }
   finally {
-    t.is(loading.workerCount, 0)
-    t.is(loading.workers.size, 0)
+    t.is(busy.workerCount, 0)
+    t.is(busy.workers.size, 0)
     const r = getCachedAndRevalidate(app.render)
     t.is(r && r.length, 2)
     await sleep(100)

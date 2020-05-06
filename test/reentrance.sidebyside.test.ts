@@ -5,7 +5,7 @@
 
 import test from 'ava'
 import { Transaction as Tran, Reentrance, Reactronic as R, all, sleep, LogLevel } from 'api'
-import { AsyncDemo, AsyncDemoView, loading, output } from './reentrance'
+import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: 'nezaboodka.com', delay: 100 },
@@ -35,8 +35,8 @@ test('Reentrance.RunSideBySide', async t => {
   try {
     await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
-    t.is(loading.workerCount, 3)
-    t.is(loading.workers.size, 3)
+    t.is(busy.workerCount, 3)
+    t.is(busy.workers.size, 3)
     await all(responses)
   }
   catch (error) { /* istanbul ignore next */
@@ -44,8 +44,8 @@ test('Reentrance.RunSideBySide', async t => {
     if (R.isLogging && !R.loggingOptions.silent) console.log(error.toString())
   }
   finally {
-    t.is(loading.workerCount, 0)
-    t.is(loading.workers.size, 0)
+    t.is(busy.workerCount, 0)
+    t.is(busy.workers.size, 0)
     await sleep(100)
     Tran.run('cleanup', () => {
       R.unmount(app)

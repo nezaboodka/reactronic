@@ -267,7 +267,7 @@ export class Snapshot implements Context {
           const members: string[] = []
           r.changes.forEach(m => members.push(m.toString()))
           const s = members.join(', ')
-          Dbg.log('║', '√', `${Hints.record(r)}(${s}) is ${r.prev.record === NIL ? 'constructed' : `applied on top of ${Hints.record(r.prev.record)}`}`)
+          Dbg.log('║', '√', `${Hints.record(r)} (${s}) is ${r.prev.record === NIL ? 'constructed' : `applied on top of ${Hints.record(r.prev.record)}`}`)
         }
       }
     })
