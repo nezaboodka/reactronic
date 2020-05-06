@@ -362,15 +362,15 @@ class CallResult extends Observable implements Observer {
         case Reentrance.PreventWithError:
           if (!existing.worker.isCanceled)
             throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${existing.hint()} (${existing.why()})`)
-          error = new Error(`T${this.worker.id} (${this.worker.hint}) is on hold due to canceled T${existing.worker.id} (${existing.worker.hint})`)
+          error = new Error(`T${this.worker.id} (${this.worker.hint}) is on hold/PreventWithError due to canceled T${existing.worker.id} (${existing.worker.hint})`)
           this.worker.cancel(error, existing.worker)
           break
         case Reentrance.WaitAndRestart:
-          error = new Error(`T${this.worker.id} (${this.worker.hint}) is on hold due to active T${existing.worker.id} (${existing.worker.hint})`)
+          error = new Error(`T${this.worker.id} (${this.worker.hint}) is on hold/WaitAndRestart due to active T${existing.worker.id} (${existing.worker.hint})`)
           this.worker.cancel(error, existing.worker)
           break
         case Reentrance.CancelAndWaitPrevious:
-          error = new Error(`T${this.worker.id} (${this.worker.hint}) is blocked by active T${existing.worker.id} (${existing.worker.hint})`)
+          error = new Error(`T${this.worker.id} (${this.worker.hint}) is on hold/CancelAndWaitPrevious due to active T${existing.worker.id} (${existing.worker.hint})`)
           this.worker.cancel(error, existing.worker)
           existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by re-entering T${this.worker.id} (${this.worker.hint})`), null)
           break
