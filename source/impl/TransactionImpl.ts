@@ -187,7 +187,7 @@ export class TransactionImpl extends Transaction {
           //   await this.after.whenFinished()
           await this.after.whenFinished()
           // if (Dbg.logging.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
-          return TransactionImpl.runAs<T>(this.hint, true, this.logging, this.snapshot.token, func, ...args)
+          return TransactionImpl.runAs<T>(`${this.hint} - restart after T${this.after.id}`, true, this.logging, this.snapshot.token, func, ...args)
         }
         else
           throw error
