@@ -56,7 +56,7 @@ export class TransactionImpl extends Transaction {
     try {
       TransactionImpl.inspection = true
       if (Dbg.isOn && Dbg.logging.transactions)
-        Dbg.log(' ', ' ', `[T${this.id} ${this.hint}] is being inspected by [T${TransactionImpl.running.id} ${TransactionImpl.running.hint}]`)
+        Dbg.log(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.running.id}[${TransactionImpl.running.hint}]`)
       return this.do(undefined, func, ...args)
     }
     finally {
@@ -250,7 +250,7 @@ export class TransactionImpl extends Transaction {
       if (Dbg.isOn && Dbg.logging.transactions) {
         Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== TransactionImpl.none)
-          Dbg.log('║', ' [!]', `[T${t.id} ${t.hint}] will be restarted${t !== after ? ` after [T${after.id} ${after.hint}]` : ''}`)
+          Dbg.log('║', ' [!]', `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ''}`)
       }
       Snapshot.finalizeChangeset(t.snapshot, error)
     }
@@ -264,7 +264,7 @@ export class TransactionImpl extends Transaction {
   }
 
   private tryResolveConflicts(conflicts: Record[]): void {
-    throw error(`[T${this.id} ${this.hint}] conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
+    throw error(`T${this.id}[${this.hint}] conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
   }
 
   private finish(): void {
