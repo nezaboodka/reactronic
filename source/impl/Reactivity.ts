@@ -357,21 +357,21 @@ class CallResult extends Observable implements Observer {
     const existing = head.revalidation
     if (existing && !existing.worker.isFinished) {
       if (Dbg.isOn && Dbg.logging.invalidations)
-        Dbg.log('║', ' [!]', `${Hints.record(this.record, this.method.member)} trying to re-enter over ${Hints.record(existing.record, existing.method.member)}`)
+        Dbg.log('║', ' [!]', `${Hints.record(this.record, this.method.member)} is trying to re-enter over ${Hints.record(existing.record, existing.method.member)}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
           throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${existing.hint()} (${existing.why()})`)
         case Reentrance.WaitAndRestart:
-          error = new Error(`T${this.worker.id} (${this.worker.hint}) will be restarted after T${existing.worker.id} (${existing.worker.hint})`)
+          error = new Error(`T${this.worker.id} (${this.worker.hint}) is blocked by running T${existing.worker.id} (${existing.worker.hint})`)
           this.worker.cancel(error, existing.worker)
           break
         case Reentrance.CancelAndWaitPrevious:
-          error = new Error(`T${this.worker.id} (${this.worker.hint}) will be restarted after T${existing.worker.id} (${existing.worker.hint})`)
+          error = new Error(`T${this.worker.id} (${this.worker.hint}) is blocked by running T${existing.worker.id} (${existing.worker.hint})`)
           this.worker.cancel(error, existing.worker)
-          existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by T${this.worker.id} (${this.worker.hint})`), null)
+          existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by re-entering T${this.worker.id} (${this.worker.hint})`), null)
           break
         case Reentrance.CancelPrevious:
-          existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by T${this.worker.id} (${this.worker.hint})`), null)
+          existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by re-entering T${this.worker.id} (${this.worker.hint})`), null)
           break
         case Reentrance.RunSideBySide:
           break // do nothing

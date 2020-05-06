@@ -250,7 +250,7 @@ export class TransactionImpl extends Transaction {
       if (Dbg.isOn && Dbg.logging.transactions) {
         Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== TransactionImpl.none)
-          Dbg.log('║', ' [!]', `T${t.id} (${t.hint}) will be restarted after T${after.id} (${after.hint})`)
+          Dbg.log('║', ' [!]', `T${t.id} (${t.hint}) will be restarted${t !== after ? ` after T${after.id} (${after.hint})` : ''}`)
       }
       Snapshot.finalizeChangeset(t.snapshot, error)
     }
