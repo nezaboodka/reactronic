@@ -421,7 +421,7 @@ class CallResult extends Observable implements Observer {
         if (Dbg.logging.methods)
           Dbg.log('║', '_/', `${Hints.record(this.record, this.method.member)} - leave... `, 0, 'ASYNC ──┐')
         else if (Dbg.logging.transactions)
-          Dbg.log('║', '  ', `${Hints.record(this.record, this.method.member)} - leave... `, 0, 'ASYNC')
+          Dbg.log('║', '  ', `${Hints.record(this.record, this.method.member)}... `, 0, 'ASYNC')
       }
     }
     else {
