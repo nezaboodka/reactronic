@@ -308,13 +308,20 @@ class CallResult extends Observable implements Observer {
         if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
           Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.readable().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
-        if (isTrigger) // stop cascade invalidation on trigger
-          triggers.push(this)
-        else if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, member: this.method.member, times: 0}, since, triggers))
-        const w = this.worker
-        if (!w.isFinished && this !== value)
-          w.cancel(new Error(`T${w.id} (${w.hint}) should be restarted due to invalidation by ${Hints.record(cause.record, cause.member)}`), w)
+        const worker = this.worker
+        const cancel = !worker.isFinished && this !== value
+        if (isTrigger) {// stop cascade invalidation on trigger
+          if (cancel) // restart after itself if canceled
+            worker.cancel(new Error(`T${worker.id} (${worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), worker)
+          else
+            triggers.push(this)
+        }
+        else {
+          if (cancel) // just cancel without restarting after itself
+            worker.cancel(new Error(`T${worker.id} (${worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
+          if (this.observers) // cascade invalidation
+            this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, member: this.method.member, times: 0}, since, triggers))
+        }
       }
       else if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
         Dbg.logAs(this.options.logging, '║', 'x', `${this.hint()} self-invalidation is skipped`)
