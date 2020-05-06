@@ -317,7 +317,7 @@ class CallResult extends Observable implements Observer {
           worker.cancel(new Error(`T${worker.id} (${worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
       }
       else if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
-        Dbg.logAs(this.options.logging, '║', 'x', `${this.hint()} self-invalidation is skipped`)
+        Dbg.logAs(this.options.logging, '║', 'x', `${this.hint()} self-invalidation is skipped (ignore triggering on ${Hints.record(cause.record, cause.member)})`)
     }
   }
 
