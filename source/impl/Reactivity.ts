@@ -308,20 +308,13 @@ class CallResult extends Observable implements Observer {
         if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
           Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.readable().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
+        if (isTrigger) // stop cascade invalidation on trigger
+          triggers.push(this)
+        else if (this.observers) // cascade invalidation
+          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, member: this.method.member, times: 0}, since, triggers))
         const worker = this.worker
-        const cancel = !worker.isFinished && this !== value
-        if (isTrigger) {// stop cascade invalidation on trigger
-          if (cancel) // restart after itself if canceled
-            worker.cancel(new Error(`T${worker.id} (${worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), worker)
-          else
-            triggers.push(this)
-        }
-        else {
-          if (cancel) // just cancel without restarting after itself
-            worker.cancel(new Error(`T${worker.id} (${worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
-          if (this.observers) // cascade invalidation
-            this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, member: this.method.member, times: 0}, since, triggers))
-        }
+        if (!worker.isFinished && this !== value) // restart after itself if canceled
+          worker.cancel(new Error(`T${worker.id} (${worker.hint}) is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
       }
       else if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
         Dbg.logAs(this.options.logging, '║', 'x', `${this.hint()} self-invalidation is skipped`)
@@ -367,13 +360,17 @@ class CallResult extends Observable implements Observer {
         Dbg.log('║', ' [!]', `${Hints.record(this.record, this.method.member)} is trying to re-enter over ${Hints.record(existing.record, existing.method.member)}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
-          throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${existing.hint()} (${existing.why()})`)
+          if (!existing.worker.isCanceled)
+            throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${existing.hint()} (${existing.why()})`)
+          error = new Error(`T${this.worker.id} (${this.worker.hint}) is on hold due to canceled T${existing.worker.id} (${existing.worker.hint})`)
+          this.worker.cancel(error, existing.worker)
+          break
         case Reentrance.WaitAndRestart:
-          error = new Error(`T${this.worker.id} (${this.worker.hint}) is blocked by running T${existing.worker.id} (${existing.worker.hint})`)
+          error = new Error(`T${this.worker.id} (${this.worker.hint}) is on hold due to active T${existing.worker.id} (${existing.worker.hint})`)
           this.worker.cancel(error, existing.worker)
           break
         case Reentrance.CancelAndWaitPrevious:
-          error = new Error(`T${this.worker.id} (${this.worker.hint}) is blocked by running T${existing.worker.id} (${existing.worker.hint})`)
+          error = new Error(`T${this.worker.id} (${this.worker.hint}) is blocked by active T${existing.worker.id} (${existing.worker.hint})`)
           this.worker.cancel(error, existing.worker)
           existing.worker.cancel(new Error(`T${existing.worker.id} (${existing.worker.hint}) is canceled by re-entering T${this.worker.id} (${this.worker.hint})`), null)
           break
