@@ -417,8 +417,12 @@ class CallResult extends Observable implements Observer {
           this.leave(false, '  □ ', '- finished ', 'ERR ──┘')
           throw error
         })
-      if (Dbg.isOn && Dbg.logging.methods)
-        Dbg.log('║', '_/', `${Hints.record(this.record, this.method.member)} - leave... `, 0, 'ASYNC ──┐')
+      if (Dbg.isOn) {
+        if (Dbg.logging.methods)
+          Dbg.log('║', '_/', `${Hints.record(this.record, this.method.member)} - leave... `, 0, 'ASYNC ──┐')
+        else if (Dbg.logging.transactions)
+          Dbg.log('║', '  ', `${Hints.record(this.record, this.method.member)} - leave... `, 0, 'ASYNC')
+      }
     }
     else {
       this.value = this.ret
