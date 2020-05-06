@@ -366,12 +366,12 @@ export class Snapshot implements Context {
 
 export class Hints {
   static obj(h: Handle | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
-    const s = (h === undefined)
+    const instance = (h === undefined)
       ? 'nil'
       : (typeless
         ? (stamp === undefined ? `#${h.id}` : `v${stamp}t${tran}#${h.id}`)
         : (stamp === undefined ? `#${h.id} ${h.hint}` : `v${stamp}t${tran}#${h.id} ${h.hint}`))
-    return m !== undefined ? `${s}.${m.toString()}` : s
+    return m !== undefined ? `${instance}.${m.toString()}` : instance
   }
 
   static record(r: Record, m?: Member, typeless?: boolean): string {
