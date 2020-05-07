@@ -44,7 +44,7 @@ export class Method extends Cache<any> {
     const ctx = call.context
     const c: CallResult = call.result
     if (!call.reuse && call.record.data[SYM_UNMOUNT] === undefined
-      && (!weak || !c.revalidation || c.revalidation.worker.isFinished)) {
+      && (!weak || c.invalidatedSince === -1 || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
@@ -122,8 +122,8 @@ export class Method extends Cache<any> {
     const ctx = Snapshot.readable()
     const r: Record = ctx.tryRead(this.handle)
     const c: CallResult = this.from(r)
-    const reuse = c.options.kind !== Kind.Transaction &&
-      ((ctx === c.record.snapshot && c.invalidatedSince !== -1) || ctx.timestamp < c.invalidatedSince) &&
+    const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== -1 &&
+      (ctx === c.record.snapshot || ctx.timestamp < c.invalidatedSince) &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[SYM_UNMOUNT] !== undefined
     return { context: ctx, record: r, result: c, reuse }
