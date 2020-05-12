@@ -278,8 +278,14 @@ enum Reentrance {
   RunSideBySide = -3 // multiple simultaneous calls are allowed
 }
 
-export interface ObjectOptions {
-  readonly sensitiveWrites: boolean
+enum AssignmentSensitivity {
+  FinalDifferenceOnly = 1,
+  AnyDifference = 2,
+  AnyAssignment = 3,
+}
+
+interface ObjectOptions {
+  readonly assignmentSensitivity: AssignmentSensitivity
 }
 
 class Monitor {

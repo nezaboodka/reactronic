@@ -8,7 +8,10 @@ import { Dbg } from './util/Dbg'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
-import { Transaction, Cache, Monitor, Kind, Reentrance, Options, ObjectOptions, LoggingOptions, ProfilingOptions } from './api'
+import { Transaction } from './Transaction'
+import { Cache } from './Cache'
+import { Monitor } from './Monitor'
+import { Kind, Reentrance, Options, ObjectOptions, LoggingOptions, ProfilingOptions } from './Options'
 
 export class Reactronic {
   static why(): string { return Method.why() }

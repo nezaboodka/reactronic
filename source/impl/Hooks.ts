@@ -8,7 +8,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
-import { Record, Member, Handle, Observable } from './Data'
+import { Record, Member, Handle, Observable, AssignmentSensitivity } from './Data'
 import { Snapshot, Hints, NIL, SYM_HANDLE, SYM_METHOD, SYM_BLANK, SYM_TRIGGERS, SYM_STATELESS } from './Snapshot'
 import { Options, Kind, Reentrance, ObjectOptions } from '../Options'
 import { Monitor } from '../Monitor'
@@ -130,14 +130,14 @@ export class Hooks implements ProxyHandler<Handle> {
       const curr = r.data[m] as Observable
       if (curr !== undefined || r.prev.record.snapshot === NIL.snapshot) {
         const prev = r.prev.record.data[m] as Observable
-        const changed = prev === undefined || prev.value !== value || h.sensitiveWrites
+        const changed = prev === undefined || prev.value !== value || h.sensitivity === AssignmentSensitivity.AnyAssignment
         if (changed) {
           if (prev === curr)
             r.data[m] = new Observable(value)
           else
             curr.value = value
         }
-        else if (prev !== curr)
+        else if (prev !== curr && h.sensitivity === AssignmentSensitivity.FinalDifferenceOnly)
           r.data[m] = prev // restore previous value
         Snapshot.markChanged(r, m, value, changed)
       }
@@ -267,8 +267,8 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static setObjectOptions<T>(obj: T, options: Partial<ObjectOptions>): T {
     const h = Hooks.acquireHandle(obj)
-    if (options.sensitiveWrites !== undefined)
-      h.sensitiveWrites = options.sensitiveWrites
+    if (options.assignmentSensitivity !== undefined)
+      h.sensitivity = options.assignmentSensitivity
     return obj
   }
 

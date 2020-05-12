@@ -60,6 +60,14 @@ export class Record {
   }
 }
 
+// ObjectOptions
+
+export enum AssignmentSensitivity {
+  FinalDifferenceOnly = 1,
+  AnyDifference = 2,
+  AnyAssignment = 3,
+}
+
 // Handle
 
 export class Handle {
@@ -72,7 +80,7 @@ export class Handle {
   changing?: Record
   writers: number
   hint: string
-  sensitiveWrites: boolean
+  sensitivity: AssignmentSensitivity
 
   constructor(stateless: any, proxy: any, handler: ProxyHandler<Handle>, head: Record, hint: string) {
     this.id = ++Handle.idGen
@@ -82,6 +90,6 @@ export class Handle {
     this.changing = undefined
     this.writers = 0
     this.hint = hint
-    this.sensitiveWrites = false
+    this.sensitivity = AssignmentSensitivity.FinalDifferenceOnly
   }
 }
