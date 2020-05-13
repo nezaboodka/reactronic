@@ -60,9 +60,9 @@ export class Record {
   }
 }
 
-// AssignmentSensitivity
+// Sensitivity
 
-export enum AssignmentSensitivity {
+export enum Sensitivity {
   TriggerOnFinalDifferenceOnly = 0, // default
   TriggerOnFinalAndIntermediateDifference = 1,
   TriggerRegardlessAssignedValue = 2,
@@ -80,7 +80,7 @@ export class Handle {
   changing?: Record
   writers: number
   hint: string
-  sensitivity: AssignmentSensitivity
+  sensitivity: Sensitivity
 
   constructor(stateless: any, proxy: any, handler: ProxyHandler<Handle>, head: Record, hint: string) {
     this.id = ++Handle.idGen
@@ -90,6 +90,6 @@ export class Handle {
     this.changing = undefined
     this.writers = 0
     this.hint = hint
-    this.sensitivity = AssignmentSensitivity.TriggerOnFinalDifferenceOnly
+    this.sensitivity = Sensitivity.TriggerOnFinalDifferenceOnly
   }
 }

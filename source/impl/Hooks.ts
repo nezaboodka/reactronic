@@ -8,7 +8,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
-import { Record, Member, Handle, Observable, AssignmentSensitivity } from './Data'
+import { Record, Member, Handle, Observable, Sensitivity } from './Data'
 import { Snapshot, Hints, NIL, SYM_HANDLE, SYM_METHOD, SYM_BLANK, SYM_TRIGGERS, SYM_STATELESS } from './Snapshot'
 import { Options, Kind, Reentrance, ObjectOptions } from '../Options'
 import { Monitor } from '../Monitor'
@@ -131,7 +131,7 @@ export class Hooks implements ProxyHandler<Handle> {
       if (curr !== undefined || r.prev.record.snapshot === NIL.snapshot) {
         const prev = r.prev.record.data[m] as Observable
         let changed = prev === undefined || prev.value !== value ||
-          h.sensitivity === AssignmentSensitivity.TriggerRegardlessAssignedValue
+          h.sensitivity === Sensitivity.TriggerRegardlessAssignedValue
         if (changed) {
           if (prev === curr)
             r.data[m] = new Observable(value)
@@ -139,10 +139,10 @@ export class Hooks implements ProxyHandler<Handle> {
             curr.value = value
         }
         else if (prev !== curr) { // if there was an assignment before
-          if (h.sensitivity === AssignmentSensitivity.TriggerOnFinalDifferenceOnly)
+          if (h.sensitivity === Sensitivity.TriggerOnFinalDifferenceOnly)
             r.data[m] = prev // restore previous value
           else
-            changed = true // AssignmentSensitivity.TriggerOnFinalAndIntermediateDifference
+            changed = true // Sensitivity.TriggerOnFinalAndIntermediateDifference
         }
         Snapshot.markChanged(r, m, value, changed)
       }
@@ -272,8 +272,8 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static setObjectOptions<T>(obj: T, options: Partial<ObjectOptions>): T {
     const h = Hooks.acquireHandle(obj)
-    if (options.assignmentSensitivity !== undefined)
-      h.sensitivity = options.assignmentSensitivity
+    if (options.sensitivity !== undefined)
+      h.sensitivity = options.sensitivity
     return obj
   }
 

@@ -278,14 +278,14 @@ enum Reentrance {
   RunSideBySide = -3 // multiple simultaneous calls are allowed
 }
 
-enum AssignmentSensitivity {
+enum Sensitivity {
   TriggerOnFinalDifferenceOnly = 0, // default
   TriggerOnFinalAndIntermediateDifference = 1,
   TriggerRegardlessAssignedValue = 2,
 }
 
 interface ObjectOptions {
-  readonly assignmentSensitivity: AssignmentSensitivity
+  readonly sensitivity: Sensitivity
 }
 
 class Monitor {

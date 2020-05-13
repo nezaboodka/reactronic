@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, AssignmentSensitivity, Reactronic as R } from 'api'
+import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, Sensitivity, Reactronic as R } from 'api'
 
 export const output: string[] = []
 
@@ -52,7 +52,7 @@ export class DemoView extends Stateful {
   constructor(model: Demo) {
     super()
     this.model = model
-    R.configureObject(this, { assignmentSensitivity: AssignmentSensitivity.TriggerOnFinalDifferenceOnly })
+    R.configureObject(this, { sensitivity: Sensitivity.TriggerOnFinalDifferenceOnly })
   }
 
   @trigger

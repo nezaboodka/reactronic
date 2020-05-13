@@ -5,8 +5,8 @@
 
 import { LoggingOptions } from './Logging'
 export { LoggingOptions, ProfilingOptions, LogLevel } from './Logging'
-import { AssignmentSensitivity } from './impl/Data'
-export { AssignmentSensitivity } from './impl/Data'
+import { Sensitivity } from './impl/Data'
+export { Sensitivity } from './impl/Data'
 import { Monitor } from './Monitor'
 
 export interface Options {
@@ -37,5 +37,5 @@ export enum Reentrance {
 }
 
 export interface ObjectOptions {
-  readonly assignmentSensitivity: AssignmentSensitivity
+  readonly sensitivity: Sensitivity
 }
