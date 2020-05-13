@@ -130,15 +130,20 @@ export class Hooks implements ProxyHandler<Handle> {
       const curr = r.data[m] as Observable
       if (curr !== undefined || r.prev.record.snapshot === NIL.snapshot) {
         const prev = r.prev.record.data[m] as Observable
-        const changed = prev === undefined || prev.value !== value || h.sensitivity === AssignmentSensitivity.AnyAssignment
+        let changed = prev === undefined || prev.value !== value ||
+          h.sensitivity === AssignmentSensitivity.TriggerRegardlessAssignedValue
         if (changed) {
           if (prev === curr)
             r.data[m] = new Observable(value)
           else
             curr.value = value
         }
-        else if (prev !== curr && h.sensitivity === AssignmentSensitivity.FinalDifferenceOnly)
-          r.data[m] = prev // restore previous value
+        else if (prev !== curr) { // if there was an assignment before
+          if (h.sensitivity === AssignmentSensitivity.TriggerOnFinalDifferenceOnly)
+            r.data[m] = prev // restore previous value
+          else
+            changed = true // AssignmentSensitivity.TriggerOnFinalAndIntermediateDifference
+        }
         Snapshot.markChanged(r, m, value, changed)
       }
       else

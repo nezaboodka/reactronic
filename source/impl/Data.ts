@@ -60,12 +60,12 @@ export class Record {
   }
 }
 
-// ObjectOptions
+// AssignmentSensitivity
 
 export enum AssignmentSensitivity {
-  FinalDifferenceOnly = 1,
-  AnyDifference = 2,
-  AnyAssignment = 3,
+  TriggerOnFinalDifferenceOnly = 0,
+  TriggerOnFinalAndIntermediateDifference = 1,
+  TriggerRegardlessAssignedValue = 2,
 }
 
 // Handle
@@ -90,6 +90,6 @@ export class Handle {
     this.changing = undefined
     this.writers = 0
     this.hint = hint
-    this.sensitivity = AssignmentSensitivity.FinalDifferenceOnly
+    this.sensitivity = AssignmentSensitivity.TriggerOnFinalDifferenceOnly
   }
 }

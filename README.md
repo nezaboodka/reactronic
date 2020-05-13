@@ -279,9 +279,9 @@ enum Reentrance {
 }
 
 enum AssignmentSensitivity {
-  FinalDifferenceOnly = 1,
-  AnyDifference = 2,
-  AnyAssignment = 3,
+  TriggerOnFinalDifferenceOnly = 0,
+  TriggerOnFinalAndIntermediateDifference = 1,
+  TriggerRegardlessAssignedValue = 2,
 }
 
 interface ObjectOptions {

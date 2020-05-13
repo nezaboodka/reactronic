@@ -52,7 +52,7 @@ export class DemoView extends Stateful {
   constructor(model: Demo) {
     super()
     this.model = model
-    R.configureObject(this, { assignmentSensitivity: AssignmentSensitivity.FinalDifferenceOnly })
+    R.configureObject(this, { assignmentSensitivity: AssignmentSensitivity.TriggerOnFinalDifferenceOnly })
   }
 
   @trigger
