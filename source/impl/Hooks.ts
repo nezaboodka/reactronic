@@ -8,9 +8,9 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
-import { Record, Member, Handle, Observable, Sensitivity } from './Data'
+import { Record, Member, Handle, Observable } from './Data'
 import { Snapshot, Hints, NIL, SYM_HANDLE, SYM_METHOD, SYM_BLANK, SYM_TRIGGERS, SYM_STATELESS } from './Snapshot'
-import { Options, Kind, Reentrance, ObjectOptions } from '../Options'
+import { Options, Kind, Reentrance, Sensitivity } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
 import { LoggingOptions, ProfilingOptions } from '../Logging'
@@ -96,6 +96,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static repetitiveReadWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
+  static sensitivity: Sensitivity | undefined = undefined
   static readonly proxy: Hooks = new Hooks()
 
   getPrototypeOf(h: Handle): object | null {
@@ -131,7 +132,7 @@ export class Hooks implements ProxyHandler<Handle> {
       if (curr !== undefined || r.prev.record.snapshot === NIL.snapshot) {
         const prev = r.prev.record.data[m] as Observable
         let changed = prev === undefined || prev.value !== value ||
-          h.sensitivity === Sensitivity.TriggerEvenOnSameValueAssignment
+          Hooks.sensitivity === Sensitivity.TriggerEvenOnSameValueAssignment
         if (changed) {
           if (prev === curr)
             r.data[m] = new Observable(value)
@@ -139,7 +140,7 @@ export class Hooks implements ProxyHandler<Handle> {
             curr.value = value
         }
         else if (prev !== curr) { // if there was an assignment before
-          if (h.sensitivity === Sensitivity.TriggerOnFinalDifferenceOnly)
+          if (Hooks.sensitivity === Sensitivity.TriggerOnFinalDifferenceOnly)
             r.data[m] = prev // restore previous value
           else
             changed = true // Sensitivity.TriggerOnFinalAndIntermediateDifference
@@ -257,6 +258,17 @@ export class Hooks implements ProxyHandler<Handle> {
     }
   }
 
+  static assign<T>(sensitivity: Sensitivity, obj: T, prop: keyof T, value: unknown): void {
+    const restore = Hooks.sensitivity
+    Hooks.sensitivity = sensitivity
+    try {
+      (obj as any)[prop] = value
+    }
+    finally {
+      Hooks.sensitivity = restore
+    }
+  }
+
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
       const h = Hooks.acquireHandle(obj)
@@ -270,12 +282,12 @@ export class Hooks implements ProxyHandler<Handle> {
     return h ? (full ? `${h.hint}#${h.id}` : h.hint) : undefined
   }
 
-  static setObjectOptions<T>(obj: T, options: Partial<ObjectOptions>): T {
-    const h = Hooks.acquireHandle(obj)
-    if (options.sensitivity !== undefined)
-      h.sensitivity = options.sensitivity
-    return obj
-  }
+  // static setObjectOptions<T>(obj: T, options: Partial<ObjectOptions>): T {
+  //   const h = Hooks.acquireHandle(obj)
+  //   if (options.sensitivity !== undefined)
+  //     h.sensitivity = options.sensitivity
+  //   return obj
+  // }
 
   /* istanbul ignore next */
   static createMethodTrap = function(h: Handle, m: Member, options: OptionsImpl): F<any> {

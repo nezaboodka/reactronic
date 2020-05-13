@@ -11,13 +11,14 @@ import { Method } from './impl/Reactivity'
 import { Transaction } from './Transaction'
 import { Cache } from './Cache'
 import { Monitor } from './Monitor'
-import { Kind, Reentrance, Options, ObjectOptions, LoggingOptions, ProfilingOptions } from './Options'
+import { Kind, Reentrance, Options, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
 
 export class Reactronic {
   static why(): string { return Method.why() }
   static getCache<T>(method: F<T>): Cache<T> { return Method.getCache(method) }
   static configureCache(options: Partial<Options>): Options { return Method.configureImpl(undefined, options) }
-  static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
+  // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
+  static assign<T>(sensitivity: Sensitivity, obj: T, prop: keyof T, value: unknown): void { Hooks.assign(sensitivity, obj, prop, value) }
   static unmount(obj: any): void { Snapshot.unmount(obj) }
   // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }

@@ -5,8 +5,6 @@
 
 import { LoggingOptions } from './Logging'
 export { LoggingOptions, ProfilingOptions, LogLevel } from './Logging'
-import { Sensitivity } from './impl/Data'
-export { Sensitivity } from './impl/Data'
 import { Monitor } from './Monitor'
 
 export interface Options {
@@ -36,6 +34,12 @@ export enum Reentrance {
   RunSideBySide = -4, // multiple simultaneous actions are allowed
 }
 
-export interface ObjectOptions {
-  readonly sensitivity: Sensitivity
+// export interface ObjectOptions {
+//   readonly sensitivity: Sensitivity // not supported
+// }
+
+export enum Sensitivity {
+  TriggerOnFinalDifferenceOnly = 0, // default
+  TriggerOnFinalAndIntermediateDifference = 1,
+  TriggerEvenOnSameValueAssignment = 2,
 }
