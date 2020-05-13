@@ -370,7 +370,7 @@ class Reactronic {
   static getCache<T>(method: F<T>): Cache<T>
   static configureCache(options: Partial<Options>): Options
   static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void
-  static assign<T, P extends keyof T>(sensitivity: Sensitivity, obj: T, prop: P, value: T[P])
+  static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity)
   static unmount(obj: any): void
   static triggersAutoStartDisabled: boolean
   static readonly isLogging: boolean

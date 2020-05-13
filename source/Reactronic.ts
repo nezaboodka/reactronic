@@ -18,7 +18,7 @@ export class Reactronic {
   static getCache<T>(method: F<T>): Cache<T> { return Method.getCache(method) }
   static configureCache(options: Partial<Options>): Options { return Method.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
-  static assign<T, P extends keyof T>(sensitivity: Sensitivity, obj: T, prop: P, value: T[P]): void { Hooks.assign(sensitivity, obj, prop, value) }
+  static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
   static unmount(obj: any): void { Snapshot.unmount(obj) }
   // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
