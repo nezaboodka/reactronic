@@ -258,11 +258,11 @@ export class Hooks implements ProxyHandler<Handle> {
     }
   }
 
-  static assign<T>(sensitivity: Sensitivity, obj: T, prop: keyof T, value: unknown): void {
+  static assign<T, P extends keyof T>(sensitivity: Sensitivity, obj: T, prop: P, value: T[P]): void {
     const restore = Hooks.sensitivity
     Hooks.sensitivity = sensitivity
     try {
-      (obj as any)[prop] = value
+      obj[prop] = value
     }
     finally {
       Hooks.sensitivity = restore
