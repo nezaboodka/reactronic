@@ -96,7 +96,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static repetitiveReadWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
-  static sensitivity: Sensitivity | undefined = undefined
+  static sensitivity: Sensitivity = Sensitivity.TriggerOnFinalDifferenceOnly
   static readonly proxy: Hooks = new Hooks()
 
   getPrototypeOf(h: Handle): object | null {
