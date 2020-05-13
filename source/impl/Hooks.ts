@@ -131,7 +131,7 @@ export class Hooks implements ProxyHandler<Handle> {
       if (curr !== undefined || r.prev.record.snapshot === NIL.snapshot) {
         const prev = r.prev.record.data[m] as Observable
         let changed = prev === undefined || prev.value !== value ||
-          h.sensitivity === Sensitivity.TriggerRegardlessAssignedValue
+          h.sensitivity === Sensitivity.TriggerEvenOnSameValueAssignment
         if (changed) {
           if (prev === curr)
             r.data[m] = new Observable(value)

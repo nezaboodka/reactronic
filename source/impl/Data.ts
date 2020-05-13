@@ -65,7 +65,7 @@ export class Record {
 export enum Sensitivity {
   TriggerOnFinalDifferenceOnly = 0, // default
   TriggerOnFinalAndIntermediateDifference = 1,
-  TriggerRegardlessAssignedValue = 2,
+  TriggerEvenOnSameValueAssignment = 2,
 }
 
 // Handle
