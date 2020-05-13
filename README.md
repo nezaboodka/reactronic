@@ -279,7 +279,7 @@ enum Reentrance {
 }
 
 enum AssignmentSensitivity {
-  TriggerOnFinalDifferenceOnly = 0,
+  TriggerOnFinalDifferenceOnly = 0, // default
   TriggerOnFinalAndIntermediateDifference = 1,
   TriggerRegardlessAssignedValue = 2,
 }
