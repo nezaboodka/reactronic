@@ -148,7 +148,7 @@ export class Snapshot implements Context {
 
   private guard(h: Handle, r: Record, m: Member, existing: any, value: any, token: any): void {
     if (this.completed)
-      throw misuse(`stateful property ${Hints.obj(h, m)} can only be modified inside actions and triggers`)
+      throw misuse(`stateful property ${Hints.obj(h, m)} can only be modified inside transactions and triggers`)
     // if (m !== SYM_HANDLE && value !== SYM_HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
     // if (r === NIL && m !== SYM_HANDLE && value !== SYM_HANDLE) /* istanbul ignore next */

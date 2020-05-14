@@ -33,7 +33,7 @@ test('Main', t => {
   })
   R.setLoggingMode(false)
   R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
-  // Simple actions
+  // Simple transactions
   const app = Tran.run('app', () => new DemoView(new Demo()))
   try {
     t.is(R.why(), 'Reactronic.why should be called from inside of reactive method')
@@ -57,7 +57,7 @@ test('Main', t => {
     t.is(rendering.stamp, stamp)
     rendering.invalidate()
     t.not(rendering.stamp, stamp)
-    // Multi-part actions
+    // Multi-part transactions
     const action1 = Tran.create('action1')
     action1.run(() => {
       t.throws(() => action1.apply(), undefined, 'cannot apply transaction having active functions running')
@@ -111,11 +111,11 @@ test('Main', t => {
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)
     t.is(daddy.attributes.size, 2)
-    // Protection from modification outside of actions
+    // Protection from modification outside of transactions
     t.throws(() => {
       if (daddy.emails)
         daddy.emails.push('dad@mail.com')
-    }, undefined, 'stateful property Person.emails #26 can only be modified inside actions and triggers')
+    }, undefined, 'stateful property Person.emails #26 can only be modified inside transactions and triggers')
     t.throws(() => action1.run(/* istanbul ignore next */() => { /* nope */ }), undefined, 'cannot run transaction that is already sealed')
     // // Undo transaction
     // tran1.undo()

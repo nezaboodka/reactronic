@@ -31,7 +31,7 @@ export enum Reentrance {
   CancelPrevious = -1, // cancel previous call in favor of recent one
   CancelAndWaitPrevious = -2, // cancel previous call in favor of recent one (but wait until canceling is completed)
   OverwritePrevious = -3, // allow previous to complete, but overwrite it with ignoring any conflicts
-  RunSideBySide = -4, // multiple simultaneous actions are allowed
+  RunSideBySide = -4, // multiple simultaneous transactions are allowed
 }
 
 // export interface ObjectOptions {

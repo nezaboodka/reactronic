@@ -91,7 +91,7 @@ snapshot is automatically maintained for each transaction.
 That is a logical snapshot that does not create a full copy
 of all the data.
 
-Compensating actions are not needed in case of the transaction
+Compensating transactions are not needed in case of the transaction
 failure, because all the changes made by the transaction in its
 logical snapshot are simply discarded. In case the transaction
 is successfully applied, affected caches are invalidated
@@ -194,7 +194,7 @@ There are multiple options to configure behavior of transactional reactivity.
   - `0` - run trigger immediately via event loop (asynchronously with zero timeout);
   - `>= Number.MAX_SAFE_INTEGER` - never run trigger (disabled trigger).
 
-**Reentrance** option defines how to handle reentrant calls of actions and triggers:
+**Reentrance** option defines how to handle reentrant calls of transactions and triggers:
 
   - `Reentrance.PreventWithError` - fail with error if there is an existing call in progress;
   - `Reentrance.WaitAndRestart` - wait for previous call to finish and then restart current one;
@@ -204,7 +204,7 @@ There are multiple options to configure behavior of transactional reactivity.
 
 **Monitor** is an object that maintains the status of running functions,
 which it is attached to. A single monitor object can be shared between
-multiple actions, triggers, and cache functions, thus maintaining
+multiple transactions, triggers, and cache functions, thus maintaining
 consolidated status for all of them (busy, workers, etc).
 
 ## Notes

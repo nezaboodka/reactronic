@@ -182,11 +182,11 @@ export class TransactionImpl extends Transaction {
     catch (error) {
       if (this.after !== TransactionImpl.none) {
         if (this.after) {
-          // if (Dbg.logging.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
+          // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
           // if (this.after !== this)
           //   await this.after.whenFinished()
           await this.after.whenFinished()
-          // if (Dbg.logging.actions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
+          // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           return TransactionImpl.runAs<T>(`${this.hint} - restart after T${this.after.id}`, true, this.logging, this.snapshot.token, func, ...args)
         }
         else
@@ -215,7 +215,7 @@ export class TransactionImpl extends Transaction {
       result = func(...args)
       if (this.sealed && this.workers === 1) {
         if (!this.canceled)
-          this.checkForConflicts() // merge with concurrent actions
+          this.checkForConflicts() // merge with concurrent transactions
         else if (!this.after)
           throw this.canceled
       }

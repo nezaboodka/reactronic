@@ -31,7 +31,7 @@ test('Reentrance.PreventWithError', async t => {
   })
   try {
     t.is(app.statefulField, 'stateful field')
-    t.throws(() => app.statefulField = 'test', undefined, 'stateful property AsyncDemoView.statefulField #23 can only be modified inside actions and triggers')
+    t.throws(() => app.statefulField = 'test', undefined, 'stateful property AsyncDemoView.statefulField #23 can only be modified inside transactions and triggers')
     await app.print() // trigger first run
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
