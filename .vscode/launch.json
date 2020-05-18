@@ -22,14 +22,13 @@
       "request": "launch",
       "protocol": "inspector",
       "name": "Debug Test",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/ava",
+      "runtimeArgs": ["debug", "--break", "${relativeFile}"],
+      "port": 9229,
       "internalConsoleOptions": "openOnSessionStart",
       "env": {
         "AVA_DEBUG": "${relativeFile}"
       },
-      "cwd": "${workspaceRoot}",
-      "program": "${workspaceRoot}/node_modules/ava/profile.js",
-      "args": ["${relativeFile}"],
-      "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
       "skipFiles": [
         "<node_internals>/**/*.js"
       ]
