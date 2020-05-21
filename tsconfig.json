@@ -34,10 +34,10 @@
     "experimentalDecorators": true,
     "jsx": "react",
   },
-  // "include": [
-  //   "source/**/*.ts",
-  //   "test/**/*.ts",
-  // ],
+  "include": [
+    "source/**/*.ts",
+    "test/**/*.ts",
+  ],
   "exclude": [
     "node_modules",
     "build"

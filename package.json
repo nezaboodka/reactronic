@@ -43,9 +43,9 @@
     "nyc": "15.0.1"
   },
   "scripts": {
-    "build": "eslint **/*.ts **/*.tsx **/*.js && tsc",
-    "fix": "eslint --fix **/*.ts **/*.tsx **/*.js",
-    "pack": "eslint **/*.ts **/*.tsx **/*.js && tsc --sourceMap false --removeComments true",
+    "build": "eslint source/**/*.ts test/**/*.ts && tsc",
+    "fix": "eslint --fix source/**/*.ts test/**/*.ts",
+    "pack": "eslint source/**/*.ts test/**/*.ts && tsc --sourceMap false --removeComments true",
     "test": "ava",
     "cover": "nyc ava && open build/coverage/index.html"
   }
