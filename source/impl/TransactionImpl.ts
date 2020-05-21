@@ -230,8 +230,7 @@ export class TransactionImpl extends Transaction {
       if (this.sealed && this.workers === 0) {
         this.finish()
         TransactionImpl.running = outer
-        if (!this.canceled)
-          TransactionImpl.isolated(TransactionImpl.revalidateTriggers, this)
+        TransactionImpl.isolated(TransactionImpl.revalidateTriggers, this)
       }
       else
         TransactionImpl.running = outer
