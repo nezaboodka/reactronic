@@ -333,14 +333,14 @@ class CallResult extends Observable implements Observer {
           if (c.ret instanceof Promise)
             c.ret.catch(error => {
               if (c.options.kind === Kind.Trigger)
-                misuse(`trigger ${Hints.record(c.record, c.method.member)} failed and will not run anymore: ${error}`)
+                misuse(`trigger ${Hints.record(c.record, c.method.member)} failed and will not run anymore: ${error}`, error)
             })
         }
         catch (e) {
           if (!nothrow)
             throw e
           else if (this.options.kind === Kind.Trigger)
-            misuse(`trigger ${Hints.record(this.record, this.method.member)} failed and will not run anymore: ${e}`)
+            misuse(`trigger ${Hints.record(this.record, this.method.member)} failed and will not run anymore: ${e}`, e)
         }
       }
     }

@@ -5,15 +5,16 @@
 
 import { LoggingOptions } from '../Logging'
 
-export function error(message: string, cause: Error | undefined): Error {
+export function error(message: string, dump: Error | undefined): Error {
   if (Dbg.isOn && Dbg.logging.errors)
-    Dbg.log('█', ' ███', message, undefined, ' *** ERROR ***')
+    Dbg.log('█', ' ███', message, undefined, ' *** ERROR ***', dump)
   return new Error(message)
 }
 
-export function misuse(message: string): Error {
-  Dbg.log(' ', ' ███', message, undefined, ' *** ERROR ***')
-  return new Error(message)
+export function misuse(message: string, dump?: any): Error {
+  const error = new Error(message)
+  Dbg.log(' ', ' ███', message, undefined, ' *** ERROR / MISUSE ***', dump ?? error)
+  return error
 }
 
 // Dbg
@@ -57,19 +58,22 @@ export class Dbg {
       Dbg.log('', '', 'Reactronic logging is disabled')
   }
 
-  static log(bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
-    Dbg.logAs(undefined, bar, operation, message, ms, highlight)
+  static log(bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined, dump?: any): void {
+    Dbg.logAs(undefined, bar, operation, message, ms, highlight, dump)
   }
 
-  static logAs(options: Partial<LoggingOptions> | undefined, bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined): void {
+  static logAs(options: Partial<LoggingOptions> | undefined, bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined, dump?: any): void {
     const t = Dbg.getMergedLoggingOptions(options)
     const margin1: string = '  '.repeat(t.margin1 >= 0 ? t.margin1 : 0)
     const margin2: string = '  '.repeat(t.margin2)
     const silent = (options && options.silent !== undefined) ? options.silent : t.silent
-    if (!silent) /* istanbul ignore next */
+    if (!silent) { /* istanbul ignore next */
       console.log('\x1b[37m%s\x1b[0m \x1b[' + t.color + 'm%s %s%s\x1b[0m \x1b[' + t.color + 'm%s%s\x1b[0m \x1b[' + t.color + 'm%s\x1b[0m%s',
         '', t.prefix, t.transactions ? margin1 : '', t.transactions ? bar : bar.replace(/./g, ' '), margin2, operation, message,
         (highlight !== undefined ? `${highlight}` : '') + (ms > 2 ? `    [ ${ms}ms ]` : ''))
+      if (dump)
+        console.log(dump)
+    }
   }
 
   static merge(t: Partial<LoggingOptions> | undefined, color: number | undefined, prefix: string | undefined, existing: LoggingOptions): LoggingOptions {
