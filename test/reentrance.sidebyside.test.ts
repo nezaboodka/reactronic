@@ -26,7 +26,7 @@ const expected: string[] = [
 ]
 
 test('Reentrance.RunSideBySide', async t => {
-  R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
+  R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? /* istanbul ignore next */ LogLevel.Debug : LogLevel.Suppress)
   const app = Tran.runAs('app', false, undefined, undefined, () => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getCache(a.model.load).configure({reentrance: Reentrance.RunSideBySide})

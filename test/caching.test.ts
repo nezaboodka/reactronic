@@ -59,7 +59,7 @@ export class Demo extends DemoBase {
 }
 
 test('Main', t => {
-  R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
+  R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? /* istanbul ignore next */ LogLevel.Debug : LogLevel.Suppress)
   const demo = Tran.run('caching', () => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')

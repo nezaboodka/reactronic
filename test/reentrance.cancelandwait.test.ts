@@ -23,7 +23,7 @@ const expected: string[] = [
 ]
 
 test('Reentrance.CancelAndWaitPrevious', async t => {
-  R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
+  R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? /* istanbul ignore next */ LogLevel.Debug : LogLevel.Suppress)
   const app = Tran.run('app', () => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getCache(a.model.load).configure({reentrance: Reentrance.CancelAndWaitPrevious})
