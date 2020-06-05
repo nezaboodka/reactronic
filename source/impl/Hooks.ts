@@ -279,7 +279,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static getHint(obj: object, full: boolean = false): string | undefined {
     const h = Utils.get<Handle>(obj, SYM_HANDLE)
-    return h ? (full ? `${h.hint}#${h.id}` : h.hint) : undefined
+    return h ? (full ? `${h.hint}#${h.id}` : h.hint) : /* istanbul ignore next */ undefined
   }
 
   // static setObjectOptions<T>(obj: T, options: Partial<ObjectOptions>): T {
