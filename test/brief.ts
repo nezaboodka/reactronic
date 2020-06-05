@@ -105,6 +105,7 @@ export class DemoView extends Stateful {
 
 /* istanbul ignore next */
 export class Person extends Stateful {
+  @stateless dummy: string | null = null
   id: string | null = null
   name: string | null = null
   age: number = 0
