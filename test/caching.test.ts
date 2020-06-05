@@ -37,7 +37,7 @@ export class DemoBase extends Stateful {
 
   @cached @logging({})
   produceSideEffect(): void {
-    this.raw = 'should not fail on this line'
+    this.raw = R.why()
     this.title = 'should fail on this line'
   }
 
@@ -72,7 +72,7 @@ test('Main', t => {
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
   t.throws(() => demo.produceSideEffect(), undefined, 'Demo.produceSideEffect #21 should not have side effects (trying to change Demo.title #21t105v103)')
   // t.throws(() => demo.setUninitialized('someValue'), undefined, 'uninitialized member is detected: v103t107#21 Demo.uninitialized')
-  t.is(demo.raw, 'should not fail on this line')
+  t.assert(demo.raw.startsWith('Demo.produceSideEffect #21t106v103   <<   first on-demand call by Demo.produceSideEffect #21'))
   t.is(demo.uninitialized, undefined)
   t.is(demo.cachedMap().size, 0)
   t.is(demo.cachedSet().size, 0)
