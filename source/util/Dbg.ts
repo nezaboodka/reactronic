@@ -71,7 +71,7 @@ export class Dbg {
       console.log('\x1b[37m%s\x1b[0m \x1b[' + t.color + 'm%s %s%s\x1b[0m \x1b[' + t.color + 'm%s%s\x1b[0m \x1b[' + t.color + 'm%s\x1b[0m%s',
         '', t.prefix, t.transactions ? margin1 : '', t.transactions ? bar : bar.replace(/./g, ' '), margin2, operation, message,
         (highlight !== undefined ? `${highlight}` : '') + (ms > 2 ? `    [ ${ms}ms ]` : ''))
-      if (dump)
+      if (dump) /* istanbul ignore next */
         console.log(dump)
     }
   }
