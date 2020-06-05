@@ -277,7 +277,7 @@ export class Hooks implements ProxyHandler<Handle> {
     return obj
   }
 
-  static getHint(obj: object, full: boolean = false): string | undefined {
+  static getHint(obj: object, full: boolean): string | undefined {
     const h = Utils.get<Handle>(obj, SYM_HANDLE)
     return h ? (full ? `${h.hint}#${h.id}` : h.hint) : /* istanbul ignore next */ undefined
   }
@@ -322,7 +322,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
       const v = observable.value
       if (Array.isArray(v) || v instanceof Array) {
         if (v instanceof CopyOnWriteArray && !Array.isArray(v)) {
-          throw misuse(`${Hooks.getHint(proxy)}.${m.toString()} collection cannot be reused from another property without cloning`)
+          throw misuse(`${Hooks.getHint(proxy, false)}.${m.toString()} collection cannot be reused from another property without cloning`)
         }
         else if (!Object.isFrozen(v)) {
           if (observable.isField)

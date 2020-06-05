@@ -149,7 +149,7 @@ test('Main', t => {
     t.is(rendering.error, undefined)
     t.is(R.getLoggingHint(app), 'DemoView')
     R.setLoggingHint(app, 'App')
-    t.is(R.getLoggingHint(app), 'App')
+    t.is(R.getLoggingHint(app, false), 'App')
     t.is(R.getLoggingHint(app, true), 'App#22')
     t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'loadUsers', 'backup', 'title', 'users', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
