@@ -105,6 +105,7 @@ export class Method extends Cache<any> {
     return c ? c.why() : 'Reactronic.why should be called from inside of reactive method'
   }
 
+  /* istanbul ignore next */
   static deps(): string[] {
     const c = CallResult.current
     return c ? c.deps() : ['Reactronic.deps should be called from inside of reactive method']

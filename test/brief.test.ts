@@ -58,6 +58,7 @@ test('Main', t => {
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(rendering.invalid, false)
+    t.is(Reactronic.takeSnapshot(daddy).age, 38)
     const stamp = rendering.stamp
     app.render(0)
     t.is(rendering.stamp, stamp)

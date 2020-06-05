@@ -28,29 +28,12 @@ Object.defineProperty(Handle.prototype, '<snapshot>', {
         result[m] = v.value
       else if (v === SYM_STATELESS)
         result[m] = this.stateless[m]
-      else
+      else /* istanbul ignore next */
         result[m] = v
     }
     return result
   },
 })
-
-// export class RxObject extends Handle {
-//   get ['<snapshot>'](): any {
-//     const result: any = {}
-//     const d = Snapshot.readable().read(this).data
-//     for (const m in d) {
-//       const v = d[m]
-//       if (v instanceof Observable)
-//         result[m] = v.value
-//       else if (v === SYM_STATELESS)
-//         result[m] = this.stateless[m]
-//       else
-//         result[m] = v
-//     }
-//     return result
-//   }
-// }
 
 // Snapshot
 
@@ -132,6 +115,10 @@ export class Snapshot implements Context {
     else
       r = NIL
     return r
+  }
+
+  static takeSnapshot<T>(obj: T): T {
+    return (obj as any)[SYM_HANDLE]['<snapshot>']
   }
 
   static unmount(obj: any): void {
