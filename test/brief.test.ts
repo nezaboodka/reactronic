@@ -58,10 +58,10 @@ test('Main', t => {
     rendering.invalidate()
     t.not(rendering.stamp, stamp)
     // Multi-part transactions
-    const action1 = Tran.create('action1')
-    action1.run(() => {
-      t.throws(() => action1.apply(), undefined, 'cannot apply transaction having active functions running')
-      app.model.shared = app.shared = action1.hint
+    const tran1 = Tran.create('tran1')
+    tran1.run(() => {
+      t.throws(() => tran1.apply(), undefined, 'cannot apply transaction having active functions running')
+      app.model.shared = app.shared = tran1.hint
       daddy.id = 'field restored during transaction'
       daddy.id = null // restore
       daddy.age += 2 // causes no execution of DemoApp.render
@@ -77,14 +77,14 @@ test('Main', t => {
       t.is(daddy.children.length, 3)
       app.userFilter = 'Jo' // set to the same value
     })
-    t.is(app.model.shared, action1.hint)
+    t.is(app.model.shared, tran1.hint)
     t.is(daddy.name, 'John')
-    t.is(action1.inspect(() => daddy.name), 'John Smith')
-    t.throws(() => action1.inspect(() => { daddy.name = 'Forbidden' }), undefined, 'cannot make changes during transaction inspection')
+    t.is(tran1.inspect(() => daddy.name), 'John Smith')
+    t.throws(() => tran1.inspect(() => { daddy.name = 'Forbidden' }), undefined, 'cannot make changes during transaction inspection')
     t.is(daddy.age, 38)
     t.is(daddy.children.length, 3)
     t.is(rendering.invalid, false)
-    action1.run(() => {
+    tran1.run(() => {
       t.is(daddy.age, 40)
       daddy.age += 5
       app.userFilter = ''
@@ -105,7 +105,7 @@ test('Main', t => {
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(daddy.attributes.size, 0)
-    action1.apply() // changes are applied, reactions are executed
+    tran1.apply() // changes are applied, reactions are executed
     t.is(rendering.invalid, false)
     t.not(rendering.stamp, stamp)
     t.is(daddy.name, 'John Smith')
@@ -116,7 +116,7 @@ test('Main', t => {
       if (daddy.emails)
         daddy.emails.push('dad@mail.com')
     }, undefined, 'stateful property Person.emails #26 can only be modified inside transactions and triggers')
-    t.throws(() => action1.run(/* istanbul ignore next */() => { /* nope */ }), undefined, 'cannot run transaction that is already sealed')
+    t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), undefined, 'cannot run transaction that is already sealed')
     // // Undo transaction
     // tran1.undo()
     // t.is(daddy.name, "John")
@@ -126,16 +126,16 @@ test('Main', t => {
       undefined, 'given method is not decorated as reactronic one: setParent')
     t.throws(() => { console.log(R.getCache(daddy.setParent).options.monitor) },
       undefined, 'given method is not decorated as reactronic one: setParent')
-    const action2 = Tran.create('action2')
-    t.throws(() => action2.run(() => { throw new Error('test') }), undefined, 'test')
-    t.throws(() => action2.apply(),
+    const tran2 = Tran.create('tran2')
+    t.throws(() => tran2.run(() => { throw new Error('test') }), undefined, 'test')
+    t.throws(() => tran2.apply(),
       undefined, 'cannot apply transaction that is already canceled: Error: test')
-    const action3 = Tran.create('action3')
-    t.throws(() => action3.run(() => {
-      action3.cancel(new Error('test'))
-      action3.run(nop)
+    const tran3 = Tran.create('tran3')
+    t.throws(() => tran3.run(() => {
+      tran3.cancel(new Error('test'))
+      tran3.run(nop)
     }), undefined, 'test')
-    t.throws(() => action3.apply(),
+    t.throws(() => tran3.apply(),
       undefined, 'cannot apply transaction that is already canceled: Error: test')
     // Other
     t.is(rendering.options.kind, Kind.Cached)
