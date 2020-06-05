@@ -4,11 +4,12 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, LogLevel, trigger, transaction, stateless } from 'api'
+import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, LogLevel, trigger, transaction, stateless, noSideEffects } from 'api'
 
 export class DemoBase extends Stateful {
   @stateless raw: string = 'stateless data'
   title: string = 'Demo'
+  sideEffect: string = 'no side effect'
   uninitialized?: any
 
   @trigger
@@ -18,10 +19,10 @@ export class DemoBase extends Stateful {
     this.title = `${t} - ${stamp}`
   }
 
-  // @trigger @noSideEffects(true)
-  // triggerNoSideEffects(): void {
-  //   this.title = 'should fail on this line'
-  // }
+  @trigger @noSideEffects(true)
+  triggerNoSideEffects(): void {
+    this.sideEffect = 'side effect'
+  }
 
   @transaction
   setUninitialized(value: any): void {
@@ -63,9 +64,10 @@ test('Main', t => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')
     // d.title = 'Demo+'
-    // t.is(d.cachedTitle(), 'Demo+')
+    // t.is(d.cachedTitle(), 'Demo') // cache still returns previously cached value
     return d
   })
+  t.is(demo.sideEffect, 'no side effect')
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
   t.throws(() => demo.produceSideEffect(), undefined, 'Demo.produceSideEffect #21 should not have side effects (trying to change Demo.title #21t105v103)')
   // t.throws(() => demo.setUninitialized('someValue'), 'uninitialized member is detected: v103t107#21 Demo.uninitialized')
