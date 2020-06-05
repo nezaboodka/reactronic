@@ -4,7 +4,8 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, LogLevel, trigger, stateless, noSideEffects } from 'api'
+import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, trigger, stateless, noSideEffects } from 'api'
+import { TestingLogLevel } from './brief'
 
 export class DemoBase extends Stateful {
   @stateless raw: string = 'stateless data'
@@ -59,7 +60,7 @@ export class Demo extends DemoBase {
 }
 
 test('Main', t => {
-  R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? /* istanbul ignore next */ LogLevel.Debug : LogLevel.Suppress)
+  R.setLoggingMode(true, TestingLogLevel)
   const demo = Tran.run('caching', () => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')

@@ -4,8 +4,9 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction as Tran, Reentrance, Reactronic as R, all, sleep, LogLevel } from 'api'
+import { Transaction as Tran, Reentrance, Reactronic as R, all, sleep } from 'api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
+import { TestingLogLevel } from './brief'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: 'google.com', delay: 300 },
@@ -23,7 +24,7 @@ const expected: string[] = [
 ]
 
 test('Reentrance.CancelPrevious', async t => {
-  R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? /* istanbul ignore next */ LogLevel.Debug : LogLevel.Suppress)
+  R.setLoggingMode(true, TestingLogLevel)
   const app = Tran.run('app', () => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getCache(a.print).configure({ priority: 0 })

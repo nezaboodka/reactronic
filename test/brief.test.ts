@@ -4,8 +4,8 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction as Tran, Kind, nonreactive, isolated, Reactronic as R, LogLevel, Reactronic, Sensitivity } from 'api'
-import { Person, Demo, DemoView, output } from './brief'
+import { Transaction as Tran, Kind, nonreactive, isolated, Reactronic as R, Reactronic, Sensitivity } from 'api'
+import { Person, Demo, DemoView, output, TestingLogLevel } from './brief'
 
 const expected: string[] = [
   'Filter: Jo',
@@ -35,7 +35,7 @@ test('Main', t => {
     garbageCollectionSummaryInterval: 2000, // default: 3000 ms
   })
   R.setLoggingMode(false)
-  R.setLoggingMode(true, process.env.AVA_DEBUG !== undefined ? LogLevel.Debug : LogLevel.Suppress)
+  R.setLoggingMode(true, TestingLogLevel)
   // Simple transactions
   const app = Tran.run('app', () => new DemoView(new Demo()))
   try {

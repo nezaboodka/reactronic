@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, Reactronic as R } from 'api'
+import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, Reactronic as R, LoggingOptions } from 'api'
 
 export const output: string[] = []
 
@@ -149,4 +149,23 @@ export class Person extends Stateful {
       for (const x of children)
         x.setParent(this)
   }
+}
+
+export const TestingLogLevel: LoggingOptions = {
+  silent: process.env.AVA_DEBUG === undefined,
+  transactions: true,
+  methods: true,
+  steps: true,
+  monitors: true,
+  reads: true,
+  writes: true,
+  changes: true,
+  invalidations: true,
+  errors: true,
+  warnings: true,
+  gc: true,
+  color: 37,
+  prefix: '',
+  margin1: 0,
+  margin2: 0,
 }
