@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, LogLevel, trigger, transaction, stateless, noSideEffects } from 'api'
+import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, LogLevel, trigger, stateless, noSideEffects } from 'api'
 
 export class DemoBase extends Stateful {
   @stateless raw: string = 'stateless data'
@@ -24,10 +24,10 @@ export class DemoBase extends Stateful {
     this.sideEffect = 'side effect'
   }
 
-  @transaction
-  setUninitialized(value: any): void {
-    this.uninitialized = value
-  }
+  // @transaction
+  // setUninitialized(value: any): void {
+  //   this.uninitialized = value
+  // }
 
   @cached
   cachedTitle(): string {
@@ -70,7 +70,7 @@ test('Main', t => {
   t.is(demo.sideEffect, 'no side effect')
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
   t.throws(() => demo.produceSideEffect(), undefined, 'Demo.produceSideEffect #21 should not have side effects (trying to change Demo.title #21t105v103)')
-  // t.throws(() => demo.setUninitialized('someValue'), 'uninitialized member is detected: v103t107#21 Demo.uninitialized')
+  // t.throws(() => demo.setUninitialized('someValue'), undefined, 'uninitialized member is detected: v103t107#21 Demo.uninitialized')
   t.is(demo.raw, 'should not fail on this line')
   t.is(demo.uninitialized, undefined)
   t.is(demo.cachedMap().size, 0)
