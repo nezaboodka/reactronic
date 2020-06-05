@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction as Tran, Kind, nonreactive, isolated, Reactronic as R, LogLevel } from 'api'
+import { Transaction as Tran, Kind, nonreactive, isolated, Reactronic as R, LogLevel, Reactronic, Sensitivity } from 'api'
 import { Person, Demo, DemoView, output } from './brief'
 
 const expected: string[] = [
@@ -13,6 +13,9 @@ const expected: string[] = [
   'John\'s children: Billy, Barry, Steve',
   'Filter: Jo',
   'John\'s children: Billy, Barry, Steve',
+  'Filter: ',
+  'John Smith\'s children: Barry, William Smith, Steven Smith',
+  'Kevin\'s children: Britney',
   'Filter: ',
   'John Smith\'s children: Barry, William Smith, Steven Smith',
   'Kevin\'s children: Britney',
@@ -137,6 +140,10 @@ test('Main', t => {
     }), undefined, 'test')
     t.throws(() => tran3.apply(),
       undefined, 'cannot apply transaction that is already canceled: Error: test')
+    Tran.run('tran4', () => {
+      Reactronic.assign(app, 'userFilter', app.userFilter,
+        Sensitivity.TriggerEvenOnSameValueAssignment)
+    })
     // Other
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)
