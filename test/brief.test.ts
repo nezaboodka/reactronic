@@ -134,6 +134,8 @@ test('Main', t => {
     t.throws(() => { console.log(R.getCache(daddy.setParent).options.monitor) },
       undefined, 'given method is not decorated as reactronic one: setParent')
     const tran2 = Tran.create('tran2')
+    const zombi = tran2.run(() => new Person())
+    t.throws(() => console.log(zombi.age), { message: 'object Person #29 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
     t.throws(() => tran2.run(() => { throw new Error('test') }), undefined, 'test')
     t.throws(() => tran2.apply(),
       undefined, 'cannot apply transaction that is already canceled: Error: test')

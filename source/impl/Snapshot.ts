@@ -78,7 +78,7 @@ export class Snapshot implements Context {
 
   read(h: Handle): Record {
     const r = this.tryRead(h)
-    if (r === NIL) /* istanbul ignore next */
+    if (r === NIL)
       throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
