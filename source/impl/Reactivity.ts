@@ -280,7 +280,7 @@ class CallResult extends Observable implements Observer {
       const ms = Date.now() - started
       if (Dbg.isOn && Dbg.logging.steps && this.ret)
         Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record, this.method.member)} - step out `, 0, this.started > 0 ? '        │' : '')
-      if (ms > Hooks.mainThreadBlockingWarningThreshold)
+      if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
         Dbg.log('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
       return result
     }
@@ -440,7 +440,8 @@ class CallResult extends Observable implements Observer {
     this.started = -this.started
     if (Dbg.isOn && Dbg.logging.methods)
       Dbg.log('║', `${op}`, `${Hints.record(this.record, this.method.member)} ${message}`, ms, highlight)
-    if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) Dbg.log('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
+    if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
+      Dbg.log('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
     // CachedResult.freeze(this)
