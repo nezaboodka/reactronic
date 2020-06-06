@@ -70,8 +70,8 @@ test('Main', t => {
   })
   t.is(demo.sideEffect, 'no side effect')
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
-  t.throws(() => demo.produceSideEffect(), undefined, 'Demo.produceSideEffect #21 should not have side effects (trying to change Demo.title #21t105v103)')
-  // t.throws(() => demo.setUninitialized('someValue'), undefined, 'uninitialized member is detected: v103t107#21 Demo.uninitialized')
+  t.throws(() => demo.produceSideEffect(), { message: 'Demo.produceSideEffect #21 should not have side effects (trying to change Demo.title #21t106v103)' })
+  // t.throws(() => demo.setUninitialized('someValue'), { message: 'uninitialized member is detected: v103t107#21 Demo.uninitialized' })
   t.assert(demo.raw.startsWith('Demo.produceSideEffect #21t106v103   <<   first on-demand call by Demo.produceSideEffect #21'))
   t.is(demo.uninitialized, undefined)
   t.is(demo.cachedMap().size, 0)
