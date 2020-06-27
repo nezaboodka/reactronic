@@ -39,7 +39,7 @@ export function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): 
   return Reactronic.getCache(method as any as F<T>).getCachedAndRevalidate(args) // overcome type safety
 }
 
-export function nonreactive<T>(func: F<T>, ...args: any[]): T {
+export function unobservable<T>(func: F<T>, ...args: any[]): T {
   return Method.run<T>(undefined, func, ...args)
 }
 

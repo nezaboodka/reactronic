@@ -247,7 +247,7 @@ function monitor(value: Monitor | null)
 function logging(value: Partial<LoggingOptions>)
 
 function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
-function nonreactive<T>(func: F<T>, ...args: any[]): T
+function unobservable<T>(func: F<T>, ...args: any[]): T
 function isolated<T>(func: F<T>, ...args: any[]): T
 
 // Options, ObjectOptions, Kind, Reentrance, Monitor, LoggingOptions, ProfilingOptions
