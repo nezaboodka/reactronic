@@ -263,7 +263,7 @@ class CallResult extends Observable implements Observer {
     else if (this.method.options.kind === Kind.Transaction)
       cause = '   <<   transaction'
     else
-      cause = `   <<   first on-demand call by ${this.record.snapshot.hint}`
+      cause = `   <<   called by ${this.record.snapshot.hint}`
     return `${Hints.record(this.record, this.method.member)}${cause}   (${ms}ms since previous revalidation)`
   }
 
