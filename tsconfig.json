@@ -37,6 +37,7 @@
   "include": [
     "source/**/*.ts",
     "test/**/*.ts",
+    "react/**/*.tsx"
   ],
   "exclude": [
     "node_modules",

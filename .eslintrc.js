@@ -23,6 +23,8 @@ module.exports = {
     '@typescript-eslint/member-delimiter-style': 'off',
     // '@typescript-eslint/interface-name-prefix': 'off',
     '@typescript-eslint/explicit-function-return-type': ['error', { allowExpressions: true }],
+    '@typescript-eslint/ban-types': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
   },
   'overrides': [
     {
