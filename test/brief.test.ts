@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction as Tran, Kind, unobservable, isolated, Reactronic as R, Reactronic, Sensitivity } from 'api'
+import { Transaction as Tran, Kind, untracked, isolated, Reactronic as R, Reactronic, Sensitivity } from 'api'
 import { Person, Demo, DemoView, output, TestingLogLevel } from './brief'
 
 const expected: string[] = [
@@ -80,7 +80,7 @@ test('Main', t => {
       t.is(daddy.age, 40)
       t.is(Tran.isolated(() => daddy.age), 38)
       t.is(isolated(() => daddy.age), 38)
-      t.is(unobservable(() => daddy.age), 40)
+      t.is(untracked(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = 'Jo' // set to the same value
     })
