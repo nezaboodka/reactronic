@@ -24,10 +24,10 @@
       "group": "build",
       "problemMatcher": [],
       "presentation": {
-          "echo": true,
-          "reveal": "always",
-          "focus": true,
-          "panel": "shared"
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
       }
     },
     {
@@ -38,10 +38,10 @@
       "group": "build",
       "problemMatcher": [],
       "presentation": {
-          "echo": true,
-          "reveal": "always",
-          "focus": true,
-          "panel": "shared"
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
       }
     },
     {
@@ -52,10 +52,10 @@
       "group": "build",
       "problemMatcher": [],
       "presentation": {
-          "echo": true,
-          "reveal": "always",
-          "focus": true,
-          "panel": "shared"
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
       }
     },
     {
