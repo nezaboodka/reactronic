@@ -249,6 +249,7 @@ function logging(value: Partial<LoggingOptions>)
 function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
 function untracked<T>(func: F<T>, ...args: any[]): T
 function isolated<T>(func: F<T>, ...args: any[]): T
+function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // Options, ObjectOptions, Kind, Reentrance, Monitor, LoggingOptions, ProfilingOptions
 
@@ -369,8 +370,8 @@ class Reactronic {
   static why(): string
   static getCache<T>(method: F<T>): Cache<T>
   static configureCache(options: Partial<Options>): Options
-  static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void
-  static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity)
+  // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void
+  // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity)
   static takeSnapshot(obj: T): T
   static unmount(obj: any): void
   static triggersAutoStartDisabled: boolean

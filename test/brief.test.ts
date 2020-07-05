@@ -4,7 +4,7 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import test from 'ava'
-import { Transaction as Tran, Kind, untracked, isolated, Reactronic as R, Reactronic, Sensitivity } from 'api'
+import { Transaction as Tran, Kind, untracked, isolated, sensitive, Sensitivity, Reactronic as R } from 'api'
 import { Person, Demo, DemoView, output, TestingLogLevel } from './brief'
 
 const expected: string[] = [
@@ -58,7 +58,7 @@ test('Main', t => {
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(rendering.invalid, false)
-    t.is(Reactronic.takeSnapshot(daddy).age, 38)
+    t.is(R.takeSnapshot(daddy).age, 38)
     const stamp = rendering.stamp
     app.render(0)
     t.is(rendering.stamp, stamp)
@@ -142,9 +142,8 @@ test('Main', t => {
       tran3.run(nop)
     }), { message: 'test' })
     t.throws(() => tran3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
-    Tran.run('tran4', () => {
-      Reactronic.assign(app, 'userFilter', app.userFilter,
-        Sensitivity.TriggerEvenOnSameValueAssignment)
+    Tran.run('tran4', sensitive, Sensitivity.TriggerEvenOnSameValueAssignment, () => {
+      app.userFilter = app.userFilter
     })
     // Other
     t.is(rendering.options.kind, Kind.Cached)
