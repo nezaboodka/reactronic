@@ -45,7 +45,7 @@
   "scripts": {
     "build": "eslint source/**/*.ts test/**/*.ts react/**/*.tsx && tsc",
     "fix": "eslint --fix source/**/*.ts test/**/*.ts react/**/*.tsx",
-    "pack": "eslint source/**/*.ts test/**/*.ts react/**/*.tsx && tsc --sourceMap false --removeComments true",
+    "pack": "eslint source/**/*.ts test/**/*.ts react/**/*.tsx && tsc --removeComments true",
     "test": "ava",
     "cover": "nyc ava && open build/coverage/index.html"
   }
