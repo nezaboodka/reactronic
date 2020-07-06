@@ -129,7 +129,8 @@ export class Hooks implements ProxyHandler<Handle> {
     const r: Record = Snapshot.writable().write(h, m, value)
     if (r !== NIL) {
       const curr = r.data[m] as Observable
-      if (curr !== undefined || r.prev.record.snapshot === NIL.snapshot) {
+      if (curr !== undefined || (
+        r.prev.record.snapshot === NIL.snapshot && m in h.stateless === false)) {
         const prev = r.prev.record.data[m] as Observable
         let changed = prev === undefined || prev.value !== value ||
           Hooks.sensitivity === Sensitivity.TriggerEvenOnSameValueAssignment

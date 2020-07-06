@@ -3,7 +3,7 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Stateful, state, transaction, trigger, cached, sensitiveArgs, throttling, monitor,
+import { Stateful, transaction, trigger, cached, sensitiveArgs, throttling, monitor,
   reentrance, Transaction as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'api'
 
 export const output: string[] = []
@@ -22,7 +22,7 @@ export class AsyncDemo extends Stateful {
 }
 
 export class AsyncDemoView {
-  @state statefulField: string = 'stateful field'
+  // @state statefulField: string = 'stateful field'
 
   constructor(readonly model: AsyncDemo) {
   }
