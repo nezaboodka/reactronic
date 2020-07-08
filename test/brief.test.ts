@@ -152,7 +152,8 @@ test('Main', t => {
     R.setLoggingHint(app, 'App')
     t.is(R.getLoggingHint(app, false), 'App')
     t.is(R.getLoggingHint(app, true), 'App#22')
-    t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'loadUsers', 'backup', 'title', 'users', 'usersWithoutLast'])
+    t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
+    t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
   }
   finally {

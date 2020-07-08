@@ -170,7 +170,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
-      if (typeof(value) !== 'object' || value.constructor.name !== 'CacheResult')
+      if (!(value instanceof Observable) || value.isField)
         result.push(m)
     }
     return result
