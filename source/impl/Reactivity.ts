@@ -100,9 +100,14 @@ export class Method extends Cache<any> {
     return result
   }
 
-  static why(): string {
+  static whyFull(): string {
     const c = CallResult.current
-    return c ? c.why() : 'Reactronic.why should be called from inside of reactive method'
+    return c ? c.whyFull() : 'Reactronic.why should be called from inside of reactive method'
+  }
+
+  static whyShort(): string {
+    const c = CallResult.current
+    return c ? c.whyShort() : 'Reactronic.why should be called from inside of reactive method'
   }
 
   /* istanbul ignore next */
@@ -174,7 +179,7 @@ export class Method extends Cache<any> {
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
         if (Dbg.isOn && (Dbg.logging.transactions || Dbg.logging.methods || Dbg.logging.invalidations))
-          Dbg.log('║', ' (f)', `${call.result.why()}`)
+          Dbg.log('║', ' (f)', `${call.result.whyFull()}`)
         call.result.compute(this.handle.proxy, argsx)
       }
       else { // retry call
@@ -182,7 +187,7 @@ export class Method extends Cache<any> {
         if (call.result.options.kind === Kind.Transaction || !call.reuse) {
           call = this.write()
           if (Dbg.isOn && (Dbg.logging.transactions || Dbg.logging.methods || Dbg.logging.invalidations))
-            Dbg.log('║', ' (f)', `${call.result.why()}`)
+            Dbg.log('║', ' (f)', `${call.result.whyFull()}`)
           call.result.compute(this.handle.proxy, argsx)
         }
       }
@@ -252,19 +257,23 @@ class CallResult extends Observable implements Observer {
   hint(): string { return `${Hints.record(this.record, this.method.member)}` }
   priority(): number { return this.options.priority }
 
-  why(): string {
+  whyFull(): string {
     let ms: number = Date.now()
     const prev = this.record.prev.record.data[this.method.member]
     if (prev instanceof CallResult)
       ms = Math.abs(this.started) - Math.abs(prev.started)
     let cause: string
     if (this.cause)
-      cause = `   <<   ${propagationHint(this.cause).join('   <<   ')}`
+      cause = `   <<   ${propagationHint(this.cause, true).join('   <<   ')}`
     else if (this.method.options.kind === Kind.Transaction)
       cause = '   <<   transaction'
     else
       cause = `   <<   called by ${this.record.snapshot.hint}`
     return `${Hints.record(this.record, this.method.member)}${cause}   (${ms}ms since previous revalidation)`
+  }
+
+  whyShort(): string {
+    return this.cause ? propagationHint(this.cause, false)[0] : 'nil'
   }
 
   deps(): string[] {
@@ -281,7 +290,7 @@ class CallResult extends Observable implements Observer {
       if (Dbg.isOn && Dbg.logging.steps && this.ret)
         Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record, this.method.member)} - step out `, 0, this.started > 0 ? '        │' : '')
       if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
-        Dbg.log('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
+        Dbg.log('', '[!]', this.whyFull(), ms, '    *** main thread is too busy ***')
       return result
     }
     return cacheBound
@@ -362,7 +371,7 @@ class CallResult extends Observable implements Observer {
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
           if (!existing.worker.isCanceled)
-            throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${existing.hint()} (${existing.why()})`)
+            throw misuse(`${head.hint()} (${head.whyFull()}) is not reentrant over ${existing.hint()} (${existing.whyFull()})`)
           error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/PreventWithError due to canceled T${existing.worker.id}[${existing.worker.hint}]`)
           this.worker.cancel(error, existing.worker)
           break
@@ -441,7 +450,7 @@ class CallResult extends Observable implements Observer {
     if (Dbg.isOn && Dbg.logging.methods)
       Dbg.log('║', `${op}`, `${Hints.record(this.record, this.method.member)} ${message}`, ms, highlight)
     if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
-      Dbg.log('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
+      Dbg.log('', '[!]', this.whyFull(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
     // CachedResult.freeze(this)
@@ -637,31 +646,39 @@ class CallResult extends Observable implements Observer {
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {
-        get: Method.why, configurable: false, enumerable: false,
-      })    }
+        get: Method.whyFull, configurable: false, enumerable: false,
+      })
+      Object.defineProperty(globalThis, 'rWhyShort', {
+        get: Method.whyShort, configurable: false, enumerable: false,
+      })
+    }
     catch (e) {
       // ignore
     }
     try {
       Object.defineProperty(global, 'rWhy', {
-        get: Method.why, configurable: false, enumerable: false,
-      })    }
+        get: Method.whyFull, configurable: false, enumerable: false,
+      })
+      Object.defineProperty(global, 'rWhyShort', {
+        get: Method.whyShort, configurable: false, enumerable: false,
+      })
+    }
     catch (e) {
       // ignore
     }
   }
 }
 
-function propagationHint(cause: MemberHint): string[] {
+function propagationHint(cause: MemberHint, full: boolean): string[] {
   const result: string[] = []
   let value: Observable = cause.record.data[cause.member]
   while (value instanceof CallResult && value.invalidatedDueTo) {
-    result.push(Hints.record(cause.record, cause.member))
+    full && result.push(Hints.record(cause.record, cause.member))
     cause = value.invalidatedDueTo
     value = cause.record.data[cause.member]
   }
   result.push(Hints.record(cause.record, cause.member))
-  result.push(cause.record.snapshot.hint)
+  full && result.push(cause.record.snapshot.hint)
   return result
 }
 

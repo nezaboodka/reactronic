@@ -146,6 +146,7 @@ test('Main', t => {
       app.userFilter = app.userFilter
     })
     // Other
+    t.is(app.raw, 'DemoView.userFilter #22t123v101')
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)
     t.is(R.getLoggingHint(app), 'DemoView')

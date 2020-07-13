@@ -45,6 +45,7 @@ export class Demo extends Stateful {
 }
 
 export class DemoView extends Stateful {
+  @stateless raw: string = 'stateless field'
   @stateless shared: string = 'for testing purposes'
   @stateless readonly model: Demo
   userFilter: string = 'Jo'
@@ -86,6 +87,7 @@ export class DemoView extends Stateful {
   @cached @sensitiveArgs(true)
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
+    this.raw = R.why(true)
     const r: string[] = []
     r.push(`Filter: ${this.userFilter}`)
     const a = this.filteredUsers()

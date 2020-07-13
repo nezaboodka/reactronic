@@ -14,7 +14,7 @@ import { Monitor } from './Monitor'
 import { Kind, Reentrance, Options, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
 
 export class Reactronic {
-  static why(): string { return Method.why() }
+  static why(short: boolean = false): string { return short ? Method.whyShort() : Method.whyFull() }
   static getCache<T>(method: F<T>): Cache<T> { return Method.getCache(method) }
   static configureCache(options: Partial<Options>): Options { return Method.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }

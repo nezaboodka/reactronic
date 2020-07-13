@@ -136,5 +136,6 @@ export const LogLevel: {
 declare global {
   interface Window {
     rWhy: string
+    rWhyShort: string
   }
 }
