@@ -39,7 +39,7 @@ test('Main', t => {
   // Simple transactions
   const app = Tran.run('app', () => new DemoView(new Demo()))
   try {
-    t.is(R.why(), 'Reactronic.why should be called from inside of reactive method')
+    t.is(R.why(), 'N/A')
     t.is(R.getCache(app.print).options.priority, 123)
     t.notThrows(() => DemoView.test())
     const rendering = R.getCache(app.render)

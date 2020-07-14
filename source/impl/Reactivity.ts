@@ -102,12 +102,12 @@ export class Method extends Cache<any> {
 
   static whyFull(): string {
     const c = CallResult.current
-    return c ? c.whyFull() : 'Reactronic.why should be called from inside of reactive method'
+    return c ? c.whyFull() : 'N/A'
   }
 
   static whyShort(): string {
     const c = CallResult.current
-    return c ? c.whyShort() : 'Reactronic.why should be called from inside of reactive method'
+    return c ? c.whyShort() : 'N/A'
   }
 
   /* istanbul ignore next */
