@@ -12,6 +12,7 @@ export abstract class Transaction implements Worker {
   static get current(): Transaction { return TransactionImpl.current }
 
   abstract readonly id: number
+  abstract readonly timestamp: number
   abstract readonly hint: string
   abstract readonly error: Error | undefined
 

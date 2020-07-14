@@ -43,6 +43,7 @@ export class TransactionImpl extends Transaction {
 
   static get current(): TransactionImpl { return TransactionImpl.running }
   get id(): number { return this.snapshot.id }
+  get timestamp(): number { return this.snapshot.timestamp }
   get hint(): string { return this.snapshot.hint }
   get error(): Error | undefined { return this.canceled }
 
