@@ -15,7 +15,7 @@ import { Monitor, Worker } from '../Monitor'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'nil')
+const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'N/A')
 
 type Call = { context: Snapshot, record: Record, result: CallResult, reuse: boolean }
 
@@ -102,12 +102,12 @@ export class Method extends Cache<any> {
 
   static whyFull(): string {
     const c = CallResult.current
-    return c ? c.whyFull() : 'N/A'
+    return c ? c.whyFull() : NIL_HANDLE.hint
   }
 
   static whyShort(): string {
     const c = CallResult.current
-    return c ? c.whyShort() : 'N/A'
+    return c ? c.whyShort() : NIL_HANDLE.hint
   }
 
   /* istanbul ignore next */
@@ -273,7 +273,7 @@ class CallResult extends Observable implements Observer {
   }
 
   whyShort(): string {
-    return this.cause ? propagationHint(this.cause, false)[0] : 'nil'
+    return this.cause ? propagationHint(this.cause, false)[0] : NIL_HANDLE.hint
   }
 
   deps(): string[] {
