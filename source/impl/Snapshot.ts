@@ -279,22 +279,26 @@ export class Snapshot implements Context {
     return r
   }
 
-  // static undo(s: Snapshot): void {
-  //   s.changeset.forEach((r: Record, h: RxObject) => {
-  //     r.changes.forEach(m => {
-  //       if (r.prev.record !== INIT) {
-  //         const prevValue: any = r.prev.record.data[m];
-  //         const ctx = Snapshot.write();
-  //         const t: Record = ctx.write(h, m, prevValue);
-  //         if (t.snapshot === ctx) {
-  //           t.data[m] = prevValue;
-  //           const v: any = t.prev.record.data[m];
-  //           Record.markChanged(t, m, v !== prevValue, prevValue);
-  //         }
-  //       }
-  //     });
-  //   });
-  // }
+  static undo(s: Snapshot): void {
+    s.changeset.forEach((r: Record, h: Handle) => {
+      r.changes.forEach(m => {
+        if (r.prev.record !== NIL) {
+          const prevValue: any = r.prev.record.data[m]
+          const ctx = Snapshot.writable()
+          const t: Record = ctx.write(h, m, prevValue)
+          if (t.snapshot === ctx) {
+            t.data[m] = prevValue
+            const v: any = t.prev.record.data[m]
+            Snapshot.markChanged(t, m, prevValue, v !== prevValue)
+          }
+        }
+      })
+    })
+  }
+
+  static redo(s: Snapshot): void {
+    throw misuse('not implemented')
+  }
 
   private triggerGarbageCollection(): void {
     if (this.stamp !== 0) {

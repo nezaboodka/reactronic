@@ -128,6 +128,14 @@ export class TransactionImpl extends Transaction {
       await this.acquirePromise()
   }
 
+  undo(): void {
+    Snapshot.undo(this.snapshot)
+  }
+
+  redo(): void {
+    Snapshot.redo(this.snapshot)
+  }
+
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
     return TransactionImpl.runAs<T>(hint, false, undefined, undefined, func, ...args)
   }
