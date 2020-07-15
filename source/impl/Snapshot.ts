@@ -6,7 +6,8 @@
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Kind } from '../Options'
-import { Context, Record, Member, Handle, Observable, Observer, Meta } from './Data'
+import { Meta } from './Meta'
+import { Context, Record, Member, Handle, Observable, Observer } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
@@ -117,7 +118,7 @@ export class Snapshot implements Context {
 
   static unmount(obj: any): void {
     const ctx = Snapshot.writable()
-    const h = Utils.get<Handle>(obj, Meta.Handle)
+    const h = Meta.get<Handle>(obj, Meta.Handle)
     if (h)
       Snapshot.doUnmount(ctx, h)
   }
@@ -358,7 +359,7 @@ export class Hints {
   }
 
   static record(r: Record, m?: Member): string {
-    const h = Utils.get<Handle | undefined>(r.data, Meta.Handle)
+    const h = Meta.get<Handle | undefined>(r.data, Meta.Handle)
     return Hints.obj(h, m, r.snapshot.timestamp, r.snapshot.id)
   }
 

@@ -3,9 +3,10 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { F, Utils } from '../util/Utils'
+import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Record, Member, Handle, Observable, MemberHint, Observer, Meta } from './Data'
+import { Meta } from './Meta'
+import { Record, Member, Handle, Observable, MemberHint, Observer } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionImpl } from './TransactionImpl'
 import { MonitorImpl } from './MonitorImpl'
@@ -62,7 +63,7 @@ export class Method extends Cache<any> {
   }
 
   static getCache(method: F<any>): Cache<any> {
-    const func = Utils.get<Cache<any> | undefined>(method, Meta.Method)
+    const func = Meta.get<Cache<any> | undefined>(method, Meta.Method)
     if (!func)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return func
@@ -610,13 +611,13 @@ class CallResult extends Observable implements Observer {
     const method = new Method(h, m)
     const methodTrap: F<any> = (...args: any[]): any =>
       method.call(false, args).ret
-    Utils.set(methodTrap, Meta.Method, method)
+    Meta.set(methodTrap, Meta.Method, method)
     return methodTrap
   }
 
   private static applyOptions(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     // Configure options
-    const blank: any = Utils.acquireMeta(proto, Meta.Blank)
+    const blank: any = Meta.acquireMeta(proto, Meta.Blank)
     const existing: CallResult | undefined = blank[m]
     const method = existing ? existing.method : new Method(NIL_HANDLE, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
@@ -624,11 +625,11 @@ class CallResult extends Observable implements Observer {
     blank[m] = value
     // Add to the list if it's a trigger
     if (value.options.kind === Kind.Trigger && value.options.throttling < Number.MAX_SAFE_INTEGER) {
-      const triggers = Utils.acquireMeta(proto, Meta.Triggers)
+      const triggers = Meta.acquireMeta(proto, Meta.Triggers)
       triggers[m] = value
     }
     else if (value.options.kind === Kind.Trigger && value.options.throttling < Number.MAX_SAFE_INTEGER) {
-      const triggers = Utils.getMeta<any>(proto, Meta.Triggers)
+      const triggers = Meta.getMeta<any>(proto, Meta.Triggers)
       delete triggers[m]
     }
     return value.options

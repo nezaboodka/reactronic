@@ -8,7 +8,8 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
-import { Record, Member, Handle, Observable, Meta } from './Data'
+import { Meta } from './Meta'
+import { Record, Member, Handle, Observable } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { Options, Kind, Reentrance, Sensitivity } from '../Options'
 import { Monitor } from '../Monitor'
@@ -20,10 +21,10 @@ import { LoggingOptions, ProfilingOptions } from '../Logging'
 export abstract class Stateful {
   constructor() {
     const proto = new.target.prototype
-    const blank = Utils.getMeta<any>(proto, Meta.Blank)
+    const blank = Meta.getMeta<any>(proto, Meta.Blank)
     const h = Hooks.createHandle(this, blank, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
-      const triggers = Utils.getMeta<any>(proto, Meta.Triggers)
+      const triggers = Meta.getMeta<any>(proto, Meta.Triggers)
       for (const member in triggers)
         (h.proxy[member][Meta.Method] as Cache<any>).invalidate()
     }
@@ -32,7 +33,7 @@ export abstract class Stateful {
 
   /* istanbul ignore next */
   [Symbol.toStringTag](): string {
-    const h = Utils.get<Handle>(this, Meta.Handle)
+    const h = Meta.get<Handle>(this, Meta.Handle)
     return Hints.obj(h)
   }
 }
@@ -189,7 +190,7 @@ export class Hooks implements ProxyHandler<Handle> {
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Utils.acquireMeta(proto, Meta.Blank)[m] = Meta.Stateless
+      Meta.acquireMeta(proto, Meta.Blank)[m] = Meta.Stateless
   }
 
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: Member, pd: TypedPropertyDescriptor<F<any>>): any {
@@ -211,13 +212,13 @@ export class Hooks implements ProxyHandler<Handle> {
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
-      const blank = Utils.getMeta<any>(Object.getPrototypeOf(obj), Meta.Blank)
+      const blank = Meta.getMeta<any>(Object.getPrototypeOf(obj), Meta.Blank)
       const initial = new Record(NIL.snapshot, NIL, {...blank})
-      Utils.set(initial.data, Meta.Handle, h)
+      Meta.set(initial.data, Meta.Handle, h)
       if (Dbg.isOn)
         Snapshot.freezeRecord(initial)
       h = new Handle(obj, obj, Hooks.proxy, initial, obj.constructor.name)
-      Utils.set(obj, Meta.Handle, h)
+      Meta.set(obj, Meta.Handle, h)
     }
     return h
   }
@@ -275,7 +276,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   static getHint(obj: object, full: boolean): string | undefined {
-    const h = Utils.get<Handle>(obj, Meta.Handle)
+    const h = Meta.get<Handle>(obj, Meta.Handle)
     return h ? (full ? `${h.hint}#${h.id}` : h.hint) : /* istanbul ignore next */ undefined
   }
 

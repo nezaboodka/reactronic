@@ -5,31 +5,7 @@
 
 export type F<T> = (...args: any[]) => T
 
-const EMPTY_META = Object.freeze({})
-
 export class Utils {
-  static get<T>(obj: any, sym: symbol): T {
-    return obj[sym]
-  }
-
-  static set(obj: any, sym: symbol, value: any): any {
-    Object.defineProperty(obj, sym, { value, configurable: false, enumerable: false })
-    return obj
-  }
-
-  static acquireMeta(proto: any, sym: symbol): any {
-    let meta: any = proto[sym]
-    if (!proto.hasOwnProperty(sym)) {
-      meta = {...meta} // clone meta from parent class
-      Utils.set(proto, sym, meta)
-    }
-    return meta
-  }
-
-  static getMeta<T>(proto: any, sym: symbol): T {
-    return proto[sym] ?? /* istanbul ignore next */ EMPTY_META
-  }
-
   static freezeSet<T>(obj?: Set<T>): void {
     if (obj instanceof Set) {
       const pd = { configurable: false, enumerable: false, get: undef, set: undef }
