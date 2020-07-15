@@ -129,8 +129,10 @@ export class TransactionImpl extends Transaction {
   }
 
   revert(): Transaction {
-    Snapshot.revert(this.snapshot)
-    return Transaction.current // temp
+    return TransactionImpl.runAs(`revert: ${this.hint}`, true, undefined, undefined, () => {
+      Snapshot.revert(this.snapshot)
+      return Transaction.current
+    })
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {
