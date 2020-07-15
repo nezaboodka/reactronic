@@ -14,7 +14,7 @@ const requests: Array<{ url: string, delay: number }> = [
   { url: 'microsoft.com', delay: 200 },
 ]
 
-const expected: string[] = [
+const expected: Array<string | undefined> = [
   'Url: reactronic',
   'Log: RTA',
   '[...] Url: reactronic',

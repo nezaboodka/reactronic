@@ -523,6 +523,8 @@ class CallResult extends Observable implements Observer {
         else
           for (const m in r.prev.record.data)
             CallResult.finalizeChange(true, since, r, m, triggers)
+        if (Dbg.isOn)
+          Snapshot.freezeRecord(r)
       })
       triggers.sort(CallResult.compareTriggersByPriority)
     }
@@ -540,6 +542,9 @@ class CallResult extends Observable implements Observer {
     if (triggers) {
       const prev = r.prev.record.data[m] as Observable
       if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
+        // // TODO: To mark all fields of the unmounted objects
+        // if (unsubscribe) // in fact it means unmount if triggers are not undefined
+        //   r.data[m] = SYM_UNMOUNT
         prev.replacement = r
         const cause: MemberHint = { record: r, member: m, times: 0 }
         if (prev instanceof CallResult && (prev.invalidatedSince === TOP_TIMESTAMP || prev.invalidatedSince <= 0)) {

@@ -237,8 +237,6 @@ export class Snapshot implements Context {
     this.completed = true
     this.changeset.forEach((r: Record, h: Handle) => {
       r.changes.forEach(m => CopyOnWriteProxy.seal(r.data[m], h.proxy, m))
-      if (Dbg.isOn)
-        Snapshot.freezeRecord(r)
       h.writers--
       if (h.writers === 0)
         h.changing = undefined
