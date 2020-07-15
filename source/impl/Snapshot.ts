@@ -279,7 +279,7 @@ export class Snapshot implements Context {
     return r
   }
 
-  static undo(s: Snapshot): void {
+  static revert(s: Snapshot): void {
     s.changeset.forEach((r: Record, h: Handle) => {
       r.changes.forEach(m => {
         if (r.prev.record !== NIL) {
@@ -294,10 +294,6 @@ export class Snapshot implements Context {
         }
       })
     })
-  }
-
-  static redo(s: Snapshot): void {
-    throw misuse('not implemented')
   }
 
   private triggerGarbageCollection(): void {
