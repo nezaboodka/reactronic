@@ -125,8 +125,8 @@ test('Main', t => {
     }, undefined, 'stateful property Person.emails #26 can only be modified inside transactions and triggers')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // // Undo transaction
-    // tran1.undo()
-    // t.is(daddy.name, "John")
+    // tran1.revert()
+    // t.is(daddy.name, 'John')
     // t.is(daddy.age, 38)
     // Check protection and error handling
     t.throws(() => { R.getCache(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
