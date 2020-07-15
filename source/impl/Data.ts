@@ -5,6 +5,15 @@
 
 import { Dbg } from '../util/Dbg'
 
+export abstract class Sym {
+  static readonly Handle: unique symbol = Symbol('rxHandle')
+  static readonly Method: unique symbol = Symbol('rxMethod')
+  static readonly Unmount: unique symbol = Symbol('rxUnmount')
+  static readonly Blank: unique symbol = Symbol('rxBlank')
+  static readonly Triggers: unique symbol = Symbol('rxTriggers')
+  static readonly Stateless: unique symbol = Symbol('rxStateless')
+}
+
 // Context
 
 export interface Context {

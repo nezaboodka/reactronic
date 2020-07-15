@@ -5,8 +5,8 @@
 
 import { F, Utils } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Record, Member, Handle, Observable, MemberHint, Observer } from './Data'
-import { Snapshot, Hints, NIL, SYM_HANDLE, SYM_METHOD, SYM_UNMOUNT, SYM_BLANK, SYM_TRIGGERS } from './Snapshot'
+import { Record, Member, Handle, Observable, MemberHint, Observer, Sym } from './Data'
+import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionImpl } from './TransactionImpl'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -43,7 +43,7 @@ export class Method extends Cache<any> {
     let call: Call = this.read(args)
     const ctx = call.context
     const c: CallResult = call.result
-    if (!call.reuse && call.record.data[SYM_UNMOUNT] === undefined
+    if (!call.reuse && call.record.data[Sym.Unmount] === undefined
       && (!weak || c.invalidatedSince === -1 || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
@@ -62,7 +62,7 @@ export class Method extends Cache<any> {
   }
 
   static getCache(method: F<any>): Cache<any> {
-    const func = Utils.get<Cache<any> | undefined>(method, SYM_METHOD)
+    const func = Utils.get<Cache<any> | undefined>(method, Sym.Method)
     if (!func)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return func
@@ -131,14 +131,14 @@ export class Method extends Cache<any> {
     const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== -1 &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalidatedSince) &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
-      r.data[SYM_UNMOUNT] !== undefined
+      r.data[Sym.Unmount] !== undefined
     return { context: ctx, record: r, result: c, reuse }
   }
 
   private write(): Call {
     const ctx = Snapshot.writable()
     const m = this.member
-    const r: Record = ctx.write(this.handle, m, SYM_HANDLE, this)
+    const r: Record = ctx.write(this.handle, m, Sym.Handle, this)
     let c: CallResult = this.from(r)
     if (c.record !== r) {
       const c2 = new CallResult(this, r, c)
@@ -160,7 +160,7 @@ export class Method extends Cache<any> {
         let r2: Record = Snapshot.readable().read(h)
         let c2 = r2.data[m] as CallResult
         if (c2.method !== this) {
-          r2 = Snapshot.writable().write(h, m, SYM_HANDLE, this)
+          r2 = Snapshot.writable().write(h, m, Sym.Handle, this)
           c2 = r2.data[m] = new CallResult(this, r2, c2)
           c2.invalidatedSince = -1 // indicates blank value
           Snapshot.markChanged(r2, m, c2, true)
@@ -314,7 +314,7 @@ class CallResult extends Observable implements Observer {
       if (notSelfInvalidation) {
         this.invalidatedDueTo = cause
         this.invalidatedSince = since
-        const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[SYM_UNMOUNT] === undefined*/
+        const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[Sym.UNMOUNT] === undefined*/
         if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
           Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.readable().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
@@ -489,7 +489,7 @@ class CallResult extends Observable implements Observer {
   private static markViewed(r: Record, m: Member, value: Observable, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transaction) {
       const c: CallResult | undefined = CallResult.current // alias
-      if (c && c.options.kind !== Kind.Transaction && m !== SYM_HANDLE) {
+      if (c && c.options.kind !== Kind.Transaction && m !== Sym.Handle) {
         const ctx = Snapshot.readable()
         ctx.bumpDueTo(r)
         const t = weak ? -1 : ctx.timestamp
@@ -518,7 +518,7 @@ class CallResult extends Observable implements Observer {
       // Mark previous values as replaced, invalidate observers, and reset recomputing status
       const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, h: Handle) => {
-        if (!r.changes.has(SYM_UNMOUNT))
+        if (!r.changes.has(Sym.Unmount))
           r.changes.forEach(m => CallResult.finalizeChange(false, since, r, m, triggers))
         else
           for (const m in r.prev.record.data)
@@ -543,7 +543,7 @@ class CallResult extends Observable implements Observer {
       const prev = r.prev.record.data[m] as Observable
       if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
         if (unsubscribe) // in fact it means unmount if triggers are not undefined
-          r.data[m] = SYM_UNMOUNT
+          r.data[m] = Sym.Unmount
         prev.replacement = r
         const cause: MemberHint = { record: r, member: m, times: 0 }
         if (prev instanceof CallResult && (prev.invalidatedSince === TOP_TIMESTAMP || prev.invalidatedSince <= 0)) {
@@ -610,13 +610,13 @@ class CallResult extends Observable implements Observer {
     const method = new Method(h, m)
     const methodTrap: F<any> = (...args: any[]): any =>
       method.call(false, args).ret
-    Utils.set(methodTrap, SYM_METHOD, method)
+    Utils.set(methodTrap, Sym.Method, method)
     return methodTrap
   }
 
   private static applyOptions(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     // Configure options
-    const blank: any = Hooks.acquireMeta(proto, SYM_BLANK)
+    const blank: any = Hooks.acquireMeta(proto, Sym.Blank)
     const existing: CallResult | undefined = blank[m]
     const method = existing ? existing.method : new Method(NIL_HANDLE, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
@@ -624,11 +624,11 @@ class CallResult extends Observable implements Observer {
     blank[m] = value
     // Add to the list if it's a trigger
     if (value.options.kind === Kind.Trigger && value.options.throttling < Number.MAX_SAFE_INTEGER) {
-      const triggers = Hooks.acquireMeta(proto, SYM_TRIGGERS)
+      const triggers = Hooks.acquireMeta(proto, Sym.Triggers)
       triggers[m] = value
     }
     else if (value.options.kind === Kind.Trigger && value.options.throttling < Number.MAX_SAFE_INTEGER) {
-      const triggers = Hooks.getMeta<any>(proto, SYM_TRIGGERS)
+      const triggers = Hooks.getMeta<any>(proto, Sym.Triggers)
       delete triggers[m]
     }
     return value.options
@@ -696,7 +696,7 @@ function valueHint(value: any): string {
     result = `Map(${value.size})`
   else if (value instanceof CallResult)
     result = `<recompute:${Hints.record(value.record.prev.record)}>`
-  else if (value === SYM_UNMOUNT)
+  else if (value === Sym.Unmount)
     result = '<unmount>'
   else if (value !== undefined && value !== null)
     result = value.toString().slice(0, 20)

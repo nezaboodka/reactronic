@@ -6,15 +6,9 @@
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Kind } from '../Options'
-import { Context, Record, Member, Handle, Observable, Observer } from './Data'
+import { Context, Record, Member, Handle, Observable, Observer, Sym } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
-export const SYM_HANDLE: unique symbol = Symbol('rHandle')
-export const SYM_METHOD: unique symbol = Symbol('rMethod')
-export const SYM_UNMOUNT: unique symbol = Symbol('rUnmount')
-export const SYM_BLANK: unique symbol = Symbol('rBlank')
-export const SYM_TRIGGERS: unique symbol = Symbol('rTriggers')
-export const SYM_STATELESS: unique symbol = Symbol('rStateless')
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 Object.defineProperty(Handle.prototype, '<snapshot>', {
@@ -26,7 +20,7 @@ Object.defineProperty(Handle.prototype, '<snapshot>', {
       const v = d[m]
       if (v instanceof Observable)
         result[m] = v.value
-      else if (v === SYM_STATELESS)
+      else if (v === Sym.Stateless)
         result[m] = this.stateless[m]
       else /* istanbul ignore next */
         result[m] = v
@@ -101,11 +95,11 @@ export class Snapshot implements Context {
   write(h: Handle, m: Member, value: any, token?: any): Record {
     let r: Record = this.tryRead(h)
     const existing = r.data[m]
-    if (existing !== SYM_STATELESS) {
+    if (existing !== Sym.Stateless) {
       this.guard(h, r, m, existing, value, token)
       if (r.snapshot !== this) {
-        const data = {...m === SYM_HANDLE ? value : r.data}
-        Reflect.set(data, SYM_HANDLE, h)
+        const data = {...m === Sym.Handle ? value : r.data}
+        Reflect.set(data, Sym.Handle, h)
         r = new Record(this, r, data)
         this.changeset.set(h, r)
         h.changing = r
@@ -118,21 +112,21 @@ export class Snapshot implements Context {
   }
 
   static takeSnapshot<T>(obj: T): T {
-    return (obj as any)[SYM_HANDLE]['<snapshot>']
+    return (obj as any)[Sym.Handle]['<snapshot>']
   }
 
   static unmount(obj: any): void {
     const ctx = Snapshot.writable()
-    const h = Utils.get<Handle>(obj, SYM_HANDLE)
+    const h = Utils.get<Handle>(obj, Sym.Handle)
     if (h)
       Snapshot.doUnmount(ctx, h)
   }
 
   private static doUnmount(ctx: Snapshot, h: Handle): Record {
-    const r: Record = ctx.write(h, SYM_UNMOUNT, SYM_UNMOUNT)
+    const r: Record = ctx.write(h, Sym.Unmount, Sym.Unmount)
     if (r !== NIL) {
-      r.data[SYM_UNMOUNT] = SYM_UNMOUNT
-      Snapshot.markChanged(r, SYM_UNMOUNT, SYM_UNMOUNT, true)
+      r.data[Sym.Unmount] = Sym.Unmount
+      Snapshot.markChanged(r, Sym.Unmount, Sym.Unmount, true)
     }
     return r
   }
@@ -140,11 +134,11 @@ export class Snapshot implements Context {
   private guard(h: Handle, r: Record, m: Member, existing: any, value: any, token: any): void {
     if (this.completed)
       throw misuse(`stateful property ${Hints.obj(h, m)} can only be modified inside transactions and triggers`)
-    // if (m !== SYM_HANDLE && value !== SYM_HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
+    // if (m !== Sym.HANDLE && value !== Sym.HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
-    // if (r === NIL && m !== SYM_HANDLE && value !== SYM_HANDLE) /* istanbul ignore next */
+    // if (r === NIL && m !== Sym.HANDLE && value !== Sym.HANDLE) /* istanbul ignore next */
     //   throw misuse(`member ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
-    if (m !== SYM_HANDLE && value !== SYM_HANDLE) {
+    if (m !== Sym.Handle && value !== Sym.Handle) {
       if (r.snapshot !== this || r.prev.record !== NIL) {
         if (this.token !== undefined && token !== this.token)
           throw misuse(`${this.hint} should not have side effects (trying to change ${Hints.record(r, m)})`)
@@ -208,13 +202,13 @@ export class Snapshot implements Context {
 
   private static merge(ours: Record, head: Record): number {
     let counter: number = 0
-    const unmounted: boolean = head.changes.has(SYM_UNMOUNT)
+    const unmounted: boolean = head.changes.has(Sym.Unmount)
     const merged = {...head.data} // clone
     ours.changes.forEach(m => {
       counter++
       merged[m] = ours.data[m]
-      if (unmounted || m === SYM_UNMOUNT) {
-        if (unmounted !== (m === SYM_UNMOUNT)) {
+      if (unmounted || m === Sym.Unmount) {
+        if (unmounted !== (m === Sym.Unmount)) {
           if (Dbg.isOn && Dbg.logging.changes)
             Dbg.log('║╠', '', `${Hints.record(ours, m)} <> ${Hints.record(head, m)}`, 0, ' *** CONFLICT ***')
           ours.conflicts.set(m, head)
@@ -332,7 +326,7 @@ export class Snapshot implements Context {
           Snapshot.totalRecordCount--
           // console.log('rec--')
         }
-        if (r.changes.has(SYM_UNMOUNT)) {
+        if (r.changes.has(Sym.Unmount)) {
           Snapshot.totalRObjectCount--
           // console.log('obj--')
         }
@@ -364,7 +358,7 @@ export class Hints {
   }
 
   static record(r: Record, m?: Member): string {
-    const h = Utils.get<Handle | undefined>(r.data, SYM_HANDLE)
+    const h = Utils.get<Handle | undefined>(r.data, Sym.Handle)
     return Hints.obj(h, m, r.snapshot.timestamp, r.snapshot.id)
   }
 

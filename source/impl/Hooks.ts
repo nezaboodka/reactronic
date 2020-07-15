@@ -8,33 +8,33 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
-import { Record, Member, Handle, Observable } from './Data'
-import { Snapshot, Hints, NIL, SYM_HANDLE, SYM_METHOD, SYM_BLANK, SYM_TRIGGERS, SYM_STATELESS } from './Snapshot'
+import { Record, Member, Handle, Observable, Sym } from './Data'
+import { Snapshot, Hints, NIL } from './Snapshot'
 import { Options, Kind, Reentrance, Sensitivity } from '../Options'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
 import { LoggingOptions, ProfilingOptions } from '../Logging'
 
-// State
+// Stateful
 
 const EMPTY_META = Object.freeze({})
 
 export abstract class Stateful {
   constructor() {
     const proto = new.target.prototype
-    const blank = Hooks.getMeta<any>(proto, SYM_BLANK)
+    const blank = Hooks.getMeta<any>(proto, Sym.Blank)
     const h = Hooks.createHandle(this, blank, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
-      const triggers = Hooks.getMeta<any>(proto, SYM_TRIGGERS)
+      const triggers = Hooks.getMeta<any>(proto, Sym.Triggers)
       for (const member in triggers)
-        (h.proxy[member][SYM_METHOD] as Cache<any>).invalidate()
+        (h.proxy[member][Sym.Method] as Cache<any>).invalidate()
     }
     return h.proxy
   }
 
   /* istanbul ignore next */
   [Symbol.toStringTag](): string {
-    const h = Utils.get<Handle>(this, SYM_HANDLE)
+    const h = Utils.get<Handle>(this, Sym.Handle)
     return Hints.obj(h)
   }
 }
@@ -117,7 +117,7 @@ export class Hooks implements ProxyHandler<Handle> {
       Snapshot.markViewed(r, m, result, Kind.Field, false)
       result = result.value
     }
-    else if (m === SYM_HANDLE) {
+    else if (m === Sym.Handle) {
       // do nothing, just return instance
     }
     else // result === STATELESS
@@ -191,7 +191,7 @@ export class Hooks implements ProxyHandler<Handle> {
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Hooks.acquireMeta(proto, SYM_BLANK)[m] = SYM_STATELESS
+      Hooks.acquireMeta(proto, Sym.Blank)[m] = Sym.Stateless
   }
 
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: Member, pd: TypedPropertyDescriptor<F<any>>): any {
@@ -222,17 +222,17 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   static acquireHandle(obj: any): Handle {
-    let h = obj[SYM_HANDLE]
+    let h = obj[Sym.Handle]
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
-      const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), SYM_BLANK)
+      const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), Sym.Blank)
       const initial = new Record(NIL.snapshot, NIL, {...blank})
-      Utils.set(initial.data, SYM_HANDLE, h)
+      Utils.set(initial.data, Sym.Handle, h)
       if (Dbg.isOn)
         Snapshot.freezeRecord(initial)
       h = new Handle(obj, obj, Hooks.proxy, initial, obj.constructor.name)
-      Utils.set(obj, SYM_HANDLE, h)
+      Utils.set(obj, Sym.Handle, h)
     }
     return h
   }
@@ -240,7 +240,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static createHandle(stateless: any, blank: any, hint: string): Handle {
     const ctx = Snapshot.writable()
     const h = new Handle(stateless, undefined, Hooks.proxy, NIL, hint)
-    ctx.write(h, SYM_HANDLE, blank)
+    ctx.write(h, Sym.Handle, blank)
     return h
   }
 
@@ -290,7 +290,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   static getHint(obj: object, full: boolean): string | undefined {
-    const h = Utils.get<Handle>(obj, SYM_HANDLE)
+    const h = Utils.get<Handle>(obj, Sym.Handle)
     return h ? (full ? `${h.hint}#${h.id}` : h.hint) : /* istanbul ignore next */ undefined
   }
 
