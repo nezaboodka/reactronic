@@ -20,7 +20,7 @@ Object.defineProperty(Handle.prototype, '<snapshot>', {
       const v = d[m]
       if (v instanceof Observable)
         result[m] = v.value
-      else if (v === Meta.Stateless)
+      else if (v === undefined)
         result[m] = this.stateless[m]
       else /* istanbul ignore next */
         result[m] = v
@@ -95,7 +95,7 @@ export class Snapshot implements Context {
   write(h: Handle, m: Member, value: any, token?: any): Record {
     let r: Record = this.tryRead(h)
     const existing = r.data[m]
-    if (existing !== Meta.Stateless) {
+    if (existing !== undefined || isStateful(r, m, h.stateless)) {
       this.guard(h, r, m, existing, value, token)
       if (r.snapshot !== this) {
         const data = {...m === Meta.Handle ? value : r.data}
@@ -378,3 +378,13 @@ export class Hints {
 }
 
 export const NIL = new Record(new Snapshot('<nil>', undefined), undefined, {})
+
+function isStateful(r: Record, m: Member, stateless: any): boolean {
+  let b = r.prev.record === NIL && m in stateless === false
+  if (b) {
+    const proto = Object.getPrototypeOf(stateless)
+    const meta = Meta.from<any>(proto, Meta.Stateless)
+    b = meta[m] !== Meta.Stateless
+  }
+  return b
+}

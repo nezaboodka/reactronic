@@ -146,6 +146,8 @@ export class Hooks implements ProxyHandler<Handle> {
       else
         Reflect.set(h.stateless, m, value, receiver)
     }
+    else if (m in Object.getPrototypeOf(h.stateless))
+      Reflect.set(h.stateless, m, value, receiver)
     else
       h.stateless[m] = value
     return true
@@ -153,7 +155,8 @@ export class Hooks implements ProxyHandler<Handle> {
 
   getOwnPropertyDescriptor(h: Handle, m: Member): PropertyDescriptor | undefined {
     const r: Record = Snapshot.readable().read(h)
-    const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
+    const pd = Reflect.getOwnPropertyDescriptor(r.data, m) ??
+      Reflect.getOwnPropertyDescriptor(h.stateless, m)
     if (pd)
       pd.configurable = pd.writable = true
     return pd
@@ -163,6 +166,11 @@ export class Hooks implements ProxyHandler<Handle> {
     // TODO: Better implementation to avoid filtering
     const r: Record = Snapshot.readable().read(h)
     const result = []
+    for (const m of Object.getOwnPropertyNames(h.stateless)) {
+      const value = h.stateless[m]
+      if (!Meta.get(value, Meta.Method))
+        result.push(m)
+    }
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
       if (!(value instanceof Observable) || value.isField)
@@ -186,7 +194,7 @@ export class Hooks implements ProxyHandler<Handle> {
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Meta.acquire(proto, Meta.Blank)[m] = Meta.Stateless
+      Meta.acquire(proto, Meta.Stateless)[m] = Meta.Stateless
   }
 
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: Member, pd: TypedPropertyDescriptor<F<any>>): any {
