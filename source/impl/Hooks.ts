@@ -98,15 +98,9 @@ export class Hooks implements ProxyHandler<Handle> {
     return Reflect.getPrototypeOf(h.stateless)
   }
 
-  has(h: Handle, m: Member): boolean {
-    const r: Record = Snapshot.readable().read(h)
-    return m in r.data || m in h.stateless
-  }
-
   get(h: Handle, m: Member, receiver: any): any {
     let result: any
-    const ctx = Snapshot.readable()
-    const r: Record = ctx.read(h)
+    const r: Record = Snapshot.reader().readable(h)
     result = r.data[m]
     if (result instanceof Observable && result.isField) {
       Snapshot.markViewed(r, m, result, Kind.Field, false)
@@ -121,7 +115,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   set(h: Handle, m: Member, value: any, receiver: any): boolean {
-    const r: Record = Snapshot.writable().write(h, m, value)
+    const r: Record = Snapshot.writer().writable(h, m, value)
     if (r !== NIL) {
       const curr = r.data[m] as Observable
       if (curr !== undefined || (
@@ -151,8 +145,13 @@ export class Hooks implements ProxyHandler<Handle> {
     return true
   }
 
+  has(h: Handle, m: Member): boolean {
+    const r: Record = Snapshot.reader().readable(h)
+    return m in r.data || m in h.stateless
+  }
+
   getOwnPropertyDescriptor(h: Handle, m: Member): PropertyDescriptor | undefined {
-    const r: Record = Snapshot.readable().read(h)
+    const r: Record = Snapshot.reader().readable(h)
     const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
     if (pd)
       pd.configurable = pd.writable = true
@@ -161,7 +160,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   ownKeys(h: Handle): Member[] {
     // TODO: Better implementation to avoid filtering
-    const r: Record = Snapshot.readable().read(h)
+    const r: Record = Snapshot.reader().readable(h)
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
@@ -220,9 +219,9 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   static createHandle(stateless: any, blank: any, hint: string): Handle {
-    const ctx = Snapshot.writable()
+    const ctx = Snapshot.writer()
     const h = new Handle(stateless, undefined, Hooks.proxy, NIL, hint)
-    ctx.write(h, Meta.Handle, blank)
+    ctx.writable(h, Meta.Handle, blank)
     return h
   }
 

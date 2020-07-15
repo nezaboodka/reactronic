@@ -298,19 +298,19 @@ export class TransactionImpl extends Transaction {
     return this.promise
   }
 
-  private static readableSnapshot(): Snapshot {
+  private static readerSnapshot(): Snapshot {
     return TransactionImpl.running.snapshot
   }
 
-  private static writableSnapshot(): Snapshot {
+  private static writerSnapshot(): Snapshot {
     if (TransactionImpl.inspection)
       throw misuse('cannot make changes during transaction inspection')
     return TransactionImpl.running.snapshot
   }
 
   static _init(): void {
-    Snapshot.readable = TransactionImpl.readableSnapshot // override
-    Snapshot.writable = TransactionImpl.writableSnapshot // override
+    Snapshot.reader = TransactionImpl.readerSnapshot // override
+    Snapshot.writer = TransactionImpl.writerSnapshot // override
     TransactionImpl.none.sealed = true
     TransactionImpl.none.snapshot.complete()
     Snapshot._init()

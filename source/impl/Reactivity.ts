@@ -125,8 +125,8 @@ export class Method extends Cache<any> {
   }
 
   private read(args: any[] | undefined): Call {
-    const ctx = Snapshot.readable()
-    const r: Record = ctx.tryRead(this.handle)
+    const ctx = Snapshot.reader()
+    const r: Record = ctx.lookup(this.handle)
     const c: CallResult = this.from(r)
     const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== -1 &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalidatedSince) &&
@@ -136,9 +136,9 @@ export class Method extends Cache<any> {
   }
 
   private write(): Call {
-    const ctx = Snapshot.writable()
+    const ctx = Snapshot.writer()
     const m = this.member
-    const r: Record = ctx.write(this.handle, m, Meta.Handle, this)
+    const r: Record = ctx.writable(this.handle, m, Meta.Handle, this)
     let c: CallResult = this.from(r)
     if (c.record !== r) {
       const c2 = new CallResult(this, r, c)
@@ -157,10 +157,10 @@ export class Method extends Cache<any> {
       const spawn = r.snapshot.completed || r.prev.record !== NIL
       c = TransactionImpl.runAs<CallResult>(hint, spawn, undefined, this, (): CallResult => {
         const h = this.handle
-        let r2: Record = Snapshot.readable().read(h)
+        let r2: Record = Snapshot.reader().readable(h)
         let c2 = r2.data[m] as CallResult
         if (c2.method !== this) {
-          r2 = Snapshot.writable().write(h, m, Meta.Handle, this)
+          r2 = Snapshot.writer().writable(h, m, Meta.Handle, this)
           c2 = r2.data[m] = new CallResult(this, r2, c2)
           c2.invalidatedSince = -1 // indicates blank value
           Snapshot.markChanged(r2, m, c2, true)
@@ -198,7 +198,7 @@ export class Method extends Cache<any> {
   }
 
   private static invalidate(self: Method): void {
-    const ctx = Snapshot.readable()
+    const ctx = Snapshot.reader()
     const call = self.read(undefined)
     const c: CallResult = call.result
     c.invalidateDueTo(c, {record: NIL, member: self.member, times: 0}, ctx.timestamp, ctx.triggers)
@@ -316,7 +316,7 @@ class CallResult extends Observable implements Observer {
         this.invalidatedSince = since
         const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[Sym.UNMOUNT] === undefined*/
         if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
-          Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.readable().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+          Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.reader().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
@@ -490,7 +490,7 @@ class CallResult extends Observable implements Observer {
     if (kind !== Kind.Transaction) {
       const c: CallResult | undefined = CallResult.current // alias
       if (c && c.options.kind !== Kind.Transaction && m !== Meta.Handle) {
-        const ctx = Snapshot.readable()
+        const ctx = Snapshot.reader()
         ctx.bumpDueTo(r)
         const t = weak ? -1 : ctx.timestamp
         if (!c.subscribeTo(r, m, value, t))
@@ -578,7 +578,7 @@ class CallResult extends Observable implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this)
-      if ((Dbg.isOn && Dbg.logging.reads || (this.options.logging && this.options.logging.reads))) Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.readable().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.member)} is unsubscribed from ${Hints.record(hint.record, hint.member)}`)
+      if ((Dbg.isOn && Dbg.logging.reads || (this.options.logging && this.options.logging.reads))) Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.reader().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.member)} is unsubscribed from ${Hints.record(hint.record, hint.member)}`)
     })
     this.observables.clear()
   }

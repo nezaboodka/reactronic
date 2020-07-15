@@ -15,9 +15,9 @@ Object.defineProperty(Handle.prototype, '<snapshot>', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
-    const d = Snapshot.readable().read(this).data
-    for (const m in d) {
-      const v = d[m]
+    const data = Snapshot.reader().readable(this).data
+    for (const m in data) {
+      const v = data[m]
       if (v instanceof Observable)
         result[m] = v.value
       else if (v === Meta.Stateless)
@@ -63,21 +63,14 @@ export class Snapshot implements Context {
   }
 
   // To be redefined by Transaction and Cache implementations
-  static readable: () => Snapshot = undef
-  static writable: () => Snapshot = undef
+  static reader: () => Snapshot = undef
+  static writer: () => Snapshot = undef
   static markChanged: (r: Record, m: Member, value: any, changed: boolean) => void = undef
   static markViewed: (r: Record, m: Member, value: Observable, kind: Kind, weak: boolean) => void = undef
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
   static finalizeChangeset = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
-  read(h: Handle): Record {
-    const r = this.tryRead(h)
-    if (r === NIL)
-      throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
-    return r
-  }
-
-  tryRead(h: Handle): Record {
+  lookup(h: Handle): Record {
     let r: Record | undefined = h.changing
     if (r && r.snapshot !== this) {
       r = this.changeset.get(h)
@@ -92,8 +85,15 @@ export class Snapshot implements Context {
     return r
   }
 
-  write(h: Handle, m: Member, value: any, token?: any): Record {
-    let r: Record = this.tryRead(h)
+  readable(h: Handle): Record {
+    const r = this.lookup(h)
+    if (r === NIL)
+      throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
+    return r
+  }
+
+  writable(h: Handle, m: Member, value: any, token?: any): Record {
+    let r: Record = this.lookup(h)
     const existing = r.data[m]
     if (existing !== Meta.Stateless) {
       this.guard(h, r, m, existing, value, token)
@@ -116,14 +116,14 @@ export class Snapshot implements Context {
   }
 
   static unmount(obj: any): void {
-    const ctx = Snapshot.writable()
+    const ctx = Snapshot.writer()
     const h = Meta.get<Handle>(obj, Meta.Handle)
     if (h)
       Snapshot.doUnmount(ctx, h)
   }
 
   private static doUnmount(ctx: Snapshot, h: Handle): Record {
-    const r: Record = ctx.write(h, Meta.Unmount, Meta.Unmount)
+    const r: Record = ctx.writable(h, Meta.Unmount, Meta.Unmount)
     if (r !== NIL) {
       r.data[Meta.Unmount] = Meta.Unmount
       Snapshot.markChanged(r, Meta.Unmount, Meta.Unmount, true)
@@ -276,12 +276,12 @@ export class Snapshot implements Context {
   }
 
   static revert(s: Snapshot): void {
-    const ctx = Snapshot.writable()
+    const ctx = Snapshot.writer()
     s.changeset.forEach((r: Record, h: Handle) => {
       if (r.prev.record !== NIL) {
         r.changes.forEach(m => {
           const prevValue: any = r.prev.record.data[m]
-          const t: Record = ctx.write(h, m, prevValue)
+          const t: Record = ctx.writable(h, m, prevValue)
           if (t.snapshot === ctx) {
             t.data[m] = prevValue
             const v: any = t.prev.record.data[m]
