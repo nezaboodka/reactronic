@@ -106,6 +106,7 @@ test('Main', t => {
       x.parent = daddy
       t.is(daddy.name, 'John Smith')
       t.is(daddy.age, 45)
+      t.is(daddy.children.map(x => `"${x.name}"`).join(', '), '"Barry", "Steven Smith", "William Smith"')
       t.is(daddy.children.length, 3)
     })
     t.is(rendering.invalid, false)
