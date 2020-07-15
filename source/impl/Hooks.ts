@@ -17,15 +17,13 @@ import { LoggingOptions, ProfilingOptions } from '../Logging'
 
 // Stateful
 
-const EMPTY_META = Object.freeze({})
-
 export abstract class Stateful {
   constructor() {
     const proto = new.target.prototype
-    const blank = Hooks.getMeta<any>(proto, Sym.Blank)
+    const blank = Utils.getMeta<any>(proto, Sym.Blank)
     const h = Hooks.createHandle(this, blank, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
-      const triggers = Hooks.getMeta<any>(proto, Sym.Triggers)
+      const triggers = Utils.getMeta<any>(proto, Sym.Triggers)
       for (const member in triggers)
         (h.proxy[member][Sym.Method] as Cache<any>).invalidate()
     }
@@ -191,7 +189,7 @@ export class Hooks implements ProxyHandler<Handle> {
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Hooks.acquireMeta(proto, Sym.Blank)[m] = Sym.Stateless
+      Utils.acquireMeta(proto, Sym.Blank)[m] = Sym.Stateless
   }
 
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: Member, pd: TypedPropertyDescriptor<F<any>>): any {
@@ -208,25 +206,12 @@ export class Hooks implements ProxyHandler<Handle> {
     return Object.defineProperty(proto, method, { get: trap, enumerable, configurable })
   }
 
-  static acquireMeta(proto: any, sym: symbol): any {
-    let meta: any = proto[sym]
-    if (!proto.hasOwnProperty(sym)) {
-      meta = {...meta} // clone meta from parent class
-      Utils.set(proto, sym, meta)
-    }
-    return meta
-  }
-
-  static getMeta<T>(proto: any, sym: symbol): T {
-    return proto[sym] || /* istanbul ignore next */ EMPTY_META
-  }
-
   static acquireHandle(obj: any): Handle {
     let h = obj[Sym.Handle]
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
-      const blank = Hooks.getMeta<any>(Object.getPrototypeOf(obj), Sym.Blank)
+      const blank = Utils.getMeta<any>(Object.getPrototypeOf(obj), Sym.Blank)
       const initial = new Record(NIL.snapshot, NIL, {...blank})
       Utils.set(initial.data, Sym.Handle, h)
       if (Dbg.isOn)

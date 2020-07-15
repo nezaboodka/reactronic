@@ -616,7 +616,7 @@ class CallResult extends Observable implements Observer {
 
   private static applyOptions(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     // Configure options
-    const blank: any = Hooks.acquireMeta(proto, Sym.Blank)
+    const blank: any = Utils.acquireMeta(proto, Sym.Blank)
     const existing: CallResult | undefined = blank[m]
     const method = existing ? existing.method : new Method(NIL_HANDLE, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
@@ -624,11 +624,11 @@ class CallResult extends Observable implements Observer {
     blank[m] = value
     // Add to the list if it's a trigger
     if (value.options.kind === Kind.Trigger && value.options.throttling < Number.MAX_SAFE_INTEGER) {
-      const triggers = Hooks.acquireMeta(proto, Sym.Triggers)
+      const triggers = Utils.acquireMeta(proto, Sym.Triggers)
       triggers[m] = value
     }
     else if (value.options.kind === Kind.Trigger && value.options.throttling < Number.MAX_SAFE_INTEGER) {
-      const triggers = Hooks.getMeta<any>(proto, Sym.Triggers)
+      const triggers = Utils.getMeta<any>(proto, Sym.Triggers)
       delete triggers[m]
     }
     return value.options
