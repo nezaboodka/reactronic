@@ -124,13 +124,6 @@ test('Main', t => {
         daddy.emails.push('dad@mail.com')
     }, undefined, 'stateful property Person.emails #26 can only be modified inside transactions and triggers')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
-    // // Undo transaction
-    // const tran1undo = tran1.revert()
-    // t.is(daddy.name, undefined)
-    // t.is(daddy.age, undefined)
-    // tran1undo.revert()
-    // t.is(daddy.name, 'John Smith')
-    // t.is(daddy.age, 45)
     // Check protection and error handling
     t.throws(() => { R.getCache(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
     t.throws(() => { console.log(R.getCache(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
@@ -148,6 +141,13 @@ test('Main', t => {
     Tran.run('tran4', sensitive, Sensitivity.TriggerEvenOnSameValueAssignment, () => {
       app.userFilter = app.userFilter
     })
+    // // Undo transaction
+    // const tran1undo = tran1.revert()
+    // t.is(daddy.name, undefined)
+    // t.is(daddy.age, undefined)
+    // tran1undo.revert()
+    // t.is(daddy.name, 'John Smith')
+    // t.is(daddy.age, 45)
     // Other
     t.is(app.raw, 'DemoView.userFilter #22t123v101')
     t.is(rendering.options.kind, Kind.Cached)
@@ -165,6 +165,8 @@ test('Main', t => {
       R.unmount(app)
       R.unmount(app.model)
     })
+    t.is(app.model.title, undefined)
+    t.is(app.userFilter, undefined)
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
