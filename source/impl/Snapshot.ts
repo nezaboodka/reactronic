@@ -124,13 +124,17 @@ export class Snapshot implements Context {
   static unmount(obj: any): void {
     const ctx = Snapshot.writable()
     const h = Utils.get<Handle>(obj, SYM_HANDLE)
-    if (h) {
-      const r: Record = ctx.write(h, SYM_UNMOUNT, SYM_UNMOUNT)
-      if (r !== NIL) {
-        r.data[SYM_UNMOUNT] = SYM_UNMOUNT
-        Snapshot.markChanged(r, SYM_UNMOUNT, SYM_UNMOUNT, true)
-      }
+    if (h)
+      Snapshot.doUnmount(ctx, h)
+  }
+
+  private static doUnmount(ctx: Snapshot, h: Handle): Record {
+    const r: Record = ctx.write(h, SYM_UNMOUNT, SYM_UNMOUNT)
+    if (r !== NIL) {
+      r.data[SYM_UNMOUNT] = SYM_UNMOUNT
+      Snapshot.markChanged(r, SYM_UNMOUNT, SYM_UNMOUNT, true)
     }
+    return r
   }
 
   private guard(h: Handle, r: Record, m: Member, existing: any, value: any, token: any): void {
@@ -280,19 +284,21 @@ export class Snapshot implements Context {
   }
 
   static revert(s: Snapshot): void {
+    const ctx = Snapshot.writable()
     s.changeset.forEach((r: Record, h: Handle) => {
-      r.changes.forEach(m => {
-        if (r.prev.record !== NIL) {
+      if (r.prev.record !== NIL) {
+        r.changes.forEach(m => {
           const prevValue: any = r.prev.record.data[m]
-          const ctx = Snapshot.writable()
           const t: Record = ctx.write(h, m, prevValue)
           if (t.snapshot === ctx) {
             t.data[m] = prevValue
             const v: any = t.prev.record.data[m]
             Snapshot.markChanged(t, m, prevValue, v !== prevValue)
           }
-        }
-      })
+        })
+      }
+      else
+        Snapshot.doUnmount(ctx, h)
     })
   }
 
