@@ -22,7 +22,7 @@ export abstract class Meta {
     return obj
   }
 
-  static acquireMeta(proto: any, sym: symbol): any {
+  static acquire(proto: any, sym: symbol): any {
     let meta: any = proto[sym]
     if (!proto.hasOwnProperty(sym)) {
       meta = {...meta} // clone meta from parent class
@@ -31,7 +31,7 @@ export abstract class Meta {
     return meta
   }
 
-  static getMeta<T>(proto: any, sym: symbol): T {
+  static from<T>(proto: any, sym: symbol): T {
     return proto[sym] ?? /* istanbul ignore next */ EMPTY_META
   }
 }

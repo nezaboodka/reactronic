@@ -21,10 +21,10 @@ import { LoggingOptions, ProfilingOptions } from '../Logging'
 export abstract class Stateful {
   constructor() {
     const proto = new.target.prototype
-    const blank = Meta.getMeta<any>(proto, Meta.Blank)
+    const blank = Meta.from<any>(proto, Meta.Blank)
     const h = Hooks.createHandle(this, blank, new.target.name)
     if (!Hooks.triggersAutoStartDisabled) {
-      const triggers = Meta.getMeta<any>(proto, Meta.Triggers)
+      const triggers = Meta.from<any>(proto, Meta.Triggers)
       for (const member in triggers)
         (h.proxy[member][Meta.Method] as Cache<any>).invalidate()
     }
@@ -190,7 +190,7 @@ export class Hooks implements ProxyHandler<Handle> {
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Meta.acquireMeta(proto, Meta.Blank)[m] = Meta.Stateless
+      Meta.acquire(proto, Meta.Blank)[m] = Meta.Stateless
   }
 
   static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: Member, pd: TypedPropertyDescriptor<F<any>>): any {
@@ -212,7 +212,7 @@ export class Hooks implements ProxyHandler<Handle> {
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
-      const blank = Meta.getMeta<any>(Object.getPrototypeOf(obj), Meta.Blank)
+      const blank = Meta.from<any>(Object.getPrototypeOf(obj), Meta.Blank)
       const initial = new Record(NIL.snapshot, NIL, {...blank})
       Meta.set(initial.data, Meta.Handle, h)
       if (Dbg.isOn)
