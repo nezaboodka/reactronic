@@ -5,8 +5,7 @@
 
 import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Meta } from './Meta'
-import { Record, Member, Handle, Observable, MemberHint, Observer } from './Data'
+import { Record, Member, Handle, Observable, MemberHint, Observer, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionImpl } from './TransactionImpl'
 import { MonitorImpl } from './MonitorImpl'

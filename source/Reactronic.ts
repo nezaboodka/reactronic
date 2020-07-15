@@ -5,6 +5,7 @@
 
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
+import { Handle } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, options } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
@@ -29,7 +30,7 @@ export class Reactronic {
   static get loggingOptions(): LoggingOptions { return Dbg.logging }
   static setLoggingMode(enabled: boolean, options?: LoggingOptions): void { Dbg.setLoggingMode(enabled, options) }
   static setLoggingHint<T extends object>(obj: T, name: string | undefined): void { Hooks.setHint(obj, name) }
-  static getLoggingHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Hooks.getHint(obj, full) }
+  static getLoggingHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Handle.getHint(obj, full) }
   static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(enabled, options) }
 }
 

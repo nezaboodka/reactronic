@@ -4,6 +4,8 @@
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
 import { Dbg } from '../util/Dbg'
+import { Meta } from './Meta'
+export { Meta } from './Meta'
 
 // Context
 
@@ -81,5 +83,10 @@ export class Handle {
     this.changing = undefined
     this.writers = 0
     this.hint = hint
+  }
+
+  static getHint(obj: object, full: boolean): string | undefined {
+    const h = Meta.get<Handle>(obj, Meta.Handle)
+    return h ? (full ? `${h.hint}#${h.id}` : h.hint) : /* istanbul ignore next */ undefined
   }
 }

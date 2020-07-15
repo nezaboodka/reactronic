@@ -3,13 +3,9 @@
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
 
-import { Utils, undef, F } from '../util/Utils'
+import { undef, F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
-import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
-import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
-import { Meta } from './Meta'
-import { Record, Member, Handle, Observable } from './Data'
+import { Record, Member, Handle, Observable, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { Options, Kind, Reentrance, Sensitivity } from '../Options'
 import { Monitor } from '../Monitor'
@@ -256,17 +252,6 @@ export class Hooks implements ProxyHandler<Handle> {
     }
   }
 
-  // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void {
-  //   const restore = Hooks.sensitivity
-  //   Hooks.sensitivity = sensitivity
-  //   try {
-  //     obj[prop] = value
-  //   }
-  //   finally {
-  //     Hooks.sensitivity = restore
-  //   }
-  // }
-
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
       const h = Hooks.acquireHandle(obj)
@@ -274,18 +259,6 @@ export class Hooks implements ProxyHandler<Handle> {
     }
     return obj
   }
-
-  static getHint(obj: object, full: boolean): string | undefined {
-    const h = Meta.get<Handle>(obj, Meta.Handle)
-    return h ? (full ? `${h.hint}#${h.id}` : h.hint) : /* istanbul ignore next */ undefined
-  }
-
-  // static setObjectOptions<T>(obj: T, options: Partial<ObjectOptions>): T {
-  //   const h = Hooks.acquireHandle(obj)
-  //   if (options.sensitivity !== undefined)
-  //     h.sensitivity = options.sensitivity
-  //   return obj
-  // }
 
   /* istanbul ignore next */
   static createMethodTrap = function(h: Handle, m: Member, options: OptionsImpl): F<any> {
@@ -295,62 +268,5 @@ export class Hooks implements ProxyHandler<Handle> {
   /* istanbul ignore next */
   static applyOptions = function(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
     throw misuse('alterBlank should never be called')
-  }
-}
-
-export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
-  static readonly global: CopyOnWriteProxy = new CopyOnWriteProxy()
-
-  getPrototypeOf(binding: CopyOnWrite<any>): object | null {
-    return Object.getPrototypeOf(binding.value)
-  }
-
-  get(binding: CopyOnWrite<any>, m: Member, receiver: any): any {
-    const a: any = binding.readable(receiver)
-    return a[m]
-  }
-
-  set(binding: CopyOnWrite<any>, m: Member, value: any, receiver: any): boolean {
-    const a: any = binding.writable(receiver)
-    return a[m] = value
-  }
-
-  static seal(observable: Observable | symbol, proxy: any, m: Member): void {
-    if (observable instanceof Observable) {
-      const v = observable.value
-      if (Array.isArray(v) || v instanceof Array) {
-        if (v instanceof CopyOnWriteArray && !Array.isArray(v)) {
-          throw misuse(`${Hooks.getHint(proxy, false)}.${m.toString()} collection cannot be reused from another property without cloning`)
-        }
-        else if (!Object.isFrozen(v)) {
-          if (observable.isField)
-            observable.value = new Proxy(CopyOnWriteArray.seal(proxy, m, v), CopyOnWriteProxy.global)
-          else
-            Object.freeze(v) // just freeze without copy-on-write hooks
-        }
-      }
-      else if (v instanceof Set) {
-        /*if (v instanceof CopyOnWriteSet) {
-          throw misuse(`${Hints.getHint(proxy)}.${m.toString()} collection cannot be reused from another property without cloning`)
-        }
-        else*/ if (!Object.isFrozen(v)) {
-          if (observable.isField)
-            observable.value = new Proxy(CopyOnWriteSet.seal(proxy, m, v), CopyOnWriteProxy.global)
-          else
-            Utils.freezeSet(v) // just freeze without copy-on-write hooks
-        }
-      }
-      else if (v instanceof Map) {
-        /*if (v instanceof CopyOnWriteMap) {
-          throw misuse(`${Hints.getHint(proxy)}.${m.toString()} collection cannot be reused from another property without cloning`)
-        }
-        else*/ if (!Object.isFrozen(v)) {
-          if (observable.isField)
-            observable.value = new Proxy(CopyOnWriteMap.seal(proxy, m, v), CopyOnWriteProxy.global)
-          else
-            Utils.freezeMap(v) // just freeze without copy-on-write hooks
-        }
-      }
-    }
   }
 }

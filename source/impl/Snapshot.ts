@@ -6,9 +6,8 @@
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Kind } from '../Options'
-import { Meta } from './Meta'
-import { Context, Record, Member, Handle, Observable, Observer } from './Data'
-import { CopyOnWriteProxy } from './Hooks'
+import { Context, Record, Member, Handle, Observable, Observer, Meta } from './Data'
+import { CopyOnWriteProxy } from '../util/CopyOnWriteProxy'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
