@@ -25,7 +25,7 @@ export abstract class Transaction implements Worker {
   abstract readonly isCanceled: boolean
   abstract readonly isFinished: boolean
   abstract async whenFinished(): Promise<void>
-  abstract revert(): void
+  abstract revert(): Transaction
 
   static create(hint: string): Transaction { return new TransactionImpl(hint) }
   static run<T>(hint: string, func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(hint, func, ...args) }

@@ -128,8 +128,9 @@ export class TransactionImpl extends Transaction {
       await this.acquirePromise()
   }
 
-  revert(): void {
+  revert(): Transaction {
     Snapshot.revert(this.snapshot)
+    return Transaction.current // temp
   }
 
   static run<T>(hint: string, func: F<T>, ...args: any[]): T {

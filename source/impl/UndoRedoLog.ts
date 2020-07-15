@@ -32,7 +32,7 @@ export class UndoRedoLog extends Stateful {
     Transaction.run('undo', () => {
       while (i >= 0 && count > 0) {
         const t: Transaction = this._items[i]
-        t.revert()
+        this._items[i] = t.revert()
         i--
         count--
       }
@@ -44,8 +44,8 @@ export class UndoRedoLog extends Stateful {
     let i: number = this._position
     Transaction.run('redo', () => {
       while (i < this._items.length && count > 0) {
-        // const t: Transaction = this._items[i]
-        // t.redo()
+        const t: Transaction = this._items[i]
+        this._items[i] = t.revert()
         i++
         count--
       }
