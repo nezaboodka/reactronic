@@ -166,9 +166,8 @@ test('Main', t => {
       R.unmount(app)
       R.unmount(app.model)
     })
-    // TODO: To undefine all properties upon unmount
-    // t.is(app.model.title, undefined)
-    // t.is(app.userFilter, undefined)
+    t.is(app.model.title, undefined)
+    t.is(app.userFilter, undefined)
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
