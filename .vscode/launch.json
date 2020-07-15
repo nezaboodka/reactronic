@@ -13,23 +13,25 @@
       "cwd": "${workspaceRoot}",
       "args": ["${relativeFile}"],
       "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
+      "smartStep": true,
       "skipFiles": [
         "<node_internals>/**/*.js"
       ]
     },
     {
+      "name": "Debug Test",
       "type": "node",
       "request": "launch",
       "protocol": "inspector",
-      "name": "Debug Test",
+      "sourceMaps": true,
       "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/ava",
-      "runtimeArgs": ["debug", "--break", "${relativeFile}"],
-      "port": 9229,
+      "runtimeArgs": ["--timeout", "1h", "${relativeFile}"],
       "outputCapture": "std",
       "internalConsoleOptions": "openOnSessionStart",
       "env": {
         "AVA_DEBUG": "${relativeFile}"
       },
+      "smartStep": true,
       "skipFiles": [
         "<node_internals>/**/*.js"
       ]
