@@ -6,7 +6,7 @@
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Kind } from '../Options'
-import { Context, Record, Member, Handle, Observable, Observer, Sym } from './Data'
+import { Context, Record, Member, Handle, Observable, Observer, Meta } from './Data'
 import { CopyOnWriteProxy } from './Hooks'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
@@ -20,7 +20,7 @@ Object.defineProperty(Handle.prototype, '<snapshot>', {
       const v = d[m]
       if (v instanceof Observable)
         result[m] = v.value
-      else if (v === Sym.Stateless)
+      else if (v === Meta.Stateless)
         result[m] = this.stateless[m]
       else /* istanbul ignore next */
         result[m] = v
@@ -95,11 +95,11 @@ export class Snapshot implements Context {
   write(h: Handle, m: Member, value: any, token?: any): Record {
     let r: Record = this.tryRead(h)
     const existing = r.data[m]
-    if (existing !== Sym.Stateless) {
+    if (existing !== Meta.Stateless) {
       this.guard(h, r, m, existing, value, token)
       if (r.snapshot !== this) {
-        const data = {...m === Sym.Handle ? value : r.data}
-        Reflect.set(data, Sym.Handle, h)
+        const data = {...m === Meta.Handle ? value : r.data}
+        Reflect.set(data, Meta.Handle, h)
         r = new Record(this, r, data)
         this.changeset.set(h, r)
         h.changing = r
@@ -112,21 +112,21 @@ export class Snapshot implements Context {
   }
 
   static takeSnapshot<T>(obj: T): T {
-    return (obj as any)[Sym.Handle]['<snapshot>']
+    return (obj as any)[Meta.Handle]['<snapshot>']
   }
 
   static unmount(obj: any): void {
     const ctx = Snapshot.writable()
-    const h = Utils.get<Handle>(obj, Sym.Handle)
+    const h = Utils.get<Handle>(obj, Meta.Handle)
     if (h)
       Snapshot.doUnmount(ctx, h)
   }
 
   private static doUnmount(ctx: Snapshot, h: Handle): Record {
-    const r: Record = ctx.write(h, Sym.Unmount, Sym.Unmount)
+    const r: Record = ctx.write(h, Meta.Unmount, Meta.Unmount)
     if (r !== NIL) {
-      r.data[Sym.Unmount] = Sym.Unmount
-      Snapshot.markChanged(r, Sym.Unmount, Sym.Unmount, true)
+      r.data[Meta.Unmount] = Meta.Unmount
+      Snapshot.markChanged(r, Meta.Unmount, Meta.Unmount, true)
     }
     return r
   }
@@ -138,7 +138,7 @@ export class Snapshot implements Context {
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
     // if (r === NIL && m !== Sym.HANDLE && value !== Sym.HANDLE) /* istanbul ignore next */
     //   throw misuse(`member ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
-    if (m !== Sym.Handle && value !== Sym.Handle) {
+    if (m !== Meta.Handle && value !== Meta.Handle) {
       if (r.snapshot !== this || r.prev.record !== NIL) {
         if (this.token !== undefined && token !== this.token)
           throw misuse(`${this.hint} should not have side effects (trying to change ${Hints.record(r, m)})`)
@@ -202,13 +202,13 @@ export class Snapshot implements Context {
 
   private static merge(ours: Record, head: Record): number {
     let counter: number = 0
-    const unmounted: boolean = head.changes.has(Sym.Unmount)
+    const unmounted: boolean = head.changes.has(Meta.Unmount)
     const merged = {...head.data} // clone
     ours.changes.forEach(m => {
       counter++
       merged[m] = ours.data[m]
-      if (unmounted || m === Sym.Unmount) {
-        if (unmounted !== (m === Sym.Unmount)) {
+      if (unmounted || m === Meta.Unmount) {
+        if (unmounted !== (m === Meta.Unmount)) {
           if (Dbg.isOn && Dbg.logging.changes)
             Dbg.log('║╠', '', `${Hints.record(ours, m)} <> ${Hints.record(head, m)}`, 0, ' *** CONFLICT ***')
           ours.conflicts.set(m, head)
@@ -326,7 +326,7 @@ export class Snapshot implements Context {
           Snapshot.totalRecordCount--
           // console.log('rec--')
         }
-        if (r.changes.has(Sym.Unmount)) {
+        if (r.changes.has(Meta.Unmount)) {
           Snapshot.totalRObjectCount--
           // console.log('obj--')
         }
@@ -358,7 +358,7 @@ export class Hints {
   }
 
   static record(r: Record, m?: Member): string {
-    const h = Utils.get<Handle | undefined>(r.data, Sym.Handle)
+    const h = Utils.get<Handle | undefined>(r.data, Meta.Handle)
     return Hints.obj(h, m, r.snapshot.timestamp, r.snapshot.id)
   }
 

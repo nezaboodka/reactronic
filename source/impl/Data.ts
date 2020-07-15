@@ -5,7 +5,7 @@
 
 import { Dbg } from '../util/Dbg'
 
-export abstract class Sym {
+export abstract class Meta {
   static readonly Handle: unique symbol = Symbol('rxHandle')
   static readonly Method: unique symbol = Symbol('rxMethod')
   static readonly Unmount: unique symbol = Symbol('rxUnmount')
