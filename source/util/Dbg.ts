@@ -48,10 +48,9 @@ export class Dbg {
     Dbg.isOn = enabled
     Dbg.global = options || Dbg.DefaultLevel
     if (enabled) {
-      Dbg.log('', '', 'Reactronic logging is enabled:')
       const t = Dbg.global as any
-      for (const opt in t)
-        Dbg.log('', '', `  ${opt}: ${t[opt]}`)
+      const o = Object.keys(Dbg.global).filter(x => t[x] === true).join(', ')
+      Dbg.log('', '', `Reactronic logging is enabled: ${o}`)
       Dbg.log('', '', 'Method-level logging can be configured with @logging decorator')
     }
     else
