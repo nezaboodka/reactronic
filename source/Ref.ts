@@ -64,7 +64,11 @@ export class ToggleRef<T = boolean> extends Ref<T> {
     const o = this.owner
     const p = this.name
     Transaction.run(`toggle ${(o as any).constructor.name}.${p}`, () => {
-      if (o[p] !== this.value1)
+      const v = o[p]
+      const isValue1 = v === this.value1 || (
+        v instanceof Ref && this.value1 instanceof Ref &&
+        Ref.sameRefs(v, this.value1))
+      if (!isValue1)
         o[p] = this.value1
       else
         o[p] = this.value2
