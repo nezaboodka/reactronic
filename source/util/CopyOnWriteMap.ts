@@ -17,6 +17,7 @@ export abstract class CopyOnWriteMap<K, V> extends Map<K, V> {
   entries(): IterableIterator<[K, V]> { return super.entries.call(R<Map<K, V>>(this)) }
   keys(): IterableIterator<K> { return super.keys.call(R<Map<K, V>>(this)) }
   values(): IterableIterator<V> { return super.values.call(R<Map<K, V>>(this)) }
+  toJSON(name: string): any { return R<Map<K, V>>(this) }
 
   static seal<K, V>(owner: any, prop: PropertyKey, map: Map<K, V>): CopyOnWrite<Map<K, V>> {
     return CopyOnWrite.seal(owner, prop, map, map.size, CopyOnWriteMap.prototype, CopyOnWriteMap.getSize, CopyOnWriteMap.clone)

@@ -16,6 +16,7 @@ export abstract class CopyOnWriteSet<T> extends Set<T> {
   entries(): IterableIterator<[T, T]> { return super.entries.call(R<Set<T>>(this)) }
   keys(): IterableIterator<T> { return super.keys.call(R<Set<T>>(this)) }
   values(): IterableIterator<T> { return super.values.call(R<Set<T>>(this)) }
+  toJSON(name: string): any { return R<Set<T>>(this) }
 
   static seal<T>(owner: any, prop: PropertyKey, set: Set<T>): CopyOnWrite<Set<T>> {
     return CopyOnWrite.seal(owner, prop, set, set.size, CopyOnWriteSet.prototype, CopyOnWriteSet.getSize, CopyOnWriteSet.clone)

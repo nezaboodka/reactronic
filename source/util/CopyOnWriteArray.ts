@@ -34,6 +34,7 @@ export abstract class CopyOnWriteArray<T> extends Array<T> {
   // reduce<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U { return super.reduce.call(R<T[]>(this), callbackfn, initialValue) }
   // reduceRight(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: T[]) => T, initialValue?: T): T
   // reduceRight<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U { return super.reduceRight.call(R<T[]>(this), callbackfn, initialValue) }
+  toJSON(name: string): any { return R<T[]>(this) }
 
   static seal<T>(owner: any, prop: PropertyKey, array: T[]): CopyOnWrite<T[]> {
     return CopyOnWrite.seal(owner, prop, array, array.length, CopyOnWriteArray.prototype, CopyOnWriteArray.getSize, CopyOnWriteArray.clone)
