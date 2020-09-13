@@ -23,7 +23,7 @@ const expected: Array<string | undefined> = [
   'Log: RTA, nezaboodka.com/500',
 ]
 
-test('Reentrance.PreventWithError', async t => {
+test('reentrance.error', async t => {
   R.setLoggingMode(true, TestingLogLevel)
   const app = Tran.run('app', () => {
     const a = new AsyncDemoView(new AsyncDemo())

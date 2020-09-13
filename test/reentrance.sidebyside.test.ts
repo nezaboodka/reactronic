@@ -26,7 +26,7 @@ const expected: Array<string | undefined> = [
   'Log: RTA, nezaboodka.com/100',
 ]
 
-test('Reentrance.RunSideBySide', async t => {
+test('reentrance.sidebyside', async t => {
   R.setLoggingMode(true, TestingLogLevel)
   const app = Tran.runAs('app', false, undefined, undefined, () => {
     const a = new AsyncDemoView(new AsyncDemo())

@@ -27,7 +27,7 @@ const expected: Array<string | undefined> = [
   'Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500',
 ]
 
-test('Reentrance.WaitAndRestart', async t => {
+test('reentrance.restart', async t => {
   R.setLoggingMode(true, TestingLogLevel)
   const app = Tran.run('app', () => {
     const a = new AsyncDemoView(new AsyncDemo())

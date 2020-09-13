@@ -23,7 +23,7 @@ const expected: Array<string | undefined> = [
   'Log: RTA, nezaboodka.com/500',
 ]
 
-test('Reentrance.CancelAndWaitPrevious', async t => {
+test('reentrance.cancelandwait', async t => {
   R.setLoggingMode(true, TestingLogLevel)
   const app = Tran.run('app', () => {
     const a = new AsyncDemoView(new AsyncDemo())

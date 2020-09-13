@@ -23,7 +23,7 @@ const expected: string[] = [
   // "John's children: Billy, Barry, Steve",
 ]
 
-test('Main', t => {
+test('brief', t => {
   R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled
   R.triggersAutoStartDisabled = false
   R.setProfilingMode(false)

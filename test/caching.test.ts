@@ -59,7 +59,7 @@ export class Demo extends DemoBase {
   }
 }
 
-test('Main', t => {
+test('caching', t => {
   R.setLoggingMode(true, TestingLogLevel)
   const demo = Tran.run('caching', () => {
     const d = new Demo()
