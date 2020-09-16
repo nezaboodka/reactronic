@@ -29,8 +29,8 @@ export class Ref<T = any> {
       this.owner[this.name][this.index] = value
   }
 
-  static of<O = any>(owner: O): { readonly [P in keyof O]: Ref<O[P]> } {
-    return new Proxy<{ readonly [P in keyof O]: Ref<O[P]> }>(owner as any, RefGettingProxy)
+  static of<O = any>(owner: O): { readonly [P in keyof O]-?: Ref<O[P]> } {
+    return new Proxy<{ readonly [P in keyof O]-?: Ref<O[P]> }>(owner as any, RefGettingProxy)
   }
 
   static togglesOf<O = any>(owner: O): { readonly [P in keyof BooleanOnly<O>]: ToggleRef<O[P]> } {
