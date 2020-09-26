@@ -12,15 +12,15 @@ import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
 import { Transaction } from './Transaction'
-import { MethodCacheState } from './Cache'
+import { MethodCache } from './MethodCache'
 import { UndoRedoLog } from './impl/UndoRedoLog'
 import { Monitor } from './Monitor'
 import { Kind, Reentrance, MethodOptions, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
 
 export class Reactronic {
   static why(short: boolean = false): string { return short ? Method.whyShort() : Method.whyFull() }
-  static getMethodCacheState<T>(method: F<T>): MethodCacheState<T> { return Method.getCacheState(method) }
-  static configureCache(options: Partial<MethodOptions>): MethodOptions { return Method.configureImpl(undefined, options) }
+  static getMethodCacheOf<T>(method: F<T>): MethodCache<T> { return Method.getCacheState(method) }
+  static configureCurrentMethodCache(options: Partial<MethodOptions>): MethodOptions { return Method.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
   static takeSnapshot<T>(obj: T): T { return Snapshot.takeSnapshot(obj) }
@@ -40,7 +40,7 @@ export class Reactronic {
 // Operators
 
 export function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return Reactronic.getMethodCacheState(method as any as F<T>).getCachedAndRevalidate(args) // overcome type safety
+  return Reactronic.getMethodCacheOf(method as any as F<T>).getCachedAndRevalidate(args) // overcome type safety
 }
 
 export function untracked<T>(func: F<T>, ...args: any[]): T {

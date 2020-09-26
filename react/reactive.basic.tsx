@@ -26,7 +26,7 @@ class Rx extends Stateful {
 
   @trigger
   protected pulse(): void {
-    if (Reactronic.getMethodCacheState(this.render).invalid)
+    if (Reactronic.getMethodCacheOf(this.render).invalid)
       isolated(this.refresh, {rx: this})
   }
 

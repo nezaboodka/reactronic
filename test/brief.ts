@@ -65,7 +65,7 @@ export class DemoView extends Stateful {
       output.push(x) /* istanbul ignore next */
       if (R.isLogging && !R.loggingOptions.silent) console.log(x)
     })
-    R.configureCache({ priority: 123 })
+    R.configureCurrentMethodCache({ priority: 123 })
   }
 
   // @transaction @logging(log.noisy)

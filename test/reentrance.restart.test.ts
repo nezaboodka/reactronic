@@ -33,7 +33,7 @@ test('reentrance.restart', async t => {
   R.setLoggingMode(true, TestingLogLevel)
   const app = Tran.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    R.getMethodCacheState(a.model.load).configure({reentrance: Reentrance.WaitAndRestart})
+    R.getMethodCacheOf(a.model.load).configure({reentrance: Reentrance.WaitAndRestart})
     return a
   })
   try {

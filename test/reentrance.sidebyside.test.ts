@@ -32,7 +32,7 @@ test('reentrance.sidebyside', async t => {
   R.setLoggingMode(true, TestingLogLevel)
   const app = Tran.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    R.getMethodCacheState(a.model.load).configure({reentrance: Reentrance.RunSideBySide})
+    R.getMethodCacheOf(a.model.load).configure({reentrance: Reentrance.RunSideBySide})
     return a
   })
   try {

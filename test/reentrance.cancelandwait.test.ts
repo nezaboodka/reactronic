@@ -29,7 +29,7 @@ test('reentrance.cancelandwait', async t => {
   R.setLoggingMode(true, TestingLogLevel)
   const app = Tran.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    R.getMethodCacheState(a.model.load).configure({reentrance: Reentrance.CancelAndWaitPrevious})
+    R.getMethodCacheOf(a.model.load).configure({reentrance: Reentrance.CancelAndWaitPrevious})
     return a
   })
   try {

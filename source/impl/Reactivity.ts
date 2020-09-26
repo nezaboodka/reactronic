@@ -14,14 +14,14 @@ import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
 import { MethodOptions, Kind, Reentrance, LoggingOptions } from '../Options'
 import { Monitor, Worker } from '../Monitor'
-import { MethodCacheState } from '../Cache'
+import { MethodCache } from '../MethodCache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'N/A')
 
 type Call = { context: Snapshot, record: Record, result: CallResult, reuse: boolean }
 
-export class Method extends MethodCacheState<any> {
+export class Method extends MethodCache<any> {
   readonly handle: Handle
   readonly member: Member
 
@@ -63,8 +63,8 @@ export class Method extends MethodCacheState<any> {
     return result
   }
 
-  static getCacheState(method: F<any>): MethodCacheState<any> {
-    const func = Meta.get<MethodCacheState<any> | undefined>(method, Meta.Method)
+  static getCacheState(method: F<any>): MethodCache<any> {
+    const func = Meta.get<MethodCache<any> | undefined>(method, Meta.Method)
     if (!func)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return func

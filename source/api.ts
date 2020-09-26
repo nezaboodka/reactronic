@@ -13,5 +13,5 @@ export { Reactronic, getCachedAndRevalidate, untracked, isolated, sensitive, sta
   reentrance, monitor, logging } from './Reactronic'
 export { Transaction } from './Transaction'
 export { Monitor, Worker } from './Monitor'
-export { MethodCacheState } from './Cache'
+export { MethodCache } from './MethodCache'
 export { Ref, ToggleRef, BooleanOnly, GivenTypeOnly } from './Ref'

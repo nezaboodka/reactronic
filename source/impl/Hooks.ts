@@ -12,7 +12,7 @@ import { Snapshot, Hints, NIL } from './Snapshot'
 import { MethodOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { UndoRedoLog } from './UndoRedoLog'
 import { Monitor } from '../Monitor'
-import { MethodCacheState } from '../Cache'
+import { MethodCache } from '../MethodCache'
 import { LoggingOptions, ProfilingOptions } from '../Logging'
 
 // Stateful
@@ -25,7 +25,7 @@ export abstract class Stateful {
     if (!Hooks.triggersAutoStartDisabled) {
       const triggers = Meta.from<any>(proto, Meta.Triggers)
       for (const member in triggers)
-        (h.proxy[member][Meta.Method] as MethodCacheState<any>).invalidate()
+        (h.proxy[member][Meta.Method] as MethodCache<any>).invalidate()
     }
     return h.proxy
   }
