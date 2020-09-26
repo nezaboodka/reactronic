@@ -7,13 +7,13 @@
 
 import { undef, F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
+import { CacheOptions, Kind, Reentrance, Sensitivity } from '../Options'
+import { LoggingOptions, ProfilingOptions } from '../Logging'
+import { Cache } from '../Cache'
 import { Record, Member, Handle, Observable, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
-import { CacheOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { UndoRedoLog } from './UndoRedoLog'
 import { Monitor } from './Monitor'
-import { Cache } from '../Cache'
-import { LoggingOptions, ProfilingOptions } from '../Logging'
 
 // Stateful
 

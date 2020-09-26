@@ -7,14 +7,14 @@
 
 import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
+import { CacheOptions, Kind, Reentrance, LoggingOptions } from '../Options'
+import { Worker } from '../Worker'
+import { Cache } from '../Cache'
 import { Record, Member, Handle, Observable, MemberHint, Observer, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
-import { CacheOptions, Kind, Reentrance, LoggingOptions } from '../Options'
-import { Worker } from '../Worker'
-import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'N/A')

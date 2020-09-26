@@ -7,15 +7,15 @@
 
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
+import { Cache } from './Cache'
+import { Kind, Reentrance, CacheOptions, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
 import { Handle } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
 import { Method } from './impl/Method'
 import { Transaction } from './impl/Transaction'
-import { Cache } from './Cache'
 import { UndoRedoLog } from './impl/UndoRedoLog'
 import { Monitor } from './impl/Monitor'
-import { Kind, Reentrance, CacheOptions, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
 
 export class Reactronic {
   static why(short: boolean = false): string { return short ? Method.whyShort() : Method.whyFull() }

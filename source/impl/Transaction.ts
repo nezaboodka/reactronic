@@ -7,10 +7,10 @@
 
 import { undef, F } from '../util/Utils'
 import { Dbg, misuse, error } from '../util/Dbg'
-import { Record } from './Data'
-import { Snapshot, Hints } from './Snapshot'
 import { Worker } from '../Worker'
 import { SnapshotOptions, LoggingOptions } from '../Options'
+import { Record } from './Data'
+import { Snapshot, Hints } from './Snapshot'
 
 export abstract class Transaction implements Worker {
   static get current(): Transaction { return TransactionImpl.current }

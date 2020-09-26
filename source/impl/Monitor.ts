@@ -6,9 +6,9 @@
 // automatically licensed under the license referred above.
 
 import { misuse } from '../util/Dbg'
+import { Worker } from '../Worker'
 import { Stateful, Hooks } from './Hooks'
 import { Transaction } from './Transaction'
-import { Worker } from '../Worker'
 
 export abstract class Monitor extends Stateful {
   abstract readonly isActive: boolean
