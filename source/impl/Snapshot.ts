@@ -40,7 +40,7 @@ export class Snapshot implements Context {
   static oldest: Snapshot | undefined = undefined
   static garbageCollectionSummaryInterval: number = Number.MAX_SAFE_INTEGER
   static lastGarbageCollectionSummaryTimestamp: number = Date.now()
-  static totalRObjectCount: number = 0
+  static totalObjectCount: number = 0
   static totalRecordCount: number = 0
 
   readonly id: number
@@ -243,7 +243,7 @@ export class Snapshot implements Context {
           Snapshot.totalRecordCount++
           // console.log('rec++')
           if (r.prev.record === NIL) {
-            Snapshot.totalRObjectCount++
+            Snapshot.totalObjectCount++
             // console.log('obj++')
           }
         }
@@ -309,7 +309,7 @@ export class Snapshot implements Context {
         Snapshot.oldest = Snapshot.pending[0] // undefined is OK
         const now = Date.now()
         if (now - Snapshot.lastGarbageCollectionSummaryTimestamp > Snapshot.garbageCollectionSummaryInterval) {
-          Dbg.log('', '[G]', `Total object/record count: ${Snapshot.totalRObjectCount}/${Snapshot.totalRecordCount}`)
+          Dbg.log('', '[G]', `Total object/record count: ${Snapshot.totalObjectCount}/${Snapshot.totalRecordCount}`)
           Snapshot.lastGarbageCollectionSummaryTimestamp = now
         }
       }
@@ -328,7 +328,7 @@ export class Snapshot implements Context {
           // console.log('rec--')
         }
         if (r.changes.has(Meta.Unmount)) {
-          Snapshot.totalRObjectCount--
+          Snapshot.totalObjectCount--
           // console.log('obj--')
         }
       }

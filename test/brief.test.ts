@@ -144,13 +144,6 @@ test('brief', t => {
     Tran.run(sensitive, Sensitivity.TriggerEvenOnSameValueAssignment, () => {
       app.userFilter = app.userFilter
     })
-    // // Undo transaction
-    // const tran1undo = tran1.revert()
-    // t.is(daddy.name, undefined)
-    // t.is(daddy.age, undefined)
-    // tran1undo.revert()
-    // t.is(daddy.name, 'John Smith')
-    // t.is(daddy.age, 45)
     // Other
     t.is(app.raw, 'DemoView.userFilter #22t123v101')
     t.is(rendering.options.kind, Kind.Cached)
@@ -162,6 +155,13 @@ test('brief', t => {
     t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
     t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
+    // // Undo transaction
+    // const tran1undo = tran1.revert()
+    // t.is(daddy.name, undefined)
+    // t.is(daddy.age, undefined)
+    // tran1undo.revert()
+    // t.is(daddy.name, 'John Smith')
+    // t.is(daddy.age, 45)
   }
   finally {
     Tran.run(() => {
