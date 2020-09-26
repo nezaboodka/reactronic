@@ -5,7 +5,7 @@
 
 import { MethodOptions } from './Options'
 
-export abstract class Cache<T> {
+export abstract class MethodCacheState<T> {
   abstract readonly options: MethodOptions
   abstract readonly args: ReadonlyArray<any>
   abstract readonly value: T

@@ -29,8 +29,8 @@ test('reentrance.cancel', async t => {
   R.setLoggingMode(true, TestingLogLevel)
   const app = Tran.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    R.getCache(a.print).configure({ priority: 0 })
-    R.getCache(a.model.load).configure({reentrance: Reentrance.CancelPrevious})
+    R.getMethodCacheState(a.print).configure({ priority: 0 })
+    R.getMethodCacheState(a.model.load).configure({reentrance: Reentrance.CancelPrevious})
     return a
   })
   try {

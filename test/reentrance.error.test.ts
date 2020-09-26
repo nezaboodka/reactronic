@@ -27,7 +27,7 @@ test('reentrance.error', async t => {
   R.setLoggingMode(true, TestingLogLevel)
   const app = Tran.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    R.getCache(a.model.load).configure({reentrance: Reentrance.PreventWithError})
+    R.getMethodCacheState(a.model.load).configure({reentrance: Reentrance.PreventWithError})
     return a
   })
   try {

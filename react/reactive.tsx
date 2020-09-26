@@ -28,7 +28,7 @@ class Rx<V> extends Stateful {
 
   @trigger
   protected pulse(): void {
-    if (R.getCache(this.render).invalid)
+    if (R.getMethodCacheState(this.render).invalid)
       isolated(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
@@ -43,8 +43,8 @@ class Rx<V> extends Stateful {
     if (hint)
       R.setLoggingHint(rx, hint)
     if (logging) {
-      R.getCache(rx.render).configure({logging})
-      R.getCache(rx.pulse).configure({logging})
+      R.getMethodCacheState(rx.render).configure({logging})
+      R.getMethodCacheState(rx.pulse).configure({logging})
     }
     return rx
   }
@@ -52,7 +52,7 @@ class Rx<V> extends Stateful {
 
 function createReactState<V>(name?: string, logging?: Partial<LoggingOptions>): ReactState<V> {
   const hint = name || (R.isLogging ? getComponentName() : '<rx>')
-  const rx = Transaction.runAs<Rx<V>>(hint, { logging }, Rx.create, hint, logging)
+  const rx = Transaction.runAs<Rx<V>>({ hint, logging }, Rx.create, hint, logging)
   return {rx, cycle: 0}
 }
 

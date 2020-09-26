@@ -26,7 +26,7 @@ class Rx extends Stateful {
 
   @trigger
   protected pulse(): void {
-    if (Reactronic.getCache(this.render).invalid)
+    if (Reactronic.getMethodCacheState(this.render).invalid)
       isolated(this.refresh, {rx: this})
   }
 
@@ -41,7 +41,7 @@ class Rx extends Stateful {
 }
 
 function createReactState(): ReactState {
-  const rx = Transaction.runAs<Rx>('<rx>', null, Rx.create)
+  const rx = Transaction.runAs<Rx>({ hint: '<rx>' }, Rx.create)
   return {rx}
 }
 
