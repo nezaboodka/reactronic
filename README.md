@@ -388,4 +388,4 @@ class Reactronic {
 ## Contribution
 
 By contributing, you agree that your contributions will be
-automatically licensed under the license referred above.
+automatically licensed under the MIT license (see LICENSE file).
