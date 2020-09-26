@@ -19,7 +19,7 @@ import { Kind, Reentrance, MethodOptions, LoggingOptions, ProfilingOptions, Sens
 
 export class Reactronic {
   static why(short: boolean = false): string { return short ? Method.whyShort() : Method.whyFull() }
-  static getMethodCacheOf<T>(method: F<T>): MethodCache<T> { return Method.getCacheState(method) }
+  static getMethodCache<T>(method: F<T>): MethodCache<T> { return Method.getCache(method) }
   static configureCurrentMethodCache(options: Partial<MethodOptions>): MethodOptions { return Method.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
@@ -40,7 +40,7 @@ export class Reactronic {
 // Operators
 
 export function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return Reactronic.getMethodCacheOf(method as any as F<T>).getCachedAndRevalidate(args) // overcome type safety
+  return Reactronic.getMethodCache(method as any as F<T>).getCachedAndRevalidate(args) // overcome type safety
 }
 
 export function untracked<T>(func: F<T>, ...args: any[]): T {

@@ -30,7 +30,7 @@ class Rx<V> extends Stateful {
 
   @trigger
   protected pulse(): void {
-    if (R.getMethodCacheOf(this.render).invalid)
+    if (R.getMethodCache(this.render).invalid)
       isolated(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
@@ -45,8 +45,8 @@ class Rx<V> extends Stateful {
     if (hint)
       R.setLoggingHint(rx, hint)
     if (logging) {
-      R.getMethodCacheOf(rx.render).configure({logging})
-      R.getMethodCacheOf(rx.pulse).configure({logging})
+      R.getMethodCache(rx.render).configure({logging})
+      R.getMethodCache(rx.pulse).configure({logging})
     }
     return rx
   }

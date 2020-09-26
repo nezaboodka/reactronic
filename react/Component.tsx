@@ -21,7 +21,7 @@ export class Component<P> extends React.Component<P> {
   }
 
   shouldComponentUpdate(): boolean {
-    return Reactronic.getMethodCacheOf(this.render).invalid
+    return Reactronic.getMethodCache(this.render).invalid
   }
 
   componentDidMount(): void {

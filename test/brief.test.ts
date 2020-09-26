@@ -42,9 +42,9 @@ test('brief', t => {
   const app = Tran.run(() => new DemoView(new Demo()))
   try {
     t.is(R.why(), 'N/A')
-    t.is(R.getMethodCacheOf(app.print).options.priority, 123)
+    t.is(R.getMethodCache(app.print).options.priority, 123)
     t.notThrows(() => DemoView.test())
-    const rendering = R.getMethodCacheOf(app.render)
+    const rendering = R.getMethodCache(app.render)
     t.is(rendering.invalid, false)
     t.is(rendering.args.length, 1)
     t.is(rendering.value.length, 1)
@@ -128,8 +128,8 @@ test('brief', t => {
     }, undefined, 'stateful property Person.emails #26 can only be modified inside transactions and triggers')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
-    t.throws(() => { R.getMethodCacheOf(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
-    t.throws(() => { console.log(R.getMethodCacheOf(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { R.getMethodCache(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { console.log(R.getMethodCache(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
     const tran2 = Tran.create({ hint: 'tran2' })
     const zombi = tran2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: 'object Person #29 doesn\'t exist in snapshot v9007199254740990 (<none>)' })

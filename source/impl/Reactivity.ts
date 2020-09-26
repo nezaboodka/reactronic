@@ -63,7 +63,7 @@ export class Method extends MethodCache<any> {
     return result
   }
 
-  static getCacheState(method: F<any>): MethodCache<any> {
+  static getCache(method: F<any>): MethodCache<any> {
     const func = Meta.get<MethodCache<any> | undefined>(method, Meta.Method)
     if (!func)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
