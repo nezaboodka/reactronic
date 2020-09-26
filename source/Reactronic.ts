@@ -11,6 +11,7 @@ import { Hooks, decorateMethod } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
 import { Transaction } from './Transaction'
 import { Cache } from './Cache'
+import { UndoRedoLog } from './impl/UndoRedoLog'
 import { Monitor } from './Monitor'
 import { Kind, Reentrance, Options, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
 
@@ -95,6 +96,10 @@ export function throttling(milliseconds: number): F<any> {
 
 export function reentrance(value: Reentrance): F<any> {
   return decorateMethod({reentrance: value})
+}
+
+export function undoRedoLog(value: UndoRedoLog | null): F<any> {
+  return decorateMethod({undoRedoLog: value})
 }
 
 export function monitor(value: Monitor | null): F<any> {
