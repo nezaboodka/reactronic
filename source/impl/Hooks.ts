@@ -7,7 +7,7 @@ import { undef, F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Record, Member, Handle, Observable, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
-import { Options, Kind, Reentrance, Sensitivity } from '../Options'
+import { MethodOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { UndoRedoLog } from './UndoRedoLog'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
@@ -35,7 +35,7 @@ export abstract class Stateful {
   }
 }
 
-export function decorateMethod(options: Partial<Options>): F<any> {
+export function decorateMethod(options: Partial<MethodOptions>): F<any> {
   return function(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
     return Hooks.decorateMethod(false, options, proto, prop, pd) /* istanbul ignore next */
   }
@@ -43,7 +43,7 @@ export function decorateMethod(options: Partial<Options>): F<any> {
 
 // Options
 
-const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
+const DEFAULT_STATELESS_OPTIONS: MethodOptions = Object.freeze({
   kind: Kind.Field,
   priority: 0,
   noSideEffects: false,
@@ -55,7 +55,7 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   logging: undefined,
 })
 
-export class OptionsImpl implements Options {
+export class OptionsImpl implements MethodOptions {
   readonly body: Function
   readonly kind: Kind
   readonly priority: number
@@ -192,11 +192,11 @@ export class Hooks implements ProxyHandler<Handle> {
       Meta.acquire(proto, Meta.Blank)[m] = Meta.Stateless
   }
 
-  static decorateMethod(implicit: boolean, options: Partial<Options>, proto: any, method: Member, pd: TypedPropertyDescriptor<F<any>>): any {
+  static decorateMethod(implicit: boolean, options: Partial<MethodOptions>, proto: any, method: Member, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
     // Setup method trap
-    const opts = Hooks.applyOptions(proto, method, pd.value, true, configurable, options, implicit)
+    const opts = Hooks.applyMethodOptions(proto, method, pd.value, true, configurable, options, implicit)
     const trap = function(this: any): any {
       const h = Hooks.acquireHandle(this)
       const value = Hooks.createMethodTrap(h, method, opts)
@@ -269,7 +269,7 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   /* istanbul ignore next */
-  static applyOptions = function(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+  static applyMethodOptions = function(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
     throw misuse('alterBlank should never be called')
   }
 }

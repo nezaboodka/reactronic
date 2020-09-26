@@ -13,12 +13,12 @@ import { Transaction } from './Transaction'
 import { Cache } from './Cache'
 import { UndoRedoLog } from './impl/UndoRedoLog'
 import { Monitor } from './Monitor'
-import { Kind, Reentrance, Options, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
+import { Kind, Reentrance, MethodOptions, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
 
 export class Reactronic {
   static why(short: boolean = false): string { return short ? Method.whyShort() : Method.whyFull() }
   static getCache<T>(method: F<T>): Cache<T> { return Method.getCache(method) }
-  static configureCache(options: Partial<Options>): Options { return Method.configureImpl(undefined, options) }
+  static configureCache(options: Partial<MethodOptions>): MethodOptions { return Method.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
   static takeSnapshot<T>(obj: T): T { return Snapshot.takeSnapshot(obj) }

@@ -10,7 +10,7 @@ import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionImpl } from './TransactionImpl'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
-import { Options, Kind, Reentrance, LoggingOptions } from '../Options'
+import { MethodOptions, Kind, Reentrance, LoggingOptions } from '../Options'
 import { Monitor, Worker } from '../Monitor'
 import { Cache } from '../Cache'
 
@@ -23,8 +23,8 @@ export class Method extends Cache<any> {
   readonly handle: Handle
   readonly member: Member
 
-  configure(options: Partial<Options>): Options { return Method.configureImpl(this, options) }
-  get options(): Options { return this.weak().result.options }
+  configure(options: Partial<MethodOptions>): MethodOptions { return Method.configureImpl(this, options) }
+  get options(): MethodOptions { return this.weak().result.options }
   get args(): ReadonlyArray<any> { return this.weak().result.args }
   get value(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.weak().result.error }
@@ -68,7 +68,7 @@ export class Method extends Cache<any> {
     return func
   }
 
-  static configureImpl(self: Method | undefined, options: Partial<Options>): Options {
+  static configureImpl(self: Method | undefined, options: Partial<MethodOptions>): MethodOptions {
     let c: CallResult | undefined
     if (self)
       c = self.write().result
@@ -614,7 +614,7 @@ class CallResult extends Observable implements Observer {
     return methodTrap
   }
 
-  private static applyOptions(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<Options>, implicit: boolean): OptionsImpl {
+  private static applyMethodOptions(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: CallResult | undefined = blank[m]
@@ -646,7 +646,7 @@ class CallResult extends Observable implements Observer {
     Snapshot.isConflicting = CallResult.isConflicting // override
     Snapshot.finalizeChangeset = CallResult.finalizeChangeset // override
     Hooks.createMethodTrap = CallResult.createMethodTrap // override
-    Hooks.applyOptions = CallResult.applyOptions // override
+    Hooks.applyMethodOptions = CallResult.applyMethodOptions // override
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {

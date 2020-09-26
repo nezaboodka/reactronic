@@ -8,7 +8,14 @@ export { LoggingOptions, ProfilingOptions, LogLevel } from './Logging'
 import { UndoRedoLog } from './impl/UndoRedoLog'
 import { Monitor } from './Monitor'
 
-export interface Options {
+export interface SnapshotOptions {
+  spawn?: boolean
+  undoRedoLog?: UndoRedoLog
+  logging?: Partial<LoggingOptions>
+  token?: any
+}
+
+export interface MethodOptions {
   readonly kind: Kind
   readonly priority: number
   readonly noSideEffects: boolean

@@ -8,9 +8,9 @@ import { Dbg, misuse, error } from '../util/Dbg'
 import { Record } from './Data'
 import { Snapshot, Hints } from './Snapshot'
 import { Worker } from '../Monitor'
-import { Transaction, TransactionOptions } from '../Transaction'
+import { Transaction } from '../Transaction'
 import { UndoRedoLog } from './UndoRedoLog'
-import { LoggingOptions } from '../Options'
+import { SnapshotOptions, LoggingOptions } from '../Options'
 
 export class TransactionImpl extends Transaction {
   private static readonly none: TransactionImpl = new TransactionImpl('<none>')
@@ -142,7 +142,7 @@ export class TransactionImpl extends Transaction {
     return TransactionImpl.runAs<T>(hint, null, func, ...args)
   }
 
-  static runAs<T>(hint: string, options: TransactionOptions | null, func: F<T>, ...args: any[]): T {
+  static runAs<T>(hint: string, options: SnapshotOptions | null, func: F<T>, ...args: any[]): T {
     const t: TransactionImpl = TransactionImpl.acquire(hint, options)
     const root = t !== TransactionImpl.running
     t.guard()
@@ -170,7 +170,7 @@ export class TransactionImpl extends Transaction {
 
   // Internal
 
-  private static acquire(hint: string, options: TransactionOptions | null): TransactionImpl {
+  private static acquire(hint: string, options: SnapshotOptions | null): TransactionImpl {
     return options?.spawn || TransactionImpl.running.isFinished
       ? new TransactionImpl(hint, options?.undoRedoLog, options?.logging, options?.token)
       : TransactionImpl.running
