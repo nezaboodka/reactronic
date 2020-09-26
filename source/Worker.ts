@@ -5,17 +5,6 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Stateful } from './impl/Hooks'
-import { MonitorImpl } from './impl/MonitorImpl'
-
-export abstract class Monitor extends Stateful {
-  abstract readonly isActive: boolean
-  abstract readonly workerCount: number
-  abstract readonly workers: ReadonlySet<Worker>
-
-  static create(hint?: string, delayBeforeIdle?: number): Monitor { return MonitorImpl.create(hint, delayBeforeIdle) }
-}
-
 export interface Worker {
   readonly id: number
   readonly hint: string

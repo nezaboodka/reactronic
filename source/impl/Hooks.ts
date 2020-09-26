@@ -11,7 +11,7 @@ import { Record, Member, Handle, Observable, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { CacheOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { UndoRedoLog } from './UndoRedoLog'
-import { Monitor } from '../Monitor'
+import { Monitor } from './MonitorImpl'
 import { Cache } from '../Cache'
 import { LoggingOptions, ProfilingOptions } from '../Logging'
 

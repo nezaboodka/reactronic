@@ -11,7 +11,8 @@ export { Stateful } from './impl/Hooks'
 export { Reactronic, getCachedAndRevalidate, untracked, isolated, sensitive, stateless,
   transaction, trigger, cached, priority, noSideEffects, sensitiveArgs, throttling,
   reentrance, monitor, logging } from './Reactronic'
-export { Transaction } from './Transaction'
-export { Monitor, Worker } from './Monitor'
+export { Transaction } from './impl/TransactionImpl'
+export { Monitor } from './impl/MonitorImpl'
+export { Worker } from './Worker'
 export { Cache } from './Cache'
 export { Ref, ToggleRef, BooleanOnly, GivenTypeOnly } from './Ref'

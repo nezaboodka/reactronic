@@ -6,9 +6,17 @@
 // automatically licensed under the license referred above.
 
 import { misuse } from '../util/Dbg'
-import { Hooks } from './Hooks'
+import { Stateful, Hooks } from './Hooks'
 import { TransactionImpl } from './TransactionImpl'
-import { Monitor, Worker } from '../Monitor'
+import { Worker } from '../Worker'
+
+export abstract class Monitor extends Stateful {
+  abstract readonly isActive: boolean
+  abstract readonly workerCount: number
+  abstract readonly workers: ReadonlySet<Worker>
+
+  static create(hint?: string, delayBeforeIdle?: number): Monitor { return MonitorImpl.create(hint, delayBeforeIdle) }
+}
 
 export class MonitorImpl extends Monitor {
   isActive: boolean = false

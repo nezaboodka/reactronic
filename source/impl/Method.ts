@@ -10,10 +10,10 @@ import { Dbg, misuse } from '../util/Dbg'
 import { Record, Member, Handle, Observable, MemberHint, Observer, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionImpl } from './TransactionImpl'
-import { MonitorImpl } from './MonitorImpl'
+import { Monitor, MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
 import { CacheOptions, Kind, Reentrance, LoggingOptions } from '../Options'
-import { Monitor, Worker } from '../Monitor'
+import { Worker } from '../Worker'
 import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER

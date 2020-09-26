@@ -8,7 +8,7 @@
 import { LoggingOptions } from './Logging'
 export { LoggingOptions, ProfilingOptions, LogLevel } from './Logging'
 import { UndoRedoLog } from './impl/UndoRedoLog'
-import { Monitor } from './Monitor'
+import { Monitor } from './impl/MonitorImpl'
 
 export interface SnapshotOptions {
   readonly hint?: string

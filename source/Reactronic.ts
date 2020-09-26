@@ -11,10 +11,10 @@ import { Handle } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
 import { Method } from './impl/Method'
-import { Transaction } from './Transaction'
+import { Transaction } from './impl/TransactionImpl'
 import { Cache } from './Cache'
 import { UndoRedoLog } from './impl/UndoRedoLog'
-import { Monitor } from './Monitor'
+import { Monitor } from './impl/MonitorImpl'
 import { Kind, Reentrance, CacheOptions, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
 
 export class Reactronic {

@@ -9,9 +9,34 @@ import { undef, F } from '../util/Utils'
 import { Dbg, misuse, error } from '../util/Dbg'
 import { Record } from './Data'
 import { Snapshot, Hints } from './Snapshot'
-import { Worker } from '../Monitor'
-import { Transaction } from '../Transaction'
+import { Worker } from '../Worker'
 import { SnapshotOptions, LoggingOptions } from '../Options'
+
+export abstract class Transaction implements Worker {
+  static get current(): Transaction { return TransactionImpl.current }
+
+  abstract readonly id: number
+  abstract readonly hint: string
+  abstract readonly options: SnapshotOptions
+  abstract readonly timestamp: number
+  abstract readonly error: Error | undefined
+
+  abstract run<T>(func: F<T>, ...args: any[]): T
+  abstract inspect<T>(func: F<T>, ...args: any[]): T
+  abstract apply(): void
+  abstract seal(): this
+  abstract bind<T>(func: F<T>, secondary: boolean): F<T>
+  abstract cancel(error: Error, retryAfterOrIgnore?: Worker | null): this
+  abstract readonly isCanceled: boolean
+  abstract readonly isFinished: boolean
+  abstract async whenFinished(): Promise<void>
+  abstract revert(): Transaction
+
+  static create(options: SnapshotOptions | null): Transaction { return new TransactionImpl(options) }
+  static run<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(func, ...args) }
+  static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(options, func, ...args) }
+  static isolated<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.isolated<T>(func, ...args) }
+}
 
 export class TransactionImpl extends Transaction {
   private static readonly none: TransactionImpl = new TransactionImpl({ hint: '<none>' })
