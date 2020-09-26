@@ -18,7 +18,7 @@ export class UndoRedoLog extends Stateful {
   get canRedo(): boolean { return this._position < this._items.length }
 
   remember(t: Transaction): void {
-    Transaction.runAs('UndoRedeLog.remember', true, undefined, undefined,
+    Transaction.runAs('UndoRedeLog.remember', { spawn: true },
       UndoRedoLog.remember, this, t)
   }
 

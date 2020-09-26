@@ -52,7 +52,7 @@ class Rx<V> extends Stateful {
 
 function createReactState<V>(name?: string, logging?: Partial<LoggingOptions>): ReactState<V> {
   const hint = name || (R.isLogging ? getComponentName() : '<rx>')
-  const rx = Transaction.runAs<Rx<V>>(hint, false, logging, undefined, Rx.create, hint, logging)
+  const rx = Transaction.runAs<Rx<V>>(hint, { logging }, Rx.create, hint, logging)
   return {rx, cycle: 0}
 }
 

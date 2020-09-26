@@ -40,8 +40,8 @@ class Rx extends Stateful {
   }
 }
 
-function createReactState<V>(): ReactState {
-  const rx = Transaction.runAs<Rx>('<rx>', false, undefined, undefined, Rx.create)
+function createReactState(): ReactState {
+  const rx = Transaction.runAs<Rx>('<rx>', null, Rx.create)
   return {rx}
 }
 

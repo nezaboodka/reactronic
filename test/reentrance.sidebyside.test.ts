@@ -28,7 +28,7 @@ const expected: Array<string | undefined> = [
 
 test('reentrance.sidebyside', async t => {
   R.setLoggingMode(true, TestingLogLevel)
-  const app = Tran.runAs('app', false, undefined, undefined, () => {
+  const app = Tran.run('app', () => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getCache(a.model.load).configure({reentrance: Reentrance.RunSideBySide})
     return a

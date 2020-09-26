@@ -155,7 +155,7 @@ export class Method extends Cache<any> {
     if (c.method !== this) {
       const hint: string = Dbg.isOn ? `${Hints.obj(this.handle, m)}/initialize` : /* istanbul ignore next */ 'Cache.init'
       const spawn = r.snapshot.completed || r.prev.record !== NIL
-      c = TransactionImpl.runAs<CallResult>(hint, spawn, undefined, this, (): CallResult => {
+      c = TransactionImpl.runAs<CallResult>(hint, { spawn, token: this }, (): CallResult => {
         const h = this.handle
         let r2: Record = Snapshot.reader().readable(h)
         let c2 = r2.data[m] as CallResult
@@ -175,7 +175,7 @@ export class Method extends Cache<any> {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.handle, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.handle, this.member)}`
     let call = existing
-    const ret = TransactionImpl.runAs(hint, spawn, logging, token, (argsx: any[] | undefined): any => {
+    const ret = TransactionImpl.runAs(hint, { spawn, logging, token }, (argsx: any[] | undefined): any => {
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
         if (Dbg.isOn && (Dbg.logging.transactions || Dbg.logging.methods || Dbg.logging.invalidations))
@@ -458,7 +458,7 @@ class CallResult extends Observable implements Observer {
 
   private monitorEnter(mon: Monitor): void {
     Method.run<void>(undefined, TransactionImpl.runAs, 'Monitor.enter',
-      true, Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.global, undefined,
+      { spawn: true, logging: Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.global },
       MonitorImpl.enter, mon, this.worker)
   }
 
@@ -466,7 +466,7 @@ class CallResult extends Observable implements Observer {
     TransactionImpl.isolated<void>(() => {
       const leave = (): void => {
         Method.run<void>(undefined, TransactionImpl.runAs, 'Monitor.leave',
-          true, Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.DefaultLevel, undefined,
+          { spawn: true, logging: Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.DefaultLevel },
           MonitorImpl.leave, mon, this.worker)
       }
       this.worker.whenFinished().then(leave, leave)
