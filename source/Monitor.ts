@@ -2,6 +2,8 @@
 // shall be included in all copies or substantial portions.
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
+// By contributing, you agree that your contributions will be
+// automatically licensed under the license referred above.
 
 import { Stateful } from './impl/Hooks'
 import { MonitorImpl } from './impl/MonitorImpl'

@@ -2,6 +2,8 @@
 // shall be included in all copies or substantial portions.
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
 // License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
+// By contributing, you agree that your contributions will be
+// automatically licensed under the license referred above.
 
 import test from 'ava'
 import { Transaction as Tran, Reactronic as R, Stateful } from 'api'
