@@ -7,7 +7,7 @@
 
 import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { CacheOptions, Kind, Reentrance, LoggingOptions } from '../Options'
+import { CacheOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options'
 import { Worker } from '../Worker'
 import { Cache } from '../Cache'
 import { Record, Member, Handle, Observable, MemberHint, Observer, Meta } from './Data'
@@ -459,21 +459,25 @@ class CallResult extends Observable implements Observer {
   }
 
   private monitorEnter(mon: Monitor): void {
-    Method.run<void>(undefined, Transaction.runAs, {
+    const options: SnapshotOptions = {
       hint: 'Monitor.enter',
       spawn: true,
-      logging: Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.global },
-    MonitorImpl.enter, mon, this.worker)
+      logging: Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.global,
+    }
+    Method.run<void>(undefined, Transaction.runAs, options,
+      MonitorImpl.enter, mon, this.worker)
   }
 
   private monitorLeave(mon: Monitor): void {
     Transaction.isolated<void>(() => {
       const leave = (): void => {
-        Method.run<void>(undefined, Transaction.runAs, {
+        const options: SnapshotOptions = {
           hint: 'Monitor.leave',
           spawn: true,
-          logging: Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.DefaultLevel },
-        MonitorImpl.leave, mon, this.worker)
+          logging: Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.DefaultLevel,
+        }
+        Method.run<void>(undefined, Transaction.runAs, options,
+          MonitorImpl.leave, mon, this.worker)
       }
       this.worker.whenFinished().then(leave, leave)
     })
