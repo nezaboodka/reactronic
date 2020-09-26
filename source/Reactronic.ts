@@ -7,7 +7,7 @@ import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Handle } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
-import { Hooks, options } from './impl/Hooks'
+import { Hooks, decorateMethod } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
 import { Transaction } from './Transaction'
 import { Cache } from './Cache'
@@ -78,29 +78,29 @@ export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescri
 }
 
 export function priority(value: number): F<any> {
-  return options({priority: value})
+  return decorateMethod({priority: value})
 }
 
 export function noSideEffects(value: boolean): F<any> {
-  return options({noSideEffects: value})
+  return decorateMethod({noSideEffects: value})
 }
 
 export function sensitiveArgs(value: boolean): F<any> {
-  return options({sensitiveArgs: value})
+  return decorateMethod({sensitiveArgs: value})
 }
 
 export function throttling(milliseconds: number): F<any> {
-  return options({throttling: milliseconds})
+  return decorateMethod({throttling: milliseconds})
 }
 
 export function reentrance(value: Reentrance): F<any> {
-  return options({reentrance: value})
+  return decorateMethod({reentrance: value})
 }
 
 export function monitor(value: Monitor | null): F<any> {
-  return options({monitor: value})
+  return decorateMethod({monitor: value})
 }
 
 export function logging(value: Partial<LoggingOptions>): F<any> {
-  return options({logging: value})
+  return decorateMethod({logging: value})
 }

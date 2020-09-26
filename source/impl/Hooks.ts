@@ -34,7 +34,7 @@ export abstract class Stateful {
   }
 }
 
-export function options(options: Partial<Options>): F<any> {
+export function decorateMethod(options: Partial<Options>): F<any> {
   return function(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
     return Hooks.decorateMethod(false, options, proto, prop, pd) /* istanbul ignore next */
   }

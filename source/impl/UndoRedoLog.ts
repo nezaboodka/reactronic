@@ -18,13 +18,16 @@ export class UndoRedoLog extends Stateful {
   get canRedo(): boolean { return this._position < this._items.length }
 
   remember(t: Transaction): void {
-    Transaction.runAs('UndoRedeLog.remember', true, undefined, undefined, () => {
-      if (this._items.length >= this._capacity)
-        this._items.shift()
-      else
-        this._items.splice(this._position)
-      this._items.push(t)
-    })
+    Transaction.runAs('UndoRedeLog.remember', true, undefined, undefined,
+      UndoRedoLog.remember, this, t)
+  }
+
+  private static remember(log: UndoRedoLog, t: Transaction): void {
+    if (log._items.length >= log._capacity)
+      log._items.shift()
+    else
+      log._items.splice(log._position)
+    log._items.push(t)
   }
 
   undo(count: number = 1): void {
