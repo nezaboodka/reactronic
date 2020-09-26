@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Stateful } from './Hooks'
-import { Transaction } from './TransactionImpl'
+import { Transaction } from './Transaction'
 
 export class UndoRedoLog extends Stateful {
   private _capacity: number = 5

@@ -7,7 +7,7 @@
 
 import { misuse } from '../util/Dbg'
 import { Stateful, Hooks } from './Hooks'
-import { TransactionImpl } from './TransactionImpl'
+import { TransactionImpl } from './Transaction'
 import { Worker } from '../Worker'
 
 export abstract class Monitor extends Stateful {
