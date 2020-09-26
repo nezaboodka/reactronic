@@ -20,6 +20,7 @@ export abstract class Transaction implements Worker {
   abstract readonly options: SnapshotOptions
   abstract readonly timestamp: number
   abstract readonly error: Error | undefined
+  abstract readonly margin: number
 
   abstract run<T>(func: F<T>, ...args: any[]): T
   abstract inspect<T>(func: F<T>, ...args: any[]): T
@@ -38,7 +39,7 @@ export abstract class Transaction implements Worker {
   static isolated<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.isolated<T>(func, ...args) }
 }
 
-export class TransactionImpl extends Transaction {
+class TransactionImpl extends Transaction {
   private static readonly none: TransactionImpl = new TransactionImpl({ hint: '<none>' })
   private static running: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false
