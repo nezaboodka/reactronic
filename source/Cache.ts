@@ -5,17 +5,17 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { MethodOptions } from './Options'
+import { CacheOptions } from './Options'
 
-export abstract class MethodCache<T> {
-  abstract readonly options: MethodOptions
+export abstract class Cache<T> {
+  abstract readonly options: CacheOptions
   abstract readonly args: ReadonlyArray<any>
   abstract readonly value: T
   abstract readonly error: any
   abstract readonly stamp: number
   abstract readonly invalid: boolean
 
-  abstract configure(options: Partial<MethodOptions>): MethodOptions
+  abstract configure(options: Partial<CacheOptions>): CacheOptions
   abstract invalidate(): void
   abstract getCachedAndRevalidate(args?: any[]): T | undefined
 }

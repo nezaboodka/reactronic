@@ -18,7 +18,7 @@ export interface SnapshotOptions {
   readonly token?: any
 }
 
-export interface MethodOptions {
+export interface CacheOptions {
   readonly kind: Kind
   readonly priority: number
   readonly noSideEffects: boolean

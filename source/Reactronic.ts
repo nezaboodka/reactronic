@@ -12,15 +12,15 @@ import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
 import { Method } from './impl/Reactivity'
 import { Transaction } from './Transaction'
-import { MethodCache } from './MethodCache'
+import { Cache } from './Cache'
 import { UndoRedoLog } from './impl/UndoRedoLog'
 import { Monitor } from './Monitor'
-import { Kind, Reentrance, MethodOptions, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
+import { Kind, Reentrance, CacheOptions, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
 
 export class Reactronic {
   static why(short: boolean = false): string { return short ? Method.whyShort() : Method.whyFull() }
-  static getMethodCache<T>(method: F<T>): MethodCache<T> { return Method.getCache(method) }
-  static configureCurrentMethodCache(options: Partial<MethodOptions>): MethodOptions { return Method.configureImpl(undefined, options) }
+  static getMethodCache<T>(method: F<T>): Cache<T> { return Method.getCache(method) }
+  static configureCurrentMethodCache(options: Partial<CacheOptions>): CacheOptions { return Method.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
   static takeSnapshot<T>(obj: T): T { return Snapshot.takeSnapshot(obj) }

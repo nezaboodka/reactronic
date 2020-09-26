@@ -6,12 +6,12 @@
 // automatically licensed under the license referred above.
 
 export { all, sleep } from './util/Utils'
-export { MethodOptions, Kind, Reentrance, Sensitivity, LoggingOptions, ProfilingOptions, LogLevel } from './Options'
+export { CacheOptions, Kind, Reentrance, Sensitivity, LoggingOptions, ProfilingOptions, LogLevel } from './Options'
 export { Stateful } from './impl/Hooks'
 export { Reactronic, getCachedAndRevalidate, untracked, isolated, sensitive, stateless,
   transaction, trigger, cached, priority, noSideEffects, sensitiveArgs, throttling,
   reentrance, monitor, logging } from './Reactronic'
 export { Transaction } from './Transaction'
 export { Monitor, Worker } from './Monitor'
-export { MethodCache } from './MethodCache'
+export { Cache } from './Cache'
 export { Ref, ToggleRef, BooleanOnly, GivenTypeOnly } from './Ref'

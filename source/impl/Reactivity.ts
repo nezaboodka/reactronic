@@ -12,21 +12,21 @@ import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionImpl } from './TransactionImpl'
 import { MonitorImpl } from './MonitorImpl'
 import { Hooks, OptionsImpl } from './Hooks'
-import { MethodOptions, Kind, Reentrance, LoggingOptions } from '../Options'
+import { CacheOptions, Kind, Reentrance, LoggingOptions } from '../Options'
 import { Monitor, Worker } from '../Monitor'
-import { MethodCache } from '../MethodCache'
+import { Cache } from '../Cache'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'N/A')
 
 type Call = { context: Snapshot, record: Record, result: CallResult, reuse: boolean }
 
-export class Method extends MethodCache<any> {
+export class Method extends Cache<any> {
   readonly handle: Handle
   readonly member: Member
 
-  configure(options: Partial<MethodOptions>): MethodOptions { return Method.configureImpl(this, options) }
-  get options(): MethodOptions { return this.weak().result.options }
+  configure(options: Partial<CacheOptions>): CacheOptions { return Method.configureImpl(this, options) }
+  get options(): CacheOptions { return this.weak().result.options }
   get args(): ReadonlyArray<any> { return this.weak().result.args }
   get value(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.weak().result.error }
@@ -63,14 +63,14 @@ export class Method extends MethodCache<any> {
     return result
   }
 
-  static getCache(method: F<any>): MethodCache<any> {
-    const func = Meta.get<MethodCache<any> | undefined>(method, Meta.Method)
+  static getCache(method: F<any>): Cache<any> {
+    const func = Meta.get<Cache<any> | undefined>(method, Meta.Method)
     if (!func)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return func
   }
 
-  static configureImpl(self: Method | undefined, options: Partial<MethodOptions>): MethodOptions {
+  static configureImpl(self: Method | undefined, options: Partial<CacheOptions>): CacheOptions {
     let c: CallResult | undefined
     if (self)
       c = self.write().result
@@ -620,7 +620,7 @@ class CallResult extends Observable implements Observer {
     return methodTrap
   }
 
-  private static applyMethodOptions(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
+  private static applyMethodOptions(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<CacheOptions>, implicit: boolean): OptionsImpl {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: CallResult | undefined = blank[m]
