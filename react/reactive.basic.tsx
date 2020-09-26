@@ -37,7 +37,7 @@ class Rx extends Stateful {
     return (): void => { isolated(Reactronic.unmount, this) }
   }
 
-  static create<V>(): Rx {
+  static create(): Rx {
     return new Rx()
   }
 }
