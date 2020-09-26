@@ -61,7 +61,7 @@ export class Demo extends DemoBase {
 
 test('caching', t => {
   R.setLoggingMode(true, TestingLogLevel)
-  const demo = Tran.run('caching', () => {
+  const demo = Tran.run(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')
     // d.title = 'Demo+'

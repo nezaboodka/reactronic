@@ -9,10 +9,11 @@ import { UndoRedoLog } from './impl/UndoRedoLog'
 import { Monitor } from './Monitor'
 
 export interface SnapshotOptions {
-  spawn?: boolean
-  undoRedoLog?: UndoRedoLog
-  logging?: Partial<LoggingOptions>
-  token?: any
+  readonly hint?: string
+  readonly spawn?: boolean
+  readonly undoRedoLog?: UndoRedoLog
+  readonly logging?: Partial<LoggingOptions>
+  readonly token?: any
 }
 
 export interface MethodOptions {

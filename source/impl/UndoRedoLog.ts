@@ -18,7 +18,7 @@ export class UndoRedoLog extends Stateful {
   get canRedo(): boolean { return this._position < this._items.length }
 
   remember(t: Transaction): void {
-    Transaction.runAs('UndoRedeLog.remember', { spawn: true },
+    Transaction.runAs({ hint: 'UndoRedeLog.remember', spawn: true },
       UndoRedoLog.remember, this, t)
   }
 
@@ -32,7 +32,7 @@ export class UndoRedoLog extends Stateful {
 
   undo(count: number = 1): void {
     let i: number = this._position - 1
-    Transaction.run('undo', () => {
+    Transaction.runAs({ hint: 'UndoRedeLog.undo' }, () => {
       while (i >= 0 && count > 0) {
         const t: Transaction = this._items[i]
         this._items[i] = t.revert()
@@ -45,7 +45,7 @@ export class UndoRedoLog extends Stateful {
 
   redo(count: number = 1): void {
     let i: number = this._position
-    Transaction.run('redo', () => {
+    Transaction.runAs({ hint: 'UndoRedeLog.redo' }, () => {
       while (i < this._items.length && count > 0) {
         const t: Transaction = this._items[i]
         this._items[i] = t.revert()

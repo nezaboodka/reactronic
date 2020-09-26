@@ -5,7 +5,7 @@
 
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { Kind } from '../Options'
+import { Kind, SnapshotOptions } from '../Options'
 import { Context, Record, Member, Handle, Observable, Observer, Meta } from './Data'
 import { CopyOnWriteProxy } from '../util/CopyOnWriteProxy'
 
@@ -42,21 +42,20 @@ export class Snapshot implements Context {
   static totalRecordCount: number = 0
 
   readonly id: number
-  readonly hint: string
+  readonly options: SnapshotOptions
+  get hint(): string { return this.options.hint ?? 'noname' }
   get timestamp(): number { return this.stamp }
   private stamp: number
   private bumper: number
-  readonly token: any
   readonly changeset: Map<Handle, Record>
   readonly triggers: Observer[]
   completed: boolean
 
-  constructor(hint: string, caching: any) {
+  constructor(options: SnapshotOptions | null) {
     this.id = ++Snapshot.idGen
-    this.hint = hint
+    this.options = options ?? DefaultSnapshotOptions
     this.stamp = UNDEFINED_TIMESTAMP
     this.bumper = 100
-    this.token = caching
     this.changeset = new Map<Handle, Record>()
     this.triggers = []
     this.completed = false
@@ -140,7 +139,7 @@ export class Snapshot implements Context {
     //   throw misuse(`member ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     if (m !== Meta.Handle && value !== Meta.Handle) {
       if (r.snapshot !== this || r.prev.record !== NIL) {
-        if (this.token !== undefined && token !== this.token)
+        if (this.options.token !== undefined && token !== this.options.token)
           throw misuse(`${this.hint} should not have side effects (trying to change ${Hints.record(r, m)})`)
         // TODO: Detect uninitialized members
         // if (existing === undefined)
@@ -153,7 +152,7 @@ export class Snapshot implements Context {
 
   acquire(outer: Snapshot): void {
     if (!this.completed && this.stamp === UNDEFINED_TIMESTAMP) {
-      const ahead = this.token === undefined || outer.stamp === UNDEFINED_TIMESTAMP
+      const ahead = this.options.token === undefined || outer.stamp === UNDEFINED_TIMESTAMP
       this.stamp = ahead ? Snapshot.stampGen : outer.stamp
       Snapshot.pending.push(this)
       if (Snapshot.oldest === undefined)
@@ -186,7 +185,7 @@ export class Snapshot implements Context {
             Dbg.log('╠╝', '', `${Hints.record(r)} is merged with ${Hints.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
-      if (this.token === undefined) {
+      if (this.options.token === undefined) {
         if (this.bumper > 100) { // if transaction ever touched existing objects
           this.bumper = this.stamp // not needed? (just for debug)
           this.stamp = ++Snapshot.stampGen
@@ -377,4 +376,12 @@ export class Hints {
   }
 }
 
-export const NIL = new Record(new Snapshot('<nil>', undefined), undefined, {})
+export const NIL = new Record(new Snapshot({ hint: '<nil>' }), undefined, {})
+
+export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
+  hint: 'noname',
+  spawn: false,
+  undoRedoLog: undefined,
+  logging: undefined,
+  token: undefined,
+})

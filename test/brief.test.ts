@@ -37,7 +37,7 @@ test('brief', t => {
   R.setLoggingMode(false)
   R.setLoggingMode(true, TestingLogLevel)
   // Simple transactions
-  const app = Tran.run('app', () => new DemoView(new Demo()))
+  const app = Tran.run(() => new DemoView(new Demo()))
   try {
     t.is(R.why(), 'N/A')
     t.is(R.getCache(app.print).options.priority, 123)
@@ -65,7 +65,7 @@ test('brief', t => {
     rendering.invalidate()
     t.not(rendering.stamp, stamp)
     // Multi-part transactions
-    const tran1 = Tran.create('tran1')
+    const tran1 = Tran.create({ hint: 'tran1' })
     tran1.run(() => {
       t.throws(() => tran1.apply(), { message: 'cannot apply transaction having active functions running' })
       app.model.shared = app.shared = tran1.hint
@@ -128,18 +128,18 @@ test('brief', t => {
     // Check protection and error handling
     t.throws(() => { R.getCache(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
     t.throws(() => { console.log(R.getCache(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
-    const tran2 = Tran.create('tran2')
+    const tran2 = Tran.create({ hint: 'tran2' })
     const zombi = tran2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: 'object Person #29 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
     t.throws(() => tran2.run(() => { throw new Error('test') }), { message: 'test' })
     t.throws(() => tran2.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
-    const tran3 = Tran.create('tran3')
+    const tran3 = Tran.create({ hint: 'tran3' })
     t.throws(() => tran3.run(() => {
       tran3.cancel(new Error('test'))
       tran3.run(nop)
     }), { message: 'test' })
     t.throws(() => tran3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
-    Tran.run('tran4', sensitive, Sensitivity.TriggerEvenOnSameValueAssignment, () => {
+    Tran.run(sensitive, Sensitivity.TriggerEvenOnSameValueAssignment, () => {
       app.userFilter = app.userFilter
     })
     // // Undo transaction
@@ -162,7 +162,7 @@ test('brief', t => {
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
   }
   finally {
-    Tran.run('cleanup', () => {
+    Tran.run(() => {
       R.unmount(app)
       R.unmount(app.model)
     })

@@ -29,7 +29,7 @@ const expected: Array<string | undefined> = [
 
 test('reentrance.restart', async t => {
   R.setLoggingMode(true, TestingLogLevel)
-  const app = Tran.run('app', () => {
+  const app = Tran.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getCache(a.model.load).configure({reentrance: Reentrance.WaitAndRestart})
     return a
@@ -49,7 +49,7 @@ test('reentrance.restart', async t => {
     t.is(busy.workerCount, 0)
     t.is(busy.workers.size, 0)
     await sleep(100)
-    Tran.run('cleanup', () => {
+    Tran.run(() => {
       R.unmount(app)
       R.unmount(app.model)
     })

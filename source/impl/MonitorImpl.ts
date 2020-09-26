@@ -31,7 +31,7 @@ export class MonitorImpl extends Monitor {
   }
 
   static create(hint?: string, prolonged?: number): MonitorImpl {
-    return TransactionImpl.run('Monitor.create', MonitorImpl.doCreate, hint, prolonged)
+    return TransactionImpl.runAs({ hint: 'Monitor.create' }, MonitorImpl.doCreate, hint, prolonged)
   }
 
   static enter(mon: MonitorImpl, worker: Worker): void {
@@ -60,7 +60,7 @@ export class MonitorImpl extends Monitor {
     }
     else
       this.x.timeout = setTimeout(() =>
-        TransactionImpl.runAs<void>('Monitor.idle', { spawn: true },
+        TransactionImpl.runAs<void>({ hint: 'Monitor.idle', spawn: true },
           MonitorImpl.idle, this, true), this.x.delayBeforeIdle)
   }
 

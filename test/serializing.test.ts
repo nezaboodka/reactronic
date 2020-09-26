@@ -14,7 +14,7 @@ class Serializable extends Stateful {
 
 test('serializing', t => {
   R.setLoggingMode(true, TestingLogLevel)
-  const serializable = Tran.run('app', () => {
+  const serializable = Tran.run(() => {
     const s1 = new Serializable()
     s1.text = 's1'
     const s2 = new Serializable()

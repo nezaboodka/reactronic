@@ -30,7 +30,7 @@ export class Method extends Cache<any> {
   get error(): boolean { return this.weak().result.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reuse }
-  invalidate(): void { TransactionImpl.run(Dbg.isOn ? `invalidate(${Hints.obj(this.handle, this.member)})` : 'invalidate()', Method.invalidate, this) }
+  invalidate(): void { TransactionImpl.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.handle, this.member)})` : 'invalidate()' }, Method.invalidate, this) }
   getCachedAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
   constructor(handle: Handle, member: Member) {
@@ -155,7 +155,7 @@ export class Method extends Cache<any> {
     if (c.method !== this) {
       const hint: string = Dbg.isOn ? `${Hints.obj(this.handle, m)}/initialize` : /* istanbul ignore next */ 'Cache.init'
       const spawn = r.snapshot.completed || r.prev.record !== NIL
-      c = TransactionImpl.runAs<CallResult>(hint, { spawn, token: this }, (): CallResult => {
+      c = TransactionImpl.runAs<CallResult>({ hint, spawn, token: this }, (): CallResult => {
         const h = this.handle
         let r2: Record = Snapshot.reader().readable(h)
         let c2 = r2.data[m] as CallResult
@@ -175,7 +175,7 @@ export class Method extends Cache<any> {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.handle, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.handle, this.member)}`
     let call = existing
-    const ret = TransactionImpl.runAs(hint, { spawn, logging, token }, (argsx: any[] | undefined): any => {
+    const ret = TransactionImpl.runAs({ hint, spawn, logging, token }, (argsx: any[] | undefined): any => {
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
         if (Dbg.isOn && (Dbg.logging.transactions || Dbg.logging.methods || Dbg.logging.invalidations))
@@ -457,17 +457,21 @@ class CallResult extends Observable implements Observer {
   }
 
   private monitorEnter(mon: Monitor): void {
-    Method.run<void>(undefined, TransactionImpl.runAs, 'Monitor.enter',
-      { spawn: true, logging: Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.global },
-      MonitorImpl.enter, mon, this.worker)
+    Method.run<void>(undefined, TransactionImpl.runAs, {
+      hint: 'Monitor.enter',
+      spawn: true,
+      logging: Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.global },
+    MonitorImpl.enter, mon, this.worker)
   }
 
   private monitorLeave(mon: Monitor): void {
     TransactionImpl.isolated<void>(() => {
       const leave = (): void => {
-        Method.run<void>(undefined, TransactionImpl.runAs, 'Monitor.leave',
-          { spawn: true, logging: Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.DefaultLevel },
-          MonitorImpl.leave, mon, this.worker)
+        Method.run<void>(undefined, TransactionImpl.runAs, {
+          hint: 'Monitor.leave',
+          spawn: true,
+          logging: Dbg.isOn && Dbg.logging.monitors ? undefined : Dbg.DefaultLevel },
+        MonitorImpl.leave, mon, this.worker)
       }
       this.worker.whenFinished().then(leave, leave)
     })
@@ -707,7 +711,7 @@ function valueHint(value: any): string {
 
 function getMergedLoggingOptions(local: Partial<LoggingOptions> | undefined): LoggingOptions {
   const t = TransactionImpl.current
-  let res = Dbg.merge(t.logging, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Snapshot.idGen.toString().replace(/[0-9]/g, '-')}`, Dbg.global)
+  let res = Dbg.merge(t.options.logging, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Snapshot.idGen.toString().replace(/[0-9]/g, '-')}`, Dbg.global)
   res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
   if (CallResult.current)
     res = Dbg.merge({margin2: CallResult.current.margin}, undefined, undefined, res)

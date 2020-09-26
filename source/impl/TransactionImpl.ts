@@ -9,16 +9,13 @@ import { Record } from './Data'
 import { Snapshot, Hints } from './Snapshot'
 import { Worker } from '../Monitor'
 import { Transaction } from '../Transaction'
-import { UndoRedoLog } from './UndoRedoLog'
 import { SnapshotOptions, LoggingOptions } from '../Options'
 
 export class TransactionImpl extends Transaction {
-  private static readonly none: TransactionImpl = new TransactionImpl('<none>')
+  private static readonly none: TransactionImpl = new TransactionImpl({ hint: '<none>' })
   private static running: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false
 
-  readonly undoRedoLog?: UndoRedoLog
-  readonly logging?: Partial<LoggingOptions> // assigned in constructor
   readonly margin: number
   private readonly snapshot: Snapshot // assigned in constructor
   private workers: number
@@ -29,12 +26,10 @@ export class TransactionImpl extends Transaction {
   private resolve: (value?: void) => void
   private reject: (reason: any) => void
 
-  constructor(hint: string, undoRedoLog?: UndoRedoLog, logging?: Partial<LoggingOptions>, token?: any) {
+  constructor(options: SnapshotOptions | null) {
     super()
-    this.undoRedoLog = undoRedoLog
-    this.logging = logging
     this.margin = TransactionImpl.running ? TransactionImpl.running.margin + 1 : -1
-    this.snapshot = new Snapshot(hint, token)
+    this.snapshot = new Snapshot(options)
     this.workers = 0
     this.sealed = false
     this.canceled = undefined
@@ -46,8 +41,9 @@ export class TransactionImpl extends Transaction {
 
   static get current(): TransactionImpl { return TransactionImpl.running }
   get id(): number { return this.snapshot.id }
-  get timestamp(): number { return this.snapshot.timestamp }
   get hint(): string { return this.snapshot.hint }
+  get options(): SnapshotOptions { return this.snapshot.options }
+  get timestamp(): number { return this.snapshot.timestamp }
   get error(): Error | undefined { return this.canceled }
 
   run<T>(func: F<T>, ...args: any[]): T {
@@ -132,18 +128,18 @@ export class TransactionImpl extends Transaction {
   }
 
   revert(): Transaction {
-    return TransactionImpl.runAs(`revert: ${this.hint}`, { spawn: true }, () => {
+    return TransactionImpl.runAs({ hint: `revert: ${this.hint}`, spawn: true }, () => {
       Snapshot.revert(this.snapshot)
       return Transaction.current
     })
   }
 
-  static run<T>(hint: string, func: F<T>, ...args: any[]): T {
-    return TransactionImpl.runAs<T>(hint, null, func, ...args)
+  static run<T>(func: F<T>, ...args: any[]): T {
+    return TransactionImpl.runAs<T>(null, func, ...args)
   }
 
-  static runAs<T>(hint: string, options: SnapshotOptions | null, func: F<T>, ...args: any[]): T {
-    const t: TransactionImpl = TransactionImpl.acquire(hint, options)
+  static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T {
+    const t: TransactionImpl = TransactionImpl.acquire(options)
     const root = t !== TransactionImpl.running
     t.guard()
     let result: any = t.do<T>(options?.logging, func, ...args)
@@ -170,9 +166,9 @@ export class TransactionImpl extends Transaction {
 
   // Internal
 
-  private static acquire(hint: string, options: SnapshotOptions | null): TransactionImpl {
+  private static acquire(options: SnapshotOptions | null): TransactionImpl {
     return options?.spawn || TransactionImpl.running.isFinished
-      ? new TransactionImpl(hint, options?.undoRedoLog, options?.logging, options?.token)
+      ? new TransactionImpl(options)
       : TransactionImpl.running
   }
 
@@ -198,10 +194,12 @@ export class TransactionImpl extends Transaction {
           //   await this.after.whenFinished()
           await this.after.whenFinished()
           // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
-          return TransactionImpl.runAs<T>(
-            `${this.hint} - restart after T${this.after.id}`,
-            { spawn: true, logging: this.logging, token: this.snapshot.token },
-            func, ...args)
+          return TransactionImpl.runAs<T>({
+            hint: `${this.hint} - restart after T${this.after.id}`,
+            spawn: true,
+            logging: this.snapshot.options.logging,
+            token: this.snapshot.options.token },
+          func, ...args)
         }
         else
           throw error

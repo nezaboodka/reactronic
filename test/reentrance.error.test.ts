@@ -25,7 +25,7 @@ const expected: Array<string | undefined> = [
 
 test('reentrance.error', async t => {
   R.setLoggingMode(true, TestingLogLevel)
-  const app = Tran.run('app', () => {
+  const app = Tran.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getCache(a.model.load).configure({reentrance: Reentrance.PreventWithError})
     return a
@@ -50,7 +50,7 @@ test('reentrance.error', async t => {
     const r = getCachedAndRevalidate(app.render)
     t.is(r && r.length, 2)
     await sleep(100)
-    Tran.run('cleanup', () => {
+    Tran.run(() => {
       R.unmount(app)
       R.unmount(app.model)
     })

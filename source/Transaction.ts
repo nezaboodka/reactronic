@@ -12,8 +12,9 @@ export abstract class Transaction implements Worker {
   static get current(): Transaction { return TransactionImpl.current }
 
   abstract readonly id: number
-  abstract readonly timestamp: number
   abstract readonly hint: string
+  abstract readonly options: SnapshotOptions
+  abstract readonly timestamp: number
   abstract readonly error: Error | undefined
 
   abstract run<T>(func: F<T>, ...args: any[]): T
@@ -27,8 +28,8 @@ export abstract class Transaction implements Worker {
   abstract async whenFinished(): Promise<void>
   abstract revert(): Transaction
 
-  static create(hint: string): Transaction { return new TransactionImpl(hint) }
-  static run<T>(hint: string, func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(hint, func, ...args) }
-  static runAs<T>(hint: string, options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(hint, options, func, ...args) }
+  static create(options: SnapshotOptions | null): Transaction { return new TransactionImpl(options) }
+  static run<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(func, ...args) }
+  static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(options, func, ...args) }
   static isolated<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.isolated<T>(func, ...args) }
 }
