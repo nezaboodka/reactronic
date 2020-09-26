@@ -8,6 +8,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { Record, Member, Handle, Observable, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { Options, Kind, Reentrance, Sensitivity } from '../Options'
+import { UndoRedoLog } from './UndoRedoLog'
 import { Monitor } from '../Monitor'
 import { Cache } from '../Cache'
 import { LoggingOptions, ProfilingOptions } from '../Logging'
@@ -49,6 +50,7 @@ const DEFAULT_STATELESS_OPTIONS: Options = Object.freeze({
   sensitiveArgs: false,
   throttling: Number.MAX_SAFE_INTEGER, // never revalidate
   reentrance: Reentrance.PreventWithError,
+  undoRedoLog: null,
   monitor: null,
   logging: undefined,
 })
@@ -61,6 +63,7 @@ export class OptionsImpl implements Options {
   readonly sensitiveArgs: boolean
   readonly throttling: number
   readonly reentrance: Reentrance
+  readonly undoRedoLog: UndoRedoLog | null
   readonly monitor: Monitor | null
   readonly logging?: Partial<LoggingOptions>
   static readonly INITIAL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))
@@ -73,6 +76,7 @@ export class OptionsImpl implements Options {
     this.sensitiveArgs = merge(DEFAULT_STATELESS_OPTIONS.sensitiveArgs, existing.sensitiveArgs, patch.sensitiveArgs, implicit)
     this.throttling = merge(DEFAULT_STATELESS_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
+    this.undoRedoLog = merge(DEFAULT_STATELESS_OPTIONS.undoRedoLog, existing.undoRedoLog, patch.undoRedoLog, implicit)
     this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
     this.logging = merge(DEFAULT_STATELESS_OPTIONS.logging, existing.logging, patch.logging, implicit)
     if (Dbg.isOn)

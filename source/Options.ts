@@ -5,6 +5,7 @@
 
 import { LoggingOptions } from './Logging'
 export { LoggingOptions, ProfilingOptions, LogLevel } from './Logging'
+import { UndoRedoLog } from './impl/UndoRedoLog'
 import { Monitor } from './Monitor'
 
 export interface Options {
@@ -14,6 +15,7 @@ export interface Options {
   readonly sensitiveArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
+  readonly undoRedoLog: UndoRedoLog | null
   readonly monitor: Monitor | null
   readonly logging?: Partial<LoggingOptions>
 }
