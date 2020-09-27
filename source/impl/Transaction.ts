@@ -20,6 +20,7 @@ export abstract class Transaction implements Worker {
   abstract readonly options: SnapshotOptions
   abstract readonly timestamp: number
   abstract readonly error: Error | undefined
+  abstract readonly snapshot: Snapshot
   abstract readonly margin: number
 
   abstract run<T>(func: F<T>, ...args: any[]): T
@@ -31,7 +32,6 @@ export abstract class Transaction implements Worker {
   abstract readonly isCanceled: boolean
   abstract readonly isFinished: boolean
   abstract async whenFinished(): Promise<void>
-  abstract revert(): Transaction
 
   static create(options: SnapshotOptions | null): Transaction { return new TransactionImpl(options) }
   static run<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(func, ...args) }
@@ -45,7 +45,7 @@ class TransactionImpl extends Transaction {
   private static inspection: boolean = false
 
   readonly margin: number
-  private readonly snapshot: Snapshot // assigned in constructor
+  readonly snapshot: Snapshot // assigned in constructor
   private workers: number
   private sealed: boolean
   private canceled?: Error
@@ -153,13 +153,6 @@ class TransactionImpl extends Transaction {
   async whenFinished(): Promise<void> {
     if (!this.isFinished)
       await this.acquirePromise()
-  }
-
-  revert(): Transaction {
-    return TransactionImpl.runAs({ hint: `revert: ${this.hint}`, spawn: true }, () => {
-      Snapshot.revert(this.snapshot)
-      return Transaction.current
-    })
   }
 
   static run<T>(func: F<T>, ...args: any[]): T {

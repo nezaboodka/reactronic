@@ -11,6 +11,7 @@ export { Worker } from './Worker'
 export { Cache } from './Cache'
 export { Ref, ToggleRef, BooleanOnly, GivenTypeOnly } from './Ref'
 export { Stateful } from './impl/Hooks'
+export { Snapshot } from './impl/Snapshot'
 export { Transaction } from './impl/Transaction'
 export { Monitor } from './impl/Monitor'
 export { Reactronic, getCachedAndRevalidate, untracked, isolated, sensitive, stateless,

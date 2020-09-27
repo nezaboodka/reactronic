@@ -7,15 +7,23 @@
 
 import { Stateful } from './Hooks'
 import { Transaction } from './Transaction'
+import { Handle, Record } from './Data'
+
+export class UndoRedoItem {
+  constructor(
+    readonly undoChangeset: Map<Handle, Record>,
+    readonly redoChangeset: Map<Handle, Record>) {
+  }
+}
 
 export class UndoRedoLog extends Stateful {
   private _capacity: number = 5
-  private _items: Transaction[] = []
+  private _items: UndoRedoItem[] = []
   private _position: number = 0
 
   get capacity(): number { return this._capacity }
   set capacity(value: number) { this._capacity = value; if (value < this._items.length) this._items.splice(0, this._items.length - value) }
-  get items(): ReadonlyArray<Transaction> { return this._items }
+  get items(): ReadonlyArray<UndoRedoItem> { return this._items }
   get canUndo(): boolean { return this._items.length > 0 && this._position > 0 }
   get canRedo(): boolean { return this._position < this._items.length }
 
@@ -25,19 +33,21 @@ export class UndoRedoLog extends Stateful {
   }
 
   private static remember(log: UndoRedoLog, t: Transaction): void {
+    const item = new UndoRedoItem(t.snapshot.changeset, t.snapshot.changeset)
     if (log._items.length >= log._capacity)
       log._items.shift()
     else
       log._items.splice(log._position)
-    log._items.push(t)
+    log._items.push(item)
   }
 
   undo(count: number = 1): void {
     let i: number = this._position - 1
     Transaction.runAs({ hint: 'UndoRedeLog.undo' }, () => {
       while (i >= 0 && count > 0) {
-        const t: Transaction = this._items[i]
-        this._items[i] = t.revert()
+        // NOT IMPLEMENTED
+        // const item: UndoRedoItem = this._items[i]
+        // item.revert()
         i--
         count--
       }
@@ -49,8 +59,9 @@ export class UndoRedoLog extends Stateful {
     let i: number = this._position
     Transaction.runAs({ hint: 'UndoRedeLog.redo' }, () => {
       while (i < this._items.length && count > 0) {
-        const t: Transaction = this._items[i]
-        this._items[i] = t.revert()
+        // NOT IMPLEMENTED
+        // const t: Transaction = this._items[i]
+        // this._items[i] = t.revert()
         i++
         count--
       }
