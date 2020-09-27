@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, Reactronic as R, LoggingOptions } from 'api'
+import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, UndoRedoLog, Reactronic as R, LoggingOptions } from 'api'
 
 export const output: string[] = []
 
@@ -14,6 +14,7 @@ export class Demo extends Stateful {
   title: string = 'Demo'
   users: Person[] = []
   usersWithoutLast: Person[] = []
+  undoRedoLog = UndoRedoLog.create()
 
   @transaction
   loadUsers(): void {

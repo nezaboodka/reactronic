@@ -100,6 +100,6 @@ export class DataPatch {
 }
 
 export class ObjectDataPatch {
-  undoData: any
-  redoData: any
+  undoData: any = {}
+  redoData: any = {}
 }

@@ -43,26 +43,26 @@ export class UndoRedoLogImpl extends UndoRedoLog {
   }
 
   undo(count: number = 1): void {
-    let i: number = this._position - 1
     Transaction.runAs({ hint: 'UndoRedeLog.undo' }, () => {
+      let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._items[i]
         Snapshot.applyDataPatch(patch, true)
         i--, count--
       }
+      this._position = i + 1
     })
-    this._position = i + 1
   }
 
   redo(count: number = 1): void {
-    let i: number = this._position
     Transaction.runAs({ hint: 'UndoRedeLog.redo' }, () => {
+      let i: number = this._position
       while (i < this._items.length && count > 0) {
         const patch = this._items[i]
         Snapshot.applyDataPatch(patch, false)
         i++, count--
       }
+      this._position = i
     })
-    this._position = i
   }
 }

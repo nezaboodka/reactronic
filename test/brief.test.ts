@@ -67,7 +67,7 @@ test('brief', t => {
     rendering.invalidate()
     t.not(rendering.stamp, stamp)
     // Multi-part transactions
-    const tran1 = Tran.create({ hint: 'tran1' })
+    const tran1 = Tran.create({ hint: 'tran1', undoRedoLog: app.model.undoRedoLog })
     tran1.run(() => {
       t.throws(() => tran1.apply(), { message: 'cannot apply transaction having active functions running' })
       app.model.shared = app.shared = tran1.hint
@@ -132,7 +132,7 @@ test('brief', t => {
     t.throws(() => { console.log(R.getMethodCache(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
     const tran2 = Tran.create({ hint: 'tran2' })
     const zombi = tran2.run(() => new Person())
-    t.throws(() => console.log(zombi.age), { message: 'object Person #29 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
+    t.throws(() => console.log(zombi.age), { message: 'object Person #30 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
     t.throws(() => tran2.run(() => { throw new Error('test') }), { message: 'test' })
     t.throws(() => tran2.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
     const tran3 = Tran.create({ hint: 'tran3' })
@@ -145,18 +145,18 @@ test('brief', t => {
       app.userFilter = app.userFilter
     })
     // Other
-    t.is(app.raw, 'DemoView.userFilter #22t123v101')
+    t.is(app.raw, 'DemoView.userFilter #23t124v101')
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)
     t.is(R.getLoggingHint(app), 'DemoView')
     R.setLoggingHint(app, 'App')
     t.is(R.getLoggingHint(app, false), 'App')
-    t.is(R.getLoggingHint(app, true), 'App#22')
-    t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
-    t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
+    t.is(R.getLoggingHint(app, true), 'App#23')
+    t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'usersWithoutLast', 'undoRedoLog'])
+    t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'usersWithoutLast', 'undoRedoLog'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
-    // // Undo transaction
-    // const tran1undo = tran1.revert()
+    // Undo
+    // app.model.undoRedoLog.undo()
     // t.is(daddy.name, undefined)
     // t.is(daddy.age, undefined)
     // tran1undo.revert()
