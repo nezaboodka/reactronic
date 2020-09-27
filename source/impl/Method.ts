@@ -538,8 +538,7 @@ class CallResult extends Observable implements Observer {
       })
       triggers.sort(CallResult.compareTriggersByPriority)
       const log = snapshot.options.undoRedoLog
-      if (log)
-        log.remember(snapshot.createPatch())
+      log && log.remember(snapshot.createPatch())
     }
     else
       snapshot.changeset.forEach((r: Record, h: Handle) =>
