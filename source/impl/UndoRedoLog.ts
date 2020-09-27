@@ -8,6 +8,7 @@
 import { Stateful } from './Hooks'
 import { Transaction } from './Transaction'
 import { DataPatch } from './Data'
+import { Snapshot } from './Snapshot'
 
 export abstract class UndoRedoLog extends Stateful {
   abstract capacity: number
@@ -45,11 +46,9 @@ export class UndoRedoLogImpl extends UndoRedoLog {
     let i: number = this._position - 1
     Transaction.runAs({ hint: 'UndoRedeLog.undo' }, () => {
       while (i >= 0 && count > 0) {
-        // NOT IMPLEMENTED
-        // const item: UndoRedoItem = this._items[i]
-        // item.revert()
-        i--
-        count--
+        const patch = this._items[i]
+        Snapshot.applyDataPatch(patch, true)
+        i--, count--
       }
     })
     this._position = i + 1
@@ -59,11 +58,9 @@ export class UndoRedoLogImpl extends UndoRedoLog {
     let i: number = this._position
     Transaction.runAs({ hint: 'UndoRedeLog.redo' }, () => {
       while (i < this._items.length && count > 0) {
-        // NOT IMPLEMENTED
-        // const t: Transaction = this._items[i]
-        // this._items[i] = t.revert()
-        i++
-        count--
+        const patch = this._items[i]
+        Snapshot.applyDataPatch(patch, false)
+        i++, count--
       }
     })
     this._position = i

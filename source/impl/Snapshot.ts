@@ -293,19 +293,20 @@ export class Snapshot implements Context {
     return patch
   }
 
-  static revert(s: Snapshot): void {
+  static applyDataPatch(patch: DataPatch, undo: boolean): void {
     const ctx = Snapshot.writer()
-    s.changeset.forEach((r: Record, h: Handle) => {
-      if (r.prev.record !== NIL) {
-        r.changes.forEach(m => {
-          const prevValue: any = r.prev.record.data[m]
-          const t: Record = ctx.writable(h, m, prevValue)
+    patch.objects.forEach((p: ObjectDataPatch, h: Handle) => {
+      const data = undo ? p.undoData : p.redoData
+      if (data[Meta.Unmount] !== Meta.Unmount) {
+        for (const m in data) {
+          const value = data[m]
+          const t: Record = ctx.writable(h, m, value)
           if (t.snapshot === ctx) {
-            t.data[m] = prevValue
+            t.data[m] = value
             const v: any = t.prev.record.data[m]
-            Snapshot.markChanged(t, m, prevValue, v !== prevValue)
+            Snapshot.markChanged(t, m, value, v !== value)
           }
-        })
+        }
       }
       else
         Snapshot.doUnmount(ctx, h)
