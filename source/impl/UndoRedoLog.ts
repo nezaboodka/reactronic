@@ -7,7 +7,7 @@
 
 import { Stateful } from './Hooks'
 import { Transaction } from './Transaction'
-import { Handle, Record, Meta, DataPatch, ObjectDataPatch } from './Data'
+import { Handle, Record, Meta, DataPatch, ObjectDataPatch, Observable } from './Data'
 import { NIL, Snapshot } from './Snapshot'
 
 export abstract class UndoRedoLog extends Stateful {
@@ -73,8 +73,8 @@ export class UndoRedoLogImpl extends UndoRedoLog {
       const old = r.prev.record !== NIL ? r.prev.record.data : undefined
       r.changes.forEach(m => {
         if (old)
-          p.undoData[m] = old[m]
-        p.redoData[m] = r.data[m]
+          p.undoData[m] = unpack(old[m])
+        p.redoData[m] = unpack(r.data[m])
       })
       if (!old)
         p.undoData[Meta.Unmount] = Meta.Unmount
@@ -92,7 +92,7 @@ export class UndoRedoLogImpl extends UndoRedoLog {
           const value = data[m]
           const t: Record = ctx.writable(h, m, value)
           if (t.snapshot === ctx) {
-            t.data[m] = value
+            t.data[m] = new Observable(value)
             const v: any = t.prev.record.data[m]
             Snapshot.markChanged(t, m, value, v !== value)
           }
@@ -102,4 +102,12 @@ export class UndoRedoLogImpl extends UndoRedoLog {
         Snapshot.doUnmount(ctx, h)
     })
   }
+}
+
+function unpack(observable: Observable): any {
+  let result = observable.value
+  // TODO: Support Array, Set, Map (all CopyOnWrite collections)
+  if (result instanceof Array)
+    result = result.slice()
+  return result
 }
