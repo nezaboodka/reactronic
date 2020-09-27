@@ -7,31 +7,31 @@
 
 import { Stateful } from './Hooks'
 import { Transaction } from './Transaction'
-import { Patch } from './Data'
+import { DataPatch } from './Data'
 
 export abstract class UndoRedoLog extends Stateful {
   abstract capacity: number
-  abstract readonly items: ReadonlyArray<Patch>
+  abstract readonly items: ReadonlyArray<DataPatch>
   abstract readonly canUndo: boolean
   abstract readonly canRedo: boolean
   abstract undo(count?: number): void
   abstract redo(count?: number): void
-  abstract remember(patch: Patch): void
+  abstract remember(patch: DataPatch): void
   static create(): UndoRedoLog { return new UndoRedoLogImpl() }
 }
 
 export class UndoRedoLogImpl extends UndoRedoLog {
   private _capacity: number = 5
-  private _items: Patch[] = []
+  private _items: DataPatch[] = []
   private _position: number = 0
 
   get capacity(): number { return this._capacity }
   set capacity(value: number) { this._capacity = value; if (value < this._items.length) this._items.splice(0, this._items.length - value) }
-  get items(): ReadonlyArray<Patch> { return this._items }
+  get items(): ReadonlyArray<DataPatch> { return this._items }
   get canUndo(): boolean { return this._items.length > 0 && this._position > 0 }
   get canRedo(): boolean { return this._position < this._items.length }
 
-  remember(p: Patch): void {
+  remember(p: DataPatch): void {
     Transaction.runAs({ hint: 'UndoRedeLog.remember', spawn: true }, () => {
       if (this._items.length >= this._capacity)
         this._items.shift()

@@ -93,13 +93,13 @@ export class Handle {
   }
 }
 
-// Patch
+// DataPatch
 
-export class Patch {
-  objects: Map<Handle, ObjectPatch> = new Map<Handle, ObjectPatch>()
+export class DataPatch {
+  objects: Map<Handle, ObjectDataPatch> = new Map<Handle, ObjectDataPatch>()
 }
 
-export class ObjectPatch {
+export class ObjectDataPatch {
   undoData: any
   redoData: any
 }

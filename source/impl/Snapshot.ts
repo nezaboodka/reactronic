@@ -9,7 +9,7 @@ import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { CopyOnWriteProxy } from '../util/CopyOnWriteProxy'
 import { Kind, SnapshotOptions } from '../Options'
-import { Context, Record, Member, Handle, Observable, Observer, Meta, Patch, ObjectPatch } from './Data'
+import { Context, Record, Member, Handle, Observable, Observer, Meta, DataPatch, ObjectDataPatch } from './Data'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
@@ -276,10 +276,10 @@ export class Snapshot implements Context {
     return r
   }
 
-  createPatch(): Patch {
-    const patch = new Patch()
+  createDataPatch(): DataPatch {
+    const patch = new DataPatch()
     this.changeset.forEach((r: Record, h: Handle) => {
-      const p = new ObjectPatch()
+      const p = new ObjectDataPatch()
       const old = r.prev.record !== NIL ? r.prev.record.data : undefined
       r.changes.forEach(m => {
         if (old)
