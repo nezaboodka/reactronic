@@ -65,6 +65,11 @@ export function W<T>(self: any): T {
   return binding !== undefined ? binding.writable(self) : self
 }
 
+export function V<T>(self: any): T {
+  const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
+  return binding !== undefined ? binding.value : self
+}
+
 // export function S<T>(self: any): number {
 //   const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
 //   return binding !== undefined ? binding.sizing(self) : -1

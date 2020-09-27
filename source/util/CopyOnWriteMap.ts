@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { CopyOnWrite, R, W } from './CopyOnWrite'
+import { CopyOnWrite, R, W, V } from './CopyOnWrite'
 export { CopyOnWrite } from './CopyOnWrite'
 
 export abstract class CopyOnWriteMap<K, V> extends Map<K, V> {
@@ -16,7 +16,7 @@ export abstract class CopyOnWriteMap<K, V> extends Map<K, V> {
   has(key: K): boolean { return super.has.call(R<Map<K, V>>(this), key) }
   set(key: K, value: V): this { super.set.call(W<Map<K, V>>(this), key, value); return this }
   get size(): number { return super.size /* S<Map<K, V>>(this)*/ }
-  entries(): IterableIterator<[K, V]> { return super.entries.call(R<Map<K, V>>(this)) }
+  entries(): IterableIterator<[K, V]> { return super.entries.call(V<Map<K, V>>(this)) }
   keys(): IterableIterator<K> { return super.keys.call(R<Map<K, V>>(this)) }
   values(): IterableIterator<V> { return super.values.call(R<Map<K, V>>(this)) }
   toJSON(name: string): any { return R<Map<K, V>>(this) }

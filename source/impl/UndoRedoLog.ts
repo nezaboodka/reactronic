@@ -108,6 +108,10 @@ function unpack(observable: Observable): any {
   let result = observable.value
   // TODO: Support Array, Set, Map (all CopyOnWrite collections)
   if (result instanceof Array)
-    result = result.slice()
+    result = new Array(...result)
+  else if (result instanceof Set)
+    result = new Set(result.values())
+  else if (result instanceof Map)
+    result = new Map(result.entries())
   return result
 }
