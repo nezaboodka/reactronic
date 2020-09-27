@@ -537,11 +537,13 @@ class CallResult extends Observable implements Observer {
           Snapshot.freezeRecord(r)
       })
       triggers.sort(CallResult.compareTriggersByPriority)
+      const log = snapshot.options.undoRedoLog
+      if (log)
+        log.remember(snapshot.createPatch())
     }
-    else {
+    else
       snapshot.changeset.forEach((r: Record, h: Handle) =>
         r.changes.forEach(m => CallResult.finalizeChange(true, since, r, m)))
-    }
   }
 
   private static compareTriggersByPriority(a: Observer, b: Observer): number {

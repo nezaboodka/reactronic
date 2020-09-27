@@ -92,3 +92,14 @@ export class Handle {
     return h ? (full ? `${h.hint}#${h.id}` : h.hint) : /* istanbul ignore next */ undefined
   }
 }
+
+// Patch
+
+export class Patch {
+  objects: Map<Handle, ObjectPatch> = new Map<Handle, ObjectPatch>()
+}
+
+export class ObjectPatch {
+  undoData: any
+  redoData: any
+}

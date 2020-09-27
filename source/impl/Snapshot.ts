@@ -9,7 +9,7 @@ import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { CopyOnWriteProxy } from '../util/CopyOnWriteProxy'
 import { Kind, SnapshotOptions } from '../Options'
-import { Context, Record, Member, Handle, Observable, Observer, Meta } from './Data'
+import { Context, Record, Member, Handle, Observable, Observer, Meta, Patch, ObjectPatch } from './Data'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
@@ -274,6 +274,23 @@ export class Snapshot implements Context {
     Utils.freezeSet(r.changes)
     Utils.freezeMap(r.conflicts)
     return r
+  }
+
+  createPatch(): Patch {
+    const patch = new Patch()
+    this.changeset.forEach((r: Record, h: Handle) => {
+      const p = new ObjectPatch()
+      const old = r.prev.record !== NIL ? r.prev.record.data : undefined
+      r.changes.forEach(m => {
+        if (old)
+          p.undoData[m] = old[m]
+        p.redoData[m] = r.data[m]
+      })
+      if (!old)
+        p.undoData[Meta.Unmount] = Meta.Unmount
+      patch.objects.set(h, p)
+    })
+    return patch
   }
 
   static revert(s: Snapshot): void {
