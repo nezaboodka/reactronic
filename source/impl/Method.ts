@@ -15,6 +15,7 @@ import { Snapshot, Hints, NIL } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
+import { UndoRedoLogImpl } from './UndoRedoLog'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'N/A')
@@ -538,7 +539,7 @@ class CallResult extends Observable implements Observer {
       })
       triggers.sort(CallResult.compareTriggersByPriority)
       const log = snapshot.options.undoRedoLog
-      log && log.remember(snapshot.createDataPatch())
+      log && log.remember(UndoRedoLogImpl.createDataPatch(snapshot.changeset))
     }
     else
       snapshot.changeset.forEach((r: Record, h: Handle) =>

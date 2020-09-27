@@ -7,8 +7,8 @@
 
 import { Stateful } from './Hooks'
 import { Transaction } from './Transaction'
-import { DataPatch } from './Data'
-import { Snapshot } from './Snapshot'
+import { Handle, Record, Meta, DataPatch, ObjectDataPatch } from './Data'
+import { NIL, Snapshot } from './Snapshot'
 
 export abstract class UndoRedoLog extends Stateful {
   abstract capacity: number
@@ -47,7 +47,7 @@ export class UndoRedoLogImpl extends UndoRedoLog {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._items[i]
-        Snapshot.applyDataPatch(patch, true)
+        UndoRedoLogImpl.applyDataPatch(patch, true)
         i--, count--
       }
       this._position = i + 1
@@ -59,10 +59,47 @@ export class UndoRedoLogImpl extends UndoRedoLog {
       let i: number = this._position
       while (i < this._items.length && count > 0) {
         const patch = this._items[i]
-        Snapshot.applyDataPatch(patch, false)
+        UndoRedoLogImpl.applyDataPatch(patch, false)
         i++, count--
       }
       this._position = i
+    })
+  }
+
+  static createDataPatch(changeset: Map<Handle, Record>): DataPatch {
+    const patch = new DataPatch()
+    changeset.forEach((r: Record, h: Handle) => {
+      const p = new ObjectDataPatch()
+      const old = r.prev.record !== NIL ? r.prev.record.data : undefined
+      r.changes.forEach(m => {
+        if (old)
+          p.undoData[m] = old[m]
+        p.redoData[m] = r.data[m]
+      })
+      if (!old)
+        p.undoData[Meta.Unmount] = Meta.Unmount
+      patch.objects.set(h, p)
+    })
+    return patch
+  }
+
+  static applyDataPatch(patch: DataPatch, undo: boolean): void {
+    const ctx = Snapshot.writer()
+    patch.objects.forEach((p: ObjectDataPatch, h: Handle) => {
+      const data = undo ? p.undoData : p.redoData
+      if (data[Meta.Unmount] !== Meta.Unmount) {
+        for (const m in data) {
+          const value = data[m]
+          const t: Record = ctx.writable(h, m, value)
+          if (t.snapshot === ctx) {
+            t.data[m] = value
+            const v: any = t.prev.record.data[m]
+            Snapshot.markChanged(t, m, value, v !== value)
+          }
+        }
+      }
+      else
+        Snapshot.doUnmount(ctx, h)
     })
   }
 }

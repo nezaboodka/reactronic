@@ -9,7 +9,7 @@ import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { CopyOnWriteProxy } from '../util/CopyOnWriteProxy'
 import { Kind, SnapshotOptions } from '../Options'
-import { Context, Record, Member, Handle, Observable, Observer, Meta, DataPatch, ObjectDataPatch } from './Data'
+import { Context, Record, Member, Handle, Observable, Observer, Meta } from './Data'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
@@ -123,7 +123,7 @@ export class Snapshot implements Context {
       Snapshot.doUnmount(ctx, h)
   }
 
-  private static doUnmount(ctx: Snapshot, h: Handle): Record {
+  static doUnmount(ctx: Snapshot, h: Handle): Record {
     const r: Record = ctx.writable(h, Meta.Unmount, Meta.Unmount)
     if (r !== NIL) {
       r.data[Meta.Unmount] = Meta.Unmount
@@ -274,43 +274,6 @@ export class Snapshot implements Context {
     Utils.freezeSet(r.changes)
     Utils.freezeMap(r.conflicts)
     return r
-  }
-
-  createDataPatch(): DataPatch {
-    const patch = new DataPatch()
-    this.changeset.forEach((r: Record, h: Handle) => {
-      const p = new ObjectDataPatch()
-      const old = r.prev.record !== NIL ? r.prev.record.data : undefined
-      r.changes.forEach(m => {
-        if (old)
-          p.undoData[m] = old[m]
-        p.redoData[m] = r.data[m]
-      })
-      if (!old)
-        p.undoData[Meta.Unmount] = Meta.Unmount
-      patch.objects.set(h, p)
-    })
-    return patch
-  }
-
-  static applyDataPatch(patch: DataPatch, undo: boolean): void {
-    const ctx = Snapshot.writer()
-    patch.objects.forEach((p: ObjectDataPatch, h: Handle) => {
-      const data = undo ? p.undoData : p.redoData
-      if (data[Meta.Unmount] !== Meta.Unmount) {
-        for (const m in data) {
-          const value = data[m]
-          const t: Record = ctx.writable(h, m, value)
-          if (t.snapshot === ctx) {
-            t.data[m] = value
-            const v: any = t.prev.record.data[m]
-            Snapshot.markChanged(t, m, value, v !== value)
-          }
-        }
-      }
-      else
-        Snapshot.doUnmount(ctx, h)
-    })
   }
 
   private triggerGarbageCollection(): void {
