@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { CopyOnWrite, R, W, V } from './CopyOnWrite'
+import { CopyOnWrite, R, W } from './CopyOnWrite'
 export { CopyOnWrite } from './CopyOnWrite'
 
 export abstract class CopyOnWriteSet<T> extends Set<T> {
@@ -15,10 +15,11 @@ export abstract class CopyOnWriteSet<T> extends Set<T> {
   forEach(callbackfn: (value: T, value2: T, set: Set<T>) => void, thisArg?: any): void { super.forEach.call(R<Set<T>>(this), callbackfn, thisArg) }
   has(value: T): boolean { return super.has.call(R<Set<T>>(this), value) }
   get size(): number { return super.size /* S<Set<T>>(this)*/ }
-  entries(): IterableIterator<[T, T]> { return super.entries.call(V<Set<T>>(this)) }
+  entries(): IterableIterator<[T, T]> { return super.entries.call(R<Set<T>>(this)) }
   keys(): IterableIterator<T> { return super.keys.call(R<Set<T>>(this)) }
   values(): IterableIterator<T> { return super.values.call(R<Set<T>>(this)) }
   toJSON(name: string): any { return R<Set<T>>(this) }
+  raw(): Set<T> { return R<Set<T>>(this, true) }
 
   static seal<T>(owner: any, prop: PropertyKey, set: Set<T>): CopyOnWrite<Set<T>> {
     return CopyOnWrite.seal(owner, prop, set, set.size, CopyOnWriteSet.prototype, CopyOnWriteSet.getSize, CopyOnWriteSet.clone)

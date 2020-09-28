@@ -7,6 +7,7 @@
 
 import { Utils } from '../util/Utils'
 import { misuse } from '../util/Dbg'
+import { R_COPY_ON_WRITE } from './CopyOnWrite'
 import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
 import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
 import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
@@ -20,7 +21,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
   }
 
   get(binding: CopyOnWrite<any>, m: Member, receiver: any): any {
-    const a: any = binding.readable(receiver)
+    const a: any = binding.readable(receiver, m === 'raw' || m === R_COPY_ON_WRITE)
     return a[m]
   }
 

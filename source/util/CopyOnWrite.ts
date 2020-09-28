@@ -24,9 +24,9 @@ export class CopyOnWrite<T> {
   //   return v === receiver ? this.size : this.getSize(v)
   // }
 
-  readable(receiver: any): T {
+  readable(receiver: any, raw?: boolean): T {
     let v: T = this.owner[this.prop]
-    if (v === receiver) // check if array is not yet cloned
+    if (v === receiver || raw) // check if array is not yet cloned
       v = this.value
     return v
   }
@@ -55,9 +55,9 @@ export class CopyOnWrite<T> {
   }
 }
 
-export function R<T>(self: any): T {
+export function R<T>(self: any, raw?: boolean): T {
   const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
-  return binding !== undefined ? binding.readable(self) : self
+  return binding !== undefined ? binding.readable(self, raw) : self
 }
 
 export function W<T>(self: any): T {
@@ -65,10 +65,10 @@ export function W<T>(self: any): T {
   return binding !== undefined ? binding.writable(self) : self
 }
 
-export function V<T>(self: any): T {
-  const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
-  return binding !== undefined ? binding.value : self
-}
+// export function V<T>(self: any): T {
+//   const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
+//   return binding !== undefined ? binding.value : self
+// }
 
 // export function S<T>(self: any): number {
 //   const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]

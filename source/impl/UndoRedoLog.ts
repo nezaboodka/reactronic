@@ -6,9 +6,12 @@
 // automatically licensed under the license referred above.
 
 import { Stateful } from './Hooks'
-import { Transaction } from './Transaction'
+import { CopyOnWriteArray } from '../util/CopyOnWriteArray'
+import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
+import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Handle, Record, Meta, DataPatch, ObjectDataPatch, Observable } from './Data'
 import { NIL, Snapshot } from './Snapshot'
+import { Transaction } from './Transaction'
 
 export abstract class UndoRedoLog extends Stateful {
   abstract capacity: number
@@ -109,11 +112,13 @@ export class UndoRedoLogImpl extends UndoRedoLog {
 function unpack(observable: Observable): any {
   let result = observable.value
   // TODO: Support Array, Set, Map (all CopyOnWrite collections)
-  if (result instanceof Array)
-    result = new Array(...result)
-  else if (result instanceof Set)
-    result = new Set(result.values())
-  else if (result instanceof Map)
-    result = new Map(result.entries())
+  if (result instanceof CopyOnWriteArray)
+    result = new Array(...result.raw())
+  else if (result instanceof CopyOnWriteSet)
+    result = new Set(Set.prototype.values.call(result.raw()))
+  else if (result instanceof CopyOnWriteMap) {
+    const raw = result.raw()
+    result = new Map(Map.prototype.entries.call(raw))
+  }
   return result
 }
