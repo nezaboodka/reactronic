@@ -15,9 +15,11 @@ export abstract class UndoRedoLog extends Stateful {
   abstract readonly items: ReadonlyArray<DataPatch>
   abstract readonly canUndo: boolean
   abstract readonly canRedo: boolean
+
   abstract undo(count?: number): void
   abstract redo(count?: number): void
   abstract remember(patch: DataPatch): void
+
   static create(): UndoRedoLog { return new UndoRedoLogImpl() }
 }
 
