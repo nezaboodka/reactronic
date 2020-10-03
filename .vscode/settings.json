@@ -34,6 +34,7 @@
     "argsx",
     "boilerplating",
     "cancelandwait",
+    "deref",
     "enqueues",
     "gmail",
     "keyof",

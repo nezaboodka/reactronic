@@ -17,14 +17,14 @@ export class Ref<T = any> {
     readonly index: number = -1) {
   }
 
-  get value(): T {
+  get deref(): T {
     if (this.index < 0)
       return this.owner[this.name]
     else
       return this.owner[this.name][this.index]
   }
 
-  set value(value: T) {
+  set deref(value: T) {
     if (this.index < 0)
       this.owner[this.name] = value
     else
@@ -35,12 +35,12 @@ export class Ref<T = any> {
     return new Proxy<{ readonly [P in keyof O]-?: Ref<O[P]> }>(owner as any, RefGettingProxy)
   }
 
-  static togglesOf<O = any>(owner: O): { readonly [P in keyof BooleanOnly<O>]: ToggleRef<O[P]> } {
-    return new Proxy<{ readonly [P in keyof BooleanOnly<O>]: ToggleRef<O[P]> }>(owner, ToggleRefGettingProxy)
+  static togglesOf<O = any>(owner: O): { readonly [P in keyof BooleanOnly<O>]: BoolRef<O[P]> } {
+    return new Proxy<{ readonly [P in keyof BooleanOnly<O>]: BoolRef<O[P]> }>(owner, BoolRefGettingProxy)
   }
 
-  static customTogglesOf<T, O extends object = any>(owner: O, value1: T, value2: T): { readonly [P in keyof GivenTypeOnly<O, T | any>]: ToggleRef<O[P]> } {
-    const handler = new CustomToggleGettingProxy<T>(value1, value2)
+  static customTogglesOf<T, O extends object = any>(owner: O, value1: T, value2: T): { readonly [P in keyof GivenTypeOnly<O, T | any>]: BoolRef<O[P]> } {
+    const handler = new CustomBoolRefGettingProxy<T>(value1, value2)
     return new Proxy<O>(owner, handler)
   }
 
@@ -53,7 +53,7 @@ export class Ref<T = any> {
   }
 }
 
-export class ToggleRef<T = boolean> extends Ref<T> {
+export class BoolRef<T = boolean> extends Ref<T> {
   constructor(
     owner: any,
     name: string,
@@ -86,20 +86,20 @@ const RefGettingProxy = {
   },
 }
 
-const ToggleRefGettingProxy = {
-  get: <T, O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): ToggleRef<T> => {
-    return new ToggleRef<any>(obj, prop as string, true, false)
+const BoolRefGettingProxy = {
+  get: <T, O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): BoolRef<T> => {
+    return new BoolRef<any>(obj, prop as string, true, false)
   },
 }
 
-class CustomToggleGettingProxy<T> {
+class CustomBoolRefGettingProxy<T> {
   constructor(
     readonly value1: T,
     readonly value2: T) {
   }
 
-  get<O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): ToggleRef<T> {
-    return new ToggleRef<T>(obj, prop as string, this.value1, this.value2)
+  get<O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): BoolRef<T> {
+    return new BoolRef<T>(obj, prop as string, this.value1, this.value2)
   }
 }
 
