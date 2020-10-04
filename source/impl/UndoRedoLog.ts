@@ -81,8 +81,10 @@ export class UndoRedoLogImpl extends UndoRedoLog {
           p.undoData[m] = unpack(old[m])
         p.redoData[m] = unpack(r.data[m])
       })
-      if (!old)
+      if (!old) {
         p.undoData[Meta.Unmount] = Meta.Unmount
+        p.redoData[Meta.Unmount] = undefined
+      }
       patch.objects.set(h, p)
     })
     return patch
