@@ -52,7 +52,7 @@ const DEFAULT_STATELESS_OPTIONS: CacheOptions = Object.freeze({
   sensitiveArgs: false,
   throttling: Number.MAX_SAFE_INTEGER, // never revalidate
   reentrance: Reentrance.PreventWithError,
-  undoRedoLog: null,
+  undoRedoLog: undefined,
   monitor: null,
   logging: undefined,
 })
@@ -65,7 +65,7 @@ export class OptionsImpl implements CacheOptions {
   readonly sensitiveArgs: boolean
   readonly throttling: number
   readonly reentrance: Reentrance
-  readonly undoRedoLog: UndoRedoLog | null
+  readonly undoRedoLog: UndoRedoLog | undefined
   readonly monitor: Monitor | null
   readonly logging?: Partial<LoggingOptions>
   static readonly INITIAL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))

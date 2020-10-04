@@ -52,7 +52,7 @@ export class Method extends Cache<any> {
       const spawn = weak || opt.kind === Kind.Trigger ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
       const token = opt.noSideEffects ? this : undefined
-      const call2 = this.compute(call, spawn, opt.logging, token, args)
+      const call2 = this.compute(call, spawn, opt, token, args)
       const ctx2 = call2.result.record.snapshot
       if (!weak || ctx === ctx2 || (ctx2.completed && ctx.timestamp >= ctx2.timestamp))
         call = call2
@@ -174,11 +174,12 @@ export class Method extends Cache<any> {
     return c
   }
 
-  private compute(existing: Call, spawn: boolean, logging: Partial<LoggingOptions> | undefined, token: any, args: any[] | undefined): Call {
+  private compute(existing: Call, spawn: boolean, options: CacheOptions, token: any, args: any[] | undefined): Call {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.handle, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.handle, this.member)}`
     let call = existing
-    const ret = Transaction.runAs({ hint, spawn, logging, token }, (argsx: any[] | undefined): any => {
+    const opt = { hint, spawn, undoRedoLog: options.undoRedoLog, logging: options.logging, token }
+    const ret = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
         if (Dbg.isOn && (Dbg.logging.transactions || Dbg.logging.methods || Dbg.logging.invalidations))

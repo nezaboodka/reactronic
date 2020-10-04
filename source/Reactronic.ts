@@ -100,7 +100,7 @@ export function reentrance(value: Reentrance): F<any> {
   return decorateMethod({reentrance: value})
 }
 
-export function undoRedoLog(value: UndoRedoLog | null): F<any> {
+export function undoRedoLog(value: UndoRedoLog | undefined): F<any> {
   return decorateMethod({undoRedoLog: value})
 }
 
