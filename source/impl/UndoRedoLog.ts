@@ -44,6 +44,7 @@ export class UndoRedoLogImpl extends UndoRedoLog {
       else
         this._items.splice(this._position)
       this._items.push(p)
+      this._position = this._items.length
     })
   }
 
@@ -52,7 +53,7 @@ export class UndoRedoLogImpl extends UndoRedoLog {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._items[i]
-        UndoRedoLogImpl.applyDataPatch(patch, true)
+        UndoRedoLogImpl.applyPatch(patch, true)
         i--, count--
       }
       this._position = i + 1
@@ -64,14 +65,14 @@ export class UndoRedoLogImpl extends UndoRedoLog {
       let i: number = this._position
       while (i < this._items.length && count > 0) {
         const patch = this._items[i]
-        UndoRedoLogImpl.applyDataPatch(patch, false)
+        UndoRedoLogImpl.applyPatch(patch, false)
         i++, count--
       }
       this._position = i
     })
   }
 
-  static createDataPatch(changeset: Map<Handle, Record>): Patch {
+  static createPatch(changeset: Map<Handle, Record>): Patch {
     const patch: Patch = { objects: new Map<object, ObjectPatch>() }
     changeset.forEach((r: Record, h: Handle) => {
       const p: ObjectPatch = { changes: {}, old: {} }
@@ -90,7 +91,7 @@ export class UndoRedoLogImpl extends UndoRedoLog {
     return patch
   }
 
-  static applyDataPatch(patch: Patch, undo: boolean): void {
+  static applyPatch(patch: Patch, undo: boolean): void {
     const ctx = Snapshot.writer()
     patch.objects.forEach((p: ObjectPatch, obj: object) => {
       const h = Meta.get<Handle>(obj, Meta.Handle)

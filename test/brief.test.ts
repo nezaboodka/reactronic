@@ -21,8 +21,11 @@ const expected: string[] = [
   'Filter: ',
   'John Smith\'s children: Barry, Steven Smith, William Smith',
   'Kevin\'s children: Britney',
-  // "Filter: Jo",
-  // "John's children: Billy, Barry, Steve",
+  'Filter: Jo',
+  'John\'s children: Billy, Barry, Steve',
+  'Filter: ',
+  'John Smith\'s children: Barry, Steven Smith, William Smith',
+  'Kevin\'s children: Britney',
 ]
 
 test('brief', t => {
@@ -156,9 +159,17 @@ test('brief', t => {
     t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'usersWithoutLast', 'undoRedoLog'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
     // Undo
-    // app.model.undoRedoLog.undo()
-    // t.is(daddy.name, undefined)
-    // t.is(daddy.age, undefined)
+    t.is(daddy.name, 'John Smith')
+    t.is(daddy.age, 45)
+    t.is(app.userFilter, '')
+    app.model.undoRedoLog.undo()
+    t.is(daddy.name, 'John')
+    t.is(daddy.age, 38)
+    t.is(app.userFilter, 'Jo')
+    app.model.undoRedoLog.redo()
+    t.is(daddy.name, 'John Smith')
+    t.is(daddy.age, 45)
+    t.is(app.userFilter, '')
     // tran1undo.revert()
     // t.is(daddy.name, 'John Smith')
     // t.is(daddy.age, 45)
