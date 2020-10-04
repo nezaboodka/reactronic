@@ -72,28 +72,29 @@ export class UndoRedoLogImpl extends UndoRedoLog {
   }
 
   static createDataPatch(changeset: Map<Handle, Record>): DataPatch {
-    const patch: DataPatch = { objects: new Map<Handle, ObjectDataPatch>() }
+    const patch: DataPatch = { objects: new Map<object, ObjectDataPatch>() }
     changeset.forEach((r: Record, h: Handle) => {
-      const p: ObjectDataPatch = { undoData: {}, redoData: {} }
+      const p: ObjectDataPatch = { previous: {}, changes: {} }
       const old = r.prev.record !== NIL ? r.prev.record.data : undefined
       r.changes.forEach(m => {
         if (old)
-          p.undoData[m] = unpack(old[m])
-        p.redoData[m] = unpack(r.data[m])
+          p.previous[m] = unpack(old[m])
+        p.changes[m] = unpack(r.data[m])
       })
       if (!old) {
-        p.undoData[Meta.Unmount] = Meta.Unmount
-        p.redoData[Meta.Unmount] = undefined
+        p.previous[Meta.Unmount] = Meta.Unmount
+        p.changes[Meta.Unmount] = undefined
       }
-      patch.objects.set(h, p)
+      patch.objects.set(h.proxy, p)
     })
     return patch
   }
 
   static applyDataPatch(patch: DataPatch, undo: boolean): void {
     const ctx = Snapshot.writer()
-    patch.objects.forEach((p: ObjectDataPatch, h: Handle) => {
-      const data = undo ? p.undoData : p.redoData
+    patch.objects.forEach((p: ObjectDataPatch, obj: object) => {
+      const h = Meta.get<Handle>(obj, Meta.Handle)
+      const data = undo ? p.previous : p.changes
       if (data[Meta.Unmount] !== Meta.Unmount) {
         for (const m in data) {
           const value = data[m]
