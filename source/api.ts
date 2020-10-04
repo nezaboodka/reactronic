@@ -17,4 +17,4 @@ export { Monitor } from './impl/Monitor'
 export { UndoRedoLog } from './impl/UndoRedoLog'
 export { Reactronic, getCachedAndRevalidate, untracked, isolated, sensitive, stateless,
   transaction, trigger, cached, priority, noSideEffects, sensitiveArgs, throttling,
-  reentrance, monitor, logging } from './Reactronic'
+  reentrance, undoRedoLog, monitor, logging } from './Reactronic'

@@ -5,20 +5,25 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, UndoRedoLog, Reactronic as R, LoggingOptions } from 'api'
+import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, UndoRedoLog, undoRedoLog, Reactronic as R, LoggingOptions, Transaction } from 'api'
 
 export const output: string[] = []
 
 export class Demo extends Stateful {
+  static UndoRedoLog = Transaction.run(() => UndoRedoLog.create())
   @stateless shared: string = 'for testing purposes'
   title: string = 'Demo'
   users: Person[] = []
   usersWithoutLast: Person[] = []
-  undoRedoLog = UndoRedoLog.create()
 
   @transaction
   loadUsers(): void {
     this._loadUsers()
+  }
+
+  @transaction @undoRedoLog(Demo.UndoRedoLog)
+  testUndo(): void {
+    this.title = 'Demo - undo/redo'
   }
 
   @trigger @priority(1)

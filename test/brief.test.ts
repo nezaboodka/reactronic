@@ -70,7 +70,7 @@ test('brief', t => {
     rendering.invalidate()
     t.not(rendering.stamp, stamp)
     // Multi-part transactions
-    const tran1 = Tran.create({ hint: 'tran1', undoRedoLog: app.model.undoRedoLog })
+    const tran1 = Tran.create({ hint: 'tran1', undoRedoLog: Demo.UndoRedoLog })
     tran1.run(() => {
       t.throws(() => tran1.apply(), { message: 'cannot apply transaction having active functions running' })
       app.model.shared = app.shared = tran1.hint
@@ -148,28 +148,34 @@ test('brief', t => {
       app.userFilter = app.userFilter
     })
     // Other
-    t.is(app.raw, 'DemoView.userFilter #23t124v101')
+    t.is(app.raw, 'DemoView.userFilter #23t125v101')
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)
     t.is(R.getLoggingHint(app), 'DemoView')
     R.setLoggingHint(app, 'App')
     t.is(R.getLoggingHint(app, false), 'App')
     t.is(R.getLoggingHint(app, true), 'App#23')
-    t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'usersWithoutLast', 'undoRedoLog'])
-    t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'usersWithoutLast', 'undoRedoLog'])
+    t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
+    t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
     // Undo
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)
     t.is(app.userFilter, '')
-    app.model.undoRedoLog.undo()
+    Demo.UndoRedoLog.undo()
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(app.userFilter, 'Jo')
-    app.model.undoRedoLog.redo()
+    Demo.UndoRedoLog.redo()
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)
     t.is(app.userFilter, '')
+    // Undo - decorator
+    t.is(app.model.title, 'Demo')
+    app.model.testUndo()
+    t.is(app.model.title, 'Demo - undo/redo')
+    Demo.UndoRedoLog.undo()
+    t.is(app.model.title, 'Demo')
     // tran1undo.revert()
     // t.is(daddy.name, 'John Smith')
     // t.is(daddy.age, 45)
