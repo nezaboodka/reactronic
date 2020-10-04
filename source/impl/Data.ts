@@ -95,11 +95,11 @@ export class Handle {
 
 // DataPatch
 
-export class DataPatch {
-  objects: Map<Handle, ObjectDataPatch> = new Map<Handle, ObjectDataPatch>()
+export interface DataPatch {
+  objects: Map<Handle, ObjectDataPatch>
 }
 
-export class ObjectDataPatch {
-  undoData: any = {}
-  redoData: any = {}
+export interface ObjectDataPatch {
+  undoData: any
+  redoData: any
 }

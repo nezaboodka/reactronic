@@ -72,9 +72,9 @@ export class UndoRedoLogImpl extends UndoRedoLog {
   }
 
   static createDataPatch(changeset: Map<Handle, Record>): DataPatch {
-    const patch = new DataPatch()
+    const patch: DataPatch = { objects: new Map<Handle, ObjectDataPatch>() }
     changeset.forEach((r: Record, h: Handle) => {
-      const p = new ObjectDataPatch()
+      const p: ObjectDataPatch = { undoData: {}, redoData: {} }
       const old = r.prev.record !== NIL ? r.prev.record.data : undefined
       r.changes.forEach(m => {
         if (old)
