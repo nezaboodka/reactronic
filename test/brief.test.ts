@@ -159,6 +159,15 @@ test('brief', t => {
     t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
     // Undo
+    t.is(app.model.title, 'Demo')
+    t.is(Demo.UndoRedoLog.items.length, 1)
+    app.model.testUndo()
+    t.is(Demo.UndoRedoLog.items.length, 2)
+    t.is(app.model.title, 'Demo - undo/redo')
+    Demo.UndoRedoLog.undo()
+    t.is(Demo.UndoRedoLog.items.length, 2)
+    t.is(app.model.title, 'Demo')
+    // Undo
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)
     t.is(app.userFilter, '')
@@ -171,11 +180,6 @@ test('brief', t => {
     t.is(daddy.age, 45)
     t.is(app.userFilter, '')
     // Undo - decorator
-    t.is(app.model.title, 'Demo')
-    app.model.testUndo()
-    t.is(app.model.title, 'Demo - undo/redo')
-    Demo.UndoRedoLog.undo()
-    t.is(app.model.title, 'Demo')
     // tran1undo.revert()
     // t.is(daddy.name, 'John Smith')
     // t.is(daddy.age, 45)
