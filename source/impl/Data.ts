@@ -96,6 +96,7 @@ export class Handle {
 // Patch
 
 export interface Patch {
+  hint: string
   objects: Map<object, ObjectPatch>
 }
 

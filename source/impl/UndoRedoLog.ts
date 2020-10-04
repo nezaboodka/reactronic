@@ -72,8 +72,8 @@ export class UndoRedoLogImpl extends UndoRedoLog {
     })
   }
 
-  static createPatch(changeset: Map<Handle, Record>): Patch {
-    const patch: Patch = { objects: new Map<object, ObjectPatch>() }
+  static createPatch(hint: string, changeset: Map<Handle, Record>): Patch {
+    const patch: Patch = { hint, objects: new Map<object, ObjectPatch>() }
     changeset.forEach((r: Record, h: Handle) => {
       const p: ObjectPatch = { changes: {}, old: {} }
       const old = r.prev.record !== NIL ? r.prev.record.data : undefined
