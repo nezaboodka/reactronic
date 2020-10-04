@@ -24,7 +24,7 @@ export class Reactronic {
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
   static takeSnapshot<T>(obj: T): T { return Snapshot.takeSnapshot(obj) }
-  static unmount(obj: any): void { Snapshot.unmount(obj) }
+  static dispose(obj: any): void { Snapshot.dispose(obj) }
   // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
   static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }

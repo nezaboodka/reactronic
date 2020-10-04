@@ -34,7 +34,7 @@ class Rx extends Stateful {
 
   @stateless refresh: (next: ReactState) => void = nop
   @stateless readonly unmount = (): (() => void) => {
-    return (): void => { isolated(Reactronic.unmount, this) }
+    return (): void => { isolated(Reactronic.dispose, this) }
   }
 
   static create(): Rx {

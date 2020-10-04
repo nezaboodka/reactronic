@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    isolated(Reactronic.unmount, this)
+    isolated(Reactronic.dispose, this)
   }
 }

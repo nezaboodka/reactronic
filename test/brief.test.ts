@@ -165,8 +165,8 @@ test('brief', t => {
   }
   finally {
     Tran.run(() => {
-      R.unmount(app)
-      R.unmount(app.model)
+      R.dispose(app)
+      R.dispose(app.model)
     })
     t.is(app.model.title, undefined)
     t.is(app.userFilter, undefined)

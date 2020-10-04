@@ -52,8 +52,8 @@ test('reentrance.restart', async t => {
     t.is(busy.workers.size, 0)
     await sleep(100)
     Tran.run(() => {
-      R.unmount(app)
-      R.unmount(app.model)
+      R.dispose(app)
+      R.dispose(app.model)
     })
   } /* istanbul ignore next */
   if (!R.loggingOptions.silent) {

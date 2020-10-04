@@ -37,7 +37,7 @@ class Rx<V> extends Stateful {
   @stateless cycle: number = 0
   @stateless refresh: (next: ReactState<V>) => void = nop
   @stateless readonly unmount = (): (() => void) => {
-    return (): void => { isolated(R.unmount, this) }
+    return (): void => { isolated(R.dispose, this) }
   }
 
   static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): Rx<V> {

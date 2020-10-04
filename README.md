@@ -367,13 +367,13 @@ abstract class Cache<T> {
 // Reactronic
 
 class Reactronic {
-  static why(): string
-  static getCache<T>(method: F<T>): Cache<T>
-  static configureCache(options: Partial<Options>): Options
+  static why(short: boolean = false): string
+  static getMethodCache<T>(method: F<T>): Cache<T>
+  static configureCurrentMethodCache(options: Partial<Options>): Options
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity)
-  static takeSnapshot(obj: T): T
-  static unmount(obj: any): void
+  static takeSnapshot<T>(obj: T): T
+  static dispose(obj: any): void
   static triggersAutoStartDisabled: boolean
   static readonly isLogging: boolean
   static readonly loggingOptions: LoggingOptions

@@ -116,18 +116,18 @@ export class Snapshot implements Context {
     return (obj as any)[Meta.Handle]['<snapshot>']
   }
 
-  static unmount(obj: any): void {
+  static dispose(obj: any): void {
     const ctx = Snapshot.writer()
     const h = Meta.get<Handle>(obj, Meta.Handle)
     if (h)
-      Snapshot.doUnmount(ctx, h)
+      Snapshot.doDispose(ctx, h)
   }
 
-  static doUnmount(ctx: Snapshot, h: Handle): Record {
-    const r: Record = ctx.writable(h, Meta.Unmount, Meta.Unmount)
+  static doDispose(ctx: Snapshot, h: Handle): Record {
+    const r: Record = ctx.writable(h, Meta.Disposed, Meta.Disposed)
     if (r !== NIL) {
-      r.data[Meta.Unmount] = Meta.Unmount
-      Snapshot.markChanged(r, Meta.Unmount, Meta.Unmount, true)
+      r.data[Meta.Disposed] = Meta.Disposed
+      Snapshot.markChanged(r, Meta.Disposed, Meta.Disposed, true)
     }
     return r
   }
@@ -203,13 +203,13 @@ export class Snapshot implements Context {
 
   private static merge(ours: Record, head: Record): number {
     let counter: number = 0
-    const unmounted: boolean = head.changes.has(Meta.Unmount)
+    const disposed: boolean = head.changes.has(Meta.Disposed)
     const merged = {...head.data} // clone
     ours.changes.forEach(m => {
       counter++
       merged[m] = ours.data[m]
-      if (unmounted || m === Meta.Unmount) {
-        if (unmounted !== (m === Meta.Unmount)) {
+      if (disposed || m === Meta.Disposed) {
+        if (disposed !== (m === Meta.Disposed)) {
           if (Dbg.isOn && Dbg.logging.changes)
             Dbg.log('║╠', '', `${Hints.record(ours, m)} <> ${Hints.record(head, m)}`, 0, ' *** CONFLICT ***')
           ours.conflicts.set(m, head)
@@ -308,7 +308,7 @@ export class Snapshot implements Context {
           Snapshot.totalRecordCount--
           // console.log('rec--')
         }
-        if (r.changes.has(Meta.Unmount)) {
+        if (r.changes.has(Meta.Disposed)) {
           Snapshot.totalObjectCount--
           // console.log('obj--')
         }

@@ -82,8 +82,8 @@ export class UndoRedoLogImpl extends UndoRedoLog {
           p.old[m] = unpack(old[m])
       })
       if (!old) {
-        p.changes[Meta.Unmount] = undefined // object restore
-        p.old[Meta.Unmount] = Meta.Unmount // object dispose
+        p.changes[Meta.Disposed] = undefined // object restore
+        p.old[Meta.Disposed] = Meta.Disposed // object dispose
       }
       patch.objects.set(h.proxy, p)
     })
@@ -95,7 +95,7 @@ export class UndoRedoLogImpl extends UndoRedoLog {
     patch.objects.forEach((p: ObjectPatch, obj: object) => {
       const h = Meta.get<Handle>(obj, Meta.Handle)
       const data = undo ? p.old : p.changes
-      if (data[Meta.Unmount] !== Meta.Unmount) {
+      if (data[Meta.Disposed] !== Meta.Disposed) {
         for (const m in data) {
           const value = data[m]
           const t: Record = ctx.writable(h, m, value)
@@ -107,7 +107,7 @@ export class UndoRedoLogImpl extends UndoRedoLog {
         }
       }
       else
-        Snapshot.doUnmount(ctx, h)
+        Snapshot.doDispose(ctx, h)
     })
   }
 }

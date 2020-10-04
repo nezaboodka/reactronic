@@ -46,7 +46,7 @@ export class Method extends Cache<any> {
     let call: Call = this.read(args)
     const ctx = call.context
     const c: CallResult = call.result
-    if (!call.reuse && call.record.data[Meta.Unmount] === undefined
+    if (!call.reuse && call.record.data[Meta.Disposed] === undefined
       && (!weak || c.invalidatedSince === -1 || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Trigger ||
@@ -134,7 +134,7 @@ export class Method extends Cache<any> {
     const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== -1 &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalidatedSince) &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
-      r.data[Meta.Unmount] !== undefined
+      r.data[Meta.Disposed] !== undefined
     return { context: ctx, record: r, result: c, reuse }
   }
 
@@ -317,7 +317,7 @@ class CallResult extends Observable implements Observer {
       if (notSelfInvalidation) {
         this.invalidatedDueTo = cause
         this.invalidatedSince = since
-        const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[Sym.UNMOUNT] === undefined*/
+        const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[Meta.Disposed] === undefined*/
         if (Dbg.isOn && Dbg.logging.invalidations || (this.options.logging && this.options.logging.invalidations))
           Dbg.logAs(this.options.logging, Dbg.logging.transactions && !Snapshot.reader().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
@@ -529,7 +529,7 @@ class CallResult extends Observable implements Observer {
       // Mark previous values as replaced, invalidate observers, and reset recomputing status
       const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, h: Handle) => {
-        if (!r.changes.has(Meta.Unmount))
+        if (!r.changes.has(Meta.Disposed))
           r.changes.forEach(m => CallResult.finalizeChange(false, since, r, m, triggers))
         else
           for (const m in r.prev.record.data)
@@ -554,8 +554,8 @@ class CallResult extends Observable implements Observer {
     if (triggers) {
       const prev = r.prev.record.data[m] as Observable
       if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
-        if (unsubscribe) // in fact it means unmount if triggers are not undefined
-          r.data[m] = Meta.Unmount
+        if (unsubscribe) // in fact it means disposal if triggers are not undefined
+          r.data[m] = Meta.Disposed
         prev.replacement = r
         const cause: MemberHint = { record: r, member: m, times: 0 }
         if (prev instanceof CallResult && (prev.invalidatedSince === TOP_TIMESTAMP || prev.invalidatedSince <= 0)) {
@@ -708,8 +708,8 @@ function valueHint(value: any): string {
     result = `Map(${value.size})`
   else if (value instanceof CallResult)
     result = `<recompute:${Hints.record(value.record.prev.record)}>`
-  else if (value === Meta.Unmount)
-    result = '<unmount>'
+  else if (value === Meta.Disposed)
+    result = '<disposed>'
   else if (value !== undefined && value !== null)
     result = value.toString().slice(0, 20)
   else

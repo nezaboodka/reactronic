@@ -53,8 +53,8 @@ test('reentrance.error', async t => {
     t.is(r && r.length, 2)
     await sleep(100)
     Tran.run(() => {
-      R.unmount(app)
-      R.unmount(app.model)
+      R.dispose(app)
+      R.dispose(app.model)
     })
   } /* istanbul ignore next */
   if (R.isLogging && !R.loggingOptions.silent)
