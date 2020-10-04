@@ -93,13 +93,13 @@ export class Handle {
   }
 }
 
-// DataPatch
+// Patch
 
-export interface DataPatch {
-  objects: Map<object, ObjectDataPatch>
+export interface Patch {
+  objects: Map<object, ObjectPatch>
 }
 
-export interface ObjectDataPatch {
-  previous: any
+export interface ObjectPatch {
   changes: any
+  old: any
 }
