@@ -99,11 +99,11 @@ export class UndoRedoLogImpl extends UndoRedoLog {
       if (data[Meta.Disposed] !== Meta.Disposed) {
         for (const m in data) {
           const value = data[m]
-          const t: Record = ctx.writable(h, m, value)
-          if (t.snapshot === ctx) {
-            t.data[m] = new Observable(value)
-            const v: any = t.prev.record.data[m]
-            Snapshot.markChanged(t, m, value, v !== value)
+          const r: Record = ctx.writable(h, m, value)
+          if (r.snapshot === ctx) {
+            r.data[m] = new Observable(value)
+            const v: any = r.prev.record.data[m]
+            Snapshot.markChanged(r, m, value, v !== value)
           }
         }
       }
