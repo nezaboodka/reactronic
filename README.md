@@ -29,7 +29,7 @@ Transactional reactivity is based on four fundamental concepts:
 
   - **State** - a set of objects that store data of an application;
   - **Transaction** - a function that changes state objects in transactional (atomic) way;
-  - **Trigger** - a function that is called automatically in response to state changes made by a transaction;
+  - **Reaction** - a function that is called automatically in response to state changes made by a transaction;
   - **Cache** - a computed value having associated function that is called on-demand to renew the value if it was invalidated.
 
 The following picture illustrates relationships between the concepts
@@ -105,12 +105,12 @@ all of them. An asynchronous call may spawn other
 asynchronous calls, which prolong transaction execution until
 the whole chain of asynchronous operations is fully completed.
 
-### Trigger & Cache
+### Reaction & Cache
 
-Trigger is a function that is immediately called in response to
+Reaction is a function that is immediately called in response to
 state changes. Cache is a computed value having an associated
 function that is called on-demand to renew the value if it was
-invalidated. Trigger and cached functions are instrumented with
+invalidated. Reactive and cached functions are instrumented with
 hooks to seamlessly subscribe to those state objects and other
 cached functions (dependencies), which are used during their
 execution.
@@ -136,7 +136,7 @@ class Component<P> extends React.Component<P> {
     throw new Error('render method is undefined')
   }
 
-  @trigger // called immediately in response to state changes
+  @reactive // called immediately in response to state changes
   pulse(): void {
     if (Reactronic.getCache(this.render).invalid)
       isolated(() => this.setState({})) // ask React to re-render
@@ -147,7 +147,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentDidMount(): void {
-    this.pulse() // initial trigger run
+    this.pulse() // initial run
   }
 
   componentWillUnmount(): void {
@@ -156,24 +156,24 @@ class Component<P> extends React.Component<P> {
 }
 ```
 
-In the example above, `pulse` trigger is transparently subscribed
+In the example above, `pulse` reaction is transparently subscribed
 to the cached function `render`. In turn, the `render` function is
 subscribed to the `url` and `content` properties of a corresponding
 `MyModel` object. Once `url` or `content` values are changed, the
 `render` cache becomes invalid and causes invalidation and immediate
-re-execution of `pulse` trigger. While executed, the `pulse`
-trigger function enqueues re-rendering request to React, which calls
+re-execution of `pulse` reaction. While executed, the `pulse`
+reactive function enqueues re-rendering request to React, which calls
 `render` function causing it to renew its cached value.
 
-In general case, all triggers and caches are automatically and
+In general case, all reactions and caches are automatically and
 immediately marked as invalid when changes are made in those state
 objects and cached functions that were used during their execution.
 And once marked, the functions are automatically executed again,
-either immediately (for @trigger functions) or on-demand
+either immediately (for @reactive functions) or on-demand
 (for @cached functions).
 
 Reactronic takes full care of tracking dependencies between
-all the state objects and triggers/caches (observables and observers).
+all the state objects and reactions/caches (observables and observers).
 With Reactronic, you no longer need to create data change events
 in one set of objects, subscribe to these events in other objects,
 and manually maintain switching from the previous state to a new
@@ -183,18 +183,18 @@ one.
 
 There are multiple options to configure behavior of transactional reactivity.
 
-**Priority** options defines order of triggers re-validation:
+**Priority** options defines order of reactions re-validation:
 
   - (TBD)
 
-**Throttling** option defines how often trigger is revalidated:
+**Throttling** option defines how often reaction is revalidated:
 
-  - `(ms)` - minimal delay in milliseconds between trigger revalidation;
-  - `-1` - run trigger immediately once transaction is applied (synchronously);
-  - `0` - run trigger immediately via event loop (asynchronously with zero timeout);
-  - `>= Number.MAX_SAFE_INTEGER` - never run trigger (disabled trigger).
+  - `(ms)` - minimal delay in milliseconds between reaction revalidation;
+  - `-1` - run reaction immediately once transaction is applied (synchronously);
+  - `0` - run reaction immediately via event loop (asynchronously with zero timeout);
+  - `>= Number.MAX_SAFE_INTEGER` - never run reaction (disabled reaction).
 
-**Reentrance** option defines how to handle reentrant calls of transactions and triggers:
+**Reentrance** option defines how to handle reentrant calls of transactions and reactions:
 
   - `Reentrance.PreventWithError` - fail with error if there is an existing call in progress;
   - `Reentrance.WaitAndRestart` - wait for previous call to finish and then restart current one;
@@ -204,7 +204,7 @@ There are multiple options to configure behavior of transactional reactivity.
 
 **Monitor** is an object that maintains the status of running functions,
 which it is attached to. A single monitor object can be shared between
-multiple transactions, triggers, and cache functions, thus maintaining
+multiple transactions, reactive and cached functions, thus maintaining
 consolidated status for all of them (busy, workers, etc).
 
 ## Notes
@@ -236,13 +236,13 @@ NPM: `npm install reactronic`
 
 function stateless(proto, prop) // field only
 function transaction(proto, prop, pd) // method only
-function trigger(proto, prop, pd) // method only
+function reactive(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
-function noSideEffects(value: boolean) // transaction & cached & trigger
-function sensitiveArgs(value: boolean) // cached & trigger
-function throttling(milliseconds: number) // trigger only
-function reentrance(value: Reentrance) // transaction & trigger
+function noSideEffects(value: boolean) // transaction & cached & reactive
+function sensitiveArgs(value: boolean) // cached & reactive
+function throttling(milliseconds: number) // reactive only
+function reentrance(value: Reentrance) // transaction & reactive
 function monitor(value: Monitor | null)
 function logging(value: Partial<LoggingOptions>)
 
@@ -266,7 +266,7 @@ interface Options {
 enum Kind {
   Field = 0,
   Transaction = 1,
-  Trigger = 2,
+  Reactive = 2,
   Cached = 3
 }
 
@@ -280,9 +280,9 @@ enum Reentrance {
 }
 
 enum Sensitivity {
-  TriggerOnFinalDifferenceOnly = 0, // default
-  TriggerOnFinalAndIntermediateDifference = 1,
-  TriggerEvenOnSameValueAssignment = 2,
+  ReactionOnFinalDifferenceOnly = 0, // default
+  ReactionOnFinalAndIntermediateDifference = 1,
+  ReactionEvenOnSameValueAssignment = 2,
 }
 
 class Monitor {
@@ -374,7 +374,7 @@ class Reactronic {
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity)
   static takeSnapshot<T>(obj: T): T
   static dispose(obj: any): void
-  static triggersAutoStartDisabled: boolean
+  static reactionsAutoStartDisabled: boolean
   static readonly isLogging: boolean
   static readonly loggingOptions: LoggingOptions
   static setLoggingMode(enabled: boolean, options?: LoggingOptions)

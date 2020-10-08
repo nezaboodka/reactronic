@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, trigger, stateless, noSideEffects } from 'api'
+import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, reactive, stateless, noSideEffects } from 'api'
 import { TestingLogLevel } from './brief'
 
 export class DemoBase extends Stateful {
@@ -15,15 +15,15 @@ export class DemoBase extends Stateful {
   sideEffect: string = 'no side effect'
   uninitialized?: any
 
-  @trigger
+  @reactive
   normalizeTitle(): void {
     const stamp = new Date().toUTCString()
     const t = this.title.toLowerCase()
     this.title = `${t} - ${stamp}`
   }
 
-  @trigger @noSideEffects(true)
-  triggerNoSideEffects(): void {
+  @reactive @noSideEffects(true)
+  reactionWithNoSideEffects(): void {
     this.sideEffect = 'side effect'
   }
 
@@ -55,9 +55,9 @@ export class DemoBase extends Stateful {
 }
 
 export class Demo extends DemoBase {
-  @trigger
-  oneMoreTrigger(): void {
-    // do nothing, the trigger is just to test inheritance chain
+  @reactive
+  oneMoreReaction(): void {
+    // do nothing, the reaction is just to test inheritance chain
   }
 }
 

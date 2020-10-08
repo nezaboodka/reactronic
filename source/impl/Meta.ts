@@ -12,7 +12,7 @@ export abstract class Meta {
   static readonly Method: unique symbol = Symbol('rxMethod')
   static readonly Disposed: unique symbol = Symbol('rxDisposed')
   static readonly Blank: unique symbol = Symbol('rxBlank')
-  static readonly Triggers: unique symbol = Symbol('rxTriggers')
+  static readonly Reactions: unique symbol = Symbol('rxReactions')
   static readonly Stateless: unique symbol = Symbol('rxStateless')
 
   static get<T>(obj: any, sym: symbol): T {
