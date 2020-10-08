@@ -33,7 +33,7 @@ test('reentrance.cancelandwait', async t => {
     return a
   })
   try {
-    await app.print() // initial run
+    await app.print() // trigger first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
     t.is(busy.workerCount, 1)
     t.is(busy.workers.size, 1)

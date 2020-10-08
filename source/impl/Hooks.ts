@@ -22,9 +22,9 @@ export abstract class Stateful {
     const proto = new.target.prototype
     const blank = Meta.from<any>(proto, Meta.Blank)
     const h = Hooks.createHandle(this, blank, new.target.name)
-    if (!Hooks.reactionsAutoStartDisabled) {
-      const reactions = Meta.from<any>(proto, Meta.Reactions)
-      for (const member in reactions)
+    if (!Hooks.triggersAutoStartDisabled) {
+      const triggers = Meta.from<any>(proto, Meta.Triggers)
+      for (const member in triggers)
         (h.proxy[member][Meta.Method] as Cache<any>).invalidate()
     }
     return h.proxy
@@ -93,11 +93,11 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 // Hooks
 
 export class Hooks implements ProxyHandler<Handle> {
-  static reactionsAutoStartDisabled: boolean = false
+  static triggersAutoStartDisabled: boolean = false
   static repetitiveReadWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
-  static sensitivity: Sensitivity = Sensitivity.ReactionOnFinalDifferenceOnly
+  static sensitivity: Sensitivity = Sensitivity.TriggerOnFinalDifferenceOnly
   static readonly proxy: Hooks = new Hooks()
 
   getPrototypeOf(h: Handle): object | null {
@@ -128,7 +128,7 @@ export class Hooks implements ProxyHandler<Handle> {
         r.prev.record.snapshot === NIL.snapshot && m in h.stateless === false)) {
         const prev = r.prev.record.data[m] as Observable
         let changed = prev === undefined || prev.value !== value ||
-          Hooks.sensitivity === Sensitivity.ReactionEvenOnSameValueAssignment
+          Hooks.sensitivity === Sensitivity.TriggerEvenOnSameValueAssignment
         if (changed) {
           if (prev === curr)
             r.data[m] = new Observable(value)
@@ -136,10 +136,10 @@ export class Hooks implements ProxyHandler<Handle> {
             curr.value = value
         }
         else if (prev !== curr) { // if there was an assignment before
-          if (Hooks.sensitivity === Sensitivity.ReactionOnFinalDifferenceOnly)
+          if (Hooks.sensitivity === Sensitivity.TriggerOnFinalDifferenceOnly)
             r.data[m] = prev // restore previous value
           else
-            changed = true // Sensitivity.ReactionOnFinalAndIntermediateDifference
+            changed = true // Sensitivity.TriggerOnFinalAndIntermediateDifference
         }
         Snapshot.markChanged(r, m, value, changed)
       }

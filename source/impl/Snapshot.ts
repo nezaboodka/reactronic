@@ -50,7 +50,7 @@ export class Snapshot implements Context {
   private stamp: number
   private bumper: number
   readonly changeset: Map<Handle, Record>
-  readonly reactions: Observer[]
+  readonly triggers: Observer[]
   completed: boolean
 
   constructor(options: SnapshotOptions | null) {
@@ -59,7 +59,7 @@ export class Snapshot implements Context {
     this.stamp = UNDEFINED_TIMESTAMP
     this.bumper = 100
     this.changeset = new Map<Handle, Record>()
-    this.reactions = []
+    this.triggers = []
     this.completed = false
   }
 
@@ -134,7 +134,7 @@ export class Snapshot implements Context {
 
   private guard(h: Handle, r: Record, m: Member, existing: any, value: any, token: any): void {
     if (this.completed)
-      throw misuse(`stateful property ${Hints.obj(h, m)} can only be modified inside transactions and reactions`)
+      throw misuse(`stateful property ${Hints.obj(h, m)} can only be modified inside transactions and triggers`)
     // if (m !== Sym.HANDLE && value !== Sym.HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
     // if (r === NIL && m !== Sym.HANDLE && value !== Sym.HANDLE) /* istanbul ignore next */
@@ -263,7 +263,7 @@ export class Snapshot implements Context {
   collect(): void {
     if (Dbg.isOn) {
       Utils.freezeMap(this.changeset)
-      Object.freeze(this.reactions)
+      Object.freeze(this.triggers)
       Object.freeze(this)
     }
     this.triggerGarbageCollection()

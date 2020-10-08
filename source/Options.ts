@@ -33,7 +33,7 @@ export interface CacheOptions {
 export enum Kind {
   Field = 0,
   Transaction = 1,
-  Reactive = 2,
+  Trigger = 2,
   Cached = 3,
 }
 
@@ -51,7 +51,7 @@ export enum Reentrance {
 // }
 
 export enum Sensitivity {
-  ReactionOnFinalDifferenceOnly = 0, // default
-  ReactionOnFinalAndIntermediateDifference = 1,
-  ReactionEvenOnSameValueAssignment = 2,
+  TriggerOnFinalDifferenceOnly = 0, // default
+  TriggerOnFinalAndIntermediateDifference = 1,
+  TriggerEvenOnSameValueAssignment = 2,
 }

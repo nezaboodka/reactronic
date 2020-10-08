@@ -32,7 +32,7 @@ export interface Observer {
   hint(notran?: boolean): string
   priority(): number
   readonly invalidatedSince: number
-  invalidateDueTo(value: Observable, cause: MemberHint, since: number, reactions: Observer[]): void
+  invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void
   revalidate(now: boolean, nothrow: boolean): void
 }
 
