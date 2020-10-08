@@ -8,7 +8,7 @@
 import * as React from 'react'
 import { Stateful, Transaction, stateless, reactive, cached, isolated, Reactronic as R, LoggingOptions } from 'api' // from 'reactronic'
 
-export function reactiveRender(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, tran?: Transaction): JSX.Element {
+export function reactive(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, tran?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
     (!name && !logging) ? createReactState : () => createReactState(name, logging))
   const rx = state.rx
