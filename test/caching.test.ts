@@ -6,8 +6,8 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Stateful, cached, Transaction as Tran, Reactronic as R, logging, trigger, stateless, noSideEffects } from 'api'
-import { TestingLogLevel } from './brief'
+import { Stateful, cached, Transaction as Tran, Reactronic as R, trace, trigger, stateless, noSideEffects } from 'api'
+import { TestingTraceLevel } from './brief'
 
 export class DemoBase extends Stateful {
   @stateless raw: string = 'stateless data'
@@ -37,7 +37,7 @@ export class DemoBase extends Stateful {
     return this.title
   }
 
-  @cached @logging({})
+  @cached @trace({})
   produceSideEffect(): void {
     this.raw = R.why()
     this.title = 'should fail on this line'
@@ -62,7 +62,7 @@ export class Demo extends DemoBase {
 }
 
 test('caching', t => {
-  R.setLoggingMode(true, TestingLogLevel)
+  R.setTraceMode(true, TestingTraceLevel)
   const demo = Tran.run(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')

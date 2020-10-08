@@ -7,7 +7,7 @@
 
 import test from 'ava'
 import { Transaction as Tran, Kind, untracked, isolated, sensitive, Sensitivity, Reactronic as R } from 'api'
-import { Person, Demo, DemoView, output, TestingLogLevel } from './brief'
+import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
   'Filter: Jo',
@@ -39,8 +39,8 @@ test('brief', t => {
     asyncActionDurationWarningThreshold: 100, // default: 150 ms
     garbageCollectionSummaryInterval: 2000, // default: 3000 ms
   })
-  R.setLoggingMode(false)
-  R.setLoggingMode(true, TestingLogLevel)
+  R.setTraceMode(false)
+  R.setTraceMode(true, TestingTraceLevel)
   // Simple transactions
   const app = Tran.run(() => new DemoView(new Demo()))
   try {
@@ -151,10 +151,10 @@ test('brief', t => {
     t.is(app.raw, 'DemoView.userFilter #23t125v101')
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)
-    t.is(R.getLoggingHint(app), 'DemoView')
-    R.setLoggingHint(app, 'App')
-    t.is(R.getLoggingHint(app, false), 'App')
-    t.is(R.getLoggingHint(app, true), 'App#23')
+    t.is(R.getTraceHint(app), 'DemoView')
+    R.setTraceHint(app, 'App')
+    t.is(R.getTraceHint(app, false), 'App')
+    t.is(R.getTraceHint(app, true), 'App#23')
     t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
     t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
@@ -194,7 +194,7 @@ test('brief', t => {
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (R.isLogging && !R.loggingOptions.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

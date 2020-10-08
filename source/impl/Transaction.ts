@@ -8,7 +8,7 @@
 import { undef, F } from '../util/Utils'
 import { Dbg, misuse, error } from '../util/Dbg'
 import { Worker } from '../Worker'
-import { SnapshotOptions, LoggingOptions } from '../Options'
+import { SnapshotOptions, TraceOptions } from '../Options'
 import { Record } from './Data'
 import { Snapshot, Hints } from './Snapshot'
 
@@ -83,7 +83,7 @@ class TransactionImpl extends Transaction {
     const restore = TransactionImpl.inspection
     try {
       TransactionImpl.inspection = true
-      if (Dbg.isOn && Dbg.logging.transactions)
+      if (Dbg.isOn && Dbg.trace.transactions)
         Dbg.log(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.running.id}[${TransactionImpl.running.hint}]`)
       return this.do(undefined, func, ...args)
     }
@@ -163,7 +163,7 @@ class TransactionImpl extends Transaction {
     const t: TransactionImpl = TransactionImpl.acquire(options)
     const root = t !== TransactionImpl.running
     t.guard()
-    let result: any = t.do<T>(options?.logging, func, ...args)
+    let result: any = t.do<T>(options?.trace, func, ...args)
     if (root) {
       if (result instanceof Promise)
         result = TransactionImpl.isolated(() => {
@@ -218,7 +218,7 @@ class TransactionImpl extends Transaction {
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
             spawn: true,
-            logging: this.snapshot.options.logging,
+            trace: this.snapshot.options.trace,
             token: this.snapshot.options.token,
           }
           return TransactionImpl.runAs<T>(options, func, ...args)
@@ -239,7 +239,7 @@ class TransactionImpl extends Transaction {
 
   // Internal
 
-  private do<T>(logging: Partial<LoggingOptions> | undefined, func: F<T>, ...args: any[]): T {
+  private do<T>(trace: Partial<TraceOptions> | undefined, func: F<T>, ...args: any[]): T {
     let result: T
     const outer = TransactionImpl.running
     try {
@@ -280,7 +280,7 @@ class TransactionImpl extends Transaction {
     if (!t.canceled && error) {
       t.canceled = error
       t.after = after
-      if (Dbg.isOn && Dbg.logging.transactions) {
+      if (Dbg.isOn && Dbg.trace.transactions) {
         Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== TransactionImpl.none)
           Dbg.log('║', ' [!]', `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ''}`)

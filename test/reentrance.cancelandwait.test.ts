@@ -8,7 +8,7 @@
 import test from 'ava'
 import { Transaction as Tran, Reentrance, Reactronic as R, all, sleep } from 'api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
-import { TestingLogLevel } from './brief'
+import { TestingTraceLevel } from './brief'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: 'google.com', delay: 300 },
@@ -26,7 +26,7 @@ const expected: Array<string | undefined> = [
 ]
 
 test('reentrance.cancelandwait', async t => {
-  R.setLoggingMode(true, TestingLogLevel)
+  R.setTraceMode(true, TestingTraceLevel)
   const app = Tran.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getMethodCache(a.model.load).configure({reentrance: Reentrance.CancelAndWaitPrevious})
@@ -43,7 +43,7 @@ test('reentrance.cancelandwait', async t => {
   }
   catch (error) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
-    if (R.isLogging && !R.loggingOptions.silent) console.log(error.toString())
+    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(error.toString())
   }
   finally {
     t.is(busy.workerCount, 0)
@@ -54,7 +54,7 @@ test('reentrance.cancelandwait', async t => {
       R.dispose(app.model)
     })
   } /* istanbul ignore next */
-  if (R.isLogging && !R.loggingOptions.silent) {
+  if (R.isTraceEnabled && !R.traceOptions.silent) {
     console.log('\nResults:\n')
     for (const x of output)
       console.log(x)
@@ -62,7 +62,7 @@ test('reentrance.cancelandwait', async t => {
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (R.isLogging && !R.loggingOptions.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
+    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
     t.is(output[i], expected[i])
   }
 })

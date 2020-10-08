@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, UndoRedoLog, undoRedoLog, Reactronic as R, LoggingOptions, Transaction } from 'api'
+import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, UndoRedoLog, undoRedoLog, Reactronic as R, TraceOptions, Transaction } from 'api'
 
 export const output: string[] = []
 
@@ -69,12 +69,12 @@ export class DemoView extends Stateful {
     const lines = this.render(0)
     lines.forEach(x => {
       output.push(x) /* istanbul ignore next */
-      if (R.isLogging && !R.loggingOptions.silent) console.log(x)
+      if (R.isTraceEnabled && !R.traceOptions.silent) console.log(x)
     })
     R.configureCurrentMethodCache({ priority: 123 })
   }
 
-  // @transaction @logging(log.noisy)
+  // @transaction @trace(log.noisy)
   // subPrint(): void {
   //   this.render().forEach(x => output.push(x));
   // }
@@ -161,7 +161,7 @@ export class Person extends Stateful {
   }
 }
 
-export const TestingLogLevel: LoggingOptions = {
+export const TestingTraceLevel: TraceOptions = {
   silent: process.env.AVA_DEBUG === undefined,
   transactions: true,
   methods: true,

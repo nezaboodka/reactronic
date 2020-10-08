@@ -159,7 +159,7 @@ export class Snapshot implements Context {
       Snapshot.pending.push(this)
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this
-      if (Dbg.isOn && Dbg.logging.transactions)
+      if (Dbg.isOn && Dbg.trace.transactions)
         Dbg.log('╔══', `v${this.stamp}`, `${this.hint}`)
     }
   }
@@ -183,7 +183,7 @@ export class Snapshot implements Context {
               conflicts = []
             conflicts.push(r)
           }
-          if (Dbg.isOn && Dbg.logging.changes)
+          if (Dbg.isOn && Dbg.trace.changes)
             Dbg.log('╠╝', '', `${Hints.record(r)} is merged with ${Hints.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
@@ -210,7 +210,7 @@ export class Snapshot implements Context {
       merged[m] = ours.data[m]
       if (disposed || m === Meta.Disposed) {
         if (disposed !== (m === Meta.Disposed)) {
-          if (Dbg.isOn && Dbg.logging.changes)
+          if (Dbg.isOn && Dbg.trace.changes)
             Dbg.log('║╠', '', `${Hints.record(ours, m)} <> ${Hints.record(head, m)}`, 0, ' *** CONFLICT ***')
           ours.conflicts.set(m, head)
         }
@@ -219,7 +219,7 @@ export class Snapshot implements Context {
         const conflict = Snapshot.isConflicting(head.data[m], ours.prev.record.data[m])
         if (conflict)
           ours.conflicts.set(m, head)
-        if (Dbg.isOn && Dbg.logging.changes)
+        if (Dbg.isOn && Dbg.trace.changes)
           Dbg.log('║╠', '', `${Hints.record(ours, m)} ${conflict ? '<>' : '=='} ${Hints.record(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
       }
     })
@@ -247,7 +247,7 @@ export class Snapshot implements Context {
             // console.log('obj++')
           }
         }
-        if (Dbg.isOn && Dbg.logging.changes) {
+        if (Dbg.isOn && Dbg.trace.changes) {
           const members: string[] = []
           r.changes.forEach(m => members.push(m.toString()))
           const s = members.join(', ')
@@ -255,7 +255,7 @@ export class Snapshot implements Context {
         }
       }
     })
-    if (Dbg.isOn && Dbg.logging.transactions)
+    if (Dbg.isOn && Dbg.trace.transactions)
       Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
     Snapshot.finalizeChangeset(this, error)
   }
@@ -298,10 +298,10 @@ export class Snapshot implements Context {
   }
 
   private unlinkHistory(): void {
-    if (Dbg.isOn && Dbg.logging.gc)
+    if (Dbg.isOn && Dbg.trace.gc)
       Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.isOn && Dbg.logging.gc && r.prev.record !== NIL)
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== NIL)
         Dbg.log(' ', '  ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
         if (r.prev.record !== NIL) {
@@ -365,6 +365,6 @@ export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',
   spawn: false,
   undoRedoLog: undefined,
-  logging: undefined,
+  trace: undefined,
   token: undefined,
 })

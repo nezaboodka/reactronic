@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { Stateful, Transaction, stateless, trigger, cached, isolated, Reactronic as R, LoggingOptions } from 'api' // from 'reactronic'
+import { Stateful, Transaction, stateless, trigger, cached, isolated, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
 
-export function reactive(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, tran?: Transaction): JSX.Element {
+export function reactive(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, tran?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
-    (!name && !logging) ? createReactState : () => createReactState(name, logging))
+    (!name && !trace) ? createReactState : () => createReactState(name, trace))
   const rx = state.rx
   rx.cycle = state.cycle
   rx.refresh = refresh // just in case React will change refresh on each rendering
@@ -40,21 +40,21 @@ class Rx<V> extends Stateful {
     return (): void => { isolated(R.dispose, this) }
   }
 
-  static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): Rx<V> {
+  static create<V>(hint: string | undefined, trace: TraceOptions | undefined): Rx<V> {
     const rx = new Rx<V>()
     if (hint)
-      R.setLoggingHint(rx, hint)
-    if (logging) {
-      R.getMethodCache(rx.render).configure({logging})
-      R.getMethodCache(rx.pulse).configure({logging})
+      R.setTraceHint(rx, hint)
+    if (trace) {
+      R.getMethodCache(rx.render).configure({trace})
+      R.getMethodCache(rx.pulse).configure({trace})
     }
     return rx
   }
 }
 
-function createReactState<V>(name?: string, logging?: Partial<LoggingOptions>): ReactState<V> {
-  const hint = name || (R.isLogging ? getComponentName() : '<rx>')
-  const rx = Transaction.runAs<Rx<V>>({ hint, logging }, Rx.create, hint, logging)
+function createReactState<V>(name?: string, trace?: Partial<TraceOptions>): ReactState<V> {
+  const hint = name || (R.isTraceEnabled ? getComponentName() : '<rx>')
+  const rx = Transaction.runAs<Rx<V>>({ hint, trace }, Rx.create, hint, trace)
   return {rx, cycle: 0}
 }
 

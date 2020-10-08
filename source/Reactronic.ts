@@ -8,7 +8,7 @@
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Cache } from './Cache'
-import { Kind, Reentrance, CacheOptions, LoggingOptions, ProfilingOptions, Sensitivity } from './Options'
+import { Kind, Reentrance, CacheOptions, TraceOptions, ProfilingOptions, Sensitivity } from './Options'
 import { Handle } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
@@ -28,12 +28,12 @@ export class Reactronic {
   // Configuration
   static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
   static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }
-  // Logging
-  static get isLogging(): boolean { return Dbg.isOn }
-  static get loggingOptions(): LoggingOptions { return Dbg.logging }
-  static setLoggingMode(enabled: boolean, options?: LoggingOptions): void { Dbg.setLoggingMode(enabled, options) }
-  static setLoggingHint<T extends object>(obj: T, name: string | undefined): void { Hooks.setHint(obj, name) }
-  static getLoggingHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Handle.getHint(obj, full) }
+  // Trace
+  static get isTraceEnabled(): boolean { return Dbg.isOn }
+  static get traceOptions(): TraceOptions { return Dbg.trace }
+  static setTraceMode(enabled: boolean, options?: TraceOptions): void { Dbg.setTraceMode(enabled, options) }
+  static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Hooks.setHint(obj, name) }
+  static getTraceHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Handle.getHint(obj, full) }
   static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(enabled, options) }
 }
 
@@ -108,6 +108,6 @@ export function monitor(value: Monitor | null): F<any> {
   return decorateMethod({monitor: value})
 }
 
-export function logging(value: Partial<LoggingOptions>): F<any> {
-  return decorateMethod({logging: value})
+export function trace(value: Partial<TraceOptions>): F<any> {
+  return decorateMethod({trace: value})
 }

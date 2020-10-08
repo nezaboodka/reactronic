@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-export interface LoggingOptions {
+export interface TraceOptions {
   readonly silent: boolean
   readonly transactions: boolean
   readonly methods: boolean
@@ -32,11 +32,11 @@ export interface ProfilingOptions {
 }
 
 export const LogLevel: {
-  Error: LoggingOptions,
-  Minimal: LoggingOptions,
-  Info: LoggingOptions,
-  Debug: LoggingOptions,
-  Suppress: LoggingOptions,
+  Error: TraceOptions,
+  Minimal: TraceOptions,
+  Info: TraceOptions,
+  Debug: TraceOptions,
+  Suppress: TraceOptions,
 } = {
 
   Error: {

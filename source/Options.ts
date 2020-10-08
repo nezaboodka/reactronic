@@ -5,8 +5,8 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { LoggingOptions } from './Logging'
-export { LoggingOptions, ProfilingOptions, LogLevel } from './Logging'
+import { TraceOptions } from './Trace'
+export { TraceOptions, ProfilingOptions, LogLevel } from './Trace'
 import { UndoRedoLog } from './impl/UndoRedoLog'
 import { Monitor } from './impl/Monitor'
 
@@ -14,7 +14,7 @@ export interface SnapshotOptions {
   readonly hint?: string
   readonly spawn?: boolean
   readonly undoRedoLog?: UndoRedoLog
-  readonly logging?: Partial<LoggingOptions>
+  readonly trace?: Partial<TraceOptions>
   readonly token?: any
 }
 
@@ -27,7 +27,7 @@ export interface CacheOptions {
   readonly reentrance: Reentrance
   readonly undoRedoLog: UndoRedoLog | undefined
   readonly monitor: Monitor | null
-  readonly logging?: Partial<LoggingOptions>
+  readonly trace?: Partial<TraceOptions>
 }
 
 export enum Kind {

@@ -5,10 +5,10 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { LoggingOptions } from '../Logging'
+import { TraceOptions } from '../Trace'
 
 export function error(message: string, dump: Error | undefined): Error {
-  if (Dbg.isOn && Dbg.logging.errors)
+  if (Dbg.isOn && Dbg.trace.errors)
     Dbg.log('█', ' ███', message, undefined, ' *** ERROR ***', dump)
   return new Error(message)
 }
@@ -22,7 +22,7 @@ export function misuse(message: string, dump?: any): Error {
 // Dbg
 
 export class Dbg {
-  static DefaultLevel: LoggingOptions = {
+  static DefaultLevel: TraceOptions = {
     silent: false,
     errors: false,
     warnings: false,
@@ -42,29 +42,29 @@ export class Dbg {
   }
 
   static isOn: boolean = false
-  static global: LoggingOptions = Dbg.DefaultLevel
-  static get logging(): LoggingOptions { return this.getMergedLoggingOptions(undefined) }
-  static getMergedLoggingOptions = (local: Partial<LoggingOptions> | undefined): LoggingOptions => Dbg.global
+  static global: TraceOptions = Dbg.DefaultLevel
+  static get trace(): TraceOptions { return this.getMergedTraceOptions(undefined) }
+  static getMergedTraceOptions = (local: Partial<TraceOptions> | undefined): TraceOptions => Dbg.global
 
-  static setLoggingMode(enabled: boolean, options?: LoggingOptions): void {
+  static setTraceMode(enabled: boolean, options?: TraceOptions): void {
     Dbg.isOn = enabled
     Dbg.global = options || Dbg.DefaultLevel
     if (enabled) {
       const t = Dbg.global as any
       const o = Object.keys(Dbg.global).filter(x => t[x] === true).join(', ')
-      Dbg.log('', '', `Reactronic logging is enabled: ${o}`)
-      Dbg.log('', '', 'Method-level logging can be configured with @logging decorator')
+      Dbg.log('', '', `Reactronic trace is enabled: ${o}`)
+      Dbg.log('', '', 'Method-level trace can be configured with @trace decorator')
     }
     else
-      Dbg.log('', '', 'Reactronic logging is disabled')
+      Dbg.log('', '', 'Reactronic trace is disabled')
   }
 
   static log(bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined, dump?: any): void {
     Dbg.logAs(undefined, bar, operation, message, ms, highlight, dump)
   }
 
-  static logAs(options: Partial<LoggingOptions> | undefined, bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined, dump?: any): void {
-    const t = Dbg.getMergedLoggingOptions(options)
+  static logAs(options: Partial<TraceOptions> | undefined, bar: string, operation: string, message: string, ms: number = 0, highlight: string | undefined = undefined, dump?: any): void {
+    const t = Dbg.getMergedTraceOptions(options)
     const margin1: string = '  '.repeat(t.margin1 >= 0 ? t.margin1 : 0)
     const margin2: string = '  '.repeat(t.margin2)
     const silent = (options && options.silent !== undefined) ? options.silent : t.silent
@@ -77,7 +77,7 @@ export class Dbg {
     }
   }
 
-  static merge(t: Partial<LoggingOptions> | undefined, color: number | undefined, prefix: string | undefined, existing: LoggingOptions): LoggingOptions {
+  static merge(t: Partial<TraceOptions> | undefined, color: number | undefined, prefix: string | undefined, existing: TraceOptions): TraceOptions {
     const result = !t ? { ...existing } : {
       silent: t.silent !== undefined ? t.silent : existing.silent,
       transactions: t.transactions !== undefined ? t.transactions : existing.transactions,

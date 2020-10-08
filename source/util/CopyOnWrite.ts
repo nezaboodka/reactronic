@@ -34,7 +34,7 @@ export class CopyOnWrite<T> {
   writable(receiver: any): T {
     let v: T = this.owner[this.prop]
     if (v === receiver) { // check if it's first write and clone then
-      if (Dbg.isOn && Dbg.logging.writes)
+      if (Dbg.isOn && Dbg.trace.writes)
         Dbg.log('║', ' ', `<obj>.${this.prop.toString()} - copy-on-write - cloned`)
       v = this.owner[this.prop] = this.clone(this.value)
     }
@@ -45,7 +45,7 @@ export class CopyOnWrite<T> {
     if (Object.isFrozen(value)) /* istanbul ignore next */
       throw misuse('copy-on-write collection cannot be referenced from multiple objects')
     const self: any = value
-    if (Dbg.isOn && Dbg.logging.writes)
+    if (Dbg.isOn && Dbg.trace.writes)
       Dbg.log('║', ' ', `<obj>.${prop.toString()} - copy-on-write - sealed ${size} item(s)`)
     const binding = new CopyOnWrite<T>(owner, prop, value, size, getSize, clone)
     self[R_COPY_ON_WRITE] = binding

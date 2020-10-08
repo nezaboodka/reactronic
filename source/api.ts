@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 export { all, sleep } from './util/Utils'
-export { CacheOptions, Kind, Reentrance, Sensitivity, LoggingOptions, ProfilingOptions, LogLevel } from './Options'
+export { CacheOptions, Kind, Reentrance, Sensitivity, TraceOptions, ProfilingOptions, LogLevel } from './Options'
 export { Worker } from './Worker'
 export { Cache } from './Cache'
 export { Ref, BoolRef, BooleanOnly, GivenTypeOnly } from './Ref'
@@ -17,4 +17,4 @@ export { Monitor } from './impl/Monitor'
 export { UndoRedoLog } from './impl/UndoRedoLog'
 export { Reactronic, getCachedAndRevalidate, untracked, isolated, sensitive, stateless,
   transaction, trigger, cached, priority, noSideEffects, sensitiveArgs, throttling,
-  reentrance, undoRedoLog, monitor, logging } from './Reactronic'
+  reentrance, undoRedoLog, monitor, trace } from './Reactronic'

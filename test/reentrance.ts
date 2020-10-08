@@ -35,7 +35,7 @@ export class AsyncDemoView {
     if (!Tran.current.isCanceled) {
       for (const x of lines) {
         output.push(x) /* istanbul ignore next */
-        if (R.isLogging && !R.loggingOptions.silent) console.log(x)
+        if (R.isTraceEnabled && !R.traceOptions.silent) console.log(x)
       }
     }
   }

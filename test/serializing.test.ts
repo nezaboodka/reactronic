@@ -7,7 +7,7 @@
 
 import test from 'ava'
 import { Transaction as Tran, Reactronic as R, Stateful } from 'api'
-import { TestingLogLevel } from './brief'
+import { TestingTraceLevel } from './brief'
 
 class Serializable extends Stateful {
   text: string = ''
@@ -15,7 +15,7 @@ class Serializable extends Stateful {
 }
 
 test('serializing', t => {
-  R.setLoggingMode(true, TestingLogLevel)
+  R.setTraceMode(true, TestingTraceLevel)
   const serializable = Tran.run(() => {
     const s1 = new Serializable()
     s1.text = 's1'
