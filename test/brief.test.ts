@@ -70,7 +70,7 @@ test('brief', t => {
     rendering.invalidate()
     t.not(rendering.stamp, stamp)
     // Multi-part transactions
-    const tran1 = Tran.create({ hint: 'tran1', undoRedoLog: Demo.UndoRedoLog })
+    const tran1 = Tran.create({ hint: 'tran1', journal: Demo.UndoRedo })
     tran1.run(() => {
       t.throws(() => tran1.apply(), { message: 'cannot apply transaction having active functions running' })
       app.model.shared = app.shared = tran1.hint
@@ -160,22 +160,22 @@ test('brief', t => {
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
     // Undo
     t.is(app.model.title, 'Demo')
-    t.is(Demo.UndoRedoLog.items.length, 1)
+    t.is(Demo.UndoRedo.items.length, 1)
     app.model.testUndo()
-    t.is(Demo.UndoRedoLog.items.length, 2)
+    t.is(Demo.UndoRedo.items.length, 2)
     t.is(app.model.title, 'Demo - undo/redo')
-    Demo.UndoRedoLog.undo()
-    t.is(Demo.UndoRedoLog.items.length, 2)
+    Demo.UndoRedo.undo()
+    t.is(Demo.UndoRedo.items.length, 2)
     t.is(app.model.title, 'Demo')
     // Undo
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)
     t.is(app.userFilter, '')
-    Demo.UndoRedoLog.undo()
+    Demo.UndoRedo.undo()
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(app.userFilter, 'Jo')
-    Demo.UndoRedoLog.redo()
+    Demo.UndoRedo.redo()
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)
     t.is(app.userFilter, '')

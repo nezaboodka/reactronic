@@ -15,7 +15,7 @@ import { Snapshot, Hints, NIL } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
-import { UndoRedoLogImpl } from './UndoRedoLog'
+import { TransactionJournalImpl } from './TransactionJournal'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'N/A')
@@ -178,7 +178,7 @@ export class Method extends Cache<any> {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.handle, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.handle, this.member)}`
     let call = existing
-    const opt = { hint, spawn, undoRedoLog: options.undoRedoLog, trace: options.trace, token }
+    const opt = { hint, spawn, journal: options.journal, trace: options.trace, token }
     const ret = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
       if (!call.result.worker.isCanceled) { // first call
         call = this.write()
@@ -539,8 +539,8 @@ class CallResult extends Observable implements Observer {
           Snapshot.freezeRecord(r)
       })
       triggers.sort(CallResult.compareTriggersByPriority)
-      const log = snapshot.options.undoRedoLog
-      log && log.remember(UndoRedoLogImpl.createPatch(snapshot.hint, snapshot.changeset))
+      const log = snapshot.options.journal
+      log && log.remember(TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
     }
     else
       snapshot.changeset.forEach((r: Record, h: Handle) =>

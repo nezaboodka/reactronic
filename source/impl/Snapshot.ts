@@ -364,7 +364,7 @@ export const NIL = new Record(new Snapshot({ hint: '<nil>' }), undefined, {})
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',
   spawn: false,
-  undoRedoLog: undefined,
+  journal: undefined,
   trace: undefined,
   token: undefined,
 })

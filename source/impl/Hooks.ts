@@ -12,7 +12,7 @@ import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Cache } from '../Cache'
 import { Record, Member, Handle, Observable, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
-import { UndoRedoLog } from './UndoRedoLog'
+import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
 
 // Stateful
@@ -52,7 +52,7 @@ const DEFAULT_STATELESS_OPTIONS: CacheOptions = Object.freeze({
   sensitiveArgs: false,
   throttling: Number.MAX_SAFE_INTEGER, // never revalidate
   reentrance: Reentrance.PreventWithError,
-  undoRedoLog: undefined,
+  journal: undefined,
   monitor: null,
   trace: undefined,
 })
@@ -65,7 +65,7 @@ export class OptionsImpl implements CacheOptions {
   readonly sensitiveArgs: boolean
   readonly throttling: number
   readonly reentrance: Reentrance
-  readonly undoRedoLog: UndoRedoLog | undefined
+  readonly journal: TransactionJournal | undefined
   readonly monitor: Monitor | null
   readonly trace?: Partial<TraceOptions>
   static readonly INITIAL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))
@@ -78,7 +78,7 @@ export class OptionsImpl implements CacheOptions {
     this.sensitiveArgs = merge(DEFAULT_STATELESS_OPTIONS.sensitiveArgs, existing.sensitiveArgs, patch.sensitiveArgs, implicit)
     this.throttling = merge(DEFAULT_STATELESS_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
     this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
-    this.undoRedoLog = merge(DEFAULT_STATELESS_OPTIONS.undoRedoLog, existing.undoRedoLog, patch.undoRedoLog, implicit)
+    this.journal = merge(DEFAULT_STATELESS_OPTIONS.journal, existing.journal, patch.journal, implicit)
     this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
     this.trace = merge(DEFAULT_STATELESS_OPTIONS.trace, existing.trace, patch.trace, implicit)
     if (Dbg.isOn)

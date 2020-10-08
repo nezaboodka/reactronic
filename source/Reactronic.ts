@@ -14,7 +14,7 @@ import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
 import { Method } from './impl/Method'
 import { Transaction } from './impl/Transaction'
-import { UndoRedoLog } from './impl/UndoRedoLog'
+import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 
 export class Reactronic {
@@ -100,8 +100,8 @@ export function reentrance(value: Reentrance): F<any> {
   return decorateMethod({reentrance: value})
 }
 
-export function undoRedoLog(value: UndoRedoLog | undefined): F<any> {
-  return decorateMethod({undoRedoLog: value})
+export function journal(value: TransactionJournal | undefined): F<any> {
+  return decorateMethod({journal: value})
 }
 
 export function monitor(value: Monitor | null): F<any> {

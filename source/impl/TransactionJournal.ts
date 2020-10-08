@@ -13,7 +13,7 @@ import { Handle, Record, Meta, Patch, ObjectPatch, Observable } from './Data'
 import { NIL, Snapshot } from './Snapshot'
 import { Transaction } from './Transaction'
 
-export abstract class UndoRedoLog extends Stateful {
+export abstract class TransactionJournal extends Stateful {
   abstract capacity: number
   abstract readonly items: ReadonlyArray<Patch>
   abstract readonly canUndo: boolean
@@ -23,10 +23,10 @@ export abstract class UndoRedoLog extends Stateful {
   abstract redo(count?: number): void
   abstract remember(patch: Patch): void
 
-  static create(): UndoRedoLog { return new UndoRedoLogImpl() }
+  static create(): TransactionJournal { return new TransactionJournalImpl() }
 }
 
-export class UndoRedoLogImpl extends UndoRedoLog {
+export class TransactionJournalImpl extends TransactionJournal {
   private _capacity: number = 5
   private _items: Patch[] = []
   private _position: number = 0
@@ -53,7 +53,7 @@ export class UndoRedoLogImpl extends UndoRedoLog {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._items[i]
-        UndoRedoLogImpl.applyPatch(patch, true)
+        TransactionJournalImpl.applyPatch(patch, true)
         i--, count--
       }
       this._position = i + 1
@@ -65,7 +65,7 @@ export class UndoRedoLogImpl extends UndoRedoLog {
       let i: number = this._position
       while (i < this._items.length && count > 0) {
         const patch = this._items[i]
-        UndoRedoLogImpl.applyPatch(patch, false)
+        TransactionJournalImpl.applyPatch(patch, false)
         i++, count--
       }
       this._position = i
