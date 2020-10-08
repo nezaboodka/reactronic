@@ -31,7 +31,7 @@ export interface ProfilingOptions {
   garbageCollectionSummaryInterval: number // default: 3000 ms
 }
 
-export const LogLevel: {
+export const TraceLevel: {
   Error: TraceOptions,
   Minimal: TraceOptions,
   Info: TraceOptions,

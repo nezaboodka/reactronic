@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 export { all, sleep } from './util/Utils'
-export { CacheOptions, Kind, Reentrance, Sensitivity, TraceOptions, ProfilingOptions, LogLevel } from './Options'
+export { CacheOptions, Kind, Reentrance, Sensitivity, TraceOptions, ProfilingOptions, TraceLevel } from './Options'
 export { Worker } from './Worker'
 export { Cache } from './Cache'
 export { Ref, BoolRef, BooleanOnly, GivenTypeOnly } from './Ref'
