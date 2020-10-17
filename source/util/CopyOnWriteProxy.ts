@@ -16,17 +16,17 @@ import { Member, Handle, Observable } from '../impl/Data'
 export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
   static readonly global: CopyOnWriteProxy = new CopyOnWriteProxy()
 
-  getPrototypeOf(binding: CopyOnWrite<any>): object | null {
-    return Object.getPrototypeOf(binding.payload)
+  getPrototypeOf(handler: CopyOnWrite<any>): object | null {
+    return Object.getPrototypeOf(handler.payload)
   }
 
-  get(binding: CopyOnWrite<any>, m: Member, receiver: any): any {
-    const a: any = binding.readable(receiver, m === 'raw' || m === R_COPY_ON_WRITE)
+  get(handler: CopyOnWrite<any>, m: Member, receiver: any): any {
+    const a: any = handler.readable(receiver, m === 'raw' || m === R_COPY_ON_WRITE)
     return a[m]
   }
 
-  set(binding: CopyOnWrite<any>, m: Member, value: any, receiver: any): boolean {
-    const a: any = binding.writable(receiver)
+  set(handler: CopyOnWrite<any>, m: Member, value: any, receiver: any): boolean {
+    const a: any = handler.writable(receiver)
     return a[m] = value
   }
 

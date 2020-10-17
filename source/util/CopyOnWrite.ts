@@ -47,22 +47,22 @@ export class CopyOnWrite<T> {
     const self: any = payload
     if (Dbg.isOn && Dbg.trace.writes)
       Dbg.log('║', ' ', `<obj>.${member.toString()} - copy-on-write - sealed ${size} item(s)`)
-    const binding = new CopyOnWrite<T>(owner, member, payload, size, getSize, clone)
-    self[R_COPY_ON_WRITE] = binding
+    const handler = new CopyOnWrite<T>(owner, member, payload, size, getSize, clone)
+    self[R_COPY_ON_WRITE] = handler
     Object.setPrototypeOf(payload, proto)
     Object.freeze(payload)
-    return binding
+    return handler
   }
 }
 
 export function R<T>(self: any, raw?: boolean): T {
-  const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
-  return binding !== undefined ? binding.readable(self, raw) : self
+  const handler: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
+  return handler !== undefined ? handler.readable(self, raw) : self
 }
 
 export function W<T>(self: any): T {
-  const binding: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
-  return binding !== undefined ? binding.writable(self) : self
+  const handler: CopyOnWrite<T> = self[R_COPY_ON_WRITE]
+  return handler !== undefined ? handler.writable(self) : self
 }
 
 // export function V<T>(self: any): T {
