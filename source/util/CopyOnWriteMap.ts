@@ -22,8 +22,8 @@ export abstract class CopyOnWriteMap<K, V> extends Map<K, V> {
   toJSON(name: string): any { return R<Map<K, V>>(this) }
   raw(): Map<K, V> { return R<Map<K, V>>(this, true) }
 
-  static seal<K, V>(owner: any, prop: PropertyKey, map: Map<K, V>): CopyOnWrite<Map<K, V>> {
-    return CopyOnWrite.seal(owner, prop, map, map.size, CopyOnWriteMap.prototype, CopyOnWriteMap.getSize, CopyOnWriteMap.clone)
+  static seal<K, V>(owner: any, member: PropertyKey, payload: Map<K, V>): CopyOnWrite<Map<K, V>> {
+    return CopyOnWrite.seal(owner, member, payload, payload.size, CopyOnWriteMap.prototype, CopyOnWriteMap.getSize, CopyOnWriteMap.clone)
   }
 
   static getSize<K, V>(set: Map<K, V>): number {

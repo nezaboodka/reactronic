@@ -21,8 +21,8 @@ export abstract class CopyOnWriteSet<T> extends Set<T> {
   toJSON(name: string): any { return R<Set<T>>(this) }
   raw(): Set<T> { return R<Set<T>>(this, true) }
 
-  static seal<T>(owner: any, prop: PropertyKey, set: Set<T>): CopyOnWrite<Set<T>> {
-    return CopyOnWrite.seal(owner, prop, set, set.size, CopyOnWriteSet.prototype, CopyOnWriteSet.getSize, CopyOnWriteSet.clone)
+  static seal<T>(owner: any, member: PropertyKey, payload: Set<T>): CopyOnWrite<Set<T>> {
+    return CopyOnWrite.seal(owner, member, payload, payload.size, CopyOnWriteSet.prototype, CopyOnWriteSet.getSize, CopyOnWriteSet.clone)
   }
 
   static getSize<T>(set: Set<T>): number {

@@ -39,8 +39,8 @@ export abstract class CopyOnWriteArray<T> extends Array<T> {
   toJSON(name: string): any { return R<T[]>(this) }
   raw(): Array<T> { return R<Array<T>>(this, true) }
 
-  static seal<T>(owner: any, prop: PropertyKey, array: T[]): CopyOnWrite<T[]> {
-    return CopyOnWrite.seal(owner, prop, array, array.length, CopyOnWriteArray.prototype, CopyOnWriteArray.getSize, CopyOnWriteArray.clone)
+  static seal<T>(owner: any, member: PropertyKey, payload: T[]): CopyOnWrite<T[]> {
+    return CopyOnWrite.seal(owner, member, payload, payload.length, CopyOnWriteArray.prototype, CopyOnWriteArray.getSize, CopyOnWriteArray.clone)
   }
 
   static getSize<T>(set: T[]): number {

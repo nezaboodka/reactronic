@@ -41,13 +41,13 @@ export class CopyOnWrite<T> {
     return v
   }
 
-  static seal<T>(owner: any, prop: PropertyKey, value: T, size: number, proto: object, getSize: (v: T) => number, clone: (v: T) => T): CopyOnWrite<T> {
+  static seal<T>(owner: any, member: PropertyKey, value: T, size: number, proto: object, getSize: (v: T) => number, clone: (v: T) => T): CopyOnWrite<T> {
     if (Object.isFrozen(value)) /* istanbul ignore next */
       throw misuse('copy-on-write collection cannot be referenced from multiple objects')
     const self: any = value
     if (Dbg.isOn && Dbg.trace.writes)
-      Dbg.log('║', ' ', `<obj>.${prop.toString()} - copy-on-write - sealed ${size} item(s)`)
-    const binding = new CopyOnWrite<T>(owner, prop, value, size, getSize, clone)
+      Dbg.log('║', ' ', `<obj>.${member.toString()} - copy-on-write - sealed ${size} item(s)`)
+    const binding = new CopyOnWrite<T>(owner, member, value, size, getSize, clone)
     self[R_COPY_ON_WRITE] = binding
     Object.setPrototypeOf(value, proto)
     Object.freeze(value)
