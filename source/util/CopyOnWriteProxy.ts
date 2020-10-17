@@ -17,7 +17,7 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
   static readonly global: CopyOnWriteProxy = new CopyOnWriteProxy()
 
   getPrototypeOf(binding: CopyOnWrite<any>): object | null {
-    return Object.getPrototypeOf(binding.value)
+    return Object.getPrototypeOf(binding.payload)
   }
 
   get(binding: CopyOnWrite<any>, m: Member, receiver: any): any {

@@ -12,8 +12,8 @@ export const R_COPY_ON_WRITE: unique symbol = Symbol('R:COPY-ON-WRITE')
 export class CopyOnWrite<T> {
   constructor(
     readonly owner: any,
-    readonly prop: PropertyKey,
-    readonly value: T,
+    readonly member: PropertyKey,
+    readonly payload: T,
     readonly size: number,
     readonly getSize: (value: T) => number,
     readonly clone: (value: T) => T) {
@@ -25,18 +25,18 @@ export class CopyOnWrite<T> {
   // }
 
   readable(receiver: any, raw?: boolean): T {
-    let v: T = this.owner[this.prop]
+    let v: T = this.owner[this.member]
     if (v === receiver || raw) // check if array is not yet cloned
-      v = this.value
+      v = this.payload
     return v
   }
 
   writable(receiver: any): T {
-    let v: T = this.owner[this.prop]
+    let v: T = this.owner[this.member]
     if (v === receiver) { // check if it's first write and clone then
       if (Dbg.isOn && Dbg.trace.writes)
-        Dbg.log('║', ' ', `<obj>.${this.prop.toString()} - copy-on-write - cloned`)
-      v = this.owner[this.prop] = this.clone(this.value)
+        Dbg.log('║', ' ', `<obj>.${this.member.toString()} - copy-on-write - cloned`)
+      v = this.owner[this.member] = this.clone(this.payload)
     }
     return v
   }
