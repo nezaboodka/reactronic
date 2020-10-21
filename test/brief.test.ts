@@ -126,6 +126,9 @@ test('brief', t => {
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)
     t.is(daddy.attributes.size, 2)
+    t.is(app.model.users !== app.model.usersWithoutLast, true)
+    t.is(app.model.usersWithoutLast !== app.model.collection1, true)
+    t.is(app.model.collection1 !== app.model.collection2, true)
     // Protection from modification outside of transactions
     t.throws(() => {
       if (daddy.emails)
@@ -149,6 +152,8 @@ test('brief', t => {
     Tran.run(sensitive, Sensitivity.TriggerEvenOnSameValueAssignment, () => {
       app.userFilter = app.userFilter
     })
+    app.model.testCollectionSealing()
+    t.is(app.model.collection1 === app.model.collection2, false)
     // Other
     t.is(app.raw, 'DemoView.userFilter #23t125v101')
     t.is(rendering.options.kind, Kind.Cached)
@@ -157,8 +162,8 @@ test('brief', t => {
     R.setTraceHint(app, 'App')
     t.is(R.getTraceHint(app, false), 'App')
     t.is(R.getTraceHint(app, true), 'App#23')
-    t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
-    t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'usersWithoutLast'])
+    t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
+    t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
     // Undo
     t.is(app.model.title, 'Demo')

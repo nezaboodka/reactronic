@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Dbg, misuse } from './Dbg'
+import { Dbg } from './Dbg'
 
 export interface Sealable<T> {
   mutable: T
@@ -25,16 +25,17 @@ export abstract class Sealant {
   static readonly Clone: unique symbol = Symbol('rxClone')
 
   static seal<T extends Sealable<T>>(collection: T, owner: any, member: any, proto: object): T {
-    if (Object.isFrozen(collection)) /* istanbul ignore next */
-      throw misuse('sealable collection cannot be referenced from multiple objects')
+    let result: T & Sealed<T> = collection as any
+    const clone = result[Sealant.Clone]
+    if (clone)
+      result = clone.call(result) as any
     if (Dbg.isOn && Dbg.trace.writes)
-      Dbg.log('║', ' ', `<obj>.${member.toString()} - collection is sealed`)
-    const sealed: T & Sealed<T> = collection as any
-    Object.defineProperty(sealed, Sealant.OwnObject, { value: owner, writable: false, enumerable: false, configurable: false })
-    Object.defineProperty(sealed, Sealant.OwnMember, { value: member, writable: false, enumerable: false, configurable: false })
-    Object.setPrototypeOf(sealed, proto)
-    Object.freeze(sealed)
-    return sealed
+      Dbg.log('║', ' ', `${owner.constructor.name}.${member.toString()} - collection is sealed`)
+    Object.defineProperty(result, Sealant.OwnObject, { value: owner, writable: false, enumerable: false, configurable: false })
+    Object.defineProperty(result, Sealant.OwnMember, { value: member, writable: false, enumerable: false, configurable: false })
+    Object.setPrototypeOf(result, proto)
+    Object.freeze(result)
+    return result
   }
 
   static mutable<T extends Sealable<T>>(collection: T): T {

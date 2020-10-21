@@ -14,11 +14,18 @@ export class Demo extends Stateful {
   @stateless shared: string = 'for testing purposes'
   title: string = 'Demo'
   users: Person[] = []
-  usersWithoutLast: Person[] = []
+  collection1: Person[] = this.users
+  collection2: Person[] = this.users
+  usersWithoutLast: Person[] = this.users
 
   @transaction
   loadUsers(): void {
     this._loadUsers()
+  }
+
+  @transaction
+  testCollectionSealing(): void {
+    this.collection1 = this.collection2 = []
   }
 
   @transaction @journal(Demo.UndoRedo)

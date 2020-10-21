@@ -267,7 +267,8 @@ export class Snapshot implements Context {
     if (observable instanceof Observable) {
       const value = observable.value
       const sealType = value?.[Sealant.SealType]
-      sealType && Sealant.seal(value, proxy, m, sealType)
+      if (sealType)
+        observable.value = Sealant.seal(value, proxy, m, sealType)
     }
   }
 
