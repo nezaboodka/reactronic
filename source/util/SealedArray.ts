@@ -13,7 +13,7 @@ declare global {
     [SealUtil.Owner]: any
     [SealUtil.Member]: any
     [SealUtil.Seal](owner: any, member: any): void
-    [SealUtil.Clone](): Array<T>
+    [SealUtil.Unseal](): Array<T>
   }
 }
 
@@ -46,7 +46,7 @@ Object.defineProperty(Array.prototype, SealUtil.Seal, {
   },
 })
 
-Object.defineProperty(Array.prototype, SealUtil.Clone, {
+Object.defineProperty(Array.prototype, SealUtil.Unseal, {
   configurable: false, enumerable: false, writable: false,
   value<T>(this: Array<T>): Array<T> {
     return this.slice()

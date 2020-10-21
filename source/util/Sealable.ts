@@ -12,14 +12,14 @@ export interface Sealable<T> {
   [SealUtil.Owner]: any
   [SealUtil.Member]: any
   [SealUtil.Seal](owner: any, member: any): void
-  [SealUtil.Clone](): T
+  [SealUtil.Unseal](): T
 }
 
 export abstract class SealUtil {
   static readonly Owner: unique symbol = Symbol('rxOwner')
   static readonly Member: unique symbol = Symbol('rxMember')
   static readonly Seal: unique symbol = Symbol('rxSeal')
-  static readonly Clone: unique symbol = Symbol('rxClone')
+  static readonly Unseal: unique symbol = Symbol('rxUnseal')
 
   static seal<T extends Sealable<T>>(sealable: T, owner: any, member: any, proto: object, size: number): T {
     if (Object.isFrozen(sealable)) /* istanbul ignore next */
@@ -40,8 +40,8 @@ export abstract class SealUtil {
     if (owner) {
       sealable = owner[sealable[SealUtil.Member]] // re-read to grab existing mutable
       owner = sealable[SealUtil.Owner]
-      if (owner) { // not yet cloned
-        collection = sealable[SealUtil.Clone]() // clone
+      if (owner) { // not unsealed yet
+        collection = sealable[SealUtil.Unseal]() // unseal
         owner[sealable[SealUtil.Member]] = collection // remember
       }
     }

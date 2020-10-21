@@ -13,7 +13,7 @@ declare global {
     [SealUtil.Owner]: any
     [SealUtil.Member]: any
     [SealUtil.Seal](owner: any, member: any): void
-    [SealUtil.Clone](): Set<T>
+    [SealUtil.Unseal](): Set<T>
   }
 }
 
@@ -37,7 +37,7 @@ Object.defineProperty(Set.prototype, SealUtil.Seal, {
   },
 })
 
-Object.defineProperty(Set.prototype, SealUtil.Clone, {
+Object.defineProperty(Set.prototype, SealUtil.Unseal, {
   configurable: false, enumerable: false, writable: false,
   value<T>(this: Set<T>): Set<T> {
     return new Set<T>(this.values())

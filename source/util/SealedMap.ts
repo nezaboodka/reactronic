@@ -13,7 +13,7 @@ declare global {
     [SealUtil.Owner]: any
     [SealUtil.Member]: any
     [SealUtil.Seal](owner: any, member: any): void
-    [SealUtil.Clone](): Map<K, V>
+    [SealUtil.Unseal](): Map<K, V>
   }
 }
 
@@ -37,7 +37,7 @@ Object.defineProperty(Map.prototype, SealUtil.Seal, {
   },
 })
 
-Object.defineProperty(Map.prototype, SealUtil.Clone, {
+Object.defineProperty(Map.prototype, SealUtil.Unseal, {
   configurable: false, enumerable: false, writable: false,
   value<K, V>(this: Map<K, V>): Map<K, V> {
     return new Map<K, V>(this.entries())
