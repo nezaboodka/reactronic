@@ -5,35 +5,35 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Sealable, Sealer } from './Sealer'
+import { Sealable, Sealant } from './Sealant'
 
 declare global {
   interface Set<T> {
     mutable: Set<T>
-    [Sealer.OwnObject]: any
-    [Sealer.OwnMember]: any
-    [Sealer.Seal](owner: any, member: any): void
-    [Sealer.Unseal](): Set<T>
+    [Sealant.OwnObject]: any
+    [Sealant.OwnMember]: any
+    [Sealant.Seal](owner: any, member: any): void
+    [Sealant.Unseal](): Set<T>
   }
 }
 
 export abstract class SealedSet<T> extends Set<T> implements Sealable<Set<T>> {
-  add(value: T): this { throw Sealer.error(this) }
-  clear(): void { throw Sealer.error(this) }
-  delete(value: T): boolean { throw Sealer.error(this) }
-  [Sealer.Unseal](): Set<T> { return new Set<T>(this.values()) }
+  add(value: T): this { throw Sealant.error(this) }
+  clear(): void { throw Sealant.error(this) }
+  delete(value: T): boolean { throw Sealant.error(this) }
+  [Sealant.Unseal](): Set<T> { return new Set<T>(this.values()) }
 }
 
 Object.defineProperty(Set.prototype, 'mutable', {
   configurable: false, enumerable: false,
   get<T>(this: Set<T>) {
-    return Sealer.mutable(this)
+    return Sealant.mutable(this)
   },
 })
 
-Object.defineProperty(Set.prototype, Sealer.Seal, {
+Object.defineProperty(Set.prototype, Sealant.Seal, {
   configurable: false, enumerable: false, writable: false,
   value<T>(this: Set<T>, owner: any, member: any): void {
-    Sealer.seal(this, owner, member, SealedSet.prototype, this.size)
+    Sealant.seal(this, owner, member, SealedSet.prototype, this.size)
   },
 })
