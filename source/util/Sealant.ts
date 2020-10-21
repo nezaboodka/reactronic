@@ -15,14 +15,14 @@ export interface Sealable<T> {
 export interface Sealed<T> {
   [Sealant.OwnObject]: any
   [Sealant.OwnMember]: any
-  [Sealant.Unseal]?: () => T
+  [Sealant.Clone]?: () => T
 }
 
 export abstract class Sealant {
   static readonly OwnObject: unique symbol = Symbol('rxOwnObject')
   static readonly OwnMember: unique symbol = Symbol('rxOwnMember')
   static readonly SealType: unique symbol = Symbol('rxSealType')
-  static readonly Unseal: unique symbol = Symbol('rxUnseal')
+  static readonly Clone: unique symbol = Symbol('rxClone')
 
   static seal<T extends Sealable<T>>(collection: T, owner: any, member: any, proto: object): T {
     if (Object.isFrozen(collection)) /* istanbul ignore next */
@@ -39,13 +39,13 @@ export abstract class Sealant {
 
   static mutable<T extends Sealable<T>>(collection: T): T {
     const col: Sealed<T> = collection as any
-    const unseal = col[Sealant.Unseal]
-    if (unseal) {
+    const clone = col[Sealant.Clone]
+    if (clone) {
       const owner = col[Sealant.OwnObject]
       const member = col[Sealant.OwnMember]
       const another = owner[member] // re-read collection from owner
       if (another === collection) { // not unsealed yet
-        collection = unseal.call(collection)
+        collection = clone.call(collection)
         owner[member] = collection // remember
       }
       else

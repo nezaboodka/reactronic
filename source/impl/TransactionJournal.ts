@@ -113,8 +113,8 @@ export class TransactionJournalImpl extends TransactionJournal {
 
 function unpack(observable: Observable): any {
   let result = observable.value
-  const unseal = result?.[Sealant.Unseal] as () => any
-  if (unseal)
-    result = unseal.call(result)
+  const clone = result?.[Sealant.Clone] as () => any
+  if (clone)
+    result = clone.call(result)
   return result
 }

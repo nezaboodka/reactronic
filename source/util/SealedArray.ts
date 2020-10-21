@@ -15,14 +15,15 @@ declare global {
 }
 
 export abstract class SealedArray<T> extends Array<T> implements Sealed<Array<T>> {
-  [Sealant.OwnObject]: any
-  [Sealant.OwnMember]: any
   pop(): T | undefined { throw Sealant.error(this) }
   push(...items: T[]): number { throw Sealant.error(this) }
   sort(compareFn?: (a: T, b: T) => number): this { throw Sealant.error(this) }
   splice(start: number, deleteCount?: number): T[]
   splice(start: number, deleteCount: number, ...items: T[]): T[] { throw Sealant.error(this) }
   unshift(...items: T[]): number { throw Sealant.error(this) }
+  [Sealant.OwnObject]: any
+  [Sealant.OwnMember]: any
+  [Sealant.Clone](): Array<T> { return this.slice() }
 
   slice(start?: number, end?: number): T[] {
     const result = super.slice(start, end)
@@ -30,9 +31,6 @@ export abstract class SealedArray<T> extends Array<T> implements Sealed<Array<T>
     return result
   }
 
-  [Sealant.Unseal](): Array<T> {
-    return this.slice()
-  }
 }
 
 Object.defineProperty(Array.prototype, 'mutable', {

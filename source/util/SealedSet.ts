@@ -15,12 +15,12 @@ declare global {
 }
 
 export abstract class SealedSet<T> extends Set<T> implements Sealed<Set<T>> {
-  [Sealant.OwnObject]: any
-  [Sealant.OwnMember]: any
   add(value: T): this { throw Sealant.error(this) }
   clear(): void { throw Sealant.error(this) }
   delete(value: T): boolean { throw Sealant.error(this) }
-  [Sealant.Unseal](): Set<T> { return new Set<T>(this.values()) }
+  [Sealant.OwnObject]: any
+  [Sealant.OwnMember]: any
+  [Sealant.Clone](): Set<T> { return new Set<T>(this.values()) }
 }
 
 Object.defineProperty(Set.prototype, 'mutable', {
