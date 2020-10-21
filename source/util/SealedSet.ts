@@ -1,4 +1,3 @@
-import { misuse } from './Dbg'
 // The below copyright notice and the license permission notice
 // shall be included in all copies or substantial portions.
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
@@ -19,9 +18,9 @@ declare global {
 }
 
 export abstract class SealedSet<T> extends Set<T> implements Sealable<Set<T>> {
-  add(value: T): this { throw misuse(SealUtil.Error) }
-  clear(): void { throw misuse(SealUtil.Error) }
-  delete(value: T): boolean { throw misuse(SealUtil.Error) }
+  add(value: T): this { throw SealUtil.error(this) }
+  clear(): void { throw SealUtil.error(this) }
+  delete(value: T): boolean { throw SealUtil.error(this) }
 }
 
 Object.defineProperty(Set.prototype, 'mutable', {

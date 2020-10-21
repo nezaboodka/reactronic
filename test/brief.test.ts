@@ -101,9 +101,11 @@ test('brief', t => {
       daddy.age += 5
       app.userFilter = ''
       if (daddy.emails) {
+        daddy.emails.mutable
         daddy.emails[0] = 'daddy@mail.com'
         daddy.emails.push('someone@mail.io')
       }
+      daddy.attributes.mutable
       daddy.attributes.set('city', 'London')
       daddy.attributes.set('country', 'United Kingdom')
       const x = daddy.children[1]
@@ -127,7 +129,7 @@ test('brief', t => {
     // Protection from modification outside of transactions
     t.throws(() => {
       if (daddy.emails)
-        daddy.emails.push('dad@mail.com')
+        daddy.emails.mutable.push('dad@mail.com')
     }, undefined, 'stateful property Person.emails #26 can only be modified inside transactions and triggers')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
@@ -186,8 +188,8 @@ test('brief', t => {
   }
   finally {
     Tran.run(() => {
-      R.dispose(app)
       R.dispose(app.model)
+      R.dispose(app)
     })
     t.is(app.model.title, undefined)
     t.is(app.userFilter, undefined)

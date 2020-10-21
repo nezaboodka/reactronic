@@ -7,7 +7,10 @@
 
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { CopyOnWriteProxy } from '../util/CopyOnWriteProxy'
+import { SealUtil } from '../util/Sealable'
+import { SealedArray } from '../util/SealedArray'
+import { SealedMap } from '../util/SealedMap'
+import { SealedSet } from '../util/SealedSet'
 import { Kind, SnapshotOptions } from '../Options'
 import { Context, Record, Member, Handle, Observable, Observer, Meta } from './Data'
 
@@ -231,9 +234,9 @@ export class Snapshot implements Context {
   complete(error?: any): void {
     this.completed = true
     this.changeset.forEach((r: Record, h: Handle) => {
-      r.changes.forEach(m => CopyOnWriteProxy.seal(r.data[m], h.proxy, m))
+      r.changes.forEach(m => Snapshot.seal(r.data[m], h.proxy, m))
       h.writers--
-      if (h.writers === 0)
+      if (h.writers === 0) // уходя гасите свет
         h.changing = undefined
       if (!error) {
         // if (this.timestamp < h.head.snapshot.timestamp)
@@ -258,6 +261,14 @@ export class Snapshot implements Context {
     if (Dbg.isOn && Dbg.trace.transactions)
       Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
     Snapshot.finalizeChangeset(this, error)
+  }
+
+  static seal(observable: Observable | symbol, proxy: any, m: Member): void {
+    if (observable instanceof Observable) {
+      const v = observable.value
+      const seal = v?.[SealUtil.Seal] as (owner: any, member: any) => void
+      seal?.call(v, proxy, m)
+    }
   }
 
   collect(): void {
@@ -326,6 +337,9 @@ export class Snapshot implements Context {
     Snapshot.idGen = 100
     Snapshot.stampGen = 101
     Snapshot.oldest = undefined
+    SealedArray.prototype
+    SealedMap.prototype
+    SealedSet.prototype
   }
 }
 

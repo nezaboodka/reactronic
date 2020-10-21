@@ -6,12 +6,10 @@
 // automatically licensed under the license referred above.
 
 import { Stateful } from './Hooks'
-import { CopyOnWriteArray } from '../util/CopyOnWriteArray'
-import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
-import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
 import { Handle, Record, Meta, Patch, ObjectPatch, Observable } from './Data'
 import { NIL, Snapshot } from './Snapshot'
 import { Transaction } from './Transaction'
+import { SealUtil } from 'util/Sealable'
 
 export abstract class TransactionJournal extends Stateful {
   abstract capacity: number
@@ -40,16 +38,16 @@ export class TransactionJournalImpl extends TransactionJournal {
   remember(p: Patch): void {
     Transaction.runAs({ hint: 'UndoRedeLog.remember', spawn: true }, () => {
       if (this._items.length >= this._capacity)
-        this._items.shift()
+        this._items.mutable.shift()
       else
-        this._items.splice(this._position)
-      this._items.push(p)
+        this._items.mutable.splice(this._position)
+      this._items.mutable.push(p)
       this._position = this._items.length
     })
   }
 
   undo(count: number = 1): void {
-    Transaction.runAs({ hint: 'UndoRedeLog.undo' }, () => {
+    Transaction.runAs({ hint: 'UndoRedeLog.undo', spawn: true }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._items[i]
@@ -61,7 +59,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 
   redo(count: number = 1): void {
-    Transaction.runAs({ hint: 'UndoRedeLog.redo' }, () => {
+    Transaction.runAs({ hint: 'UndoRedeLog.redo', spawn: true }, () => {
       let i: number = this._position
       while (i < this._items.length && count > 0) {
         const patch = this._items[i]
@@ -115,14 +113,8 @@ export class TransactionJournalImpl extends TransactionJournal {
 
 function unpack(observable: Observable): any {
   let result = observable.value
-  // TODO: Support Array, Set, Map (all CopyOnWrite collections)
-  if (result instanceof CopyOnWriteArray)
-    result = new Array(...result.raw())
-  else if (result instanceof CopyOnWriteSet)
-    result = new Set(Set.prototype.values.call(result.raw()))
-  else if (result instanceof CopyOnWriteMap) {
-    const raw = result.raw()
-    result = new Map(Map.prototype.entries.call(raw))
-  }
+  const clone = result?.[SealUtil.Clone] as () => any
+  if (clone)
+    result = clone.call(result)
   return result
 }

@@ -20,7 +20,6 @@ export abstract class SealUtil {
   static readonly Member: unique symbol = Symbol('rxMember')
   static readonly Seal: unique symbol = Symbol('rxSeal')
   static readonly Clone: unique symbol = Symbol('rxClone')
-  static readonly Error = 'stateful collection field is always immutable'
 
   static seal<T extends Sealable<T>>(sealable: T, owner: any, member: any, proto: object, size: number): T {
     if (Object.isFrozen(sealable)) /* istanbul ignore next */
@@ -35,8 +34,8 @@ export abstract class SealUtil {
     return sealed
   }
 
-  static mutable<T>(collection: T): T {
-    let sealable: Sealable<T> = collection as any
+  static mutable<T extends Sealable<T>>(collection: T): T {
+    let sealable = collection
     let owner = sealable[SealUtil.Owner]
     if (owner) {
       sealable = owner[sealable[SealUtil.Member]] // re-read to grab existing mutable
@@ -49,4 +48,9 @@ export abstract class SealUtil {
     return collection
   }
 
+  static error(collection: Sealable<any>): Error {
+    const owner = collection[SealUtil.Owner]
+    const member = collection[SealUtil.Member]
+    return new Error(`stateful collection ${owner}.${member} is always immutable`)
+  }
 }

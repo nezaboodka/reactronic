@@ -1,4 +1,3 @@
-import { misuse } from './Dbg'
 // The below copyright notice and the license permission notice
 // shall be included in all copies or substantial portions.
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
@@ -19,9 +18,9 @@ declare global {
 }
 
 export abstract class SealedMap<K, V> extends Map<K, V> implements Sealable<Map<K, V>> {
-  clear(): void { throw misuse(SealUtil.Error) }
-  delete(key: K): boolean { throw misuse(SealUtil.Error) }
-  set(key: K, value: V): this { throw misuse(SealUtil.Error) }
+  clear(): void { throw SealUtil.error(this) }
+  delete(key: K): boolean { throw SealUtil.error(this) }
+  set(key: K, value: V): this { throw SealUtil.error(this) }
 }
 
 Object.defineProperty(Map.prototype, 'mutable', {

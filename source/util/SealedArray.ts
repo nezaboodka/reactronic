@@ -5,7 +5,6 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { misuse } from './Dbg'
 import { Sealable, SealUtil } from './Sealable'
 
 declare global {
@@ -19,12 +18,18 @@ declare global {
 }
 
 export abstract class SealedArray<T> extends Array<T> implements Sealable<Array<T>> {
-  pop(): T | undefined { throw misuse(SealUtil.Error) }
-  push(...items: T[]): number { throw misuse(SealUtil.Error) }
-  sort(compareFn?: (a: T, b: T) => number): this { throw misuse(SealUtil.Error) }
+  pop(): T | undefined { throw SealUtil.error(this) }
+  push(...items: T[]): number { throw SealUtil.error(this) }
+  sort(compareFn?: (a: T, b: T) => number): this { throw SealUtil.error(this) }
   splice(start: number, deleteCount?: number): T[]
-  splice(start: number, deleteCount: number, ...items: T[]): T[] { throw misuse(SealUtil.Error) }
-  unshift(...items: T[]): number { throw misuse(SealUtil.Error) }
+  splice(start: number, deleteCount: number, ...items: T[]): T[] { throw SealUtil.error(this) }
+  unshift(...items: T[]): number { throw SealUtil.error(this) }
+
+  slice(start?: number, end?: number): T[] {
+    const result = super.slice(start, end)
+    Object.setPrototypeOf(result, Array.prototype)
+    return result
+  }
 }
 
 Object.defineProperty(Array.prototype, 'mutable', {

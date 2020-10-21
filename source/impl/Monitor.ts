@@ -30,11 +30,11 @@ export class MonitorImpl extends Monitor {
     if (this.workerCount === 0)
       this.isActive = true
     this.workerCount++
-    this.workers.add(worker)
+    this.workers.mutable.add(worker)
   }
 
   leave(worker: Worker): void {
-    this.workers.delete(worker)
+    this.workers.mutable.delete(worker)
     this.workerCount--
     if (this.workerCount === 0)
       this.idle(false)
