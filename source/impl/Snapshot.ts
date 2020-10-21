@@ -7,7 +7,7 @@
 
 import { Utils, undef } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { SealUtil } from '../util/Sealable'
+import { Sealer } from '../util/Sealer'
 import { SealedArray } from '../util/SealedArray'
 import { SealedMap } from '../util/SealedMap'
 import { SealedSet } from '../util/SealedSet'
@@ -265,9 +265,9 @@ export class Snapshot implements Context {
 
   static seal(observable: Observable | symbol, proxy: any, m: Member): void {
     if (observable instanceof Observable) {
-      const v = observable.value
-      const seal = v?.[SealUtil.Seal] as (owner: any, member: any) => void
-      seal?.call(v, proxy, m)
+      const value = observable.value
+      const seal = value?.[Sealer.Seal] as (owner: any, member: any) => void
+      seal?.call(value, proxy, m)
     }
   }
 

@@ -9,7 +9,7 @@ import { Stateful } from './Hooks'
 import { Handle, Record, Meta, Patch, ObjectPatch, Observable } from './Data'
 import { NIL, Snapshot } from './Snapshot'
 import { Transaction } from './Transaction'
-import { SealUtil } from 'util/Sealable'
+import { Sealer } from 'util/Sealer'
 
 export abstract class TransactionJournal extends Stateful {
   abstract capacity: number
@@ -113,7 +113,7 @@ export class TransactionJournalImpl extends TransactionJournal {
 
 function unpack(observable: Observable): any {
   let result = observable.value
-  const unseal = result?.[SealUtil.Unseal] as () => any
+  const unseal = result?.[Sealer.Unseal] as () => any
   if (unseal)
     result = unseal.call(result)
   return result

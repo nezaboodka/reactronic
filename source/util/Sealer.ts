@@ -9,15 +9,15 @@ import { Dbg, misuse } from './Dbg'
 
 export interface Sealable<T> {
   mutable: T
-  [SealUtil.Owner]: any
-  [SealUtil.Member]: any
-  [SealUtil.Seal](owner: any, member: any): void
-  [SealUtil.Unseal](): T
+  [Sealer.OwnObject]: any
+  [Sealer.OwnMember]: any
+  [Sealer.Seal](owner: any, member: any): void
+  [Sealer.Unseal](): T
 }
 
-export abstract class SealUtil {
-  static readonly Owner: unique symbol = Symbol('rxOwner')
-  static readonly Member: unique symbol = Symbol('rxMember')
+export abstract class Sealer {
+  static readonly OwnObject: unique symbol = Symbol('rxOwnObject')
+  static readonly OwnMember: unique symbol = Symbol('rxOwnMember')
   static readonly Seal: unique symbol = Symbol('rxSeal')
   static readonly Unseal: unique symbol = Symbol('rxUnseal')
 
@@ -27,8 +27,8 @@ export abstract class SealUtil {
     if (Dbg.isOn && Dbg.trace.writes)
       Dbg.log('║', ' ', `<obj>.${member.toString()} - sealed ${size} item(s)`)
     const sealed: T & Sealable<T> = sealable as any
-    Object.defineProperty(sealed, SealUtil.Owner, { value: owner, writable: false, enumerable: false, configurable: false })
-    Object.defineProperty(sealed, SealUtil.Member, { value: member, writable: false, enumerable: false, configurable: false })
+    Object.defineProperty(sealed, Sealer.OwnObject, { value: owner, writable: false, enumerable: false, configurable: false })
+    Object.defineProperty(sealed, Sealer.OwnMember, { value: member, writable: false, enumerable: false, configurable: false })
     Object.setPrototypeOf(sealed, proto)
     Object.freeze(sealed)
     return sealed
@@ -36,21 +36,21 @@ export abstract class SealUtil {
 
   static mutable<T extends Sealable<T>>(collection: T): T {
     let sealable = collection
-    let owner = sealable[SealUtil.Owner]
+    let owner = sealable[Sealer.OwnObject]
     if (owner) {
-      sealable = owner[sealable[SealUtil.Member]] // re-read to grab existing mutable
-      owner = sealable[SealUtil.Owner]
+      sealable = owner[sealable[Sealer.OwnMember]] // re-read to grab existing mutable
+      owner = sealable[Sealer.OwnObject]
       if (owner) { // not unsealed yet
-        collection = sealable[SealUtil.Unseal]() // unseal
-        owner[sealable[SealUtil.Member]] = collection // remember
+        collection = sealable[Sealer.Unseal]() // unseal
+        owner[sealable[Sealer.OwnMember]] = collection // remember
       }
     }
     return collection
   }
 
   static error(collection: Sealable<any>): Error {
-    const owner = collection[SealUtil.Owner]
-    const member = collection[SealUtil.Member]
+    const owner = collection[Sealer.OwnObject]
+    const member = collection[Sealer.OwnMember]
     return new Error(`stateful collection ${owner}.${member} is always immutable`)
   }
 }
