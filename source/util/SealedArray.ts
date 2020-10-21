@@ -5,19 +5,18 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Sealable, Sealant } from './Sealant'
+import { Sealant, Sealed } from './Sealant'
 
 declare global {
   interface Array<T> {
     mutable: Array<T>
-    [Sealant.OwnObject]: any
-    [Sealant.OwnMember]: any
-    [Sealant.Seal](owner: any, member: any): void
-    [Sealant.Unseal](): Array<T>
+    [Sealant.SealType]: object
   }
 }
 
-export abstract class SealedArray<T> extends Array<T> implements Sealable<Array<T>> {
+export abstract class SealedArray<T> extends Array<T> implements Sealed<Array<T>> {
+  [Sealant.OwnObject]: any
+  [Sealant.OwnMember]: any
   pop(): T | undefined { throw Sealant.error(this) }
   push(...items: T[]): number { throw Sealant.error(this) }
   sort(compareFn?: (a: T, b: T) => number): this { throw Sealant.error(this) }
@@ -43,9 +42,7 @@ Object.defineProperty(Array.prototype, 'mutable', {
   },
 })
 
-Object.defineProperty(Array.prototype, Sealant.Seal, {
+Object.defineProperty(Array.prototype, Sealant.SealType, {
+  value: SealedArray.prototype,
   configurable: false, enumerable: false, writable: false,
-  value<T>(this: Array<T>, owner: any, member: any): void {
-    Sealant.seal(this, owner, member, SealedArray.prototype, this.length)
-  },
 })

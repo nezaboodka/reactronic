@@ -5,19 +5,18 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Sealable, Sealant } from './Sealant'
+import { Sealant, Sealed } from './Sealant'
 
 declare global {
   interface Set<T> {
     mutable: Set<T>
-    [Sealant.OwnObject]: any
-    [Sealant.OwnMember]: any
-    [Sealant.Seal](owner: any, member: any): void
-    [Sealant.Unseal](): Set<T>
+    [Sealant.SealType]: object
   }
 }
 
-export abstract class SealedSet<T> extends Set<T> implements Sealable<Set<T>> {
+export abstract class SealedSet<T> extends Set<T> implements Sealed<Set<T>> {
+  [Sealant.OwnObject]: any
+  [Sealant.OwnMember]: any
   add(value: T): this { throw Sealant.error(this) }
   clear(): void { throw Sealant.error(this) }
   delete(value: T): boolean { throw Sealant.error(this) }
@@ -31,9 +30,7 @@ Object.defineProperty(Set.prototype, 'mutable', {
   },
 })
 
-Object.defineProperty(Set.prototype, Sealant.Seal, {
+Object.defineProperty(Set.prototype, Sealant.SealType, {
+  value: SealedSet.prototype,
   configurable: false, enumerable: false, writable: false,
-  value<T>(this: Set<T>, owner: any, member: any): void {
-    Sealant.seal(this, owner, member, SealedSet.prototype, this.size)
-  },
 })

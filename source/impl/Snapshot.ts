@@ -266,8 +266,8 @@ export class Snapshot implements Context {
   static seal(observable: Observable | symbol, proxy: any, m: Member): void {
     if (observable instanceof Observable) {
       const value = observable.value
-      const seal = value?.[Sealant.Seal] as (owner: any, member: any) => void
-      seal?.call(value, proxy, m)
+      const sealType = value?.[Sealant.SealType]
+      sealType && Sealant.seal(value, proxy, m, sealType)
     }
   }
 

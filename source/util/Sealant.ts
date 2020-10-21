@@ -9,24 +9,27 @@ import { Dbg, misuse } from './Dbg'
 
 export interface Sealable<T> {
   mutable: T
+  [Sealant.SealType]: object
+}
+
+export interface Sealed<T> {
   [Sealant.OwnObject]: any
   [Sealant.OwnMember]: any
-  [Sealant.Seal](owner: any, member: any): void
-  [Sealant.Unseal](): T
+  [Sealant.Unseal]?: () => T
 }
 
 export abstract class Sealant {
   static readonly OwnObject: unique symbol = Symbol('rxOwnObject')
   static readonly OwnMember: unique symbol = Symbol('rxOwnMember')
-  static readonly Seal: unique symbol = Symbol('rxSeal')
+  static readonly SealType: unique symbol = Symbol('rxSealType')
   static readonly Unseal: unique symbol = Symbol('rxUnseal')
 
-  static seal<T extends Sealable<T>>(sealable: T, owner: any, member: any, proto: object, size: number): T {
-    if (Object.isFrozen(sealable)) /* istanbul ignore next */
+  static seal<T extends Sealable<T>>(collection: T, owner: any, member: any, proto: object): T {
+    if (Object.isFrozen(collection)) /* istanbul ignore next */
       throw misuse('sealable collection cannot be referenced from multiple objects')
     if (Dbg.isOn && Dbg.trace.writes)
-      Dbg.log('║', ' ', `<obj>.${member.toString()} - sealed ${size} item(s)`)
-    const sealed: T & Sealable<T> = sealable as any
+      Dbg.log('║', ' ', `<obj>.${member.toString()} - collection is sealed`)
+    const sealed: T & Sealed<T> = collection as any
     Object.defineProperty(sealed, Sealant.OwnObject, { value: owner, writable: false, enumerable: false, configurable: false })
     Object.defineProperty(sealed, Sealant.OwnMember, { value: member, writable: false, enumerable: false, configurable: false })
     Object.setPrototypeOf(sealed, proto)
@@ -35,10 +38,11 @@ export abstract class Sealant {
   }
 
   static mutable<T extends Sealable<T>>(collection: T): T {
-    const unseal = collection[Sealant.Unseal]
+    const col: Sealed<T> = collection as any
+    const unseal = col[Sealant.Unseal]
     if (unseal) {
-      const owner = collection[Sealant.OwnObject]
-      const member = collection[Sealant.OwnMember]
+      const owner = col[Sealant.OwnObject]
+      const member = col[Sealant.OwnMember]
       const another = owner[member] // re-read collection from owner
       if (another === collection) { // not unsealed yet
         collection = unseal.call(collection)
@@ -50,7 +54,7 @@ export abstract class Sealant {
     return collection
   }
 
-  static error(collection: Sealable<any>): Error {
+  static error(collection: Sealed<any>): Error {
     const owner = collection[Sealant.OwnObject]
     const member = collection[Sealant.OwnMember]
     return new Error(`stateful collection ${owner}.${member} is always immutable`)
