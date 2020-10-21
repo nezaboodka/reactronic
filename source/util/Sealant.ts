@@ -35,15 +35,17 @@ export abstract class Sealant {
   }
 
   static mutable<T extends Sealable<T>>(collection: T): T {
-    let sealable = collection
-    let owner = sealable[Sealant.OwnObject]
-    if (owner) {
-      sealable = owner[sealable[Sealant.OwnMember]] // re-read to grab existing mutable
-      owner = sealable[Sealant.OwnObject]
-      if (owner) { // not unsealed yet
-        collection = sealable[Sealant.Unseal]() // unseal
-        owner[sealable[Sealant.OwnMember]] = collection // remember
+    const unseal = collection[Sealant.Unseal]
+    if (unseal) {
+      const owner = collection[Sealant.OwnObject]
+      const member = collection[Sealant.OwnMember]
+      const another = owner[member] // re-read collection from owner
+      if (another === collection) { // not unsealed yet
+        collection = unseal.call(collection)
+        owner[member] = collection // remember
       }
+      else
+        collection = another // re-use already unsealed collection
     }
     return collection
   }
