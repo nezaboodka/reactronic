@@ -6,6 +6,9 @@
 // automatically licensed under the license referred above.
 
 export { all, sleep } from './util/Utils'
+export { SealedArray } from './util/SealedArray'
+export { SealedMap } from './util/SealedMap'
+export { SealedSet } from './util/SealedSet'
 export { CacheOptions, Kind, Reentrance, Sensitivity, TraceOptions, ProfilingOptions, TraceLevel } from './Options'
 export { Worker } from './Worker'
 export { Cache } from './Cache'
