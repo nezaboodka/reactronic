@@ -31,6 +31,13 @@ export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
   }
 
   static seal(observable: Observable | symbol, proxy: any, m: Member): void {
+    // if (observable instanceof Observable) {
+    //   const v = observable.value
+    //   const seal = v[SealUtil.Seal] as (owner: any, member: any) => void
+    //   if (seal)
+    //     seal.call(v, proxy, m)
+    // }
+
     if (observable instanceof Observable) {
       const v = observable.value
       if (Array.isArray(v) || v instanceof Array) {
