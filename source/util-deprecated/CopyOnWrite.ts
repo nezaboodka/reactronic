@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Dbg, misuse } from './Dbg'
+import { Dbg, misuse } from '../util/Dbg'
 
 export const R_COPY_ON_WRITE: unique symbol = Symbol('R:COPY-ON-WRITE')
 

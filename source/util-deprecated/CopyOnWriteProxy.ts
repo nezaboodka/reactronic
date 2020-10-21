@@ -8,9 +8,9 @@
 import { Utils } from '../util/Utils'
 import { misuse } from '../util/Dbg'
 import { R_COPY_ON_WRITE } from './CopyOnWrite'
-import { CopyOnWriteArray, CopyOnWrite } from '../util/CopyOnWriteArray'
-import { CopyOnWriteSet } from '../util/CopyOnWriteSet'
-import { CopyOnWriteMap } from '../util/CopyOnWriteMap'
+import { CopyOnWriteArray, CopyOnWrite } from './CopyOnWriteArray'
+import { CopyOnWriteSet } from './CopyOnWriteSet'
+import { CopyOnWriteMap } from './CopyOnWriteMap'
 import { Member, Handle, Observable } from '../impl/Data'
 
 export class CopyOnWriteProxy implements ProxyHandler<CopyOnWrite<any>> {
