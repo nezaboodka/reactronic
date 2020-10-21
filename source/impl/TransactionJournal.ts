@@ -76,9 +76,9 @@ export class TransactionJournalImpl extends TransactionJournal {
       const p: ObjectPatch = { changes: {}, old: {} }
       const old = r.prev.record !== NIL ? r.prev.record.data : undefined
       r.changes.forEach(m => {
-        p.changes[m] = unpack(r.data[m])
+        p.changes[m] = unseal(r.data[m])
         if (old)
-          p.old[m] = unpack(old[m])
+          p.old[m] = unseal(old[m])
       })
       if (!old) {
         p.changes[Meta.Disposed] = undefined // object restore
@@ -111,7 +111,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 }
 
-function unpack(observable: Observable): any {
+function unseal(observable: Observable): any {
   const result = observable.value
   const clone = result?.[Sealant.Clone] as () => any
   return clone ? clone.call(result) : result
