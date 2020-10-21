@@ -152,9 +152,10 @@ test('brief', t => {
     Tran.run(sensitive, Sensitivity.TriggerEvenOnSameValueAssignment, () => {
       app.userFilter = app.userFilter
     })
+    // Other
+    t.throws(() => app.model.testImmutableCollection(), { message: 'Demo.collection1 is a stateful collection, use Demo.collection1.mutable to modify it' })
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
-    // Other
     t.is(app.raw, 'DemoView.userFilter #23t125v101')
     t.is(rendering.options.kind, Kind.Cached)
     t.is(rendering.error, undefined)

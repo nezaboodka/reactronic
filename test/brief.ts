@@ -28,6 +28,11 @@ export class Demo extends Stateful {
     this.collection1 = this.collection2 = []
   }
 
+  @transaction
+  testImmutableCollection(): void {
+    this.collection1.push(...this.users)
+  }
+
   @transaction @journal(Demo.UndoRedo)
   testUndo(): void {
     this.title = 'Demo - undo/redo'

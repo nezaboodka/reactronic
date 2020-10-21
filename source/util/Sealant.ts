@@ -58,6 +58,6 @@ export abstract class Sealant {
   static error(collection: Sealed<any>): Error {
     const owner = collection[Sealant.OwnObject]
     const member = collection[Sealant.OwnMember]
-    return new Error(`stateful collection ${owner}.${member} is always immutable`)
+    return new Error(`${owner.constructor.name}.${member} is a stateful collection, use ${owner.constructor.name}.${member}.mutable to modify it`)
   }
 }
