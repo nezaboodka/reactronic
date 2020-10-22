@@ -1,4 +1,3 @@
-import { stateless } from 'api'
 // The below copyright notice and the license permission notice
 // shall be included in all copies or substantial portions.
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
@@ -24,20 +23,22 @@ export class MonitorImpl extends Monitor {
   isActive: boolean = false
   workerCount: number = 0
   workers = new Set<Worker>()
-  @stateless delayBeforeActive: number = -1
-  @stateless delayBeforeInactive: number = -1
-  @stateless timeout: any = undefined
+  internals = {
+    delayBeforeActive: -1,
+    delayBeforeInactive: -1,
+    timeout: undefined,
+  }
 
   enter(worker: Worker): void {
     this.workerCount++
     this.workers.mutable.add(worker)
-    this.update(this.delayBeforeActive)
+    this.update(this.internals.delayBeforeActive)
   }
 
   leave(worker: Worker): void {
     this.workerCount--
     this.workers.mutable.delete(worker)
-    this.update(this.delayBeforeInactive)
+    this.update(this.internals.delayBeforeInactive)
   }
 
   static create(hint: string, delayBeforeActive: number, delayBeforeInactive: number): MonitorImpl {
@@ -58,22 +59,22 @@ export class MonitorImpl extends Monitor {
   private static doCreate(hint: string, delayBeforeActive: number, delayBeforeInactive: number): MonitorImpl {
     const m = new MonitorImpl()
     Hooks.setHint(m, hint)
-    m.delayBeforeActive = delayBeforeActive
-    m.delayBeforeInactive = delayBeforeInactive
+    m.internals.delayBeforeActive = delayBeforeActive
+    m.internals.delayBeforeInactive = delayBeforeInactive
     return m
   }
 
   private update(delay: number): void {
     if (delay < 0)
       this.isActive = this.workerCount > 0
-    else if (!this.timeout)
-      this.timeout = setTimeout(() =>
+    else if (!this.internals.timeout)
+      this.internals.timeout = setTimeout(() =>
         Transaction.runAs<void>({ hint: 'Monitor.update', spawn: true },
-          MonitorImpl.updateTick, this), delay)
+          MonitorImpl.updateTick, this), delay) as any
   }
 
   private static updateTick(mon: MonitorImpl): void {
-    mon.timeout = undefined
+    mon.internals.timeout = undefined
     mon.update(-1)
   }
 }
