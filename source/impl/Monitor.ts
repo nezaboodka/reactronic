@@ -1,3 +1,4 @@
+import { stateless } from 'api'
 // The below copyright notice and the license permission notice
 // shall be included in all copies or substantial portions.
 // Copyright (C) 2016-2020 Yury Chetyrko <ychetyrko@gmail.com>
@@ -5,7 +6,6 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { misuse } from '../util/Dbg'
 import { Worker } from '../Worker'
 import { Stateful, Hooks } from './Hooks'
 import { Transaction } from './Transaction'
@@ -15,33 +15,34 @@ export abstract class Monitor extends Stateful {
   abstract readonly workerCount: number
   abstract readonly workers: ReadonlySet<Worker>
 
-  static create(hint?: string, delayBeforeIdle?: number): Monitor { return MonitorImpl.create(hint, delayBeforeIdle) }
+  static create(hint: string, delayBeforeActive: number, delayBeforeInactive: number): Monitor {
+    return MonitorImpl.create(hint, delayBeforeActive, delayBeforeInactive)
+  }
 }
 
 export class MonitorImpl extends Monitor {
   isActive: boolean = false
   workerCount: number = 0
   workers = new Set<Worker>()
-  private readonly x: { delayBeforeIdle?: number, timeout: any } =
-    { delayBeforeIdle: undefined, timeout: undefined }
+  @stateless delayBeforeActive: number = -1
+  @stateless delayBeforeInactive: number = -1
+  @stateless timeout: any = undefined
 
   enter(worker: Worker): void {
-    this.x.timeout = MonitorImpl.clear(this.x.timeout) // yes, on each enter
-    if (this.workerCount === 0)
-      this.isActive = true
     this.workerCount++
     this.workers.mutable.add(worker)
+    this.update(this.delayBeforeActive)
   }
 
   leave(worker: Worker): void {
-    this.workers.mutable.delete(worker)
     this.workerCount--
-    if (this.workerCount === 0)
-      this.idle(false)
+    this.workers.mutable.delete(worker)
+    this.update(this.delayBeforeInactive)
   }
 
-  static create(hint?: string, prolonged?: number): MonitorImpl {
-    return Transaction.runAs({ hint: 'Monitor.create' }, MonitorImpl.doCreate, hint, prolonged)
+  static create(hint: string, delayBeforeActive: number, delayBeforeInactive: number): MonitorImpl {
+    return Transaction.runAs({ hint: 'Monitor.create' },
+      MonitorImpl.doCreate, hint, delayBeforeActive, delayBeforeInactive)
   }
 
   static enter(mon: MonitorImpl, worker: Worker): void {
@@ -54,32 +55,25 @@ export class MonitorImpl extends Monitor {
 
   // Internal
 
-  private static doCreate(hint?: string, delayBeforeIdle?: number): MonitorImpl {
+  private static doCreate(hint: string, delayBeforeActive: number, delayBeforeInactive: number): MonitorImpl {
     const m = new MonitorImpl()
     Hooks.setHint(m, hint)
-    m.x.delayBeforeIdle = delayBeforeIdle
+    m.delayBeforeActive = delayBeforeActive
+    m.delayBeforeInactive = delayBeforeInactive
     return m
   }
 
-  private idle(now: boolean): void {
-    if (now || this.x.delayBeforeIdle === undefined) {
-      if (this.workerCount > 0 || this.workers.size > 0) /* istanbul ignore next */
-        throw misuse('cannot reset monitor having active workers')
-      this.isActive = false
-      this.x.timeout = MonitorImpl.clear(this.x.timeout)
-    }
-    else
-      this.x.timeout = setTimeout(() =>
-        Transaction.runAs<void>({ hint: 'Monitor.idle', spawn: true },
-          MonitorImpl.idle, this, true), this.x.delayBeforeIdle)
+  private update(delay: number): void {
+    if (delay < 0)
+      this.isActive = this.workerCount > 0
+    else if (!this.timeout)
+      this.timeout = setTimeout(() =>
+        Transaction.runAs<void>({ hint: 'Monitor.update', spawn: true },
+          MonitorImpl.updateTick, this), delay)
   }
 
-  private static idle(mon: MonitorImpl, now: boolean): void {
-    mon.idle(now)
-  }
-
-  private static clear(timeout: any): undefined {
-    clearTimeout(timeout)
-    return undefined
+  private static updateTick(mon: MonitorImpl): void {
+    mon.timeout = undefined
+    mon.update(-1)
   }
 }

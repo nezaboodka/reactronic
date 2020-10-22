@@ -289,7 +289,7 @@ class Monitor {
   readonly isActive: boolean
   readonly workerCount: number
   readonly workers: ReadonlySet<Worker>
-  static create(hint?: string, delayBeforeIdle?: number): Monitor
+  static create(hint: string, delayBeforeActive: number, delayBeforeInactive: number): Monitor
 }
 
 interface Worker {
