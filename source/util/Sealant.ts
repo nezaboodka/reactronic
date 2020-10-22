@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Dbg } from './Dbg'
+import { Dbg, misuse } from './Dbg'
 
 export interface Sealable<T> {
   mutable: T
@@ -58,6 +58,6 @@ export abstract class Sealant {
   static error(collection: Sealed<any>): Error {
     const owner = collection[Sealant.OwnObject]
     const member = collection[Sealant.OwnMember]
-    return new Error(`${owner.constructor.name}.${member} is a stateful collection, use ${owner.constructor.name}.${member}.mutable to modify it`)
+    return misuse(`${owner.constructor.name}.${member} is a stateful collection, use ${owner.constructor.name}.${member}.mutable to modify it`)
   }
 }
