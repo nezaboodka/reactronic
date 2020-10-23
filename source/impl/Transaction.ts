@@ -259,10 +259,10 @@ class TransactionImpl extends Transaction {
         this.cancel(e)
       throw e
     }
-    finally { // it's critical to have no exceptions in this block
+    finally {
       this.workers--
       if (this.sealed && this.workers === 0) {
-        this.finish()
+        this.finish() // it's critical to have no exceptions inside this call
         TransactionImpl.running = outer
         TransactionImpl.isolated(TransactionImpl.revalidateTriggers, this)
       }
@@ -302,16 +302,22 @@ class TransactionImpl extends Transaction {
 
   private finish(): void {
     // It's critical to have no exceptions in this block
-    this.snapshot.complete(this.canceled)
-    this.snapshot.collect()
-    if (this.promise) {
-      if (this.canceled && !this.after)
-        this.reject(this.canceled)
-      else
-        this.resolve()
+    try {
+      this.snapshot.complete(this.canceled)
+      this.snapshot.collect()
+      if (this.promise) {
+        if (this.canceled && !this.after)
+          this.reject(this.canceled)
+        else
+          this.resolve()
+      }
+      if (Dbg.isOn)
+        Object.freeze(this)
     }
-    if (Dbg.isOn)
-      Object.freeze(this)
+    catch (e) {
+      misuse(`*** FATAL ***: ${e.message}`, e)
+      throw e
+    }
   }
 
   private acquirePromise(): Promise<void> {
