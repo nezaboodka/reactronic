@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { undef, F } from '../util/Utils'
-import { Dbg, misuse, error } from '../util/Dbg'
+import { Dbg, misuse, error, fatal } from '../util/Dbg'
 import { Worker } from '../Worker'
 import { SnapshotOptions, TraceOptions } from '../Options'
 import { Record } from './Data'
@@ -315,7 +315,7 @@ class TransactionImpl extends Transaction {
         Object.freeze(this)
     }
     catch (e) {
-      misuse(`*** FATAL ***: ${e.message}`, e)
+      fatal(e)
       throw e
     }
   }

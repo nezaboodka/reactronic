@@ -19,6 +19,11 @@ export function misuse(message: string, dump?: any): Error {
   return error
 }
 
+export function fatal(error: Error): Error {
+  Dbg.log(' ', ' ███', error.message, undefined, ' *** FATAL ***', error)
+  return error
+}
+
 // Dbg
 
 export class Dbg {

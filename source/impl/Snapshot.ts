@@ -263,13 +263,13 @@ export class Snapshot implements Context {
     Snapshot.finalizeChangeset(this, error)
   }
 
-  static seal(observable: Observable | symbol, proxy: any, m: Member): void {
+  static seal(observable: Observable | symbol, proxy: any, member: Member): void {
     if (observable instanceof Observable) {
       const value = observable.value
       if (value !== undefined && value !== null) {
         const sealType = Object.getPrototypeOf(value)[Sealant.SealType]
         if (sealType)
-          observable.value = Sealant.seal(value, proxy, m, sealType)
+          observable.value = Sealant.seal(value, proxy, member, sealType)
       }
     }
   }
