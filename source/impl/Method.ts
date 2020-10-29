@@ -29,7 +29,7 @@ export class Method extends Cache<any> {
   configure(options: Partial<CacheOptions>): CacheOptions { return Method.configureImpl(this, options) }
   get options(): CacheOptions { return this.weak().result.options }
   get args(): ReadonlyArray<any> { return this.weak().result.args }
-  get value(): any { return this.call(true, undefined).value }
+  get value(): any { return this.call(true, this.args).value }
   get error(): boolean { return this.weak().result.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reuse }
@@ -42,7 +42,7 @@ export class Method extends Cache<any> {
     this.member = member
   }
 
-  call(weak: boolean, args: any[] | undefined): CallResult {
+  call(weak: boolean, args: ReadonlyArray<any> | undefined): CallResult {
     let call: Call = this.read(args)
     const ctx = call.context
     const c: CallResult = call.result
@@ -127,7 +127,7 @@ export class Method extends Cache<any> {
     return call
   }
 
-  private read(args: any[] | undefined): Call {
+  private read(args: ReadonlyArray<any> | undefined): Call {
     const ctx = Snapshot.reader()
     const r: Record = ctx.lookup(this.handle)
     const c: CallResult = this.from(r)
@@ -174,7 +174,7 @@ export class Method extends Cache<any> {
     return c
   }
 
-  private compute(existing: Call, spawn: boolean, options: CacheOptions, token: any, args: any[] | undefined): Call {
+  private compute(existing: Call, spawn: boolean, options: CacheOptions, token: any, args: ReadonlyArray<any> | undefined): Call {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.handle, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.handle, this.member)}`
     let call = existing
@@ -343,7 +343,7 @@ class CallResult extends Observable implements Observer {
       if (!this.error && (this.options.kind === Kind.Transaction ||
         !this.revalidation || this.revalidation.worker.isCanceled)) {
         try {
-          const c: CallResult = this.method.call(false, undefined)
+          const c: CallResult = this.method.call(false, this.args)
           if (c.ret instanceof Promise)
             c.ret.catch(error => {
               if (c.options.kind === Kind.Trigger)
