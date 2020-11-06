@@ -14,8 +14,8 @@ export abstract class Monitor extends Stateful {
   abstract readonly workerCount: number
   abstract readonly workers: ReadonlySet<Worker>
 
-  static create(hint: string, delayBeforeActive: number, delayBeforeInactive: number): Monitor {
-    return MonitorImpl.create(hint, delayBeforeActive, delayBeforeInactive)
+  static create(hint: string, activationDelay: number, deactivationDelay: number): Monitor {
+    return MonitorImpl.create(hint, activationDelay, deactivationDelay)
   }
 }
 
@@ -24,26 +24,27 @@ export class MonitorImpl extends Monitor {
   workerCount: number = 0
   workers = new Set<Worker>()
   internals = {
-    delayBeforeActive: -1,
-    delayBeforeInactive: -1,
-    timeout: undefined,
+    activationDelay: -1,
+    activationTimeout: undefined,
+    deactivationDelay: -1,
+    deactivationTimeout: undefined,
   }
 
   enter(worker: Worker): void {
     this.workerCount++
     this.workers.mutable.add(worker)
-    this.update(this.internals.delayBeforeActive)
+    MonitorImpl.activate(this, this.internals.activationDelay)
   }
 
   leave(worker: Worker): void {
     this.workerCount--
     this.workers.mutable.delete(worker)
-    this.update(this.internals.delayBeforeInactive)
+    MonitorImpl.deactivate(this, this.internals.deactivationDelay)
   }
 
-  static create(hint: string, delayBeforeActive: number, delayBeforeInactive: number): MonitorImpl {
+  static create(hint: string, activationDelay: number, deactivationDelay: number): MonitorImpl {
     return Transaction.runAs({ hint: 'Monitor.create' },
-      MonitorImpl.doCreate, hint, delayBeforeActive, delayBeforeInactive)
+      MonitorImpl.doCreate, hint, activationDelay, deactivationDelay)
   }
 
   static enter(mon: MonitorImpl, worker: Worker): void {
@@ -56,25 +57,36 @@ export class MonitorImpl extends Monitor {
 
   // Internal
 
-  private static doCreate(hint: string, delayBeforeActive: number, delayBeforeInactive: number): MonitorImpl {
+  private static doCreate(hint: string, activationDelay: number, deactivationDelay: number): MonitorImpl {
     const m = new MonitorImpl()
     Hooks.setHint(m, hint)
-    m.internals.delayBeforeActive = delayBeforeActive
-    m.internals.delayBeforeInactive = delayBeforeInactive
+    m.internals.activationDelay = activationDelay
+    m.internals.deactivationDelay = deactivationDelay
     return m
   }
 
-  private update(delay: number): void {
-    if (delay < 0)
-      this.isActive = this.workerCount > 0
-    else if (!this.internals.timeout)
-      this.internals.timeout = setTimeout(() =>
-        Transaction.runAs<void>({ hint: 'Monitor.update', spawn: true },
-          MonitorImpl.updateTick, this), delay) as any
+  private static activate(mon: MonitorImpl, delay: number): void {
+    if (delay >= 0) {
+      if (!mon.internals.activationTimeout) // only once
+        mon.internals.activationTimeout = setTimeout(() =>
+          Transaction.runAs<void>({ hint: 'Monitor.activate', spawn: true },
+            MonitorImpl.activate, mon, -1), delay) as any
+    }
+    else if (mon.workerCount > 0)
+      mon.isActive = true
   }
 
-  private static updateTick(mon: MonitorImpl): void {
-    mon.internals.timeout = undefined
-    mon.update(-1)
+  private static deactivate(mon: MonitorImpl, delay: number): void {
+    if (delay >= 0) {
+      // Discard existing timer and start new one
+      clearTimeout(mon.internals.deactivationTimeout)
+      mon.internals.deactivationTimeout = setTimeout(() =>
+        Transaction.runAs<void>({ hint: 'Monitor.deactivate', spawn: true },
+          MonitorImpl.deactivate, mon, -1), delay) as any
+    }
+    else if (mon.workerCount <= 0) {
+      mon.isActive = false
+      mon.internals.activationTimeout = undefined
+    }
   }
 }
