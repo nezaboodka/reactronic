@@ -9,7 +9,7 @@ import { Sealant, Sealed } from './Sealant'
 
 declare global {
   interface Array<T> {
-    createOrGetMutableCopy(): Array<T>
+    toMutable(): Array<T>
     [Sealant.SealType]: object
   }
 }
@@ -31,10 +31,10 @@ export abstract class SealedArray<T> extends Array<T> implements Sealed<Array<T>
 
 }
 
-Object.defineProperty(Array.prototype, 'createOrGetMutableCopy', {
+Object.defineProperty(Array.prototype, 'toMutable', {
   configurable: false, enumerable: false,
   value<T>(this: Array<T>) {
-    return Sealant.createOrGetMutableCopy(this)
+    return Sealant.toMutable(this)
   },
 })
 

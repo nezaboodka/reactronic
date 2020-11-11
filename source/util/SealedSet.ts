@@ -9,7 +9,7 @@ import { Sealant, Sealed } from './Sealant'
 
 declare global {
   interface Set<T> {
-    createOrGetMutableCopy(): Set<T>
+    toMutable(): Set<T>
     [Sealant.SealType]: object
   }
 }
@@ -21,10 +21,10 @@ export abstract class SealedSet<T> extends Set<T> implements Sealed<Set<T>> {
   [Sealant.Clone](): Set<T> { return new Set<T>(this.values()) }
 }
 
-Object.defineProperty(Set.prototype, 'createOrGetMutableCopy', {
+Object.defineProperty(Set.prototype, 'toMutable', {
   configurable: false, enumerable: false,
   value<T>(this: Set<T>) {
-    return Sealant.createOrGetMutableCopy(this)
+    return Sealant.toMutable(this)
   },
 })
 

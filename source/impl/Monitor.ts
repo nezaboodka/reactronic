@@ -32,14 +32,14 @@ export class MonitorImpl extends Monitor {
 
   enter(worker: Worker): void {
     this.workerCount++
-    const workers = this.workers = this.workers.createOrGetMutableCopy()
+    const workers = this.workers = this.workers.toMutable()
     workers.add(worker)
     MonitorImpl.activate(this, this.internals.activationDelay)
   }
 
   leave(worker: Worker): void {
     this.workerCount--
-    const workers = this.workers = this.workers.createOrGetMutableCopy()
+    const workers = this.workers = this.workers.toMutable()
     workers.delete(worker)
     MonitorImpl.deactivate(this, this.internals.deactivationDelay)
   }

@@ -101,11 +101,11 @@ test('brief', t => {
       daddy.age += 5
       app.userFilter = ''
       if (daddy.emails) {
-        const emails = daddy.emails = daddy.emails.createOrGetMutableCopy()
+        const emails = daddy.emails = daddy.emails.toMutable()
         emails[0] = 'daddy@mail.com'
         emails.push('someone@mail.io')
       }
-      const attrs = daddy.attributes = daddy.attributes.createOrGetMutableCopy()
+      const attrs = daddy.attributes = daddy.attributes.toMutable()
       attrs.set('city', 'London')
       attrs.set('country', 'United Kingdom')
       const x = daddy.children[1]
@@ -132,7 +132,7 @@ test('brief', t => {
     // Protection from modification outside of transactions
     t.throws(() => {
       if (daddy.emails) {
-        const emails = daddy.emails = daddy.emails.createOrGetMutableCopy()
+        const emails = daddy.emails = daddy.emails.toMutable()
         emails.push('dad@mail.com')
       }
     }, undefined, 'stateful property Person.emails #26 can only be modified inside transactions and triggers')
@@ -155,7 +155,7 @@ test('brief', t => {
       app.userFilter = app.userFilter
     })
     // Other
-    t.throws(() => app.model.testImmutableCollection(), { message: 'use createOrGetMutableCopy to modify sealed collection' })
+    t.throws(() => app.model.testImmutableCollection(), { message: 'use toMutable to modify sealed collection' })
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
     t.is(app.raw, 'DemoView.userFilter #23t125v101')

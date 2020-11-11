@@ -19,7 +19,7 @@ export class AsyncDemo extends Stateful {
   async load(url: string, delay: number): Promise<void> {
     this.url = url
     await all([sleep(delay)])
-    const log = this.log = this.log.createOrGetMutableCopy()
+    const log = this.log = this.log.toMutable()
     log.push(`${this.url}/${delay}`)
   }
 }

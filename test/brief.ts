@@ -45,7 +45,7 @@ export class Demo extends Stateful {
   }
 
   private _loadUsers(): void {
-    const users = this.users = this.users.createOrGetMutableCopy()
+    const users = this.users = this.users.toMutable()
     users.push(new Person({
       name: 'John', age: 38,
       emails: ['john@mail.com'],
@@ -151,7 +151,7 @@ export class Person extends Stateful {
   setParent(value: Person | null): void {
     if (this._parent !== value) {
       if (this._parent) { // remove from children of old parent
-        const children = this._parent._children = this._parent._children.createOrGetMutableCopy()
+        const children = this._parent._children = this._parent._children.toMutable()
         const i = children.findIndex((x, i) => x === this)
         if (i >= 0)
           children.splice(i, 1)
@@ -159,7 +159,7 @@ export class Person extends Stateful {
           throw new Error('invariant is broken, please restart the application')
       }
       if (value) { // add to children of a new parent
-        const children = value._children = value._children.createOrGetMutableCopy()
+        const children = value._children = value._children.toMutable()
         children.push(this)
         this._parent = value
       }

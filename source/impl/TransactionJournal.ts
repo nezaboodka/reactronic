@@ -37,7 +37,7 @@ export class TransactionJournalImpl extends TransactionJournal {
 
   remember(p: Patch): void {
     Transaction.runAs({ hint: 'UndoRedeLog.remember', spawn: true }, () => {
-      const items = this._items = this._items.createOrGetMutableCopy()
+      const items = this._items = this._items.toMutable()
       if (items.length >= this._capacity)
         items.shift()
       else

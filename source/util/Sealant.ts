@@ -8,7 +8,7 @@
 import { Dbg, misuse } from './Dbg'
 
 export interface Sealable<T> {
-  createOrGetMutableCopy(): T
+  toMutable(): T
   [Sealant.SealType]: object
 }
 
@@ -32,7 +32,7 @@ export abstract class Sealant {
     return result
   }
 
-  static createOrGetMutableCopy<T extends Sealable<T>>(collection: T): T {
+  static toMutable<T extends Sealable<T>>(collection: T): T {
     const col: Sealed<T> = collection as any
     const clone = col[Sealant.Clone]
     if (clone)
@@ -41,6 +41,6 @@ export abstract class Sealant {
   }
 
   static error(collection: Sealed<any>): Error {
-    return misuse('use createOrGetMutableCopy to modify sealed collection')
+    return misuse('use toMutable to modify sealed collection')
   }
 }

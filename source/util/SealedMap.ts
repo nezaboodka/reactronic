@@ -9,7 +9,7 @@ import { Sealant, Sealed } from './Sealant'
 
 declare global {
   interface Map<K, V> {
-    createOrGetMutableCopy(): Map<K, V>
+    toMutable(): Map<K, V>
     [Sealant.SealType]: object
   }
 }
@@ -21,10 +21,10 @@ export abstract class SealedMap<K, V> extends Map<K, V> implements Sealed<Map<K,
   [Sealant.Clone](): Map<K, V> { return new Map<K, V>(this.entries()) }
 }
 
-Object.defineProperty(Map.prototype, 'createOrGetMutableCopy', {
+Object.defineProperty(Map.prototype, 'toMutable', {
   configurable: false, enumerable: false,
   value<K, V>(this: Map<K, V>) {
-    return Sealant.createOrGetMutableCopy(this)
+    return Sealant.toMutable(this)
   },
 })
 
