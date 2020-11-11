@@ -101,13 +101,13 @@ test('brief', t => {
       daddy.age += 5
       app.userFilter = ''
       if (daddy.emails) {
-        daddy.emails.mutable
-        daddy.emails[0] = 'daddy@mail.com'
-        daddy.emails.push('someone@mail.io')
+        const emails = daddy.emails = daddy.emails.createOrGetMutableCopy()
+        emails[0] = 'daddy@mail.com'
+        emails.push('someone@mail.io')
       }
-      daddy.attributes.mutable
-      daddy.attributes.set('city', 'London')
-      daddy.attributes.set('country', 'United Kingdom')
+      const attrs = daddy.attributes = daddy.attributes.createOrGetMutableCopy()
+      attrs.set('city', 'London')
+      attrs.set('country', 'United Kingdom')
       const x = daddy.children[1]
       x.parent = null
       x.parent = daddy
@@ -131,8 +131,10 @@ test('brief', t => {
     t.is(app.model.collection1 !== app.model.collection2, true)
     // Protection from modification outside of transactions
     t.throws(() => {
-      if (daddy.emails)
-        daddy.emails.mutable.push('dad@mail.com')
+      if (daddy.emails) {
+        const emails = daddy.emails = daddy.emails.createOrGetMutableCopy()
+        emails.push('dad@mail.com')
+      }
     }, undefined, 'stateful property Person.emails #26 can only be modified inside transactions and triggers')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
@@ -153,7 +155,7 @@ test('brief', t => {
       app.userFilter = app.userFilter
     })
     // Other
-    t.throws(() => app.model.testImmutableCollection(), { message: 'Demo.collection1 is a stateful collection, use Demo.collection1.mutable to modify it' })
+    t.throws(() => app.model.testImmutableCollection(), { message: 'use createOrGetMutableCopy to modify sealed collection' })
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
     t.is(app.raw, 'DemoView.userFilter #23t125v101')

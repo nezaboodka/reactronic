@@ -9,7 +9,7 @@ import { Sealant, Sealed } from './Sealant'
 
 declare global {
   interface Array<T> {
-    mutable: Array<T>
+    createOrGetMutableCopy(): Array<T>
     [Sealant.SealType]: object
   }
 }
@@ -21,8 +21,6 @@ export abstract class SealedArray<T> extends Array<T> implements Sealed<Array<T>
   splice(start: number, deleteCount?: number): T[]
   splice(start: number, deleteCount: number, ...items: T[]): T[] { throw Sealant.error(this) }
   unshift(...items: T[]): number { throw Sealant.error(this) }
-  [Sealant.OwnObject]: any
-  [Sealant.OwnMember]: any
   [Sealant.Clone](): Array<T> { return this.slice() }
 
   slice(start?: number, end?: number): T[] {
@@ -33,10 +31,10 @@ export abstract class SealedArray<T> extends Array<T> implements Sealed<Array<T>
 
 }
 
-Object.defineProperty(Array.prototype, 'mutable', {
+Object.defineProperty(Array.prototype, 'createOrGetMutableCopy', {
   configurable: false, enumerable: false,
-  get<T>(this: Array<T>) {
-    return Sealant.mutable(this)
+  value<T>(this: Array<T>) {
+    return Sealant.createOrGetMutableCopy(this)
   },
 })
 

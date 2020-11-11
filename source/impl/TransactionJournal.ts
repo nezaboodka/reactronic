@@ -37,12 +37,13 @@ export class TransactionJournalImpl extends TransactionJournal {
 
   remember(p: Patch): void {
     Transaction.runAs({ hint: 'UndoRedeLog.remember', spawn: true }, () => {
-      if (this._items.length >= this._capacity)
-        this._items.mutable.shift()
+      const items = this._items = this._items.createOrGetMutableCopy()
+      if (items.length >= this._capacity)
+        items.shift()
       else
-        this._items.mutable.splice(this._position)
-      this._items.mutable.push(p)
-      this._position = this._items.length
+        items.splice(this._position)
+      items.push(p)
+      this._position = items.length
     })
   }
 
