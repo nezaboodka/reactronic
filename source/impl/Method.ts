@@ -312,10 +312,10 @@ class CallResult extends Observable implements Observer {
 
   invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void {
     if (this.invalidatedSince === TOP_TIMESTAMP || this.invalidatedSince <= 0) {
-      const notSelfInvalidation = !value.isField ||
-        cause.record.snapshot !== this.record.snapshot ||
-        !cause.record.changes.has(cause.member)
-      if (notSelfInvalidation) {
+      const skip = value.isField &&
+        cause.record.snapshot === this.record.snapshot &&
+        cause.record.changes.has(cause.member)
+      if (!skip) {
         this.invalidatedDueTo = cause
         this.invalidatedSince = since
         const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[Meta.Disposed] === undefined*/
@@ -331,9 +331,15 @@ class CallResult extends Observable implements Observer {
           worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
       }
       else {
-        const hint = this.hint()
-        const causeHint = Hints.record(cause.record, cause.member)
-        throw misuse(`trigger ${hint} should either read or write ${causeHint}, but not both (consider using untracked read)`)
+        if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
+          Dbg.log('║', 'x', `${this.hint()} self-invalidation is skipped (ignore triggering on ${Hints.record(cause.record, cause.member)})`)
+
+        // Variant 2:
+        // const hint = this.hint()
+        // const causeHint = Hints.record(cause.record, cause.member)
+        // throw misuse(`trigger ${hint} should either read or write ${causeHint}, but not both (consider using untracked read)`)
+
+        // Variant 3:
         // this.observables.delete(value)
         // value.observers?.delete(this)
         // if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations || Dbg.trace.reads || this.options.trace?.reads)) {
