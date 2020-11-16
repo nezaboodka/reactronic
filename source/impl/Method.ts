@@ -319,8 +319,8 @@ class CallResult extends Observable implements Observer {
         this.invalidatedDueTo = cause
         this.invalidatedSince = since
         const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[Meta.Disposed] === undefined*/
-        if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations))
-          Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+        if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
+          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
@@ -330,8 +330,8 @@ class CallResult extends Observable implements Observer {
         if (!worker.isFinished && this !== value) // restart after itself if canceled
           worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
       }
-      else if (Dbg.isOn && Dbg.trace.invalidations || (this.options.trace && this.options.trace.invalidations))
-        Dbg.logAs(this.options.trace, '║', 'x', `${this.hint()} self-invalidation is skipped (ignore triggering on ${Hints.record(cause.record, cause.member)})`)
+      else if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
+        Dbg.log('║', 'x', `${this.hint()} self-invalidation is skipped (ignore triggering on ${Hints.record(cause.record, cause.member)})`)
     }
   }
 
@@ -591,7 +591,8 @@ class CallResult extends Observable implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this)
-      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.member)} is unsubscribed from ${Hints.record(hint.record, hint.member)}`)
+      if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
+        Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.member)} is unsubscribed from ${Hints.record(hint.record, hint.member)}`)
     })
     this.observables.clear()
   }
@@ -614,7 +615,8 @@ class CallResult extends Observable implements Observer {
       const hint: MemberHint = {record: r, member: m, times}
       value.observers.add(this)
       this.observables.set(value, hint)
-      if ((Dbg.isOn && Dbg.trace.reads || (this.options.trace && this.options.trace.reads))) Dbg.logAs(this.options.trace, '║', '  ∞ ', `${Hints.record(this.record, this.method.member)} is subscribed to ${Hints.record(hint.record, hint.member)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
+      if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
+        Dbg.log('║', '  ∞ ', `${Hints.record(this.record, this.method.member)} is subscribed to ${Hints.record(hint.record, hint.member)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
     }
     return result || value.replacement === r
   }
