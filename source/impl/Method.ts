@@ -331,17 +331,20 @@ class CallResult extends Observable implements Observer {
           worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
       }
       else {
-        this.observables.delete(value)
-        value.observers?.delete(this)
-        if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations || Dbg.trace.reads || this.options.trace?.reads)) {
-          const hint = this.hint()
-          const causeHint = Hints.record(cause.record, cause.member)
-          if (Dbg.trace.invalidations || this.options.trace?.invalidations)
-            Dbg.log(' ', 'x', `${hint} reads and writes ${causeHint}, thus should subscription should be discarded`)
-          if (Dbg.trace.reads || this.options.trace?.reads)
-            Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ',
-              '-', `${hint} is unsubscribed from ${causeHint}`)
-        }
+        const hint = this.hint()
+        const causeHint = Hints.record(cause.record, cause.member)
+        throw misuse(`trigger ${hint} should either read or write ${causeHint}, but not both (consider using untracked read)`)
+        // this.observables.delete(value)
+        // value.observers?.delete(this)
+        // if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations || Dbg.trace.reads || this.options.trace?.reads)) {
+        //   const hint = this.hint()
+        //   const causeHint = Hints.record(cause.record, cause.member)
+        //   if (Dbg.trace.invalidations || this.options.trace?.invalidations)
+        //     Dbg.log(' ', 'x', `${hint} reads and writes ${causeHint}, thus should subscription should be discarded`)
+        //   if (Dbg.trace.reads || this.options.trace?.reads)
+        //     Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ',
+        //       '-', `${hint} is unsubscribed from ${causeHint}`)
+        // }
       }
     }
   }
