@@ -330,8 +330,19 @@ class CallResult extends Observable implements Observer {
         if (!worker.isFinished && this !== value) // restart after itself if canceled
           worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
       }
-      else if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-        Dbg.log('║', 'x', `${this.hint()} self-invalidation is skipped (ignore triggering on ${Hints.record(cause.record, cause.member)})`)
+      else {
+        this.observables.delete(value)
+        value.observers?.delete(this)
+        if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations || Dbg.trace.reads || this.options.trace?.reads)) {
+          const hint = this.hint()
+          const causeHint = Hints.record(cause.record, cause.member)
+          if (Dbg.trace.invalidations || this.options.trace?.invalidations)
+            Dbg.log('║', 'x', `${hint} reads and writes ${causeHint}, thus should subscription should be discarded`)
+          if (Dbg.trace.reads || this.options.trace?.reads)
+            Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ',
+              '-', `${hint} is unsubscribed from ${causeHint}`)
+        }
+      }
     }
   }
 
