@@ -320,7 +320,7 @@ class CallResult extends Observable implements Observer {
         this.invalidatedSince = since
         const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[Meta.Disposed] === undefined*/
         if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated by ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
         if (isTrigger) // stop cascade invalidation on trigger
           triggers.push(this)
@@ -337,7 +337,7 @@ class CallResult extends Observable implements Observer {
           const hint = this.hint()
           const causeHint = Hints.record(cause.record, cause.member)
           if (Dbg.trace.invalidations || this.options.trace?.invalidations)
-            Dbg.log('║', 'x', `${hint} reads and writes ${causeHint}, thus should subscription should be discarded`)
+            Dbg.log(' ', 'x', `${hint} reads and writes ${causeHint}, thus should subscription should be discarded`)
           if (Dbg.trace.reads || this.options.trace?.reads)
             Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ',
               '-', `${hint} is unsubscribed from ${causeHint}`)
@@ -628,6 +628,10 @@ class CallResult extends Observable implements Observer {
       this.observables.set(value, hint)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
         Dbg.log('║', '  ∞ ', `${Hints.record(this.record, this.method.member)} is subscribed to ${Hints.record(hint.record, hint.member)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
+    }
+    else {
+      if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
+        Dbg.log('║', '  x ', `${Hints.record(this.record, this.method.member)} is NOT subscribed to already invalidated ${Hints.record(r, m)}`)
     }
     return result || value.replacement === r
   }
