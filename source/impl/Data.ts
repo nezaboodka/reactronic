@@ -24,7 +24,7 @@ export class Observable {
   value: any
   replacement?: Record
   observers?: Set<Observer>
-  get isField(): boolean { return true }
+  get isMethod(): boolean { return false }
   constructor(value: any) { this.value = value }
 }
 

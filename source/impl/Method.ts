@@ -215,7 +215,7 @@ class CallResult extends Observable implements Observer {
   static current?: CallResult = undefined
   static asyncTriggerBatch: CallResult[] = []
 
-  get isField(): boolean { return false }
+  get isMethod(): boolean { return true }
   readonly method: Method
   readonly record: Record
   readonly observables: Map<Observable, MemberHint>
@@ -312,7 +312,7 @@ class CallResult extends Observable implements Observer {
 
   invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void {
     if (this.invalidatedSince === TOP_TIMESTAMP || this.invalidatedSince <= 0) {
-      const skip = value.isField &&
+      const skip = !value.isMethod &&
         cause.record.snapshot === this.record.snapshot &&
         cause.record.changes.has(cause.member)
       if (!skip) {
