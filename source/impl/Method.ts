@@ -525,7 +525,7 @@ class CallResult extends Observable implements Observer {
         const ctx = Snapshot.reader()
         ctx.bumpDueTo(r)
         const t = weak ? -1 : ctx.timestamp
-        if (!c.subscribeTo(r, m, value, t))
+        if (!c.subscribeTo(value, r, m, t))
           c.invalidateDueTo(value, {record: r, member: m, times: 0}, ctx.timestamp, ctx.triggers)
       }
     }
@@ -617,7 +617,7 @@ class CallResult extends Observable implements Observer {
     this.observables.clear()
   }
 
-  private subscribeTo(r: Record, m: Member, value: Observable, timestamp: number): boolean {
+  private subscribeTo(value: Observable, r: Record, m: Member, timestamp: number): boolean {
     let result = value.replacement === undefined
     if (result && timestamp !== -1)
       result = !(value instanceof CallResult && timestamp >= value.invalidatedSince)
