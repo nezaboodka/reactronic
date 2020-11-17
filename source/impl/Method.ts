@@ -551,10 +551,10 @@ class CallResult extends Observable implements Observer {
       const triggers = snapshot.triggers
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(Meta.Disposed))
-          r.changes.forEach(m => CallResult.finalizeChange(false, since, r, m, triggers))
+          r.changes.forEach(m => CallResult.finalizeMemberChange(false, since, r, m, triggers))
         else
           for (const m in r.prev.record.data)
-            CallResult.finalizeChange(true, since, r, m, triggers)
+            CallResult.finalizeMemberChange(true, since, r, m, triggers)
         if (Dbg.isOn)
           Snapshot.freezeRecord(r)
       })
@@ -564,14 +564,14 @@ class CallResult extends Observable implements Observer {
     }
     else
       snapshot.changeset.forEach((r: Record, h: Handle) =>
-        r.changes.forEach(m => CallResult.finalizeChange(true, since, r, m)))
+        r.changes.forEach(m => CallResult.finalizeMemberChange(true, since, r, m)))
   }
 
   private static compareTriggersByPriority(a: Observer, b: Observer): number {
     return a.priority() - b.priority()
   }
 
-  private static finalizeChange(unsubscribe: boolean, timestamp: number, r: Record, m: Member, triggers?: Observer[]): void {
+  private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: Record, m: Member, triggers?: Observer[]): void {
     if (triggers) {
       const prev = r.prev.record.data[m]
       if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
