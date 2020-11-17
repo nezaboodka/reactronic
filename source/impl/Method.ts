@@ -588,19 +588,19 @@ class CallResult extends Observable implements Observer {
           prev.observers.forEach(c => c.invalidateDueTo(prev, cause, timestamp, triggers))
       }
     }
-    const observable = r.data[m]
-    if (observable.record === r) {
-      if (observable instanceof CallResult) {
+    const value = r.data[m]
+    if (value.record === r) {
+      if (value instanceof CallResult) {
         if (unsubscribe)
-          observable.unsubscribeFromAll()
+          value.unsubscribeFromAll()
         // Clear recomputing status of previous cached result
         // const prev = cache.record.prev.record.data[m]
         // if (prev instanceof CallResult && prev.revalidation === cache)
         //   prev.revalidation = undefined
         // Performance tracking
         if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
-          observable.observables.forEach((hint, value) => {
-            if (hint.times > Hooks.repetitiveReadWarningThreshold) Dbg.log('', '[!]', `${observable.hint()} uses ${Hints.record(hint.record, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
+          value.observables.forEach((hint, v) => {
+            if (hint.times > Hooks.repetitiveReadWarningThreshold) Dbg.log('', '[!]', `${value.hint()} uses ${Hints.record(hint.record, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
       }
