@@ -573,7 +573,7 @@ class CallResult extends Observable implements Observer {
 
   private static finalizeChange(unsubscribe: boolean, timestamp: number, r: Record, m: Member, triggers?: Observer[]): void {
     if (triggers) {
-      const prev = r.prev.record.data[m] as Observable
+      const prev = r.prev.record.data[m]
       if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
         if (unsubscribe) // in fact it means disposal if triggers are not undefined
           r.data[m] = Meta.Disposed
