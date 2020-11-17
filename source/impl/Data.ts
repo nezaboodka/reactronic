@@ -29,9 +29,10 @@ export class Observable {
 }
 
 export interface Observer {
-  hint(notran?: boolean): string
-  priority(): number
+  readonly priority: number
+  readonly observables: Map<Observable, MemberHint>
   readonly invalidatedSince: number
+  hint(notran?: boolean): string
   invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void
   revalidate(now: boolean, nothrow: boolean): void
 }

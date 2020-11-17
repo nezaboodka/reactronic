@@ -259,7 +259,7 @@ class CallResult extends Observable implements Observer {
   }
 
   hint(): string { return `${Hints.record(this.record, this.method.member)}` }
-  priority(): number { return this.options.priority }
+  get priority(): number { return this.options.priority }
 
   whyFull(): string {
     let ms: number = Date.now()
@@ -568,7 +568,7 @@ class CallResult extends Observable implements Observer {
   }
 
   private static compareTriggersByPriority(a: Observer, b: Observer): number {
-    return a.priority() - b.priority()
+    return a.priority - b.priority
   }
 
   private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: Record, m: Member, triggers?: Observer[]): void {
@@ -589,6 +589,10 @@ class CallResult extends Observable implements Observer {
       }
     }
     const value = r.data[m]
+    // if (value instanceof Observable && value.observers) {
+    //   value.observers.forEach(o => o.observables.delete(value))
+    //   value.observers = undefined
+    // }
     if (value instanceof CallResult && value.record === r) {
       if (unsubscribe)
         value.unsubscribeFromAll()
