@@ -15,10 +15,10 @@ export class TriggeringDemo extends Stateful {
 
   @trigger
   actualize1(): void {
-    // this.title
+    this.title
     this.title = 'Title/1'
     this.content = 'Content/1'
-    // this.title
+    this.title
   }
 
   @trigger

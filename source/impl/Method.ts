@@ -332,25 +332,12 @@ class CallResult extends Observable implements Observer {
       }
       else {
         if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log(' ', 'x', `${this.hint()} self-invalidation is skipped (ignore triggering on ${Hints.record(cause.record, cause.member)})`)
+          Dbg.log(' ', 'x', `${this.hint()} invalidation is skipped for self-changed ${Hints.record(cause.record, cause.member)}`)
 
         // Variant 2:
         // const hint = this.hint()
         // const causeHint = Hints.record(cause.record, cause.member)
         // throw misuse(`trigger ${hint} should either read or write ${causeHint}, but not both (consider using untracked read)`)
-
-        // Variant 3:
-        // this.observables.delete(value)
-        // value.observers?.delete(this)
-        // if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations || Dbg.trace.reads || this.options.trace?.reads)) {
-        //   const hint = this.hint()
-        //   const causeHint = Hints.record(cause.record, cause.member)
-        //   if (Dbg.trace.invalidations || this.options.trace?.invalidations)
-        //     Dbg.log(' ', 'x', `${hint} reads and writes ${causeHint}, thus should subscription should be discarded`)
-        //   if (Dbg.trace.reads || this.options.trace?.reads)
-        //     Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ',
-        //       '-', `${hint} is unsubscribed from ${causeHint}`)
-        // }
       }
     }
   }
@@ -589,23 +576,29 @@ class CallResult extends Observable implements Observer {
       }
     }
     const value = r.data[m]
-    // if (value instanceof Observable && value.observers) {
-    //   value.observers.forEach(o => o.observables.delete(value))
-    //   value.observers = undefined
-    // }
-    if (value instanceof CallResult && value.record === r) {
-      if (unsubscribe)
-        value.unsubscribeFromAll()
-      // Clear recomputing status of previous cached result
-      // const prev = cache.record.prev.record.data[m]
-      // if (prev instanceof CallResult && prev.revalidation === cache)
-      //   prev.revalidation = undefined
-      // Performance tracking
-      if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
-        value.observables.forEach((hint, v) => {
-          if (hint.times > Hooks.repetitiveReadWarningThreshold) Dbg.log('', '[!]', `${value.hint()} uses ${Hints.record(hint.record, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
-        })
+    if (value instanceof CallResult) {
+      if (value.record === r) {
+        if (unsubscribe)
+          value.unsubscribeFromAll()
+        // Clear recomputing status of previous cached result
+        // const prev = cache.record.prev.record.data[m]
+        // if (prev instanceof CallResult && prev.revalidation === cache)
+        //   prev.revalidation = undefined
+        // Performance tracking
+        if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
+          value.observables.forEach((hint, v) => {
+            if (hint.times > Hooks.repetitiveReadWarningThreshold) Dbg.log('', '[!]', `${value.hint()} uses ${Hints.record(hint.record, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
+          })
+        }
       }
+    }
+    else if (value instanceof Observable && value.observers) {
+      value.observers.forEach(o => {
+        o.observables.delete(value)
+        if (Dbg.isOn && Dbg.trace.reads)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.record(r, m)}`)
+      })
+      value.observers = undefined
     }
   }
 
