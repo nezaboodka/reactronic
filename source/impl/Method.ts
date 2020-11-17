@@ -332,7 +332,7 @@ class CallResult extends Observable implements Observer {
       }
       else {
         if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log('║', 'x', `${this.hint()} self-invalidation is skipped (ignore triggering on ${Hints.record(cause.record, cause.member)})`)
+          Dbg.log(' ', 'x', `${this.hint()} self-invalidation is skipped (ignore triggering on ${Hints.record(cause.record, cause.member)})`)
 
         // Variant 2:
         // const hint = this.hint()
@@ -636,7 +636,7 @@ class CallResult extends Observable implements Observer {
       value.observers.add(this)
       this.observables.set(value, hint)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log('║', '  ∞ ', `${Hints.record(this.record, this.method.member)} is subscribed to ${Hints.record(hint.record, hint.member)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
+        Dbg.log('║', '  ∞ ', `${Hints.record(this.record, this.method.member)} is subscribed to ${Hints.record(r, m)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
     }
     else {
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
