@@ -10,50 +10,50 @@ import { Transaction } from './impl/Transaction'
 export type BooleanOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
 export type GivenTypeOnly<T, V> = Pick<T, {[P in keyof T]: T[P] extends V ? P : never}[keyof T]>
 
-export class Ref<T = any> {
+export class Field<T = any> {
   constructor(
     readonly owner: any,
     readonly name: string,
     readonly index: number = -1) {
   }
 
-  get deref(): T {
+  get value(): T {
     if (this.index < 0)
       return this.owner[this.name]
     else
       return this.owner[this.name][this.index]
   }
 
-  set deref(value: T) {
+  set value(value: T) {
     if (this.index < 0)
       this.owner[this.name] = value
     else
       this.owner[this.name][this.index] = value
   }
 
-  static of<O = any>(owner: O): { readonly [P in keyof O]-?: Ref<O[P]> } {
-    return new Proxy<{ readonly [P in keyof O]-?: Ref<O[P]> }>(owner as any, RefGettingProxy)
+  static of<O = any>(owner: O): { readonly [P in keyof O]-?: Field<O[P]> } {
+    return new Proxy<{ readonly [P in keyof O]-?: Field<O[P]> }>(owner as any, FieldGettingProxy)
   }
 
-  static togglesOf<O = any>(owner: O): { readonly [P in keyof BooleanOnly<O>]: BoolRef<O[P]> } {
-    return new Proxy<{ readonly [P in keyof BooleanOnly<O>]: BoolRef<O[P]> }>(owner, BoolRefGettingProxy)
+  static togglesOf<O = any>(owner: O): { readonly [P in keyof BooleanOnly<O>]: BoolField<O[P]> } {
+    return new Proxy<{ readonly [P in keyof BooleanOnly<O>]: BoolField<O[P]> }>(owner, BoolFieldGettingProxy)
   }
 
-  static customTogglesOf<T, O extends object = any>(owner: O, value1: T, value2: T): { readonly [P in keyof GivenTypeOnly<O, T | any>]: BoolRef<O[P]> } {
-    const handler = new CustomBoolRefGettingProxy<T>(value1, value2)
+  static customTogglesOf<T, O extends object = any>(owner: O, value1: T, value2: T): { readonly [P in keyof GivenTypeOnly<O, T | any>]: BoolField<O[P]> } {
+    const handler = new CustomBoolFieldGettingProxy<T>(value1, value2)
     return new Proxy<O>(owner, handler)
   }
 
-  static sameRefs(v1: Ref, v2: Ref): boolean {
+  static sameFields(v1: Field, v2: Field): boolean {
     return v1.owner === v2.owner && v1.name === v2.name && v1.index === v2.index
   }
 
-  static similarRefs(v1: Ref, v2: Ref): boolean {
+  static similarFields(v1: Field, v2: Field): boolean {
     return v1.owner.constructor === v2.owner.constructor && v1.name === v2.name && v1.index === v2.index
   }
 }
 
-export class BoolRef<T = boolean> extends Ref<T> {
+export class BoolField<T = boolean> extends Field<T> {
   constructor(
     owner: any,
     name: string,
@@ -68,8 +68,8 @@ export class BoolRef<T = boolean> extends Ref<T> {
     Transaction.runAs({ hint: `toggle ${(o as any).constructor.name}.${p}` }, () => {
       const v = o[p]
       const isValue1 = v === this.value1 || (
-        v instanceof Ref && this.value1 instanceof Ref &&
-        Ref.sameRefs(v, this.value1))
+        v instanceof Field && this.value1 instanceof Field &&
+        Field.sameFields(v, this.value1))
       if (!isValue1)
         o[p] = this.value1
       else
@@ -80,26 +80,26 @@ export class BoolRef<T = boolean> extends Ref<T> {
 
 // Internal
 
-const RefGettingProxy = {
-  get: <T = any, O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): Ref<T> => {
-    return new Ref<T>(obj, prop as string)
+const FieldGettingProxy = {
+  get: <T = any, O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): Field<T> => {
+    return new Field<T>(obj, prop as string)
   },
 }
 
-const BoolRefGettingProxy = {
-  get: <T, O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): BoolRef<T> => {
-    return new BoolRef<any>(obj, prop as string, true, false)
+const BoolFieldGettingProxy = {
+  get: <T, O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): BoolField<T> => {
+    return new BoolField<any>(obj, prop as string, true, false)
   },
 }
 
-class CustomBoolRefGettingProxy<T> {
+class CustomBoolFieldGettingProxy<T> {
   constructor(
     readonly value1: T,
     readonly value2: T) {
   }
 
-  get<O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): BoolRef<T> {
-    return new BoolRef<T>(obj, prop as string, this.value1, this.value2)
+  get<O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): BoolField<T> {
+    return new BoolField<T>(obj, prop as string, this.value1, this.value2)
   }
 }
 
