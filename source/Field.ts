@@ -7,7 +7,7 @@
 
 import { Transaction } from './impl/Transaction'
 
-export type BooleanOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
+export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
 export type GivenTypeOnly<T, V> = Pick<T, {[P in keyof T]: T[P] extends V ? P : never}[keyof T]>
 
 export class Field<T = any> {
@@ -35,12 +35,12 @@ export class Field<T = any> {
     return new Proxy<{ readonly [P in keyof O]-?: Field<O[P]> }>(owner as any, FieldGettingProxy)
   }
 
-  static togglesOf<O = any>(owner: O): { readonly [P in keyof BooleanOnly<O>]: BoolField<O[P]> } {
-    return new Proxy<{ readonly [P in keyof BooleanOnly<O>]: BoolField<O[P]> }>(owner, BoolFieldGettingProxy)
+  static toggleOf<O = any>(owner: O): { readonly [P in keyof BoolOnly<O>]: FieldToggle<O[P]> } {
+    return new Proxy<{ readonly [P in keyof BoolOnly<O>]: FieldToggle<O[P]> }>(owner, BoolFieldGettingProxy)
   }
 
-  static customTogglesOf<T, O extends object = any>(owner: O, value1: T, value2: T): { readonly [P in keyof GivenTypeOnly<O, T | any>]: BoolField<O[P]> } {
-    const handler = new CustomBoolFieldGettingProxy<T>(value1, value2)
+  static customToggleOf<T, O extends object = any>(owner: O, value1: T, value2: T): { readonly [P in keyof GivenTypeOnly<O, T | any>]: FieldToggle<O[P]> } {
+    const handler = new FieldToggleGettingProxy<T>(value1, value2)
     return new Proxy<O>(owner, handler)
   }
 
@@ -53,7 +53,7 @@ export class Field<T = any> {
   }
 }
 
-export class BoolField<T = boolean> extends Field<T> {
+export class FieldToggle<T = boolean> extends Field<T> {
   constructor(
     owner: any,
     name: string,
@@ -87,25 +87,18 @@ const FieldGettingProxy = {
 }
 
 const BoolFieldGettingProxy = {
-  get: <T, O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): BoolField<T> => {
-    return new BoolField<any>(obj, prop as string, true, false)
+  get: <T, O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): FieldToggle<T> => {
+    return new FieldToggle<any>(obj, prop as string, true, false)
   },
 }
 
-class CustomBoolFieldGettingProxy<T> {
+class FieldToggleGettingProxy<T> {
   constructor(
     readonly value1: T,
     readonly value2: T) {
   }
 
-  get<O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): BoolField<T> {
-    return new BoolField<T>(obj, prop as string, this.value1, this.value2)
+  get<O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): FieldToggle<T> {
+    return new FieldToggle<T>(obj, prop as string, this.value1, this.value2)
   }
 }
-
-// export function assign<T, P extends (keyof T)>(entity: T, prop: P, value: T[P]): void {
-//   Transaction.run(`assign ${(entity as any).constructor.name}.${prop}`, () => {
-//     const o: any = entity
-//     o[prop] = value
-//   })
-// }
