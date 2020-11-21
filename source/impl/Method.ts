@@ -129,7 +129,7 @@ export class Method extends Cache<any> {
 
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.reader()
-    const r: Record = ctx.lookup(this.handle)
+    const r: Record = ctx.lookup(this.handle, this.member)
     const c: CallResult = this.from(r)
     const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== -1 &&
       (ctx === c.record.snapshot || ctx.timestamp < c.invalidatedSince) &&
@@ -160,7 +160,7 @@ export class Method extends Cache<any> {
       const spawn = r.snapshot.completed || r.prev.record !== NIL
       c = Transaction.runAs<CallResult>({ hint, spawn, token: this }, (): CallResult => {
         const h = this.handle
-        let r2: Record = Snapshot.reader().readable(h)
+        let r2: Record = Snapshot.reader().readable(h, m)
         let c2 = r2.data[m] as CallResult
         if (c2.method !== this) {
           r2 = Snapshot.writer().writable(h, m, Meta.Handle, this)

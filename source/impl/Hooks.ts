@@ -106,7 +106,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   get(h: Handle, m: Member, receiver: any): any {
     let result: any
-    const r: Record = Snapshot.reader().readable(h)
+    const r: Record = Snapshot.reader().readable(h, m)
     result = r.data[m]
     if (result instanceof Observable && !result.isMethod) {
       Snapshot.markViewed(r, m, result, Kind.Field, false)
@@ -152,12 +152,12 @@ export class Hooks implements ProxyHandler<Handle> {
   }
 
   has(h: Handle, m: Member): boolean {
-    const r: Record = Snapshot.reader().readable(h)
+    const r: Record = Snapshot.reader().readable(h, m)
     return m in r.data || m in h.stateless
   }
 
   getOwnPropertyDescriptor(h: Handle, m: Member): PropertyDescriptor | undefined {
-    const r: Record = Snapshot.reader().readable(h)
+    const r: Record = Snapshot.reader().readable(h, m)
     const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
     if (pd)
       pd.configurable = pd.writable = true
@@ -166,7 +166,7 @@ export class Hooks implements ProxyHandler<Handle> {
 
   ownKeys(h: Handle): Member[] {
     // TODO: Better implementation to avoid filtering
-    const r: Record = Snapshot.reader().readable(h)
+    const r: Record = Snapshot.reader().readable(h, Meta.Handle)
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]

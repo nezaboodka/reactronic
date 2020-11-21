@@ -20,7 +20,7 @@ Object.defineProperty(Handle.prototype, '<snapshot>', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
-    const data = Snapshot.reader().readable(this).data
+    const data = Snapshot.reader().readable(this, '<snapshot>').data
     for (const m in data) {
       const v = data[m]
       if (v instanceof Observable)
@@ -74,7 +74,8 @@ export class Snapshot implements Context {
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
   static finalizeChangeset = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
-  lookup(h: Handle): Record {
+  lookup(h: Handle, m: Member): Record {
+    // TODO: Take into account timestamp of the member
     let r: Record | undefined = h.changing
     if (r && r.snapshot !== this) {
       r = this.changeset.get(h)
@@ -89,20 +90,20 @@ export class Snapshot implements Context {
     return r
   }
 
-  readable(h: Handle): Record {
-    const r = this.lookup(h)
+  readable(h: Handle, m: Member): Record {
+    const r = this.lookup(h, m)
     if (r === NIL)
       throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
 
   writable(h: Handle, m: Member, value: any, token?: any): Record {
-    let r: Record = this.lookup(h)
+    let r: Record = this.lookup(h, m)
     const existing = r.data[m]
     if (existing !== Meta.Stateless) {
       this.guard(h, r, m, existing, value, token)
       if (r.snapshot !== this) {
-        const data = {...m === Meta.Handle ? value : r.data}
+        const data = { ...m === Meta.Handle ? value : r.data }
         Reflect.set(data, Meta.Handle, h)
         r = new Record(this, r, data)
         this.changeset.set(h, r)
@@ -192,14 +193,18 @@ export class Snapshot implements Context {
       })
       if (this.options.token === undefined) {
         if (this.bumper > 100) { // if transaction ever touched existing objects
-          this.bumper = this.stamp // not needed? (just for debug)
+          this.bumper = this.stamp // just for debug and is not needed?
           this.stamp = ++Snapshot.stampGen
         }
         else
           this.stamp = this.bumper + 1
       }
-      else
+      else {
+        // TODO: Downgrading timestamp of whole record is not the right way
+        // to put cached value into the past on timeline. The solution is
+        // to introduce cache-specific timestamp.
         this.stamp = this.bumper // downgrade timestamp of renewed cache
+      }
     }
     return conflicts
   }
