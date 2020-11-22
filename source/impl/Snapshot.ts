@@ -168,12 +168,9 @@ export class Snapshot implements Context {
     }
   }
 
-  bumpDueTo(r: Record): void {
-    if (r.snapshot !== this) { // snapshot should not bump itself
-      const timestamp = r.snapshot.timestamp
-      if (timestamp > this.bumper)
-        this.bumper = timestamp
-    }
+  bumpBy(timestamp: number): void {
+    if (timestamp > this.bumper)
+      this.bumper = timestamp
   }
 
   rebase(): Record[] | undefined { // return conflicts
