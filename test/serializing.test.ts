@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction as Tran, Reactronic as R, Stateful } from 'api'
+import { Transaction as Tran, Reactronic as R, ManagedObject } from 'api'
 import { TestingTraceLevel } from './brief'
 
-class Serializable extends Stateful {
+class Serializable extends ManagedObject {
   text: string = ''
   array?: Array<Serializable> = undefined
 }

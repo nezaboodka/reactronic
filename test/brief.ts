@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Stateful, stateless, transaction, reaction, cached, sensitiveArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
+import { ManagedObject, unmanaged, transaction, reaction, cached, sensitiveArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
 
 export const output: string[] = []
 
-export class Demo extends Stateful {
+export class Demo extends ManagedObject {
   static UndoRedo = Transaction.run(() => TransactionJournal.create())
-  @stateless shared: string = 'for testing purposes'
+  @unmanaged shared: string = 'for testing purposes'
   title: string = 'Demo'
   users: Person[] = []
   collection1: Person[] = this.users
@@ -65,10 +65,10 @@ export class Demo extends Stateful {
   }
 }
 
-export class DemoView extends Stateful {
-  @stateless raw: string = 'stateless field'
-  @stateless shared: string = 'for testing purposes'
-  @stateless readonly model: Demo
+export class DemoView extends ManagedObject {
+  @unmanaged raw: string = 'unmanaged field'
+  @unmanaged shared: string = 'for testing purposes'
+  @unmanaged readonly model: Demo
   userFilter: string = 'Jo'
 
   constructor(model: Demo) {
@@ -127,8 +127,8 @@ export class DemoView extends Stateful {
 // Person
 
 /* istanbul ignore next */
-export class Person extends Stateful {
-  @stateless dummy: string | null = null
+export class Person extends ManagedObject {
+  @unmanaged dummy: string | null = null
   id: string | null = null
   name: string | null = null
   age: number = 0

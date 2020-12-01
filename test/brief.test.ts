@@ -135,7 +135,7 @@ test('brief', t => {
         const emails = daddy.emails = daddy.emails.toMutable()
         emails.push('dad@mail.com')
       }
-    }, undefined, 'stateful property Person.emails #26 can only be modified inside transactions and reactions')
+    }, undefined, 'managed property Person.emails #26 can only be modified inside transactions and reactions')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
     t.throws(() => { R.getMethodCache(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })

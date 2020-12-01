@@ -61,7 +61,7 @@ export function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[
 //   return Hooks.decorateField(true, proto, prop)
 // }
 
-export function stateless(proto: object, prop: PropertyKey): any {
+export function unmanaged(proto: object, prop: PropertyKey): any {
   return Hooks.decorateField(false, proto, prop)
 }
 

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { Stateful, Transaction, stateless, reaction, cached, isolated, Reactronic } from 'api' // from 'reactronic'
+import { ManagedObject, Transaction, unmanaged, reaction, cached, isolated, Reactronic } from 'api' // from 'reactronic'
 
 export function reactive(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -20,7 +20,7 @@ export function reactive(render: () => JSX.Element): JSX.Element {
 
 type ReactState = { rx: Rx }
 
-class Rx extends Stateful {
+class Rx extends ManagedObject {
   @cached
   render(render: () => JSX.Element): JSX.Element {
     return render()
@@ -32,8 +32,8 @@ class Rx extends Stateful {
       isolated(this.refresh, {rx: this})
   }
 
-  @stateless refresh: (next: ReactState) => void = nop
-  @stateless readonly unmount = (): (() => void) => {
+  @unmanaged refresh: (next: ReactState) => void = nop
+  @unmanaged readonly unmount = (): (() => void) => {
     return (): void => { isolated(Reactronic.dispose, this) }
   }
 

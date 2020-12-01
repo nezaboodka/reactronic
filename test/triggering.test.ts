@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Stateful, Transaction as Tran, Reactronic as R, reaction } from 'api'
+import { ManagedObject, Transaction as Tran, Reactronic as R, reaction } from 'api'
 import { TestingTraceLevel } from './brief'
 
-export class ReactiveDemo extends Stateful {
+export class ReactiveDemo extends ManagedObject {
   title: string = 'ReactiveDemo'
   content: string = 'Content'
 

@@ -7,9 +7,9 @@
 
 /* istanbul ignore file */
 
-import { Stateful } from './impl/Hooks'
+import { ManagedObject } from './impl/Hooks'
 
-export abstract class Buffer<T> extends Stateful {
+export abstract class Buffer<T> extends ManagedObject {
   abstract readonly capacity: number
   abstract readonly count: number
   abstract put(...items: T[]): void

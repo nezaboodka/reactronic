@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { Stateful, Transaction, stateless, reaction, cached, isolated, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
+import { ManagedObject, Transaction, unmanaged, reaction, cached, isolated, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
 
 export function reactive(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, tran?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -22,7 +22,7 @@ export function reactive(render: (cycle: number) => JSX.Element, name?: string, 
 
 type ReactState<V> = { rx: Rx<V>, cycle: number }
 
-class Rx<V> extends Stateful {
+class Rx<V> extends ManagedObject {
   @cached
   render(generate: (cycle: number) => V, tran?: Transaction): V {
     return tran ? tran.inspect(() => generate(this.cycle)) : generate(this.cycle)
@@ -34,9 +34,9 @@ class Rx<V> extends Stateful {
       isolated(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
-  @stateless cycle: number = 0
-  @stateless refresh: (next: ReactState<V>) => void = nop
-  @stateless readonly unmount = (): (() => void) => {
+  @unmanaged cycle: number = 0
+  @unmanaged refresh: (next: ReactState<V>) => void = nop
+  @unmanaged readonly unmount = (): (() => void) => {
     return (): void => { isolated(R.dispose, this) }
   }
 

@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { Stateful, transaction, cached } from 'api' // from 'reactronic'
+import { ManagedObject, transaction, cached } from 'api' // from 'reactronic'
 import { Component } from './Component'
 
-class MyModel extends Stateful {
+class MyModel extends ManagedObject {
   url: string = 'https://nezaboodka.com'
   content: string = ''
   timestamp: number = Date.now()

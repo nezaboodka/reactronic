@@ -46,7 +46,7 @@ All state objects are transparently hooked to track access to
 their properties, both on reads and writes.
 
 ``` typescript
-class MyModel extends Stateful {
+class MyModel extends ManagedObject {
   url: string = "https://github.com/nezaboodka/reactronic"
   content: string = "transactionally reactive state management"
   timestamp: Date = Date.now()
@@ -54,7 +54,7 @@ class MyModel extends Stateful {
 ```
 
 In the example above, the class `MyModel` is based on Reactronic's
-`Stateful` class and all its properties `url`, `content`, and `timestamp`
+`ManagedObject` class and all its properties `url`, `content`, and `timestamp`
 are hooked.
 
 ### Transaction
@@ -65,7 +65,7 @@ to provide transparent atomicity (by implicit context switching
 and isolation).
 
 ``` typescript
-class MyModel extends Stateful {
+class MyModel extends ManagedObject {
   // ...
   @transaction
   async load(url: string): Promise<void> {
@@ -234,7 +234,7 @@ NPM: `npm install reactronic`
 ```typescript
 // Decorators & Operators
 
-function stateless(proto, prop) // field only
+function unmanaged(proto, prop) // field only
 function transaction(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only

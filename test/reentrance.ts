@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Stateful, transaction, reaction, cached, sensitiveArgs, throttling, monitor,
+import { ManagedObject, transaction, reaction, cached, sensitiveArgs, throttling, monitor,
   reentrance, Transaction as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'api'
 
 export const output: string[] = []
 export const busy = Monitor.create('Busy', 0, 0)
 
-export class AsyncDemo extends Stateful {
+export class AsyncDemo extends ManagedObject {
   url: string = 'reactronic'
   log: string[] = ['RTA']
 
@@ -25,7 +25,7 @@ export class AsyncDemo extends Stateful {
 }
 
 export class AsyncDemoView {
-  // @state statefulField: string = 'stateful field'
+  // @state managedField: string = 'managed field'
 
   constructor(readonly model: AsyncDemo) {
   }

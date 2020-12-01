@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import { Worker } from '../Worker'
-import { Stateful, Hooks } from './Hooks'
+import { ManagedObject, Hooks } from './Hooks'
 import { Transaction } from './Transaction'
 
-export abstract class Monitor extends Stateful {
+export abstract class Monitor extends ManagedObject {
   abstract readonly isActive: boolean
   abstract readonly workerCount: number
   abstract readonly workers: ReadonlySet<Worker>

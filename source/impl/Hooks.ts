@@ -15,9 +15,9 @@ import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
 
-// Stateful
+// ManagedObject
 
-export abstract class Stateful {
+export abstract class ManagedObject {
   constructor() {
     const proto = new.target.prototype
     const blank = Meta.from<any>(proto, Meta.Blank)
@@ -45,7 +45,7 @@ export function decorateMethod(options: Partial<CacheOptions>): F<any> {
 
 // Options
 
-const DEFAULT_STATELESS_OPTIONS: CacheOptions = Object.freeze({
+const DEFAULT_UNMANAGED_OPTIONS: CacheOptions = Object.freeze({
   kind: Kind.Field,
   priority: 0,
   noSideEffects: false,
@@ -68,19 +68,19 @@ export class OptionsImpl implements CacheOptions {
   readonly journal: TransactionJournal | undefined
   readonly monitor: Monitor | null
   readonly trace?: Partial<TraceOptions>
-  static readonly INITIAL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_STATELESS_OPTIONS}, {}, false))
+  static readonly INITIAL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_UNMANAGED_OPTIONS}, {}, false))
 
   constructor(body: Function | undefined, existing: OptionsImpl, patch: Partial<OptionsImpl>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body
-    this.kind = merge(DEFAULT_STATELESS_OPTIONS.kind, existing.kind, patch.kind, implicit)
-    this.priority = merge(DEFAULT_STATELESS_OPTIONS.priority, existing.priority, patch.priority, implicit)
-    this.noSideEffects = merge(DEFAULT_STATELESS_OPTIONS.noSideEffects, existing.noSideEffects, patch.noSideEffects, implicit)
-    this.sensitiveArgs = merge(DEFAULT_STATELESS_OPTIONS.sensitiveArgs, existing.sensitiveArgs, patch.sensitiveArgs, implicit)
-    this.throttling = merge(DEFAULT_STATELESS_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
-    this.reentrance = merge(DEFAULT_STATELESS_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
-    this.journal = merge(DEFAULT_STATELESS_OPTIONS.journal, existing.journal, patch.journal, implicit)
-    this.monitor = merge(DEFAULT_STATELESS_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
-    this.trace = merge(DEFAULT_STATELESS_OPTIONS.trace, existing.trace, patch.trace, implicit)
+    this.kind = merge(DEFAULT_UNMANAGED_OPTIONS.kind, existing.kind, patch.kind, implicit)
+    this.priority = merge(DEFAULT_UNMANAGED_OPTIONS.priority, existing.priority, patch.priority, implicit)
+    this.noSideEffects = merge(DEFAULT_UNMANAGED_OPTIONS.noSideEffects, existing.noSideEffects, patch.noSideEffects, implicit)
+    this.sensitiveArgs = merge(DEFAULT_UNMANAGED_OPTIONS.sensitiveArgs, existing.sensitiveArgs, patch.sensitiveArgs, implicit)
+    this.throttling = merge(DEFAULT_UNMANAGED_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
+    this.reentrance = merge(DEFAULT_UNMANAGED_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
+    this.journal = merge(DEFAULT_UNMANAGED_OPTIONS.journal, existing.journal, patch.journal, implicit)
+    this.monitor = merge(DEFAULT_UNMANAGED_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
+    this.trace = merge(DEFAULT_UNMANAGED_OPTIONS.trace, existing.trace, patch.trace, implicit)
     if (Dbg.isOn)
       Object.freeze(this)
   }
@@ -101,7 +101,7 @@ export class Hooks implements ProxyHandler<Handle> {
   static readonly proxy: Hooks = new Hooks()
 
   getPrototypeOf(h: Handle): object | null {
-    return Reflect.getPrototypeOf(h.stateless)
+    return Reflect.getPrototypeOf(h.unmanaged)
   }
 
   get(h: Handle, m: Member, receiver: any): any {
@@ -115,8 +115,8 @@ export class Hooks implements ProxyHandler<Handle> {
     else if (m === Meta.Handle) {
       // do nothing, just return instance
     }
-    else // result === STATELESS
-      result = Reflect.get(h.stateless, m, receiver)
+    else // result === UNMANAGED
+      result = Reflect.get(h.unmanaged, m, receiver)
     return result
   }
 
@@ -125,7 +125,7 @@ export class Hooks implements ProxyHandler<Handle> {
     if (r !== NIL) {
       const curr = r.data[m] as Observable
       if (curr !== undefined || (
-        r.prev.record.snapshot === NIL.snapshot && m in h.stateless === false)) {
+        r.prev.record.snapshot === NIL.snapshot && m in h.unmanaged === false)) {
         const prev = r.prev.record.data[m] as Observable
         let changed = prev === undefined || prev.value !== value ||
           Hooks.sensitivity === Sensitivity.ReactEvenOnSameValueAssignment
@@ -144,16 +144,16 @@ export class Hooks implements ProxyHandler<Handle> {
         Snapshot.markChanged(r, m, value, changed)
       }
       else
-        Reflect.set(h.stateless, m, value, receiver)
+        Reflect.set(h.unmanaged, m, value, receiver)
     }
     else
-      h.stateless[m] = value
+      h.unmanaged[m] = value
     return true
   }
 
   has(h: Handle, m: Member): boolean {
     const r: Record = Snapshot.reader().readable(h, m)
-    return m in r.data || m in h.stateless
+    return m in r.data || m in h.unmanaged
   }
 
   getOwnPropertyDescriptor(h: Handle, m: Member): PropertyDescriptor | undefined {
@@ -176,8 +176,8 @@ export class Hooks implements ProxyHandler<Handle> {
     return result
   }
 
-  static decorateField(stateful: boolean, proto: any, m: Member): any {
-    if (stateful) {
+  static decorateField(managed: boolean, proto: any, m: Member): any {
+    if (managed) {
       const get = function(this: any): any {
         const h = Hooks.acquireHandle(this)
         return Hooks.proxy.get(h, m, this)
@@ -191,7 +191,7 @@ export class Hooks implements ProxyHandler<Handle> {
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Meta.acquire(proto, Meta.Blank)[m] = Meta.Stateless
+      Meta.acquire(proto, Meta.Blank)[m] = Meta.Unmanaged
   }
 
   static decorateMethod(implicit: boolean, options: Partial<CacheOptions>, proto: any, method: Member, pd: TypedPropertyDescriptor<F<any>>): any {
@@ -202,7 +202,7 @@ export class Hooks implements ProxyHandler<Handle> {
     const trap = function(this: any): any {
       const h = Hooks.acquireHandle(this)
       const value = Hooks.createMethodTrap(h, method, opts)
-      Object.defineProperty(h.stateless, method, { value, enumerable, configurable })
+      Object.defineProperty(h.unmanaged, method, { value, enumerable, configurable })
       return value
     }
     return Object.defineProperty(proto, method, { get: trap, enumerable, configurable })
@@ -224,9 +224,9 @@ export class Hooks implements ProxyHandler<Handle> {
     return h
   }
 
-  static createHandle(stateless: any, blank: any, hint: string): Handle {
+  static createHandle(unmanaged: any, blank: any, hint: string): Handle {
     const ctx = Snapshot.writer()
-    const h = new Handle(stateless, undefined, Hooks.proxy, NIL, hint)
+    const h = new Handle(unmanaged, undefined, Hooks.proxy, NIL, hint)
     ctx.writable(h, Meta.Handle, blank)
     return h
   }

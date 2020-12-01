@@ -12,12 +12,12 @@ export { SealedSet } from './util/SealedSet'
 export { CacheOptions, Kind, Reentrance, Sensitivity, TraceOptions, ProfilingOptions, TraceLevel } from './Options'
 export { Worker } from './Worker'
 export { Cache } from './Cache'
-export { Field, FieldToggle, BoolOnly as BooleanOnly, GivenTypeOnly } from './Field'
-export { Stateful } from './impl/Hooks'
+export { Field, FieldToggle, BoolOnly, GivenTypeOnly } from './Field'
+export { ManagedObject } from './impl/Hooks'
 export { Snapshot } from './impl/Snapshot'
 export { Transaction } from './impl/Transaction'
 export { Monitor } from './impl/Monitor'
 export { TransactionJournal } from './impl/TransactionJournal'
-export { Reactronic, getCachedAndRevalidate, untracked, isolated, sensitive, stateless,
+export { Reactronic, getCachedAndRevalidate, untracked, isolated, sensitive, unmanaged,
   transaction, reaction, cached, priority, noSideEffects, sensitiveArgs, throttling,
   reentrance, journal, monitor, trace } from './Reactronic'

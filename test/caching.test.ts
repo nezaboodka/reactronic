@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Stateful, cached, Transaction as Tran, Reactronic as R, trace, reaction, stateless, noSideEffects } from 'api'
+import { ManagedObject, cached, Transaction as Tran, Reactronic as R, trace, reaction, unmanaged, noSideEffects } from 'api'
 import { TestingTraceLevel } from './brief'
 
-export class DemoBase extends Stateful {
-  @stateless raw: string = 'stateless data'
+export class DemoBase extends ManagedObject {
+  @unmanaged raw: string = 'unmanaged data'
   title: string = 'Demo'
   sideEffect: string = 'no side effect'
   uninitialized?: any
