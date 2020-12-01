@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Stateful, transaction, trigger, cached, sensitiveArgs, throttling, monitor,
+import { Stateful, transaction, reaction, cached, sensitiveArgs, throttling, monitor,
   reentrance, Transaction as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'api'
 
 export const output: string[] = []
@@ -30,7 +30,7 @@ export class AsyncDemoView {
   constructor(readonly model: AsyncDemo) {
   }
 
-  @trigger @throttling(-1)
+  @reaction @throttling(-1)
   async print(): Promise<void> {
     const lines: string[] = await this.render()
     if (!Tran.current.isCanceled) {

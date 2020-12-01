@@ -6,14 +6,14 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Stateful, Transaction as Tran, Reactronic as R, trigger } from 'api'
+import { Stateful, Transaction as Tran, Reactronic as R, reaction } from 'api'
 import { TestingTraceLevel } from './brief'
 
-export class TriggeringDemo extends Stateful {
-  title: string = 'TriggeringDemo'
+export class ReactiveDemo extends Stateful {
+  title: string = 'ReactiveDemo'
   content: string = 'Content'
 
-  @trigger
+  @reaction
   actualize1(): void {
     this.title
     this.title = 'Title/1'
@@ -21,16 +21,16 @@ export class TriggeringDemo extends Stateful {
     this.title
   }
 
-  @trigger
+  @reaction
   actualize2(): void {
     this.content
     this.title = 'Title/2'
   }
 }
 
-test('triggering', t => {
+test('reactive', t => {
   R.setTraceMode(true, TestingTraceLevel)
-  const demo = Tran.run(() => new TriggeringDemo())
+  const demo = Tran.run(() => new ReactiveDemo())
   t.is(demo.title, 'Title/2')
   t.is(demo.content, 'Content/1')
 })

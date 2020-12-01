@@ -26,8 +26,8 @@ export class Reactronic {
   static takeSnapshot<T>(obj: T): T { return Snapshot.takeSnapshot(obj) }
   static dispose(obj: any): void { Snapshot.dispose(obj) }
   // Configuration
-  static get triggersAutoStartDisabled(): boolean { return Hooks.triggersAutoStartDisabled }
-  static set triggersAutoStartDisabled(value: boolean) { Hooks.triggersAutoStartDisabled = value }
+  static get reactionsAutoStartDisabled(): boolean { return Hooks.reactionsAutoStartDisabled }
+  static set reactionsAutoStartDisabled(value: boolean) { Hooks.reactionsAutoStartDisabled = value }
   // Trace
   static get isTraceEnabled(): boolean { return Dbg.isOn }
   static get traceOptions(): TraceOptions { return Dbg.trace }
@@ -70,8 +70,8 @@ export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyD
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
-export function trigger(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const opt = { kind: Kind.Trigger, throttling: -1 } // immediate trigger
+export function reaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+  const opt = { kind: Kind.Reaction, throttling: -1 } // immediate reaction
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 

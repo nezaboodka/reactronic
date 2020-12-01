@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { Stateful, Transaction, stateless, trigger, cached, isolated, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
+import { Stateful, Transaction, stateless, reaction, cached, isolated, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
 
 export function reactive(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, tran?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -28,7 +28,7 @@ class Rx<V> extends Stateful {
     return tran ? tran.inspect(() => generate(this.cycle)) : generate(this.cycle)
   }
 
-  @trigger
+  @reaction
   protected pulse(): void {
     if (R.getMethodCache(this.render).invalid)
       isolated(this.refresh, {rx: this, cycle: this.cycle + 1})

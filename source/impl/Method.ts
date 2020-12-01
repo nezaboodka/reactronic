@@ -49,7 +49,7 @@ export class Method extends Cache<any> {
     if (!call.reuse && call.record.data[Meta.Disposed] === undefined
       && (!weak || c.invalidatedSince === -1 || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
-      const spawn = weak || opt.kind === Kind.Trigger ||
+      const spawn = weak || opt.kind === Kind.Reaction ||
         (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
       const token = opt.noSideEffects ? this : undefined
       const call2 = this.compute(call, spawn, opt, token, args)
@@ -205,7 +205,7 @@ export class Method extends Cache<any> {
     const ctx = Snapshot.reader()
     const call = self.read(undefined)
     const c: CallResult = call.result
-    c.invalidateDueTo(c, {record: NIL, member: self.member, times: 0}, ctx.timestamp, ctx.triggers)
+    c.invalidateDueTo(c, {record: NIL, member: self.member, times: 0}, ctx.timestamp, ctx.reactions)
   }
 }
 
@@ -213,7 +213,7 @@ export class Method extends Cache<any> {
 
 class CallResult extends Observable implements Observer {
   static current?: CallResult = undefined
-  static asyncTriggerBatch: CallResult[] = []
+  static asyncReactionsBatch: CallResult[] = []
 
   get isMethod(): boolean { return true }
   readonly method: Method
@@ -310,7 +310,7 @@ class CallResult extends Observable implements Observer {
       this.ret = Promise.reject(this.error)
   }
 
-  invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void {
+  invalidateDueTo(value: Observable, cause: MemberHint, since: number, reactions: Observer[]): void {
     if (this.invalidatedSince === TOP_TIMESTAMP || this.invalidatedSince <= 0) {
       const skip = !value.isMethod &&
         cause.record.snapshot === this.record.snapshot &&
@@ -318,14 +318,14 @@ class CallResult extends Observable implements Observer {
       if (!skip) {
         this.invalidatedDueTo = cause
         this.invalidatedSince = since
-        const isTrigger = this.options.kind === Kind.Trigger /*&& this.record.data[Meta.Disposed] === undefined*/
+        const isReaction = this.options.kind === Kind.Reaction /*&& this.record.data[Meta.Disposed] === undefined*/
         if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', isTrigger ? '█' : '▒', isTrigger && cause.record === NIL ? `${this.hint()} is a trigger and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.record(cause.record, cause.member)} since v${since}${isTrigger ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.record === NIL ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.record(cause.record, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
-        if (isTrigger) // stop cascade invalidation on trigger
-          triggers.push(this)
+        if (isReaction) // stop cascade invalidation on reaction
+          reactions.push(this)
         else if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, member: this.method.member, times: 0}, since, triggers))
+          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, member: this.method.member, times: 0}, since, reactions))
         const worker = this.worker
         if (!worker.isFinished && this !== value) // restart after itself if canceled
           worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
@@ -337,15 +337,15 @@ class CallResult extends Observable implements Observer {
         // Variant 2:
         // const hint = this.hint()
         // const causeHint = Hints.record(cause.record, cause.member)
-        // throw misuse(`trigger ${hint} should either read or write ${causeHint}, but not both (consider using untracked read)`)
+        // throw misuse(`reaction ${hint} should either read or write ${causeHint}, but not both (consider using untracked read)`)
       }
     }
   }
 
   revalidate(now: boolean, nothrow: boolean): void {
     const t = this.options.throttling
-    const interval = Date.now() + this.started // "started" is stored as negative value after trigger completion
-    const hold = t ? t - interval : 0 // "started" is stored as negative value after trigger completion
+    const interval = Date.now() + this.started // "started" is stored as negative value after reaction completion
+    const hold = t ? t - interval : 0 // "started" is stored as negative value after reaction completion
     if (now || hold < 0) {
       if (!this.error && (this.options.kind === Kind.Transaction ||
         !this.revalidation || this.revalidation.worker.isCanceled)) {
@@ -353,15 +353,15 @@ class CallResult extends Observable implements Observer {
           const c: CallResult = this.method.call(false, undefined)
           if (c.ret instanceof Promise)
             c.ret.catch(error => {
-              if (c.options.kind === Kind.Trigger)
-                misuse(`trigger ${Hints.record(c.record, c.method.member)} failed and will not run anymore: ${error}`, error)
+              if (c.options.kind === Kind.Reaction)
+                misuse(`reaction ${Hints.record(c.record, c.method.member)} failed and will not run anymore: ${error}`, error)
             })
         }
         catch (e) {
           if (!nothrow)
             throw e
-          else if (this.options.kind === Kind.Trigger)
-            misuse(`trigger ${Hints.record(this.record, this.method.member)} failed and will not run anymore: ${e}`, e)
+          else if (this.options.kind === Kind.Reaction)
+            misuse(`reaction ${Hints.record(this.record, this.method.member)} failed and will not run anymore: ${e}`, e)
         }
       }
     }
@@ -369,7 +369,7 @@ class CallResult extends Observable implements Observer {
       if (hold > 0)
         setTimeout(() => this.revalidate(true, true), hold)
       else
-        this.addToAsyncTriggerBatch()
+        this.addToAsyncReactionsBatch()
     }
   }
 
@@ -492,16 +492,16 @@ class CallResult extends Observable implements Observer {
     })
   }
 
-  private addToAsyncTriggerBatch(): void {
-    CallResult.asyncTriggerBatch.push(this)
-    if (CallResult.asyncTriggerBatch.length === 1)
-      setTimeout(CallResult.processAsyncTriggerBatch, 0)
+  private addToAsyncReactionsBatch(): void {
+    CallResult.asyncReactionsBatch.push(this)
+    if (CallResult.asyncReactionsBatch.length === 1)
+      setTimeout(CallResult.processAsyncReactionsBatch, 0)
   }
 
-  private static processAsyncTriggerBatch(): void {
-    const triggers = CallResult.asyncTriggerBatch
-    CallResult.asyncTriggerBatch = [] // reset
-    for (const t of triggers)
+  private static processAsyncReactionsBatch(): void {
+    const reactions = CallResult.asyncReactionsBatch
+    CallResult.asyncReactionsBatch = [] // reset
+    for (const t of reactions)
       t.revalidate(true, true)
   }
 
@@ -514,7 +514,7 @@ class CallResult extends Observable implements Observer {
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!c.subscribeTo(value, r, m, t))
-          c.invalidateDueTo(value, {record: r, member: m, times: 0}, ctx.timestamp, ctx.triggers)
+          c.invalidateDueTo(value, {record: r, member: m, times: 0}, ctx.timestamp, ctx.reactions)
       }
     }
   }
@@ -536,17 +536,17 @@ class CallResult extends Observable implements Observer {
     const since = snapshot.timestamp
     if (!error) {
       // Mark previous values as replaced, invalidate observers, and reset recomputing status
-      const triggers = snapshot.triggers
+      const reactions = snapshot.reactions
       snapshot.changeset.forEach((r: Record, h: Handle) => {
         if (!r.changes.has(Meta.Disposed))
-          r.changes.forEach(m => CallResult.finalizeMemberChange(false, since, r, m, triggers))
+          r.changes.forEach(m => CallResult.finalizeMemberChange(false, since, r, m, reactions))
         else
           for (const m in r.prev.record.data)
-            CallResult.finalizeMemberChange(true, since, r, m, triggers)
+            CallResult.finalizeMemberChange(true, since, r, m, reactions)
         if (Dbg.isOn)
           Snapshot.freezeRecord(r)
       })
-      triggers.sort(CallResult.compareTriggersByPriority)
+      reactions.sort(CallResult.compareReactionsByPriority)
       const log = snapshot.options.journal
       log && log.remember(TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
     }
@@ -555,15 +555,15 @@ class CallResult extends Observable implements Observer {
         r.changes.forEach(m => CallResult.finalizeMemberChange(true, since, r, m)))
   }
 
-  private static compareTriggersByPriority(a: Observer, b: Observer): number {
+  private static compareReactionsByPriority(a: Observer, b: Observer): number {
     return a.priority - b.priority
   }
 
-  private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: Record, m: Member, triggers?: Observer[]): void {
-    if (triggers) {
+  private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: Record, m: Member, reactions?: Observer[]): void {
+    if (reactions) {
       const prev = r.prev.record.data[m]
       if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
-        if (unsubscribe) // in fact it means disposal if triggers are not undefined
+        if (unsubscribe) // in fact it means disposal if reactions are not undefined
           r.data[m] = Meta.Disposed
         prev.replacement = r
         const cause: MemberHint = { record: r, member: m, times: 0 }
@@ -573,7 +573,7 @@ class CallResult extends Observable implements Observer {
           prev.unsubscribeFromAll()
         }
         if (prev.observers)
-          prev.observers.forEach(c => c.invalidateDueTo(prev, cause, timestamp, triggers))
+          prev.observers.forEach(c => c.invalidateDueTo(prev, cause, timestamp, reactions))
       }
     }
     const value = r.data[m]
@@ -659,14 +659,14 @@ class CallResult extends Observable implements Observer {
     const opts = existing ? existing.options : OptionsImpl.INITIAL
     const value =  new CallResult(method, NIL, new OptionsImpl(body, opts, options, implicit))
     blank[m] = value
-    // Add to the list if it's a trigger
-    if (value.options.kind === Kind.Trigger && value.options.throttling < Number.MAX_SAFE_INTEGER) {
-      const triggers = Meta.acquire(proto, Meta.Triggers)
-      triggers[m] = value
+    // Add to the list if it's a reaction
+    if (value.options.kind === Kind.Reaction && value.options.throttling < Number.MAX_SAFE_INTEGER) {
+      const reactions = Meta.acquire(proto, Meta.Reactions)
+      reactions[m] = value
     }
-    else if (value.options.kind === Kind.Trigger && value.options.throttling >= Number.MAX_SAFE_INTEGER) {
-      const triggers = Meta.from<any>(proto, Meta.Triggers)
-      delete triggers[m]
+    else if (value.options.kind === Kind.Reaction && value.options.throttling >= Number.MAX_SAFE_INTEGER) {
+      const reactions = Meta.from<any>(proto, Meta.Reactions)
+      delete reactions[m]
     }
     return value.options
   }

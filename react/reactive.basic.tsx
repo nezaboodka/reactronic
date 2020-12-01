@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { Stateful, Transaction, stateless, trigger, cached, isolated, Reactronic } from 'api' // from 'reactronic'
+import { Stateful, Transaction, stateless, reaction, cached, isolated, Reactronic } from 'api' // from 'reactronic'
 
 export function reactive(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -26,7 +26,7 @@ class Rx extends Stateful {
     return render()
   }
 
-  @trigger
+  @reaction
   protected pulse(): void {
     if (Reactronic.getMethodCache(this.render).invalid)
       isolated(this.refresh, {rx: this})

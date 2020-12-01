@@ -33,7 +33,7 @@ export interface Observer {
   readonly observables: Map<Observable, MemberHint>
   readonly invalidatedSince: number
   hint(notran?: boolean): string
-  invalidateDueTo(value: Observable, cause: MemberHint, since: number, triggers: Observer[]): void
+  invalidateDueTo(value: Observable, cause: MemberHint, since: number, reactions: Observer[]): void
   revalidate(now: boolean, nothrow: boolean): void
 }
 

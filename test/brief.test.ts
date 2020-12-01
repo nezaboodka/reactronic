@@ -29,8 +29,8 @@ const expected: string[] = [
 ]
 
 test('brief', t => {
-  R.triggersAutoStartDisabled = !R.triggersAutoStartDisabled
-  R.triggersAutoStartDisabled = false
+  R.reactionsAutoStartDisabled = !R.reactionsAutoStartDisabled
+  R.reactionsAutoStartDisabled = false
   R.setProfilingMode(false)
   R.setProfilingMode(true, {})
   R.setProfilingMode(true, {
@@ -135,7 +135,7 @@ test('brief', t => {
         const emails = daddy.emails = daddy.emails.toMutable()
         emails.push('dad@mail.com')
       }
-    }, undefined, 'stateful property Person.emails #26 can only be modified inside transactions and triggers')
+    }, undefined, 'stateful property Person.emails #26 can only be modified inside transactions and reactions')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
     t.throws(() => { R.getMethodCache(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
@@ -151,7 +151,7 @@ test('brief', t => {
       tran3.run(nop)
     }), { message: 'test' })
     t.throws(() => tran3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
-    Tran.run(sensitive, Sensitivity.TriggerEvenOnSameValueAssignment, () => {
+    Tran.run(sensitive, Sensitivity.ReactEvenOnSameValueAssignment, () => {
       app.userFilter = app.userFilter
     })
     // Other

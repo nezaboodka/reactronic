@@ -264,7 +264,7 @@ class TransactionImpl extends Transaction {
       if (this.sealed && this.workers === 0) {
         this.finish() // it's critical to have no exceptions inside this call
         TransactionImpl.running = outer
-        TransactionImpl.isolated(TransactionImpl.revalidateTriggers, this)
+        TransactionImpl.isolated(TransactionImpl.revalidateReactions, this)
       }
       else
         TransactionImpl.running = outer
@@ -272,8 +272,8 @@ class TransactionImpl extends Transaction {
     return result
   }
 
-  private static revalidateTriggers(t: TransactionImpl): void {
-    t.snapshot.triggers.map(x => x.revalidate(false, true))
+  private static revalidateReactions(t: TransactionImpl): void {
+    t.snapshot.reactions.map(x => x.revalidate(false, true))
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {

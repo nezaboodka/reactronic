@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Stateful, stateless, transaction, trigger, cached, sensitiveArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
+import { Stateful, stateless, transaction, reaction, cached, sensitiveArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
 
 export const output: string[] = []
 
@@ -38,7 +38,7 @@ export class Demo extends Stateful {
     this.title = 'Demo - undo/redo'
   }
 
-  @trigger @priority(1)
+  @reaction @priority(1)
   protected backup(): void {
     this.usersWithoutLast = this.users.slice()
     this.usersWithoutLast.pop()
@@ -74,10 +74,10 @@ export class DemoView extends Stateful {
   constructor(model: Demo) {
     super()
     this.model = model
-    // R.configureObject(this, { sensitivity: Sensitivity.TriggerOnFinalDifferenceOnly })
+    // R.configureObject(this, { sensitivity: Sensitivity.ReactOnFinalDifferenceOnly })
   }
 
-  @trigger
+  @reaction
   print(): void {
     const lines = this.render(0)
     lines.forEach(x => {
