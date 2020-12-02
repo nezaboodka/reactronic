@@ -232,6 +232,11 @@ NPM: `npm install reactronic`
 ## API (TypeScript)
 
 ```typescript
+
+// Base Object
+
+class ManagedObject { }
+
 // Decorators & Operators
 
 function unmanaged(proto, prop) // field only
