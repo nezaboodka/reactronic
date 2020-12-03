@@ -43,7 +43,7 @@ export function getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any
   return Reactronic.getMethodCache(method as any as F<T>).getCachedValueAndRevalidate(args) // overcome type safety
 }
 
-export function unobserved<T>(func: F<T>, ...args: any[]): T {
+export function unreactive<T>(func: F<T>, ...args: any[]): T {
   return Method.run<T>(undefined, func, ...args)
 }
 
@@ -65,12 +65,12 @@ export function unobservable(proto: object, prop: PropertyKey): any {
   return Hooks.decorateField(false, proto, prop)
 }
 
-export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+export function transactional(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
   const opt = { kind: Kind.Transaction }
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
-export function reaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+export function reactive(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
   const opt = { kind: Kind.Reaction, throttling: -1 } // immediate reaction
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }

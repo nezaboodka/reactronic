@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, transaction, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
+import { ObservableObject, unobservable, transactional, reactive, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
 
 export const output: string[] = []
 
@@ -18,27 +18,27 @@ export class Demo extends ObservableObject {
   collection2: Person[] = this.users
   usersWithoutLast: Person[] = this.users
 
-  @transaction
+  @transactional
   loadUsers(): void {
     this._loadUsers()
   }
 
-  @transaction
+  @transactional
   testCollectionSealing(): void {
     this.collection1 = this.collection2 = []
   }
 
-  @transaction
+  @transactional
   testImmutableCollection(): void {
     this.collection1.push(...this.users)
   }
 
-  @transaction @journal(Demo.UndoRedo)
+  @transactional @journal(Demo.UndoRedo)
   testUndo(): void {
     this.title = 'Demo - undo/redo'
   }
 
-  @reaction @priority(1)
+  @reactive @priority(1)
   protected backup(): void {
     this.usersWithoutLast = this.users.slice()
     this.usersWithoutLast.pop()
@@ -77,7 +77,7 @@ export class DemoView extends ObservableObject {
     // R.configureObject(this, { sensitivity: Sensitivity.ReactOnFinalDifferenceOnly })
   }
 
-  @reaction
+  @reactive
   print(): void {
     const lines = this.render(0)
     lines.forEach(x => {

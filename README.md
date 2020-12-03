@@ -67,7 +67,7 @@ and isolation).
 ``` typescript
 class MyModel extends ObservableObject {
   // ...
-  @transaction
+  @transactional
   async load(url: string): Promise<void> {
     this.url = url
     this.content = await fetch(url)
@@ -76,8 +76,8 @@ class MyModel extends ObservableObject {
 }
 ```
 
-In the example above, the function `load` is a transaction that makes
-changes to `url`, `content` and `timestamp` properties. While the
+In the example above, the transactional function `load` makes
+changes to `url`, `content` and `timestamp` properties. While
 transaction is running, the changes are visible only inside the
 transaction itself. The new values become atomically visible outside
 of the transaction only upon its completion.
@@ -136,7 +136,7 @@ class Component<P> extends React.Component<P> {
     throw new Error('render method is undefined')
   }
 
-  @reaction // called immediately in response to state changes
+  @reactive // called immediately in response to state changes
   pulse(): void {
     if (Reactronic.getCache(this.render).invalid)
       isolated(() => this.setState({})) // ask React to re-render
@@ -156,12 +156,12 @@ class Component<P> extends React.Component<P> {
 }
 ```
 
-In the example above, `pulse` reaction is transparently subscribed
+In the example above, reactive function `pulse` is transparently subscribed
 to the cached function `render`. In turn, the `render` function is
 subscribed to the `url` and `content` properties of a corresponding
 `MyModel` object. Once `url` or `content` values are changed, the
 `render` cache becomes invalid and causes invalidation and immediate
-re-execution of `pulse` reaction. While executed, the `pulse`
+re-execution of reactive function `pulse`. While executed, the `pulse`
 reactive function enqueues re-rendering request to React, which calls
 `render` function causing it to renew its cached value.
 
@@ -169,7 +169,7 @@ In general case, all reactions and caches are automatically and
 immediately marked as invalid when changes are made in those state
 objects and cached functions that were used during their execution.
 And once marked, the functions are automatically executed again,
-either immediately (for @reaction functions) or on-demand
+either immediately (for @reactive functions) or on-demand
 (for @cached functions).
 
 Reactronic takes full care of tracking dependencies between
@@ -233,26 +233,26 @@ NPM: `npm install reactronic`
 
 ```typescript
 
-// Base Object
+// Classes
 
 class ObservableObject { }
 
 // Decorators & Operators
 
 function unobservable(proto, prop) // field only
-function transaction(proto, prop, pd) // method only
-function reaction(proto, prop, pd) // method only
+function transactional(proto, prop, pd) // method only
+function reactive(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
-function noSideEffects(value: boolean) // transaction & cached & reaction
-function observableArgs(value: boolean) // cached & reaction
-function throttling(milliseconds: number) // reaction only
-function reentrance(value: Reentrance) // transaction & reaction
+function noSideEffects(value: boolean) // transactional & cached & reactive
+function observableArgs(value: boolean) // cached & reactive
+function throttling(milliseconds: number) // reactive only
+function reentrance(value: Reentrance) // transactional & reactive
 function monitor(value: Monitor | null)
 function trace(value: Partial<TraceOptions>)
 
 function getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
-function unobserved<T>(func: F<T>, ...args: any[]): T
+function unreactive<T>(func: F<T>, ...args: any[]): T
 function isolated<T>(func: F<T>, ...args: any[]): T
 function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
