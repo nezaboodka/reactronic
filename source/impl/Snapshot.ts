@@ -25,8 +25,8 @@ Object.defineProperty(Handle.prototype, '<snapshot>', {
       const v = data[m]
       if (v instanceof Observable)
         result[m] = v.value
-      else if (v === Meta.Unmanaged)
-        result[m] = this.unmanaged[m]
+      else if (v === Meta.Unobservable)
+        result[m] = this.unobservable[m]
       else /* istanbul ignore next */
         result[m] = v
     }
@@ -100,7 +100,7 @@ export class Snapshot implements Context {
   writable(h: Handle, m: Member, value: any, token?: any): Record {
     let r: Record = this.lookup(h, m)
     const existing = r.data[m]
-    if (existing !== Meta.Unmanaged) {
+    if (existing !== Meta.Unobservable) {
       this.guard(h, r, m, existing, value, token)
       if (r.snapshot !== this) {
         const data = { ...m === Meta.Handle ? value : r.data }
@@ -138,7 +138,7 @@ export class Snapshot implements Context {
 
   private guard(h: Handle, r: Record, m: Member, existing: any, value: any, token: any): void {
     if (this.completed)
-      throw misuse(`managed property ${Hints.obj(h, m)} can only be modified inside transactions and reactions`)
+      throw misuse(`observable property ${Hints.obj(h, m)} can only be modified inside transactions and reactions`)
     // if (m !== Sym.HANDLE && value !== Sym.HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
     // if (r === NIL && m !== Sym.HANDLE && value !== Sym.HANDLE) /* istanbul ignore next */

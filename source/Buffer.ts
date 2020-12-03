@@ -7,9 +7,9 @@
 
 /* istanbul ignore file */
 
-import { ManagedObject } from './impl/Hooks'
+import { ObservableObject } from './impl/Hooks'
 
-export abstract class Buffer<T> extends ManagedObject {
+export abstract class Buffer<T> extends ObservableObject {
   abstract readonly capacity: number
   abstract readonly count: number
   abstract put(...items: T[]): void

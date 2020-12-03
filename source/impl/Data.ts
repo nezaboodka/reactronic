@@ -71,16 +71,16 @@ export class Handle {
   private static idGen: number = 19
 
   readonly id: number
-  readonly unmanaged: any
+  readonly unobservable: any
   readonly proxy: any
   head: Record
   changing?: Record
   writers: number
   hint: string
 
-  constructor(unmanaged: any, proxy: any, handler: ProxyHandler<Handle>, head: Record, hint: string) {
+  constructor(unobservable: any, proxy: any, handler: ProxyHandler<Handle>, head: Record, hint: string) {
     this.id = ++Handle.idGen
-    this.unmanaged = unmanaged
+    this.unobservable = unobservable
     this.proxy = proxy || new Proxy<Handle>(this, handler)
     this.head = head
     this.changing = undefined

@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ManagedObject } from './Hooks'
+import { ObservableObject } from './Hooks'
 import { Handle, Record, Meta, Patch, ObjectPatch, Observable } from './Data'
 import { NIL, Snapshot } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
 
-export abstract class TransactionJournal extends ManagedObject {
+export abstract class TransactionJournal extends ObservableObject {
   abstract capacity: number
   abstract readonly items: ReadonlyArray<Patch>
   abstract readonly canUndo: boolean

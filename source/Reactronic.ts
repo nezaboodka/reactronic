@@ -39,11 +39,11 @@ export class Reactronic {
 
 // Operators
 
-export function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return Reactronic.getMethodCache(method as any as F<T>).getCachedAndRevalidate(args) // overcome type safety
+export function getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
+  return Reactronic.getMethodCache(method as any as F<T>).getCachedValueAndRevalidate(args) // overcome type safety
 }
 
-export function untracked<T>(func: F<T>, ...args: any[]): T {
+export function unobserved<T>(func: F<T>, ...args: any[]): T {
   return Method.run<T>(undefined, func, ...args)
 }
 
@@ -61,7 +61,7 @@ export function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[
 //   return Hooks.decorateField(true, proto, prop)
 // }
 
-export function unmanaged(proto: object, prop: PropertyKey): any {
+export function unobservable(proto: object, prop: PropertyKey): any {
   return Hooks.decorateField(false, proto, prop)
 }
 
@@ -76,7 +76,7 @@ export function reaction(proto: object, prop: PropertyKey, pd: TypedPropertyDesc
 }
 
 export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-  const opt = { kind: Kind.Cached, noSideEffects: true }
+  const opt = { kind: Kind.Cache, noSideEffects: true }
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
@@ -88,7 +88,7 @@ export function noSideEffects(value: boolean): F<any> {
   return decorateMethod({noSideEffects: value})
 }
 
-export function sensitiveArgs(value: boolean): F<any> {
+export function observableArgs(value: boolean): F<any> {
   return decorateMethod({sensitiveArgs: value})
 }
 

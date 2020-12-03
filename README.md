@@ -46,7 +46,7 @@ All state objects are transparently hooked to track access to
 their properties, both on reads and writes.
 
 ``` typescript
-class MyModel extends ManagedObject {
+class MyModel extends ObservableObject {
   url: string = "https://github.com/nezaboodka/reactronic"
   content: string = "transactionally reactive state management"
   timestamp: Date = Date.now()
@@ -54,8 +54,8 @@ class MyModel extends ManagedObject {
 ```
 
 In the example above, the class `MyModel` is based on Reactronic's
-`ManagedObject` class and all its properties `url`, `content`, and `timestamp`
-are hooked.
+`ObservableObject` class and all its properties `url`, `content`,
+and `timestamp` are hooked.
 
 ### Transaction
 
@@ -65,7 +65,7 @@ to provide transparent atomicity (by implicit context switching
 and isolation).
 
 ``` typescript
-class MyModel extends ManagedObject {
+class MyModel extends ObservableObject {
   // ...
   @transaction
   async load(url: string): Promise<void> {
@@ -235,24 +235,24 @@ NPM: `npm install reactronic`
 
 // Base Object
 
-class ManagedObject { }
+class ObservableObject { }
 
 // Decorators & Operators
 
-function unmanaged(proto, prop) // field only
+function unobservable(proto, prop) // field only
 function transaction(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
 function noSideEffects(value: boolean) // transaction & cached & reaction
-function sensitiveArgs(value: boolean) // cached & reaction
+function observableArgs(value: boolean) // cached & reaction
 function throttling(milliseconds: number) // reaction only
 function reentrance(value: Reentrance) // transaction & reaction
 function monitor(value: Monitor | null)
 function trace(value: Partial<TraceOptions>)
 
-function getCachedAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
-function untracked<T>(func: F<T>, ...args: any[]): T
+function getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
+function unobserved<T>(func: F<T>, ...args: any[]): T
 function isolated<T>(func: F<T>, ...args: any[]): T
 function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
@@ -269,10 +269,10 @@ interface Options {
 }
 
 enum Kind {
-  Field = 0,
+  Data = 0,
   Transaction = 1,
   Reaction = 2,
-  Cached = 3
+  Cache = 3
 }
 
 enum Reentrance {
@@ -366,7 +366,7 @@ abstract class Cache<T> {
 
   configure(options: Partial<Options>): Options
   invalidate(): boolean
-  getCachedAndRevalidate(args?: any[]): T | undefined
+  getCachedValueAndRevalidate(args?: any[]): T | undefined
 }
 
 // Reactronic

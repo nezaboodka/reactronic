@@ -17,5 +17,5 @@ export abstract class Cache<T> {
 
   abstract configure(options: Partial<CacheOptions>): CacheOptions
   abstract invalidate(): void
-  abstract getCachedAndRevalidate(args?: any[]): T | undefined
+  abstract getCachedValueAndRevalidate(args?: any[]): T | undefined
 }

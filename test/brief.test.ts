@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction as Tran, Kind, untracked, isolated, sensitive, Sensitivity, Reactronic as R } from 'api'
+import { Transaction as Tran, Kind, unobserved, isolated, sensitive, Sensitivity, Reactronic as R } from 'api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
@@ -85,7 +85,7 @@ test('brief', t => {
       t.is(daddy.age, 40)
       t.is(Tran.isolated(() => daddy.age), 38)
       t.is(isolated(() => daddy.age), 38)
-      t.is(untracked(() => daddy.age), 40)
+      t.is(unobserved(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = 'Jo' // set to the same value
     })
@@ -135,7 +135,7 @@ test('brief', t => {
         const emails = daddy.emails = daddy.emails.toMutable()
         emails.push('dad@mail.com')
       }
-    }, undefined, 'managed property Person.emails #26 can only be modified inside transactions and reactions')
+    }, undefined, 'observable property Person.emails #26 can only be modified inside transactions and reactions')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
     t.throws(() => { R.getMethodCache(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
@@ -159,7 +159,7 @@ test('brief', t => {
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
     t.is(app.raw, 'DemoView.userFilter #23t125v101')
-    t.is(rendering.options.kind, Kind.Cached)
+    t.is(rendering.options.kind, Kind.Cache)
     t.is(rendering.error, undefined)
     t.is(R.getTraceHint(app), 'DemoView')
     R.setTraceHint(app, 'App')

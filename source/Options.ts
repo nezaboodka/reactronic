@@ -31,10 +31,10 @@ export interface CacheOptions {
 }
 
 export enum Kind {
-  Field = 0,
+  Data = 0,
   Transaction = 1,
   Reaction = 2,
-  Cached = 3,
+  Cache = 3,
 }
 
 export enum Reentrance {

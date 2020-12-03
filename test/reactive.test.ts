@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ManagedObject, Transaction as Tran, Reactronic as R, reaction } from 'api'
+import { ObservableObject, Transaction as Tran, Reactronic as R, reaction } from 'api'
 import { TestingTraceLevel } from './brief'
 
-export class ReactiveDemo extends ManagedObject {
+export class ReactiveDemo extends ObservableObject {
   title: string = 'ReactiveDemo'
   content: string = 'Content'
 

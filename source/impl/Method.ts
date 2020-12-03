@@ -34,7 +34,7 @@ export class Method extends Cache<any> {
   get stamp(): number { return this.weak().record.snapshot.timestamp }
   get invalid(): boolean { return !this.weak().reuse }
   invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.handle, this.member)})` : 'invalidate()' }, Method.invalidate, this) }
-  getCachedAndRevalidate(args?: any[]): any { return this.call(true, args).value }
+  getCachedValueAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
   constructor(handle: Handle, member: Member) {
     super()
@@ -50,7 +50,7 @@ export class Method extends Cache<any> {
       && (!weak || c.invalidatedSince === -1 || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Reaction ||
-        (opt.kind === Kind.Cached && (call.record.snapshot.completed || call.record.prev.record !== NIL))
+        (opt.kind === Kind.Cache && (call.record.snapshot.completed || call.record.prev.record !== NIL))
       const token = opt.noSideEffects ? this : undefined
       const call2 = this.compute(call, spawn, opt, token, args)
       const ctx2 = call2.result.record.snapshot

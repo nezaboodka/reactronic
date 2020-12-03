@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ManagedObject, transaction, reaction, cached, sensitiveArgs, throttling, monitor,
+import { ObservableObject, transaction, reaction, cached, observableArgs, throttling, monitor,
   reentrance, Transaction as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'api'
 
 export const output: string[] = []
 export const busy = Monitor.create('Busy', 0, 0)
 
-export class AsyncDemo extends ManagedObject {
+export class AsyncDemo extends ObservableObject {
   url: string = 'reactronic'
   log: string[] = ['RTA']
 
@@ -25,7 +25,7 @@ export class AsyncDemo extends ManagedObject {
 }
 
 export class AsyncDemoView {
-  // @state managedField: string = 'managed field'
+  // @state observableField: string = 'observable field'
 
   constructor(readonly model: AsyncDemo) {
   }
@@ -41,7 +41,7 @@ export class AsyncDemoView {
     }
   }
 
-  @cached @sensitiveArgs(false)
+  @cached @observableArgs(false)
   async render(): Promise<string[]> {
     const result: string[] = []
     result.push(`${busy.isActive ? '[...] ' : ''}Url: ${this.model.url}`)

@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ManagedObject, unmanaged, transaction, reaction, cached, sensitiveArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
+import { ObservableObject, unobservable, transaction, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
 
 export const output: string[] = []
 
-export class Demo extends ManagedObject {
+export class Demo extends ObservableObject {
   static UndoRedo = Transaction.run(() => TransactionJournal.create())
-  @unmanaged shared: string = 'for testing purposes'
+  @unobservable shared: string = 'for testing purposes'
   title: string = 'Demo'
   users: Person[] = []
   collection1: Person[] = this.users
@@ -65,10 +65,10 @@ export class Demo extends ManagedObject {
   }
 }
 
-export class DemoView extends ManagedObject {
-  @unmanaged raw: string = 'unmanaged field'
-  @unmanaged shared: string = 'for testing purposes'
-  @unmanaged readonly model: Demo
+export class DemoView extends ObservableObject {
+  @unobservable raw: string = 'unobservable field'
+  @unobservable shared: string = 'for testing purposes'
+  @unobservable readonly model: Demo
   userFilter: string = 'Jo'
 
   constructor(model: Demo) {
@@ -105,7 +105,7 @@ export class DemoView extends ManagedObject {
     return result
   }
 
-  @cached @sensitiveArgs(true)
+  @cached @observableArgs(true)
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
     this.raw = R.why(true)
@@ -127,8 +127,8 @@ export class DemoView extends ManagedObject {
 // Person
 
 /* istanbul ignore next */
-export class Person extends ManagedObject {
-  @unmanaged dummy: string | null = null
+export class Person extends ObservableObject {
+  @unobservable dummy: string | null = null
   id: string | null = null
   name: string | null = null
   age: number = 0

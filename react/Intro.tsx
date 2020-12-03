@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ManagedObject, transaction, cached } from 'api' // from 'reactronic'
+import { ObservableObject, transaction, cached } from 'api' // from 'reactronic'
 import { Component } from './Component'
 
-class MyModel extends ManagedObject {
+class MyModel extends ObservableObject {
   url: string = 'https://nezaboodka.com'
   content: string = ''
   timestamp: number = Date.now()
