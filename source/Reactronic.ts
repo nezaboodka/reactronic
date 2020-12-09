@@ -43,7 +43,7 @@ export function getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any
   return Reactronic.getMethodCache(method as any as F<T>).getCachedValueAndRevalidate(args) // overcome type safety
 }
 
-export function unreactive<T>(func: F<T>, ...args: any[]): T {
+export function unobservable<T>(func: F<T>, ...args: any[]): T {
   return Method.run<T>(undefined, func, ...args)
 }
 
@@ -61,7 +61,7 @@ export function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[
 //   return Hooks.decorateField(true, proto, prop)
 // }
 
-export function unobservable(proto: object, prop: PropertyKey): any {
+export function unobs(proto: object, prop: PropertyKey): any {
   return Hooks.decorateField(false, proto, prop)
 }
 
