@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction as Tran, Kind, unobserved, isolated, sensitive, Sensitivity, Reactronic as R } from 'api'
+import { Transaction as Tran, Kind, unobservableRun, isolatedRun, sensitiveRun, Sensitivity, Reactronic as R } from 'api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
@@ -84,8 +84,8 @@ test('brief', t => {
       t.is(daddy.name, 'John Smith')
       t.is(daddy.age, 40)
       t.is(Tran.isolated(() => daddy.age), 38)
-      t.is(isolated(() => daddy.age), 38)
-      t.is(unobserved(() => daddy.age), 40)
+      t.is(isolatedRun(() => daddy.age), 38)
+      t.is(unobservableRun(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = 'Jo' // set to the same value
     })
@@ -151,7 +151,7 @@ test('brief', t => {
       tran3.run(nop)
     }), { message: 'test' })
     t.throws(() => tran3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
-    Tran.run(sensitive, Sensitivity.ReactEvenOnSameValueAssignment, () => {
+    Tran.run(sensitiveRun, Sensitivity.ReactEvenOnSameValueAssignment, () => {
       app.userFilter = app.userFilter
     })
     // Other

@@ -6,14 +6,14 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, Transaction as Tran, Reactronic as R, reactive } from 'api'
+import { ObservableObject, Transaction as Tran, Reactronic as R, reaction } from 'api'
 import { TestingTraceLevel } from './brief'
 
 export class ReactiveDemo extends ObservableObject {
   title: string = 'ReactiveDemo'
   content: string = 'Content'
 
-  @reactive
+  @reaction
   actualize1(): void {
     this.title
     this.title = 'Title/1'
@@ -21,7 +21,7 @@ export class ReactiveDemo extends ObservableObject {
     this.title
   }
 
-  @reactive
+  @reaction
   actualize2(): void {
     this.content
     this.title = 'Title/2'

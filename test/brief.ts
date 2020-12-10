@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, transactional, reactive, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
+import { ObservableObject, unobservable, transactional, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
 
 export const output: string[] = []
 
@@ -38,7 +38,7 @@ export class Demo extends ObservableObject {
     this.title = 'Demo - undo/redo'
   }
 
-  @reactive @priority(1)
+  @reaction @priority(1)
   protected backup(): void {
     this.usersWithoutLast = this.users.slice()
     this.usersWithoutLast.pop()
@@ -77,7 +77,7 @@ export class DemoView extends ObservableObject {
     // R.configureObject(this, { sensitivity: Sensitivity.ReactOnFinalDifferenceOnly })
   }
 
-  @reactive
+  @reaction
   print(): void {
     const lines = this.render(0)
     lines.forEach(x => {

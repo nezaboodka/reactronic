@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, cached, Transaction as Tran, Reactronic as R, trace, reactive, unobservable, noSideEffects } from 'api'
+import { ObservableObject, cached, Transaction as Tran, Reactronic as R, trace, reaction, unobservable, noSideEffects } from 'api'
 import { TestingTraceLevel } from './brief'
 
 export class DemoBase extends ObservableObject {
@@ -15,14 +15,14 @@ export class DemoBase extends ObservableObject {
   sideEffect: string = 'no side effect'
   uninitialized?: any
 
-  @reactive
+  @reaction
   normalizeTitle(): void {
     const stamp = new Date().toUTCString()
     const t = this.title.toLowerCase()
     this.title = `${t} - ${stamp}`
   }
 
-  @reactive @noSideEffects(true)
+  @reaction @noSideEffects(true)
   reactionWithNoSideEffects(): void {
     this.sideEffect = 'side effect'
   }
@@ -55,7 +55,7 @@ export class DemoBase extends ObservableObject {
 }
 
 export class Demo extends DemoBase {
-  @reactive
+  @reaction
   oneMoreReaction(): void {
     // do nothing, the reaction is just to test inheritance chain
   }

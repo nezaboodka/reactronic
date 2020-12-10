@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { reactive, cached, isolated, Reactronic } from 'api' // from 'reactronic'
+import { reaction, cached, isolatedRun, Reactronic } from 'api' // from 'reactronic'
 
 export class Component<P> extends React.Component<P> {
   @cached
@@ -14,10 +14,10 @@ export class Component<P> extends React.Component<P> {
     throw new Error('render method is undefined')
   }
 
-  @reactive
+  @reaction
   pulse(): void {
     if (this.shouldComponentUpdate())
-      isolated(() => this.setState({}))
+      isolatedRun(() => this.setState({}))
   }
 
   shouldComponentUpdate(): boolean {
@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    isolated(Reactronic.dispose, this)
+    isolatedRun(Reactronic.dispose, this)
   }
 }

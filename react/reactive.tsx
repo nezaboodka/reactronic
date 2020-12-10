@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, unobservable, reactive, cached, isolated, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
+import { ObservableObject, Transaction, unobservable, reaction, cached, isolatedRun, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, tran?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -28,16 +28,16 @@ class Rx<V> extends ObservableObject {
     return tran ? tran.inspect(() => generate(this.cycle)) : generate(this.cycle)
   }
 
-  @reactive
+  @reaction
   protected pulse(): void {
     if (R.getMethodCache(this.render).invalid)
-      isolated(this.refresh, {rx: this, cycle: this.cycle + 1})
+      isolatedRun(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
   @unobservable cycle: number = 0
   @unobservable refresh: (next: ReactState<V>) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
-    return (): void => { isolated(R.dispose, this) }
+    return (): void => { isolatedRun(R.dispose, this) }
   }
 
   static create<V>(hint: string | undefined, trace: TraceOptions | undefined): Rx<V> {
@@ -68,7 +68,7 @@ function getComponentName(): string {
   const stack = error.stack || ''
   Error.stackTraceLimit = restore
   const lines = stack.split('\n')
-  const i = lines.findIndex(x => x.indexOf(reactive.name) >= 0) || 6
+  const i = lines.findIndex(x => x.indexOf(reaction.name) >= 0) || 6
   let result: string = lines[i + 1] || ''
   result = (result.match(/^\s*at\s*(\S+)/) || [])[1]
   return result !== undefined ? `<${result}>` : '<Rx>'
