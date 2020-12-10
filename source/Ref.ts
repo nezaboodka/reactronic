@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Transaction } from './impl/Transaction'
-import { unobservable } from './Reactronic'
+import { unobserved } from './Reactronic'
 
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
 export type GivenTypeOnly<T, V> = Pick<T, {[P in keyof T]: T[P] extends V ? P : never}[keyof T]>
@@ -33,7 +33,7 @@ export class Ref<T = any> {
   }
 
   peek(): T {
-    return unobservable(() => this.value)
+    return unobserved(() => this.value)
   }
 
   observe(): T {

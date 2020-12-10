@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, unobs, reactive, cached, isolated, Reactronic } from 'api' // from 'reactronic'
+import { ObservableObject, Transaction, unobservable, reactive, cached, isolated, Reactronic } from 'api' // from 'reactronic'
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -32,8 +32,8 @@ class Rx extends ObservableObject {
       isolated(this.refresh, {rx: this})
   }
 
-  @unobs refresh: (next: ReactState) => void = nop
-  @unobs readonly unmount = (): (() => void) => {
+  @unobservable refresh: (next: ReactState) => void = nop
+  @unobservable readonly unmount = (): (() => void) => {
     return (): void => { isolated(Reactronic.dispose, this) }
   }
 

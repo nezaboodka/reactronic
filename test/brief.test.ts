@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction as Tran, Kind, unobservable, isolated, sensitive, Sensitivity, Reactronic as R } from 'api'
+import { Transaction as Tran, Kind, unobserved, isolated, sensitive, Sensitivity, Reactronic as R } from 'api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
@@ -85,7 +85,7 @@ test('brief', t => {
       t.is(daddy.age, 40)
       t.is(Tran.isolated(() => daddy.age), 38)
       t.is(isolated(() => daddy.age), 38)
-      t.is(unobservable(() => daddy.age), 40)
+      t.is(unobserved(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = 'Jo' // set to the same value
     })
