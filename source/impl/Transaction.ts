@@ -31,7 +31,7 @@ export abstract class Transaction implements Worker {
   abstract cancel(error: Error, retryAfterOrIgnore?: Worker | null): this
   abstract readonly isCanceled: boolean
   abstract readonly isFinished: boolean
-  abstract async whenFinished(): Promise<void>
+  async whenFinished(): Promise<void> { /* to be overridden */ }
 
   static create(options: SnapshotOptions | null): Transaction { return new TransactionImpl(options) }
   static run<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(func, ...args) }
