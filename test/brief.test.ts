@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction as Tran, Kind, unobservableRun, isolatedRun, sensitiveRun, Sensitivity, getController, Reactronic as R } from 'api'
+import { Transaction as Tran, Kind, unobservableRun, isolatedRun, sensitiveRun, Sensitivity, Reactronic as R } from 'api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
@@ -45,9 +45,9 @@ test('brief', t => {
   const app = Tran.run(() => new DemoView(new Demo()))
   try {
     t.is(R.why(), 'N/A')
-    t.is(getController(app.print).options.priority, 123)
+    t.is(R.getController(app.print).options.priority, 123)
     t.notThrows(() => DemoView.test())
-    const renderCtl = getController(app.render)
+    const renderCtl = R.getController(app.render)
     t.is(renderCtl.isInvalidated, false)
     t.is(renderCtl.args.length, 1)
     t.is(renderCtl.value.length, 1)
@@ -138,8 +138,8 @@ test('brief', t => {
     }, undefined, 'observable property Person.emails #26 can only be modified inside transactions and reactions')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
-    t.throws(() => { getController(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
-    t.throws(() => { console.log(getController(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { R.getController(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { console.log(R.getController(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
     const tran2 = Tran.create({ hint: 'tran2' })
     const zombi = tran2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: 'object Person #30 doesn\'t exist in snapshot v9007199254740990 (<none>)' })

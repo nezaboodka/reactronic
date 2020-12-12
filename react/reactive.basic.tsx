@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, unobservable, reaction, cached, isolatedRun, getController, Reactronic } from 'api' // from 'reactronic'
+import { ObservableObject, Transaction, unobservable, reaction, cached, isolatedRun, Reactronic } from 'api' // from 'reactronic'
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -28,7 +28,7 @@ class Rx extends ObservableObject {
 
   @reaction
   protected pulse(): void {
-    if (getController(this.render).isInvalidated)
+    if (Reactronic.getController(this.render).isInvalidated)
       isolatedRun(this.refresh, {rx: this})
   }
 

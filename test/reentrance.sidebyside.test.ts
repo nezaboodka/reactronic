@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction as Tran, Reentrance, getController, Reactronic as R, all, sleep } from 'api'
+import { Transaction as Tran, Reentrance, Reactronic as R, all, sleep } from 'api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 import { TestingTraceLevel } from './brief'
 
@@ -32,7 +32,7 @@ test('reentrance.sidebyside', async t => {
   R.setTraceMode(true, TestingTraceLevel)
   const app = Tran.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    getController(a.model.load).configure({reentrance: Reentrance.RunSideBySide})
+    R.getController(a.model.load).configure({reentrance: Reentrance.RunSideBySide})
     return a
   })
   try {

@@ -19,6 +19,8 @@ import { Monitor } from './impl/Monitor'
 
 export class Reactronic {
   static why(short: boolean = false): string { return short ? Method.whyShort() : Method.whyFull() }
+  static getController<T>(method: F<T>): Controller<T> { return Method.getController(method) }
+  static getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Reactronic.getController(method as any as F<T>).getCachedValueAndRevalidate(args) }
   static configureCurrentMethodCache(options: Partial<CacheOptions>): CacheOptions { return Method.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
@@ -37,14 +39,6 @@ export class Reactronic {
 }
 
 // Operators
-
-export function getController<T>(method: F<T>): Controller<T> {
-  return Method.getController(method)
-}
-
-export function getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return getController(method as any as F<T>).getCachedValueAndRevalidate(args) // overcome type safety
-}
 
 export function unobservableRun<T>(func: F<T>, ...args: any[]): T {
   return Method.run<T>(undefined, func, ...args)

@@ -18,6 +18,6 @@ export { Snapshot } from './impl/Snapshot'
 export { Transaction } from './impl/Transaction'
 export { Monitor } from './impl/Monitor'
 export { TransactionJournal } from './impl/TransactionJournal'
-export { Reactronic, getController, getCachedValueAndRevalidate, unobservableRun, isolatedRun, sensitiveRun, unobservable,
+export { Reactronic, unobservableRun, isolatedRun, sensitiveRun, unobservable,
   transactional, reaction, cached, priority, noSideEffects, observableArgs, throttling,
   reentrance, journal, monitor, trace } from './Reactronic'
