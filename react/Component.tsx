@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { reaction, cached, isolatedRun, Reactronic } from 'api' // from 'reactronic'
+import { reaction, cached, isolatedRun, getController, Reactronic } from 'api' // from 'reactronic'
 
 export class Component<P> extends React.Component<P> {
   @cached
@@ -21,7 +21,7 @@ export class Component<P> extends React.Component<P> {
   }
 
   shouldComponentUpdate(): boolean {
-    return Reactronic.getMethodCache(this.render).invalid
+    return getController(this.render).isInvalidated
   }
 
   componentDidMount(): void {

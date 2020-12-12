@@ -9,7 +9,7 @@ import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Worker } from '../Worker'
-import { Cache } from '../Cache'
+import { Controller } from '../Controller'
 import { Record, Member, Handle, Observable, MemberHint, Observer, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { Transaction } from './Transaction'
@@ -22,7 +22,7 @@ const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'N/A')
 
 type Call = { context: Snapshot, record: Record, result: CallResult, reuse: boolean }
 
-export class Method extends Cache<any> {
+export class Method extends Controller<any> {
   readonly handle: Handle
   readonly member: Member
 
@@ -32,7 +32,7 @@ export class Method extends Cache<any> {
   get value(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.weak().result.error }
   get stamp(): number { return this.weak().record.snapshot.timestamp }
-  get invalid(): boolean { return !this.weak().reuse }
+  get isInvalidated(): boolean { return !this.weak().reuse }
   invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.handle, this.member)})` : 'invalidate()' }, Method.invalidate, this) }
   getCachedValueAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
@@ -64,8 +64,8 @@ export class Method extends Cache<any> {
     return result
   }
 
-  static getCache(method: F<any>): Cache<any> {
-    const func = Meta.get<Cache<any> | undefined>(method, Meta.Method)
+  static getController(method: F<any>): Controller<any> {
+    const func = Meta.get<Controller<any> | undefined>(method, Meta.Method)
     if (!func)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return func

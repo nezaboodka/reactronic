@@ -7,13 +7,13 @@
 
 import { CacheOptions } from './Options'
 
-export abstract class Cache<T> {
+export abstract class Controller<T> {
   abstract readonly options: CacheOptions
   abstract readonly args: ReadonlyArray<any>
   abstract readonly value: T
   abstract readonly error: any
   abstract readonly stamp: number
-  abstract readonly invalid: boolean
+  abstract readonly isInvalidated: boolean
 
   abstract configure(options: Partial<CacheOptions>): CacheOptions
   abstract invalidate(): void

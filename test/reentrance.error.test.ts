@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction as Tran, Reentrance, getCachedValueAndRevalidate, Reactronic as R, sleep } from 'api'
+import { Transaction as Tran, Reentrance, getController, getCachedValueAndRevalidate, Reactronic as R, sleep } from 'api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 import { TestingTraceLevel } from './brief'
 
@@ -29,7 +29,7 @@ test('reentrance.error', async t => {
   R.setTraceMode(true, TestingTraceLevel)
   const app = Tran.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    R.getMethodCache(a.model.load).configure({reentrance: Reentrance.PreventWithError})
+    getController(a.model.load).configure({reentrance: Reentrance.PreventWithError})
     return a
   })
   try {

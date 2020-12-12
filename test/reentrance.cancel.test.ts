@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction as Tran, Reentrance, Reactronic as R, all, sleep } from 'api'
+import { Transaction as Tran, Reentrance, getController, Reactronic as R, all, sleep } from 'api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 import { TestingTraceLevel } from './brief'
 
@@ -29,8 +29,8 @@ test('reentrance.cancel', async t => {
   R.setTraceMode(true, TestingTraceLevel)
   const app = Tran.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    R.getMethodCache(a.print).configure({ priority: 0 })
-    R.getMethodCache(a.model.load).configure({reentrance: Reentrance.CancelPrevious})
+    getController(a.print).configure({ priority: 0 })
+    getController(a.model.load).configure({reentrance: Reentrance.CancelPrevious})
     return a
   })
   try {

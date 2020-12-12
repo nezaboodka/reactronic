@@ -9,7 +9,7 @@ import { undef, F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
-import { Cache } from '../Cache'
+import { Controller } from '../Controller'
 import { Record, Member, Handle, Observable, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
@@ -25,7 +25,7 @@ export abstract class ObservableObject {
     if (!Hooks.reactionsAutoStartDisabled) {
       const reactions = Meta.from<any>(proto, Meta.Reactions)
       for (const member in reactions)
-        (h.proxy[member][Meta.Method] as Cache<any>).invalidate()
+        (h.proxy[member][Meta.Method] as Controller<any>).invalidate()
     }
     return h.proxy
   }

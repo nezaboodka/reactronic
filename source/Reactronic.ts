@@ -7,7 +7,7 @@
 
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
-import { Cache } from './Cache'
+import { Controller } from './Controller'
 import { Kind, Reentrance, CacheOptions, TraceOptions, ProfilingOptions, Sensitivity } from './Options'
 import { Handle } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
@@ -19,7 +19,6 @@ import { Monitor } from './impl/Monitor'
 
 export class Reactronic {
   static why(short: boolean = false): string { return short ? Method.whyShort() : Method.whyFull() }
-  static getMethodCache<T>(method: F<T>): Cache<T> { return Method.getCache(method) }
   static configureCurrentMethodCache(options: Partial<CacheOptions>): CacheOptions { return Method.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
@@ -39,8 +38,12 @@ export class Reactronic {
 
 // Operators
 
+export function getController<T>(method: F<T>): Controller<T> {
+  return Method.getController(method)
+}
+
 export function getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined {
-  return Reactronic.getMethodCache(method as any as F<T>).getCachedValueAndRevalidate(args) // overcome type safety
+  return getController(method as any as F<T>).getCachedValueAndRevalidate(args) // overcome type safety
 }
 
 export function unobservableRun<T>(func: F<T>, ...args: any[]): T {

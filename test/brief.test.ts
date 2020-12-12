@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction as Tran, Kind, unobservableRun, isolatedRun, sensitiveRun, Sensitivity, Reactronic as R } from 'api'
+import { Transaction as Tran, Kind, unobservableRun, isolatedRun, sensitiveRun, Sensitivity, getController, Reactronic as R } from 'api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
@@ -45,15 +45,15 @@ test('brief', t => {
   const app = Tran.run(() => new DemoView(new Demo()))
   try {
     t.is(R.why(), 'N/A')
-    t.is(R.getMethodCache(app.print).options.priority, 123)
+    t.is(getController(app.print).options.priority, 123)
     t.notThrows(() => DemoView.test())
-    const rendering = R.getMethodCache(app.render)
-    t.is(rendering.invalid, false)
-    t.is(rendering.args.length, 1)
-    t.is(rendering.value.length, 1)
+    const renderCtl = getController(app.render)
+    t.is(renderCtl.isInvalidated, false)
+    t.is(renderCtl.args.length, 1)
+    t.is(renderCtl.value.length, 1)
     app.model.loadUsers()
     t.is(app.model.users.length - 1, app.model.usersWithoutLast.length)
-    t.is(rendering.value.length, 2)
+    t.is(renderCtl.value.length, 2)
     const daddy: Person = app.model.users[0]
     t.is(daddy.hasOwnProperty('name'), true)
     t.is('name' in daddy, true)
@@ -62,13 +62,13 @@ test('brief', t => {
     t.is('dummy2' in daddy, false)
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
-    t.is(rendering.invalid, false)
+    t.is(renderCtl.isInvalidated, false)
     t.is(R.takeSnapshot(daddy).age, 38)
-    const stamp = rendering.stamp
+    const stamp = renderCtl.stamp
     app.render(0)
-    t.is(rendering.stamp, stamp)
-    rendering.invalidate()
-    t.not(rendering.stamp, stamp)
+    t.is(renderCtl.stamp, stamp)
+    renderCtl.invalidate()
+    t.not(renderCtl.stamp, stamp)
     // Multi-part transactions
     const tran1 = Tran.create({ hint: 'tran1', journal: Demo.UndoRedo })
     tran1.run(() => {
@@ -95,7 +95,7 @@ test('brief', t => {
     t.throws(() => tran1.inspect(() => { daddy.name = 'Forbidden' }), { message: 'cannot make changes during transaction inspection' })
     t.is(daddy.age, 38)
     t.is(daddy.children.length, 3)
-    t.is(rendering.invalid, false)
+    t.is(renderCtl.isInvalidated, false)
     tran1.run(() => {
       t.is(daddy.age, 40)
       daddy.age += 5
@@ -116,13 +116,13 @@ test('brief', t => {
       t.is(daddy.children.map(x => `"${x.name}"`).join(', '), '"Barry", "Steven Smith", "William Smith"')
       t.is(daddy.children.length, 3)
     })
-    t.is(rendering.invalid, false)
+    t.is(renderCtl.isInvalidated, false)
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(daddy.attributes.size, 0)
     tran1.apply() // changes are applied, reactions are executed
-    t.is(rendering.invalid, false)
-    t.not(rendering.stamp, stamp)
+    t.is(renderCtl.isInvalidated, false)
+    t.not(renderCtl.stamp, stamp)
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)
     t.is(daddy.attributes.size, 2)
@@ -138,8 +138,8 @@ test('brief', t => {
     }, undefined, 'observable property Person.emails #26 can only be modified inside transactions and reactions')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
-    t.throws(() => { R.getMethodCache(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
-    t.throws(() => { console.log(R.getMethodCache(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { getController(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { console.log(getController(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
     const tran2 = Tran.create({ hint: 'tran2' })
     const zombi = tran2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: 'object Person #30 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
@@ -159,8 +159,8 @@ test('brief', t => {
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
     t.is(app.raw, 'DemoView.userFilter #23t125v101')
-    t.is(rendering.options.kind, Kind.Cache)
-    t.is(rendering.error, undefined)
+    t.is(renderCtl.options.kind, Kind.Cache)
+    t.is(renderCtl.error, undefined)
     t.is(R.getTraceHint(app), 'DemoView')
     R.setTraceHint(app, 'App')
     t.is(R.getTraceHint(app, false), 'App')
