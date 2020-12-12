@@ -32,12 +32,16 @@ export class Ref<T = any> {
       this.owner[this.name][this.index] = value
   }
 
-  peek(): T {
+  unobservableValue(): T {
     return unobservableRun(() => this.value)
   }
 
   observe(): T {
     return this.value
+  }
+
+  unobserve(): T {
+    throw new Error('not implemented')
   }
 
   static to<O = any>(owner: O): { readonly [P in keyof O]-?: Ref<O[P]> } {
