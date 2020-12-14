@@ -262,7 +262,7 @@ class TransactionImpl extends Transaction {
     finally {
       this.workers--
       if (this.sealed && this.workers === 0) {
-        this.finish() // it's critical to have no exceptions inside this call
+        this.commitOrRollback() // it's critical to have no exceptions inside this call
         TransactionImpl.running = outer
         TransactionImpl.isolated(TransactionImpl.revalidateReactions, this)
       }
@@ -300,7 +300,7 @@ class TransactionImpl extends Transaction {
     throw error(`T${this.id}[${this.hint}] conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
   }
 
-  private finish(): void {
+  private commitOrRollback(): void {
     // It's critical to have no exceptions in this block
     try {
       this.snapshot.complete(this.canceled)
