@@ -41,7 +41,7 @@ export abstract class Transaction implements Worker {
 
 class TransactionImpl extends Transaction {
   private static readonly none: TransactionImpl = new TransactionImpl({ hint: '<none>' })
-  private static running: TransactionImpl = TransactionImpl.none
+  private static curr: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false
 
   readonly margin: number
@@ -56,7 +56,7 @@ class TransactionImpl extends Transaction {
 
   constructor(options: SnapshotOptions | null) {
     super()
-    this.margin = TransactionImpl.running ? TransactionImpl.running.margin + 1 : -1
+    this.margin = TransactionImpl.curr ? TransactionImpl.curr.margin + 1 : -1
     this.snapshot = new Snapshot(options)
     this.workers = 0
     this.sealed = false
@@ -67,7 +67,7 @@ class TransactionImpl extends Transaction {
     this.reject = undef
   }
 
-  static get current(): TransactionImpl { return TransactionImpl.running }
+  static get current(): TransactionImpl { return TransactionImpl.curr }
   get id(): number { return this.snapshot.id }
   get hint(): string { return this.snapshot.hint }
   get options(): SnapshotOptions { return this.snapshot.options }
@@ -84,7 +84,7 @@ class TransactionImpl extends Transaction {
     try {
       TransactionImpl.inspection = true
       if (Dbg.isOn && Dbg.trace.transactions)
-        Dbg.log(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.running.id}[${TransactionImpl.running.hint}]`)
+        Dbg.log(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.curr.id}[${TransactionImpl.curr.hint}]`)
       return this.runImpl(undefined, func, ...args)
     }
     finally {
@@ -161,7 +161,7 @@ class TransactionImpl extends Transaction {
 
   static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T {
     const t: TransactionImpl = TransactionImpl.acquire(options)
-    const root = t !== TransactionImpl.running
+    const root = t !== TransactionImpl.curr
     t.guard()
     let result: any = t.runImpl<T>(options?.trace, func, ...args)
     if (root) {
@@ -175,28 +175,28 @@ class TransactionImpl extends Transaction {
   }
 
   static isolated<T>(func: F<T>, ...args: any[]): T {
-    const outer = TransactionImpl.running
+    const outer = TransactionImpl.curr
     try {
-      TransactionImpl.running = TransactionImpl.none
+      TransactionImpl.curr = TransactionImpl.none
       return func(...args)
     }
     finally {
-      TransactionImpl.running = outer
+      TransactionImpl.curr = outer
     }
   }
 
   // Internal
 
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
-    return options?.spawn || TransactionImpl.running.isFinished
+    return options?.spawn || TransactionImpl.curr.isFinished
       ? new TransactionImpl(options)
-      : TransactionImpl.running
+      : TransactionImpl.curr
   }
 
   private guard(): void {
     // if (this.error) // prevent from continuing canceled transaction
     //   throw error(this.error.message, this.error)
-    if (this.sealed && TransactionImpl.running !== this)
+    if (this.sealed && TransactionImpl.curr !== this)
       throw misuse('cannot run transaction that is already sealed')
   }
 
@@ -241,9 +241,9 @@ class TransactionImpl extends Transaction {
 
   private runImpl<T>(trace: Partial<TraceOptions> | undefined, func: F<T>, ...args: any[]): T {
     let result: T
-    const outer = TransactionImpl.running
+    const outer = TransactionImpl.curr
     try {
-      TransactionImpl.running = this
+      TransactionImpl.curr = this
       this.workers++
       this.snapshot.acquire(outer.snapshot)
       result = func(...args)
@@ -263,11 +263,11 @@ class TransactionImpl extends Transaction {
       this.workers--
       if (this.sealed && this.workers === 0) {
         this.commitOrRollback() // it's critical to have no exceptions inside this call
-        TransactionImpl.running = outer
+        TransactionImpl.curr = outer
         TransactionImpl.isolated(TransactionImpl.revalidateReactions, this)
       }
       else
-        TransactionImpl.running = outer
+        TransactionImpl.curr = outer
     }
     return result
   }
@@ -331,13 +331,13 @@ class TransactionImpl extends Transaction {
   }
 
   private static readerSnapshot(): Snapshot {
-    return TransactionImpl.running.snapshot
+    return TransactionImpl.curr.snapshot
   }
 
   private static writerSnapshot(): Snapshot {
     if (TransactionImpl.inspection)
       throw misuse('cannot make changes during transaction inspection')
-    return TransactionImpl.running.snapshot
+    return TransactionImpl.curr.snapshot
   }
 
   static _init(): void {
