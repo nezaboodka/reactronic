@@ -76,7 +76,7 @@ class TransactionImpl extends Transaction {
 
   run<T>(func: F<T>, ...args: any[]): T {
     this.guard()
-    return this.do(undefined, func, ...args)
+    return this.runImpl(undefined, func, ...args)
   }
 
   inspect<T>(func: F<T>, ...args: any[]): T {
@@ -85,7 +85,7 @@ class TransactionImpl extends Transaction {
       TransactionImpl.inspection = true
       if (Dbg.isOn && Dbg.trace.transactions)
         Dbg.log(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.running.id}[${TransactionImpl.running.hint}]`)
-      return this.do(undefined, func, ...args)
+      return this.runImpl(undefined, func, ...args)
     }
     finally {
       TransactionImpl.inspection = restore
@@ -116,7 +116,7 @@ class TransactionImpl extends Transaction {
       self.inspect(TransactionImpl.boundEnter, self, error)
     const transactionBound: F<T> = (...args: any[]): T => {
       if (!inspect)
-        return self.do<T>(undefined, TransactionImpl.boundLeave, self, error, func, ...args)
+        return self.runImpl<T>(undefined, TransactionImpl.boundLeave, self, error, func, ...args)
       else
         return self.inspect<T>(TransactionImpl.boundLeave, self, error, func, ...args)
     }
@@ -137,7 +137,7 @@ class TransactionImpl extends Transaction {
   }
 
   cancel(error: Error, restartAfter?: Worker | null): this {
-    this.do(undefined, TransactionImpl.seal, this, error,
+    this.runImpl(undefined, TransactionImpl.seal, this, error,
       restartAfter === null ? TransactionImpl.none : restartAfter)
     return this
   }
@@ -163,7 +163,7 @@ class TransactionImpl extends Transaction {
     const t: TransactionImpl = TransactionImpl.acquire(options)
     const root = t !== TransactionImpl.running
     t.guard()
-    let result: any = t.do<T>(options?.trace, func, ...args)
+    let result: any = t.runImpl<T>(options?.trace, func, ...args)
     if (root) {
       if (result instanceof Promise)
         result = TransactionImpl.isolated(() => {
@@ -239,7 +239,7 @@ class TransactionImpl extends Transaction {
 
   // Internal
 
-  private do<T>(trace: Partial<TraceOptions> | undefined, func: F<T>, ...args: any[]): T {
+  private runImpl<T>(trace: Partial<TraceOptions> | undefined, func: F<T>, ...args: any[]): T {
     let result: T
     const outer = TransactionImpl.running
     try {
