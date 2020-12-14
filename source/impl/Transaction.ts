@@ -45,7 +45,7 @@ class TransactionImpl extends Transaction {
   private static inspection: boolean = false
 
   readonly margin: number
-  readonly snapshot: Snapshot // assigned in constructor
+  readonly snapshot: Snapshot
   private pending: number
   private sealed: boolean
   private canceled?: Error
