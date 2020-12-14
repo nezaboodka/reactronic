@@ -46,7 +46,7 @@ class TransactionImpl extends Transaction {
 
   readonly margin: number
   readonly snapshot: Snapshot // assigned in constructor
-  private workers: number
+  private pending: number
   private sealed: boolean
   private canceled?: Error
   private after?: TransactionImpl
@@ -58,7 +58,7 @@ class TransactionImpl extends Transaction {
     super()
     this.margin = TransactionImpl.curr ? TransactionImpl.curr.margin + 1 : -1
     this.snapshot = new Snapshot(options)
-    this.workers = 0
+    this.pending = 0
     this.sealed = false
     this.canceled = undefined
     this.after = undefined
@@ -93,7 +93,7 @@ class TransactionImpl extends Transaction {
   }
 
   apply(): void {
-    if (this.workers > 0)
+    if (this.pending > 0)
       throw misuse('cannot apply transaction having active functions running')
     if (this.canceled)
       throw misuse(`cannot apply transaction that is already canceled: ${this.canceled}`)
@@ -125,11 +125,11 @@ class TransactionImpl extends Transaction {
 
   private static boundEnter<T>(t: TransactionImpl, error: boolean): void {
     if (!error)
-      t.workers++
+      t.pending++
   }
 
   private static boundLeave<T>(t: TransactionImpl, error: boolean, func: F<T>, ...args: any[]): T {
-    t.workers--
+    t.pending--
     const result = func(...args)
     // if (t.error && !error)
     //   throw t.error
@@ -147,7 +147,7 @@ class TransactionImpl extends Transaction {
   }
 
   get isFinished(): boolean {
-    return this.sealed && this.workers === 0
+    return this.sealed && this.pending === 0
   }
 
   async whenFinished(): Promise<void> {
@@ -244,10 +244,10 @@ class TransactionImpl extends Transaction {
     const outer = TransactionImpl.curr
     try {
       TransactionImpl.curr = this
-      this.workers++
+      this.pending++
       this.snapshot.acquire(outer.snapshot)
       result = func(...args)
-      if (this.sealed && this.workers === 1) {
+      if (this.sealed && this.pending === 1) {
         if (!this.canceled)
           this.checkForConflicts() // merge with concurrent transactions
         else if (!this.after)
@@ -260,8 +260,8 @@ class TransactionImpl extends Transaction {
       throw e
     }
     finally {
-      this.workers--
-      if (this.sealed && this.workers === 0) {
+      this.pending--
+      if (this.sealed && this.pending === 0) {
         this.commitOrRollback() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
         TransactionImpl.isolated(TransactionImpl.revalidateReactions, this)
