@@ -23,7 +23,7 @@ export interface Context {
 export class Observable {
   value: any
   observers?: Set<Observer>
-  replacement?: ObjectRevision
+  next?: ObjectRevision
   get isMethod(): boolean { return false }
   constructor(value: any) { this.value = value }
 }

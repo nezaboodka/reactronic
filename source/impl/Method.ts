@@ -562,10 +562,10 @@ class CallResult extends Observable implements Observer {
   private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: ObjectRevision, m: Member, reactions?: Observer[]): void {
     if (reactions) {
       const prev = r.prev.revision.data[m]
-      if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
+      if (prev !== undefined && prev instanceof Observable && prev.next === undefined) {
         if (unsubscribe) // in fact it means disposal if reactions are not undefined
           r.data[m] = Meta.Disposed
-        prev.replacement = r
+        prev.next = r
         const cause: MemberHint = { revision: r, member: m, times: 0 }
         if (prev instanceof CallResult && (prev.invalidatedSince === TOP_TIMESTAMP || prev.invalidatedSince <= 0)) {
           prev.invalidatedDueTo = cause
@@ -616,7 +616,7 @@ class CallResult extends Observable implements Observer {
   }
 
   private subscribeTo(value: Observable, r: ObjectRevision, m: Member, timestamp: number): boolean {
-    let result = value.replacement === undefined
+    let result = value.next === undefined
     if (result && timestamp !== -1)
       result = !(value instanceof CallResult && timestamp >= value.invalidatedSince)
     if (result) {
@@ -640,7 +640,7 @@ class CallResult extends Observable implements Observer {
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
         Dbg.log('║', '  x ', `${Hints.revision(this.revision, this.method.member)} is NOT subscribed to already invalidated ${Hints.revision(r, m)}`)
     }
-    return result || value.replacement === r
+    return result || value.next === r
   }
 
   private static createMethodTrap(h: ObjectHolder, m: Member, options: OptionsImpl): F<any> {
