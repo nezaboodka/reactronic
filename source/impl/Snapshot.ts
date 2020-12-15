@@ -12,7 +12,7 @@ import { SealedArray } from '../util/SealedArray'
 import { SealedMap } from '../util/SealedMap'
 import { SealedSet } from '../util/SealedSet'
 import { Kind, SnapshotOptions } from '../Options'
-import { Context, ObjectRevision, Member, ObjectHolder, Observable, Observer, Meta } from './Data'
+import { AbstractSnapshot, ObjectRevision, Member, ObjectHolder, Observable, Observer, Meta } from './Data'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
@@ -36,7 +36,7 @@ Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
 
 // Snapshot
 
-export class Snapshot implements Context {
+export class Snapshot implements AbstractSnapshot {
   static idGen: number = -1
   static stampGen: number = 1
   static pending: Snapshot[] = []

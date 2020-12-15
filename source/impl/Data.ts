@@ -9,9 +9,9 @@ import { Dbg } from '../util/Dbg'
 import { Meta } from './Meta'
 export { Meta } from './Meta'
 
-// Context
+// AbstractSnapshot
 
-export interface Context {
+export interface AbstractSnapshot {
   readonly id: number
   readonly hint: string
   readonly timestamp: number
@@ -48,13 +48,13 @@ export interface MemberHint {
 }
 
 export class ObjectRevision {
-  readonly snapshot: Context
+  readonly snapshot: AbstractSnapshot
   readonly prev: { revision: ObjectRevision }
   readonly data: any
   readonly changes: Set<Member>
   readonly conflicts: Map<Member, ObjectRevision>
 
-  constructor(snapshot: Context, prev: ObjectRevision | undefined, data: object) {
+  constructor(snapshot: AbstractSnapshot, prev: ObjectRevision | undefined, data: object) {
     this.snapshot = snapshot
     this.prev = { revision: prev || this } // undefined prev means initialization of NIL
     this.data = data
