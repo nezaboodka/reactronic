@@ -12,11 +12,11 @@ import { SealedArray } from '../util/SealedArray'
 import { SealedMap } from '../util/SealedMap'
 import { SealedSet } from '../util/SealedSet'
 import { Kind, SnapshotOptions } from '../Options'
-import { Context, Record, Member, Handle, Observable, Observer, Meta } from './Data'
+import { Context, ObjectRevision, Member, ObjectHolder, Observable, Observer, Meta } from './Data'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
-Object.defineProperty(Handle.prototype, '<snapshot>', {
+Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
@@ -43,8 +43,8 @@ export class Snapshot implements Context {
   static oldest: Snapshot | undefined = undefined
   static garbageCollectionSummaryInterval: number = Number.MAX_SAFE_INTEGER
   static lastGarbageCollectionSummaryTimestamp: number = Date.now()
-  static totalObjectCount: number = 0
-  static totalRecordCount: number = 0
+  static totalObjectHolderCount: number = 0
+  static totalObjectRevisionCount: number = 0
 
   readonly id: number
   readonly options: SnapshotOptions
@@ -52,7 +52,7 @@ export class Snapshot implements Context {
   get timestamp(): number { return this.stamp }
   private stamp: number
   private bumper: number
-  readonly changeset: Map<Handle, Record>
+  readonly changeset: Map<ObjectHolder, ObjectRevision>
   readonly reactions: Observer[]
   completed: boolean
 
@@ -61,7 +61,7 @@ export class Snapshot implements Context {
     this.options = options ?? DefaultSnapshotOptions
     this.stamp = UNDEFINED_TIMESTAMP
     this.bumper = 100
-    this.changeset = new Map<Handle, Record>()
+    this.changeset = new Map<ObjectHolder, ObjectRevision>()
     this.reactions = []
     this.completed = false
   }
@@ -69,43 +69,43 @@ export class Snapshot implements Context {
   // To be redefined by Transaction and Cache implementations
   static reader: () => Snapshot = undef
   static writer: () => Snapshot = undef
-  static markChanged: (r: Record, m: Member, value: any, changed: boolean) => void = undef
-  static markViewed: (r: Record, m: Member, value: Observable, kind: Kind, weak: boolean) => void = undef
+  static markChanged: (r: ObjectRevision, m: Member, value: any, changed: boolean) => void = undef
+  static markViewed: (r: ObjectRevision, m: Member, value: Observable, kind: Kind, weak: boolean) => void = undef
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
   static finalizeChangeset = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
-  lookup(h: Handle, m: Member): Record {
+  lookup(h: ObjectHolder, m: Member): ObjectRevision {
     // TODO: Take into account timestamp of the member
-    let r: Record | undefined = h.changing
+    let r: ObjectRevision | undefined = h.changing
     if (r && r.snapshot !== this) {
       r = this.changeset.get(h)
       if (r)
-        h.changing = r // remember last changing record
+        h.changing = r // remember last changing revision
     }
     if (!r) {
       r = h.head
       while (r !== NIL && r.snapshot.timestamp > this.timestamp)
-        r = r.prev.record
+        r = r.prev.revision
     }
     return r
   }
 
-  readable(h: Handle, m: Member): Record {
+  readable(h: ObjectHolder, m: Member): ObjectRevision {
     const r = this.lookup(h, m)
     if (r === NIL)
       throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
 
-  writable(h: Handle, m: Member, value: any, token?: any): Record {
-    let r: Record = this.lookup(h, m)
+  writable(h: ObjectHolder, m: Member, value: any, token?: any): ObjectRevision {
+    let r: ObjectRevision = this.lookup(h, m)
     const existing = r.data[m]
     if (existing !== Meta.Unobservable) {
       this.guard(h, r, m, existing, value, token)
       if (r.snapshot !== this) {
-        const data = { ...m === Meta.Handle ? value : r.data }
-        Reflect.set(data, Meta.Handle, h)
-        r = new Record(this, r, data)
+        const data = { ...m === Meta.Holder ? value : r.data }
+        Reflect.set(data, Meta.Holder, h)
+        r = new ObjectRevision(this, r, data)
         this.changeset.set(h, r)
         h.changing = r
         h.writers++
@@ -117,18 +117,18 @@ export class Snapshot implements Context {
   }
 
   static takeSnapshot<T>(obj: T): T {
-    return (obj as any)[Meta.Handle]['<snapshot>']
+    return (obj as any)[Meta.Holder]['<snapshot>']
   }
 
   static dispose(obj: any): void {
     const ctx = Snapshot.writer()
-    const h = Meta.get<Handle>(obj, Meta.Handle)
+    const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
     if (h)
       Snapshot.doDispose(ctx, h)
   }
 
-  static doDispose(ctx: Snapshot, h: Handle): Record {
-    const r: Record = ctx.writable(h, Meta.Disposed, Meta.Disposed)
+  static doDispose(ctx: Snapshot, h: ObjectHolder): ObjectRevision {
+    const r: ObjectRevision = ctx.writable(h, Meta.Disposed, Meta.Disposed)
     if (r !== NIL) {
       r.data[Meta.Disposed] = Meta.Disposed
       Snapshot.markChanged(r, Meta.Disposed, Meta.Disposed, true)
@@ -136,23 +136,23 @@ export class Snapshot implements Context {
     return r
   }
 
-  private guard(h: Handle, r: Record, m: Member, existing: any, value: any, token: any): void {
+  private guard(h: ObjectHolder, r: ObjectRevision, m: Member, existing: any, value: any, token: any): void {
     if (this.completed)
       throw misuse(`observable property ${Hints.obj(h, m)} can only be modified inside transactions and reactions`)
-    // if (m !== Sym.HANDLE && value !== Sym.HANDLE && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.record !== NIL))
-    //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.record(r, m)}`)
-    // if (r === NIL && m !== Sym.HANDLE && value !== Sym.HANDLE) /* istanbul ignore next */
-    //   throw misuse(`member ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
-    if (m !== Meta.Handle && value !== Meta.Handle) {
-      if (r.snapshot !== this || r.prev.record !== NIL) {
+    // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== NIL))
+    //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.revision(r, m)}`)
+    // if (r === NIL && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */
+    //   throw misuse(`member ${Hints.revision(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
+    if (m !== Meta.Holder && value !== Meta.Holder) {
+      if (r.snapshot !== this || r.prev.revision !== NIL) {
         if (this.options.token !== undefined && token !== this.options.token)
-          throw misuse(`${this.hint} should not have side effects (trying to change ${Hints.record(r, m)})`)
+          throw misuse(`${this.hint} should not have side effects (trying to change ${Hints.revision(r, m)})`)
         // TODO: Detect uninitialized members
         // if (existing === undefined)
-        //   throw misuse(`uninitialized member is detected: ${Hints.record(r, m)}`)
+        //   throw misuse(`uninitialized member is detected: ${Hints.revision(r, m)}`)
       }
       if (r === NIL)
-        throw misuse(`member ${Hints.record(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
+        throw misuse(`member ${Hints.revision(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     }
   }
 
@@ -173,11 +173,11 @@ export class Snapshot implements Context {
       this.bumper = timestamp
   }
 
-  rebase(): Record[] | undefined { // return conflicts
-    let conflicts: Record[] | undefined = undefined
+  rebase(): ObjectRevision[] | undefined { // return conflicts
+    let conflicts: ObjectRevision[] | undefined = undefined
     if (this.changeset.size > 0) {
-      this.changeset.forEach((r: Record, h: Handle) => {
-        if (r.prev.record !== h.head) {
+      this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
+        if (r.prev.revision !== h.head) {
           const merged = Snapshot.merge(r, h.head)
           if (r.conflicts.size > 0) {
             if (!conflicts)
@@ -185,7 +185,7 @@ export class Snapshot implements Context {
             conflicts.push(r)
           }
           if (Dbg.isOn && Dbg.trace.changes)
-            Dbg.log('╠╝', '', `${Hints.record(r)} is merged with ${Hints.record(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
+            Dbg.log('╠╝', '', `${Hints.revision(r)} is merged with ${Hints.revision(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
       if (this.options.token === undefined) {
@@ -197,7 +197,7 @@ export class Snapshot implements Context {
           this.stamp = this.bumper + 1
       }
       else {
-        // TODO: Downgrading timestamp of whole record is not the right way
+        // TODO: Downgrading timestamp of whole revision is not the right way
         // to put cached value into the past on timeline. The solution is
         // to introduce cache-specific timestamp.
         this.stamp = this.bumper // downgrade timestamp of renewed cache
@@ -206,7 +206,7 @@ export class Snapshot implements Context {
     return conflicts
   }
 
-  private static merge(ours: Record, head: Record): number {
+  private static merge(ours: ObjectRevision, head: ObjectRevision): number {
     let counter: number = 0
     const disposed: boolean = head.changes.has(Meta.Disposed)
     const merged = {...head.data} // clone
@@ -216,26 +216,26 @@ export class Snapshot implements Context {
       if (disposed || m === Meta.Disposed) {
         if (disposed !== (m === Meta.Disposed)) {
           if (Dbg.isOn && Dbg.trace.changes)
-            Dbg.log('║╠', '', `${Hints.record(ours, m)} <> ${Hints.record(head, m)}`, 0, ' *** CONFLICT ***')
+            Dbg.log('║╠', '', `${Hints.revision(ours, m)} <> ${Hints.revision(head, m)}`, 0, ' *** CONFLICT ***')
           ours.conflicts.set(m, head)
         }
       }
       else {
-        const conflict = Snapshot.isConflicting(head.data[m], ours.prev.record.data[m])
+        const conflict = Snapshot.isConflicting(head.data[m], ours.prev.revision.data[m])
         if (conflict)
           ours.conflicts.set(m, head)
         if (Dbg.isOn && Dbg.trace.changes)
-          Dbg.log('║╠', '', `${Hints.record(ours, m)} ${conflict ? '<>' : '=='} ${Hints.record(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
+          Dbg.log('║╠', '', `${Hints.revision(ours, m)} ${conflict ? '<>' : '=='} ${Hints.revision(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
       }
     })
     Utils.copyAllMembers(merged, ours.data) // overwrite with merged copy
-    ours.prev.record = head // rebase is completed
+    ours.prev.revision = head // rebase is completed
     return counter
   }
 
   complete(error?: any): void {
     this.completed = true
-    this.changeset.forEach((r: Record, h: Handle) => {
+    this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       r.changes.forEach(m => Snapshot.seal(r.data[m], h.proxy, m))
       h.writers--
       if (h.writers === 0) // уходя гасите свет
@@ -245,10 +245,10 @@ export class Snapshot implements Context {
         //   console.log(`!!! timestamp downgrade detected ${h.head.snapshot.timestamp} -> ${this.timestamp} !!!`)
         h.head = r // switch object to a new version
         if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
-          Snapshot.totalRecordCount++
+          Snapshot.totalObjectRevisionCount++
           // console.log('rec++')
-          if (r.prev.record === NIL) {
-            Snapshot.totalObjectCount++
+          if (r.prev.revision === NIL) {
+            Snapshot.totalObjectHolderCount++
             // console.log('obj++')
           }
         }
@@ -256,7 +256,7 @@ export class Snapshot implements Context {
           const members: string[] = []
           r.changes.forEach(m => members.push(m.toString()))
           const s = members.join(', ')
-          Dbg.log('║', '√', `${Hints.record(r)} (${s}) is ${r.prev.record === NIL ? 'constructed' : `applied on top of ${Hints.record(r.prev.record)}`}`)
+          Dbg.log('║', '√', `${Hints.revision(r)} (${s}) is ${r.prev.revision === NIL ? 'constructed' : `applied on top of ${Hints.revision(r.prev.revision)}`}`)
         }
       }
     })
@@ -285,7 +285,7 @@ export class Snapshot implements Context {
     this.triggerGarbageCollection()
   }
 
-  static freezeRecord(r: Record): Record {
+  static freezeObjectRevision(r: ObjectRevision): ObjectRevision {
     Object.freeze(r.data)
     Utils.freezeSet(r.changes)
     Utils.freezeMap(r.conflicts)
@@ -306,7 +306,7 @@ export class Snapshot implements Context {
         Snapshot.oldest = Snapshot.pending[0] // undefined is OK
         const now = Date.now()
         if (now - Snapshot.lastGarbageCollectionSummaryTimestamp > Snapshot.garbageCollectionSummaryInterval) {
-          Dbg.log('', '[G]', `Total object/record count: ${Snapshot.totalObjectCount}/${Snapshot.totalRecordCount}`)
+          Dbg.log('', '[G]', `Total object/revision count: ${Snapshot.totalObjectHolderCount}/${Snapshot.totalObjectRevisionCount}`)
           Snapshot.lastGarbageCollectionSummaryTimestamp = now
         }
       }
@@ -316,20 +316,20 @@ export class Snapshot implements Context {
   private unlinkHistory(): void {
     if (Dbg.isOn && Dbg.trace.gc)
       Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
-    this.changeset.forEach((r: Record, h: Handle) => {
-      if (Dbg.isOn && Dbg.trace.gc && r.prev.record !== NIL)
-        Dbg.log(' ', '  ', `${Hints.record(r.prev.record)} is ready for GC because overwritten by ${Hints.record(r)}`)
+    this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.revision !== NIL)
+        Dbg.log(' ', '  ', `${Hints.revision(r.prev.revision)} is ready for GC because overwritten by ${Hints.revision(r)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
-        if (r.prev.record !== NIL) {
-          Snapshot.totalRecordCount--
+        if (r.prev.revision !== NIL) {
+          Snapshot.totalObjectRevisionCount--
           // console.log('rec--')
         }
         if (r.changes.has(Meta.Disposed)) {
-          Snapshot.totalObjectCount--
+          Snapshot.totalObjectHolderCount--
           // console.log('obj--')
         }
       }
-      r.prev.record = NIL // unlink history
+      r.prev.revision = NIL // unlink history
     })
   }
 
@@ -338,7 +338,7 @@ export class Snapshot implements Context {
     nil.acquire(nil)
     nil.complete()
     nil.collect()
-    Snapshot.freezeRecord(NIL)
+    Snapshot.freezeObjectRevision(NIL)
     Snapshot.idGen = 100
     Snapshot.stampGen = 101
     Snapshot.oldest = undefined
@@ -351,34 +351,34 @@ export class Snapshot implements Context {
 // Hints
 
 export class Hints {
-  static obj(h: Handle | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
+  static obj(h: ObjectHolder | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const member = m !== undefined ? `.${m.toString()}` : ''
     return h === undefined
       ? `nil${member}`
       : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${tran}v${stamp}`
   }
 
-  static record(r: Record, m?: Member): string {
-    const h = Meta.get<Handle | undefined>(r.data, Meta.Handle)
+  static revision(r: ObjectRevision, m?: Member): string {
+    const h = Meta.get<ObjectHolder | undefined>(r.data, Meta.Holder)
     return Hints.obj(h, m, r.snapshot.timestamp, r.snapshot.id)
   }
 
-  static conflicts(conflicts: Record[]): string {
+  static conflicts(conflicts: ObjectRevision[]): string {
     return conflicts.map(ours => {
       const items: string[] = []
-      ours.conflicts.forEach((theirs: Record, m: Member) => {
+      ours.conflicts.forEach((theirs: ObjectRevision, m: Member) => {
         items.push(Hints.conflictingMemberHint(m, ours, theirs))
       })
       return items.join(', ')
     }).join(', ')
   }
 
-  static conflictingMemberHint(m: Member, ours: Record, theirs: Record): string {
-    return `${theirs.snapshot.hint} on ${Hints.record(theirs, m)}`
+  static conflictingMemberHint(m: Member, ours: ObjectRevision, theirs: ObjectRevision): string {
+    return `${theirs.snapshot.hint} on ${Hints.revision(theirs, m)}`
   }
 }
 
-export const NIL = new Record(new Snapshot({ hint: '<nil>' }), undefined, {})
+export const NIL = new ObjectRevision(new Snapshot({ hint: '<nil>' }), undefined, {})
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',

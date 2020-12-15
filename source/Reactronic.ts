@@ -9,7 +9,7 @@ import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Controller } from './Controller'
 import { Kind, Reentrance, CacheOptions, TraceOptions, ProfilingOptions, Sensitivity } from './Options'
-import { Handle } from './impl/Data'
+import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
 import { Method } from './impl/Method'
@@ -34,7 +34,7 @@ export class Reactronic {
   static get traceOptions(): TraceOptions { return Dbg.trace }
   static setTraceMode(enabled: boolean, options?: TraceOptions): void { Dbg.setTraceMode(enabled, options) }
   static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Hooks.setHint(obj, name) }
-  static getTraceHint<T extends object>(obj: T, full: boolean = false): string | undefined { return Handle.getHint(obj, full) }
+  static getTraceHint<T extends object>(obj: T, full: boolean = false): string | undefined { return ObjectHolder.getHint(obj, full) }
   static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(enabled, options) }
 }
 

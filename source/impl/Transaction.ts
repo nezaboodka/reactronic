@@ -9,7 +9,7 @@ import { undef, F } from '../util/Utils'
 import { Dbg, misuse, error, fatal } from '../util/Dbg'
 import { Worker } from '../Worker'
 import { SnapshotOptions, TraceOptions } from '../Options'
-import { Record } from './Data'
+import { ObjectRevision } from './Data'
 import { Snapshot, Hints } from './Snapshot'
 
 export abstract class Transaction implements Worker {
@@ -296,7 +296,7 @@ class TransactionImpl extends Transaction {
       this.tryResolveConflicts(conflicts)
   }
 
-  private tryResolveConflicts(conflicts: Record[]): void {
+  private tryResolveConflicts(conflicts: ObjectRevision[]): void {
     throw error(`T${this.id}[${this.hint}] conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
   }
 

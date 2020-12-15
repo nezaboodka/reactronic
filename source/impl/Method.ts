@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Worker } from '../Worker'
 import { Controller } from '../Controller'
-import { Record, Member, Handle, Observable, MemberHint, Observer, Meta } from './Data'
+import { ObjectRevision, Member, ObjectHolder, Observable, MemberHint, Observer, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -18,12 +18,12 @@ import { Hooks, OptionsImpl } from './Hooks'
 import { TransactionJournalImpl } from './TransactionJournal'
 
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-const NIL_HANDLE = new Handle(undefined, undefined, Hooks.proxy, NIL, 'N/A')
+const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL, 'N/A')
 
-type Call = { context: Snapshot, record: Record, result: CallResult, reuse: boolean }
+type Call = { context: Snapshot, revision: ObjectRevision, result: CallResult, reuse: boolean }
 
 export class Method extends Controller<any> {
-  readonly handle: Handle
+  readonly holder: ObjectHolder
   readonly member: Member
 
   configure(options: Partial<CacheOptions>): CacheOptions { return Method.configureImpl(this, options) }
@@ -31,14 +31,14 @@ export class Method extends Controller<any> {
   get args(): ReadonlyArray<any> { return this.weak().result.args }
   get value(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.weak().result.error }
-  get stamp(): number { return this.weak().record.snapshot.timestamp }
+  get stamp(): number { return this.weak().revision.snapshot.timestamp }
   get isInvalidated(): boolean { return !this.weak().reuse }
-  invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.handle, this.member)})` : 'invalidate()' }, Method.invalidate, this) }
+  invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.holder, this.member)})` : 'invalidate()' }, Method.invalidate, this) }
   getCachedValueAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
-  constructor(handle: Handle, member: Member) {
+  constructor(holder: ObjectHolder, member: Member) {
     super()
-    this.handle = handle
+    this.holder = holder
     this.member = member
   }
 
@@ -46,21 +46,21 @@ export class Method extends Controller<any> {
     let call: Call = this.read(args)
     const ctx = call.context
     const c: CallResult = call.result
-    if (!call.reuse && call.record.data[Meta.Disposed] === undefined
+    if (!call.reuse && call.revision.data[Meta.Disposed] === undefined
       && (!weak || c.invalidatedSince === -1 || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Reaction ||
-        (opt.kind === Kind.Cache && (call.record.snapshot.completed || call.record.prev.record !== NIL))
+        (opt.kind === Kind.Cache && (call.revision.snapshot.completed || call.revision.prev.revision !== NIL))
       const token = opt.noSideEffects ? this : undefined
       const call2 = this.compute(call, spawn, opt, token, args)
-      const ctx2 = call2.result.record.snapshot
+      const ctx2 = call2.result.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.completed && ctx.timestamp >= ctx2.timestamp))
         call = call2
     }
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true))
-      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.record(call.record, this.member)} result is reused from T${call.result.worker.id}[${call.result.worker.hint}]`)
+      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.revision(call.revision, this.member)} result is reused from T${call.result.worker.id}[${call.result.worker.hint}]`)
     const result = call.result
-    Snapshot.markViewed(call.record, this.member, result, result.options.kind, weak)
+    Snapshot.markViewed(call.revision, this.member, result, result.options.kind, weak)
     return result
   }
 
@@ -81,7 +81,7 @@ export class Method extends Controller<any> {
       throw misuse('a method is expected with reactronic decorator')
     c.options = new OptionsImpl(c.options.body, c.options, options, false)
     if (Dbg.isOn && Dbg.trace.writes)
-      Dbg.log('║', '  ♦', `${Hints.record(c.record, c.method.member)}.options = ...`)
+      Dbg.log('║', '  ♦', `${Hints.revision(c.revision, c.method.member)}.options = ...`)
     return c.options
   }
 
@@ -105,12 +105,12 @@ export class Method extends Controller<any> {
 
   static whyFull(): string {
     const c = CallResult.current
-    return c ? c.whyFull() : NIL_HANDLE.hint
+    return c ? c.whyFull() : NIL_HOLDER.hint
   }
 
   static whyShort(): string {
     const c = CallResult.current
-    return c ? c.whyShort() : NIL_HANDLE.hint
+    return c ? c.whyShort() : NIL_HOLDER.hint
   }
 
   /* istanbul ignore next */
@@ -123,47 +123,47 @@ export class Method extends Controller<any> {
 
   private weak(): Call {
     const call = this.read(undefined)
-    Snapshot.markViewed(call.record, this.member, call.result, call.result.options.kind, true)
+    Snapshot.markViewed(call.revision, this.member, call.result, call.result.options.kind, true)
     return call
   }
 
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.reader()
-    const r: Record = ctx.lookup(this.handle, this.member)
+    const r: ObjectRevision = ctx.lookup(this.holder, this.member)
     const c: CallResult = this.from(r)
     const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== -1 &&
-      (ctx === c.record.snapshot || ctx.timestamp < c.invalidatedSince) &&
+      (ctx === c.revision.snapshot || ctx.timestamp < c.invalidatedSince) &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
-    return { context: ctx, record: r, result: c, reuse }
+    return { context: ctx, revision: r, result: c, reuse }
   }
 
   private write(): Call {
     const ctx = Snapshot.writer()
     const m = this.member
-    const r: Record = ctx.writable(this.handle, m, Meta.Handle, this)
+    const r: ObjectRevision = ctx.writable(this.holder, m, Meta.Holder, this)
     let c: CallResult = this.from(r)
-    if (c.record !== r) {
+    if (c.revision !== r) {
       const c2 = new CallResult(this, r, c)
       c = r.data[m] = c2.reenterOver(c)
-      ctx.bumpBy(r.prev.record.snapshot.timestamp)
+      ctx.bumpBy(r.prev.revision.snapshot.timestamp)
       Snapshot.markChanged(r, m, c, true)
     }
-    return { context: ctx, record: r, result: c, reuse: true }
+    return { context: ctx, revision: r, result: c, reuse: true }
   }
 
-  private from(r: Record): CallResult {
+  private from(r: ObjectRevision): CallResult {
     const m = this.member
     let c: CallResult = r.data[m]
     if (c.method !== this) {
-      const hint: string = Dbg.isOn ? `${Hints.obj(this.handle, m)}/initialize` : /* istanbul ignore next */ 'Cache.init'
-      const spawn = r.snapshot.completed || r.prev.record !== NIL
+      const hint: string = Dbg.isOn ? `${Hints.obj(this.holder, m)}/initialize` : /* istanbul ignore next */ 'Cache.init'
+      const spawn = r.snapshot.completed || r.prev.revision !== NIL
       c = Transaction.runAs<CallResult>({ hint, spawn, token: this }, (): CallResult => {
-        const h = this.handle
-        let r2: Record = Snapshot.reader().readable(h, m)
+        const h = this.holder
+        let r2: ObjectRevision = Snapshot.reader().readable(h, m)
         let c2 = r2.data[m] as CallResult
         if (c2.method !== this) {
-          r2 = Snapshot.writer().writable(h, m, Meta.Handle, this)
+          r2 = Snapshot.writer().writable(h, m, Meta.Holder, this)
           c2 = r2.data[m] = new CallResult(this, r2, c2)
           c2.invalidatedSince = -1 // indicates blank value
           Snapshot.markChanged(r2, m, c2, true)
@@ -176,7 +176,7 @@ export class Method extends Controller<any> {
 
   private compute(existing: Call, spawn: boolean, options: CacheOptions, token: any, args: any[] | undefined): Call {
     // TODO: Cleaner implementation is needed
-    const hint: string = Dbg.isOn ? `${Hints.obj(this.handle, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.handle, this.member)}`
+    const hint: string = Dbg.isOn ? `${Hints.obj(this.holder, this.member)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.holder, this.member)}`
     let call = existing
     const opt = { hint, spawn, journal: options.journal, trace: options.trace, token }
     const ret = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
@@ -184,7 +184,7 @@ export class Method extends Controller<any> {
         call = this.write()
         if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
           Dbg.log('║', ' (f)', `${call.result.whyFull()}`)
-        call.result.compute(this.handle.proxy, argsx)
+        call.result.compute(this.holder.proxy, argsx)
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
@@ -192,7 +192,7 @@ export class Method extends Controller<any> {
           call = this.write()
           if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
             Dbg.log('║', ' (f)', `${call.result.whyFull()}`)
-          call.result.compute(this.handle.proxy, argsx)
+          call.result.compute(this.holder.proxy, argsx)
         }
       }
       return call.result.ret
@@ -205,7 +205,7 @@ export class Method extends Controller<any> {
     const ctx = Snapshot.reader()
     const call = self.read(undefined)
     const c: CallResult = call.result
-    c.invalidateDueTo(c, {record: NIL, member: self.member, times: 0}, ctx.timestamp, ctx.reactions)
+    c.invalidateDueTo(c, {revision: NIL, member: self.member, times: 0}, ctx.timestamp, ctx.reactions)
   }
 }
 
@@ -217,7 +217,7 @@ class CallResult extends Observable implements Observer {
 
   get isMethod(): boolean { return true }
   readonly method: Method
-  readonly record: Record
+  readonly revision: ObjectRevision
   readonly observables: Map<Observable, MemberHint>
   options: OptionsImpl
   cause: MemberHint | undefined
@@ -231,10 +231,10 @@ class CallResult extends Observable implements Observer {
   invalidatedSince: number
   revalidation: CallResult | undefined
 
-  constructor(method: Method, record: Record, prev: CallResult | OptionsImpl) {
+  constructor(method: Method, revision: ObjectRevision, prev: CallResult | OptionsImpl) {
     super(undefined)
     this.method = method
-    this.record = record
+    this.revision = revision
     this.observables = new Map<Observable, MemberHint>()
     if (prev instanceof CallResult) {
       this.options = prev.options
@@ -258,12 +258,12 @@ class CallResult extends Observable implements Observer {
     this.revalidation = undefined
   }
 
-  hint(): string { return `${Hints.record(this.record, this.method.member)}` }
+  hint(): string { return `${Hints.revision(this.revision, this.method.member)}` }
   get priority(): number { return this.options.priority }
 
   whyFull(): string {
     let ms: number = Date.now()
-    const prev = this.record.prev.record.data[this.method.member]
+    const prev = this.revision.prev.revision.data[this.method.member]
     if (prev instanceof CallResult)
       ms = Math.abs(this.started) - Math.abs(prev.started)
     let cause: string
@@ -272,12 +272,12 @@ class CallResult extends Observable implements Observer {
     else if (this.method.options.kind === Kind.Transaction)
       cause = '   <<   transaction'
     else
-      cause = `   <<   called by ${this.record.snapshot.hint}`
-    return `${Hints.record(this.record, this.method.member)}${cause}   (${ms}ms since previous revalidation)`
+      cause = `   <<   called by ${this.revision.snapshot.hint}`
+    return `${Hints.revision(this.revision, this.method.member)}${cause}   (${ms}ms since previous revalidation)`
   }
 
   whyShort(): string {
-    return this.cause ? propagationHint(this.cause, false)[0] : NIL_HANDLE.hint
+    return this.cause ? propagationHint(this.cause, false)[0] : NIL_HOLDER.hint
   }
 
   deps(): string[] {
@@ -287,12 +287,12 @@ class CallResult extends Observable implements Observer {
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret)
-        Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.record(this.record, this.method.member)} - step in  `, 0, '        │')
+        Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.revision(this.revision, this.method.member)} - step in  `, 0, '        │')
       const started = Date.now()
       const result = Method.run<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Dbg.isOn && Dbg.trace.steps && this.ret)
-        Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.record(this.record, this.method.member)} - step out `, 0, this.started > 0 ? '        │' : '')
+        Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.revision(this.revision, this.method.member)} - step out `, 0, this.started > 0 ? '        │' : '')
       if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
         Dbg.log('', '[!]', this.whyFull(), ms, '    *** main thread is too busy ***')
       return result
@@ -313,30 +313,30 @@ class CallResult extends Observable implements Observer {
   invalidateDueTo(value: Observable, cause: MemberHint, since: number, reactions: Observer[]): void {
     if (this.invalidatedSince === TOP_TIMESTAMP || this.invalidatedSince <= 0) {
       const skip = !value.isMethod &&
-        cause.record.snapshot === this.record.snapshot &&
-        cause.record.changes.has(cause.member)
+        cause.revision.snapshot === this.revision.snapshot &&
+        cause.revision.changes.has(cause.member)
       if (!skip) {
         this.invalidatedDueTo = cause
         this.invalidatedSince = since
-        const isReaction = this.options.kind === Kind.Reaction /*&& this.record.data[Meta.Disposed] === undefined*/
+        const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
         if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.record === NIL ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.record(cause.record, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.revision === NIL ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.revision(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
         if (isReaction) // stop cascade invalidation on reaction
           reactions.push(this)
         else if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo(this, {record: this.record, member: this.method.member, times: 0}, since, reactions))
+          this.observers.forEach(c => c.invalidateDueTo(this, {revision: this.revision, member: this.method.member, times: 0}, since, reactions))
         const worker = this.worker
         if (!worker.isFinished && this !== value) // restart after itself if canceled
-          worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to invalidation by ${Hints.record(cause.record, cause.member)}`), null)
+          worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to invalidation by ${Hints.revision(cause.revision, cause.member)}`), null)
       }
       else {
         if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log(' ', 'x', `${this.hint()} invalidation is skipped for self-changed ${Hints.record(cause.record, cause.member)}`)
+          Dbg.log(' ', 'x', `${this.hint()} invalidation is skipped for self-changed ${Hints.revision(cause.revision, cause.member)}`)
 
         // Variant 2:
         // const hint = this.hint()
-        // const causeHint = Hints.record(cause.record, cause.member)
+        // const causeHint = Hints.revision(cause.revision, cause.member)
         // throw misuse(`reaction ${hint} should either read or write ${causeHint}, but not both (consider using untracked read)`)
       }
     }
@@ -354,14 +354,14 @@ class CallResult extends Observable implements Observer {
           if (c.ret instanceof Promise)
             c.ret.catch(error => {
               if (c.options.kind === Kind.Reaction)
-                misuse(`reaction ${Hints.record(c.record, c.method.member)} failed and will not run anymore: ${error}`, error)
+                misuse(`reaction ${Hints.revision(c.revision, c.method.member)} failed and will not run anymore: ${error}`, error)
             })
         }
         catch (e) {
           if (!nothrow)
             throw e
           else if (this.options.kind === Kind.Reaction)
-            misuse(`reaction ${Hints.record(this.record, this.method.member)} failed and will not run anymore: ${e}`, e)
+            misuse(`reaction ${Hints.revision(this.revision, this.method.member)} failed and will not run anymore: ${e}`, e)
         }
       }
     }
@@ -378,7 +378,7 @@ class CallResult extends Observable implements Observer {
     const existing = head.revalidation
     if (existing && !existing.worker.isFinished) {
       if (Dbg.isOn && Dbg.trace.invalidations)
-        Dbg.log('║', ' [!]', `${Hints.record(this.record, this.method.member)} is trying to re-enter over ${Hints.record(existing.record, existing.method.member)}`)
+        Dbg.log('║', ' [!]', `${Hints.revision(this.revision, this.method.member)} is trying to re-enter over ${Hints.revision(existing.revision, existing.method.member)}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
           if (!existing.worker.isCanceled)
@@ -425,7 +425,7 @@ class CallResult extends Observable implements Observer {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.methods)
-      Dbg.log('║', '‾\\', `${Hints.record(this.record, this.method.member)} - enter`)
+      Dbg.log('║', '‾\\', `${Hints.revision(this.revision, this.method.member)} - enter`)
     this.started = Date.now()
   }
 
@@ -444,9 +444,9 @@ class CallResult extends Observable implements Observer {
         })
       if (Dbg.isOn) {
         if (Dbg.trace.methods)
-          Dbg.log('║', '_/', `${Hints.record(this.record, this.method.member)} - leave... `, 0, 'ASYNC ──┐')
+          Dbg.log('║', '_/', `${Hints.revision(this.revision, this.method.member)} - leave... `, 0, 'ASYNC ──┐')
         else if (Dbg.trace.transactions)
-          Dbg.log('║', '  ', `${Hints.record(this.record, this.method.member)}... `, 0, 'ASYNC')
+          Dbg.log('║', '  ', `${Hints.revision(this.revision, this.method.member)}... `, 0, 'ASYNC')
       }
     }
     else {
@@ -459,7 +459,7 @@ class CallResult extends Observable implements Observer {
     const ms: number = Date.now() - this.started
     this.started = -this.started
     if (Dbg.isOn && Dbg.trace.methods)
-      Dbg.log('║', `${op}`, `${Hints.record(this.record, this.method.member)} ${message}`, ms, highlight)
+      Dbg.log('║', `${op}`, `${Hints.revision(this.revision, this.method.member)} ${message}`, ms, highlight)
     if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
       Dbg.log('', '[!]', this.whyFull(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
     if (this.options.monitor)
@@ -505,24 +505,24 @@ class CallResult extends Observable implements Observer {
       t.revalidate(true, true)
   }
 
-  private static markViewed(r: Record, m: Member, value: Observable, kind: Kind, weak: boolean): void {
+  private static markViewed(r: ObjectRevision, m: Member, value: Observable, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transaction) {
       const c: CallResult | undefined = CallResult.current // alias
-      if (c && c.options.kind !== Kind.Transaction && m !== Meta.Handle) {
+      if (c && c.options.kind !== Kind.Transaction && m !== Meta.Holder) {
         const ctx = Snapshot.reader()
         if (ctx !== r.snapshot) // snapshot should not bump itself
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!c.subscribeTo(value, r, m, t))
-          c.invalidateDueTo(value, {record: r, member: m, times: 0}, ctx.timestamp, ctx.reactions)
+          c.invalidateDueTo(value, {revision: r, member: m, times: 0}, ctx.timestamp, ctx.reactions)
       }
     }
   }
 
-  private static markChanged(r: Record, m: Member, value: any, changed: boolean): void {
+  private static markChanged(r: ObjectRevision, m: Member, value: any, changed: boolean): void {
     changed ? r.changes.add(m) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.writes)
-      changed ? Dbg.log('║', '  ♦', `${Hints.record(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.record(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
+      changed ? Dbg.log('║', '  ♦', `${Hints.revision(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.revision(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -537,21 +537,21 @@ class CallResult extends Observable implements Observer {
     if (!error) {
       // Mark previous values as replaced, invalidate observers, and reset recomputing status
       const reactions = snapshot.reactions
-      snapshot.changeset.forEach((r: Record, h: Handle) => {
+      snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
         if (!r.changes.has(Meta.Disposed))
           r.changes.forEach(m => CallResult.finalizeMemberChange(false, since, r, m, reactions))
         else
-          for (const m in r.prev.record.data)
+          for (const m in r.prev.revision.data)
             CallResult.finalizeMemberChange(true, since, r, m, reactions)
         if (Dbg.isOn)
-          Snapshot.freezeRecord(r)
+          Snapshot.freezeObjectRevision(r)
       })
       reactions.sort(CallResult.compareReactionsByPriority)
       const log = snapshot.options.journal
       log && log.remember(TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
     }
     else
-      snapshot.changeset.forEach((r: Record, h: Handle) =>
+      snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
         r.changes.forEach(m => CallResult.finalizeMemberChange(true, since, r, m)))
   }
 
@@ -559,14 +559,14 @@ class CallResult extends Observable implements Observer {
     return a.priority - b.priority
   }
 
-  private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: Record, m: Member, reactions?: Observer[]): void {
+  private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: ObjectRevision, m: Member, reactions?: Observer[]): void {
     if (reactions) {
-      const prev = r.prev.record.data[m]
+      const prev = r.prev.revision.data[m]
       if (prev !== undefined && prev instanceof Observable && prev.replacement === undefined) {
         if (unsubscribe) // in fact it means disposal if reactions are not undefined
           r.data[m] = Meta.Disposed
         prev.replacement = r
-        const cause: MemberHint = { record: r, member: m, times: 0 }
+        const cause: MemberHint = { revision: r, member: m, times: 0 }
         if (prev instanceof CallResult && (prev.invalidatedSince === TOP_TIMESTAMP || prev.invalidatedSince <= 0)) {
           prev.invalidatedDueTo = cause
           prev.invalidatedSince = timestamp
@@ -578,17 +578,17 @@ class CallResult extends Observable implements Observer {
     }
     const value = r.data[m]
     if (value instanceof CallResult) {
-      if (value.record === r) {
+      if (value.revision === r) {
         if (unsubscribe)
           value.unsubscribeFromAll()
         // Clear recomputing status of previous cached result
-        // const prev = cache.record.prev.record.data[m]
+        // const prev = cache.revision.prev.revision.data[m]
         // if (prev instanceof CallResult && prev.revalidation === cache)
         //   prev.revalidation = undefined
         // Performance tracking
         if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
           value.observables.forEach((hint, v) => {
-            if (hint.times > Hooks.repetitiveReadWarningThreshold) Dbg.log('', '[!]', `${value.hint()} uses ${Hints.record(hint.record, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
+            if (hint.times > Hooks.repetitiveReadWarningThreshold) Dbg.log('', '[!]', `${value.hint()} uses ${Hints.revision(hint.revision, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
       }
@@ -597,7 +597,7 @@ class CallResult extends Observable implements Observer {
       value.observers.forEach(o => {
         o.observables.delete(value)
         if (Dbg.isOn && Dbg.trace.reads)
-          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.record(r, m)}`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.revision(r, m)}`)
       })
       value.observers = undefined
     }
@@ -610,12 +610,12 @@ class CallResult extends Observable implements Observer {
       if (observers)
         observers.delete(this)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', '-', `${Hints.record(this.record, this.method.member)} is unsubscribed from ${Hints.record(hint.record, hint.member)}`)
+        Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', '-', `${Hints.revision(this.revision, this.method.member)} is unsubscribed from ${Hints.revision(hint.revision, hint.member)}`)
     })
     this.observables.clear()
   }
 
-  private subscribeTo(value: Observable, r: Record, m: Member, timestamp: number): boolean {
+  private subscribeTo(value: Observable, r: ObjectRevision, m: Member, timestamp: number): boolean {
     let result = value.replacement === undefined
     if (result && timestamp !== -1)
       result = !(value instanceof CallResult && timestamp >= value.invalidatedSince)
@@ -630,20 +630,20 @@ class CallResult extends Observable implements Observer {
       if (!value.observers)
         value.observers = new Set<CallResult>()
       // Two-way linking
-      const hint: MemberHint = {record: r, member: m, times}
+      const hint: MemberHint = {revision: r, member: m, times}
       value.observers.add(this)
       this.observables.set(value, hint)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log('║', '  ∞ ', `${Hints.record(this.record, this.method.member)} is subscribed to ${Hints.record(r, m)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
+        Dbg.log('║', '  ∞ ', `${Hints.revision(this.revision, this.method.member)} is subscribed to ${Hints.revision(r, m)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
     }
     else {
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log('║', '  x ', `${Hints.record(this.record, this.method.member)} is NOT subscribed to already invalidated ${Hints.record(r, m)}`)
+        Dbg.log('║', '  x ', `${Hints.revision(this.revision, this.method.member)} is NOT subscribed to already invalidated ${Hints.revision(r, m)}`)
     }
     return result || value.replacement === r
   }
 
-  private static createMethodTrap(h: Handle, m: Member, options: OptionsImpl): F<any> {
+  private static createMethodTrap(h: ObjectHolder, m: Member, options: OptionsImpl): F<any> {
     const method = new Method(h, m)
     const methodTrap: F<any> = (...args: any[]): any =>
       method.call(false, args).ret
@@ -655,7 +655,7 @@ class CallResult extends Observable implements Observer {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: CallResult | undefined = blank[m]
-    const method = existing ? existing.method : new Method(NIL_HANDLE, m)
+    const method = existing ? existing.method : new Method(NIL_HOLDER, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
     const value =  new CallResult(method, NIL, new OptionsImpl(body, opts, options, implicit))
     blank[m] = value
@@ -712,14 +712,14 @@ class CallResult extends Observable implements Observer {
 
 function propagationHint(cause: MemberHint, full: boolean): string[] {
   const result: string[] = []
-  let value: Observable = cause.record.data[cause.member]
+  let value: Observable = cause.revision.data[cause.member]
   while (value instanceof CallResult && value.invalidatedDueTo) {
-    full && result.push(Hints.record(cause.record, cause.member))
+    full && result.push(Hints.revision(cause.revision, cause.member))
     cause = value.invalidatedDueTo
-    value = cause.record.data[cause.member]
+    value = cause.revision.data[cause.member]
   }
-  result.push(Hints.record(cause.record, cause.member))
-  full && result.push(cause.record.snapshot.hint)
+  result.push(Hints.revision(cause.revision, cause.member))
+  full && result.push(cause.revision.snapshot.hint)
   return result
 }
 
@@ -732,7 +732,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof CallResult)
-    result = `<recompute:${Hints.record(value.record.prev.record)}>`
+    result = `<recompute:${Hints.revision(value.revision.prev.revision)}>`
   else if (value === Meta.Disposed)
     result = '<disposed>'
   else if (value !== undefined && value !== null)

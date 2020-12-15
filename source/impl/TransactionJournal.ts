@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { ObservableObject } from './Hooks'
-import { Handle, Record, Meta, Patch, ObjectPatch, Observable } from './Data'
+import { ObjectHolder, ObjectRevision, Meta, Patch, ObjectPatch, Observable } from './Data'
 import { NIL, Snapshot } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
@@ -71,11 +71,11 @@ export class TransactionJournalImpl extends TransactionJournal {
     })
   }
 
-  static createPatch(hint: string, changeset: Map<Handle, Record>): Patch {
+  static createPatch(hint: string, changeset: Map<ObjectHolder, ObjectRevision>): Patch {
     const patch: Patch = { hint, objects: new Map<object, ObjectPatch>() }
-    changeset.forEach((r: Record, h: Handle) => {
+    changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       const p: ObjectPatch = { changes: {}, old: {} }
-      const old = r.prev.record !== NIL ? r.prev.record.data : undefined
+      const old = r.prev.revision !== NIL ? r.prev.revision.data : undefined
       r.changes.forEach(m => {
         p.changes[m] = unseal(r.data[m])
         if (old)
@@ -93,15 +93,15 @@ export class TransactionJournalImpl extends TransactionJournal {
   static applyPatch(patch: Patch, undo: boolean): void {
     const ctx = Snapshot.writer()
     patch.objects.forEach((p: ObjectPatch, obj: object) => {
-      const h = Meta.get<Handle>(obj, Meta.Handle)
+      const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
       const data = undo ? p.old : p.changes
       if (data[Meta.Disposed] !== Meta.Disposed) {
         for (const m in data) {
           const value = data[m]
-          const r: Record = ctx.writable(h, m, value)
+          const r: ObjectRevision = ctx.writable(h, m, value)
           if (r.snapshot === ctx) {
             r.data[m] = new Observable(value)
-            const v: any = r.prev.record.data[m]
+            const v: any = r.prev.revision.data[m]
             Snapshot.markChanged(r, m, value, v !== value)
           }
         }

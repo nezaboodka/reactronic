@@ -8,7 +8,7 @@
 const EMPTY_META = Object.freeze({})
 
 export abstract class Meta {
-  static readonly Handle: unique symbol = Symbol('rxHandle')
+  static readonly Holder: unique symbol = Symbol('rxHolder')
   static readonly Method: unique symbol = Symbol('rxMethod')
   static readonly Disposed: unique symbol = Symbol('rxDisposed')
   static readonly Blank: unique symbol = Symbol('rxBlank')

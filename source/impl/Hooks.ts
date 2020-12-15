@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
-import { Record, Member, Handle, Observable, Meta } from './Data'
+import { ObjectRevision, Member, ObjectHolder, Observable, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
@@ -21,7 +21,7 @@ export abstract class ObservableObject {
   constructor() {
     const proto = new.target.prototype
     const blank = Meta.from<any>(proto, Meta.Blank)
-    const h = Hooks.createHandle(this, blank, new.target.name)
+    const h = Hooks.createObjectHolder(this, blank, new.target.name)
     if (!Hooks.reactionsAutoStartDisabled) {
       const reactions = Meta.from<any>(proto, Meta.Reactions)
       for (const member in reactions)
@@ -32,7 +32,7 @@ export abstract class ObservableObject {
 
   /* istanbul ignore next */
   [Symbol.toStringTag](): string {
-    const h = Meta.get<Handle>(this, Meta.Handle)
+    const h = Meta.get<ObjectHolder>(this, Meta.Holder)
     return Hints.obj(h)
   }
 }
@@ -92,7 +92,7 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 
 // Hooks
 
-export class Hooks implements ProxyHandler<Handle> {
+export class Hooks implements ProxyHandler<ObjectHolder> {
   static reactionsAutoStartDisabled: boolean = false
   static repetitiveReadWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
@@ -100,19 +100,19 @@ export class Hooks implements ProxyHandler<Handle> {
   static sensitivity: Sensitivity = Sensitivity.ReactOnFinalDifferenceOnly
   static readonly proxy: Hooks = new Hooks()
 
-  getPrototypeOf(h: Handle): object | null {
+  getPrototypeOf(h: ObjectHolder): object | null {
     return Reflect.getPrototypeOf(h.unobservable)
   }
 
-  get(h: Handle, m: Member, receiver: any): any {
+  get(h: ObjectHolder, m: Member, receiver: any): any {
     let result: any
-    const r: Record = Snapshot.reader().readable(h, m)
+    const r: ObjectRevision = Snapshot.reader().readable(h, m)
     result = r.data[m]
     if (result instanceof Observable && !result.isMethod) {
       Snapshot.markViewed(r, m, result, Kind.Data, false)
       result = result.value
     }
-    else if (m === Meta.Handle) {
+    else if (m === Meta.Holder) {
       // do nothing, just return instance
     }
     else // result === UNOBSERVABLE
@@ -120,13 +120,13 @@ export class Hooks implements ProxyHandler<Handle> {
     return result
   }
 
-  set(h: Handle, m: Member, value: any, receiver: any): boolean {
-    const r: Record = Snapshot.writer().writable(h, m, value)
+  set(h: ObjectHolder, m: Member, value: any, receiver: any): boolean {
+    const r: ObjectRevision = Snapshot.writer().writable(h, m, value)
     if (r !== NIL) {
       const curr = r.data[m] as Observable
       if (curr !== undefined || (
-        r.prev.record.snapshot === NIL.snapshot && m in h.unobservable === false)) {
-        const prev = r.prev.record.data[m] as Observable
+        r.prev.revision.snapshot === NIL.snapshot && m in h.unobservable === false)) {
+        const prev = r.prev.revision.data[m] as Observable
         let changed = prev === undefined || prev.value !== value ||
           Hooks.sensitivity === Sensitivity.ReactEvenOnSameValueAssignment
         if (changed) {
@@ -151,22 +151,22 @@ export class Hooks implements ProxyHandler<Handle> {
     return true
   }
 
-  has(h: Handle, m: Member): boolean {
-    const r: Record = Snapshot.reader().readable(h, m)
+  has(h: ObjectHolder, m: Member): boolean {
+    const r: ObjectRevision = Snapshot.reader().readable(h, m)
     return m in r.data || m in h.unobservable
   }
 
-  getOwnPropertyDescriptor(h: Handle, m: Member): PropertyDescriptor | undefined {
-    const r: Record = Snapshot.reader().readable(h, m)
+  getOwnPropertyDescriptor(h: ObjectHolder, m: Member): PropertyDescriptor | undefined {
+    const r: ObjectRevision = Snapshot.reader().readable(h, m)
     const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
     if (pd)
       pd.configurable = pd.writable = true
     return pd
   }
 
-  ownKeys(h: Handle): Member[] {
+  ownKeys(h: ObjectHolder): Member[] {
     // TODO: Better implementation to avoid filtering
-    const r: Record = Snapshot.reader().readable(h, Meta.Handle)
+    const r: ObjectRevision = Snapshot.reader().readable(h, Meta.Holder)
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
@@ -179,11 +179,11 @@ export class Hooks implements ProxyHandler<Handle> {
   static decorateField(observable: boolean, proto: any, m: Member): any {
     if (observable) {
       const get = function(this: any): any {
-        const h = Hooks.acquireHandle(this)
+        const h = Hooks.acquireObjectHolder(this)
         return Hooks.proxy.get(h, m, this)
       }
       const set = function(this: any, value: any): boolean {
-        const h = Hooks.acquireHandle(this)
+        const h = Hooks.acquireObjectHolder(this)
         return Hooks.proxy.set(h, m, value, this)
       }
       const enumerable = true
@@ -200,7 +200,7 @@ export class Hooks implements ProxyHandler<Handle> {
     // Setup method trap
     const opts = Hooks.applyMethodOptions(proto, method, pd.value, true, configurable, options, implicit)
     const trap = function(this: any): any {
-      const h = Hooks.acquireHandle(this)
+      const h = Hooks.acquireObjectHolder(this)
       const value = Hooks.createMethodTrap(h, method, opts)
       Object.defineProperty(h.unobservable, method, { value, enumerable, configurable })
       return value
@@ -208,26 +208,26 @@ export class Hooks implements ProxyHandler<Handle> {
     return Object.defineProperty(proto, method, { get: trap, enumerable, configurable })
   }
 
-  static acquireHandle(obj: any): Handle {
-    let h = obj[Meta.Handle]
+  static acquireObjectHolder(obj: any): ObjectHolder {
+    let h = obj[Meta.Holder]
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
       const blank = Meta.from<any>(Object.getPrototypeOf(obj), Meta.Blank)
-      const initial = new Record(NIL.snapshot, NIL, {...blank})
-      Meta.set(initial.data, Meta.Handle, h)
+      const initial = new ObjectRevision(NIL.snapshot, NIL, {...blank})
+      Meta.set(initial.data, Meta.Holder, h)
       if (Dbg.isOn)
-        Snapshot.freezeRecord(initial)
-      h = new Handle(obj, obj, Hooks.proxy, initial, obj.constructor.name)
-      Meta.set(obj, Meta.Handle, h)
+        Snapshot.freezeObjectRevision(initial)
+      h = new ObjectHolder(obj, obj, Hooks.proxy, initial, obj.constructor.name)
+      Meta.set(obj, Meta.Holder, h)
     }
     return h
   }
 
-  static createHandle(unobservable: any, blank: any, hint: string): Handle {
+  static createObjectHolder(unobservable: any, blank: any, hint: string): ObjectHolder {
     const ctx = Snapshot.writer()
-    const h = new Handle(unobservable, undefined, Hooks.proxy, NIL, hint)
-    ctx.writable(h, Meta.Handle, blank)
+    const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, NIL, hint)
+    ctx.writable(h, Meta.Holder, blank)
     return h
   }
 
@@ -259,14 +259,14 @@ export class Hooks implements ProxyHandler<Handle> {
 
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
-      const h = Hooks.acquireHandle(obj)
+      const h = Hooks.acquireObjectHolder(obj)
       h.hint = hint
     }
     return obj
   }
 
   /* istanbul ignore next */
-  static createMethodTrap = function(h: Handle, m: Member, options: OptionsImpl): F<any> {
+  static createMethodTrap = function(h: ObjectHolder, m: Member, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
   }
 
