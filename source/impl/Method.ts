@@ -20,7 +20,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL, 'N/A')
 
-type Call = { context: Snapshot, revision: ObjectRevision, result: Computation, reuse: boolean }
+type Call = { snapshot: Snapshot, revision: ObjectRevision, result: Computation, reuse: boolean }
 
 export class Method extends Controller<any> {
   readonly holder: ObjectHolder
@@ -44,7 +44,7 @@ export class Method extends Controller<any> {
 
   call(weak: boolean, args: any[] | undefined): Computation {
     let call: Call = this.read(args)
-    const ctx = call.context
+    const ctx = call.snapshot
     const c: Computation = call.result
     if (!call.reuse && call.revision.data[Meta.Disposed] === undefined
       && (!weak || c.invalidatedSince === -1 || !c.revalidation || c.revalidation.worker.isFinished)) {
@@ -135,7 +135,7 @@ export class Method extends Controller<any> {
       (ctx === c.revision.snapshot || ctx.timestamp < c.invalidatedSince) &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
-    return { context: ctx, revision: r, result: c, reuse }
+    return { snapshot: ctx, revision: r, result: c, reuse }
   }
 
   private write(): Call {
@@ -149,7 +149,7 @@ export class Method extends Controller<any> {
       ctx.bumpBy(r.prev.revision.snapshot.timestamp)
       Snapshot.markChanged(r, m, c, true)
     }
-    return { context: ctx, revision: r, result: c, reuse: true }
+    return { snapshot: ctx, revision: r, result: c, reuse: true }
   }
 
   private from(r: ObjectRevision): Computation {
