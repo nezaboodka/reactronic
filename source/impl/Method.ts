@@ -20,7 +20,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL, 'N/A')
 
-type Call = { context: Snapshot, revision: ObjectRevision, result: CallResult, reuse: boolean }
+type Call = { context: Snapshot, revision: ObjectRevision, result: Computation, reuse: boolean }
 
 export class Method extends Controller<any> {
   readonly holder: ObjectHolder
@@ -42,10 +42,10 @@ export class Method extends Controller<any> {
     this.member = member
   }
 
-  call(weak: boolean, args: any[] | undefined): CallResult {
+  call(weak: boolean, args: any[] | undefined): Computation {
     let call: Call = this.read(args)
     const ctx = call.context
-    const c: CallResult = call.result
+    const c: Computation = call.result
     if (!call.reuse && call.revision.data[Meta.Disposed] === undefined
       && (!weak || c.invalidatedSince === -1 || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
@@ -72,11 +72,11 @@ export class Method extends Controller<any> {
   }
 
   static configureImpl(self: Method | undefined, options: Partial<CacheOptions>): CacheOptions {
-    let c: CallResult | undefined
+    let c: Computation | undefined
     if (self)
       c = self.write().result
     else
-      c = CallResult.current
+      c = Computation.current
     if (!c || c.worker.isFinished)
       throw misuse('a method is expected with reactronic decorator')
     c.options = new OptionsImpl(c.options.body, c.options, options, false)
@@ -85,11 +85,11 @@ export class Method extends Controller<any> {
     return c.options
   }
 
-  static run<T>(c: CallResult | undefined, func: F<T>, ...args: any[]): T {
+  static run<T>(c: Computation | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined
-    const outer = CallResult.current
+    const outer = Computation.current
     try {
-      CallResult.current = c
+      Computation.current = c
       result = func(...args)
     }
     catch (e) {
@@ -98,24 +98,24 @@ export class Method extends Controller<any> {
       throw e
     }
     finally {
-      CallResult.current = outer
+      Computation.current = outer
     }
     return result
   }
 
   static whyFull(): string {
-    const c = CallResult.current
+    const c = Computation.current
     return c ? c.whyFull() : NIL_HOLDER.hint
   }
 
   static whyShort(): string {
-    const c = CallResult.current
+    const c = Computation.current
     return c ? c.whyShort() : NIL_HOLDER.hint
   }
 
   /* istanbul ignore next */
   static deps(): string[] {
-    const c = CallResult.current
+    const c = Computation.current
     return c ? c.deps() : ['Reactronic.deps should be called from inside of reactive method']
   }
 
@@ -130,7 +130,7 @@ export class Method extends Controller<any> {
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.reader()
     const r: ObjectRevision = ctx.lookup(this.holder, this.member)
-    const c: CallResult = this.from(r)
+    const c: Computation = this.from(r)
     const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== -1 &&
       (ctx === c.revision.snapshot || ctx.timestamp < c.invalidatedSince) &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
@@ -142,9 +142,9 @@ export class Method extends Controller<any> {
     const ctx = Snapshot.writer()
     const m = this.member
     const r: ObjectRevision = ctx.writable(this.holder, m, Meta.Holder, this)
-    let c: CallResult = this.from(r)
+    let c: Computation = this.from(r)
     if (c.revision !== r) {
-      const c2 = new CallResult(this, r, c)
+      const c2 = new Computation(this, r, c)
       c = r.data[m] = c2.reenterOver(c)
       ctx.bumpBy(r.prev.revision.snapshot.timestamp)
       Snapshot.markChanged(r, m, c, true)
@@ -152,19 +152,19 @@ export class Method extends Controller<any> {
     return { context: ctx, revision: r, result: c, reuse: true }
   }
 
-  private from(r: ObjectRevision): CallResult {
+  private from(r: ObjectRevision): Computation {
     const m = this.member
-    let c: CallResult = r.data[m]
+    let c: Computation = r.data[m]
     if (c.method !== this) {
       const hint: string = Dbg.isOn ? `${Hints.obj(this.holder, m)}/initialize` : /* istanbul ignore next */ 'Cache.init'
       const spawn = r.snapshot.completed || r.prev.revision !== NIL
-      c = Transaction.runAs<CallResult>({ hint, spawn, token: this }, (): CallResult => {
+      c = Transaction.runAs<Computation>({ hint, spawn, token: this }, (): Computation => {
         const h = this.holder
         let r2: ObjectRevision = Snapshot.reader().readable(h, m)
-        let c2 = r2.data[m] as CallResult
+        let c2 = r2.data[m] as Computation
         if (c2.method !== this) {
           r2 = Snapshot.writer().writable(h, m, Meta.Holder, this)
-          c2 = r2.data[m] = new CallResult(this, r2, c2)
+          c2 = r2.data[m] = new Computation(this, r2, c2)
           c2.invalidatedSince = -1 // indicates blank value
           Snapshot.markChanged(r2, m, c2, true)
         }
@@ -204,16 +204,16 @@ export class Method extends Controller<any> {
   private static invalidate(self: Method): void {
     const ctx = Snapshot.reader()
     const call = self.read(undefined)
-    const c: CallResult = call.result
+    const c: Computation = call.result
     c.invalidateDueTo(c, {revision: NIL, member: self.member, times: 0}, ctx.timestamp, ctx.reactions)
   }
 }
 
-// CallResult
+// Computation
 
-class CallResult extends Observable implements Observer {
-  static current?: CallResult = undefined
-  static asyncReactionsBatch: CallResult[] = []
+class Computation extends Observable implements Observer {
+  static current?: Computation = undefined
+  static asyncReactionsBatch: Computation[] = []
 
   get isMethod(): boolean { return true }
   readonly method: Method
@@ -229,14 +229,14 @@ class CallResult extends Observable implements Observer {
   started: number
   invalidatedDueTo: MemberHint | undefined
   invalidatedSince: number
-  revalidation: CallResult | undefined
+  revalidation: Computation | undefined
 
-  constructor(method: Method, revision: ObjectRevision, prev: CallResult | OptionsImpl) {
+  constructor(method: Method, revision: ObjectRevision, prev: Computation | OptionsImpl) {
     super(undefined)
     this.method = method
     this.revision = revision
     this.observables = new Map<Observable, MemberHint>()
-    if (prev instanceof CallResult) {
+    if (prev instanceof Computation) {
       this.options = prev.options
       this.args = prev.args
       // this.value = init.value
@@ -250,7 +250,7 @@ class CallResult extends Observable implements Observer {
     }
     // this.ret = undefined
     // this.error = undefined
-    this.margin = CallResult.current ? CallResult.current.margin + 1 : 1
+    this.margin = Computation.current ? Computation.current.margin + 1 : 1
     this.worker = Transaction.current
     this.started = 0
     this.invalidatedSince = 0
@@ -264,7 +264,7 @@ class CallResult extends Observable implements Observer {
   whyFull(): string {
     let ms: number = Date.now()
     const prev = this.revision.prev.revision.data[this.method.member]
-    if (prev instanceof CallResult)
+    if (prev instanceof Computation)
       ms = Math.abs(this.started) - Math.abs(prev.started)
     let cause: string
     if (this.cause)
@@ -305,7 +305,7 @@ class CallResult extends Observable implements Observer {
       this.args = args
     this.invalidatedSince = TOP_TIMESTAMP
     if (!this.error)
-      Method.run<void>(this, CallResult.compute, this, proxy)
+      Method.run<void>(this, Computation.compute, this, proxy)
     else
       this.ret = Promise.reject(this.error)
   }
@@ -350,7 +350,7 @@ class CallResult extends Observable implements Observer {
       if (!this.error && (this.options.kind === Kind.Transaction ||
         !this.revalidation || this.revalidation.worker.isCanceled)) {
         try {
-          const c: CallResult = this.method.call(false, undefined)
+          const c: Computation = this.method.call(false, undefined)
           if (c.ret instanceof Promise)
             c.ret.catch(error => {
               if (c.options.kind === Kind.Reaction)
@@ -373,7 +373,7 @@ class CallResult extends Observable implements Observer {
     }
   }
 
-  reenterOver(head: CallResult): this {
+  reenterOver(head: Computation): this {
     let error: Error | undefined = undefined
     const existing = head.revalidation
     if (existing && !existing.worker.isFinished) {
@@ -411,7 +411,7 @@ class CallResult extends Observable implements Observer {
 
   // Internal
 
-  private static compute(self: CallResult, proxy: any): void {
+  private static compute(self: Computation, proxy: any): void {
     self.enter()
     try {
       self.ret = self.options.body.call(proxy, ...self.args)
@@ -493,21 +493,21 @@ class CallResult extends Observable implements Observer {
   }
 
   private addToAsyncReactionsBatch(): void {
-    CallResult.asyncReactionsBatch.push(this)
-    if (CallResult.asyncReactionsBatch.length === 1)
-      setTimeout(CallResult.processAsyncReactionsBatch, 0)
+    Computation.asyncReactionsBatch.push(this)
+    if (Computation.asyncReactionsBatch.length === 1)
+      setTimeout(Computation.processAsyncReactionsBatch, 0)
   }
 
   private static processAsyncReactionsBatch(): void {
-    const reactions = CallResult.asyncReactionsBatch
-    CallResult.asyncReactionsBatch = [] // reset
+    const reactions = Computation.asyncReactionsBatch
+    Computation.asyncReactionsBatch = [] // reset
     for (const t of reactions)
       t.revalidate(true, true)
   }
 
   private static markViewed(r: ObjectRevision, m: Member, value: Observable, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transaction) {
-      const c: CallResult | undefined = CallResult.current // alias
+      const c: Computation | undefined = Computation.current // alias
       if (c && c.options.kind !== Kind.Transaction && m !== Meta.Holder) {
         const ctx = Snapshot.reader()
         if (ctx !== r.snapshot) // snapshot should not bump itself
@@ -528,7 +528,7 @@ class CallResult extends Observable implements Observer {
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof CallResult && oldValue.invalidatedSince !== -1
+      result = oldValue instanceof Computation && oldValue.invalidatedSince !== -1
     return result
   }
 
@@ -539,20 +539,20 @@ class CallResult extends Observable implements Observer {
       const reactions = snapshot.reactions
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
         if (!r.changes.has(Meta.Disposed))
-          r.changes.forEach(m => CallResult.finalizeMemberChange(false, since, r, m, reactions))
+          r.changes.forEach(m => Computation.finalizeMemberChange(false, since, r, m, reactions))
         else
           for (const m in r.prev.revision.data)
-            CallResult.finalizeMemberChange(true, since, r, m, reactions)
+            Computation.finalizeMemberChange(true, since, r, m, reactions)
         if (Dbg.isOn)
           Snapshot.freezeObjectRevision(r)
       })
-      reactions.sort(CallResult.compareReactionsByPriority)
+      reactions.sort(Computation.compareReactionsByPriority)
       const log = snapshot.options.journal
       log && log.remember(TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
     }
     else
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-        r.changes.forEach(m => CallResult.finalizeMemberChange(true, since, r, m)))
+        r.changes.forEach(m => Computation.finalizeMemberChange(true, since, r, m)))
   }
 
   private static compareReactionsByPriority(a: Observer, b: Observer): number {
@@ -567,7 +567,7 @@ class CallResult extends Observable implements Observer {
           r.data[m] = Meta.Disposed
         prev.next = r
         const cause: MemberHint = { revision: r, member: m, times: 0 }
-        if (prev instanceof CallResult && (prev.invalidatedSince === TOP_TIMESTAMP || prev.invalidatedSince <= 0)) {
+        if (prev instanceof Computation && (prev.invalidatedSince === TOP_TIMESTAMP || prev.invalidatedSince <= 0)) {
           prev.invalidatedDueTo = cause
           prev.invalidatedSince = timestamp
           prev.unsubscribeFromAll()
@@ -577,7 +577,7 @@ class CallResult extends Observable implements Observer {
       }
     }
     const value = r.data[m]
-    if (value instanceof CallResult) {
+    if (value instanceof Computation) {
       if (value.revision === r) {
         if (unsubscribe)
           value.unsubscribeFromAll()
@@ -618,7 +618,7 @@ class CallResult extends Observable implements Observer {
   private subscribeTo(value: Observable, r: ObjectRevision, m: Member, timestamp: number): boolean {
     let result = value.next === undefined
     if (result && timestamp !== -1)
-      result = !(value instanceof CallResult && timestamp >= value.invalidatedSince)
+      result = !(value instanceof Computation && timestamp >= value.invalidatedSince)
     if (result) {
       // Performance tracking
       let times: number = 0
@@ -628,7 +628,7 @@ class CallResult extends Observable implements Observer {
       }
       // Acquire observers
       if (!value.observers)
-        value.observers = new Set<CallResult>()
+        value.observers = new Set<Computation>()
       // Two-way linking
       const hint: MemberHint = {revision: r, member: m, times}
       value.observers.add(this)
@@ -654,10 +654,10 @@ class CallResult extends Observable implements Observer {
   private static applyMethodOptions(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<CacheOptions>, implicit: boolean): OptionsImpl {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
-    const existing: CallResult | undefined = blank[m]
+    const existing: Computation | undefined = blank[m]
     const method = existing ? existing.method : new Method(NIL_HOLDER, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
-    const value =  new CallResult(method, NIL, new OptionsImpl(body, opts, options, implicit))
+    const value =  new Computation(method, NIL, new OptionsImpl(body, opts, options, implicit))
     blank[m] = value
     // Add to the list if it's a reaction
     if (value.options.kind === Kind.Reaction && value.options.throttling < Number.MAX_SAFE_INTEGER) {
@@ -678,12 +678,12 @@ class CallResult extends Observable implements Observer {
 
   static init(): void {
     Dbg.getMergedTraceOptions = getMergedTraceOptions
-    Snapshot.markViewed = CallResult.markViewed // override
-    Snapshot.markChanged = CallResult.markChanged // override
-    Snapshot.isConflicting = CallResult.isConflicting // override
-    Snapshot.finalizeChangeset = CallResult.finalizeChangeset // override
-    Hooks.createMethodTrap = CallResult.createMethodTrap // override
-    Hooks.applyMethodOptions = CallResult.applyMethodOptions // override
+    Snapshot.markViewed = Computation.markViewed // override
+    Snapshot.markChanged = Computation.markChanged // override
+    Snapshot.isConflicting = Computation.isConflicting // override
+    Snapshot.finalizeChangeset = Computation.finalizeChangeset // override
+    Hooks.createMethodTrap = Computation.createMethodTrap // override
+    Hooks.applyMethodOptions = Computation.applyMethodOptions // override
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {
@@ -713,7 +713,7 @@ class CallResult extends Observable implements Observer {
 function propagationHint(cause: MemberHint, full: boolean): string[] {
   const result: string[] = []
   let value: Observable = cause.revision.data[cause.member]
-  while (value instanceof CallResult && value.invalidatedDueTo) {
+  while (value instanceof Computation && value.invalidatedDueTo) {
     full && result.push(Hints.revision(cause.revision, cause.member))
     cause = value.invalidatedDueTo
     value = cause.revision.data[cause.member]
@@ -731,7 +731,7 @@ function valueHint(value: any): string {
     result = `Set(${value.size})`
   else if (value instanceof Map)
     result = `Map(${value.size})`
-  else if (value instanceof CallResult)
+  else if (value instanceof Computation)
     result = `<recompute:${Hints.revision(value.revision.prev.revision)}>`
   else if (value === Meta.Disposed)
     result = '<disposed>'
@@ -746,8 +746,8 @@ function getMergedTraceOptions(local: Partial<TraceOptions> | undefined): TraceO
   const t = Transaction.current
   let res = Dbg.merge(t.options.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Snapshot.idGen.toString().replace(/[0-9]/g, '-')}`, Dbg.global)
   res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
-  if (CallResult.current)
-    res = Dbg.merge({margin2: CallResult.current.margin}, undefined, undefined, res)
+  if (Computation.current)
+    res = Dbg.merge({margin2: Computation.current.margin}, undefined, undefined, res)
   if (local)
     res = Dbg.merge(local, undefined, undefined, res)
   return res
@@ -765,7 +765,7 @@ function reactronicHookedThen(this: any,
       resolve = resolveReturn
     if (!reject)
       reject = rejectRethrow
-    const cache = CallResult.current
+    const cache = Computation.current
     if (cache) {
       resolve = cache.bind(resolve)
       reject = cache.bind(reject)
@@ -786,4 +786,4 @@ export function rejectRethrow(error: any): never {
   throw error
 }
 
-CallResult.init()
+Computation.init()
