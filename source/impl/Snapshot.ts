@@ -243,7 +243,7 @@ export class Snapshot implements Context {
       if (!error) {
         // if (this.timestamp < h.head.snapshot.timestamp)
         //   console.log(`!!! timestamp downgrade detected ${h.head.snapshot.timestamp} -> ${this.timestamp} !!!`)
-        h.head = r
+        h.head = r // switch object to a new version
         if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Snapshot.totalRecordCount++
           // console.log('rec++')
