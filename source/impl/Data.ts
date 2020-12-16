@@ -30,10 +30,10 @@ export class ObservableValue {
 
 export interface Observer {
   readonly priority: number
-  readonly observables: Map<ObservableValue, MemberHint>
+  readonly observables: Map<ObservableValue, MemberRef>
   readonly invalidatedSince: number
   hint(notran?: boolean): string
-  invalidateDueTo(observable: ObservableValue, cause: MemberHint, since: number, reactions: Observer[]): void
+  invalidateDueTo(observable: ObservableValue, cause: MemberRef, since: number, reactions: Observer[]): void
   revalidate(now: boolean, nothrow: boolean): void
 }
 
@@ -41,7 +41,7 @@ export interface Observer {
 
 export type Member = PropertyKey
 
-export interface MemberHint {
+export interface MemberRef {
   readonly revision: ObjectRevision
   readonly member: Member
   readonly times: number

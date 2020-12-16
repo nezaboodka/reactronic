@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Worker } from '../Worker'
 import { Controller } from '../Controller'
-import { ObjectRevision, Member, ObjectHolder, ObservableValue, MemberHint, Observer, Meta } from './Data'
+import { ObjectRevision, Member, ObjectHolder, ObservableValue, MemberRef, Observer, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -218,16 +218,16 @@ class Computation extends ObservableValue implements Observer {
   get isMethod(): boolean { return true }
   readonly method: Method
   readonly revision: ObjectRevision
-  readonly observables: Map<ObservableValue, MemberHint>
+  readonly observables: Map<ObservableValue, MemberRef>
   options: OptionsImpl
-  cause: MemberHint | undefined
+  cause: MemberRef | undefined
   args: any[]
   ret: any
   error: any
   readonly margin: number
   readonly worker: Worker
   started: number
-  invalidatedDueTo: MemberHint | undefined
+  invalidatedDueTo: MemberRef | undefined
   invalidatedSince: number
   revalidation: Computation | undefined
 
@@ -235,7 +235,7 @@ class Computation extends ObservableValue implements Observer {
     super(undefined)
     this.method = method
     this.revision = revision
-    this.observables = new Map<ObservableValue, MemberHint>()
+    this.observables = new Map<ObservableValue, MemberRef>()
     if (prev instanceof Computation) {
       this.options = prev.options
       this.args = prev.args
@@ -310,7 +310,7 @@ class Computation extends ObservableValue implements Observer {
       this.ret = Promise.reject(this.error)
   }
 
-  invalidateDueTo(observable: ObservableValue, cause: MemberHint, since: number, reactions: Observer[]): void {
+  invalidateDueTo(observable: ObservableValue, cause: MemberRef, since: number, reactions: Observer[]): void {
     if (this.invalidatedSince === TOP_TIMESTAMP || this.invalidatedSince <= 0) {
       const skip = !observable.isMethod &&
         cause.revision.snapshot === this.revision.snapshot &&
@@ -566,7 +566,7 @@ class Computation extends ObservableValue implements Observer {
         if (unsubscribe) // in fact it means disposal if reactions are not undefined
           r.data[m] = Meta.Disposed
         prev.next = r
-        const cause: MemberHint = { revision: r, member: m, times: 0 }
+        const cause: MemberRef = { revision: r, member: m, times: 0 }
         if (prev instanceof Computation && (prev.invalidatedSince === TOP_TIMESTAMP || prev.invalidatedSince <= 0)) {
           prev.invalidatedDueTo = cause
           prev.invalidatedSince = timestamp
@@ -630,11 +630,11 @@ class Computation extends ObservableValue implements Observer {
       if (!observable.observers)
         observable.observers = new Set<Computation>()
       // Two-way linking
-      const hint: MemberHint = {revision: r, member: m, times}
+      const member: MemberRef = {revision: r, member: m, times}
       observable.observers.add(this)
-      this.observables.set(observable, hint)
+      this.observables.set(observable, member)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log('║', '  ∞ ', `${Hints.revision(this.revision, this.method.member)} is subscribed to ${Hints.revision(r, m)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
+        Dbg.log('║', '  ∞ ', `${Hints.revision(this.revision, this.method.member)} is subscribed to ${Hints.revision(r, m)}${member.times > 1 ? ` (${member.times} times)` : ''}`)
     }
     else {
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
@@ -710,7 +710,7 @@ class Computation extends ObservableValue implements Observer {
   }
 }
 
-function propagationHint(cause: MemberHint, full: boolean): string[] {
+function propagationHint(cause: MemberRef, full: boolean): string[] {
   const result: string[] = []
   let observable: ObservableValue = cause.revision.data[cause.member]
   while (observable instanceof Computation && observable.invalidatedDueTo) {
