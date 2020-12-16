@@ -12,7 +12,7 @@ import { SealedArray } from '../util/SealedArray'
 import { SealedMap } from '../util/SealedMap'
 import { SealedSet } from '../util/SealedSet'
 import { Kind, SnapshotOptions } from '../Options'
-import { AbstractSnapshot, ObjectRevision, Member, ObjectHolder, Observable, Observer, Meta } from './Data'
+import { AbstractSnapshot, ObjectRevision, Member, ObjectHolder, ObservableValue, Observer, Meta } from './Data'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
@@ -23,7 +23,7 @@ Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
     const data = Snapshot.reader().readable(this, '<snapshot>').data
     for (const m in data) {
       const v = data[m]
-      if (v instanceof Observable)
+      if (v instanceof ObservableValue)
         result[m] = v.value
       else if (v === Meta.Unobservable)
         result[m] = this.unobservable[m]
@@ -70,7 +70,7 @@ export class Snapshot implements AbstractSnapshot {
   static reader: () => Snapshot = undef
   static writer: () => Snapshot = undef
   static markChanged: (r: ObjectRevision, m: Member, value: any, changed: boolean) => void = undef
-  static markViewed: (r: ObjectRevision, m: Member, value: Observable, kind: Kind, weak: boolean) => void = undef
+  static markViewed: (r: ObjectRevision, m: Member, observable: ObservableValue, kind: Kind, weak: boolean) => void = undef
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
   static finalizeChangeset = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
@@ -265,8 +265,8 @@ export class Snapshot implements AbstractSnapshot {
     Snapshot.finalizeChangeset(this, error)
   }
 
-  static seal(observable: Observable | symbol, proxy: any, member: Member): void {
-    if (observable instanceof Observable) {
+  static seal(observable: ObservableValue | symbol, proxy: any, member: Member): void {
+    if (observable instanceof ObservableValue) {
       const value = observable.value
       if (value !== undefined && value !== null) {
         const sealType = Object.getPrototypeOf(value)[Sealant.SealType]

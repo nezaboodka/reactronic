@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
-import { ObjectRevision, Member, ObjectHolder, Observable, Meta } from './Data'
+import { ObjectRevision, Member, ObjectHolder, ObservableValue, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
@@ -108,7 +108,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     let result: any
     const r: ObjectRevision = Snapshot.reader().readable(h, m)
     result = r.data[m]
-    if (result instanceof Observable && !result.isMethod) {
+    if (result instanceof ObservableValue && !result.isMethod) {
       Snapshot.markViewed(r, m, result, Kind.Data, false)
       result = result.value
     }
@@ -123,15 +123,15 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   set(h: ObjectHolder, m: Member, value: any, receiver: any): boolean {
     const r: ObjectRevision = Snapshot.writer().writable(h, m, value)
     if (r !== NIL) {
-      const curr = r.data[m] as Observable
+      const curr = r.data[m] as ObservableValue
       if (curr !== undefined || (
         r.prev.revision.snapshot === NIL.snapshot && m in h.unobservable === false)) {
-        const prev = r.prev.revision.data[m] as Observable
+        const prev = r.prev.revision.data[m] as ObservableValue
         let changed = prev === undefined || prev.value !== value ||
           Hooks.sensitivity === Sensitivity.ReactEvenOnSameValueAssignment
         if (changed) {
           if (prev === curr)
-            r.data[m] = new Observable(value)
+            r.data[m] = new ObservableValue(value)
           else
             curr.value = value
         }
@@ -170,7 +170,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
-      if (!(value instanceof Observable) || !value.isMethod)
+      if (!(value instanceof ObservableValue) || !value.isMethod)
         result.push(m)
     }
     return result

@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Worker } from '../Worker'
 import { Controller } from '../Controller'
-import { ObjectRevision, Member, ObjectHolder, Observable, MemberHint, Observer, Meta } from './Data'
+import { ObjectRevision, Member, ObjectHolder, ObservableValue, MemberHint, Observer, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -211,14 +211,14 @@ export class Method extends Controller<any> {
 
 // Computation
 
-class Computation extends Observable implements Observer {
+class Computation extends ObservableValue implements Observer {
   static current?: Computation = undefined
   static asyncReactionsBatch: Computation[] = []
 
   get isMethod(): boolean { return true }
   readonly method: Method
   readonly revision: ObjectRevision
-  readonly observables: Map<Observable, MemberHint>
+  readonly observables: Map<ObservableValue, MemberHint>
   options: OptionsImpl
   cause: MemberHint | undefined
   args: any[]
@@ -235,7 +235,7 @@ class Computation extends Observable implements Observer {
     super(undefined)
     this.method = method
     this.revision = revision
-    this.observables = new Map<Observable, MemberHint>()
+    this.observables = new Map<ObservableValue, MemberHint>()
     if (prev instanceof Computation) {
       this.options = prev.options
       this.args = prev.args
@@ -310,9 +310,9 @@ class Computation extends Observable implements Observer {
       this.ret = Promise.reject(this.error)
   }
 
-  invalidateDueTo(value: Observable, cause: MemberHint, since: number, reactions: Observer[]): void {
+  invalidateDueTo(observable: ObservableValue, cause: MemberHint, since: number, reactions: Observer[]): void {
     if (this.invalidatedSince === TOP_TIMESTAMP || this.invalidatedSince <= 0) {
-      const skip = !value.isMethod &&
+      const skip = !observable.isMethod &&
         cause.revision.snapshot === this.revision.snapshot &&
         cause.revision.changes.has(cause.member)
       if (!skip) {
@@ -327,7 +327,7 @@ class Computation extends Observable implements Observer {
         else if (this.observers) // cascade invalidation
           this.observers.forEach(c => c.invalidateDueTo(this, {revision: this.revision, member: this.method.member, times: 0}, since, reactions))
         const worker = this.worker
-        if (!worker.isFinished && this !== value) // restart after itself if canceled
+        if (!worker.isFinished && this !== observable) // restart after itself if canceled
           worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to invalidation by ${Hints.revision(cause.revision, cause.member)}`), null)
       }
       else {
@@ -505,7 +505,7 @@ class Computation extends Observable implements Observer {
       t.revalidate(true, true)
   }
 
-  private static markViewed(r: ObjectRevision, m: Member, value: Observable, kind: Kind, weak: boolean): void {
+  private static markViewed(r: ObjectRevision, m: Member, observable: ObservableValue, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transaction) {
       const c: Computation | undefined = Computation.current // alias
       if (c && c.options.kind !== Kind.Transaction && m !== Meta.Holder) {
@@ -513,8 +513,8 @@ class Computation extends Observable implements Observer {
         if (ctx !== r.snapshot) // snapshot should not bump itself
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
-        if (!c.subscribeTo(value, r, m, t))
-          c.invalidateDueTo(value, {revision: r, member: m, times: 0}, ctx.timestamp, ctx.reactions)
+        if (!c.subscribeTo(observable, r, m, t))
+          c.invalidateDueTo(observable, {revision: r, member: m, times: 0}, ctx.timestamp, ctx.reactions)
       }
     }
   }
@@ -562,7 +562,7 @@ class Computation extends Observable implements Observer {
   private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: ObjectRevision, m: Member, reactions?: Observer[]): void {
     if (reactions) {
       const prev = r.prev.revision.data[m]
-      if (prev !== undefined && prev instanceof Observable && prev.next === undefined) {
+      if (prev !== undefined && prev instanceof ObservableValue && prev.next === undefined) {
         if (unsubscribe) // in fact it means disposal if reactions are not undefined
           r.data[m] = Meta.Disposed
         prev.next = r
@@ -593,7 +593,7 @@ class Computation extends Observable implements Observer {
         }
       }
     }
-    else if (value instanceof Observable && value.observers) {
+    else if (value instanceof ObservableValue && value.observers) {
       value.observers.forEach(o => {
         o.observables.delete(value)
         if (Dbg.isOn && Dbg.trace.reads)
@@ -615,24 +615,24 @@ class Computation extends Observable implements Observer {
     this.observables.clear()
   }
 
-  private subscribeTo(value: Observable, r: ObjectRevision, m: Member, timestamp: number): boolean {
-    let result = value.next === undefined
+  private subscribeTo(observable: ObservableValue, r: ObjectRevision, m: Member, timestamp: number): boolean {
+    let result = observable.next === undefined
     if (result && timestamp !== -1)
-      result = !(value instanceof Computation && timestamp >= value.invalidatedSince)
+      result = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
     if (result) {
       // Performance tracking
       let times: number = 0
       if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
-        const existing = this.observables.get(value)
+        const existing = this.observables.get(observable)
         times = existing ? existing.times + 1 : 1
       }
       // Acquire observers
-      if (!value.observers)
-        value.observers = new Set<Computation>()
+      if (!observable.observers)
+        observable.observers = new Set<Computation>()
       // Two-way linking
       const hint: MemberHint = {revision: r, member: m, times}
-      value.observers.add(this)
-      this.observables.set(value, hint)
+      observable.observers.add(this)
+      this.observables.set(observable, hint)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
         Dbg.log('║', '  ∞ ', `${Hints.revision(this.revision, this.method.member)} is subscribed to ${Hints.revision(r, m)}${hint.times > 1 ? ` (${hint.times} times)` : ''}`)
     }
@@ -640,7 +640,7 @@ class Computation extends Observable implements Observer {
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
         Dbg.log('║', '  x ', `${Hints.revision(this.revision, this.method.member)} is NOT subscribed to already invalidated ${Hints.revision(r, m)}`)
     }
-    return result || value.next === r
+    return result || observable.next === r
   }
 
   private static createMethodTrap(h: ObjectHolder, m: Member, options: OptionsImpl): F<any> {
@@ -712,11 +712,11 @@ class Computation extends Observable implements Observer {
 
 function propagationHint(cause: MemberHint, full: boolean): string[] {
   const result: string[] = []
-  let value: Observable = cause.revision.data[cause.member]
-  while (value instanceof Computation && value.invalidatedDueTo) {
+  let observable: ObservableValue = cause.revision.data[cause.member]
+  while (observable instanceof Computation && observable.invalidatedDueTo) {
     full && result.push(Hints.revision(cause.revision, cause.member))
-    cause = value.invalidatedDueTo
-    value = cause.revision.data[cause.member]
+    cause = observable.invalidatedDueTo
+    observable = cause.revision.data[cause.member]
   }
   result.push(Hints.revision(cause.revision, cause.member))
   full && result.push(cause.revision.snapshot.hint)

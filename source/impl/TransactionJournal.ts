@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { ObservableObject } from './Hooks'
-import { ObjectHolder, ObjectRevision, Meta, Patch, ObjectPatch, Observable } from './Data'
+import { ObjectHolder, ObjectRevision, Meta, Patch, ObjectPatch, ObservableValue } from './Data'
 import { NIL, Snapshot } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
@@ -100,7 +100,7 @@ export class TransactionJournalImpl extends TransactionJournal {
           const value = data[m]
           const r: ObjectRevision = ctx.writable(h, m, value)
           if (r.snapshot === ctx) {
-            r.data[m] = new Observable(value)
+            r.data[m] = new ObservableValue(value)
             const v: any = r.prev.revision.data[m]
             Snapshot.markChanged(r, m, value, v !== value)
           }
@@ -112,7 +112,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 }
 
-function unseal(observable: Observable): any {
+function unseal(observable: ObservableValue): any {
   const result = observable.value
   const clone = result?.[Sealant.Clone] as () => any
   return clone ? clone.call(result) : result
