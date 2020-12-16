@@ -12,7 +12,7 @@ import { SealedArray } from '../util/SealedArray'
 import { SealedMap } from '../util/SealedMap'
 import { SealedSet } from '../util/SealedSet'
 import { Kind, SnapshotOptions } from '../Options'
-import { AbstractSnapshot, ObjectRevision, Member, ObjectHolder, ObservableValue, Observer, Meta } from './Data'
+import { AbstractSnapshot, ObjectRevision, MemberName, ObjectHolder, ObservableValue, Observer, Meta } from './Data'
 
 const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
@@ -69,12 +69,12 @@ export class Snapshot implements AbstractSnapshot {
   // To be redefined by Transaction and Cache implementations
   static reader: () => Snapshot = undef
   static writer: () => Snapshot = undef
-  static markChanged: (r: ObjectRevision, m: Member, value: any, changed: boolean) => void = undef
-  static markViewed: (r: ObjectRevision, m: Member, observable: ObservableValue, kind: Kind, weak: boolean) => void = undef
+  static markChanged: (r: ObjectRevision, m: MemberName, value: any, changed: boolean) => void = undef
+  static markViewed: (r: ObjectRevision, m: MemberName, observable: ObservableValue, kind: Kind, weak: boolean) => void = undef
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
   static finalizeChangeset = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
-  lookup(h: ObjectHolder, m: Member): ObjectRevision {
+  lookup(h: ObjectHolder, m: MemberName): ObjectRevision {
     // TODO: Take into account timestamp of the member
     let r: ObjectRevision | undefined = h.changing
     if (r && r.snapshot !== this) {
@@ -90,14 +90,14 @@ export class Snapshot implements AbstractSnapshot {
     return r
   }
 
-  readable(h: ObjectHolder, m: Member): ObjectRevision {
+  readable(h: ObjectHolder, m: MemberName): ObjectRevision {
     const r = this.lookup(h, m)
     if (r === NIL)
       throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
 
-  writable(h: ObjectHolder, m: Member, value: any, token?: any): ObjectRevision {
+  writable(h: ObjectHolder, m: MemberName, value: any, token?: any): ObjectRevision {
     let r: ObjectRevision = this.lookup(h, m)
     const existing = r.data[m]
     if (existing !== Meta.Unobservable) {
@@ -136,7 +136,7 @@ export class Snapshot implements AbstractSnapshot {
     return r
   }
 
-  private guard(h: ObjectHolder, r: ObjectRevision, m: Member, existing: any, value: any, token: any): void {
+  private guard(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): void {
     if (this.completed)
       throw misuse(`observable property ${Hints.obj(h, m)} can only be modified inside transactions and reactions`)
     // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== NIL))
@@ -265,7 +265,7 @@ export class Snapshot implements AbstractSnapshot {
     Snapshot.finalizeChangeset(this, error)
   }
 
-  static seal(observable: ObservableValue | symbol, proxy: any, member: Member): void {
+  static seal(observable: ObservableValue | symbol, proxy: any, member: MemberName): void {
     if (observable instanceof ObservableValue) {
       const value = observable.value
       if (value !== undefined && value !== null) {
@@ -351,14 +351,14 @@ export class Snapshot implements AbstractSnapshot {
 // Hints
 
 export class Hints {
-  static obj(h: ObjectHolder | undefined, m?: Member | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
+  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
     const member = m !== undefined ? `.${m.toString()}` : ''
     return h === undefined
       ? `nil${member}`
       : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${tran}v${stamp}`
   }
 
-  static revision(r: ObjectRevision, m?: Member): string {
+  static revision(r: ObjectRevision, m?: MemberName): string {
     const h = Meta.get<ObjectHolder | undefined>(r.data, Meta.Holder)
     return Hints.obj(h, m, r.snapshot.timestamp, r.snapshot.id)
   }
@@ -366,14 +366,14 @@ export class Hints {
   static conflicts(conflicts: ObjectRevision[]): string {
     return conflicts.map(ours => {
       const items: string[] = []
-      ours.conflicts.forEach((theirs: ObjectRevision, m: Member) => {
+      ours.conflicts.forEach((theirs: ObjectRevision, m: MemberName) => {
         items.push(Hints.conflictingMemberHint(m, ours, theirs))
       })
       return items.join(', ')
     }).join(', ')
   }
 
-  static conflictingMemberHint(m: Member, ours: ObjectRevision, theirs: ObjectRevision): string {
+  static conflictingMemberHint(m: MemberName, ours: ObjectRevision, theirs: ObjectRevision): string {
     return `${theirs.snapshot.hint} on ${Hints.revision(theirs, m)}`
   }
 }

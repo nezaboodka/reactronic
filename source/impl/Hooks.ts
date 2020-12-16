@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
-import { ObjectRevision, Member, ObjectHolder, ObservableValue, Meta } from './Data'
+import { ObjectRevision, MemberName, ObjectHolder, ObservableValue, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
@@ -104,7 +104,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return Reflect.getPrototypeOf(h.unobservable)
   }
 
-  get(h: ObjectHolder, m: Member, receiver: any): any {
+  get(h: ObjectHolder, m: MemberName, receiver: any): any {
     let result: any
     const r: ObjectRevision = Snapshot.reader().readable(h, m)
     result = r.data[m]
@@ -120,7 +120,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return result
   }
 
-  set(h: ObjectHolder, m: Member, value: any, receiver: any): boolean {
+  set(h: ObjectHolder, m: MemberName, value: any, receiver: any): boolean {
     const r: ObjectRevision = Snapshot.writer().writable(h, m, value)
     if (r !== NIL) {
       const curr = r.data[m] as ObservableValue
@@ -151,12 +151,12 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return true
   }
 
-  has(h: ObjectHolder, m: Member): boolean {
+  has(h: ObjectHolder, m: MemberName): boolean {
     const r: ObjectRevision = Snapshot.reader().readable(h, m)
     return m in r.data || m in h.unobservable
   }
 
-  getOwnPropertyDescriptor(h: ObjectHolder, m: Member): PropertyDescriptor | undefined {
+  getOwnPropertyDescriptor(h: ObjectHolder, m: MemberName): PropertyDescriptor | undefined {
     const r: ObjectRevision = Snapshot.reader().readable(h, m)
     const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
     if (pd)
@@ -164,7 +164,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return pd
   }
 
-  ownKeys(h: ObjectHolder): Member[] {
+  ownKeys(h: ObjectHolder): MemberName[] {
     // TODO: Better implementation to avoid filtering
     const r: ObjectRevision = Snapshot.reader().readable(h, Meta.Holder)
     const result = []
@@ -176,7 +176,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return result
   }
 
-  static decorateField(observable: boolean, proto: any, m: Member): any {
+  static decorateField(observable: boolean, proto: any, m: MemberName): any {
     if (observable) {
       const get = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)
@@ -194,7 +194,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       Meta.acquire(proto, Meta.Blank)[m] = Meta.Unobservable
   }
 
-  static decorateMethod(implicit: boolean, options: Partial<CacheOptions>, proto: any, method: Member, pd: TypedPropertyDescriptor<F<any>>): any {
+  static decorateMethod(implicit: boolean, options: Partial<CacheOptions>, proto: any, method: MemberName, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
     // Setup method trap
@@ -266,12 +266,12 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   /* istanbul ignore next */
-  static createMethodTrap = function(h: ObjectHolder, m: Member, options: OptionsImpl): F<any> {
+  static createMethodTrap = function(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
     throw misuse('createMethodTrap should never be called')
   }
 
   /* istanbul ignore next */
-  static applyMethodOptions = function(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<CacheOptions>, implicit: boolean): OptionsImpl {
+  static applyMethodOptions = function(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<CacheOptions>, implicit: boolean): OptionsImpl {
     throw misuse('alterBlank should never be called')
   }
 }

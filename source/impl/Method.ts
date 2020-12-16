@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Worker } from '../Worker'
 import { Controller } from '../Controller'
-import { ObjectRevision, Member, ObjectHolder, ObservableValue, MemberRef, Observer, Meta } from './Data'
+import { ObjectRevision, MemberName, ObjectHolder, ObservableValue, MemberRef, Observer, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -24,7 +24,7 @@ type Call = { snapshot: Snapshot, revision: ObjectRevision, result: Computation,
 
 export class Method extends Controller<any> {
   readonly holder: ObjectHolder
-  readonly member: Member
+  readonly member: MemberName
 
   configure(options: Partial<CacheOptions>): CacheOptions { return Method.configureImpl(this, options) }
   get options(): CacheOptions { return this.weak().result.options }
@@ -36,7 +36,7 @@ export class Method extends Controller<any> {
   invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.holder, this.member)})` : 'invalidate()' }, Method.invalidate, this) }
   getCachedValueAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
-  constructor(holder: ObjectHolder, member: Member) {
+  constructor(holder: ObjectHolder, member: MemberName) {
     super()
     this.holder = holder
     this.member = member
@@ -505,7 +505,7 @@ class Computation extends ObservableValue implements Observer {
       t.revalidate(true, true)
   }
 
-  private static markViewed(r: ObjectRevision, m: Member, observable: ObservableValue, kind: Kind, weak: boolean): void {
+  private static markViewed(r: ObjectRevision, m: MemberName, observable: ObservableValue, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transaction) {
       const c: Computation | undefined = Computation.current // alias
       if (c && c.options.kind !== Kind.Transaction && m !== Meta.Holder) {
@@ -519,7 +519,7 @@ class Computation extends ObservableValue implements Observer {
     }
   }
 
-  private static markChanged(r: ObjectRevision, m: Member, value: any, changed: boolean): void {
+  private static markChanged(r: ObjectRevision, m: MemberName, value: any, changed: boolean): void {
     changed ? r.changes.add(m) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.writes)
       changed ? Dbg.log('║', '  ♦', `${Hints.revision(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.revision(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
@@ -559,7 +559,7 @@ class Computation extends ObservableValue implements Observer {
     return a.priority - b.priority
   }
 
-  private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: ObjectRevision, m: Member, reactions?: Observer[]): void {
+  private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: ObjectRevision, m: MemberName, reactions?: Observer[]): void {
     if (reactions) {
       const prev = r.prev.revision.data[m]
       if (prev !== undefined && prev instanceof ObservableValue && prev.next === undefined) {
@@ -615,7 +615,7 @@ class Computation extends ObservableValue implements Observer {
     this.observables.clear()
   }
 
-  private subscribeTo(observable: ObservableValue, r: ObjectRevision, m: Member, timestamp: number): boolean {
+  private subscribeTo(observable: ObservableValue, r: ObjectRevision, m: MemberName, timestamp: number): boolean {
     let result = observable.next === undefined
     if (result && timestamp !== -1)
       result = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
@@ -643,7 +643,7 @@ class Computation extends ObservableValue implements Observer {
     return result || observable.next === r
   }
 
-  private static createMethodTrap(h: ObjectHolder, m: Member, options: OptionsImpl): F<any> {
+  private static createMethodTrap(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
     const method = new Method(h, m)
     const methodTrap: F<any> = (...args: any[]): any =>
       method.call(false, args).ret
@@ -651,7 +651,7 @@ class Computation extends ObservableValue implements Observer {
     return methodTrap
   }
 
-  private static applyMethodOptions(proto: any, m: Member, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<CacheOptions>, implicit: boolean): OptionsImpl {
+  private static applyMethodOptions(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<CacheOptions>, implicit: boolean): OptionsImpl {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: Computation | undefined = blank[m]

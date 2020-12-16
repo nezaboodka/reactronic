@@ -39,11 +39,11 @@ export interface Observer {
 
 // ObjectRevision
 
-export type Member = PropertyKey
+export type MemberName = PropertyKey
 
 export interface MemberRef {
   readonly revision: ObjectRevision
-  readonly member: Member
+  readonly member: MemberName
   readonly times: number
 }
 
@@ -51,15 +51,15 @@ export class ObjectRevision {
   readonly snapshot: AbstractSnapshot
   readonly prev: { revision: ObjectRevision }
   readonly data: any
-  readonly changes: Set<Member>
-  readonly conflicts: Map<Member, ObjectRevision>
+  readonly changes: Set<MemberName>
+  readonly conflicts: Map<MemberName, ObjectRevision>
 
   constructor(snapshot: AbstractSnapshot, prev: ObjectRevision | undefined, data: object) {
     this.snapshot = snapshot
     this.prev = { revision: prev || this } // undefined prev means initialization of NIL
     this.data = data
-    this.changes = new Set<Member>()
-    this.conflicts = new Map<Member, ObjectRevision>()
+    this.changes = new Set<MemberName>()
+    this.conflicts = new Map<MemberName, ObjectRevision>()
     if (Dbg.isOn)
       Object.freeze(this)
   }
