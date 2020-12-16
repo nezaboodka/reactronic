@@ -215,7 +215,7 @@ class Computation extends ObservableValue implements Observer {
   static current?: Computation = undefined
   static asyncReactionsBatch: Computation[] = []
 
-  get isMethod(): boolean { return true }
+  get isComputation(): boolean { return true }
   readonly method: Method
   readonly revision: ObjectRevision
   readonly observables: Map<ObservableValue, MemberRef>
@@ -312,7 +312,7 @@ class Computation extends ObservableValue implements Observer {
 
   invalidateDueTo(observable: ObservableValue, cause: MemberRef, since: number, reactions: Observer[]): void {
     if (this.invalidatedSince === TOP_TIMESTAMP || this.invalidatedSince <= 0) {
-      const skip = !observable.isMethod &&
+      const skip = !observable.isComputation &&
         cause.revision.snapshot === this.revision.snapshot &&
         cause.revision.changes.has(cause.member)
       if (!skip) {

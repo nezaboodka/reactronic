@@ -24,7 +24,7 @@ export class ObservableValue {
   value: any
   observers?: Set<Observer>
   next?: ObjectRevision
-  get isMethod(): boolean { return false }
+  get isComputation(): boolean { return false }
   constructor(value: any) { this.value = value }
 }
 

@@ -108,7 +108,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     let result: any
     const r: ObjectRevision = Snapshot.reader().readable(h, m)
     result = r.data[m]
-    if (result instanceof ObservableValue && !result.isMethod) {
+    if (result instanceof ObservableValue && !result.isComputation) {
       Snapshot.markViewed(r, m, result, Kind.Data, false)
       result = result.value
     }
@@ -170,7 +170,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
-      if (!(value instanceof ObservableValue) || !value.isMethod)
+      if (!(value instanceof ObservableValue) || !value.isComputation)
         result.push(m)
     }
     return result
