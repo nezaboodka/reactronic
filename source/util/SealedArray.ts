@@ -10,7 +10,7 @@ import { Sealant, Sealed } from './Sealant'
 declare global {
   interface Array<T> {
     toMutable(): Array<T>
-    [Sealant.SealType]: object
+    [Sealant.SealedType]: object
   }
 }
 
@@ -38,7 +38,7 @@ Object.defineProperty(Array.prototype, 'toMutable', {
   },
 })
 
-Object.defineProperty(Array.prototype, Sealant.SealType, {
+Object.defineProperty(Array.prototype, Sealant.SealedType, {
   value: SealedArray.prototype,
   configurable: false, enumerable: false, writable: false,
 })

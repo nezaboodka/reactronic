@@ -10,7 +10,7 @@ import { Sealant, Sealed } from './Sealant'
 declare global {
   interface Map<K, V> {
     toMutable(): Map<K, V>
-    [Sealant.SealType]: object
+    [Sealant.SealedType]: object
   }
 }
 
@@ -28,7 +28,7 @@ Object.defineProperty(Map.prototype, 'toMutable', {
   },
 })
 
-Object.defineProperty(Map.prototype, Sealant.SealType, {
+Object.defineProperty(Map.prototype, Sealant.SealedType, {
   value: SealedMap.prototype,
   configurable: false, enumerable: false, writable: false,
 })

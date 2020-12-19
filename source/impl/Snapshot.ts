@@ -269,9 +269,9 @@ export class Snapshot implements AbstractSnapshot {
     if (observable instanceof ObservableValue) {
       const value = observable.value
       if (value !== undefined && value !== null) {
-        const sealType = Object.getPrototypeOf(value)[Sealant.SealType]
-        if (sealType)
-          observable.value = Sealant.seal(value, proxy, member, sealType)
+        const sealedType = Object.getPrototypeOf(value)[Sealant.SealedType]
+        if (sealedType)
+          observable.value = Sealant.seal(value, proxy.constructor.name, member, sealedType)
       }
     }
   }

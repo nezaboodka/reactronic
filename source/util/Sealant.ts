@@ -9,7 +9,7 @@ import { Dbg, misuse } from './Dbg'
 
 export interface Sealable<T> {
   toMutable(): T
-  [Sealant.SealType]: object
+  [Sealant.SealedType]: object
 }
 
 export interface Sealed<T> {
@@ -17,17 +17,17 @@ export interface Sealed<T> {
 }
 
 export abstract class Sealant {
-  static readonly SealType: unique symbol = Symbol('rxSealType')
+  static readonly SealedType: unique symbol = Symbol('rxSealedType')
   static readonly Clone: unique symbol = Symbol('rxClone')
 
-  static seal<T extends Sealable<T>>(collection: T, owner: any, member: any, proto: object): T {
+  static seal<T extends Sealable<T>>(collection: T, typeName: string, member: any, sealedType: object): T {
     let result: T & Sealed<T> = collection as any
     const clone = result[Sealant.Clone]
     if (clone)
       result = clone.call(result) as any
     if (Dbg.isOn && Dbg.trace.writes)
-      Dbg.log('║', ' ', `${owner.constructor.name}.${member.toString()} - collection is sealed`)
-    Object.setPrototypeOf(result, proto)
+      Dbg.log('║', ' ', `${typeName}.${member.toString()} - collection is sealed`)
+    Object.setPrototypeOf(result, sealedType)
     Object.freeze(result)
     return result
   }
