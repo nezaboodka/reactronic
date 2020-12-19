@@ -303,7 +303,7 @@ class TransactionImpl extends Transaction {
   private commitOrRollback(): void {
     // It's critical to have no exceptions in this block
     try {
-      this.snapshot.complete(this.canceled)
+      this.snapshot.seal(this.canceled)
       this.snapshot.collect()
       if (this.promise) {
         if (this.canceled && !this.after)
@@ -330,21 +330,21 @@ class TransactionImpl extends Transaction {
     return this.promise
   }
 
-  private static readerSnapshot(): Snapshot {
+  private static readableSnapshot(): Snapshot {
     return TransactionImpl.curr.snapshot
   }
 
-  private static writerSnapshot(): Snapshot {
+  private static writableSnapshot(): Snapshot {
     if (TransactionImpl.inspection)
       throw misuse('cannot make changes during transaction inspection')
     return TransactionImpl.curr.snapshot
   }
 
   static _init(): void {
-    Snapshot.reader = TransactionImpl.readerSnapshot // override
-    Snapshot.writer = TransactionImpl.writerSnapshot // override
+    Snapshot.readable = TransactionImpl.readableSnapshot // override
+    Snapshot.writable = TransactionImpl.writableSnapshot // override
     TransactionImpl.none.sealed = true
-    TransactionImpl.none.snapshot.complete()
+    TransactionImpl.none.snapshot.seal()
     Snapshot._init()
   }
 }

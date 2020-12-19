@@ -20,7 +20,7 @@ Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
-    const data = Snapshot.reader().readable(this, '<snapshot>').data
+    const data = Snapshot.readable().findReadableRevision(this, '<snapshot>').data
     for (const m in data) {
       const v = data[m]
       if (v instanceof Observable)
@@ -54,7 +54,7 @@ export class Snapshot implements AbstractSnapshot {
   private bumper: number
   readonly changeset: Map<ObjectHolder, ObjectRevision>
   readonly reactions: Observer[]
-  completed: boolean
+  sealed: boolean
 
   constructor(options: SnapshotOptions | null) {
     this.id = ++Snapshot.idGen
@@ -63,12 +63,12 @@ export class Snapshot implements AbstractSnapshot {
     this.bumper = 100
     this.changeset = new Map<ObjectHolder, ObjectRevision>()
     this.reactions = []
-    this.completed = false
+    this.sealed = false
   }
 
   // To be redefined by Transaction and Cache implementations
-  static reader: () => Snapshot = undef
-  static writer: () => Snapshot = undef
+  static readable: () => Snapshot = undef
+  static writable: () => Snapshot = undef
   static markChanged: (value: any, changed: boolean, r: ObjectRevision, m: MemberName) => void = undef
   static markViewed: (observable: Observable, r: ObjectRevision, m: MemberName, kind: Kind, weak: boolean) => void = undef
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
@@ -90,14 +90,14 @@ export class Snapshot implements AbstractSnapshot {
     return r
   }
 
-  readable(h: ObjectHolder, m: MemberName): ObjectRevision {
+  findReadableRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     const r = this.lookup(h, m)
     if (r === NIL)
       throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
 
-  writable(h: ObjectHolder, m: MemberName, value: any, token?: any): ObjectRevision {
+  findWritableRevision(h: ObjectHolder, m: MemberName, value: any, token?: any): ObjectRevision {
     let r: ObjectRevision = this.lookup(h, m)
     const existing = r.data[m]
     if (existing !== Meta.Unobservable) {
@@ -121,14 +121,14 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   static dispose(obj: any): void {
-    const ctx = Snapshot.writer()
+    const ctx = Snapshot.writable()
     const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
     if (h)
       Snapshot.doDispose(ctx, h)
   }
 
   static doDispose(ctx: Snapshot, h: ObjectHolder): ObjectRevision {
-    const r: ObjectRevision = ctx.writable(h, Meta.Disposed, Meta.Disposed)
+    const r: ObjectRevision = ctx.findWritableRevision(h, Meta.Disposed, Meta.Disposed)
     if (r !== NIL) {
       r.data[Meta.Disposed] = Meta.Disposed
       Snapshot.markChanged(Meta.Disposed, true, r, Meta.Disposed)
@@ -137,7 +137,7 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   private guard(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): void {
-    if (this.completed)
+    if (this.sealed)
       throw misuse(`observable property ${Hints.obj(h, m)} can only be modified inside transactions and reactions`)
     // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== NIL))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.revision(r, m)}`)
@@ -157,7 +157,7 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   acquire(outer: Snapshot): void {
-    if (!this.completed && this.stamp === UNDEFINED_TIMESTAMP) {
+    if (!this.sealed && this.stamp === UNDEFINED_TIMESTAMP) {
       const ahead = this.options.token === undefined || outer.stamp === UNDEFINED_TIMESTAMP
       this.stamp = ahead ? Snapshot.stampGen : outer.stamp
       Snapshot.pending.push(this)
@@ -233,8 +233,8 @@ export class Snapshot implements AbstractSnapshot {
     return counter
   }
 
-  complete(error?: any): void {
-    this.completed = true
+  seal(error?: any): void {
+    this.sealed = true
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       r.changes.forEach(m => Snapshot.seal(r.data[m], h.proxy, m))
       h.writers--
@@ -298,7 +298,7 @@ export class Snapshot implements AbstractSnapshot {
         const p = Snapshot.pending
         p.sort((a, b) => a.stamp - b.stamp)
         let i: number = 0
-        while (i < p.length && p[i].completed) {
+        while (i < p.length && p[i].sealed) {
           p[i].unlinkHistory()
           i++
         }
@@ -336,7 +336,7 @@ export class Snapshot implements AbstractSnapshot {
   static _init(): void {
     const nil = NIL.snapshot as Snapshot // workaround
     nil.acquire(nil)
-    nil.complete()
+    nil.seal()
     nil.collect()
     Snapshot.freezeObjectRevision(NIL)
     Snapshot.idGen = 100

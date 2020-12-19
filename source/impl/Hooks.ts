@@ -106,7 +106,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   get(h: ObjectHolder, m: MemberName, receiver: any): any {
     let result: any
-    const r: ObjectRevision = Snapshot.reader().readable(h, m)
+    const r: ObjectRevision = Snapshot.readable().findReadableRevision(h, m)
     result = r.data[m]
     if (result instanceof Observable && !result.isComputation) {
       Snapshot.markViewed(result, r, m, Kind.Data, false)
@@ -121,7 +121,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   set(h: ObjectHolder, m: MemberName, value: any, receiver: any): boolean {
-    const r: ObjectRevision = Snapshot.writer().writable(h, m, value)
+    const r: ObjectRevision = Snapshot.writable().findWritableRevision(h, m, value)
     if (r !== NIL) {
       const curr = r.data[m] as Observable
       if (curr !== undefined || (
@@ -152,12 +152,12 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   has(h: ObjectHolder, m: MemberName): boolean {
-    const r: ObjectRevision = Snapshot.reader().readable(h, m)
+    const r: ObjectRevision = Snapshot.readable().findReadableRevision(h, m)
     return m in r.data || m in h.unobservable
   }
 
   getOwnPropertyDescriptor(h: ObjectHolder, m: MemberName): PropertyDescriptor | undefined {
-    const r: ObjectRevision = Snapshot.reader().readable(h, m)
+    const r: ObjectRevision = Snapshot.readable().findReadableRevision(h, m)
     const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
     if (pd)
       pd.configurable = pd.writable = true
@@ -166,7 +166,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   ownKeys(h: ObjectHolder): MemberName[] {
     // TODO: Better implementation to avoid filtering
-    const r: ObjectRevision = Snapshot.reader().readable(h, Meta.Holder)
+    const r: ObjectRevision = Snapshot.readable().findReadableRevision(h, Meta.Holder)
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
@@ -225,9 +225,9 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   static createObjectHolder(unobservable: any, blank: any, hint: string): ObjectHolder {
-    const ctx = Snapshot.writer()
+    const ctx = Snapshot.writable()
     const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, NIL, hint)
-    ctx.writable(h, Meta.Holder, blank)
+    ctx.findWritableRevision(h, Meta.Holder, blank)
     return h
   }
 

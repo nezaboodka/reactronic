@@ -50,11 +50,11 @@ export class Method extends Controller<any> {
       && (!weak || c.invalidatedSince === -1 || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Reaction ||
-        (opt.kind === Kind.Cache && (call.revision.snapshot.completed || call.revision.prev.revision !== NIL))
+        (opt.kind === Kind.Cache && (call.revision.snapshot.sealed || call.revision.prev.revision !== NIL))
       const token = opt.noSideEffects ? this : undefined
       const call2 = this.compute(call, spawn, opt, token, args)
       const ctx2 = call2.result.revision.snapshot
-      if (!weak || ctx === ctx2 || (ctx2.completed && ctx.timestamp >= ctx2.timestamp))
+      if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         call = call2
     }
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true))
@@ -128,7 +128,7 @@ export class Method extends Controller<any> {
   }
 
   private read(args: any[] | undefined): Call {
-    const ctx = Snapshot.reader()
+    const ctx = Snapshot.readable()
     const r: ObjectRevision = ctx.lookup(this.holder, this.member)
     const c: Computation = this.from(r)
     const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== -1 &&
@@ -139,9 +139,9 @@ export class Method extends Controller<any> {
   }
 
   private write(): Call {
-    const ctx = Snapshot.writer()
+    const ctx = Snapshot.writable()
     const m = this.member
-    const r: ObjectRevision = ctx.writable(this.holder, m, Meta.Holder, this)
+    const r: ObjectRevision = ctx.findWritableRevision(this.holder, m, Meta.Holder, this)
     let c: Computation = this.from(r)
     if (c.revision !== r) {
       const c2 = new Computation(this, r, c)
@@ -157,13 +157,13 @@ export class Method extends Controller<any> {
     let c: Computation = r.data[m]
     if (c.method !== this) {
       const hint: string = Dbg.isOn ? `${Hints.obj(this.holder, m)}/initialize` : /* istanbul ignore next */ 'Cache.init'
-      const spawn = r.snapshot.completed || r.prev.revision !== NIL
+      const spawn = r.snapshot.sealed || r.prev.revision !== NIL
       c = Transaction.runAs<Computation>({ hint, spawn, token: this }, (): Computation => {
         const h = this.holder
-        let r2: ObjectRevision = Snapshot.reader().readable(h, m)
+        let r2: ObjectRevision = Snapshot.readable().findReadableRevision(h, m)
         let c2 = r2.data[m] as Computation
         if (c2.method !== this) {
-          r2 = Snapshot.writer().writable(h, m, Meta.Holder, this)
+          r2 = Snapshot.writable().findWritableRevision(h, m, Meta.Holder, this)
           c2 = r2.data[m] = new Computation(this, r2, c2)
           c2.invalidatedSince = -1 // indicates blank value
           Snapshot.markChanged(c2, true, r2, m)
@@ -202,7 +202,7 @@ export class Method extends Controller<any> {
   }
 
   private static invalidate(self: Method): void {
-    const ctx = Snapshot.reader()
+    const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c: Computation = call.result
     c.invalidateDueTo(c, {revision: NIL, member: self.member, times: 0}, ctx.timestamp, ctx.reactions)
@@ -320,7 +320,7 @@ class Computation extends Observable implements Observer {
         this.invalidatedSince = since
         const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
         if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.revision === NIL ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.revision(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.revision === NIL ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.revision(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
         if (isReaction) // stop cascade invalidation on reaction
           reactions.push(this)
@@ -509,7 +509,7 @@ class Computation extends Observable implements Observer {
     if (kind !== Kind.Transaction) {
       const c: Computation | undefined = Computation.current // alias
       if (c && c.options.kind !== Kind.Transaction && m !== Meta.Holder) {
-        const ctx = Snapshot.reader()
+        const ctx = Snapshot.readable()
         if (ctx !== r.snapshot) // snapshot should not bump itself
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
@@ -597,7 +597,7 @@ class Computation extends Observable implements Observer {
       value.observers.forEach(o => {
         o.observables.delete(value)
         if (Dbg.isOn && Dbg.trace.reads)
-          Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.revision(r, m)}`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.revision(r, m)}`)
       })
       value.observers = undefined
     }
@@ -610,7 +610,7 @@ class Computation extends Observable implements Observer {
       if (observers)
         observers.delete(this)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log(Dbg.trace.transactions && !Snapshot.reader().completed ? '║' : ' ', '-', `${Hints.revision(this.revision, this.method.member)} is unsubscribed from ${Hints.revision(hint.revision, hint.member)}`)
+        Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', '-', `${Hints.revision(this.revision, this.method.member)} is unsubscribed from ${Hints.revision(hint.revision, hint.member)}`)
     })
     this.observables.clear()
   }

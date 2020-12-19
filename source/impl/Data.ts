@@ -15,7 +15,7 @@ export interface AbstractSnapshot {
   readonly id: number
   readonly hint: string
   readonly timestamp: number
-  readonly completed: boolean
+  readonly sealed: boolean
 }
 
 // Observable & Observer
