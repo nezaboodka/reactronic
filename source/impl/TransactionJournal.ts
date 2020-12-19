@@ -102,7 +102,7 @@ export class TransactionJournalImpl extends TransactionJournal {
           if (r.snapshot === ctx) {
             r.data[m] = new ObservableValue(value)
             const v: any = r.prev.revision.data[m]
-            Snapshot.markChanged(r, m, value, v !== value)
+            Snapshot.markChanged(value, v !== value, r, m)
           }
         }
       }

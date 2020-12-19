@@ -109,7 +109,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     const r: ObjectRevision = Snapshot.reader().readable(h, m)
     result = r.data[m]
     if (result instanceof ObservableValue && !result.isComputation) {
-      Snapshot.markViewed(r, m, result, Kind.Data, false)
+      Snapshot.markViewed(result, r, m, Kind.Data, false)
       result = result.value
     }
     else if (m === Meta.Holder) {
@@ -141,7 +141,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
           else
             changed = true // Sensitivity.ReactOnFinalAndIntermediateDifference
         }
-        Snapshot.markChanged(r, m, value, changed)
+        Snapshot.markChanged(value, changed, r, m)
       }
       else
         Reflect.set(h.unobservable, m, value, receiver)
