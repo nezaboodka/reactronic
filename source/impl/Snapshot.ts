@@ -238,7 +238,7 @@ export class Snapshot implements AbstractSnapshot {
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       r.changes.forEach(m => Snapshot.seal(r.data[m], h.proxy, m))
       h.writers--
-      if (h.writers === 0) // уходя гасите свет
+      if (h.writers === 0) // уходя гасите свет - последний уходящий убирает за всеми
         h.changing = undefined
       if (!error) {
         // if (this.timestamp < h.head.snapshot.timestamp)
