@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
-import { ObjectRevision, MemberName, ObjectHolder, ObservableValue, Meta } from './Data'
+import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
@@ -108,7 +108,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     let result: any
     const r: ObjectRevision = Snapshot.reader().readable(h, m)
     result = r.data[m]
-    if (result instanceof ObservableValue && !result.isComputation) {
+    if (result instanceof Observable && !result.isComputation) {
       Snapshot.markViewed(result, r, m, Kind.Data, false)
       result = result.value
     }
@@ -123,15 +123,15 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   set(h: ObjectHolder, m: MemberName, value: any, receiver: any): boolean {
     const r: ObjectRevision = Snapshot.writer().writable(h, m, value)
     if (r !== NIL) {
-      const curr = r.data[m] as ObservableValue
+      const curr = r.data[m] as Observable
       if (curr !== undefined || (
         r.prev.revision.snapshot === NIL.snapshot && m in h.unobservable === false)) {
-        const prev = r.prev.revision.data[m] as ObservableValue
+        const prev = r.prev.revision.data[m] as Observable
         let changed = prev === undefined || prev.value !== value ||
           Hooks.sensitivity === Sensitivity.ReactEvenOnSameValueAssignment
         if (changed) {
           if (prev === curr)
-            r.data[m] = new ObservableValue(value)
+            r.data[m] = new Observable(value)
           else
             curr.value = value
         }
@@ -170,7 +170,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
-      if (!(value instanceof ObservableValue) || !value.isComputation)
+      if (!(value instanceof Observable) || !value.isComputation)
         result.push(m)
     }
     return result

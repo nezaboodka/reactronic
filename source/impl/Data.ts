@@ -18,9 +18,9 @@ export interface AbstractSnapshot {
   readonly completed: boolean
 }
 
-// ObservableValue & Observer
+// Observable & Observer
 
-export class ObservableValue {
+export class Observable {
   value: any
   observers?: Set<Observer>
   next?: ObjectRevision
@@ -30,10 +30,10 @@ export class ObservableValue {
 
 export interface Observer {
   readonly priority: number
-  readonly observables: Map<ObservableValue, MemberRef>
+  readonly observables: Map<Observable, MemberRef>
   readonly invalidatedSince: number
   hint(notran?: boolean): string
-  invalidateDueTo(observable: ObservableValue, cause: MemberRef, since: number, reactions: Observer[]): void
+  invalidateDueTo(observable: Observable, cause: MemberRef, since: number, reactions: Observer[]): void
   revalidate(now: boolean, nothrow: boolean): void
 }
 

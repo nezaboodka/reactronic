@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Worker } from '../Worker'
 import { Controller } from '../Controller'
-import { ObjectRevision, MemberName, ObjectHolder, ObservableValue, MemberRef, Observer, Meta } from './Data'
+import { ObjectRevision, MemberName, ObjectHolder, Observable, MemberRef, Observer, Meta } from './Data'
 import { Snapshot, Hints, NIL } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -211,14 +211,14 @@ export class Method extends Controller<any> {
 
 // Computation
 
-class Computation extends ObservableValue implements Observer {
+class Computation extends Observable implements Observer {
   static current?: Computation = undefined
   static asyncReactionsBatch: Computation[] = []
 
   get isComputation(): boolean { return true }
   readonly method: Method
   readonly revision: ObjectRevision
-  readonly observables: Map<ObservableValue, MemberRef>
+  readonly observables: Map<Observable, MemberRef>
   options: OptionsImpl
   cause: MemberRef | undefined
   args: any[]
@@ -235,7 +235,7 @@ class Computation extends ObservableValue implements Observer {
     super(undefined)
     this.method = method
     this.revision = revision
-    this.observables = new Map<ObservableValue, MemberRef>()
+    this.observables = new Map<Observable, MemberRef>()
     if (prev instanceof Computation) {
       this.options = prev.options
       this.args = prev.args
@@ -310,7 +310,7 @@ class Computation extends ObservableValue implements Observer {
       this.ret = Promise.reject(this.error)
   }
 
-  invalidateDueTo(observable: ObservableValue, cause: MemberRef, since: number, reactions: Observer[]): void {
+  invalidateDueTo(observable: Observable, cause: MemberRef, since: number, reactions: Observer[]): void {
     if (this.invalidatedSince === TOP_TIMESTAMP || this.invalidatedSince <= 0) {
       const skip = !observable.isComputation &&
         cause.revision.snapshot === this.revision.snapshot &&
@@ -505,7 +505,7 @@ class Computation extends ObservableValue implements Observer {
       t.revalidate(true, true)
   }
 
-  private static markViewed(observable: ObservableValue, r: ObjectRevision, m: MemberName, kind: Kind, weak: boolean): void {
+  private static markViewed(observable: Observable, r: ObjectRevision, m: MemberName, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transaction) {
       const c: Computation | undefined = Computation.current // alias
       if (c && c.options.kind !== Kind.Transaction && m !== Meta.Holder) {
@@ -562,7 +562,7 @@ class Computation extends ObservableValue implements Observer {
   private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: ObjectRevision, m: MemberName, reactions?: Observer[]): void {
     if (reactions) {
       const prev = r.prev.revision.data[m]
-      if (prev !== undefined && prev instanceof ObservableValue && prev.next === undefined) {
+      if (prev !== undefined && prev instanceof Observable && prev.next === undefined) {
         if (unsubscribe) // in fact it means disposal if reactions are not undefined
           r.data[m] = Meta.Disposed
         prev.next = r
@@ -593,7 +593,7 @@ class Computation extends ObservableValue implements Observer {
         }
       }
     }
-    else if (value instanceof ObservableValue && value.observers) {
+    else if (value instanceof Observable && value.observers) {
       value.observers.forEach(o => {
         o.observables.delete(value)
         if (Dbg.isOn && Dbg.trace.reads)
@@ -615,7 +615,7 @@ class Computation extends ObservableValue implements Observer {
     this.observables.clear()
   }
 
-  private subscribeTo(observable: ObservableValue, r: ObjectRevision, m: MemberName, timestamp: number): boolean {
+  private subscribeTo(observable: Observable, r: ObjectRevision, m: MemberName, timestamp: number): boolean {
     let result = observable.next === undefined
     if (result && timestamp !== -1)
       result = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
@@ -712,7 +712,7 @@ class Computation extends ObservableValue implements Observer {
 
 function propagationHint(cause: MemberRef, full: boolean): string[] {
   const result: string[] = []
-  let observable: ObservableValue = cause.revision.data[cause.member]
+  let observable: Observable = cause.revision.data[cause.member]
   while (observable instanceof Computation && observable.invalidatedDueTo) {
     full && result.push(Hints.revision(cause.revision, cause.member))
     cause = observable.invalidatedDueTo
