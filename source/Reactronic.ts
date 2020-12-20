@@ -12,16 +12,16 @@ import { Kind, Reentrance, CacheOptions, TraceOptions, ProfilingOptions, Sensiti
 import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
-import { Method } from './impl/Method'
+import { MethodController } from './impl/Method'
 import { Transaction } from './impl/Transaction'
 import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 
 export class Reactronic {
-  static why(short: boolean = false): string { return short ? Method.whyShort() : Method.whyFull() }
-  static getController<T>(method: F<T>): Controller<T> { return Method.getController(method) }
+  static why(short: boolean = false): string { return short ? MethodController.whyShort() : MethodController.whyFull() }
+  static getController<T>(method: F<T>): Controller<T> { return MethodController.of(method) }
   static getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Reactronic.getController(method as any as F<T>).getCachedValueAndRevalidate(args) }
-  static configureCurrentMethodCache(options: Partial<CacheOptions>): CacheOptions { return Method.configureImpl(undefined, options) }
+  static configureCurrentMethodCache(options: Partial<CacheOptions>): CacheOptions { return MethodController.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
   static takeSnapshot<T>(obj: T): T { return Snapshot.takeSnapshot(obj) }
@@ -41,11 +41,11 @@ export class Reactronic {
 // Operators
 
 export function unobservableRun<T>(func: F<T>, ...args: any[]): T {
-  return Method.run<T>(undefined, func, ...args)
+  return MethodController.run<T>(undefined, func, ...args)
 }
 
 export function isolatedRun<T>(func: F<T>, ...args: any[]): T {
-  return Method.run<T>(undefined, Transaction.isolated, func, ...args)
+  return MethodController.run<T>(undefined, Transaction.isolated, func, ...args)
 }
 
 export function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T {

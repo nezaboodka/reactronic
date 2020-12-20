@@ -22,18 +22,18 @@ const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL, 'N/A
 
 type Call = { snapshot: Snapshot, revision: ObjectRevision, computation: Computation, reuse: boolean }
 
-export class Method extends Controller<any> {
+export class MethodController extends Controller<any> {
   readonly holder: ObjectHolder
   readonly member: MemberName
 
-  configure(options: Partial<CacheOptions>): CacheOptions { return Method.configureImpl(this, options) }
+  configure(options: Partial<CacheOptions>): CacheOptions { return MethodController.configureImpl(this, options) }
   get options(): CacheOptions { return this.weak().computation.options }
   get args(): ReadonlyArray<any> { return this.weak().computation.args }
   get value(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.weak().computation.error }
   get stamp(): number { return this.weak().revision.snapshot.timestamp }
   get isInvalidated(): boolean { return !this.weak().reuse }
-  invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.holder, this.member)})` : 'invalidate()' }, Method.invalidate, this) }
+  invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.holder, this.member)})` : 'invalidate()' }, MethodController.invalidate, this) }
   getCachedValueAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
   constructor(holder: ObjectHolder, member: MemberName) {
@@ -64,14 +64,14 @@ export class Method extends Controller<any> {
     return result
   }
 
-  static getController(method: F<any>): Controller<any> {
+  static of(method: F<any>): Controller<any> {
     const func = Meta.get<Controller<any> | undefined>(method, Meta.Method)
     if (!func)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return func
   }
 
-  static configureImpl(self: Method | undefined, options: Partial<CacheOptions>): CacheOptions {
+  static configureImpl(self: MethodController | undefined, options: Partial<CacheOptions>): CacheOptions {
     let c: Computation | undefined
     if (self)
       c = self.write().computation
@@ -201,7 +201,7 @@ export class Method extends Controller<any> {
     return call
   }
 
-  private static invalidate(self: Method): void {
+  private static invalidate(self: MethodController): void {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c: Computation = call.computation
@@ -216,7 +216,7 @@ class Computation extends Observable implements Observer {
   static asyncReactionsBatch: Computation[] = []
 
   get isComputation(): boolean { return true }
-  readonly method: Method
+  readonly method: MethodController
   readonly revision: ObjectRevision
   readonly observables: Map<Observable, MemberRef>
   options: OptionsImpl
@@ -231,7 +231,7 @@ class Computation extends Observable implements Observer {
   invalidatedSince: number
   revalidation: Computation | undefined
 
-  constructor(method: Method, revision: ObjectRevision, prev: Computation | OptionsImpl) {
+  constructor(method: MethodController, revision: ObjectRevision, prev: Computation | OptionsImpl) {
     super(undefined)
     this.method = method
     this.revision = revision
@@ -289,7 +289,7 @@ class Computation extends Observable implements Observer {
       if (Dbg.isOn && Dbg.trace.steps && this.ret)
         Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.revision(this.revision, this.method.member)} - step in  `, 0, '        │')
       const started = Date.now()
-      const result = Method.run<T>(this, func, ...args)
+      const result = MethodController.run<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Dbg.isOn && Dbg.trace.steps && this.ret)
         Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.revision(this.revision, this.method.member)} - step out `, 0, this.started > 0 ? '        │' : '')
@@ -305,7 +305,7 @@ class Computation extends Observable implements Observer {
       this.args = args
     this.invalidatedSince = TOP_TIMESTAMP
     if (!this.error)
-      Method.run<void>(this, Computation.compute, this, proxy)
+      MethodController.run<void>(this, Computation.compute, this, proxy)
     else
       this.ret = Promise.reject(this.error)
   }
@@ -473,7 +473,7 @@ class Computation extends Observable implements Observer {
       spawn: true,
       trace: Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global,
     }
-    Method.run<void>(undefined, Transaction.runAs, options,
+    MethodController.run<void>(undefined, Transaction.runAs, options,
       MonitorImpl.enter, mon, this.worker)
   }
 
@@ -485,7 +485,7 @@ class Computation extends Observable implements Observer {
           spawn: true,
           trace: Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.DefaultLevel,
         }
-        Method.run<void>(undefined, Transaction.runAs, options,
+        MethodController.run<void>(undefined, Transaction.runAs, options,
           MonitorImpl.leave, mon, this.worker)
       }
       this.worker.whenFinished().then(leave, leave)
@@ -644,7 +644,7 @@ class Computation extends Observable implements Observer {
   }
 
   private static createMethodTrap(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
-    const method = new Method(h, m)
+    const method = new MethodController(h, m)
     const methodTrap: F<any> = (...args: any[]): any =>
       method.call(false, args).ret
     Meta.set(methodTrap, Meta.Method, method)
@@ -655,7 +655,7 @@ class Computation extends Observable implements Observer {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: Computation | undefined = blank[m]
-    const method = existing ? existing.method : new Method(NIL_HOLDER, m)
+    const method = existing ? existing.method : new MethodController(NIL_HOLDER, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
     const value =  new Computation(method, NIL, new OptionsImpl(body, opts, options, implicit))
     blank[m] = value
@@ -687,10 +687,10 @@ class Computation extends Observable implements Observer {
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {
-        get: Method.whyFull, configurable: false, enumerable: false,
+        get: MethodController.whyFull, configurable: false, enumerable: false,
       })
       Object.defineProperty(globalThis, 'rWhyShort', {
-        get: Method.whyShort, configurable: false, enumerable: false,
+        get: MethodController.whyShort, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -698,10 +698,10 @@ class Computation extends Observable implements Observer {
     }
     try {
       Object.defineProperty(global, 'rWhy', {
-        get: Method.whyFull, configurable: false, enumerable: false,
+        get: MethodController.whyFull, configurable: false, enumerable: false,
       })
       Object.defineProperty(global, 'rWhyShort', {
-        get: Method.whyShort, configurable: false, enumerable: false,
+        get: MethodController.whyShort, configurable: false, enumerable: false,
       })
     }
     catch (e) {
