@@ -20,17 +20,17 @@ import { TransactionJournalImpl } from './TransactionJournal'
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL, 'N/A')
 
-type Call = { snapshot: Snapshot, revision: ObjectRevision, result: Computation, reuse: boolean }
+type Call = { snapshot: Snapshot, revision: ObjectRevision, computation: Computation, reuse: boolean }
 
 export class Method extends Controller<any> {
   readonly holder: ObjectHolder
   readonly member: MemberName
 
   configure(options: Partial<CacheOptions>): CacheOptions { return Method.configureImpl(this, options) }
-  get options(): CacheOptions { return this.weak().result.options }
-  get args(): ReadonlyArray<any> { return this.weak().result.args }
+  get options(): CacheOptions { return this.weak().computation.options }
+  get args(): ReadonlyArray<any> { return this.weak().computation.args }
   get value(): any { return this.call(true, undefined).value }
-  get error(): boolean { return this.weak().result.error }
+  get error(): boolean { return this.weak().computation.error }
   get stamp(): number { return this.weak().revision.snapshot.timestamp }
   get isInvalidated(): boolean { return !this.weak().reuse }
   invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.holder, this.member)})` : 'invalidate()' }, Method.invalidate, this) }
@@ -45,7 +45,7 @@ export class Method extends Controller<any> {
   call(weak: boolean, args: any[] | undefined): Computation {
     let call: Call = this.read(args)
     const ctx = call.snapshot
-    const c: Computation = call.result
+    const c: Computation = call.computation
     if (!call.reuse && call.revision.data[Meta.Disposed] === undefined
       && (!weak || c.invalidatedSince === -1 || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
@@ -53,13 +53,13 @@ export class Method extends Controller<any> {
         (opt.kind === Kind.Cache && (call.revision.snapshot.sealed || call.revision.prev.revision !== NIL))
       const token = opt.noSideEffects ? this : undefined
       const call2 = this.compute(call, spawn, opt, token, args)
-      const ctx2 = call2.result.revision.snapshot
+      const ctx2 = call2.computation.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         call = call2
     }
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true))
-      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.revision(call.revision, this.member)} result is reused from T${call.result.worker.id}[${call.result.worker.hint}]`)
-    const result = call.result
+      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.revision(call.revision, this.member)} result is reused from T${call.computation.worker.id}[${call.computation.worker.hint}]`)
+    const result = call.computation
     Snapshot.markViewed(result, call.revision, this.member, result.options.kind, weak)
     return result
   }
@@ -74,7 +74,7 @@ export class Method extends Controller<any> {
   static configureImpl(self: Method | undefined, options: Partial<CacheOptions>): CacheOptions {
     let c: Computation | undefined
     if (self)
-      c = self.write().result
+      c = self.write().computation
     else
       c = Computation.current
     if (!c || c.worker.isFinished)
@@ -123,7 +123,7 @@ export class Method extends Controller<any> {
 
   private weak(): Call {
     const call = this.read(undefined)
-    Snapshot.markViewed(call.result, call.revision, this.member, call.result.options.kind, true)
+    Snapshot.markViewed(call.computation, call.revision, this.member, call.computation.options.kind, true)
     return call
   }
 
@@ -135,7 +135,7 @@ export class Method extends Controller<any> {
       (ctx === c.revision.snapshot || ctx.timestamp < c.invalidatedSince) &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
-    return { snapshot: ctx, revision: r, result: c, reuse }
+    return { snapshot: ctx, revision: r, computation: c, reuse }
   }
 
   private write(): Call {
@@ -149,7 +149,7 @@ export class Method extends Controller<any> {
       ctx.bumpBy(r.prev.revision.snapshot.timestamp)
       Snapshot.markChanged(c, true, r, m)
     }
-    return { snapshot: ctx, revision: r, result: c, reuse: true }
+    return { snapshot: ctx, revision: r, computation: c, reuse: true }
   }
 
   private from(r: ObjectRevision): Computation {
@@ -180,31 +180,31 @@ export class Method extends Controller<any> {
     let call = existing
     const opt = { hint, spawn, journal: options.journal, trace: options.trace, token }
     const ret = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
-      if (!call.result.worker.isCanceled) { // first call
+      if (!call.computation.worker.isCanceled) { // first call
         call = this.write()
         if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
-          Dbg.log('║', ' (f)', `${call.result.whyFull()}`)
-        call.result.compute(this.holder.proxy, argsx)
+          Dbg.log('║', ' (f)', `${call.computation.whyFull()}`)
+        call.computation.compute(this.holder.proxy, argsx)
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
-        if (call.result.options.kind === Kind.Transaction || !call.reuse) {
+        if (call.computation.options.kind === Kind.Transaction || !call.reuse) {
           call = this.write()
           if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
-            Dbg.log('║', ' (f)', `${call.result.whyFull()}`)
-          call.result.compute(this.holder.proxy, argsx)
+            Dbg.log('║', ' (f)', `${call.computation.whyFull()}`)
+          call.computation.compute(this.holder.proxy, argsx)
         }
       }
-      return call.result.ret
+      return call.computation.ret
     }, args)
-    call.result.ret = ret
+    call.computation.ret = ret
     return call
   }
 
   private static invalidate(self: Method): void {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
-    const c: Computation = call.result
+    const c: Computation = call.computation
     c.invalidateDueTo(c, {revision: NIL, member: self.member, times: 0}, ctx.timestamp, ctx.reactions)
   }
 }
