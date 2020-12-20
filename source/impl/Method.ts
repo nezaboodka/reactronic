@@ -60,7 +60,7 @@ export class MethodController extends Controller<any> {
     else if (Dbg.isOn && Dbg.trace.methods && (c.options.trace === undefined || c.options.trace.methods === undefined || c.options.trace.methods === true))
       Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.revision(call.revision, this.member)} result is reused from T${call.computation.worker.id}[${call.computation.worker.hint}]`)
     const result = call.computation
-    Snapshot.markViewed(result, this.holder, this.member, call.revision, result.options.kind, weak)
+    Snapshot.markViewed(result, call.revision, this.member, this.holder, result.options.kind, weak)
     return result
   }
 
@@ -123,7 +123,7 @@ export class MethodController extends Controller<any> {
 
   private weak(): Call {
     const call = this.read(undefined)
-    Snapshot.markViewed(call.computation, this.holder, this.member, call.revision, call.computation.options.kind, true)
+    Snapshot.markViewed(call.computation, call.revision, this.member, this.holder, call.computation.options.kind, true)
     return call
   }
 
@@ -148,7 +148,7 @@ export class MethodController extends Controller<any> {
       const c2 = new Computation(this, r, c)
       c = r.data[m] = c2.reenterOver(c)
       ctx.bumpBy(r.prev.revision.snapshot.timestamp)
-      Snapshot.markChanged(c, true, h, m, r)
+      Snapshot.markChanged(c, true, r, m, h)
     }
     return { snapshot: ctx, revision: r, computation: c, reuse: true }
   }
@@ -167,7 +167,7 @@ export class MethodController extends Controller<any> {
           r2 = Snapshot.writable().findWritableRevision(h, m, Meta.Holder, this)
           c2 = r2.data[m] = new Computation(this, r2, c2)
           c2.invalidatedSince = -1 // indicates blank value
-          Snapshot.markChanged(c2, true, h, m, r2)
+          Snapshot.markChanged(c2, true, r2, m, h)
         }
         return c2
       })
@@ -506,7 +506,7 @@ class Computation extends Observable implements Observer {
       t.revalidate(true, true)
   }
 
-  private static markViewed(observable: Observable, h: ObjectHolder, m: MemberName, r: ObjectRevision, kind: Kind, weak: boolean): void {
+  private static markViewed(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transaction) {
       const c: Computation | undefined = Computation.current // alias
       if (c && c.options.kind !== Kind.Transaction && m !== Meta.Holder) {
@@ -520,7 +520,7 @@ class Computation extends Observable implements Observer {
     }
   }
 
-  private static markChanged(value: any, changed: boolean, h: ObjectHolder, m: MemberName, r: ObjectRevision): void {
+  private static markChanged(value: any, changed: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
     changed ? r.changes.add(m) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.writes)
       changed ? Dbg.log('║', '  ♦', `${Hints.revision(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.revision(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')

@@ -69,8 +69,8 @@ export class Snapshot implements AbstractSnapshot {
   // To be redefined by Transaction and Cache implementations
   static readable: () => Snapshot = undef
   static writable: () => Snapshot = undef
-  static markChanged: (value: any, changed: boolean, h: ObjectHolder, m: MemberName, r: ObjectRevision, ) => void = undef
-  static markViewed: (observable: Observable, h: ObjectHolder, m: MemberName, r: ObjectRevision, kind: Kind, weak: boolean) => void = undef
+  static markChanged: (value: any, changed: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = undef
+  static markViewed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = undef
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
   static finalizeChangeset = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
@@ -131,7 +131,7 @@ export class Snapshot implements AbstractSnapshot {
     const r: ObjectRevision = ctx.findWritableRevision(h, Meta.Disposed, Meta.Disposed)
     if (r !== NIL) {
       r.data[Meta.Disposed] = Meta.Disposed
-      Snapshot.markChanged(Meta.Disposed, true, h, Meta.Disposed, r)
+      Snapshot.markChanged(Meta.Disposed, true, r, Meta.Disposed, h)
     }
     return r
   }
