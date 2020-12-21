@@ -514,7 +514,7 @@ class Computation extends Observable implements Observer {
         if (ctx !== r.snapshot) // snapshot should not bump itself
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
-        if (!c.subscribeTo(observable, r, m, t))
+        if (!c.subscribeTo(observable, r, m, h, t))
           c.invalidateDueTo(observable, {revision: r, member: m, times: 0}, ctx.timestamp, ctx.reactions)
       }
     }
@@ -540,10 +540,10 @@ class Computation extends Observable implements Observer {
       const reactions = snapshot.reactions
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
         if (!r.changes.has(Meta.Disposed))
-          r.changes.forEach(m => Computation.finalizeMemberChange(false, since, r, m, reactions))
+          r.changes.forEach(m => Computation.finalizeMemberChange(false, since, r, m, h, reactions))
         else
           for (const m in r.prev.revision.data)
-            Computation.finalizeMemberChange(true, since, r, m, reactions)
+            Computation.finalizeMemberChange(true, since, r, m, h, reactions)
         if (Dbg.isOn)
           Snapshot.freezeObjectRevision(r)
       })
@@ -553,16 +553,21 @@ class Computation extends Observable implements Observer {
     }
     else
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-        r.changes.forEach(m => Computation.finalizeMemberChange(true, since, r, m)))
+        r.changes.forEach(m => Computation.finalizeMemberChange(true, since, r, m, h)))
   }
 
   private static compareReactionsByPriority(a: Observer, b: Observer): number {
     return a.priority - b.priority
   }
 
-  private static finalizeMemberChange(unsubscribe: boolean, timestamp: number, r: ObjectRevision, m: MemberName, reactions?: Observer[]): void {
+  private static finalizeMemberChange(unsubscribe: boolean, timestamp: number,
+    r: ObjectRevision, m: MemberName, h: ObjectHolder, reactions?: Observer[]): void {
     if (reactions) {
       const prev = r.prev.revision.data[m]
+      // if (prev !== undefined) {
+      //   if ((prev.next === undefined) !== (prev === h.head.data[m]))
+      //     console.log('(!!!)')
+      // }
       if (prev !== undefined && prev instanceof Observable && prev.next === undefined) {
         if (unsubscribe) // in fact it means disposal if reactions are not undefined
           r.data[m] = Meta.Disposed
@@ -616,11 +621,11 @@ class Computation extends Observable implements Observer {
     this.observables.clear()
   }
 
-  private subscribeTo(observable: Observable, r: ObjectRevision, m: MemberName, timestamp: number): boolean {
-    let result = observable.next === undefined
-    if (result && timestamp !== -1)
-      result = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
-    if (result) {
+  private subscribeTo(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
+    let isValid = !r.snapshot.sealed || observable === h.head.data[m]
+    if (isValid && timestamp !== -1)
+      isValid = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
+    if (isValid) {
       // Performance tracking
       let times: number = 0
       if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
@@ -641,7 +646,7 @@ class Computation extends Observable implements Observer {
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
         Dbg.log('║', '  x ', `${Hints.revision(this.revision, this.method.member)} is NOT subscribed to already invalidated ${Hints.revision(r, m)}`)
     }
-    return result || observable.next === r
+    return isValid // || observable.next === r
   }
 
   private static createMethodTrap(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
