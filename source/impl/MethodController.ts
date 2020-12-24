@@ -552,7 +552,7 @@ class Computation extends Observable implements Observer {
     }
     else
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-        r.changes.forEach(m => Computation.populateReactionListForChangedMember(true, since, r, m, h)))
+        r.changes.forEach(m => Computation.populateReactionListForChangedMember(true, since, r, m, h, undefined)))
   }
 
   private static compareReactionsByPriority(a: Observer, b: Observer): number {
