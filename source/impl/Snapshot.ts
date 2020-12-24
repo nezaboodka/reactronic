@@ -76,7 +76,7 @@ export class Snapshot implements AbstractSnapshot {
   static isConflicting: (oldValue: any, newValue: any) => boolean = undef
   static propagateChangesToReactions = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
-  lookup(h: ObjectHolder, m: MemberName): ObjectRevision {
+  findRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     // TODO: Take into account timestamp of the member
     let r: ObjectRevision | undefined = h.changing
     if (r && r.snapshot !== this) {
@@ -93,14 +93,14 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   findReadableRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
-    const r = this.lookup(h, m)
+    const r = this.findRevision(h, m)
     if (r === NIL_REV)
       throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
 
   findWritableRevision(h: ObjectHolder, m: MemberName, value: any, token?: any): ObjectRevision {
-    let r: ObjectRevision = this.lookup(h, m)
+    let r: ObjectRevision = this.findRevision(h, m)
     const existing = r.data[m]
     if (existing !== Meta.Unobservable) {
       this.guard(h, r, m, existing, value, token)

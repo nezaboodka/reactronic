@@ -129,7 +129,7 @@ export class MethodController extends Controller<any> {
 
   private read(args: any[] | undefined): Call {
     const ctx = Snapshot.readable()
-    const r: ObjectRevision = ctx.lookup(this.holder, this.member)
+    const r: ObjectRevision = ctx.findRevision(this.holder, this.member)
     const c: Computation = this.from(r)
     const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== INIT_TIMESTAMP &&
       (ctx === c.revision.snapshot || ctx.timestamp < c.invalidatedSince) &&
