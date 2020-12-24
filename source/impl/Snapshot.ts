@@ -254,16 +254,20 @@ export class Snapshot implements AbstractSnapshot {
             // console.log('obj++')
           }
         }
-        if (Dbg.isOn && Dbg.trace.changes) {
+      }
+    })
+    if (Dbg.isOn) {
+      if (Dbg.trace.changes) {
+        this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
           const members: string[] = []
           r.changes.forEach(m => members.push(m.toString()))
           const s = members.join(', ')
           Dbg.log('║', '√', `${Hints.revision(r)} (${s}) is ${r.prev.revision === NIL_REV ? 'constructed' : `applied on top of ${Hints.revision(r.prev.revision)}`}`)
-        }
+        })
       }
-    })
-    if (Dbg.isOn && Dbg.trace.transactions)
-      Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
+      if (Dbg.trace.transactions)
+        Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
+    }
     Snapshot.finalizeChangeset(this, error)
   }
 
