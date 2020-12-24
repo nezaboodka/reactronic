@@ -564,8 +564,6 @@ class Computation extends Observable implements Observer {
     if (reactions) {
       const prev = r.prev.revision.data[m]
       if (prev !== undefined && prev instanceof Observable) {
-        if (unsubscribe) // in fact it means disposal if reactions are not undefined
-          r.data[m] = Meta.Disposed
         const cause: MemberRef = { revision: r, member: m, times: 0 }
         if (prev instanceof Computation && (prev.invalidatedSince === MAX_TIMESTAMP || prev.invalidatedSince <= 0)) {
           prev.invalidatedDueTo = cause

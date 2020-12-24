@@ -238,7 +238,11 @@ export class Snapshot implements AbstractSnapshot {
   applyOrDiscard(error?: any): void {
     this.sealed = true
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      r.changes.forEach(m => Snapshot.seal(r.data[m], h.proxy, m))
+      if (!r.changes.has(Meta.Disposed))
+        r.changes.forEach(m => Snapshot.seal(r.data[m], h.proxy, m))
+      else
+        for (const m in r.prev.revision.data)
+          r.data[m] = Meta.Disposed
       h.writers--
       if (h.writers === 0) // уходя гасите свет - последний уходящий убирает за всеми
         h.changing = undefined
