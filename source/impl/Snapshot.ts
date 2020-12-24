@@ -238,11 +238,7 @@ export class Snapshot implements AbstractSnapshot {
   applyOrDiscard(error?: any): void {
     this.sealed = true
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      if (!r.changes.has(Meta.Disposed))
-        r.changes.forEach(m => Snapshot.seal(r.data[m], h.proxy, m))
-      else
-        for (const m in r.prev.revision.data)
-          r.data[m] = Meta.Disposed
+      Snapshot.sealObjectRevision(h, r)
       h.writers--
       if (h.writers === 0) // уходя гасите свет - последний уходящий убирает за всеми
         h.changing = undefined
@@ -275,13 +271,21 @@ export class Snapshot implements AbstractSnapshot {
     Snapshot.propagateChangesToReactions(this, error)
   }
 
-  static seal(observable: Observable | symbol, proxy: any, member: MemberName): void {
+  static sealObjectRevision(h: ObjectHolder, r: ObjectRevision): void {
+    if (!r.changes.has(Meta.Disposed))
+      r.changes.forEach(m => Snapshot.sealObservable(r.data[m], m, h.proxy.constructor.name))
+    else
+      for (const m in r.prev.revision.data)
+        r.data[m] = Meta.Disposed
+  }
+
+  static sealObservable(observable: Observable | symbol, m: MemberName, typeName: string): void {
     if (observable instanceof Observable) {
       const value = observable.value
       if (value !== undefined && value !== null) {
         const sealedType = Object.getPrototypeOf(value)[Sealant.SealedType]
         if (sealedType)
-          observable.value = Sealant.seal(value, proxy.constructor.name, member, sealedType)
+          observable.value = Sealant.seal(value, sealedType, typeName, m)
       }
     }
   }

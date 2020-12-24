@@ -20,7 +20,7 @@ export abstract class Sealant {
   static readonly SealedType: unique symbol = Symbol('rxSealedType')
   static readonly Clone: unique symbol = Symbol('rxClone')
 
-  static seal<T extends Sealable<T>>(collection: T, typeName: string, member: any, sealedType: object): T {
+  static seal<T extends Sealable<T>>(collection: T, sealedType: object, typeName: string, member: any): T {
     let result: T & Sealed<T> = collection as any
     const clone = result[Sealant.Clone]
     if (clone)
