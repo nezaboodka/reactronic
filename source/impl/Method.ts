@@ -27,7 +27,8 @@ export class MethodController extends Controller<any> {
   readonly member: MemberName
 
   configure(options: Partial<CacheOptions>): CacheOptions { return MethodController.configureImpl(this, options) }
-  get options(): CacheOptions { return this.weak().computation.options }
+  get options(): CacheOptions { return this.read(undefined).computation.options }
+  get unobservableValue(): any { return this.read(undefined).computation.value }
   get args(): ReadonlyArray<any> { return this.weak().computation.args }
   get value(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.weak().computation.error }
