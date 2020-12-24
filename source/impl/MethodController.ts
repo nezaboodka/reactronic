@@ -589,7 +589,8 @@ class Computation extends Observable implements Observer {
         // Performance tracking
         if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
           value.observables.forEach((hint, v) => {
-            if (hint.times > Hooks.repetitiveReadWarningThreshold) Dbg.log('', '[!]', `${value.hint()} uses ${Hints.revision(hint.revision, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
+            if (hint.times > Hooks.repetitiveReadWarningThreshold)
+              Dbg.log('', '[!]', `${value.hint()} uses ${Hints.revision(hint.revision, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
       }
