@@ -235,7 +235,7 @@ export class Snapshot implements AbstractSnapshot {
     return counter
   }
 
-  seal(error?: any): void {
+  applyOrDiscard(error?: any): void {
     this.sealed = true
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       r.changes.forEach(m => Snapshot.seal(r.data[m], h.proxy, m))
@@ -342,7 +342,7 @@ export class Snapshot implements AbstractSnapshot {
   static _init(): void {
     const nil = NIL_REV.snapshot as Snapshot // workaround
     nil.acquire(nil)
-    nil.seal()
+    nil.applyOrDiscard()
     nil.collect()
     Snapshot.freezeObjectRevision(NIL_REV)
     Snapshot.idGen = 100

@@ -262,7 +262,7 @@ class TransactionImpl extends Transaction {
     finally {
       this.pending--
       if (this.sealed && this.pending === 0) {
-        this.commitOrRollback() // it's critical to have no exceptions inside this call
+        this.applyOrDiscard() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
         TransactionImpl.isolated(TransactionImpl.revalidateReactions, this)
       }
@@ -300,10 +300,10 @@ class TransactionImpl extends Transaction {
     throw error(`T${this.id}[${this.hint}] conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
   }
 
-  private commitOrRollback(): void {
+  private applyOrDiscard(): void {
     // It's critical to have no exceptions in this block
     try {
-      this.snapshot.seal(this.canceled)
+      this.snapshot.applyOrDiscard(this.canceled)
       this.snapshot.collect()
       if (this.promise) {
         if (this.canceled && !this.after)
@@ -344,7 +344,7 @@ class TransactionImpl extends Transaction {
     Snapshot.readable = TransactionImpl.readableSnapshot // override
     Snapshot.writable = TransactionImpl.writableSnapshot // override
     TransactionImpl.none.sealed = true
-    TransactionImpl.none.snapshot.seal()
+    TransactionImpl.none.snapshot.applyOrDiscard()
     Snapshot._init()
   }
 }
