@@ -623,9 +623,9 @@ class Computation extends Observable implements Observer {
 
   private subscribeTo(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
     let isValid = !r.snapshot.sealed || observable === h.head.data[m]
-    if (isValid)
+    if (isValid && timestamp !== -1)
       isValid = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
-    if (isValid && timestamp !== -1) {
+    if (isValid) {
       // Performance tracking
       let times: number = 0
       if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
@@ -644,7 +644,7 @@ class Computation extends Observable implements Observer {
     }
     else {
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log('║', '  x ', `${Hints.revision(this.revision, this.method.member)} is NOT subscribed to ${Hints.revision(r, m)}`)
+        Dbg.log('║', '  x ', `${Hints.revision(this.revision, this.method.member)} is NOT subscribed to already invalidated ${Hints.revision(r, m)}`)
     }
     return isValid // || observable.next === r
   }
