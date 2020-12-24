@@ -533,7 +533,7 @@ class Computation extends Observable implements Observer {
     return result
   }
 
-  private static propagateChangesToReactions(snapshot: Snapshot, error: Error | undefined): void {
+  private static populateReactionList(snapshot: Snapshot, error: Error | undefined): void {
     const since = snapshot.timestamp
     if (!error) {
       // Mark previous values as replaced, invalidate observers, and reset recomputing status
@@ -685,7 +685,7 @@ class Computation extends Observable implements Observer {
     Snapshot.markViewed = Computation.markViewed // override
     Snapshot.markChanged = Computation.markChanged // override
     Snapshot.isConflicting = Computation.isConflicting // override
-    Snapshot.propagateChangesToReactions = Computation.propagateChangesToReactions // override
+    Snapshot.populateReactionList = Computation.populateReactionList // override
     Hooks.createMethodTrap = Computation.createMethodTrap // override
     Hooks.applyMethodOptions = Computation.applyMethodOptions // override
     Promise.prototype.then = reactronicHookedThen // override
