@@ -540,10 +540,10 @@ class Computation extends Observable implements Observer {
       const reactions = snapshot.reactions
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
         if (!r.changes.has(Meta.Disposed))
-          r.changes.forEach(m => Computation.propagateMemberChangeToReactions(false, since, r, m, h, reactions))
+          r.changes.forEach(m => Computation.populateReactionListForChangedMember(false, since, r, m, h, reactions))
         else
           for (const m in r.prev.revision.data)
-            Computation.propagateMemberChangeToReactions(true, since, r, m, h, reactions)
+            Computation.populateReactionListForChangedMember(true, since, r, m, h, reactions)
         if (Dbg.isOn)
           Snapshot.freezeObjectRevision(r)
       })
@@ -552,14 +552,14 @@ class Computation extends Observable implements Observer {
     }
     else
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-        r.changes.forEach(m => Computation.propagateMemberChangeToReactions(true, since, r, m, h)))
+        r.changes.forEach(m => Computation.populateReactionListForChangedMember(true, since, r, m, h)))
   }
 
   private static compareReactionsByPriority(a: Observer, b: Observer): number {
     return a.priority - b.priority
   }
 
-  private static propagateMemberChangeToReactions(unsubscribe: boolean, timestamp: number,
+  private static populateReactionListForChangedMember(unsubscribe: boolean, timestamp: number,
     r: ObjectRevision, m: MemberName, h: ObjectHolder, reactions?: Observer[]): void {
     if (reactions) {
       const prev = r.prev.revision.data[m]
