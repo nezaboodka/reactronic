@@ -548,8 +548,7 @@ class Computation extends Observable implements Observer {
           Snapshot.freezeObjectRevision(r)
       })
       reactions.sort(Computation.compareReactionsByPriority)
-      const log = snapshot.options.journal
-      log && log.remember(TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
+      snapshot.options.journal?.remember(TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
     }
     else
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
