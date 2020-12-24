@@ -533,17 +533,17 @@ class Computation extends Observable implements Observer {
     return result
   }
 
-  private static buildReactionList(snapshot: Snapshot, error: Error | undefined): void {
+  private static propagateChangesToReactions(snapshot: Snapshot, error: Error | undefined): void {
     const since = snapshot.timestamp
     if (!error) {
       // Mark previous values as replaced, invalidate observers, and reset recomputing status
       const reactions = snapshot.reactions
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
         if (!r.changes.has(Meta.Disposed))
-          r.changes.forEach(m => Computation.finalizeMemberChange(false, since, r, m, h, reactions))
+          r.changes.forEach(m => Computation.propagateMemberChangeToReactions(false, since, r, m, h, reactions))
         else
           for (const m in r.prev.revision.data)
-            Computation.finalizeMemberChange(true, since, r, m, h, reactions)
+            Computation.propagateMemberChangeToReactions(true, since, r, m, h, reactions)
         if (Dbg.isOn)
           Snapshot.freezeObjectRevision(r)
       })
@@ -552,14 +552,14 @@ class Computation extends Observable implements Observer {
     }
     else
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-        r.changes.forEach(m => Computation.finalizeMemberChange(true, since, r, m, h)))
+        r.changes.forEach(m => Computation.propagateMemberChangeToReactions(true, since, r, m, h)))
   }
 
   private static compareReactionsByPriority(a: Observer, b: Observer): number {
     return a.priority - b.priority
   }
 
-  private static finalizeMemberChange(unsubscribe: boolean, timestamp: number,
+  private static propagateMemberChangeToReactions(unsubscribe: boolean, timestamp: number,
     r: ObjectRevision, m: MemberName, h: ObjectHolder, reactions?: Observer[]): void {
     if (reactions) {
       const prev = r.prev.revision.data[m]
@@ -687,7 +687,7 @@ class Computation extends Observable implements Observer {
     Snapshot.markViewed = Computation.markViewed // override
     Snapshot.markChanged = Computation.markChanged // override
     Snapshot.isConflicting = Computation.isConflicting // override
-    Snapshot.buildReactionList = Computation.buildReactionList // override
+    Snapshot.propagateChangesToReactions = Computation.propagateChangesToReactions // override
     Hooks.createMethodTrap = Computation.createMethodTrap // override
     Hooks.applyMethodOptions = Computation.applyMethodOptions // override
     Promise.prototype.then = reactronicHookedThen // override
