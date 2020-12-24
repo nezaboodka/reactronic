@@ -15,7 +15,7 @@ import { Kind, SnapshotOptions } from '../Options'
 import { AbstractSnapshot, ObjectRevision, MemberName, ObjectHolder, Observable, Observer, Meta } from './Data'
 
 export const INIT_TIMESTAMP = -1
-export const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
+export const MAX_TIMESTAMP = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {

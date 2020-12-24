@@ -11,7 +11,7 @@ import { CacheOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '.
 import { Worker } from '../Worker'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, MemberRef, Observer, Meta } from './Data'
-import { Snapshot, Hints, NIL_REV, INIT_TIMESTAMP, TOP_TIMESTAMP } from './Snapshot'
+import { Snapshot, Hints, NIL_REV, INIT_TIMESTAMP, MAX_TIMESTAMP } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -304,7 +304,7 @@ class Computation extends Observable implements Observer {
   compute(proxy: any, args: any[] | undefined): void {
     if (args)
       this.args = args
-    this.invalidatedSince = TOP_TIMESTAMP
+    this.invalidatedSince = MAX_TIMESTAMP
     if (!this.error)
       MethodController.run<void>(this, Computation.compute, this, proxy)
     else
@@ -312,7 +312,7 @@ class Computation extends Observable implements Observer {
   }
 
   invalidateDueTo(observable: Observable, cause: MemberRef, since: number, reactions: Observer[]): void {
-    if (this.invalidatedSince === TOP_TIMESTAMP || this.invalidatedSince <= 0) {
+    if (this.invalidatedSince === MAX_TIMESTAMP || this.invalidatedSince <= 0) {
       const skip = !observable.isComputation &&
         cause.revision.snapshot === this.revision.snapshot &&
         cause.revision.changes.has(cause.member)
@@ -573,7 +573,7 @@ class Computation extends Observable implements Observer {
           r.data[m] = Meta.Disposed
         prev.next = r
         const cause: MemberRef = { revision: r, member: m, times: 0 }
-        if (prev instanceof Computation && (prev.invalidatedSince === TOP_TIMESTAMP || prev.invalidatedSince <= 0)) {
+        if (prev instanceof Computation && (prev.invalidatedSince === MAX_TIMESTAMP || prev.invalidatedSince <= 0)) {
           prev.invalidatedDueTo = cause
           prev.invalidatedSince = timestamp
           prev.unsubscribeFromAll()
