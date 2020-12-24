@@ -567,7 +567,7 @@ class Computation extends Observable implements Observer {
       const prev = r.prev.revision.data[m]
       // if (prev !== undefined) {
       //   if ((prev.next === undefined) !== (prev === h.head.data[m]))
-      //     console.log('(!!!)')
+      //     console.log(`(!!!) prev.revision === NIL: ${r.prev.revision === NIL}`)
       // }
       if (prev !== undefined && prev instanceof Observable && prev.next === undefined) {
         if (unsubscribe) // in fact it means disposal if reactions are not undefined
@@ -622,10 +622,15 @@ class Computation extends Observable implements Observer {
     this.observables.clear()
   }
 
+  private static isValid(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
+    let result = !r.snapshot.sealed || observable === h.head.data[m]
+    if (result && timestamp !== -1)
+      result = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
+    return result
+  }
+
   private subscribeTo(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
-    let isValid = !r.snapshot.sealed || observable === h.head.data[m]
-    if (isValid && timestamp !== -1)
-      isValid = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
+    const isValid = Computation.isValid(observable, r, m, h, timestamp)
     if (isValid) {
       // Performance tracking
       let times: number = 0
