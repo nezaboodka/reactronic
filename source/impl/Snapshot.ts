@@ -16,7 +16,7 @@ import { AbstractSnapshot, ObjectRevision, MemberName, ObjectHolder, Observable,
 
 export const INIT_TIMESTAMP = -1
 export const MAX_TIMESTAMP = Number.MAX_SAFE_INTEGER
-export const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
+export const UNDEFINED_TIMESTAMP = MAX_TIMESTAMP - 1
 
 Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
   configurable: false, enumerable: false,
