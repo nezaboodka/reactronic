@@ -159,7 +159,7 @@ export class MethodController extends Controller<any> {
     const m = this.member
     let c: Computation = r.data[m]
     if (c.method !== this) {
-      const hint: string = Dbg.isOn ? `${Hints.obj(this.holder, m)}/initialize` : /* istanbul ignore next */ 'Cache.init'
+      const hint: string = Dbg.isOn ? `${Hints.obj(this.holder, m)}/init` : /* istanbul ignore next */ 'MethodController/init'
       const spawn = r.snapshot.sealed || r.prev.revision !== NIL
       c = Transaction.runAs<Computation>({ hint, spawn, token: this }, (): Computation => {
         const h = this.holder
