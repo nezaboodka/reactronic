@@ -533,7 +533,7 @@ class Computation extends Observable implements Observer {
     return result
   }
 
-  private static buildReactionListFromSubscriptions(snapshot: Snapshot, error: Error | undefined): void {
+  private static buildReactionList(snapshot: Snapshot, error: Error | undefined): void {
     const since = snapshot.timestamp
     if (!error) {
       // Mark previous values as replaced, invalidate observers, and reset recomputing status
@@ -687,7 +687,7 @@ class Computation extends Observable implements Observer {
     Snapshot.markViewed = Computation.markViewed // override
     Snapshot.markChanged = Computation.markChanged // override
     Snapshot.isConflicting = Computation.isConflicting // override
-    Snapshot.buildReactionListFromSubscriptions = Computation.buildReactionListFromSubscriptions // override
+    Snapshot.buildReactionList = Computation.buildReactionList // override
     Hooks.createMethodTrap = Computation.createMethodTrap // override
     Hooks.applyMethodOptions = Computation.applyMethodOptions // override
     Promise.prototype.then = reactronicHookedThen // override
