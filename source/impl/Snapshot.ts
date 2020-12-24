@@ -40,9 +40,9 @@ Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
 
 export class Snapshot implements AbstractSnapshot {
   static idGen: number = -1
-  static stampGen: number = 1
-  static pending: Snapshot[] = []
-  static oldest: Snapshot | undefined = undefined
+  private static stampGen: number = 1
+  private static pending: Snapshot[] = []
+  private static oldest: Snapshot | undefined = undefined
   static garbageCollectionSummaryInterval: number = Number.MAX_SAFE_INTEGER
   static lastGarbageCollectionSummaryTimestamp: number = Date.now()
   static totalObjectHolderCount: number = 0
