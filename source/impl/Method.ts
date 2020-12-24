@@ -17,6 +17,7 @@ import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
 import { TransactionJournalImpl } from './TransactionJournal'
 
+const BLANK_TIMESTAMP = -1
 const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL, 'N/A')
 
@@ -48,7 +49,7 @@ export class MethodController extends Controller<any> {
     const ctx = call.snapshot
     const c: Computation = call.computation
     if (!call.reuse && call.revision.data[Meta.Disposed] === undefined
-      && (!weak || c.invalidatedSince === -1 || !c.revalidation || c.revalidation.worker.isFinished)) {
+      && (!weak || c.invalidatedSince === BLANK_TIMESTAMP || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Reaction ||
         (opt.kind === Kind.Cache && (call.revision.snapshot.sealed || call.revision.prev.revision !== NIL))
@@ -132,7 +133,7 @@ export class MethodController extends Controller<any> {
     const ctx = Snapshot.readable()
     const r: ObjectRevision = ctx.lookup(this.holder, this.member)
     const c: Computation = this.from(r)
-    const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== -1 &&
+    const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== BLANK_TIMESTAMP &&
       (ctx === c.revision.snapshot || ctx.timestamp < c.invalidatedSince) &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
@@ -167,7 +168,7 @@ export class MethodController extends Controller<any> {
         if (c2.method !== this) {
           r2 = Snapshot.writable().findWritableRevision(h, m, Meta.Holder, this)
           c2 = r2.data[m] = new Computation(this, r2, c2)
-          c2.invalidatedSince = -1 // indicates blank value
+          c2.invalidatedSince = BLANK_TIMESTAMP // indicates blank value
           Snapshot.markChanged(c2, true, r2, m, h)
         }
         return c2
@@ -530,7 +531,7 @@ class Computation extends Observable implements Observer {
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof Computation && oldValue.invalidatedSince !== -1
+      result = oldValue instanceof Computation && oldValue.invalidatedSince !== BLANK_TIMESTAMP
     return result
   }
 
@@ -624,7 +625,7 @@ class Computation extends Observable implements Observer {
 
   private static isValid(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
     let result = !r.snapshot.sealed || observable === h.head.data[m]
-    if (result && timestamp !== -1)
+    if (result && timestamp !== BLANK_TIMESTAMP)
       result = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
     return result
   }
