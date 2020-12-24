@@ -20,10 +20,10 @@ import { Monitor } from './Monitor'
 export abstract class ObservableObject {
   constructor() {
     const proto = new.target.prototype
-    const blank = Meta.from<any>(proto, Meta.Blank)
+    const blank = Meta.getFrom(proto, Meta.Blank)
     const h = Hooks.createObjectHolder(this, blank, new.target.name)
     if (!Hooks.reactionsAutoStartDisabled) {
-      const reactions = Meta.from<any>(proto, Meta.Reactions)
+      const reactions = Meta.getFrom(proto, Meta.Reactions)
       for (const member in reactions)
         (h.proxy[member][Meta.Method] as Controller<any>).invalidate()
     }
@@ -213,7 +213,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
-      const blank = Meta.from<any>(Object.getPrototypeOf(obj), Meta.Blank)
+      const blank = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Blank)
       const initial = new ObjectRevision(NIL_REV.snapshot, NIL_REV, {...blank})
       Meta.set(initial.data, Meta.Holder, h)
       if (Dbg.isOn)

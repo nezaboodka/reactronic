@@ -676,7 +676,7 @@ class Computation extends Observable implements Observer {
       reactions[m] = value
     }
     else if (value.options.kind === Kind.Reaction && value.options.throttling >= Number.MAX_SAFE_INTEGER) {
-      const reactions = Meta.from<any>(proto, Meta.Reactions)
+      const reactions = Meta.getFrom(proto, Meta.Reactions)
       delete reactions[m]
     }
     return value.options

@@ -33,7 +33,7 @@ export abstract class Meta {
     return meta
   }
 
-  static from<T>(proto: any, sym: symbol): T {
+  static getFrom<T = any>(proto: any, sym: symbol): T {
     return proto[sym] ?? /* istanbul ignore next */ EMPTY_META
   }
 }
