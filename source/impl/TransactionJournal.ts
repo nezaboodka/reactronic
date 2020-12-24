@@ -7,7 +7,7 @@
 
 import { ObservableObject } from './Hooks'
 import { ObjectHolder, ObjectRevision, Meta, Patch, ObjectPatch, Observable } from './Data'
-import { NIL, Snapshot } from './Snapshot'
+import { Snapshot, NIL_REV } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
 
@@ -75,7 +75,7 @@ export class TransactionJournalImpl extends TransactionJournal {
     const patch: Patch = { hint, objects: new Map<object, ObjectPatch>() }
     changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       const p: ObjectPatch = { changes: {}, old: {} }
-      const old = r.prev.revision !== NIL ? r.prev.revision.data : undefined
+      const old = r.prev.revision !== NIL_REV ? r.prev.revision.data : undefined
       r.changes.forEach(m => {
         p.changes[m] = unseal(r.data[m])
         if (old)

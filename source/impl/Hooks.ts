@@ -11,7 +11,7 @@ import { CacheOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta } from './Data'
-import { Snapshot, Hints, NIL } from './Snapshot'
+import { Snapshot, Hints, NIL_REV } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
 
@@ -122,10 +122,10 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   set(h: ObjectHolder, m: MemberName, value: any, receiver: any): boolean {
     const r: ObjectRevision = Snapshot.writable().findWritableRevision(h, m, value)
-    if (r !== NIL) {
+    if (r !== NIL_REV) {
       const curr = r.data[m] as Observable
       if (curr !== undefined || (
-        r.prev.revision.snapshot === NIL.snapshot && m in h.unobservable === false)) {
+        r.prev.revision.snapshot === NIL_REV.snapshot && m in h.unobservable === false)) {
         const prev = r.prev.revision.data[m] as Observable
         let changed = prev === undefined || prev.value !== value ||
           Hooks.sensitivity === Sensitivity.ReactEvenOnSameValueAssignment
@@ -214,7 +214,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
       const blank = Meta.from<any>(Object.getPrototypeOf(obj), Meta.Blank)
-      const initial = new ObjectRevision(NIL.snapshot, NIL, {...blank})
+      const initial = new ObjectRevision(NIL_REV.snapshot, NIL_REV, {...blank})
       Meta.set(initial.data, Meta.Holder, h)
       if (Dbg.isOn)
         Snapshot.freezeObjectRevision(initial)
@@ -226,7 +226,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   static createObjectHolder(unobservable: any, blank: any, hint: string): ObjectHolder {
     const ctx = Snapshot.writable()
-    const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, NIL, hint)
+    const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, NIL_REV, hint)
     ctx.findWritableRevision(h, Meta.Holder, blank)
     return h
   }

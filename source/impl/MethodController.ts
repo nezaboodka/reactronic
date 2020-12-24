@@ -11,15 +11,13 @@ import { CacheOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '.
 import { Worker } from '../Worker'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, MemberRef, Observer, Meta } from './Data'
-import { Snapshot, Hints, NIL } from './Snapshot'
+import { Snapshot, Hints, NIL_REV, INIT_TIMESTAMP, TOP_TIMESTAMP } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
 import { TransactionJournalImpl } from './TransactionJournal'
 
-const BLANK_TIMESTAMP = -1
-const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
-const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL, 'N/A')
+const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 
 type Call = { snapshot: Snapshot, revision: ObjectRevision, computation: Computation, reuse: boolean }
 
@@ -49,10 +47,10 @@ export class MethodController extends Controller<any> {
     const ctx = call.snapshot
     const c: Computation = call.computation
     if (!call.reuse && call.revision.data[Meta.Disposed] === undefined
-      && (!weak || c.invalidatedSince === BLANK_TIMESTAMP || !c.revalidation || c.revalidation.worker.isFinished)) {
+      && (!weak || c.invalidatedSince === INIT_TIMESTAMP || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Reaction ||
-        (opt.kind === Kind.Cache && (call.revision.snapshot.sealed || call.revision.prev.revision !== NIL))
+        (opt.kind === Kind.Cache && (call.revision.snapshot.sealed || call.revision.prev.revision !== NIL_REV))
       const token = opt.noSideEffects ? this : undefined
       const call2 = this.compute(call, spawn, opt, token, args)
       const ctx2 = call2.computation.revision.snapshot
@@ -133,7 +131,7 @@ export class MethodController extends Controller<any> {
     const ctx = Snapshot.readable()
     const r: ObjectRevision = ctx.lookup(this.holder, this.member)
     const c: Computation = this.from(r)
-    const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== BLANK_TIMESTAMP &&
+    const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== INIT_TIMESTAMP &&
       (ctx === c.revision.snapshot || ctx.timestamp < c.invalidatedSince) &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
@@ -160,7 +158,7 @@ export class MethodController extends Controller<any> {
     let c: Computation = r.data[m]
     if (c.method !== this) {
       const hint: string = Dbg.isOn ? `${Hints.obj(this.holder, m)}/init` : /* istanbul ignore next */ 'MethodController/init'
-      const spawn = r.snapshot.sealed || r.prev.revision !== NIL
+      const spawn = r.snapshot.sealed || r.prev.revision !== NIL_REV
       c = Transaction.runAs<Computation>({ hint, spawn, token: this }, (): Computation => {
         const h = this.holder
         let r2: ObjectRevision = Snapshot.readable().findReadableRevision(h, m)
@@ -168,7 +166,7 @@ export class MethodController extends Controller<any> {
         if (c2.method !== this) {
           r2 = Snapshot.writable().findWritableRevision(h, m, Meta.Holder, this)
           c2 = r2.data[m] = new Computation(this, r2, c2)
-          c2.invalidatedSince = BLANK_TIMESTAMP // indicates blank value
+          c2.invalidatedSince = INIT_TIMESTAMP // indicates blank value
           Snapshot.markChanged(c2, true, r2, m, h)
         }
         return c2
@@ -208,7 +206,7 @@ export class MethodController extends Controller<any> {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const c: Computation = call.computation
-    c.invalidateDueTo(c, {revision: NIL, member: self.member, times: 0}, ctx.timestamp, ctx.reactions)
+    c.invalidateDueTo(c, {revision: NIL_REV, member: self.member, times: 0}, ctx.timestamp, ctx.reactions)
   }
 }
 
@@ -323,7 +321,7 @@ class Computation extends Observable implements Observer {
         this.invalidatedSince = since
         const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
         if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.revision === NIL ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.revision(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.revision === NIL_REV ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.revision(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
         if (isReaction) // stop cascade invalidation on reaction
           reactions.push(this)
@@ -531,7 +529,7 @@ class Computation extends Observable implements Observer {
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof Computation && oldValue.invalidatedSince !== BLANK_TIMESTAMP
+      result = oldValue instanceof Computation && oldValue.invalidatedSince !== INIT_TIMESTAMP
     return result
   }
 
@@ -625,7 +623,7 @@ class Computation extends Observable implements Observer {
 
   private static isValid(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
     let result = !r.snapshot.sealed || observable === h.head.data[m]
-    if (result && timestamp !== BLANK_TIMESTAMP)
+    if (result && timestamp !== INIT_TIMESTAMP)
       result = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
     return result
   }
@@ -670,7 +668,7 @@ class Computation extends Observable implements Observer {
     const existing: Computation | undefined = blank[m]
     const method = existing ? existing.method : new MethodController(NIL_HOLDER, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
-    const value =  new Computation(method, NIL, new OptionsImpl(body, opts, options, implicit))
+    const value =  new Computation(method, NIL_REV, new OptionsImpl(body, opts, options, implicit))
     blank[m] = value
     // Add to the list if it's a reaction
     if (value.options.kind === Kind.Reaction && value.options.throttling < Number.MAX_SAFE_INTEGER) {

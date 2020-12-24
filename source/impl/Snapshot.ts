@@ -14,7 +14,9 @@ import { SealedSet } from '../util/SealedSet'
 import { Kind, SnapshotOptions } from '../Options'
 import { AbstractSnapshot, ObjectRevision, MemberName, ObjectHolder, Observable, Observer, Meta } from './Data'
 
-const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
+export const INIT_TIMESTAMP = -1
+export const TOP_TIMESTAMP = Number.MAX_SAFE_INTEGER
+export const UNDEFINED_TIMESTAMP = Number.MAX_SAFE_INTEGER - 1
 
 Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
   configurable: false, enumerable: false,
@@ -84,7 +86,7 @@ export class Snapshot implements AbstractSnapshot {
     }
     if (!r) {
       r = h.head
-      while (r !== NIL && r.snapshot.timestamp > this.timestamp)
+      while (r !== NIL_REV && r.snapshot.timestamp > this.timestamp)
         r = r.prev.revision
     }
     return r
@@ -92,7 +94,7 @@ export class Snapshot implements AbstractSnapshot {
 
   findReadableRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     const r = this.lookup(h, m)
-    if (r === NIL)
+    if (r === NIL_REV)
       throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
@@ -112,7 +114,7 @@ export class Snapshot implements AbstractSnapshot {
       }
     }
     else
-      r = NIL
+      r = NIL_REV
     return r
   }
 
@@ -129,7 +131,7 @@ export class Snapshot implements AbstractSnapshot {
 
   static doDispose(ctx: Snapshot, h: ObjectHolder): ObjectRevision {
     const r: ObjectRevision = ctx.findWritableRevision(h, Meta.Disposed, Meta.Disposed)
-    if (r !== NIL) {
+    if (r !== NIL_REV) {
       r.data[Meta.Disposed] = Meta.Disposed
       Snapshot.markChanged(Meta.Disposed, true, r, Meta.Disposed, h)
     }
@@ -144,14 +146,14 @@ export class Snapshot implements AbstractSnapshot {
     // if (r === NIL && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */
     //   throw misuse(`member ${Hints.revision(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     if (m !== Meta.Holder && value !== Meta.Holder) {
-      if (r.snapshot !== this || r.prev.revision !== NIL) {
+      if (r.snapshot !== this || r.prev.revision !== NIL_REV) {
         if (this.options.token !== undefined && token !== this.options.token)
           throw misuse(`${this.hint} should not have side effects (trying to change ${Hints.revision(r, m)})`)
         // TODO: Detect uninitialized members
         // if (existing === undefined)
         //   throw misuse(`uninitialized member is detected: ${Hints.revision(r, m)}`)
       }
-      if (r === NIL)
+      if (r === NIL_REV)
         throw misuse(`member ${Hints.revision(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     }
   }
@@ -247,7 +249,7 @@ export class Snapshot implements AbstractSnapshot {
         if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Snapshot.totalObjectRevisionCount++
           // console.log('rec++')
-          if (r.prev.revision === NIL) {
+          if (r.prev.revision === NIL_REV) {
             Snapshot.totalObjectHolderCount++
             // console.log('obj++')
           }
@@ -256,7 +258,7 @@ export class Snapshot implements AbstractSnapshot {
           const members: string[] = []
           r.changes.forEach(m => members.push(m.toString()))
           const s = members.join(', ')
-          Dbg.log('║', '√', `${Hints.revision(r)} (${s}) is ${r.prev.revision === NIL ? 'constructed' : `applied on top of ${Hints.revision(r.prev.revision)}`}`)
+          Dbg.log('║', '√', `${Hints.revision(r)} (${s}) is ${r.prev.revision === NIL_REV ? 'constructed' : `applied on top of ${Hints.revision(r.prev.revision)}`}`)
         }
       }
     })
@@ -317,10 +319,10 @@ export class Snapshot implements AbstractSnapshot {
     if (Dbg.isOn && Dbg.trace.gc)
       Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      if (Dbg.isOn && Dbg.trace.gc && r.prev.revision !== NIL)
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.revision !== NIL_REV)
         Dbg.log(' ', '  ', `${Hints.revision(r.prev.revision)} is ready for GC because overwritten by ${Hints.revision(r)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
-        if (r.prev.revision !== NIL) {
+        if (r.prev.revision !== NIL_REV) {
           Snapshot.totalObjectRevisionCount--
           // console.log('rec--')
         }
@@ -329,16 +331,16 @@ export class Snapshot implements AbstractSnapshot {
           // console.log('obj--')
         }
       }
-      r.prev.revision = NIL // unlink history
+      r.prev.revision = NIL_REV // unlink history
     })
   }
 
   static _init(): void {
-    const nil = NIL.snapshot as Snapshot // workaround
+    const nil = NIL_REV.snapshot as Snapshot // workaround
     nil.acquire(nil)
     nil.seal()
     nil.collect()
-    Snapshot.freezeObjectRevision(NIL)
+    Snapshot.freezeObjectRevision(NIL_REV)
     Snapshot.idGen = 100
     Snapshot.stampGen = 101
     Snapshot.oldest = undefined
@@ -378,7 +380,7 @@ export class Hints {
   }
 }
 
-export const NIL = new ObjectRevision(new Snapshot({ hint: '<nil>' }), undefined, {})
+export const NIL_REV = new ObjectRevision(new Snapshot({ hint: '<nil>' }), undefined, {})
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',
