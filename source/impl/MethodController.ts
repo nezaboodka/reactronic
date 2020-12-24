@@ -536,7 +536,6 @@ class Computation extends Observable implements Observer {
   private static populateReactionList(snapshot: Snapshot, error: Error | undefined): void {
     const since = snapshot.timestamp
     if (!error) {
-      // Mark previous values as replaced, invalidate observers, and reset recomputing status
       const reactions = snapshot.reactions
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
         if (!r.changes.has(Meta.Disposed))
