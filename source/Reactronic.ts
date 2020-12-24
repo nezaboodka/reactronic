@@ -12,7 +12,7 @@ import { Kind, Reentrance, CacheOptions, TraceOptions, ProfilingOptions, Sensiti
 import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
-import { MethodController } from './impl/Method'
+import { MethodController } from './impl/MethodController'
 import { Transaction } from './impl/Transaction'
 import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
