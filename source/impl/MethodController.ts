@@ -564,14 +564,9 @@ class Computation extends Observable implements Observer {
     r: ObjectRevision, m: MemberName, h: ObjectHolder, reactions?: Observer[]): void {
     if (reactions) {
       const prev = r.prev.revision.data[m]
-      // if (prev !== undefined) {
-      //   if ((prev.next === undefined) !== (prev === h.head.data[m]))
-      //     console.log(`(!!!) prev.revision === NIL: ${r.prev.revision === NIL}`)
-      // }
-      if (prev !== undefined && prev instanceof Observable && prev.next === undefined) {
+      if (prev !== undefined && prev instanceof Observable) {
         if (unsubscribe) // in fact it means disposal if reactions are not undefined
           r.data[m] = Meta.Disposed
-        prev.next = r
         const cause: MemberRef = { revision: r, member: m, times: 0 }
         if (prev instanceof Computation && (prev.invalidatedSince === MAX_TIMESTAMP || prev.invalidatedSince <= 0)) {
           prev.invalidatedDueTo = cause
