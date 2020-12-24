@@ -621,13 +621,6 @@ class Computation extends Observable implements Observer {
     this.observables.clear()
   }
 
-  private static isValid(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
-    let result = !r.snapshot.sealed || observable === h.head.data[m]
-    if (result && timestamp !== INIT_TIMESTAMP)
-      result = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
-    return result
-  }
-
   private subscribeTo(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
     const isValid = Computation.isValid(observable, r, m, h, timestamp)
     if (isValid) {
@@ -652,6 +645,13 @@ class Computation extends Observable implements Observer {
         Dbg.log('║', '  x ', `${Hints.revision(this.revision, this.method.member)} is NOT subscribed to already invalidated ${Hints.revision(r, m)}`)
     }
     return isValid // || observable.next === r
+  }
+
+  private static isValid(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
+    let result = !r.snapshot.sealed || observable === h.head.data[m]
+    if (result && timestamp !== INIT_TIMESTAMP)
+      result = !(observable instanceof Computation && timestamp >= observable.invalidatedSince)
+    return result
   }
 
   private static createMethodTrap(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
