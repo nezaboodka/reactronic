@@ -81,7 +81,7 @@ export class MethodController extends Controller<any> {
       throw misuse('a method is expected with reactronic decorator')
     task.options = new OptionsImpl(task.options.body, task.options, options, false)
     if (Dbg.isOn && Dbg.trace.writes)
-      Dbg.log('║', '  ♦', `${Hints.rev(task.revision, task.method.memberName)}.options = ...`)
+      Dbg.log('║', '  ♦', `${Hints.rev(task.revision, task.controller.memberName)}.options = ...`)
     return task.options
   }
 
@@ -157,14 +157,14 @@ export class MethodController extends Controller<any> {
   private from(r: ObjectRevision): Task {
     const m = this.memberName
     let task: Task = r.data[m]
-    if (task.method !== this) {
+    if (task.controller !== this) {
       const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, m)}/init` : /* istanbul ignore next */ 'MethodController/init'
       const spawn = r.snapshot.sealed || r.prev.revision !== NIL_REV
       task = Transaction.runAs<Task>({ hint, spawn, token: this }, (): Task => {
         const h = this.ownHolder
         let r2: ObjectRevision = Snapshot.readable().findReadableRevision(h, m)
         let task2 = r2.data[m] as Task
-        if (task2.method !== this) {
+        if (task2.controller !== this) {
           r2 = Snapshot.writable().findWritableRevision(h, m, Meta.Holder, this)
           task2 = r2.data[m] = new Task(this, r2, task2)
           task2.invalidatedSince = INIT_TIMESTAMP // indicates blank value
@@ -221,7 +221,7 @@ class Task extends Observable implements Observer {
 
   readonly margin: number
   readonly worker: Worker
-  readonly method: MethodController
+  readonly controller: MethodController
   readonly revision: ObjectRevision
   readonly observables: Map<Observable, MemberRef>
   options: OptionsImpl
@@ -234,11 +234,11 @@ class Task extends Observable implements Observer {
   invalidatedSince: number
   replacement: Task | undefined
 
-  constructor(method: MethodController, revision: ObjectRevision, prev: Task | OptionsImpl) {
+  constructor(controller: MethodController, revision: ObjectRevision, prev: Task | OptionsImpl) {
     super(undefined)
     this.margin = Task.current ? Task.current.margin + 1 : 1
     this.worker = Transaction.current
-    this.method = method
+    this.controller = controller
     this.revision = revision
     this.observables = new Map<Observable, MemberRef>()
     if (prev instanceof Task) {
@@ -261,22 +261,22 @@ class Task extends Observable implements Observer {
     this.replacement = undefined
   }
 
-  hint(): string { return `${Hints.rev(this.revision, this.method.memberName)}` }
+  hint(): string { return `${Hints.rev(this.revision, this.controller.memberName)}` }
   get priority(): number { return this.options.priority }
 
   whyFull(): string {
     let ms: number = Date.now()
-    const prev = this.revision.prev.revision.data[this.method.memberName]
+    const prev = this.revision.prev.revision.data[this.controller.memberName]
     if (prev instanceof Task)
       ms = Math.abs(this.started) - Math.abs(prev.started)
     let cause: string
     if (this.cause)
       cause = `   <<   ${propagationHint(this.cause, true).join('   <<   ')}`
-    else if (this.method.options.kind === Kind.Transaction)
+    else if (this.controller.options.kind === Kind.Transaction)
       cause = '   <<   transaction'
     else
       cause = `   <<   called by ${this.revision.snapshot.hint}`
-    return `${Hints.rev(this.revision, this.method.memberName)}${cause}   (${ms}ms since previous revalidation)`
+    return `${Hints.rev(this.revision, this.controller.memberName)}${cause}   (${ms}ms since previous revalidation)`
   }
 
   whyShort(): string {
@@ -290,12 +290,12 @@ class Task extends Observable implements Observer {
   bind<T>(func: F<T>): F<T> {
     const cacheBound: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret)
-        Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.rev(this.revision, this.method.memberName)} - step in  `, 0, '        │')
+        Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.rev(this.revision, this.controller.memberName)} - step in  `, 0, '        │')
       const started = Date.now()
       const result = MethodController.run<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Dbg.isOn && Dbg.trace.steps && this.ret)
-        Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.rev(this.revision, this.method.memberName)} - step out `, 0, this.started > 0 ? '        │' : '')
+        Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.rev(this.revision, this.controller.memberName)} - step out `, 0, this.started > 0 ? '        │' : '')
       if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
         Dbg.log('', '[!]', this.whyFull(), ms, '    *** main thread is too busy ***')
       return result
@@ -328,7 +328,7 @@ class Task extends Observable implements Observer {
         if (isReaction) // stop cascade invalidation on reaction
           reactions.push(this)
         else if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo(this, {revision: this.revision, member: this.method.memberName, times: 0}, since, reactions))
+          this.observers.forEach(c => c.invalidateDueTo(this, {revision: this.revision, member: this.controller.memberName, times: 0}, since, reactions))
         const worker = this.worker
         if (!worker.isFinished && this !== observable) // restart after itself if canceled
           worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to invalidation by ${Hints.rev(cause.revision, cause.member)}`), null)
@@ -353,18 +353,18 @@ class Task extends Observable implements Observer {
       if (!this.error && (this.options.kind === Kind.Transaction ||
         !this.replacement || this.replacement.worker.isCanceled)) {
         try {
-          const task: Task = this.method.call(false, undefined)
+          const task: Task = this.controller.call(false, undefined)
           if (task.ret instanceof Promise)
             task.ret.catch(error => {
               if (task.options.kind === Kind.Reaction)
-                misuse(`reaction ${Hints.rev(task.revision, task.method.memberName)} failed and will not run anymore: ${error}`, error)
+                misuse(`reaction ${Hints.rev(task.revision, task.controller.memberName)} failed and will not run anymore: ${error}`, error)
             })
         }
         catch (e) {
           if (!nothrow)
             throw e
           else if (this.options.kind === Kind.Reaction)
-            misuse(`reaction ${Hints.rev(this.revision, this.method.memberName)} failed and will not run anymore: ${e}`, e)
+            misuse(`reaction ${Hints.rev(this.revision, this.controller.memberName)} failed and will not run anymore: ${e}`, e)
         }
       }
     }
@@ -381,7 +381,7 @@ class Task extends Observable implements Observer {
     const concurrent = head.replacement
     if (concurrent && !concurrent.worker.isFinished) {
       if (Dbg.isOn && Dbg.trace.invalidations)
-        Dbg.log('║', ' [!]', `${Hints.rev(this.revision, this.method.memberName)} is trying to re-enter over ${Hints.rev(concurrent.revision, concurrent.method.memberName)}`)
+        Dbg.log('║', ' [!]', `${Hints.rev(this.revision, this.controller.memberName)} is trying to re-enter over ${Hints.rev(concurrent.revision, concurrent.controller.memberName)}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
           if (!concurrent.worker.isCanceled)
@@ -428,7 +428,7 @@ class Task extends Observable implements Observer {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.methods)
-      Dbg.log('║', '‾\\', `${Hints.rev(this.revision, this.method.memberName)} - enter`, undefined, `    [ ${Hints.obj(this.method.ownHolder, this.method.memberName)} ]`)
+      Dbg.log('║', '‾\\', `${Hints.rev(this.revision, this.controller.memberName)} - enter`, undefined, `    [ ${Hints.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
     this.started = Date.now()
   }
 
@@ -447,9 +447,9 @@ class Task extends Observable implements Observer {
         })
       if (Dbg.isOn) {
         if (Dbg.trace.methods)
-          Dbg.log('║', '_/', `${Hints.rev(this.revision, this.method.memberName)} - leave... `, 0, 'ASYNC ──┐')
+          Dbg.log('║', '_/', `${Hints.rev(this.revision, this.controller.memberName)} - leave... `, 0, 'ASYNC ──┐')
         else if (Dbg.trace.transactions)
-          Dbg.log('║', '  ', `${Hints.rev(this.revision, this.method.memberName)}... `, 0, 'ASYNC')
+          Dbg.log('║', '  ', `${Hints.rev(this.revision, this.controller.memberName)}... `, 0, 'ASYNC')
       }
     }
     else {
@@ -462,7 +462,7 @@ class Task extends Observable implements Observer {
     const ms: number = Date.now() - this.started
     this.started = -this.started
     if (Dbg.isOn && Dbg.trace.methods)
-      Dbg.log('║', `${op}`, `${Hints.rev(this.revision, this.method.memberName)} ${message}`, ms, highlight)
+      Dbg.log('║', `${op}`, `${Hints.rev(this.revision, this.controller.memberName)} ${message}`, ms, highlight)
     if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
       Dbg.log('', '[!]', this.whyFull(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
     if (this.options.monitor)
@@ -607,7 +607,7 @@ class Task extends Observable implements Observer {
       if (observers)
         observers.delete(this)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', '-', `${Hints.rev(this.revision, this.method.memberName)} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
+        Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', '-', `${Hints.rev(this.revision, this.controller.memberName)} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
     })
     this.observables.clear()
   }
@@ -629,11 +629,11 @@ class Task extends Observable implements Observer {
       observable.observers.add(this)
       this.observables.set(observable, member)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log('║', '  ∞ ', `${Hints.rev(this.revision, this.method.memberName)} is subscribed to ${Hints.rev(r, m)}${member.times > 1 ? ` (${member.times} times)` : ''}`)
+        Dbg.log('║', '  ∞ ', `${Hints.rev(this.revision, this.controller.memberName)} is subscribed to ${Hints.rev(r, m)}${member.times > 1 ? ` (${member.times} times)` : ''}`)
     }
     else {
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log('║', '  x ', `${Hints.rev(this.revision, this.method.memberName)} is NOT subscribed to already invalidated ${Hints.rev(r, m)}`)
+        Dbg.log('║', '  x ', `${Hints.rev(this.revision, this.controller.memberName)} is NOT subscribed to already invalidated ${Hints.rev(r, m)}`)
     }
     return isValid // || observable.next === r
   }
@@ -657,9 +657,9 @@ class Task extends Observable implements Observer {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: Task | undefined = blank[m]
-    const method = existing ? existing.method : new MethodController(NIL_HOLDER, m)
+    const controller = existing ? existing.controller : new MethodController(NIL_HOLDER, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
-    const task =  new Task(method, NIL_REV, new OptionsImpl(body, opts, options, implicit))
+    const task =  new Task(controller, NIL_REV, new OptionsImpl(body, opts, options, implicit))
     blank[m] = task
     // Add to the list if it's a reaction
     if (task.options.kind === Kind.Reaction && task.options.throttling < Number.MAX_SAFE_INTEGER) {
