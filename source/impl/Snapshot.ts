@@ -277,6 +277,8 @@ export class Snapshot implements AbstractSnapshot {
     else
       for (const m in r.prev.revision.data)
         r.data[m] = Meta.Disposed
+    if (Dbg.isOn)
+      Snapshot.freezeObjectRevision(r)
   }
 
   static sealObservable(observable: Observable | symbol, m: MemberName, typeName: string): void {

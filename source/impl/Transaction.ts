@@ -264,7 +264,7 @@ class TransactionImpl extends Transaction {
       if (this.sealed && this.pending === 0) {
         this.applyOrDiscard() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
-        TransactionImpl.isolated(TransactionImpl.revalidateReactions, this)
+        TransactionImpl.isolated(TransactionImpl.executeReactions, this)
       }
       else
         TransactionImpl.curr = outer
@@ -272,8 +272,8 @@ class TransactionImpl extends Transaction {
     return result
   }
 
-  private static revalidateReactions(t: TransactionImpl): void {
-    t.snapshot.reactions.map(x => x.revalidate(false, true))
+  private static executeReactions(t: TransactionImpl): void {
+    t.snapshot.reactions.forEach(x => x.revalidate(false, true))
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {
@@ -303,6 +303,8 @@ class TransactionImpl extends Transaction {
   private applyOrDiscard(): void {
     // It's critical to have no exceptions in this block
     try {
+      if (Dbg.isOn && Dbg.trace.changes)
+        Dbg.log('╠══', '', '', undefined, ' changes')
       this.snapshot.applyOrDiscard(this.canceled)
       this.snapshot.collect()
       if (this.promise) {

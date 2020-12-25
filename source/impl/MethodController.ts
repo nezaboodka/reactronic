@@ -427,7 +427,7 @@ class Computation extends Observable implements Observer {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.methods)
-      Dbg.log('║', '‾\\', `${Hints.rev(this.revision, this.method.memberName)} - enter`)
+      Dbg.log('║', '‾\\', `${Hints.rev(this.revision, this.method.memberName)} - enter`, undefined, `    [ ${Hints.obj(this.method.ownHolder, this.method.memberName)} ]`)
     this.started = Date.now()
   }
 
@@ -544,8 +544,6 @@ class Computation extends Observable implements Observer {
         else
           for (const m in r.prev.revision.data)
             Computation.propagateMemberChangeToReactions(true, since, r, m, h, reactions)
-        if (Dbg.isOn)
-          Snapshot.freezeObjectRevision(r)
       })
       reactions.sort(compareReactionsByPriority)
       snapshot.options.journal?.remember(
