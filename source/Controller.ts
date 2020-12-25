@@ -13,7 +13,7 @@ export abstract class Controller<T> {
   abstract readonly result: T
   abstract readonly error: any
   abstract readonly stamp: number
-  abstract readonly isInvalidated: boolean
+  abstract readonly isInvalid: boolean
 
   abstract configure(options: Partial<MethodOptions>): MethodOptions
   abstract invalidate(): void

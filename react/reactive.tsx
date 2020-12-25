@@ -30,7 +30,7 @@ class Rx<V> extends ObservableObject {
 
   @reaction
   protected pulse(): void {
-    if (R.getController(this.render).isInvalidated)
+    if (R.getController(this.render).isInvalid)
       isolatedRun(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
