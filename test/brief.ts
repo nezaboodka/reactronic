@@ -84,7 +84,7 @@ export class DemoView extends ObservableObject {
       output.push(x) /* istanbul ignore next */
       if (R.isTraceEnabled && !R.traceOptions.silent) console.log(x)
     })
-    R.configureCurrentMethodCache({ priority: 123 })
+    R.configureCurrentMethod({ priority: 123 })
   }
 
   // @transaction @trace(log.noisy)

@@ -7,7 +7,7 @@
 
 import { UNDEF, F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { CacheOptions, Kind, Reentrance, Sensitivity } from '../Options'
+import { MethodOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta } from './Data'
@@ -37,7 +37,7 @@ export abstract class ObservableObject {
   }
 }
 
-export function decorateMethod(options: Partial<CacheOptions>): F<any> {
+export function decorateMethod(options: Partial<MethodOptions>): F<any> {
   return function(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
     return Hooks.decorateMethod(false, options, proto, prop, pd) /* istanbul ignore next */
   }
@@ -45,7 +45,7 @@ export function decorateMethod(options: Partial<CacheOptions>): F<any> {
 
 // Options
 
-const DEFAULT_OPTIONS: CacheOptions = Object.freeze({
+const DEFAULT_OPTIONS: MethodOptions = Object.freeze({
   kind: Kind.Data,
   priority: 0,
   noSideEffects: false,
@@ -57,7 +57,7 @@ const DEFAULT_OPTIONS: CacheOptions = Object.freeze({
   trace: undefined,
 })
 
-export class OptionsImpl implements CacheOptions {
+export class OptionsImpl implements MethodOptions {
   readonly body: Function
   readonly kind: Kind
   readonly priority: number
@@ -194,7 +194,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       Meta.acquire(proto, Meta.Blank)[m] = Meta.Unobservable
   }
 
-  static decorateMethod(implicit: boolean, options: Partial<CacheOptions>, proto: any, method: MemberName, pd: TypedPropertyDescriptor<F<any>>): any {
+  static decorateMethod(implicit: boolean, options: Partial<MethodOptions>, proto: any, method: MemberName, pd: TypedPropertyDescriptor<F<any>>): any {
     const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
     const configurable: boolean = true
     // Setup method trap
@@ -271,7 +271,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   /* istanbul ignore next */
-  static applyMethodOptions = function(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<CacheOptions>, implicit: boolean): OptionsImpl {
+  static applyMethodOptions = function(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
     throw misuse('alterBlank should never be called')
   }
 }

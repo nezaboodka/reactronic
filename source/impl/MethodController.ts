@@ -7,7 +7,7 @@
 
 import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { CacheOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
+import { MethodOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Worker } from '../Worker'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, MemberRef, Observer, Meta } from './Data'
@@ -25,8 +25,8 @@ export class MethodController extends Controller<any> {
   readonly ownHolder: ObjectHolder
   readonly memberName: MemberName
 
-  configure(options: Partial<CacheOptions>): CacheOptions { return MethodController.configureImpl(this, options) }
-  get options(): CacheOptions { return this.read(undefined).computation.options }
+  configure(options: Partial<MethodOptions>): MethodOptions { return MethodController.configureImpl(this, options) }
+  get options(): MethodOptions { return this.read(undefined).computation.options }
   get unobservableValue(): any { return this.read(undefined).computation.value }
   get args(): ReadonlyArray<any> { return this.weak().computation.args }
   get value(): any { return this.call(true, undefined).value }
@@ -71,7 +71,7 @@ export class MethodController extends Controller<any> {
     return func
   }
 
-  static configureImpl(self: MethodController | undefined, options: Partial<CacheOptions>): CacheOptions {
+  static configureImpl(self: MethodController | undefined, options: Partial<MethodOptions>): MethodOptions {
     let c: Computation | undefined
     if (self)
       c = self.write().computation
@@ -176,7 +176,7 @@ export class MethodController extends Controller<any> {
     return c
   }
 
-  private compute(existing: Call, spawn: boolean, options: CacheOptions, token: any, args: any[] | undefined): Call {
+  private compute(existing: Call, spawn: boolean, options: MethodOptions, token: any, args: any[] | undefined): Call {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.ownHolder, this.memberName)}`
     let call = existing
@@ -653,7 +653,7 @@ class Computation extends Observable implements Observer {
     return methodTrap
   }
 
-  private static applyMethodOptions(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<CacheOptions>, implicit: boolean): OptionsImpl {
+  private static applyMethodOptions(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: Computation | undefined = blank[m]
