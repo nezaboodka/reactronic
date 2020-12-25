@@ -52,7 +52,7 @@ export class MethodProxy extends Controller<any> {
       const spawn = weak || opt.kind === Kind.Reaction ||
         (opt.kind === Kind.Cache && (call.revision.snapshot.sealed || call.revision.prev.revision !== NIL_REV))
       const token = opt.noSideEffects ? this : undefined
-      const call2 = this.execute(call, spawn, opt, token, args)
+      const call2 = this.run(call, spawn, opt, token, args)
       const ctx2 = call2.task.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         call = call2
@@ -176,7 +176,7 @@ export class MethodProxy extends Controller<any> {
     return task
   }
 
-  private execute(existing: Call, spawn: boolean, options: MethodOptions, token: any, args: any[] | undefined): Call {
+  private run(existing: Call, spawn: boolean, options: MethodOptions, token: any, args: any[] | undefined): Call {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.ownHolder, this.memberName)}`
     let call = existing
@@ -186,7 +186,7 @@ export class MethodProxy extends Controller<any> {
         call = this.write()
         if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
           Dbg.log('║', ' (f)', `${call.task.whyFull()}`)
-        call.task.execute(this.ownHolder.proxy, argsx)
+        call.task.run(this.ownHolder.proxy, argsx)
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
@@ -194,7 +194,7 @@ export class MethodProxy extends Controller<any> {
           call = this.write()
           if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
             Dbg.log('║', ' (f)', `${call.task.whyFull()}`)
-          call.task.execute(this.ownHolder.proxy, argsx)
+          call.task.run(this.ownHolder.proxy, argsx)
         }
       }
       return call.task.ret
@@ -303,12 +303,12 @@ class Task extends Observable implements Observer {
     return cacheBound
   }
 
-  execute(proxy: any, args: any[] | undefined): void {
+  run(proxy: any, args: any[] | undefined): void {
     if (args)
       this.args = args
     this.invalidatedSince = MAX_TIMESTAMP
     if (!this.error)
-      MethodProxy.run<void>(this, Task.execute, this, proxy)
+      MethodProxy.run<void>(this, Task.run, this, proxy)
     else
       this.ret = Promise.reject(this.error)
   }
@@ -414,7 +414,7 @@ class Task extends Observable implements Observer {
 
   // Internal
 
-  private static execute(self: Task, proxy: any): void {
+  private static run(self: Task, proxy: any): void {
     self.enter()
     try {
       self.ret = self.options.body.call(proxy, ...self.args)
@@ -734,7 +734,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Task)
-    result = `<recompute:${Hints.rev(value.revision.prev.revision)}>`
+    result = `<rerun:${Hints.rev(value.revision.prev.revision)}>`
   else if (value === Meta.Disposed)
     result = '<disposed>'
   else if (value !== undefined && value !== null)
