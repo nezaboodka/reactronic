@@ -558,6 +558,7 @@ class Computation extends Observable implements Observer {
   private static propagateMemberChangeToReactions(unsubscribe: boolean, timestamp: number,
     r: ObjectRevision, m: MemberName, h: ObjectHolder, reactions?: Observer[]): void {
     if (reactions) {
+      // Propagate change to reactions
       const prev = r.prev.revision.data[m]
       if (prev !== undefined && prev instanceof Observable) {
         const cause: MemberRef = { revision: r, member: m, times: 0 }
@@ -570,31 +571,32 @@ class Computation extends Observable implements Observer {
           prev.observers.forEach(c => c.invalidateDueTo(prev, cause, timestamp, reactions))
       }
     }
-    const value = r.data[m]
-    if (value instanceof Computation) {
-      if (value.revision === r) {
+    const curr = r.data[m]
+    if (curr instanceof Computation) {
+      if (curr.revision === r) {
         if (unsubscribe)
-          value.unsubscribeFromAll()
+          curr.unsubscribeFromAll()
         // Clear recomputing status of previous cached result
         // const prev = cache.revision.prev.revision.data[m]
         // if (prev instanceof CallResult && prev.revalidation === cache)
         //   prev.revalidation = undefined
         // Performance tracking
         if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
-          value.observables.forEach((hint, v) => {
+          curr.observables.forEach((hint, v) => {
             if (hint.times > Hooks.repetitiveReadWarningThreshold)
-              Dbg.log('', '[!]', `${value.hint()} uses ${Hints.rev(hint.revision, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
+              Dbg.log('', '[!]', `${curr.hint()} uses ${Hints.rev(hint.revision, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
       }
     }
-    else if (value instanceof Observable && value.observers) {
-      value.observers.forEach(o => {
-        o.observables.delete(value)
+    else if (curr instanceof Observable && curr.observers) {
+      // Unsubscribe from self-changed observables
+      curr.observers.forEach(o => {
+        o.observables.delete(curr)
         if (Dbg.isOn && Dbg.trace.reads)
           Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.rev(r, m)}`)
       })
-      value.observers = undefined
+      curr.observers = undefined
     }
   }
 
@@ -603,7 +605,7 @@ class Computation extends Observable implements Observer {
   }
 
   private unsubscribeFromAll(): void {
-    // It's critical to have on exceptions here
+    // It's critical to have no exceptions here
     this.observables.forEach((hint, value) => {
       const observers = value.observers
       if (observers)
