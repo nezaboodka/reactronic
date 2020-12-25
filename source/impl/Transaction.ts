@@ -248,8 +248,11 @@ class TransactionImpl extends Transaction {
       this.snapshot.acquire(outer.snapshot)
       result = func(...args)
       if (this.sealed && this.pending === 1) {
-        if (!this.canceled)
+        if (!this.canceled) {
           this.checkForConflicts() // merge with concurrent transactions
+          Snapshot.propagateChangesToReactions(this.snapshot, undefined)
+          TransactionImpl.executeReactions(this)
+        }
         else if (!this.after)
           throw this.canceled
       }
@@ -261,19 +264,17 @@ class TransactionImpl extends Transaction {
     }
     finally {
       this.pending--
-      if (this.sealed && this.pending === 0) {
+      if (this.sealed && this.pending === 0)
         this.applyOrDiscard() // it's critical to have no exceptions inside this call
-        TransactionImpl.curr = outer
-        TransactionImpl.isolated(TransactionImpl.revalidateReactions, this)
-      }
-      else
-        TransactionImpl.curr = outer
+      TransactionImpl.curr = outer
     }
     return result
   }
 
-  private static revalidateReactions(t: TransactionImpl): void {
-    t.snapshot.reactions.map(x => x.revalidate(false, true))
+  private static executeReactions(t: TransactionImpl): void {
+    const rr = t.snapshot.reactions
+    t.snapshot.reactions = []
+    rr.forEach(x => x.revalidate(false, true))
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {

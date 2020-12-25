@@ -49,10 +49,8 @@ export class MethodController extends Controller<any> {
     if (!call.isValid && call.revision.data[Meta.Disposed] === undefined
       && (!weak || c.invalidatedSince === INIT_TIMESTAMP || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
-      const spawn = weak || opt.kind === Kind.Reaction ||
-        (opt.kind === Kind.Cache && (call.revision.snapshot.sealed || call.revision.prev.revision !== NIL_REV))
       const token = opt.noSideEffects ? this : undefined
-      const call2 = this.compute(call, spawn, opt, token, args)
+      const call2 = this.compute(call, weak, opt, token, args)
       const ctx2 = call2.computation.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         call = call2
@@ -132,8 +130,9 @@ export class MethodController extends Controller<any> {
     const ctx = Snapshot.readable()
     const r: ObjectRevision = ctx.findRevision(this.ownHolder, this.memberName)
     const c: Computation = this.from(r)
-    const isValid = c.options.kind !== Kind.Transaction && c.invalidatedSince !== INIT_TIMESTAMP &&
-      (ctx === c.revision.snapshot || ctx.timestamp < c.invalidatedSince) &&
+    const isValid = c.options.kind !== Kind.Transaction &&
+      c.invalidatedSince !== INIT_TIMESTAMP &&
+      ctx.timestamp < c.invalidatedSince &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
     return { snapshot: ctx, revision: r, computation: c, isValid }
@@ -274,7 +273,7 @@ class Computation extends Observable implements Observer {
     else if (this.method.options.kind === Kind.Transaction)
       cause = '   <<   transaction'
     else
-      cause = `   <<   called by ${this.revision.snapshot.hint}`
+      cause = `   <<   called within ${this.revision.snapshot.hint}`
     return `${Hints.rev(this.revision, this.method.memberName)}${cause}   (${ms}ms since previous revalidation)`
   }
 
@@ -544,8 +543,6 @@ class Computation extends Observable implements Observer {
         else
           for (const m in r.prev.revision.data)
             Computation.propagateMemberChangeToReactions(true, since, r, m, h, reactions)
-        if (Dbg.isOn)
-          Snapshot.freezeObjectRevision(r)
       })
       reactions.sort(compareReactionsByPriority)
       snapshot.options.journal?.remember(

@@ -55,7 +55,7 @@ export class Snapshot implements AbstractSnapshot {
   private stamp: number
   private bumper: number
   readonly changeset: Map<ObjectHolder, ObjectRevision>
-  readonly reactions: Observer[]
+  reactions: Observer[]
   sealed: boolean
 
   constructor(options: SnapshotOptions | null) {
@@ -268,7 +268,6 @@ export class Snapshot implements AbstractSnapshot {
       if (Dbg.trace.transactions)
         Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
     }
-    Snapshot.propagateChangesToReactions(this, error)
   }
 
   static sealObjectRevision(h: ObjectHolder, r: ObjectRevision): void {
@@ -277,6 +276,8 @@ export class Snapshot implements AbstractSnapshot {
     else
       for (const m in r.prev.revision.data)
         r.data[m] = Meta.Disposed
+    if (Dbg.isOn)
+      Snapshot.freezeObjectRevision(r)
   }
 
   static sealObservable(observable: Observable | symbol, m: MemberName, typeName: string): void {
