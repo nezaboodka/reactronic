@@ -252,6 +252,10 @@ class TransactionImpl extends Transaction {
           this.checkForConflicts() // merge with concurrent transactions
           Snapshot.propagateChangesToReactions(this.snapshot, undefined)
           TransactionImpl.executeReactions(this)
+          // while (this.snapshot.reactions.length > 0) {
+          //   TransactionImpl.executeReactions(this)
+          //   Snapshot.propagateChangesToReactions(this.snapshot, undefined)
+          // }
         }
         else if (!this.after)
           throw this.canceled
