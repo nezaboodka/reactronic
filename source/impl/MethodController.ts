@@ -19,7 +19,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 
-type Call = { snapshot: Snapshot, revision: ObjectRevision, computation: Computation, reuse: boolean }
+type Call = { snapshot: Snapshot, revision: ObjectRevision, computation: Computation, isValid: boolean }
 
 export class MethodController extends Controller<any> {
   readonly holder: ObjectHolder
@@ -32,7 +32,7 @@ export class MethodController extends Controller<any> {
   get value(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.weak().computation.error }
   get stamp(): number { return this.weak().revision.snapshot.timestamp }
-  get isInvalidated(): boolean { return !this.weak().reuse }
+  get isInvalidated(): boolean { return !this.weak().isValid }
   invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.holder, this.member)})` : 'invalidate()' }, MethodController.invalidate, this) }
   getCachedValueAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
@@ -46,7 +46,7 @@ export class MethodController extends Controller<any> {
     let call: Call = this.read(args)
     const ctx = call.snapshot
     const c: Computation = call.computation
-    if (!call.reuse && call.revision.data[Meta.Disposed] === undefined
+    if (!call.isValid && call.revision.data[Meta.Disposed] === undefined
       && (!weak || c.invalidatedSince === INIT_TIMESTAMP || !c.revalidation || c.revalidation.worker.isFinished)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Reaction ||
@@ -131,11 +131,11 @@ export class MethodController extends Controller<any> {
     const ctx = Snapshot.readable()
     const r: ObjectRevision = ctx.findRevision(this.holder, this.member)
     const c: Computation = this.from(r)
-    const reuse = c.options.kind !== Kind.Transaction && c.invalidatedSince !== INIT_TIMESTAMP &&
+    const isValid = c.options.kind !== Kind.Transaction && c.invalidatedSince !== INIT_TIMESTAMP &&
       (ctx === c.revision.snapshot || ctx.timestamp < c.invalidatedSince) &&
       (!c.options.sensitiveArgs || args === undefined || c.args.length === args.length && c.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
-    return { snapshot: ctx, revision: r, computation: c, reuse }
+    return { snapshot: ctx, revision: r, computation: c, isValid }
   }
 
   private write(): Call {
@@ -150,7 +150,7 @@ export class MethodController extends Controller<any> {
       ctx.bumpBy(r.prev.revision.snapshot.timestamp)
       Snapshot.markChanged(c, true, r, m, h)
     }
-    return { snapshot: ctx, revision: r, computation: c, reuse: true }
+    return { snapshot: ctx, revision: r, computation: c, isValid: true }
   }
 
   private from(r: ObjectRevision): Computation {
@@ -189,7 +189,7 @@ export class MethodController extends Controller<any> {
       }
       else { // retry call
         call = this.read(argsx) // re-read on retry
-        if (call.computation.options.kind === Kind.Transaction || !call.reuse) {
+        if (call.computation.options.kind === Kind.Transaction || !call.isValid) {
           call = this.write()
           if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
             Dbg.log('║', ' (f)', `${call.computation.whyFull()}`)
