@@ -148,13 +148,13 @@ export class Snapshot implements AbstractSnapshot {
     if (m !== Meta.Holder && value !== Meta.Holder) {
       if (r.snapshot !== this || r.prev.revision !== NIL_REV) {
         if (this.options.token !== undefined && token !== this.options.token)
-          throw misuse(`${this.hint} should not have side effects (trying to change ${Hints.revision(r, m)})`)
+          throw misuse(`${this.hint} should not have side effects (trying to change ${Hints.rev(r, m)})`)
         // TODO: Detect uninitialized members
         // if (existing === undefined)
         //   throw misuse(`uninitialized member is detected: ${Hints.revision(r, m)}`)
       }
       if (r === NIL_REV)
-        throw misuse(`member ${Hints.revision(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
+        throw misuse(`member ${Hints.rev(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     }
   }
 
@@ -187,7 +187,7 @@ export class Snapshot implements AbstractSnapshot {
             conflicts.push(r)
           }
           if (Dbg.isOn && Dbg.trace.changes)
-            Dbg.log('╠╝', '', `${Hints.revision(r)} is merged with ${Hints.revision(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
+            Dbg.log('╠╝', '', `${Hints.rev(r)} is merged with ${Hints.rev(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
       if (this.options.token === undefined) {
@@ -218,7 +218,7 @@ export class Snapshot implements AbstractSnapshot {
       if (disposed || m === Meta.Disposed) {
         if (disposed !== (m === Meta.Disposed)) {
           if (Dbg.isOn && Dbg.trace.changes)
-            Dbg.log('║╠', '', `${Hints.revision(ours, m)} <> ${Hints.revision(head, m)}`, 0, ' *** CONFLICT ***')
+            Dbg.log('║╠', '', `${Hints.rev(ours, m)} <> ${Hints.rev(head, m)}`, 0, ' *** CONFLICT ***')
           ours.conflicts.set(m, head)
         }
       }
@@ -227,7 +227,7 @@ export class Snapshot implements AbstractSnapshot {
         if (conflict)
           ours.conflicts.set(m, head)
         if (Dbg.isOn && Dbg.trace.changes)
-          Dbg.log('║╠', '', `${Hints.revision(ours, m)} ${conflict ? '<>' : '=='} ${Hints.revision(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
+          Dbg.log('║╠', '', `${Hints.rev(ours, m)} ${conflict ? '<>' : '=='} ${Hints.rev(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
       }
     })
     Utils.copyAllMembers(merged, ours.data) // overwrite with merged copy
@@ -262,7 +262,7 @@ export class Snapshot implements AbstractSnapshot {
           const members: string[] = []
           r.changes.forEach(m => members.push(m.toString()))
           const s = members.join(', ')
-          Dbg.log('║', '√', `${Hints.revision(r)} (${s}) is ${r.prev.revision === NIL_REV ? 'constructed' : `applied on top of ${Hints.revision(r.prev.revision)}`}`)
+          Dbg.log('║', '√', `${Hints.rev(r)} (${s}) is ${r.prev.revision === NIL_REV ? 'constructed' : `applied on top of ${Hints.rev(r.prev.revision)}`}`)
         })
       }
       if (Dbg.trace.transactions)
@@ -332,7 +332,7 @@ export class Snapshot implements AbstractSnapshot {
       Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       if (Dbg.isOn && Dbg.trace.gc && r.prev.revision !== NIL_REV)
-        Dbg.log(' ', '  ', `${Hints.revision(r.prev.revision)} is ready for GC because overwritten by ${Hints.revision(r)}`)
+        Dbg.log(' ', '  ', `${Hints.rev(r.prev.revision)} is ready for GC because overwritten by ${Hints.rev(r)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
         if (r.prev.revision !== NIL_REV) {
           Snapshot.totalObjectRevisionCount--
@@ -372,7 +372,7 @@ export class Hints {
       : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${tran}v${stamp}`
   }
 
-  static revision(r: ObjectRevision, m?: MemberName): string {
+  static rev(r: ObjectRevision, m?: MemberName): string {
     const h = Meta.get<ObjectHolder | undefined>(r.data, Meta.Holder)
     return Hints.obj(h, m, r.snapshot.timestamp, r.snapshot.id)
   }
@@ -388,7 +388,7 @@ export class Hints {
   }
 
   static conflictingMemberHint(m: MemberName, ours: ObjectRevision, theirs: ObjectRevision): string {
-    return `${theirs.snapshot.hint} on ${Hints.revision(theirs, m)}`
+    return `${theirs.snapshot.hint} on ${Hints.rev(theirs, m)}`
   }
 }
 
