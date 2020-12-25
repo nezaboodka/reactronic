@@ -377,28 +377,28 @@ class Computation extends Observable implements Observer {
 
   reenterOver(head: Computation): this {
     let error: Error | undefined = undefined
-    const competitor = head.replacement
-    if (competitor && !competitor.worker.isFinished) {
+    const concurrent = head.replacement
+    if (concurrent && !concurrent.worker.isFinished) {
       if (Dbg.isOn && Dbg.trace.invalidations)
-        Dbg.log('║', ' [!]', `${Hints.rev(this.revision, this.method.memberName)} is trying to re-enter over ${Hints.rev(competitor.revision, competitor.method.memberName)}`)
+        Dbg.log('║', ' [!]', `${Hints.rev(this.revision, this.method.memberName)} is trying to re-enter over ${Hints.rev(concurrent.revision, concurrent.method.memberName)}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
-          if (!competitor.worker.isCanceled)
-            throw misuse(`${head.hint()} (${head.whyFull()}) is not reentrant over ${competitor.hint()} (${competitor.whyFull()})`)
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/PreventWithError due to canceled T${competitor.worker.id}[${competitor.worker.hint}]`)
-          this.worker.cancel(error, competitor.worker)
+          if (!concurrent.worker.isCanceled)
+            throw misuse(`${head.hint()} (${head.whyFull()}) is not reentrant over ${concurrent.hint()} (${concurrent.whyFull()})`)
+          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/PreventWithError due to canceled T${concurrent.worker.id}[${concurrent.worker.hint}]`)
+          this.worker.cancel(error, concurrent.worker)
           break
         case Reentrance.WaitAndRestart:
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/WaitAndRestart due to active T${competitor.worker.id}[${competitor.worker.hint}]`)
-          this.worker.cancel(error, competitor.worker)
+          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/WaitAndRestart due to active T${concurrent.worker.id}[${concurrent.worker.hint}]`)
+          this.worker.cancel(error, concurrent.worker)
           break
         case Reentrance.CancelAndWaitPrevious:
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/CancelAndWaitPrevious due to active T${competitor.worker.id}[${competitor.worker.hint}]`)
-          this.worker.cancel(error, competitor.worker)
-          competitor.worker.cancel(new Error(`T${competitor.worker.id}[${competitor.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
+          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/CancelAndWaitPrevious due to active T${concurrent.worker.id}[${concurrent.worker.hint}]`)
+          this.worker.cancel(error, concurrent.worker)
+          concurrent.worker.cancel(new Error(`T${concurrent.worker.id}[${concurrent.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
           break
         case Reentrance.CancelPrevious:
-          competitor.worker.cancel(new Error(`T${competitor.worker.id}[${competitor.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
+          concurrent.worker.cancel(new Error(`T${concurrent.worker.id}[${concurrent.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
           break
         case Reentrance.RunSideBySide:
           break // do nothing
