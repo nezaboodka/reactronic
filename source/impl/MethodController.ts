@@ -29,7 +29,7 @@ export class MethodController extends Controller<any> {
   get options(): MethodOptions { return this.read(undefined).algorithm.options }
   get unobservableValue(): any { return this.read(undefined).algorithm.value }
   get args(): ReadonlyArray<any> { return this.weak().algorithm.args }
-  get value(): any { return this.call(true, undefined).value }
+  get result(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.weak().algorithm.error }
   get stamp(): number { return this.weak().revision.snapshot.timestamp }
   get isInvalidated(): boolean { return !this.weak().isValid }

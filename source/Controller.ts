@@ -10,7 +10,7 @@ import { MethodOptions } from './Options'
 export abstract class Controller<T> {
   abstract readonly options: MethodOptions
   abstract readonly args: ReadonlyArray<any>
-  abstract readonly value: T
+  abstract readonly result: T
   abstract readonly error: any
   abstract readonly stamp: number
   abstract readonly isInvalidated: boolean
