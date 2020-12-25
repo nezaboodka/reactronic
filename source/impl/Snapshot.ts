@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Utils, undef } from '../util/Utils'
+import { Utils, UNDEF } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { Sealant } from '../util/Sealant'
 import { SealedArray } from '../util/SealedArray'
@@ -69,11 +69,11 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   // To be redefined by Transaction and Cache implementations
-  static readable: () => Snapshot = undef
-  static writable: () => Snapshot = undef
-  static markChanged: (value: any, changed: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = undef
-  static markViewed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = undef
-  static isConflicting: (oldValue: any, newValue: any) => boolean = undef
+  static readable: () => Snapshot = UNDEF
+  static writable: () => Snapshot = UNDEF
+  static markChanged: (value: any, changed: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
+  static markViewed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF
+  static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateChangesToReactions = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
   findRevision(h: ObjectHolder, m: MemberName): ObjectRevision {

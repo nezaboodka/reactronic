@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { undef, F } from '../util/Utils'
+import { UNDEF, F } from '../util/Utils'
 import { Dbg, misuse, error, fatal } from '../util/Dbg'
 import { Worker } from '../Worker'
 import { SnapshotOptions, TraceOptions } from '../Options'
@@ -63,8 +63,8 @@ class TransactionImpl extends Transaction {
     this.canceled = undefined
     this.after = undefined
     this.promise = undefined
-    this.resolve = undef
-    this.reject = undef
+    this.resolve = UNDEF
+    this.reject = UNDEF
   }
 
   static get current(): TransactionImpl { return TransactionImpl.curr }

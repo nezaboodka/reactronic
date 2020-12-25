@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { undef, F } from '../util/Utils'
+import { UNDEF, F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { CacheOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
@@ -68,7 +68,7 @@ export class OptionsImpl implements CacheOptions {
   readonly journal: TransactionJournal | undefined
   readonly monitor: Monitor | null
   readonly trace?: Partial<TraceOptions>
-  static readonly INITIAL = Object.freeze(new OptionsImpl(undef, {body: undef, ...DEFAULT_OPTIONS}, {}, false))
+  static readonly INITIAL = Object.freeze(new OptionsImpl(UNDEF, { body: UNDEF, ...DEFAULT_OPTIONS }, {}, false))
 
   constructor(body: Function | undefined, existing: OptionsImpl, patch: Partial<OptionsImpl>, implicit: boolean) {
     this.body = body !== undefined ? body : existing.body
