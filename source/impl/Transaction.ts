@@ -273,9 +273,11 @@ class TransactionImpl extends Transaction {
 
   private static executeReactions(t: TransactionImpl): void {
     const rr = t.snapshot.reactions
-    Dbg.log('╠══', '', ' (reactions)')
-    t.snapshot.reactions = []
-    rr.forEach(x => x.revalidate(false, true))
+    if (rr.length > 0) {
+      Dbg.log('╠══', '', '', undefined, ' reactions')
+      t.snapshot.reactions = []
+      rr.forEach(x => x.revalidate(false, true))
+    }
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {
@@ -305,7 +307,7 @@ class TransactionImpl extends Transaction {
   private applyOrDiscard(): void {
     // It's critical to have no exceptions in this block
     try {
-      Dbg.log('╠══', '', ' (changes)')
+      Dbg.log('╠══', '', '', undefined, ' changes')
       this.snapshot.applyOrDiscard(this.canceled)
       this.snapshot.collect()
       if (this.promise) {
