@@ -273,6 +273,7 @@ class TransactionImpl extends Transaction {
 
   private static executeReactions(t: TransactionImpl): void {
     const rr = t.snapshot.reactions
+    Dbg.log('╠══', '', ' (reactions)')
     t.snapshot.reactions = []
     rr.forEach(x => x.revalidate(false, true))
   }
@@ -304,6 +305,7 @@ class TransactionImpl extends Transaction {
   private applyOrDiscard(): void {
     // It's critical to have no exceptions in this block
     try {
+      Dbg.log('╠══', '', ' (changes)')
       this.snapshot.applyOrDiscard(this.canceled)
       this.snapshot.collect()
       if (this.promise) {

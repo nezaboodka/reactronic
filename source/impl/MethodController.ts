@@ -534,6 +534,7 @@ class Computation extends Observable implements Observer {
   }
 
   private static propagateChangesToReactions(snapshot: Snapshot, error: Error | undefined): void {
+    Dbg.log('╠══', '', ' (propagation)')
     const since = snapshot.timestamp
     if (!error) {
       const reactions = snapshot.reactions
