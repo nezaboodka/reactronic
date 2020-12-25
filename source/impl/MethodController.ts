@@ -547,8 +547,9 @@ class Computation extends Observable implements Observer {
         if (Dbg.isOn)
           Snapshot.freezeObjectRevision(r)
       })
-      reactions.sort(Computation.compareReactionsByPriority)
-      snapshot.options.journal?.remember(TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
+      reactions.sort(compareReactionsByPriority)
+      snapshot.options.journal?.remember(
+        TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
     }
     else
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
@@ -598,10 +599,6 @@ class Computation extends Observable implements Observer {
       })
       curr.observers = undefined
     }
-  }
-
-  private static compareReactionsByPriority(a: Observer, b: Observer): number {
-    return a.priority - b.priority
   }
 
   private unsubscribeFromAll(): void {
@@ -780,6 +777,10 @@ function reactronicHookedThen(this: any,
     reject = tran.bind(reject, true)
   }
   return ORIGINAL_PROMISE_THEN.call(this, resolve, reject)
+}
+
+function compareReactionsByPriority(a: Observer, b: Observer): number {
+  return a.priority - b.priority
 }
 
 /* istanbul ignore next */
