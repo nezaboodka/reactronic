@@ -34,7 +34,7 @@ export class MethodCtl extends Controller<any> {
   get stamp(): number { return this.weak().revision.snapshot.timestamp }
   get isInvalid(): boolean { return !this.weak().isValid }
   invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.ownHolder, this.memberName)})` : 'invalidate()' }, MethodCtl.invalidate, this) }
-  getCachedValueAndRevalidate(args?: any[]): any { return this.call(true, args).value }
+  getLastResultAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
   constructor(ownHolder: ObjectHolder, memberName: MemberName) {
     super()
@@ -287,7 +287,7 @@ class Task extends Observable implements Observer {
   }
 
   bind<T>(func: F<T>): F<T> {
-    const cacheBound: F<T> = (...args: any[]): T => {
+    const boundFunc: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.ret)
         Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.rev(this.revision, this.controller.memberName)} - step in  `, 0, '        │')
       const started = Date.now()
@@ -299,7 +299,7 @@ class Task extends Observable implements Observer {
         Dbg.log('', '[!]', this.whyFull(), ms, '    *** main thread is too busy ***')
       return result
     }
-    return cacheBound
+    return boundFunc
   }
 
   run(proxy: any, args: any[] | undefined): void {

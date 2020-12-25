@@ -17,5 +17,5 @@ export abstract class Controller<T> {
 
   abstract configure(options: Partial<MethodOptions>): MethodOptions
   abstract invalidate(): void
-  abstract getCachedValueAndRevalidate(args?: any[]): T | undefined
+  abstract getLastResultAndRevalidate(args?: any[]): T | undefined
 }
