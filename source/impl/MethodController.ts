@@ -218,6 +218,8 @@ class Computation extends Observable implements Observer {
   static asyncReactionsBatch: Computation[] = []
 
   get isComputation(): boolean { return true }
+  readonly margin: number
+  readonly worker: Worker
   readonly method: MethodController
   readonly revision: ObjectRevision
   readonly observables: Map<Observable, MemberRef>
@@ -226,8 +228,6 @@ class Computation extends Observable implements Observer {
   args: any[]
   ret: any
   error: any
-  readonly margin: number
-  readonly worker: Worker
   started: number
   invalidatedDueTo: MemberRef | undefined
   invalidatedSince: number
@@ -235,6 +235,8 @@ class Computation extends Observable implements Observer {
 
   constructor(method: MethodController, revision: ObjectRevision, prev: Computation | OptionsImpl) {
     super(undefined)
+    this.margin = Computation.current ? Computation.current.margin + 1 : 1
+    this.worker = Transaction.current
     this.method = method
     this.revision = revision
     this.observables = new Map<Observable, MemberRef>()
@@ -252,8 +254,6 @@ class Computation extends Observable implements Observer {
     }
     // this.ret = undefined
     // this.error = undefined
-    this.margin = Computation.current ? Computation.current.margin + 1 : 1
-    this.worker = Transaction.current
     this.started = 0
     this.invalidatedSince = 0
     this.invalidatedDueTo = undefined
