@@ -426,7 +426,7 @@ class Computation extends Observable implements Observer {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.methods)
-      Dbg.log('║', '‾\\', `${Hints.rev(this.revision, this.method.memberName)} - enter`)
+      Dbg.log('║', '‾\\', `${Hints.rev(this.revision, this.method.memberName)} - enter`, undefined, `    [ ${Hints.obj(this.method.ownHolder, this.method.memberName)} ]`)
     this.started = Date.now()
   }
 
