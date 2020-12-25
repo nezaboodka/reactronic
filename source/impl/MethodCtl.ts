@@ -274,7 +274,7 @@ class Task extends Observable implements Observer {
     else if (this.controller.options.kind === Kind.Transaction)
       cause = '   <<   transaction'
     else
-      cause = `   <<   called by ${this.revision.snapshot.hint}`
+      cause = `   <<   called within ${this.revision.snapshot.hint}`
     return `${Hints.rev(this.revision, this.controller.memberName)}${cause}   (${ms}ms since previous revalidation)`
   }
 
