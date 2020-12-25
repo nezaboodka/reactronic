@@ -555,10 +555,6 @@ class Computation extends Observable implements Observer {
         r.changes.forEach(m => Computation.propagateMemberChangeToReactions(true, since, r, m, h, undefined)))
   }
 
-  private static compareReactionsByPriority(a: Observer, b: Observer): number {
-    return a.priority - b.priority
-  }
-
   private static propagateMemberChangeToReactions(unsubscribe: boolean, timestamp: number,
     r: ObjectRevision, m: MemberName, h: ObjectHolder, reactions?: Observer[]): void {
     if (reactions) {
@@ -600,6 +596,10 @@ class Computation extends Observable implements Observer {
       })
       value.observers = undefined
     }
+  }
+
+  private static compareReactionsByPriority(a: Observer, b: Observer): number {
+    return a.priority - b.priority
   }
 
   private unsubscribeFromAll(): void {
