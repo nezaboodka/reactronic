@@ -47,7 +47,7 @@ export class MethodController extends Controller<any> {
     const ctx = call.snapshot
     const c: Computation = call.computation
     if (!call.isValid && call.revision.data[Meta.Disposed] === undefined
-      && (!weak || c.invalidatedSince === INIT_TIMESTAMP || !c.revalidation || c.revalidation.worker.isFinished)) {
+      && (!weak || c.invalidatedSince === INIT_TIMESTAMP || !c.replacement || c.replacement.worker.isFinished)) {
       const opt = c.options
       const spawn = weak || opt.kind === Kind.Reaction ||
         (opt.kind === Kind.Cache && (call.revision.snapshot.sealed || call.revision.prev.revision !== NIL_REV))
@@ -231,7 +231,7 @@ class Computation extends Observable implements Observer {
   started: number
   invalidatedDueTo: MemberRef | undefined
   invalidatedSince: number
-  revalidation: Computation | undefined
+  replacement: Computation | undefined
 
   constructor(method: MethodController, revision: ObjectRevision, prev: Computation | OptionsImpl) {
     super(undefined)
@@ -257,7 +257,7 @@ class Computation extends Observable implements Observer {
     this.started = 0
     this.invalidatedSince = 0
     this.invalidatedDueTo = undefined
-    this.revalidation = undefined
+    this.replacement = undefined
   }
 
   hint(): string { return `${Hints.rev(this.revision, this.method.memberName)}` }
@@ -350,7 +350,7 @@ class Computation extends Observable implements Observer {
     const hold = t ? t - interval : 0 // "started" is stored as negative value after reaction completion
     if (now || hold < 0) {
       if (!this.error && (this.options.kind === Kind.Transaction ||
-        !this.revalidation || this.revalidation.worker.isCanceled)) {
+        !this.replacement || this.replacement.worker.isCanceled)) {
         try {
           const c: Computation = this.method.call(false, undefined)
           if (c.ret instanceof Promise)
@@ -377,35 +377,35 @@ class Computation extends Observable implements Observer {
 
   reenterOver(head: Computation): this {
     let error: Error | undefined = undefined
-    const existing = head.revalidation
-    if (existing && !existing.worker.isFinished) {
+    const competitor = head.replacement
+    if (competitor && !competitor.worker.isFinished) {
       if (Dbg.isOn && Dbg.trace.invalidations)
-        Dbg.log('║', ' [!]', `${Hints.rev(this.revision, this.method.memberName)} is trying to re-enter over ${Hints.rev(existing.revision, existing.method.memberName)}`)
+        Dbg.log('║', ' [!]', `${Hints.rev(this.revision, this.method.memberName)} is trying to re-enter over ${Hints.rev(competitor.revision, competitor.method.memberName)}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
-          if (!existing.worker.isCanceled)
-            throw misuse(`${head.hint()} (${head.whyFull()}) is not reentrant over ${existing.hint()} (${existing.whyFull()})`)
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/PreventWithError due to canceled T${existing.worker.id}[${existing.worker.hint}]`)
-          this.worker.cancel(error, existing.worker)
+          if (!competitor.worker.isCanceled)
+            throw misuse(`${head.hint()} (${head.whyFull()}) is not reentrant over ${competitor.hint()} (${competitor.whyFull()})`)
+          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/PreventWithError due to canceled T${competitor.worker.id}[${competitor.worker.hint}]`)
+          this.worker.cancel(error, competitor.worker)
           break
         case Reentrance.WaitAndRestart:
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/WaitAndRestart due to active T${existing.worker.id}[${existing.worker.hint}]`)
-          this.worker.cancel(error, existing.worker)
+          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/WaitAndRestart due to active T${competitor.worker.id}[${competitor.worker.hint}]`)
+          this.worker.cancel(error, competitor.worker)
           break
         case Reentrance.CancelAndWaitPrevious:
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/CancelAndWaitPrevious due to active T${existing.worker.id}[${existing.worker.hint}]`)
-          this.worker.cancel(error, existing.worker)
-          existing.worker.cancel(new Error(`T${existing.worker.id}[${existing.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
+          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/CancelAndWaitPrevious due to active T${competitor.worker.id}[${competitor.worker.hint}]`)
+          this.worker.cancel(error, competitor.worker)
+          competitor.worker.cancel(new Error(`T${competitor.worker.id}[${competitor.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
           break
         case Reentrance.CancelPrevious:
-          existing.worker.cancel(new Error(`T${existing.worker.id}[${existing.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
+          competitor.worker.cancel(new Error(`T${competitor.worker.id}[${competitor.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
           break
         case Reentrance.RunSideBySide:
           break // do nothing
       }
     }
     if (!error)
-      head.revalidation = this
+      head.replacement = this
     else
       this.error = error
     return this
