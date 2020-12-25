@@ -21,11 +21,11 @@ const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 
 
 type Call = { snapshot: Snapshot, revision: ObjectRevision, task: Task, isValid: boolean }
 
-export class MethodProxy extends Controller<any> {
+export class MethodCtl extends Controller<any> {
   readonly ownHolder: ObjectHolder
   readonly memberName: MemberName
 
-  configure(options: Partial<MethodOptions>): MethodOptions { return MethodProxy.configureImpl(this, options) }
+  configure(options: Partial<MethodOptions>): MethodOptions { return MethodCtl.configureImpl(this, options) }
   get options(): MethodOptions { return this.read(undefined).task.options }
   get unobservableValue(): any { return this.read(undefined).task.value }
   get args(): ReadonlyArray<any> { return this.weak().task.args }
@@ -33,7 +33,7 @@ export class MethodProxy extends Controller<any> {
   get error(): boolean { return this.weak().task.error }
   get stamp(): number { return this.weak().revision.snapshot.timestamp }
   get isInvalidated(): boolean { return !this.weak().isValid }
-  invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.ownHolder, this.memberName)})` : 'invalidate()' }, MethodProxy.invalidate, this) }
+  invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.ownHolder, this.memberName)})` : 'invalidate()' }, MethodCtl.invalidate, this) }
   getCachedValueAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
   constructor(ownHolder: ObjectHolder, memberName: MemberName) {
@@ -71,7 +71,7 @@ export class MethodProxy extends Controller<any> {
     return ctl
   }
 
-  static configureImpl(self: MethodProxy | undefined, options: Partial<MethodOptions>): MethodOptions {
+  static configureImpl(self: MethodCtl | undefined, options: Partial<MethodOptions>): MethodOptions {
     let task: Task | undefined
     if (self)
       task = self.write().task
@@ -203,7 +203,7 @@ export class MethodProxy extends Controller<any> {
     return call
   }
 
-  private static invalidate(self: MethodProxy): void {
+  private static invalidate(self: MethodCtl): void {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const task: Task = call.task
@@ -221,7 +221,7 @@ class Task extends Observable implements Observer {
 
   readonly margin: number
   readonly worker: Worker
-  readonly controller: MethodProxy
+  readonly controller: MethodCtl
   readonly revision: ObjectRevision
   readonly observables: Map<Observable, MemberRef>
   options: OptionsImpl
@@ -234,7 +234,7 @@ class Task extends Observable implements Observer {
   invalidatedSince: number
   replacement: Task | undefined
 
-  constructor(controller: MethodProxy, revision: ObjectRevision, prev: Task | OptionsImpl) {
+  constructor(controller: MethodCtl, revision: ObjectRevision, prev: Task | OptionsImpl) {
     super(undefined)
     this.margin = Task.current ? Task.current.margin + 1 : 1
     this.worker = Transaction.current
@@ -292,7 +292,7 @@ class Task extends Observable implements Observer {
       if (Dbg.isOn && Dbg.trace.steps && this.ret)
         Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.rev(this.revision, this.controller.memberName)} - step in  `, 0, '        │')
       const started = Date.now()
-      const result = MethodProxy.run<T>(this, func, ...args)
+      const result = MethodCtl.run<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Dbg.isOn && Dbg.trace.steps && this.ret)
         Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.rev(this.revision, this.controller.memberName)} - step out `, 0, this.started > 0 ? '        │' : '')
@@ -308,7 +308,7 @@ class Task extends Observable implements Observer {
       this.args = args
     this.invalidatedSince = MAX_TIMESTAMP
     if (!this.error)
-      MethodProxy.run<void>(this, Task.run, this, proxy)
+      MethodCtl.run<void>(this, Task.run, this, proxy)
     else
       this.ret = Promise.reject(this.error)
   }
@@ -476,7 +476,7 @@ class Task extends Observable implements Observer {
       spawn: true,
       trace: Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global,
     }
-    MethodProxy.run<void>(undefined, Transaction.runAs, options,
+    MethodCtl.run<void>(undefined, Transaction.runAs, options,
       MonitorImpl.enter, mon, this.worker)
   }
 
@@ -488,7 +488,7 @@ class Task extends Observable implements Observer {
           spawn: true,
           trace: Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.DefaultLevel,
         }
-        MethodProxy.run<void>(undefined, Transaction.runAs, options,
+        MethodCtl.run<void>(undefined, Transaction.runAs, options,
           MonitorImpl.leave, mon, this.worker)
       }
       this.worker.whenFinished().then(leave, leave)
@@ -646,10 +646,10 @@ class Task extends Observable implements Observer {
   }
 
   private static createMethodTrap(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
-    const methodProxy = new MethodProxy(h, m)
+    const methodCtl = new MethodCtl(h, m)
     const methodTrap: F<any> = (...args: any[]): any =>
-      methodProxy.call(false, args).ret
-    Meta.set(methodTrap, Meta.Method, methodProxy)
+      methodCtl.call(false, args).ret
+    Meta.set(methodTrap, Meta.Method, methodCtl)
     return methodTrap
   }
 
@@ -657,9 +657,9 @@ class Task extends Observable implements Observer {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: Task | undefined = blank[m]
-    const controller = existing ? existing.controller : new MethodProxy(NIL_HOLDER, m)
+    const ctl = existing ? existing.controller : new MethodCtl(NIL_HOLDER, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
-    const task =  new Task(controller, NIL_REV, new OptionsImpl(body, opts, options, implicit))
+    const task =  new Task(ctl, NIL_REV, new OptionsImpl(body, opts, options, implicit))
     blank[m] = task
     // Add to the list if it's a reaction
     if (task.options.kind === Kind.Reaction && task.options.throttling < Number.MAX_SAFE_INTEGER) {
@@ -689,10 +689,10 @@ class Task extends Observable implements Observer {
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {
-        get: MethodProxy.whyFull, configurable: false, enumerable: false,
+        get: MethodCtl.whyFull, configurable: false, enumerable: false,
       })
       Object.defineProperty(globalThis, 'rWhyShort', {
-        get: MethodProxy.whyShort, configurable: false, enumerable: false,
+        get: MethodCtl.whyShort, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -700,10 +700,10 @@ class Task extends Observable implements Observer {
     }
     try {
       Object.defineProperty(global, 'rWhy', {
-        get: MethodProxy.whyFull, configurable: false, enumerable: false,
+        get: MethodCtl.whyFull, configurable: false, enumerable: false,
       })
       Object.defineProperty(global, 'rWhyShort', {
-        get: MethodProxy.whyShort, configurable: false, enumerable: false,
+        get: MethodCtl.whyShort, configurable: false, enumerable: false,
       })
     }
     catch (e) {

@@ -12,16 +12,16 @@ import { Kind, Reentrance, MethodOptions, TraceOptions, ProfilingOptions, Sensit
 import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
-import { MethodProxy } from './impl/MethodProxy'
+import { MethodCtl } from './impl/MethodProxy'
 import { Transaction } from './impl/Transaction'
 import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 
 export class Reactronic {
-  static why(short: boolean = false): string { return short ? MethodProxy.whyShort() : MethodProxy.whyFull() }
-  static getController<T>(method: F<T>): Controller<T> { return MethodProxy.of(method) }
+  static why(short: boolean = false): string { return short ? MethodCtl.whyShort() : MethodCtl.whyFull() }
+  static getController<T>(method: F<T>): Controller<T> { return MethodCtl.of(method) }
   static getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Reactronic.getController(method as any as F<T>).getCachedValueAndRevalidate(args) }
-  static configureCurrentMethod(options: Partial<MethodOptions>): MethodOptions { return MethodProxy.configureImpl(undefined, options) }
+  static configureCurrentMethod(options: Partial<MethodOptions>): MethodOptions { return MethodCtl.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
   static takeSnapshot<T>(obj: T): T { return Snapshot.takeSnapshot(obj) }
@@ -41,11 +41,11 @@ export class Reactronic {
 // Operators
 
 export function unobservableRun<T>(func: F<T>, ...args: any[]): T {
-  return MethodProxy.run<T>(undefined, func, ...args)
+  return MethodCtl.run<T>(undefined, func, ...args)
 }
 
 export function isolatedRun<T>(func: F<T>, ...args: any[]): T {
-  return MethodProxy.run<T>(undefined, Transaction.isolated, func, ...args)
+  return MethodCtl.run<T>(undefined, Transaction.isolated, func, ...args)
 }
 
 export function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T {
