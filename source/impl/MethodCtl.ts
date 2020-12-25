@@ -217,8 +217,6 @@ class Task extends Observable implements Observer {
   static current?: Task = undefined
   static asyncReactionsBatch: Task[] = []
 
-  get isTask(): boolean { return true } // override
-
   readonly margin: number
   readonly worker: Worker
   readonly controller: MethodCtl
@@ -261,7 +259,8 @@ class Task extends Observable implements Observer {
     this.replacement = undefined
   }
 
-  hint(): string { return `${Hints.rev(this.revision, this.controller.memberName)}` }
+  get isTask(): boolean { return true } // override
+  hint(): string { return `${Hints.rev(this.revision, this.controller.memberName)}` } // override
   get priority(): number { return this.options.priority }
 
   whyFull(): string {
