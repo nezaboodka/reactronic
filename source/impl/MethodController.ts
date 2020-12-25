@@ -217,7 +217,8 @@ class Computation extends Observable implements Observer {
   static current?: Computation = undefined
   static asyncReactionsBatch: Computation[] = []
 
-  get isComputation(): boolean { return true }
+  get isComputation(): boolean { return true } // override
+
   readonly margin: number
   readonly worker: Worker
   readonly method: MethodController
