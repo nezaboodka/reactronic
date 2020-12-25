@@ -146,8 +146,8 @@ export class MethodProxy extends Controller<any> {
     const r: ObjectRevision = ctx.findWritableRevision(h, m, Meta.Holder, this)
     let task: Task = this.from(r)
     if (task.revision !== r) {
-      const c2 = new Task(this, r, task)
-      task = r.data[m] = c2.reenterOver(task)
+      const task2 = new Task(this, r, task)
+      task = r.data[m] = task2.reenterOver(task)
       ctx.bumpBy(r.prev.revision.snapshot.timestamp)
       Snapshot.markChanged(task, true, r, m, h)
     }
