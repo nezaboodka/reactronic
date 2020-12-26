@@ -91,18 +91,18 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 
   static applyPatch(patch: Patch, undo: boolean): void {
-    const ctx = Snapshot.writable()
+    const ctx = Snapshot.edit()
     patch.objects.forEach((p: ObjectPatch, obj: object) => {
       const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
       const data = undo ? p.old : p.changes
       if (data[Meta.Disposed] !== Meta.Disposed) {
         for (const m in data) {
           const value = data[m]
-          const r: ObjectRevision = ctx.findWritableRevision(h, m, value)
+          const r: ObjectRevision = ctx.getEditableRevision(h, m, value)
           if (r.snapshot === ctx) {
             r.data[m] = new Observable(value)
             const v: any = r.prev.revision.data[m]
-            Snapshot.markChanged(value, v !== value, r, m, h)
+            Snapshot.markEdited(value, v !== value, r, m, h)
           }
         }
       }

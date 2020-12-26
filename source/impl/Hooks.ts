@@ -106,7 +106,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   get(h: ObjectHolder, m: MemberName, receiver: any): any {
     let result: any
-    const r: ObjectRevision = Snapshot.readable().findReadableRevision(h, m)
+    const r: ObjectRevision = Snapshot.view().getViewableRevision(h, m)
     result = r.data[m]
     if (result instanceof Observable && !result.isTask) {
       Snapshot.markViewed(result, r, m, h, Kind.Data, false)
@@ -121,15 +121,15 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   set(h: ObjectHolder, m: MemberName, value: any, receiver: any): boolean {
-    const r: ObjectRevision = Snapshot.writable().findWritableRevision(h, m, value)
+    const r: ObjectRevision = Snapshot.edit().getEditableRevision(h, m, value)
     if (r !== NIL_REV) {
       const curr = r.data[m] as Observable
       if (curr !== undefined || (
         r.prev.revision.snapshot === NIL_REV.snapshot && m in h.unobservable === false)) {
         const prev = r.prev.revision.data[m] as Observable
-        let changed = prev === undefined || prev.value !== value ||
+        let edited = prev === undefined || prev.value !== value ||
           Hooks.sensitivity === Sensitivity.ReactEvenOnSameValueAssignment
-        if (changed) {
+        if (edited) {
           if (prev === curr)
             r.data[m] = new Observable(value)
           else
@@ -139,9 +139,9 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
           if (Hooks.sensitivity === Sensitivity.ReactOnFinalDifferenceOnly)
             r.data[m] = prev // restore previous value
           else
-            changed = true // Sensitivity.ReactOnFinalAndIntermediateDifference
+            edited = true // Sensitivity.ReactOnFinalAndIntermediateDifference
         }
-        Snapshot.markChanged(value, changed, r, m, h)
+        Snapshot.markEdited(value, edited, r, m, h)
       }
       else
         Reflect.set(h.unobservable, m, value, receiver)
@@ -152,12 +152,12 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   has(h: ObjectHolder, m: MemberName): boolean {
-    const r: ObjectRevision = Snapshot.readable().findReadableRevision(h, m)
+    const r: ObjectRevision = Snapshot.view().getViewableRevision(h, m)
     return m in r.data || m in h.unobservable
   }
 
   getOwnPropertyDescriptor(h: ObjectHolder, m: MemberName): PropertyDescriptor | undefined {
-    const r: ObjectRevision = Snapshot.readable().findReadableRevision(h, m)
+    const r: ObjectRevision = Snapshot.view().getViewableRevision(h, m)
     const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
     if (pd)
       pd.configurable = pd.writable = true
@@ -166,7 +166,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   ownKeys(h: ObjectHolder): MemberName[] {
     // TODO: Better implementation to avoid filtering
-    const r: ObjectRevision = Snapshot.readable().findReadableRevision(h, Meta.Holder)
+    const r: ObjectRevision = Snapshot.view().getViewableRevision(h, Meta.Holder)
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
@@ -225,9 +225,9 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   static createObjectHolder(unobservable: any, blank: any, hint: string): ObjectHolder {
-    const ctx = Snapshot.writable()
+    const ctx = Snapshot.edit()
     const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, NIL_REV, hint)
-    ctx.findWritableRevision(h, Meta.Holder, blank)
+    ctx.getEditableRevision(h, Meta.Holder, blank)
     return h
   }
 

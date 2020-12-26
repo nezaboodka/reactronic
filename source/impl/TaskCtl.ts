@@ -26,13 +26,13 @@ export class TaskCtl extends Controller<any> {
   readonly memberName: MemberName
 
   configure(options: Partial<MethodOptions>): MethodOptions { return TaskCtl.configureImpl(this, options) }
-  get options(): MethodOptions { return this.read(undefined).task.options }
-  get unobservable(): any { return this.read(undefined).task.value }
-  get args(): ReadonlyArray<any> { return this.weak().task.args }
+  get options(): MethodOptions { return this.view(undefined).task.options }
+  get unobservable(): any { return this.view(undefined).task.value }
+  get args(): ReadonlyArray<any> { return this.weakView().task.args }
   get result(): any { return this.call(true, undefined).value }
-  get error(): boolean { return this.weak().task.error }
-  get stamp(): number { return this.weak().revision.snapshot.timestamp }
-  get isValid(): boolean { return this.weak().isValid }
+  get error(): boolean { return this.weakView().task.error }
+  get stamp(): number { return this.weakView().revision.snapshot.timestamp }
+  get isValid(): boolean { return this.weakView().isValid }
   invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.ownHolder, this.memberName)})` : 'invalidate()' }, TaskCtl.invalidate, this) }
   getLastResultAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
@@ -43,7 +43,7 @@ export class TaskCtl extends Controller<any> {
   }
 
   call(weak: boolean, args: any[] | undefined): Task {
-    let tc: TaskContext = this.read(args)
+    let tc: TaskContext = this.view(args)
     const ctx = tc.snapshot
     const task: Task = tc.task
     if (!tc.isValid && tc.revision.data[Meta.Disposed] === undefined
@@ -74,7 +74,7 @@ export class TaskCtl extends Controller<any> {
   static configureImpl(self: TaskCtl | undefined, options: Partial<MethodOptions>): MethodOptions {
     let task: Task | undefined
     if (self)
-      task = self.write().task
+      task = self.edit().task
     else
       task = Task.current
     if (!task || task.worker.isFinished)
@@ -121,15 +121,15 @@ export class TaskCtl extends Controller<any> {
 
   // Internal
 
-  private weak(): TaskContext {
-    const call = this.read(undefined)
+  private weakView(): TaskContext {
+    const call = this.view(undefined)
     Snapshot.markViewed(call.task, call.revision,
       this.memberName, this.ownHolder, call.task.options.kind, true)
     return call
   }
 
-  private read(args: any[] | undefined): TaskContext {
-    const ctx = Snapshot.readable()
+  private view(args: any[] | undefined): TaskContext {
+    const ctx = Snapshot.view()
     const r: ObjectRevision = ctx.findRevision(this.ownHolder, this.memberName)
     const task: Task = this.from(r)
     const isValid = task.options.kind !== Kind.Transaction && task.invalidatedSince !== INIT_TIMESTAMP &&
@@ -139,17 +139,17 @@ export class TaskCtl extends Controller<any> {
     return { task, isValid, snapshot: ctx, revision: r }
   }
 
-  private write(): TaskContext {
-    const ctx = Snapshot.writable()
+  private edit(): TaskContext {
+    const ctx = Snapshot.edit()
     const h = this.ownHolder
     const m = this.memberName
-    const r: ObjectRevision = ctx.findWritableRevision(h, m, Meta.Holder, this)
+    const r: ObjectRevision = ctx.getEditableRevision(h, m, Meta.Holder, this)
     let task: Task = this.from(r)
     if (task.revision !== r) {
       const task2 = new Task(this, r, task)
       task = r.data[m] = task2.reenterOver(task)
       ctx.bumpBy(r.prev.revision.snapshot.timestamp)
-      Snapshot.markChanged(task, true, r, m, h)
+      Snapshot.markEdited(task, true, r, m, h)
     }
     return { task, isValid: true, snapshot: ctx, revision: r }
   }
@@ -162,13 +162,13 @@ export class TaskCtl extends Controller<any> {
       const spawn = r.snapshot.sealed || r.prev.revision !== NIL_REV
       task = Transaction.runAs<Task>({ hint, spawn, token: this }, (): Task => {
         const h = this.ownHolder
-        let r2: ObjectRevision = Snapshot.readable().findReadableRevision(h, m)
+        let r2: ObjectRevision = Snapshot.view().getViewableRevision(h, m)
         let task2 = r2.data[m] as Task
         if (task2.controller !== this) {
-          r2 = Snapshot.writable().findWritableRevision(h, m, Meta.Holder, this)
+          r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
           task2 = r2.data[m] = new Task(this, r2, task2)
           task2.invalidatedSince = INIT_TIMESTAMP // indicates blank value
-          Snapshot.markChanged(task2, true, r2, m, h)
+          Snapshot.markEdited(task2, true, r2, m, h)
         }
         return task2
       })
@@ -183,15 +183,15 @@ export class TaskCtl extends Controller<any> {
     const opt = { hint, spawn, journal: options.journal, trace: options.trace, token }
     const result = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
       if (!call.task.worker.isCanceled) { // first call
-        call = this.write()
+        call = this.edit()
         if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
           Dbg.log('║', ' (f)', `${call.task.whyFull()}`)
         call.task.run(this.ownHolder.proxy, argsx)
       }
       else { // retry call
-        call = this.read(argsx) // re-read on retry
+        call = this.view(argsx) // re-read on retry
         if (call.task.options.kind === Kind.Transaction || !call.isValid) {
-          call = this.write()
+          call = this.edit()
           if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
             Dbg.log('║', ' (f)', `${call.task.whyFull()}`)
           call.task.run(this.ownHolder.proxy, argsx)
@@ -204,9 +204,9 @@ export class TaskCtl extends Controller<any> {
   }
 
   private static invalidate(self: TaskCtl): void {
-    const ctx = Snapshot.readable()
-    const call = self.read(undefined)
-    const task: Task = call.task
+    const tc = self.view(undefined)
+    const ctx = tc.snapshot
+    const task: Task = tc.task
     task.invalidateDueTo(task, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
   }
 }
@@ -322,7 +322,7 @@ class Task extends Observable implements Observer {
         this.invalidatedSince = since
         const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
         if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.revision === NIL_REV ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.rev(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.view().sealed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.revision === NIL_REV ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.rev(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
         if (isReaction) // stop cascade invalidation on reaction
           reactions.push(this)
@@ -511,7 +511,7 @@ class Task extends Observable implements Observer {
     if (kind !== Kind.Transaction) {
       const task: Task | undefined = Task.current // alias
       if (task && task.options.kind !== Kind.Transaction && m !== Meta.Holder) {
-        const ctx = Snapshot.readable()
+        const ctx = Snapshot.view()
         if (ctx !== r.snapshot) // snapshot should not bump itself
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
@@ -521,10 +521,10 @@ class Task extends Observable implements Observer {
     }
   }
 
-  private static markChanged(value: any, changed: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
-    changed ? r.changes.add(m) : r.changes.delete(m)
+  private static markEdited(value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
+    edited ? r.changes.add(m) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.writes)
-      changed ? Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
+      edited ? Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -593,7 +593,7 @@ class Task extends Observable implements Observer {
       curr.observers.forEach(o => {
         o.observables.delete(curr)
         if (Dbg.isOn && Dbg.trace.reads)
-          Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.rev(r, m)}`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.view().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.rev(r, m)}`)
       })
       curr.observers = undefined
     }
@@ -606,7 +606,7 @@ class Task extends Observable implements Observer {
       if (observers)
         observers.delete(this)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
+        Dbg.log(Dbg.trace.transactions && !Snapshot.view().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
     })
     this.observables.clear()
   }
@@ -680,7 +680,7 @@ class Task extends Observable implements Observer {
   static init(): void {
     Dbg.getMergedTraceOptions = getMergedTraceOptions
     Snapshot.markViewed = Task.markViewed // override
-    Snapshot.markChanged = Task.markChanged // override
+    Snapshot.markEdited = Task.markEdited // override
     Snapshot.isConflicting = Task.isConflicting // override
     Snapshot.propagateChangesToReactions = Task.propagateChangesToReactions // override
     Hooks.createMethodTrap = Task.createMethodTrap // override

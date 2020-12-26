@@ -22,7 +22,7 @@ Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
-    const data = Snapshot.readable().findReadableRevision(this, '<snapshot>').data
+    const data = Snapshot.view().getViewableRevision(this, '<snapshot>').data
     for (const m in data) {
       const v = data[m]
       if (v instanceof Observable)
@@ -69,9 +69,9 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   // To be redefined by Transaction and Cache implementations
-  static readable: () => Snapshot = UNDEF
-  static writable: () => Snapshot = UNDEF
-  static markChanged: (value: any, changed: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
+  static view: () => Snapshot = UNDEF
+  static edit: () => Snapshot = UNDEF
+  static markEdited: (value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
   static markViewed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateChangesToReactions = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
@@ -92,14 +92,14 @@ export class Snapshot implements AbstractSnapshot {
     return r
   }
 
-  findReadableRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
+  getViewableRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     const r = this.findRevision(h, m)
     if (r === NIL_REV)
       throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
 
-  findWritableRevision(h: ObjectHolder, m: MemberName, value: any, token?: any): ObjectRevision {
+  getEditableRevision(h: ObjectHolder, m: MemberName, value: any, token?: any): ObjectRevision {
     let r: ObjectRevision = this.findRevision(h, m)
     const existing = r.data[m]
     if (existing !== Meta.Unobservable) {
@@ -123,17 +123,17 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   static dispose(obj: any): void {
-    const ctx = Snapshot.writable()
+    const ctx = Snapshot.edit()
     const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
     if (h)
       Snapshot.doDispose(ctx, h)
   }
 
   static doDispose(ctx: Snapshot, h: ObjectHolder): ObjectRevision {
-    const r: ObjectRevision = ctx.findWritableRevision(h, Meta.Disposed, Meta.Disposed)
+    const r: ObjectRevision = ctx.getEditableRevision(h, Meta.Disposed, Meta.Disposed)
     if (r !== NIL_REV) {
       r.data[Meta.Disposed] = Meta.Disposed
-      Snapshot.markChanged(Meta.Disposed, true, r, Meta.Disposed, h)
+      Snapshot.markEdited(Meta.Disposed, true, r, Meta.Disposed, h)
     }
     return r
   }
