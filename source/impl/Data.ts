@@ -29,22 +29,22 @@ export class Observable {
 
 export interface Observer {
   readonly priority: number
-  readonly observables: Map<Observable, MemberRef>
+  readonly observables: Map<Observable, ObservationInfo>
   readonly invalidatedSince: number
   hint(notran?: boolean): string
-  invalidateDueTo(observable: Observable, cause: MemberRef, since: number, reactions: Observer[]): void
+  invalidateDueTo(observable: Observable, cause: ObservationInfo, since: number, reactions: Observer[]): void
   revalidate(now: boolean, nothrow: boolean): void
 }
 
-// ObjectRevision
-
 export type MemberName = PropertyKey
 
-export interface MemberRef {
+export interface ObservationInfo {
   readonly revision: ObjectRevision
   readonly member: MemberName
   readonly times: number
 }
+
+// ObjectRevision
 
 export class ObjectRevision {
   readonly snapshot: AbstractSnapshot
