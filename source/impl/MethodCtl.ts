@@ -181,7 +181,7 @@ export class MethodCtl extends Controller<any> {
     const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.ownHolder, this.memberName)}`
     let call = existing
     const opt = { hint, spawn, journal: options.journal, trace: options.trace, token }
-    const ret = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
+    const result = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
       if (!call.task.worker.isCanceled) { // first call
         call = this.write()
         if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
@@ -197,9 +197,9 @@ export class MethodCtl extends Controller<any> {
           call.task.run(this.ownHolder.proxy, argsx)
         }
       }
-      return call.task.ret
+      return call.task.result
     }, args)
-    call.task.ret = ret
+    call.task.result = result
     return call
   }
 
@@ -225,7 +225,7 @@ class Task extends Observable implements Observer {
   options: OptionsImpl
   cause: MemberRef | undefined
   args: any[]
-  ret: any
+  result: any
   error: any
   started: number
   invalidatedDueTo: MemberRef | undefined
@@ -288,12 +288,12 @@ class Task extends Observable implements Observer {
 
   bind<T>(func: F<T>): F<T> {
     const boundFunc: F<T> = (...args: any[]): T => {
-      if (Dbg.isOn && Dbg.trace.steps && this.ret)
+      if (Dbg.isOn && Dbg.trace.steps && this.result)
         Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.rev(this.revision, this.controller.memberName)} - step in  `, 0, '        │')
       const started = Date.now()
       const result = MethodCtl.run<T>(this, func, ...args)
       const ms = Date.now() - started
-      if (Dbg.isOn && Dbg.trace.steps && this.ret)
+      if (Dbg.isOn && Dbg.trace.steps && this.result)
         Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.rev(this.revision, this.controller.memberName)} - step out `, 0, this.started > 0 ? '        │' : '')
       if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
         Dbg.log('', '[!]', this.whyFull(), ms, '    *** main thread is too busy ***')
@@ -309,7 +309,7 @@ class Task extends Observable implements Observer {
     if (!this.error)
       MethodCtl.run<void>(this, Task.run, this, proxy)
     else
-      this.ret = Promise.reject(this.error)
+      this.result = Promise.reject(this.error)
   }
 
   invalidateDueTo(observable: Observable, cause: MemberRef, since: number, reactions: Observer[]): void {
@@ -353,8 +353,8 @@ class Task extends Observable implements Observer {
         !this.replacement || this.replacement.worker.isCanceled)) {
         try {
           const task: Task = this.controller.call(false, undefined)
-          if (task.ret instanceof Promise)
-            task.ret.catch(error => {
+          if (task.result instanceof Promise)
+            task.result.catch(error => {
               if (task.options.kind === Kind.Reaction)
                 misuse(`reaction ${Hints.rev(task.revision, task.controller.memberName)} failed and will not run anymore: ${error}`, error)
             })
@@ -416,7 +416,7 @@ class Task extends Observable implements Observer {
   private static run(task: Task, proxy: any): void {
     task.enter()
     try {
-      task.ret = task.options.body.call(proxy, ...task.args)
+      task.result = task.options.body.call(proxy, ...task.args)
     }
     finally {
       task.leaveOrAsync()
@@ -432,8 +432,8 @@ class Task extends Observable implements Observer {
   }
 
   private leaveOrAsync(): void {
-    if (this.ret instanceof Promise) {
-      this.ret = this.ret.then(
+    if (this.result instanceof Promise) {
+      this.result = this.result.then(
         value => {
           this.value = value
           this.leave(false, '  □ ', '- finished ', ' OK ──┘')
@@ -452,7 +452,7 @@ class Task extends Observable implements Observer {
       }
     }
     else {
-      this.value = this.ret
+      this.value = this.result
       this.leave(true, '_/', '- leave')
     }
   }
@@ -647,7 +647,7 @@ class Task extends Observable implements Observer {
   private static createMethodTrap(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
     const methodCtl = new MethodCtl(h, m)
     const methodTrap: F<any> = (...args: any[]): any =>
-      methodCtl.call(false, args).ret
+      methodCtl.call(false, args).result
     Meta.set(methodTrap, Meta.Method, methodCtl)
     return methodTrap
   }
