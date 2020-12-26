@@ -32,7 +32,7 @@ export class TaskCtl extends Controller<any> {
   get result(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.weak().task.error }
   get stamp(): number { return this.weak().revision.snapshot.timestamp }
-  get isInvalid(): boolean { return !this.weak().isValid }
+  get isValid(): boolean { return this.weak().isValid }
   invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.ownHolder, this.memberName)})` : 'invalidate()' }, TaskCtl.invalidate, this) }
   getLastResultAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 

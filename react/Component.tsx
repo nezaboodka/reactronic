@@ -21,7 +21,7 @@ export class Component<P> extends React.Component<P> {
   }
 
   shouldComponentUpdate(): boolean {
-    return Reactronic.getController(this.render).isInvalid
+    return !Reactronic.getController(this.render).isValid
   }
 
   componentDidMount(): void {
