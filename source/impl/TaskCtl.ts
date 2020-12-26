@@ -19,7 +19,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 
-type Call = { snapshot: Snapshot, revision: ObjectRevision, task: Task, isValid: boolean }
+type TaskContext = { task: Task, isValid: boolean, snapshot: Snapshot, revision: ObjectRevision }
 
 export class TaskCtl extends Controller<any> {
   readonly ownHolder: ObjectHolder
@@ -43,24 +43,24 @@ export class TaskCtl extends Controller<any> {
   }
 
   call(weak: boolean, args: any[] | undefined): Task {
-    let call: Call = this.read(args)
-    const ctx = call.snapshot
-    const task: Task = call.task
-    if (!call.isValid && call.revision.data[Meta.Disposed] === undefined
+    let tc: TaskContext = this.read(args)
+    const ctx = tc.snapshot
+    const task: Task = tc.task
+    if (!tc.isValid && tc.revision.data[Meta.Disposed] === undefined
       && (!weak || task.invalidatedSince === INIT_TIMESTAMP || !task.replacement || task.replacement.worker.isFinished)) {
       const opt = task.options
       const spawn = weak || opt.kind === Kind.Reaction ||
-        (opt.kind === Kind.Cache && (call.revision.snapshot.sealed || call.revision.prev.revision !== NIL_REV))
+        (opt.kind === Kind.Cache && (tc.revision.snapshot.sealed || tc.revision.prev.revision !== NIL_REV))
       const token = opt.noSideEffects ? this : undefined
-      const call2 = this.run(call, spawn, opt, token, args)
+      const call2 = this.run(tc, spawn, opt, token, args)
       const ctx2 = call2.task.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
-        call = call2
+        tc = call2
     }
     else if (Dbg.isOn && Dbg.trace.methods && (task.options.trace === undefined || task.options.trace.methods === undefined || task.options.trace.methods === true))
-      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.rev(call.revision, this.memberName)} result is reused from T${call.task.worker.id}[${call.task.worker.hint}]`)
-    const t = call.task
-    Snapshot.markViewed(t, call.revision, this.memberName, this.ownHolder, t.options.kind, weak)
+      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.rev(tc.revision, this.memberName)} result is reused from T${tc.task.worker.id}[${tc.task.worker.hint}]`)
+    const t = tc.task
+    Snapshot.markViewed(t, tc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
     return t
   }
 
@@ -121,14 +121,14 @@ export class TaskCtl extends Controller<any> {
 
   // Internal
 
-  private weak(): Call {
+  private weak(): TaskContext {
     const call = this.read(undefined)
     Snapshot.markViewed(call.task, call.revision,
       this.memberName, this.ownHolder, call.task.options.kind, true)
     return call
   }
 
-  private read(args: any[] | undefined): Call {
+  private read(args: any[] | undefined): TaskContext {
     const ctx = Snapshot.readable()
     const r: ObjectRevision = ctx.findRevision(this.ownHolder, this.memberName)
     const task: Task = this.from(r)
@@ -136,10 +136,10 @@ export class TaskCtl extends Controller<any> {
       (ctx === task.revision.snapshot || ctx.timestamp < task.invalidatedSince) &&
       (!task.options.sensitiveArgs || args === undefined || task.args.length === args.length && task.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
-    return { snapshot: ctx, revision: r, task, isValid }
+    return { task, isValid, snapshot: ctx, revision: r }
   }
 
-  private write(): Call {
+  private write(): TaskContext {
     const ctx = Snapshot.writable()
     const h = this.ownHolder
     const m = this.memberName
@@ -151,7 +151,7 @@ export class TaskCtl extends Controller<any> {
       ctx.bumpBy(r.prev.revision.snapshot.timestamp)
       Snapshot.markChanged(task, true, r, m, h)
     }
-    return { snapshot: ctx, revision: r, task, isValid: true }
+    return { task, isValid: true, snapshot: ctx, revision: r }
   }
 
   private from(r: ObjectRevision): Task {
@@ -176,7 +176,7 @@ export class TaskCtl extends Controller<any> {
     return task
   }
 
-  private run(existing: Call, spawn: boolean, options: MethodOptions, token: any, args: any[] | undefined): Call {
+  private run(existing: TaskContext, spawn: boolean, options: MethodOptions, token: any, args: any[] | undefined): TaskContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.ownHolder, this.memberName)}`
     let call = existing
