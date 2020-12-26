@@ -81,7 +81,7 @@ export class MethodCtl extends Controller<any> {
       throw misuse('a method is expected with reactronic decorator')
     task.options = new OptionsImpl(task.options.body, task.options, options, false)
     if (Dbg.isOn && Dbg.trace.writes)
-      Dbg.log('║', '  ♦', `${Hints.rev(task.revision, task.controller.memberName)}.options = ...`)
+      Dbg.log('║', '  ♦', `${task.hint()}.options = ...`)
     return task.options
   }
 
@@ -275,7 +275,7 @@ class Task extends Observable implements Observer {
       cause = '   <<   transaction'
     else
       cause = `   <<   called within ${this.revision.snapshot.hint}`
-    return `${Hints.rev(this.revision, this.controller.memberName)}${cause}   (${ms}ms since previous revalidation)`
+    return `${this.hint()}${cause}   (${ms}ms since previous revalidation)`
   }
 
   whyShort(): string {
@@ -289,12 +289,12 @@ class Task extends Observable implements Observer {
   bind<T>(func: F<T>): F<T> {
     const boundFunc: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.steps && this.result)
-        Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${Hints.rev(this.revision, this.controller.memberName)} - step in  `, 0, '        │')
+        Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${this.hint()} - step in  `, 0, '        │')
       const started = Date.now()
       const result = MethodCtl.run<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Dbg.isOn && Dbg.trace.steps && this.result)
-        Dbg.logAs({margin2: this.margin}, '║', '_/', `${Hints.rev(this.revision, this.controller.memberName)} - step out `, 0, this.started > 0 ? '        │' : '')
+        Dbg.logAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
       if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
         Dbg.log('', '[!]', this.whyFull(), ms, '    *** main thread is too busy ***')
       return result
@@ -356,14 +356,14 @@ class Task extends Observable implements Observer {
           if (task.result instanceof Promise)
             task.result.catch(error => {
               if (task.options.kind === Kind.Reaction)
-                misuse(`reaction ${Hints.rev(task.revision, task.controller.memberName)} failed and will not run anymore: ${error}`, error)
+                misuse(`reaction ${task.hint()} failed and will not run anymore: ${error}`, error)
             })
         }
         catch (e) {
           if (!nothrow)
             throw e
           else if (this.options.kind === Kind.Reaction)
-            misuse(`reaction ${Hints.rev(this.revision, this.controller.memberName)} failed and will not run anymore: ${e}`, e)
+            misuse(`reaction ${this.hint()} failed and will not run anymore: ${e}`, e)
         }
       }
     }
@@ -380,7 +380,7 @@ class Task extends Observable implements Observer {
     const concurrent = head.replacement
     if (concurrent && !concurrent.worker.isFinished) {
       if (Dbg.isOn && Dbg.trace.invalidations)
-        Dbg.log('║', ' [!]', `${Hints.rev(this.revision, this.controller.memberName)} is trying to re-enter over ${Hints.rev(concurrent.revision, concurrent.controller.memberName)}`)
+        Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${concurrent.hint()}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
           if (!concurrent.worker.isCanceled)
@@ -427,7 +427,7 @@ class Task extends Observable implements Observer {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.methods)
-      Dbg.log('║', '‾\\', `${Hints.rev(this.revision, this.controller.memberName)} - enter`, undefined, `    [ ${Hints.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
+      Dbg.log('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Hints.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
     this.started = Date.now()
   }
 
@@ -446,9 +446,9 @@ class Task extends Observable implements Observer {
         })
       if (Dbg.isOn) {
         if (Dbg.trace.methods)
-          Dbg.log('║', '_/', `${Hints.rev(this.revision, this.controller.memberName)} - leave... `, 0, 'ASYNC ──┐')
+          Dbg.log('║', '_/', `${this.hint()} - leave... `, 0, 'ASYNC ──┐')
         else if (Dbg.trace.transactions)
-          Dbg.log('║', '  ', `${Hints.rev(this.revision, this.controller.memberName)}... `, 0, 'ASYNC')
+          Dbg.log('║', '  ', `${this.hint()}... `, 0, 'ASYNC')
       }
     }
     else {
@@ -461,7 +461,7 @@ class Task extends Observable implements Observer {
     const ms: number = Date.now() - this.started
     this.started = -this.started
     if (Dbg.isOn && Dbg.trace.methods)
-      Dbg.log('║', `${op}`, `${Hints.rev(this.revision, this.controller.memberName)} ${message}`, ms, highlight)
+      Dbg.log('║', `${op}`, `${this.hint()} ${message}`, ms, highlight)
     if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
       Dbg.log('', '[!]', this.whyFull(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
     if (this.options.monitor)
@@ -606,7 +606,7 @@ class Task extends Observable implements Observer {
       if (observers)
         observers.delete(this)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', '-', `${Hints.rev(this.revision, this.controller.memberName)} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
+        Dbg.log(Dbg.trace.transactions && !Snapshot.readable().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
     })
     this.observables.clear()
   }
@@ -628,11 +628,11 @@ class Task extends Observable implements Observer {
       observable.observers.add(this)
       this.observables.set(observable, member)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log('║', '  ∞ ', `${Hints.rev(this.revision, this.controller.memberName)} is subscribed to ${Hints.rev(r, m)}${member.times > 1 ? ` (${member.times} times)` : ''}`)
+        Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Hints.rev(r, m)}${member.times > 1 ? ` (${member.times} times)` : ''}`)
     }
     else {
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log('║', '  x ', `${Hints.rev(this.revision, this.controller.memberName)} is NOT subscribed to already invalidated ${Hints.rev(r, m)}`)
+        Dbg.log('║', '  x ', `${this.hint()} is NOT subscribed to already invalidated ${Hints.rev(r, m)}`)
     }
     return isValid // || observable.next === r
   }
