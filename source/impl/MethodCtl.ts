@@ -21,11 +21,11 @@ const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 
 
 type Call = { snapshot: Snapshot, revision: ObjectRevision, task: Task, isValid: boolean }
 
-export class MethodCtl extends Controller<any> {
+export class TaskCtl extends Controller<any> {
   readonly ownHolder: ObjectHolder
   readonly memberName: MemberName
 
-  configure(options: Partial<MethodOptions>): MethodOptions { return MethodCtl.configureImpl(this, options) }
+  configure(options: Partial<MethodOptions>): MethodOptions { return TaskCtl.configureImpl(this, options) }
   get options(): MethodOptions { return this.read(undefined).task.options }
   get unobservableValue(): any { return this.read(undefined).task.value }
   get args(): ReadonlyArray<any> { return this.weak().task.args }
@@ -33,7 +33,7 @@ export class MethodCtl extends Controller<any> {
   get error(): boolean { return this.weak().task.error }
   get stamp(): number { return this.weak().revision.snapshot.timestamp }
   get isInvalid(): boolean { return !this.weak().isValid }
-  invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.ownHolder, this.memberName)})` : 'invalidate()' }, MethodCtl.invalidate, this) }
+  invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.ownHolder, this.memberName)})` : 'invalidate()' }, TaskCtl.invalidate, this) }
   getLastResultAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
   constructor(ownHolder: ObjectHolder, memberName: MemberName) {
@@ -71,7 +71,7 @@ export class MethodCtl extends Controller<any> {
     return ctl
   }
 
-  static configureImpl(self: MethodCtl | undefined, options: Partial<MethodOptions>): MethodOptions {
+  static configureImpl(self: TaskCtl | undefined, options: Partial<MethodOptions>): MethodOptions {
     let task: Task | undefined
     if (self)
       task = self.write().task
@@ -203,7 +203,7 @@ export class MethodCtl extends Controller<any> {
     return call
   }
 
-  private static invalidate(self: MethodCtl): void {
+  private static invalidate(self: TaskCtl): void {
     const ctx = Snapshot.readable()
     const call = self.read(undefined)
     const task: Task = call.task
@@ -219,7 +219,7 @@ class Task extends Observable implements Observer {
 
   readonly margin: number
   readonly worker: Worker
-  readonly controller: MethodCtl
+  readonly controller: TaskCtl
   readonly revision: ObjectRevision
   readonly observables: Map<Observable, MemberRef>
   options: OptionsImpl
@@ -232,7 +232,7 @@ class Task extends Observable implements Observer {
   invalidatedSince: number
   replacement: Task | undefined
 
-  constructor(controller: MethodCtl, revision: ObjectRevision, prev: Task | OptionsImpl) {
+  constructor(controller: TaskCtl, revision: ObjectRevision, prev: Task | OptionsImpl) {
     super(undefined)
     this.margin = Task.current ? Task.current.margin + 1 : 1
     this.worker = Transaction.current
@@ -291,7 +291,7 @@ class Task extends Observable implements Observer {
       if (Dbg.isOn && Dbg.trace.steps && this.result)
         Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${this.hint()} - step in  `, 0, '        │')
       const started = Date.now()
-      const result = MethodCtl.run<T>(this, func, ...args)
+      const result = TaskCtl.run<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Dbg.isOn && Dbg.trace.steps && this.result)
         Dbg.logAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
@@ -307,7 +307,7 @@ class Task extends Observable implements Observer {
       this.args = args
     this.invalidatedSince = MAX_TIMESTAMP
     if (!this.error)
-      MethodCtl.run<void>(this, Task.run, this, proxy)
+      TaskCtl.run<void>(this, Task.run, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
@@ -475,7 +475,7 @@ class Task extends Observable implements Observer {
       spawn: true,
       trace: Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global,
     }
-    MethodCtl.run<void>(undefined, Transaction.runAs, options,
+    TaskCtl.run<void>(undefined, Transaction.runAs, options,
       MonitorImpl.enter, mon, this.worker)
   }
 
@@ -487,7 +487,7 @@ class Task extends Observable implements Observer {
           spawn: true,
           trace: Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.DefaultLevel,
         }
-        MethodCtl.run<void>(undefined, Transaction.runAs, options,
+        TaskCtl.run<void>(undefined, Transaction.runAs, options,
           MonitorImpl.leave, mon, this.worker)
       }
       this.worker.whenFinished().then(leave, leave)
@@ -645,10 +645,10 @@ class Task extends Observable implements Observer {
   }
 
   private static createMethodTrap(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
-    const methodCtl = new MethodCtl(h, m)
+    const taskCtl = new TaskCtl(h, m)
     const methodTrap: F<any> = (...args: any[]): any =>
-      methodCtl.call(false, args).result
-    Meta.set(methodTrap, Meta.Method, methodCtl)
+      taskCtl.call(false, args).result
+    Meta.set(methodTrap, Meta.Method, taskCtl)
     return methodTrap
   }
 
@@ -656,7 +656,7 @@ class Task extends Observable implements Observer {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: Task | undefined = blank[m]
-    const ctl = existing ? existing.controller : new MethodCtl(NIL_HOLDER, m)
+    const ctl = existing ? existing.controller : new TaskCtl(NIL_HOLDER, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
     const task =  new Task(ctl, NIL_REV, new OptionsImpl(body, opts, options, implicit))
     blank[m] = task
@@ -688,10 +688,10 @@ class Task extends Observable implements Observer {
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {
-        get: MethodCtl.whyFull, configurable: false, enumerable: false,
+        get: TaskCtl.whyFull, configurable: false, enumerable: false,
       })
       Object.defineProperty(globalThis, 'rWhyShort', {
-        get: MethodCtl.whyShort, configurable: false, enumerable: false,
+        get: TaskCtl.whyShort, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -699,10 +699,10 @@ class Task extends Observable implements Observer {
     }
     try {
       Object.defineProperty(global, 'rWhy', {
-        get: MethodCtl.whyFull, configurable: false, enumerable: false,
+        get: TaskCtl.whyFull, configurable: false, enumerable: false,
       })
       Object.defineProperty(global, 'rWhyShort', {
-        get: MethodCtl.whyShort, configurable: false, enumerable: false,
+        get: TaskCtl.whyShort, configurable: false, enumerable: false,
       })
     }
     catch (e) {
