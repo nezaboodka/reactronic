@@ -413,13 +413,13 @@ class Task extends Observable implements Observer {
 
   // Internal
 
-  private static run(self: Task, proxy: any): void {
-    self.enter()
+  private static run(task: Task, proxy: any): void {
+    task.enter()
     try {
-      self.ret = self.options.body.call(proxy, ...self.args)
+      task.ret = task.options.body.call(proxy, ...task.args)
     }
     finally {
-      self.leaveOrAsync()
+      task.leaveOrAsync()
     }
   }
 
