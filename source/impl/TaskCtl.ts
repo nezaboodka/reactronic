@@ -47,7 +47,7 @@ export class TaskCtl extends Controller<any> {
     const ctx = tc.snapshot
     const task: Task = tc.task
     if (!tc.isValid && tc.revision.data[Meta.Disposed] === undefined
-      && (!weak || task.invalidatedSince === INIT_TIMESTAMP || !task.changeover || task.changeover.worker.isFinished)) {
+      && (!weak || task.invalidatedSince === INIT_TIMESTAMP || !task.subsequent || task.subsequent.worker.isFinished)) {
       const opt = task.options
       const spawn = weak || opt.kind === Kind.Reaction ||
         (opt.kind === Kind.Cache && (tc.revision.snapshot.sealed || tc.revision.prev.revision !== NIL_REV))
@@ -230,7 +230,7 @@ class Task extends Observable implements Observer {
   started: number
   invalidatedDueTo: MemberInfo | undefined
   invalidatedSince: number
-  changeover: Task | undefined
+  subsequent: Task | undefined
 
   constructor(controller: TaskCtl, revision: ObjectRevision, prev: Task | OptionsImpl) {
     super(undefined)
@@ -256,7 +256,7 @@ class Task extends Observable implements Observer {
     this.started = 0
     this.invalidatedSince = 0
     this.invalidatedDueTo = undefined
-    this.changeover = undefined
+    this.subsequent = undefined
   }
 
   get isTask(): boolean { return true } // override
@@ -350,7 +350,7 @@ class Task extends Observable implements Observer {
     const hold = t ? t - interval : 0 // "started" is stored as negative value after reaction completion
     if (now || hold < 0) {
       if (!this.error && (this.options.kind === Kind.Transaction ||
-        !this.changeover || this.changeover.worker.isCanceled)) {
+        !this.subsequent || this.subsequent.worker.isCanceled)) {
         try {
           const task: Task = this.controller.call(false, undefined)
           if (task.result instanceof Promise)
@@ -377,35 +377,35 @@ class Task extends Observable implements Observer {
 
   reenterOver(head: Task): this {
     let error: Error | undefined = undefined
-    const changeover = head.changeover
-    if (changeover && !changeover.worker.isFinished) {
+    const concurrent = head.subsequent
+    if (concurrent && !concurrent.worker.isFinished) {
       if (Dbg.isOn && Dbg.trace.invalidations)
-        Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${changeover.hint()}`)
+        Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${concurrent.hint()}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
-          if (!changeover.worker.isCanceled)
-            throw misuse(`${head.hint()} (${head.whyFull()}) is not reentrant over ${changeover.hint()} (${changeover.whyFull()})`)
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/PreventWithError due to canceled T${changeover.worker.id}[${changeover.worker.hint}]`)
-          this.worker.cancel(error, changeover.worker)
+          if (!concurrent.worker.isCanceled)
+            throw misuse(`${head.hint()} (${head.whyFull()}) is not reentrant over ${concurrent.hint()} (${concurrent.whyFull()})`)
+          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/PreventWithError due to canceled T${concurrent.worker.id}[${concurrent.worker.hint}]`)
+          this.worker.cancel(error, concurrent.worker)
           break
         case Reentrance.WaitAndRestart:
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/WaitAndRestart due to active T${changeover.worker.id}[${changeover.worker.hint}]`)
-          this.worker.cancel(error, changeover.worker)
+          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/WaitAndRestart due to active T${concurrent.worker.id}[${concurrent.worker.hint}]`)
+          this.worker.cancel(error, concurrent.worker)
           break
         case Reentrance.CancelAndWaitPrevious:
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/CancelAndWaitPrevious due to active T${changeover.worker.id}[${changeover.worker.hint}]`)
-          this.worker.cancel(error, changeover.worker)
-          changeover.worker.cancel(new Error(`T${changeover.worker.id}[${changeover.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
+          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/CancelAndWaitPrevious due to active T${concurrent.worker.id}[${concurrent.worker.hint}]`)
+          this.worker.cancel(error, concurrent.worker)
+          concurrent.worker.cancel(new Error(`T${concurrent.worker.id}[${concurrent.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
           break
         case Reentrance.CancelPrevious:
-          changeover.worker.cancel(new Error(`T${changeover.worker.id}[${changeover.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
+          concurrent.worker.cancel(new Error(`T${concurrent.worker.id}[${concurrent.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
           break
         case Reentrance.RunSideBySide:
           break // do nothing
       }
     }
     if (!error)
-      head.changeover = this
+      head.subsequent = this
     else
       this.error = error
     return this
