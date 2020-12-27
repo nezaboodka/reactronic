@@ -211,7 +211,7 @@ export class Snapshot implements AbstractSnapshot {
   private static merge(ours: ObjectRevision, head: ObjectRevision): number {
     let counter: number = 0
     const disposed: boolean = head.changes.has(Meta.Disposed)
-    const merged = {...head.data} // clone
+    const merged = { ...head.data } // clone
     ours.changes.forEach(m => {
       counter++
       merged[m] = ours.data[m]

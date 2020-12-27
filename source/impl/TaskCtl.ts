@@ -624,7 +624,7 @@ class Task extends Observable implements Observer {
       if (!observable.observers)
         observable.observers = new Set<Task>()
       // Two-way linking
-      const info: ObservationInfo = {revision: r, member: m, times}
+      const info: ObservationInfo = { revision: r, member: m, times }
       observable.observers.add(this)
       this.observables.set(observable, info)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
