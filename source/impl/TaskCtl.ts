@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { MethodOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Worker } from '../Worker'
 import { Controller } from '../Controller'
-import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, ObservationInfo, Meta } from './Data'
+import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, MemberInfo, Meta } from './Data'
 import { Snapshot, Hints, NIL_REV, INIT_TIMESTAMP, MAX_TIMESTAMP } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -207,7 +207,7 @@ export class TaskCtl extends Controller<any> {
     const tc = self.view(undefined)
     const ctx = tc.snapshot
     const task: Task = tc.task
-    task.invalidateDueTo(task, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
+    task.invalidateDueTo(task, {revision: NIL_REV, member: self.memberName, views: 0}, ctx.timestamp, ctx.reactions)
   }
 }
 
@@ -221,14 +221,14 @@ class Task extends Observable implements Observer {
   readonly worker: Worker
   readonly controller: TaskCtl
   readonly revision: ObjectRevision
-  readonly observables: Map<Observable, ObservationInfo>
+  readonly observables: Map<Observable, MemberInfo>
   options: OptionsImpl
-  cause: ObservationInfo | undefined
+  cause: MemberInfo | undefined
   args: any[]
   result: any
   error: any
   started: number
-  invalidatedDueTo: ObservationInfo | undefined
+  invalidatedDueTo: MemberInfo | undefined
   invalidatedSince: number
   replacement: Task | undefined
 
@@ -238,7 +238,7 @@ class Task extends Observable implements Observer {
     this.worker = Transaction.current
     this.controller = controller
     this.revision = revision
-    this.observables = new Map<Observable, ObservationInfo>()
+    this.observables = new Map<Observable, MemberInfo>()
     if (prev instanceof Task) {
       this.options = prev.options
       this.args = prev.args
@@ -312,7 +312,7 @@ class Task extends Observable implements Observer {
       this.result = Promise.reject(this.error)
   }
 
-  invalidateDueTo(observable: Observable, cause: ObservationInfo, since: number, reactions: Observer[]): void {
+  invalidateDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void {
     if (this.invalidatedSince === MAX_TIMESTAMP || this.invalidatedSince <= 0) {
       const skip = !observable.isTask &&
         cause.revision.snapshot === this.revision.snapshot &&
@@ -327,7 +327,7 @@ class Task extends Observable implements Observer {
         if (isReaction) // stop cascade invalidation on reaction
           reactions.push(this)
         else if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo(this, {revision: this.revision, member: this.controller.memberName, times: 0}, since, reactions))
+          this.observers.forEach(c => c.invalidateDueTo(this, {revision: this.revision, member: this.controller.memberName, views: 0}, since, reactions))
         const worker = this.worker
         if (!worker.isFinished && this !== observable) // restart after itself if canceled
           worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to invalidation by ${Hints.rev(cause.revision, cause.member)}`), null)
@@ -516,7 +516,7 @@ class Task extends Observable implements Observer {
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!task.subscribeTo(observable, r, m, h, t))
-          task.invalidateDueTo(observable, {revision: r, member: m, times: 0}, ctx.timestamp, ctx.reactions)
+          task.invalidateDueTo(observable, { revision: r, member: m, views: 0 }, ctx.timestamp, ctx.reactions)
       }
     }
   }
@@ -560,7 +560,7 @@ class Task extends Observable implements Observer {
       // Propagate change to reactions
       const prev = r.prev.revision.data[m]
       if (prev !== undefined && prev instanceof Observable) {
-        const cause: ObservationInfo = { revision: r, member: m, times: 0 }
+        const cause: MemberInfo = { revision: r, member: m, views: 0 }
         if (prev instanceof Task && (prev.invalidatedSince === MAX_TIMESTAMP || prev.invalidatedSince <= 0)) {
           prev.invalidatedDueTo = cause
           prev.invalidatedSince = timestamp
@@ -582,8 +582,8 @@ class Task extends Observable implements Observer {
         // Performance tracking
         if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
           curr.observables.forEach((hint, v) => {
-            if (hint.times > Hooks.repetitiveReadWarningThreshold)
-              Dbg.log('', '[!]', `${curr.hint()} uses ${Hints.rev(hint.revision, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
+            if (hint.views > Hooks.repetitiveReadWarningThreshold)
+              Dbg.log('', '[!]', `${curr.hint()} uses ${Hints.rev(hint.revision, hint.member)} ${hint.views} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
       }
@@ -615,20 +615,20 @@ class Task extends Observable implements Observer {
     const isValid = Task.isValid(observable, r, m, h, timestamp)
     if (isValid) {
       // Performance tracking
-      let times: number = 0
+      let views: number = 0
       if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
         const existing = this.observables.get(observable)
-        times = existing ? existing.times + 1 : 1
+        views = existing ? existing.views + 1 : 1
       }
       // Acquire observers
       if (!observable.observers)
         observable.observers = new Set<Task>()
       // Two-way linking
-      const info: ObservationInfo = { revision: r, member: m, times }
+      const info: MemberInfo = { revision: r, member: m, views }
       observable.observers.add(this)
       this.observables.set(observable, info)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Hints.rev(r, m)}${info.times > 1 ? ` (${info.times} times)` : ''}`)
+        Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Hints.rev(r, m)}${info.views > 1 ? ` (${info.views} times)` : ''}`)
     }
     else {
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
@@ -711,7 +711,7 @@ class Task extends Observable implements Observer {
   }
 }
 
-function propagationHint(cause: ObservationInfo, full: boolean): string[] {
+function propagationHint(cause: MemberInfo, full: boolean): string[] {
   const result: string[] = []
   let observable: Observable = cause.revision.data[cause.member]
   while (observable instanceof Task && observable.invalidatedDueTo) {
