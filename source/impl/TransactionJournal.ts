@@ -74,16 +74,16 @@ export class TransactionJournalImpl extends TransactionJournal {
   static createPatch(hint: string, changeset: Map<ObjectHolder, ObjectRevision>): Patch {
     const patch: Patch = { hint, objects: new Map<object, ObjectPatch>() }
     changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      const p: ObjectPatch = { changes: {}, old: {} }
+      const p: ObjectPatch = { current: {}, former: {} }
       const old = r.prev.revision !== NIL_REV ? r.prev.revision.data : undefined
       r.changes.forEach(m => {
-        p.changes[m] = unseal(r.data[m])
+        p.current[m] = unseal(r.data[m])
         if (old)
-          p.old[m] = unseal(old[m])
+          p.former[m] = unseal(old[m])
       })
       if (!old) {
-        p.changes[Meta.Disposed] = undefined // object restore
-        p.old[Meta.Disposed] = Meta.Disposed // object dispose
+        delete p.current[Meta.Disposed] // object restore
+        p.former[Meta.Disposed] = Meta.Disposed // object dispose
       }
       patch.objects.set(h.proxy, p)
     })
@@ -94,7 +94,7 @@ export class TransactionJournalImpl extends TransactionJournal {
     const ctx = Snapshot.edit()
     patch.objects.forEach((p: ObjectPatch, obj: object) => {
       const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
-      const data = undo ? p.old : p.changes
+      const data = undo ? p.former : p.current
       if (data[Meta.Disposed] !== Meta.Disposed) {
         for (const m in data) {
           const value = data[m]

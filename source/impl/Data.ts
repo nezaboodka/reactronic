@@ -101,8 +101,8 @@ export interface Patch {
 }
 
 export interface ObjectPatch {
-  changes: any
-  old: any
+  current: any
+  former: any
 }
 
 // DataRequest
