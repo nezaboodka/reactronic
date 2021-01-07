@@ -67,7 +67,7 @@ export class ObjectRevision {
 // ObjectHolder
 
 export class ObjectHolder {
-  private static idGen: number = 19
+  private static generator: number = 19
 
   readonly id: number
   readonly unobservable: any
@@ -78,7 +78,7 @@ export class ObjectHolder {
   hint: string
 
   constructor(unobservable: any, proxy: any, handler: ProxyHandler<ObjectHolder>, head: ObjectRevision, hint: string) {
-    this.id = ++ObjectHolder.idGen
+    this.id = ++ObjectHolder.generator
     this.unobservable = unobservable
     this.proxy = proxy || new Proxy<ObjectHolder>(this, handler)
     this.head = head
