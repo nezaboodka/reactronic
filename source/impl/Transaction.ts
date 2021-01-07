@@ -332,19 +332,19 @@ class TransactionImpl extends Transaction {
     return this.promise
   }
 
-  private static view(): Snapshot {
+  private static getCurrentSnapshot(): Snapshot {
     return TransactionImpl.curr.snapshot
   }
 
-  private static edit(): Snapshot {
+  private static editSnapshot(): Snapshot {
     if (TransactionImpl.inspection)
       throw misuse('cannot make changes during transaction inspection')
     return TransactionImpl.curr.snapshot
   }
 
   static _init(): void {
-    Snapshot.view = TransactionImpl.view // override
-    Snapshot.edit = TransactionImpl.edit // override
+    Snapshot.current = TransactionImpl.getCurrentSnapshot // override
+    Snapshot.edit = TransactionImpl.editSnapshot // override
     TransactionImpl.none.sealed = true
     TransactionImpl.none.snapshot.applyOrDiscard()
     Snapshot._init()

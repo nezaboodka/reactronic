@@ -129,7 +129,7 @@ export class TaskCtl extends Controller<any> {
   }
 
   private view(args: any[] | undefined): TaskContext {
-    const ctx = Snapshot.view()
+    const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.findRevision(this.ownHolder, this.memberName)
     const task: Task = this.from(r)
     const isValid = task.options.kind !== Kind.Transaction && task.invalidatedSince !== INIT_TIMESTAMP &&
@@ -162,7 +162,7 @@ export class TaskCtl extends Controller<any> {
       const spawn = r.snapshot.sealed || r.prev.revision !== NIL_REV
       task = Transaction.runAs<Task>({ hint, spawn, token: this }, (): Task => {
         const h = this.ownHolder
-        let r2: ObjectRevision = Snapshot.view().getViewableRevision(h, m)
+        let r2: ObjectRevision = Snapshot.current().getRelevantRevision(h, m)
         let task2 = r2.data[m] as Task
         if (task2.controller !== this) {
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
@@ -322,7 +322,7 @@ class Task extends Observable implements Observer {
         this.invalidatedSince = since
         const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
         if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log(Dbg.trace.transactions && !Snapshot.view().sealed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.revision === NIL_REV ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.rev(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.revision === NIL_REV ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.rev(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
         if (isReaction) // stop cascade invalidation on reaction
           reactions.push(this)
@@ -511,7 +511,7 @@ class Task extends Observable implements Observer {
     if (kind !== Kind.Transaction) {
       const task: Task | undefined = Task.current // alias
       if (task && task.options.kind !== Kind.Transaction && m !== Meta.Holder) {
-        const ctx = Snapshot.view()
+        const ctx = Snapshot.current()
         if (ctx !== r.snapshot) // snapshot should not bump itself
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
@@ -593,7 +593,7 @@ class Task extends Observable implements Observer {
       curr.observers.forEach(o => {
         o.observables.delete(curr)
         if (Dbg.isOn && Dbg.trace.reads)
-          Dbg.log(Dbg.trace.transactions && !Snapshot.view().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.rev(r, m)}`)
+          Dbg.log(Dbg.trace.transactions && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.rev(r, m)}`)
       })
       curr.observers = undefined
     }
@@ -606,7 +606,7 @@ class Task extends Observable implements Observer {
       if (observers)
         observers.delete(this)
       if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log(Dbg.trace.transactions && !Snapshot.view().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
+        Dbg.log(Dbg.trace.transactions && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
     })
     this.observables.clear()
   }

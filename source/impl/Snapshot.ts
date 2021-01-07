@@ -22,7 +22,7 @@ Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
-    const data = Snapshot.view().getViewableRevision(this, '<snapshot>').data
+    const data = Snapshot.current().getRelevantRevision(this, '<snapshot>').data
     for (const m in data) {
       const v = data[m]
       if (v instanceof Observable)
@@ -69,7 +69,7 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   // To be redefined by Transaction and Cache implementations
-  static view: () => Snapshot = UNDEF
+  static current: () => Snapshot = UNDEF
   static edit: () => Snapshot = UNDEF
   static markEdited: (value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
   static markViewed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF
@@ -92,7 +92,7 @@ export class Snapshot implements AbstractSnapshot {
     return r
   }
 
-  getViewableRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
+  getRelevantRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     const r = this.findRevision(h, m)
     if (r === NIL_REV)
       throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)

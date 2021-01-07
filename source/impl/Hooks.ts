@@ -106,7 +106,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   get(h: ObjectHolder, m: MemberName, receiver: any): any {
     let result: any
-    const r: ObjectRevision = Snapshot.view().getViewableRevision(h, m)
+    const r: ObjectRevision = Snapshot.current().getRelevantRevision(h, m)
     result = r.data[m]
     if (result instanceof Observable && !result.isTask) {
       Snapshot.markViewed(result, r, m, h, Kind.Data, false)
@@ -152,12 +152,12 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   has(h: ObjectHolder, m: MemberName): boolean {
-    const r: ObjectRevision = Snapshot.view().getViewableRevision(h, m)
+    const r: ObjectRevision = Snapshot.current().getRelevantRevision(h, m)
     return m in r.data || m in h.unobservable
   }
 
   getOwnPropertyDescriptor(h: ObjectHolder, m: MemberName): PropertyDescriptor | undefined {
-    const r: ObjectRevision = Snapshot.view().getViewableRevision(h, m)
+    const r: ObjectRevision = Snapshot.current().getRelevantRevision(h, m)
     const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
     if (pd)
       pd.configurable = pd.writable = true
@@ -166,7 +166,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   ownKeys(h: ObjectHolder): MemberName[] {
     // TODO: Better implementation to avoid filtering
-    const r: ObjectRevision = Snapshot.view().getViewableRevision(h, Meta.Holder)
+    const r: ObjectRevision = Snapshot.current().getRelevantRevision(h, Meta.Holder)
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
