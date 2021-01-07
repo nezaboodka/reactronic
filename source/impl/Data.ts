@@ -41,7 +41,7 @@ export type MemberName = PropertyKey
 export interface MemberInfo {
   readonly revision: ObjectRevision
   readonly member: MemberName
-  readonly views: number
+  readonly times: number
 }
 
 // ObjectRevision
