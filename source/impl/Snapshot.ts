@@ -103,7 +103,7 @@ export class Snapshot implements AbstractSnapshot {
     let r: ObjectRevision = this.findRevOf(h, m)
     const existing = r.data[m]
     if (existing !== Meta.Unobservable) {
-      this.guard(h, r, m, existing, value, token)
+      this.checkIfEditable(h, r, m, existing, value, token)
       if (r.snapshot !== this) {
         const data = { ...m === Meta.Holder ? value : r.data }
         Reflect.set(data, Meta.Holder, h)
@@ -138,7 +138,7 @@ export class Snapshot implements AbstractSnapshot {
     return r
   }
 
-  private guard(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): void {
+  private checkIfEditable(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): void {
     if (this.sealed)
       throw misuse(`observable property ${Hints.obj(h, m)} can only be modified inside transactions and reactions`)
     // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== NIL))
