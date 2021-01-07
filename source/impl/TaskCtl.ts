@@ -26,13 +26,13 @@ export class TaskCtl extends Controller<any> {
   readonly memberName: MemberName
 
   configure(options: Partial<MethodOptions>): MethodOptions { return TaskCtl.configureImpl(this, options) }
-  get options(): MethodOptions { return this.view(undefined).task.options }
-  get unobservable(): any { return this.view(undefined).task.value }
-  get args(): ReadonlyArray<any> { return this.weakView().task.args }
+  get options(): MethodOptions { return this.current(undefined).task.options }
+  get unobservable(): any { return this.current(undefined).task.value }
+  get args(): ReadonlyArray<any> { return this.weak().task.args }
   get result(): any { return this.call(true, undefined).value }
-  get error(): boolean { return this.weakView().task.error }
-  get stamp(): number { return this.weakView().revision.snapshot.timestamp }
-  get isValid(): boolean { return this.weakView().isValid }
+  get error(): boolean { return this.weak().task.error }
+  get stamp(): number { return this.weak().revision.snapshot.timestamp }
+  get isValid(): boolean { return this.weak().isValid }
   invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.ownHolder, this.memberName)})` : 'invalidate()' }, TaskCtl.invalidate, this) }
   getLastResultAndRevalidate(args?: any[]): any { return this.call(true, args).value }
 
@@ -43,7 +43,7 @@ export class TaskCtl extends Controller<any> {
   }
 
   call(weak: boolean, args: any[] | undefined): Task {
-    let tc: TaskContext = this.view(args)
+    let tc: TaskContext = this.current(args)
     const ctx = tc.snapshot
     const task: Task = tc.task
     if (!tc.isValid && tc.revision.data[Meta.Disposed] === undefined
@@ -121,14 +121,14 @@ export class TaskCtl extends Controller<any> {
 
   // Internal
 
-  private weakView(): TaskContext {
-    const call = this.view(undefined)
+  private weak(): TaskContext {
+    const call = this.current(undefined)
     Snapshot.markViewed(call.task, call.revision,
       this.memberName, this.ownHolder, call.task.options.kind, true)
     return call
   }
 
-  private view(args: any[] | undefined): TaskContext {
+  private current(args: any[] | undefined): TaskContext {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
     const task: Task = this.from(r)
@@ -189,7 +189,7 @@ export class TaskCtl extends Controller<any> {
         call.task.run(this.ownHolder.proxy, argsx)
       }
       else { // retry call
-        call = this.view(argsx) // re-read on retry
+        call = this.current(argsx) // re-read on retry
         if (call.task.options.kind === Kind.Transaction || !call.isValid) {
           call = this.edit()
           if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
@@ -204,7 +204,7 @@ export class TaskCtl extends Controller<any> {
   }
 
   private static invalidate(self: TaskCtl): void {
-    const tc = self.view(undefined)
+    const tc = self.current(undefined)
     const ctx = tc.snapshot
     const task: Task = tc.task
     task.invalidateDueTo(task, {revision: NIL_REV, member: self.memberName, views: 0}, ctx.timestamp, ctx.reactions)
