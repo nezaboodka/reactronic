@@ -130,7 +130,7 @@ export class TaskCtl extends Controller<any> {
 
   private view(args: any[] | undefined): TaskContext {
     const ctx = Snapshot.current()
-    const r: ObjectRevision = ctx.findRevision(this.ownHolder, this.memberName)
+    const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
     const task: Task = this.from(r)
     const isValid = task.options.kind !== Kind.Transaction && task.invalidatedSince !== INIT_TIMESTAMP &&
       (ctx === task.revision.snapshot || ctx.timestamp < task.invalidatedSince) &&
