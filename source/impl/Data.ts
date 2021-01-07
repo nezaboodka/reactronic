@@ -73,8 +73,8 @@ export class ObjectHolder {
   readonly unobservable: any
   readonly proxy: any
   head: ObjectRevision
-  changing?: ObjectRevision
-  writers: number
+  editing?: ObjectRevision
+  editors: number
   hint: string
 
   constructor(unobservable: any, proxy: any, handler: ProxyHandler<ObjectHolder>, head: ObjectRevision, hint: string) {
@@ -82,8 +82,8 @@ export class ObjectHolder {
     this.unobservable = unobservable
     this.proxy = proxy || new Proxy<ObjectHolder>(this, handler)
     this.head = head
-    this.changing = undefined
-    this.writers = 0
+    this.editing = undefined
+    this.editors = 0
     this.hint = hint
   }
 

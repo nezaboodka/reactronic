@@ -78,11 +78,11 @@ export class Snapshot implements AbstractSnapshot {
 
   findRevOf(h: ObjectHolder, m: MemberName): ObjectRevision {
     // TODO: Take into account timestamp of the member
-    let r: ObjectRevision | undefined = h.changing
+    let r: ObjectRevision | undefined = h.editing
     if (r && r.snapshot !== this) {
       r = this.changeset.get(h)
       if (r)
-        h.changing = r // remember last changing revision
+        h.editing = r // remember last changing revision
     }
     if (!r) {
       r = h.head
@@ -109,8 +109,8 @@ export class Snapshot implements AbstractSnapshot {
         Reflect.set(data, Meta.Holder, h)
         r = new ObjectRevision(this, r, data)
         this.changeset.set(h, r)
-        h.changing = r
-        h.writers++
+        h.editing = r
+        h.editors++
       }
     }
     else
@@ -239,9 +239,9 @@ export class Snapshot implements AbstractSnapshot {
     this.sealed = true
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       Snapshot.sealObjectRevision(h, r)
-      h.writers--
-      if (h.writers === 0) // уходя гасите свет - последний уходящий убирает за всеми
-        h.changing = undefined
+      h.editors--
+      if (h.editors === 0) // уходя гасите свет - последний уходящий убирает за всеми
+        h.editing = undefined
       if (!error) {
         // if (this.timestamp < h.head.snapshot.timestamp)
         //   console.log(`!!! timestamp downgrade detected ${h.head.snapshot.timestamp} -> ${this.timestamp} !!!`)
