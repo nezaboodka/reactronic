@@ -162,7 +162,7 @@ export class TaskCtl extends Controller<any> {
       const spawn = r.snapshot.sealed || r.prev.revision !== NIL_REV
       task = Transaction.runAs<Task>({ hint, spawn, token: this }, (): Task => {
         const h = this.ownHolder
-        let r2: ObjectRevision = Snapshot.current().getRelevantRevision(h, m)
+        let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
         let task2 = r2.data[m] as Task
         if (task2.controller !== this) {
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)

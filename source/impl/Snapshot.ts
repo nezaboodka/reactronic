@@ -22,7 +22,7 @@ Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
-    const data = Snapshot.current().getRelevantRevision(this, '<snapshot>').data
+    const data = Snapshot.current().getCurrentRevision(this, '<snapshot>').data
     for (const m in data) {
       const v = data[m]
       if (v instanceof Observable)
@@ -92,7 +92,7 @@ export class Snapshot implements AbstractSnapshot {
     return r
   }
 
-  getRelevantRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
+  getCurrentRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     const r = this.findRevOf(h, m)
     if (r === NIL_REV)
       throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
