@@ -316,7 +316,7 @@ class Task extends Observable implements Observer {
     if (this.invalidatedSince === MAX_TIMESTAMP || this.invalidatedSince <= 0) {
       const skip = !observable.isTask &&
         cause.revision.snapshot === this.revision.snapshot &&
-        cause.revision.changes.has(cause.member)
+        cause.revision.members.has(cause.member)
       if (!skip) {
         this.invalidatedDueTo = cause
         this.invalidatedSince = since
@@ -522,7 +522,7 @@ class Task extends Observable implements Observer {
   }
 
   private static markEdited(value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
-    edited ? r.changes.add(m) : r.changes.delete(m)
+    edited ? r.members.add(m) : r.members.delete(m)
     if (Dbg.isOn && Dbg.trace.writes)
       edited ? Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
@@ -539,8 +539,8 @@ class Task extends Observable implements Observer {
     if (!error) {
       const reactions = snapshot.reactions
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-        if (!r.changes.has(Meta.Disposed))
-          r.changes.forEach(m => Task.propagateMemberChangeToReactions(false, since, r, m, h, reactions))
+        if (!r.members.has(Meta.Disposed))
+          r.members.forEach(m => Task.propagateMemberChangeToReactions(false, since, r, m, h, reactions))
         else
           for (const m in r.prev.revision.data)
             Task.propagateMemberChangeToReactions(true, since, r, m, h, reactions)
@@ -551,7 +551,7 @@ class Task extends Observable implements Observer {
     }
     else
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-        r.changes.forEach(m => Task.propagateMemberChangeToReactions(true, since, r, m, h, undefined)))
+        r.members.forEach(m => Task.propagateMemberChangeToReactions(true, since, r, m, h, undefined)))
   }
 
   private static propagateMemberChangeToReactions(unsubscribe: boolean, timestamp: number,

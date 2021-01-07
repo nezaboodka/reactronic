@@ -210,9 +210,9 @@ export class Snapshot implements AbstractSnapshot {
 
   private static merge(ours: ObjectRevision, head: ObjectRevision): number {
     let counter: number = 0
-    const disposed: boolean = head.changes.has(Meta.Disposed)
+    const disposed: boolean = head.members.has(Meta.Disposed)
     const merged = { ...head.data } // clone
-    ours.changes.forEach(m => {
+    ours.members.forEach(m => {
       counter++
       merged[m] = ours.data[m]
       if (disposed || m === Meta.Disposed) {
@@ -260,7 +260,7 @@ export class Snapshot implements AbstractSnapshot {
       if (Dbg.trace.changes) {
         this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
           const members: string[] = []
-          r.changes.forEach(m => members.push(m.toString()))
+          r.members.forEach(m => members.push(m.toString()))
           const s = members.join(', ')
           Dbg.log('║', '√', `${Hints.rev(r)} (${s}) is ${r.prev.revision === NIL_REV ? 'constructed' : `applied on top of ${Hints.rev(r.prev.revision)}`}`)
         })
@@ -272,8 +272,8 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   static sealObjectRevision(h: ObjectHolder, r: ObjectRevision): void {
-    if (!r.changes.has(Meta.Disposed))
-      r.changes.forEach(m => Snapshot.sealObservable(r.data[m], m, h.proxy.constructor.name))
+    if (!r.members.has(Meta.Disposed))
+      r.members.forEach(m => Snapshot.sealObservable(r.data[m], m, h.proxy.constructor.name))
     else
       for (const m in r.prev.revision.data)
         r.data[m] = Meta.Disposed
@@ -303,7 +303,7 @@ export class Snapshot implements AbstractSnapshot {
 
   static freezeObjectRevision(r: ObjectRevision): ObjectRevision {
     Object.freeze(r.data)
-    Utils.freezeSet(r.changes)
+    Utils.freezeSet(r.members)
     Utils.freezeMap(r.conflicts)
     return r
   }
@@ -340,7 +340,7 @@ export class Snapshot implements AbstractSnapshot {
           Snapshot.totalObjectRevisionCount--
           // console.log('rec--')
         }
-        if (r.changes.has(Meta.Disposed)) {
+        if (r.members.has(Meta.Disposed)) {
           Snapshot.totalObjectHolderCount--
           // console.log('obj--')
         }
