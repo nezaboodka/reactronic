@@ -114,9 +114,9 @@ export class TaskCtl extends Controller<any> {
   }
 
   /* istanbul ignore next */
-  static deps(): string[] {
+  static dependencies(): string[] {
     const task = Task.current
-    return task ? task.deps() : ['Reactronic.deps should be called from inside of reactive method']
+    return task ? task.dependencies() : ['Reactronic.deps should be called from inside of reactive method']
   }
 
   // Internal
@@ -282,7 +282,7 @@ class Task extends Observable implements Observer {
     return this.cause ? propagationHint(this.cause, false)[0] : NIL_HOLDER.hint
   }
 
-  deps(): string[] {
+  dependencies(): string[] {
     throw misuse('not implemented yet')
   }
 
