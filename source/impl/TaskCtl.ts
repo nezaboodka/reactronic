@@ -108,7 +108,7 @@ export class TaskCtl extends Controller<any> {
     return task ? task.why() : NIL_HOLDER.hint
   }
 
-  static briefShy(): string {
+  static briefWhy(): string {
     const task = Task.current
     return task ? task.briefWhy() : NIL_HOLDER.hint
   }
@@ -690,8 +690,8 @@ class Task extends Observable implements Observer {
       Object.defineProperty(globalThis, 'rWhy', {
         get: TaskCtl.why, configurable: false, enumerable: false,
       })
-      Object.defineProperty(globalThis, 'rWhyBrief', {
-        get: TaskCtl.briefShy, configurable: false, enumerable: false,
+      Object.defineProperty(globalThis, 'rBriefWhy', {
+        get: TaskCtl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -701,8 +701,8 @@ class Task extends Observable implements Observer {
       Object.defineProperty(global, 'rWhy', {
         get: TaskCtl.why, configurable: false, enumerable: false,
       })
-      Object.defineProperty(global, 'rWhyBrief', {
-        get: TaskCtl.briefShy, configurable: false, enumerable: false,
+      Object.defineProperty(global, 'rBriefWhy', {
+        get: TaskCtl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {

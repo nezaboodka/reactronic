@@ -18,7 +18,7 @@ import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 
 export class Reactronic {
-  static why(brief: boolean = false): string { return brief ? TaskCtl.briefShy() : TaskCtl.why() }
+  static why(brief: boolean = false): string { return brief ? TaskCtl.briefWhy() : TaskCtl.why() }
   static getController<T>(method: F<T>): Controller<T> { return TaskCtl.of(method) }
   static getLastResultAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Reactronic.getController(method as any as F<T>).getLastResultAndRevalidate(args) }
   static configureCurrentMethod(options: Partial<MethodOptions>): MethodOptions { return TaskCtl.configureImpl(undefined, options) }
