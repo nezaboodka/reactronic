@@ -71,8 +71,8 @@ export class Snapshot implements AbstractSnapshot {
   // To be redefined by Transaction and Cache implementations
   static current: () => Snapshot = UNDEF
   static edit: () => Snapshot = UNDEF
-  static markEdited: (value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
   static markViewed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF
+  static markEdited: (value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateChangesToReactions = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
 
