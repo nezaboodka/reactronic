@@ -140,9 +140,9 @@ export class TaskCtl extends Controller<any> {
   }
 
   private edit(): TaskContext {
-    const ctx = Snapshot.edit()
     const h = this.ownHolder
     const m = this.memberName
+    const ctx = Snapshot.edit()
     const r: ObjectRevision = ctx.getEditableRevision(h, m, Meta.Holder, this)
     let task: Task = this.from(r)
     if (task.revision !== r) {
