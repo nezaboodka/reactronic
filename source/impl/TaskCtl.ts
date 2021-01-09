@@ -108,9 +108,9 @@ export class TaskCtl extends Controller<any> {
     return task ? task.why() : NIL_HOLDER.hint
   }
 
-  static whyShort(): string {
+  static briefShy(): string {
     const task = Task.current
-    return task ? task.whyShort() : NIL_HOLDER.hint
+    return task ? task.briefWhy() : NIL_HOLDER.hint
   }
 
   /* istanbul ignore next */
@@ -278,7 +278,7 @@ class Task extends Observable implements Observer {
     return `${this.hint()}${cause}   (${ms}ms since previous revalidation)`
   }
 
-  whyShort(): string {
+  briefWhy(): string {
     return this.cause ? propagationHint(this.cause, false)[0] : NIL_HOLDER.hint
   }
 
@@ -691,7 +691,7 @@ class Task extends Observable implements Observer {
         get: TaskCtl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(globalThis, 'rWhyShort', {
-        get: TaskCtl.whyShort, configurable: false, enumerable: false,
+        get: TaskCtl.briefShy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -702,7 +702,7 @@ class Task extends Observable implements Observer {
         get: TaskCtl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(global, 'rWhyShort', {
-        get: TaskCtl.whyShort, configurable: false, enumerable: false,
+        get: TaskCtl.briefShy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
