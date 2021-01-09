@@ -690,7 +690,7 @@ class Task extends Observable implements Observer {
       Object.defineProperty(globalThis, 'rWhy', {
         get: TaskCtl.why, configurable: false, enumerable: false,
       })
-      Object.defineProperty(globalThis, 'rWhyShort', {
+      Object.defineProperty(globalThis, 'rWhyBrief', {
         get: TaskCtl.briefShy, configurable: false, enumerable: false,
       })
     }
@@ -701,7 +701,7 @@ class Task extends Observable implements Observer {
       Object.defineProperty(global, 'rWhy', {
         get: TaskCtl.why, configurable: false, enumerable: false,
       })
-      Object.defineProperty(global, 'rWhyShort', {
+      Object.defineProperty(global, 'rWhyBrief', {
         get: TaskCtl.briefShy, configurable: false, enumerable: false,
       })
     }

@@ -138,6 +138,6 @@ export const TraceLevel: {
 declare global {
   interface Window {
     rWhy: string
-    rWhyShort: string
+    rWhyBrief: string
   }
 }
