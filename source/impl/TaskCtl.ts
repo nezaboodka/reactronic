@@ -103,9 +103,9 @@ export class TaskCtl extends Controller<any> {
     return result
   }
 
-  static whyFull(): string {
+  static why(): string {
     const task = Task.current
-    return task ? task.whyFull() : NIL_HOLDER.hint
+    return task ? task.why() : NIL_HOLDER.hint
   }
 
   static whyShort(): string {
@@ -185,7 +185,7 @@ export class TaskCtl extends Controller<any> {
       if (!call.task.worker.isCanceled) { // first call
         call = this.edit()
         if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
-          Dbg.log('║', ' (f)', `${call.task.whyFull()}`)
+          Dbg.log('║', ' (f)', `${call.task.why()}`)
         call.task.run(this.ownHolder.proxy, argsx)
       }
       else { // retry call
@@ -193,7 +193,7 @@ export class TaskCtl extends Controller<any> {
         if (call.task.options.kind === Kind.Transaction || !call.isValid) {
           call = this.edit()
           if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
-            Dbg.log('║', ' (f)', `${call.task.whyFull()}`)
+            Dbg.log('║', ' (f)', `${call.task.why()}`)
           call.task.run(this.ownHolder.proxy, argsx)
         }
       }
@@ -263,7 +263,7 @@ class Task extends Observable implements Observer {
   hint(): string { return `${Hints.rev(this.revision, this.controller.memberName)}` } // override
   get priority(): number { return this.options.priority }
 
-  whyFull(): string {
+  why(): string {
     let ms: number = Date.now()
     const prev = this.revision.prev.revision.data[this.controller.memberName]
     if (prev instanceof Task)
@@ -296,7 +296,7 @@ class Task extends Observable implements Observer {
       if (Dbg.isOn && Dbg.trace.steps && this.result)
         Dbg.logAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
       if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
-        Dbg.log('', '[!]', this.whyFull(), ms, '    *** main thread is too busy ***')
+        Dbg.log('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
       return result
     }
     return boundFunc
@@ -384,7 +384,7 @@ class Task extends Observable implements Observer {
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
           if (!concurrent.worker.isCanceled)
-            throw misuse(`${head.hint()} (${head.whyFull()}) is not reentrant over ${concurrent.hint()} (${concurrent.whyFull()})`)
+            throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${concurrent.hint()} (${concurrent.why()})`)
           error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/PreventWithError due to canceled T${concurrent.worker.id}[${concurrent.worker.hint}]`)
           this.worker.cancel(error, concurrent.worker)
           break
@@ -463,7 +463,7 @@ class Task extends Observable implements Observer {
     if (Dbg.isOn && Dbg.trace.methods)
       Dbg.log('║', `${op}`, `${this.hint()} ${message}`, ms, highlight)
     if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
-      Dbg.log('', '[!]', this.whyFull(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
+      Dbg.log('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
     // CachedResult.freeze(this)
@@ -688,7 +688,7 @@ class Task extends Observable implements Observer {
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {
-        get: TaskCtl.whyFull, configurable: false, enumerable: false,
+        get: TaskCtl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(globalThis, 'rWhyShort', {
         get: TaskCtl.whyShort, configurable: false, enumerable: false,
@@ -699,7 +699,7 @@ class Task extends Observable implements Observer {
     }
     try {
       Object.defineProperty(global, 'rWhy', {
-        get: TaskCtl.whyFull, configurable: false, enumerable: false,
+        get: TaskCtl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(global, 'rWhyShort', {
         get: TaskCtl.whyShort, configurable: false, enumerable: false,
