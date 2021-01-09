@@ -285,7 +285,7 @@ class TransactionImpl extends Transaction {
         if (after && after !== TransactionImpl.none)
           Dbg.log('║', ' [!]', `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ''}`)
       }
-      Snapshot.propagateChangesToReactions(t.snapshot, error)
+      Snapshot.propagateChanges(t.snapshot, error)
     }
     t.sealed = true
   }

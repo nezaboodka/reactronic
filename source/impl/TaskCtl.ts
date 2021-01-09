@@ -534,7 +534,7 @@ class Task extends Observable implements Observer {
     return result
   }
 
-  private static propagateChangesToReactions(snapshot: Snapshot, error: Error | undefined): void {
+  private static propagateChanges(snapshot: Snapshot, error: Error | undefined): void {
     const since = snapshot.timestamp
     if (!error) {
       const reactions = snapshot.reactions
@@ -682,7 +682,7 @@ class Task extends Observable implements Observer {
     Snapshot.markViewed = Task.markViewed // override
     Snapshot.markEdited = Task.markEdited // override
     Snapshot.isConflicting = Task.isConflicting // override
-    Snapshot.propagateChangesToReactions = Task.propagateChangesToReactions // override
+    Snapshot.propagateChanges = Task.propagateChanges // override
     Hooks.createMethodTrap = Task.createMethodTrap // override
     Hooks.applyMethodOptions = Task.applyMethodOptions // override
     Promise.prototype.then = reactronicHookedThen // override
