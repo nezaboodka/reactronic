@@ -252,9 +252,9 @@ function monitor(value: Monitor | null)
 function trace(value: Partial<TraceOptions>)
 
 function getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
-function unreactive<T>(func: F<T>, ...args: any[]): T
-function isolated<T>(func: F<T>, ...args: any[]): T
-function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
+function unobservableRun<T>(func: F<T>, ...args: any[]): T
+function isolatedRun<T>(func: F<T>, ...args: any[]): T
+function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // Options, ObjectOptions, Kind, Reentrance, Monitor, TraceOptions, ProfilingOptions
 
