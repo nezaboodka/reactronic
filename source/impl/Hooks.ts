@@ -164,7 +164,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return pd
   }
 
-  ownKeys(h: ObjectHolder): MemberName[] {
+  ownKeys(h: ObjectHolder): Array<string | symbol> {
     // TODO: Better implementation to avoid filtering
     const r: ObjectRevision = Snapshot.current().getCurrentRevision(h, Meta.Holder)
     const result = []

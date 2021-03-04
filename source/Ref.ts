@@ -53,7 +53,7 @@ export class Ref<T = any> {
   }
 
   static toCustomToggle<T, O extends object = any>(owner: O, value1: T, value2: T): { readonly [P in keyof GivenTypeOnly<O, T | any>]: ToggleRef<O[P]> } {
-    const handler = new CustomToggleRefGettingProxy<T>(value1, value2)
+    const handler: any = new CustomToggleRefGettingProxy<T>(value1, value2)
     return new Proxy<O>(owner, handler)
   }
 
@@ -93,13 +93,13 @@ export class ToggleRef<T = boolean> extends Ref<T> {
 
 // Internal
 
-const RefGettingProxy = {
+const RefGettingProxy: ProxyHandler<any> = {
   get: <T = any, O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): Ref<T> => {
     return new Ref<T>(obj, prop as string)
   },
 }
 
-const BoolRefGettingProxy = {
+const BoolRefGettingProxy: ProxyHandler<any> = {
   get: <T, O = any>(obj: O, prop: keyof {[P in keyof O]: O[P] extends T ? P : never}): ToggleRef<T> => {
     return new ToggleRef<any>(obj, prop as string, true, false)
   },
