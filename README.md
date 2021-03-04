@@ -136,14 +136,14 @@ class Component<P> extends React.Component<P> {
     throw new Error('render method is undefined')
   }
 
-  @reactive // called immediately in response to state changes
+  @reaction // called immediately in response to state changes
   pulse(): void {
-    if (Reactronic.getCache(this.render).invalid)
-      isolated(() => this.setState({})) // ask React to re-render
+    if (this.shouldComponentUpdate())
+      isolatedRun(() => this.setState({})) // ask React to re-render
   } // pulse is subscribed to render
 
   shouldComponentUpdate(): boolean {
-    return Reactronic.getCache(this.render).invalid
+    return !Reactronic.getController(this.render).isValid
   }
 
   componentDidMount(): void {
@@ -151,7 +151,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    isolated(Cache.unmount, this)
+    isolatedRun(Reactronic.dispose, this)
   }
 }
 ```
