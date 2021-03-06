@@ -9,11 +9,11 @@ import * as React from 'react'
 import { ObservableObject, Transaction, unobservable, reaction, cached, isolatedRun, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, tran?: Transaction): JSX.Element {
-  const [state, refresh] = React.useState<ReactState<JSX.Element>>(
+  const [state, rerender] = React.useState<ReactState<JSX.Element>>(
     (!name && !trace) ? createReactState : () => createReactState(name, trace))
   const rx = state.rx
   rx.cycle = state.cycle
-  rx.refresh = refresh // just in case React will change refresh on each rendering
+  rx.rerender = rerender // just in case React will change refresh on each rendering
   React.useEffect(rx.unmount, [])
   return rx.render(render, tran)
 }
@@ -24,18 +24,18 @@ type ReactState<V> = { rx: Rx<V>, cycle: number }
 
 class Rx<V> extends ObservableObject {
   @cached
-  render(generate: (cycle: number) => V, tran?: Transaction): V {
-    return tran ? tran.inspect(() => generate(this.cycle)) : generate(this.cycle)
+  render(emit: (cycle: number) => V, tran?: Transaction): V {
+    return tran ? tran.inspect(() => emit(this.cycle)) : emit(this.cycle)
   }
 
   @reaction
-  protected pulse(): void {
+  protected refresh(): void {
     if (!R.getController(this.render).isValid)
-      isolatedRun(this.refresh, {rx: this, cycle: this.cycle + 1})
+      isolatedRun(this.rerender, {rx: this, cycle: this.cycle + 1})
   }
 
   @unobservable cycle: number = 0
-  @unobservable refresh: (next: ReactState<V>) => void = nop
+  @unobservable rerender: (next: ReactState<V>) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
     return (): void => { isolatedRun(R.dispose, this) }
   }
@@ -46,7 +46,7 @@ class Rx<V> extends ObservableObject {
       R.setTraceHint(rx, hint)
     if (trace) {
       R.getController(rx.render).configure({trace})
-      R.getController(rx.pulse).configure({trace})
+      R.getController(rx.refresh).configure({trace})
     }
     return rx
   }

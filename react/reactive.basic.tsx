@@ -9,9 +9,9 @@ import * as React from 'react'
 import { ObservableObject, Transaction, unobservable, reaction, cached, isolatedRun, Reactronic } from 'api' // from 'reactronic'
 
 export function autorender(render: () => JSX.Element): JSX.Element {
-  const [state, refresh] = React.useState<ReactState>(createReactState)
+  const [state, rerender] = React.useState<ReactState>(createReactState)
   const rx = state.rx
-  rx.refresh = refresh // just in case React will change refresh on each rendering
+  rx.rerender = rerender // just in case React will change refresh on each rendering
   React.useEffect(rx.unmount, [])
   return rx.render(render)
 }
@@ -22,17 +22,17 @@ type ReactState = { rx: Rx }
 
 class Rx extends ObservableObject {
   @cached
-  render(render: () => JSX.Element): JSX.Element {
-    return render()
+  render(emit: () => JSX.Element): JSX.Element {
+    return emit()
   }
 
   @reaction
-  protected pulse(): void {
+  protected refresh(): void {
     if (!Reactronic.getController(this.render).isValid)
-      isolatedRun(this.refresh, {rx: this})
+      isolatedRun(this.rerender, {rx: this})
   }
 
-  @unobservable refresh: (next: ReactState) => void = nop
+  @unobservable rerender: (next: ReactState) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
     return (): void => { isolatedRun(Reactronic.dispose, this) }
   }

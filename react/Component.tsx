@@ -15,7 +15,7 @@ export class Component<P> extends React.Component<P> {
   }
 
   @reaction
-  pulse(): void {
+  refresh(): void {
     if (this.shouldComponentUpdate())
       isolatedRun(() => this.setState({}))
   }
@@ -25,7 +25,7 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentDidMount(): void {
-    this.pulse()
+    this.refresh() // run for the first time to subscribe
   }
 
   componentWillUnmount(): void {
