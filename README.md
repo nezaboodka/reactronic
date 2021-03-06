@@ -8,8 +8,6 @@
 ![Lines](https://img.shields.io/badge/lines-1540-success.svg)
 [![Demo](https://img.shields.io/badge/demo-live-success.svg)](https://nezaboodka.github.io/reactronic-demo/)
 
-Live demo: https://nezaboodka.github.io/reactronic-demo/
-
 # **Reactronic** - Transactionally Reactive State Management
 
 Reactronic is a JavaScript library that provides
