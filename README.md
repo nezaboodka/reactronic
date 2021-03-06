@@ -25,9 +25,9 @@ between visual components (observers) and state objects (observables).
 
 Transactional reactivity is based on four fundamental concepts:
 
-  - **State** - a set of observable objects that store data of an application;
-  - **Transaction** - a function that makes changes in state objects in transactional (atomic) way;
-  - **Reaction** - a function that is called automatically in response to state changes made by a transaction;
+  - **Observable Objects** - a set of objects that store data of an application;
+  - **Transaction** - a function that makes changes in observable objects in transactional (atomic) way;
+  - **Reaction** - a function that is called automatically in response to changes made by a transaction;
   - **Cache** - a computed value having associated function that is called on-demand to renew the value if it was invalidated.
 
 The following picture illustrates relationships between the concepts
@@ -37,11 +37,11 @@ in the source code:
 
 Below is the detailed description of each concept.
 
-### State
+### Observable Objects
 
-State is a set of objects that store data of an application.
-All state objects are transparently hooked to track access to
-their properties, both on reads and writes.
+Observable objects store data of an application. All such objects
+are transparently hooked to track access to their properties,
+both on reads and writes.
 
 ``` typescript
 class MyModel extends ObservableObject {
@@ -57,8 +57,8 @@ and `timestamp` are hooked.
 
 ### Transaction
 
-Transaction is a function that changes state objects in transactional
-(atomic) way. Such a function is instrumented with hooks
+Transaction is a function that makes changes in observable objects
+in transactional (atomic) way. Such a function is instrumented with hooks
 to provide transparent atomicity (by implicit context switching
 and isolation).
 
@@ -106,12 +106,12 @@ the whole chain of asynchronous operations is fully completed.
 ### Reaction & Cache
 
 Reaction is a function that is immediately called in response to
-state changes. Cache is a computed value having an associated
-function that is called on-demand to renew the value if it was
-invalidated. Reactive and cached functions are instrumented with
-hooks to seamlessly subscribe to those state objects and other
-cached functions (dependencies), which are used during their
-execution.
+changes made by a transaction in observable objects. Cache is a
+computed value having an associated function that is called
+on-demand to renew the value if it was invalidated. Reactive
+and cached functions are instrumented with hooks to seamlessly
+subscribe to those state objects and other cached functions
+(dependencies), which are used during their execution.
 
 ``` tsx
 class MyView extends Component<{model: MyModel}> {
@@ -134,7 +134,7 @@ class Component<P> extends React.Component<P> {
     throw new Error('render method is undefined')
   }
 
-  @reaction // called immediately in response to state changes
+  @reaction // called immediately in response to changes
   pulse(): void {
     if (this.shouldComponentUpdate())
       isolatedRun(() => this.setState({})) // ask React to re-render
@@ -164,18 +164,18 @@ reactive function enqueues re-rendering request to React, which calls
 `render` function causing it to renew its cached value.
 
 In general case, all reactions and caches are automatically and
-immediately marked as invalid when changes are made in those state
+immediately marked as invalid when changes are made in those observable
 objects and cached functions that were used during their execution.
 And once marked, the functions are automatically executed again,
 either immediately (for @reactive functions) or on-demand
 (for @cached functions).
 
 Reactronic takes full care of tracking dependencies between
-all the state objects and reactions/caches (observables and observers).
+all the observable objects and reactions/caches (observables and observers).
 With Reactronic, you no longer need to create data change events
 in one set of objects, subscribe to these events in other objects,
-and manually maintain switching from the previous state to a new
-one.
+and manually maintain switching from the previous object version
+to a new one.
 
 ### Behavior Options
 
