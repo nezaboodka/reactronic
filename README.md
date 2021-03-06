@@ -135,17 +135,17 @@ class Component<P> extends React.Component<P> {
   }
 
   @reaction // called immediately in response to changes
-  pulse(): void {
+  refresh(): void {
     if (this.shouldComponentUpdate())
       isolatedRun(() => this.setState({})) // ask React to re-render
-  } // pulse is subscribed to render
+  } // refresh is subscribed to render
 
   shouldComponentUpdate(): boolean {
     return !Reactronic.getController(this.render).isValid
   }
 
   componentDidMount(): void {
-    this.pulse() // initial reaction run
+    this.refresh() // initial reaction run
   }
 
   componentWillUnmount(): void {
@@ -154,12 +154,12 @@ class Component<P> extends React.Component<P> {
 }
 ```
 
-In the example above, reactive function `pulse` is transparently subscribed
+In the example above, reactive function `refresh` is transparently subscribed
 to the cached function `render`. In turn, the `render` function is
 subscribed to the `url` and `content` properties of a corresponding
 `MyModel` object. Once `url` or `content` values are changed, the
 `render` cache becomes invalid and causes invalidation and immediate
-re-execution of reactive function `pulse`. While executed, the `pulse`
+re-execution of reactive function `refresh`. While executed, the `refresh`
 reactive function enqueues re-rendering request to React, which calls
 `render` function causing it to renew its cached value.
 
