@@ -220,9 +220,9 @@ Key Reactronic principles and differentiators:
 
 Roadmap:
 
-  - v1.5: Patches and conflict resolution API
-  - v1.7: History/undo/redo API and implementation
-  - v2.0: Sync API and implementation
+  - Patches and conflict resolution API (partially done)
+  - History/undo/redo API and implementation (partially done)
+  - Sync API and implementation (not implemented yet)
 
 ## Installation
 
