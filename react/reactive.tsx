@@ -9,11 +9,11 @@ import * as React from 'react'
 import { ObservableObject, Transaction, unobservable, reaction, cached, isolatedRun, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, tran?: Transaction): JSX.Element {
-  const [state, rerender] = React.useState<ReactState<JSX.Element>>(
+  const [state, refresh] = React.useState<ReactState<JSX.Element>>(
     (!name && !trace) ? createReactState : () => createReactState(name, trace))
   const rx = state.rx
   rx.cycle = state.cycle
-  rx.rerender = rerender // just in case React will change refresh on each rendering
+  rx.refresh = refresh // just in case React will change refresh on each rendering
   React.useEffect(rx.unmount, [])
   return rx.render(render, tran)
 }
@@ -29,13 +29,13 @@ class Rx<V> extends ObservableObject {
   }
 
   @reaction
-  protected refresh(): void {
+  protected ensureUpToDate(): void {
     if (!R.getController(this.render).isUpToDate)
-      isolatedRun(this.rerender, {rx: this, cycle: this.cycle + 1})
+      isolatedRun(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
   @unobservable cycle: number = 0
-  @unobservable rerender: (next: ReactState<V>) => void = nop
+  @unobservable refresh: (next: ReactState<V>) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
     return (): void => { isolatedRun(R.dispose, this) }
   }
@@ -46,7 +46,7 @@ class Rx<V> extends ObservableObject {
       R.setTraceHint(rx, hint)
     if (trace) {
       R.getController(rx.render).configure({trace})
-      R.getController(rx.refresh).configure({trace})
+      R.getController(rx.ensureUpToDate).configure({trace})
     }
     return rx
   }

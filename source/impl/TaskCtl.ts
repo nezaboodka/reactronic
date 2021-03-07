@@ -344,7 +344,7 @@ class Task extends Observable implements Observer {
     }
   }
 
-  revalidate(now: boolean, nothrow: boolean): void {
+  ensureUpToDate(now: boolean, nothrow: boolean): void {
     const t = this.options.throttling
     const interval = Date.now() + this.started // "started" is stored as negative value after reaction completion
     const hold = t ? t - interval : 0 // "started" is stored as negative value after reaction completion
@@ -369,7 +369,7 @@ class Task extends Observable implements Observer {
     }
     else if (t < Number.MAX_SAFE_INTEGER) {
       if (hold > 0)
-        setTimeout(() => this.revalidate(true, true), hold)
+        setTimeout(() => this.ensureUpToDate(true, true), hold)
       else
         this.addToAsyncReactionsBatch()
     }
@@ -504,7 +504,7 @@ class Task extends Observable implements Observer {
     const reactions = Task.asyncReactionsBatch
     Task.asyncReactionsBatch = [] // reset
     for (const t of reactions)
-      t.revalidate(true, true)
+      t.ensureUpToDate(true, true)
   }
 
   private static markViewed(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean): void {

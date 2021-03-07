@@ -15,7 +15,7 @@ export class Component<P> extends React.Component<P> {
   }
 
   @reaction // called immediately in response to changes
-  refresh(): void {
+  ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
       isolatedRun(() => this.setState({})) // ask React to re-render
   } // refresh is subscribed to render
@@ -25,7 +25,7 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentDidMount(): void {
-    this.refresh() // run to subscribe for the first time
+    this.ensureUpToDate() // run to subscribe for the first time
   }
 
   componentWillUnmount(): void {

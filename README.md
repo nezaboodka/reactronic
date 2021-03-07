@@ -136,17 +136,17 @@ class Component<P> extends React.Component<P> {
   }
 
   @reaction // called immediately in response to changes
-  refresh(): void {
+  ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
       isolatedRun(() => this.setState({})) // ask React to re-render
   } // refresh is subscribed to render
 
   shouldComponentUpdate(): boolean {
-    return !Reactronic.getController(this.render).isValid
+    return !Reactronic.getController(this.render).isUpToDate
   }
 
   componentDidMount(): void {
-    this.refresh() // run to subscribe for the first time
+    this.ensureUpToDate() // run to subscribe for the first time
   }
 
   componentWillUnmount(): void {
@@ -250,7 +250,6 @@ function reentrance(value: Reentrance) // transactional & reactive
 function monitor(value: Monitor | null)
 function trace(value: Partial<TraceOptions>)
 
-function getCachedValueAndRevalidate<T>(method: F<Promise<T>>, args?: any[]): T | undefined
 function unobservableRun<T>(func: F<T>, ...args: any[]): T
 function isolatedRun<T>(func: F<T>, ...args: any[]): T
 function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T

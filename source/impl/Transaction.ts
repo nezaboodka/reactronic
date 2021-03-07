@@ -273,7 +273,7 @@ class TransactionImpl extends Transaction {
   }
 
   private static executeReactions(t: TransactionImpl): void {
-    t.snapshot.reactions.forEach(x => x.revalidate(false, true))
+    t.snapshot.reactions.forEach(x => x.ensureUpToDate(false, true))
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {

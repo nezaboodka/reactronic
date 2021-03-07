@@ -50,7 +50,7 @@ const DEFAULT_OPTIONS: MethodOptions = Object.freeze({
   priority: 0,
   noSideEffects: false,
   sensitiveArgs: false,
-  throttling: Number.MAX_SAFE_INTEGER, // never revalidate
+  throttling: Number.MAX_SAFE_INTEGER, // disabled reaction
   reentrance: Reentrance.PreventWithError,
   journal: undefined,
   monitor: null,
