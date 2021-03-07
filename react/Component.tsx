@@ -18,7 +18,7 @@ export class Component<P> extends React.Component<P> {
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
       isolatedRun(() => this.setState({})) // ask React to re-render
-  } // refresh is subscribed to render
+  } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
     return !Reactronic.getController(this.render).isUpToDate
