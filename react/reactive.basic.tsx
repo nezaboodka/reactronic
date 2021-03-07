@@ -28,7 +28,7 @@ class Rx extends ObservableObject {
 
   @reaction
   protected refresh(): void {
-    if (!Reactronic.getController(this.render).isValid)
+    if (!Reactronic.getController(this.render).isUpToDate)
       isolatedRun(this.rerender, {rx: this})
   }
 

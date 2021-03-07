@@ -25,7 +25,7 @@ export abstract class Sealant {
     const clone = result[Sealant.Clone]
     if (clone)
       result = clone.call(result) as any
-    if (Dbg.isOn && Dbg.trace.writes)
+    if (Dbg.isOn && Dbg.trace.write)
       Dbg.log('║', ' ', `${typeName}.${member.toString()} - collection is sealed`)
     Object.setPrototypeOf(result, sealedType)
     Object.freeze(result)

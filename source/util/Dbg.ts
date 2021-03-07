@@ -8,7 +8,7 @@
 import { TraceOptions } from '../Trace'
 
 export function error(message: string, dump: Error | undefined): Error {
-  if (Dbg.isOn && Dbg.trace.errors)
+  if (Dbg.isOn && Dbg.trace.error)
     Dbg.log('█', ' ███', message, undefined, ' *** ERROR ***', dump)
   return new Error(message)
 }
@@ -29,16 +29,16 @@ export function fatal(error: Error): Error {
 export class Dbg {
   static DefaultLevel: TraceOptions = {
     silent: false,
-    errors: false,
-    warnings: false,
-    transactions: false,
-    methods: false,
-    steps: false,
-    monitors: false,
-    reads: false,
-    writes: false,
-    changes: false,
-    invalidations: false,
+    error: false,
+    warning: false,
+    transaction: false,
+    method: false,
+    step: false,
+    monitor: false,
+    read: false,
+    write: false,
+    change: false,
+    obsolete: false,
     gc: false,
     color: 37,
     prefix: '',
@@ -75,7 +75,7 @@ export class Dbg {
     const silent = (options && options.silent !== undefined) ? options.silent : t.silent
     if (!silent) { /* istanbul ignore next */
       console.log('\x1b[37m%s\x1b[0m \x1b[' + t.color + 'm%s %s%s\x1b[0m \x1b[' + t.color + 'm%s%s\x1b[0m \x1b[' + t.color + 'm%s\x1b[0m%s',
-        '', t.prefix, t.transactions ? margin1 : '', t.transactions ? bar : bar.replace(/./g, ' '), margin2, operation, message,
+        '', t.prefix, t.transaction ? margin1 : '', t.transaction ? bar : bar.replace(/./g, ' '), margin2, operation, message,
         (highlight !== undefined ? `${highlight}` : '') + (ms > 2 ? `    [ ${ms}ms ]` : ''))
       if (dump) /* istanbul ignore next */
         console.log(dump)
@@ -85,16 +85,16 @@ export class Dbg {
   static merge(t: Partial<TraceOptions> | undefined, color: number | undefined, prefix: string | undefined, existing: TraceOptions): TraceOptions {
     const result = !t ? { ...existing } : {
       silent: t.silent !== undefined ? t.silent : existing.silent,
-      transactions: t.transactions !== undefined ? t.transactions : existing.transactions,
-      methods: t.methods !== undefined ? t.methods : existing.methods,
-      steps: t.steps !== undefined ? t.steps : existing.steps,
-      monitors: t.monitors !== undefined ? t.monitors : existing.monitors,
-      reads: t.reads !== undefined ? t.reads : existing.reads,
-      writes: t.writes !== undefined ? t.writes : existing.writes,
-      changes: t.changes !== undefined ? t.changes : existing.changes,
-      invalidations: t.invalidations !== undefined ? t.invalidations : existing.invalidations,
-      errors: t.errors !== undefined ? t.errors : existing.errors,
-      warnings: t.warnings !== undefined ? t.warnings : existing.warnings,
+      transaction: t.transaction !== undefined ? t.transaction : existing.transaction,
+      method: t.method !== undefined ? t.method : existing.method,
+      step: t.step !== undefined ? t.step : existing.step,
+      monitor: t.monitor !== undefined ? t.monitor : existing.monitor,
+      read: t.read !== undefined ? t.read : existing.read,
+      write: t.write !== undefined ? t.write : existing.write,
+      change: t.change !== undefined ? t.change : existing.change,
+      obsolete: t.obsolete !== undefined ? t.obsolete : existing.obsolete,
+      error: t.error !== undefined ? t.error : existing.error,
+      warning: t.warning !== undefined ? t.warning : existing.warning,
       gc: t.gc !== undefined ? t.gc : existing.gc,
       color: t.color !== undefined ? t.color : existing.color,
       prefix: t.prefix !== undefined ? t.prefix : existing.prefix,

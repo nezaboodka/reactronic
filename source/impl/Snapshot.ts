@@ -165,7 +165,7 @@ export class Snapshot implements AbstractSnapshot {
       Snapshot.pending.push(this)
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this
-      if (Dbg.isOn && Dbg.trace.transactions)
+      if (Dbg.isOn && Dbg.trace.transaction)
         Dbg.log('╔══', `v${this.stamp}`, `${this.hint}`)
     }
   }
@@ -186,7 +186,7 @@ export class Snapshot implements AbstractSnapshot {
               conflicts = []
             conflicts.push(r)
           }
-          if (Dbg.isOn && Dbg.trace.changes)
+          if (Dbg.isOn && Dbg.trace.change)
             Dbg.log('╠╝', '', `${Hints.rev(r)} is merged with ${Hints.rev(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
@@ -217,7 +217,7 @@ export class Snapshot implements AbstractSnapshot {
       merged[m] = ours.data[m]
       if (disposed || m === Meta.Disposed) {
         if (disposed !== (m === Meta.Disposed)) {
-          if (Dbg.isOn && Dbg.trace.changes)
+          if (Dbg.isOn && Dbg.trace.change)
             Dbg.log('║╠', '', `${Hints.rev(ours, m)} <> ${Hints.rev(head, m)}`, 0, ' *** CONFLICT ***')
           ours.conflicts.set(m, head)
         }
@@ -226,7 +226,7 @@ export class Snapshot implements AbstractSnapshot {
         const conflict = Snapshot.isConflicting(head.data[m], ours.prev.revision.data[m])
         if (conflict)
           ours.conflicts.set(m, head)
-        if (Dbg.isOn && Dbg.trace.changes)
+        if (Dbg.isOn && Dbg.trace.change)
           Dbg.log('║╠', '', `${Hints.rev(ours, m)} ${conflict ? '<>' : '=='} ${Hints.rev(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
       }
     })
@@ -257,7 +257,7 @@ export class Snapshot implements AbstractSnapshot {
       }
     })
     if (Dbg.isOn) {
-      if (Dbg.trace.changes) {
+      if (Dbg.trace.change) {
         this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
           const members: string[] = []
           r.members.forEach(m => members.push(m.toString()))
@@ -265,7 +265,7 @@ export class Snapshot implements AbstractSnapshot {
           Dbg.log('║', '√', `${Hints.rev(r)} (${s}) is ${r.prev.revision === NIL_REV ? 'constructed' : `applied on top of ${Hints.rev(r.prev.revision)}`}`)
         })
       }
-      if (Dbg.trace.transactions)
+      if (Dbg.trace.transaction)
         Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
     }
     Snapshot.propagateChanges(this, error)

@@ -13,9 +13,9 @@ export abstract class Controller<T> {
   abstract readonly result: T
   abstract readonly error: any
   abstract readonly stamp: number
-  abstract readonly isValid: boolean
+  abstract readonly isUpToDate: boolean
 
   abstract configure(options: Partial<MethodOptions>): MethodOptions
-  abstract invalidate(): void
-  abstract getLastResultAndRevalidate(args?: any[]): T | undefined
+  abstract markObsolete(): void
+  abstract pullLastResult(args?: any[]): T | undefined
 }

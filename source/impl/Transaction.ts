@@ -83,7 +83,7 @@ class TransactionImpl extends Transaction {
     const restore = TransactionImpl.inspection
     try {
       TransactionImpl.inspection = true
-      if (Dbg.isOn && Dbg.trace.transactions)
+      if (Dbg.isOn && Dbg.trace.transaction)
         Dbg.log(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.curr.id}[${TransactionImpl.curr.hint}]`)
       return this.runImpl(undefined, func, ...args)
     }
@@ -280,7 +280,7 @@ class TransactionImpl extends Transaction {
     if (!t.canceled && error) {
       t.canceled = error
       t.after = after
-      if (Dbg.isOn && Dbg.trace.transactions) {
+      if (Dbg.isOn && Dbg.trace.transaction) {
         Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== TransactionImpl.none)
           Dbg.log('║', ' [!]', `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ''}`)
@@ -303,7 +303,7 @@ class TransactionImpl extends Transaction {
   private applyOrDiscard(): void {
     // It's critical to have no exceptions in this block
     try {
-      if (Dbg.isOn && Dbg.trace.changes)
+      if (Dbg.isOn && Dbg.trace.change)
         Dbg.log('╠══', '', '', undefined, ' changes')
       this.snapshot.applyOrDiscard(this.canceled)
       this.snapshot.collect()

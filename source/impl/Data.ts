@@ -30,9 +30,9 @@ export class Observable {
 export interface Observer {
   readonly priority: number
   readonly observables: Map<Observable, MemberInfo>
-  readonly invalidatedSince: number
+  readonly obsoleteSince: number
   hint(notran?: boolean): string
-  invalidateDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void
+  markObsoleteDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void
   revalidate(now: boolean, nothrow: boolean): void
 }
 

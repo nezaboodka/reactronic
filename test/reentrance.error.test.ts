@@ -49,7 +49,7 @@ test('reentrance.error', async t => {
   finally {
     t.is(busy.workerCount, 0)
     t.is(busy.workers.size, 0)
-    const r = R.getLastResultAndRevalidate(app.render)
+    const r = R.pullLastResult(app.render)
     t.is(r && r.length, 2)
     await sleep(100)
     Tran.run(() => {

@@ -21,7 +21,7 @@ export class Component<P> extends React.Component<P> {
   } // refresh is subscribed to render
 
   shouldComponentUpdate(): boolean {
-    return !Reactronic.getController(this.render).isValid
+    return !Reactronic.getController(this.render).isUpToDate
   }
 
   componentDidMount(): void {

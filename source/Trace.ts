@@ -7,16 +7,16 @@
 
 export interface TraceOptions {
   readonly silent: boolean
-  readonly transactions: boolean
-  readonly methods: boolean
-  readonly steps: boolean
-  readonly monitors: boolean
-  readonly reads: boolean
-  readonly writes: boolean
-  readonly changes: boolean
-  readonly invalidations: boolean
-  readonly errors: boolean
-  readonly warnings: boolean
+  readonly transaction: boolean
+  readonly method: boolean
+  readonly step: boolean
+  readonly monitor: boolean
+  readonly read: boolean
+  readonly write: boolean
+  readonly change: boolean
+  readonly obsolete: boolean
+  readonly error: boolean
+  readonly warning: boolean
   readonly gc: boolean
   readonly color: number
   readonly prefix: string
@@ -41,16 +41,16 @@ export const TraceLevel: {
 
   Error: {
     silent: false,
-    transactions: false,
-    methods: false,
-    steps: false,
-    monitors: false,
-    reads: false,
-    writes: false,
-    changes: false,
-    invalidations: false,
-    errors: true,
-    warnings: true,
+    transaction: false,
+    method: false,
+    step: false,
+    monitor: false,
+    read: false,
+    write: false,
+    change: false,
+    obsolete: false,
+    error: true,
+    warning: true,
     gc: false,
     color: 37,
     prefix: '',
@@ -60,16 +60,16 @@ export const TraceLevel: {
 
   Minimal: {
     silent: false,
-    transactions: true,
-    methods: false,
-    steps: false,
-    monitors: false,
-    reads: false,
-    writes: false,
-    changes: false,
-    invalidations: true,
-    errors: true,
-    warnings: true,
+    transaction: true,
+    method: false,
+    step: false,
+    monitor: false,
+    read: false,
+    write: false,
+    change: false,
+    obsolete: true,
+    error: true,
+    warning: true,
     gc: false,
     color: 37,
     prefix: '',
@@ -79,16 +79,16 @@ export const TraceLevel: {
 
   Info: {
     silent: false,
-    transactions: true,
-    methods: true,
-    steps: false,
-    monitors: true,
-    reads: false,
-    writes: false,
-    changes: true,
-    invalidations: true,
-    errors: true,
-    warnings: true,
+    transaction: true,
+    method: true,
+    step: false,
+    monitor: true,
+    read: false,
+    write: false,
+    change: true,
+    obsolete: true,
+    error: true,
+    warning: true,
     gc: false,
     color: 37,
     prefix: '',
@@ -98,16 +98,16 @@ export const TraceLevel: {
 
   Debug: {
     silent: false,
-    transactions: true,
-    methods: true,
-    steps: true,
-    monitors: true,
-    reads: true,
-    writes: true,
-    changes: true,
-    invalidations: true,
-    errors: true,
-    warnings: true,
+    transaction: true,
+    method: true,
+    step: true,
+    monitor: true,
+    read: true,
+    write: true,
+    change: true,
+    obsolete: true,
+    error: true,
+    warning: true,
     gc: false,
     color: 37,
     prefix: '',
@@ -117,16 +117,16 @@ export const TraceLevel: {
 
   Suppress: {
     silent: true,
-    transactions: false,
-    methods: false,
-    steps: false,
-    monitors: false,
-    reads: false,
-    writes: false,
-    changes: false,
-    invalidations: false,
-    errors: true,
-    warnings: true,
+    transaction: false,
+    method: false,
+    step: false,
+    monitor: false,
+    read: false,
+    write: false,
+    change: false,
+    obsolete: false,
+    error: true,
+    warning: true,
     gc: false,
     color: 37,
     prefix: '',

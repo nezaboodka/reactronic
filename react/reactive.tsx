@@ -30,7 +30,7 @@ class Rx<V> extends ObservableObject {
 
   @reaction
   protected refresh(): void {
-    if (!R.getController(this.render).isValid)
+    if (!R.getController(this.render).isUpToDate)
       isolatedRun(this.rerender, {rx: this, cycle: this.cycle + 1})
   }
 

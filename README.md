@@ -28,7 +28,7 @@ Transactional reactivity is based on four fundamental concepts:
   - **Observable Objects** - a set of objects that store data of an application;
   - **Transaction** - a function that makes changes in observable objects in transactional (atomic) way;
   - **Reaction** - a function that is called automatically in response to changes made by a transaction;
-  - **Cache** - a computed value having associated function that is called on-demand to renew the value if it was invalidated.
+  - **Cache** - a computed value having associated function that is called on-demand to renew the value if it was marked as obsolete.
 
 The following picture illustrates relationships between the concepts
 in the source code:
@@ -92,7 +92,7 @@ of all the data.
 Compensating transactions are not needed in case of the transaction
 failure, because all the changes made by the transaction in its
 logical snapshot are simply discarded. In case the transaction
-is successfully applied, affected caches are invalidated
+is successfully applied, affected caches are marked as obsolete
 and corresponding caching functions are re-executed in a proper
 order (but only when all the data changes are fully applied).
 
@@ -108,10 +108,11 @@ the whole chain of asynchronous operations is fully completed.
 Reaction is a function that is immediately called in response to
 changes made by a transaction in observable objects. Cache is a
 computed value having an associated function that is called
-on-demand to renew the value if it was invalidated. Reactive
-and cached functions are instrumented with hooks to seamlessly
-subscribe to those observable objects and other cached functions
-(dependencies), which are used during their execution.
+on-demand to renew the value if it was marked as obsolete due to changes
+made by a transaction. Reactive and cached functions are
+instrumented with hooks to seamlessly subscribe to those
+observable objects and other cached functions (dependencies),
+which are used during their execution.
 
 ``` tsx
 class MyView extends Component<{model: MyModel}> {
@@ -158,13 +159,13 @@ In the example above, reactive function `refresh` is transparently subscribed
 to the cached function `render`. In turn, the `render` function is
 subscribed to the `url` and `content` properties of a corresponding
 `MyModel` object. Once `url` or `content` values are changed, the
-`render` cache becomes invalid and causes invalidation and immediate
-re-execution of reactive function `refresh`. While executed, the `refresh`
-reactive function enqueues re-rendering request to React, which calls
+`render` cache becomes obsolete and causes the `refresh` reaction to become
+obsolete as well and re-executed. While being executed, the `refresh`
+function enqueues re-rendering request to React, which calls
 `render` function causing it to renew its cached value.
 
 In general case, all reactions and caches are automatically and
-immediately marked as invalid when changes are made in those observable
+immediately marked as obsolete when changes are made in those observable
 objects and cached functions that were used during their execution.
 And once marked, the functions are automatically executed again,
 either immediately (for @reactive functions) or on-demand
@@ -306,16 +307,16 @@ interface Worker {
 
 interface TraceOptions {
   readonly silent: boolean
-  readonly transactions: boolean
-  readonly methods: boolean
-  readonly steps: boolean
-  readonly monitors: boolean
-  readonly reads: boolean
-  readonly writes: boolean
-  readonly changes: boolean
-  readonly invalidations: boolean
-  readonly errors: boolean
-  readonly warnings: boolean
+  readonly transaction: boolean
+  readonly method: boolean
+  readonly step: boolean
+  readonly monitor: boolean
+  readonly read: boolean
+  readonly write: boolean
+  readonly change: boolean
+  readonly obsolete: boolean
+  readonly error: boolean
+  readonly warning: boolean
   readonly gc: boolean
 }
 
@@ -352,19 +353,19 @@ class Transaction implements Worker {
   static isolated<T>(func: F<T>, ...args: any[]): T
 }
 
-// Cache
+// Controller
 
-abstract class Cache<T> {
+abstract class Controller<T> {
   readonly options: Options
   readonly args: ReadonlyArray<any>
   readonly value: T
   readonly error: any
   readonly stamp: number
-  readonly invalid: boolean
+  readonly isUpToDate: boolean
 
   configure(options: Partial<Options>): Options
-  invalidate(): boolean
-  getCachedValueAndRevalidate(args?: any[]): T | undefined
+  markObsolete(): boolean
+  pullLastResult(args?: any[]): T | undefined
 }
 
 // Reactronic
@@ -372,7 +373,7 @@ abstract class Cache<T> {
 class Reactronic {
   static why(short: boolean = false): string
   static getMethodCache<T>(method: F<T>): Cache<T>
-  static configureCurrentMethodCache(options: Partial<Options>): Options
+  static configureCurrentMethod(options: Partial<Options>): Options
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity)
   static takeSnapshot<T>(obj: T): T

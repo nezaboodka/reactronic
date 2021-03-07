@@ -25,7 +25,7 @@ export abstract class ObservableObject {
     if (!Hooks.reactionsAutoStartDisabled) {
       const reactions = Meta.getFrom(proto, Meta.Reactions)
       for (const member in reactions)
-        (h.proxy[member][Meta.Method] as Controller<any>).invalidate()
+        (h.proxy[member][Meta.Method] as Controller<any>).markObsolete()
     }
     return h.proxy
   }

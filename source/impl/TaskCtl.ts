@@ -19,7 +19,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 
-type TaskContext = { task: Task, isValid: boolean, snapshot: Snapshot, revision: ObjectRevision }
+type TaskContext = { task: Task, isUpToDate: boolean, snapshot: Snapshot, revision: ObjectRevision }
 
 export class TaskCtl extends Controller<any> {
   readonly ownHolder: ObjectHolder
@@ -32,9 +32,9 @@ export class TaskCtl extends Controller<any> {
   get result(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.weak().task.error }
   get stamp(): number { return this.weak().revision.snapshot.timestamp }
-  get isValid(): boolean { return this.weak().isValid }
-  invalidate(): void { Transaction.runAs({ hint: Dbg.isOn ? `invalidate(${Hints.obj(this.ownHolder, this.memberName)})` : 'invalidate()' }, TaskCtl.invalidate, this) }
-  getLastResultAndRevalidate(args?: any[]): any { return this.call(true, args).value }
+  get isUpToDate(): boolean { return this.weak().isUpToDate }
+  markObsolete(): void { Transaction.runAs({ hint: Dbg.isOn ? `markObsolete(${Hints.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, TaskCtl.markObsolete, this) }
+  pullLastResult(args?: any[]): any { return this.call(true, args).value }
 
   constructor(ownHolder: ObjectHolder, memberName: MemberName) {
     super()
@@ -46,8 +46,8 @@ export class TaskCtl extends Controller<any> {
     let tc: TaskContext = this.current(args)
     const ctx = tc.snapshot
     const task: Task = tc.task
-    if (!tc.isValid && tc.revision.data[Meta.Disposed] === undefined
-      && (!weak || task.invalidatedSince === INIT_TIMESTAMP || !task.subsequent || task.subsequent.worker.isFinished)) {
+    if (!tc.isUpToDate && tc.revision.data[Meta.Disposed] === undefined
+      && (!weak || task.obsoleteSince === INIT_TIMESTAMP || !task.subsequent || task.subsequent.worker.isFinished)) {
       const opt = task.options
       const spawn = weak || opt.kind === Kind.Reaction ||
         (opt.kind === Kind.Cache && (tc.revision.snapshot.sealed || tc.revision.prev.revision !== NIL_REV))
@@ -57,7 +57,7 @@ export class TaskCtl extends Controller<any> {
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         tc = call2
     }
-    else if (Dbg.isOn && Dbg.trace.methods && (task.options.trace === undefined || task.options.trace.methods === undefined || task.options.trace.methods === true))
+    else if (Dbg.isOn && Dbg.trace.method && (task.options.trace === undefined || task.options.trace.method === undefined || task.options.trace.method === true))
       Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.rev(tc.revision, this.memberName)} result is reused from T${tc.task.worker.id}[${tc.task.worker.hint}]`)
     const t = tc.task
     Snapshot.markViewed(t, tc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
@@ -80,7 +80,7 @@ export class TaskCtl extends Controller<any> {
     if (!task || task.worker.isFinished)
       throw misuse('a method is expected with reactronic decorator')
     task.options = new OptionsImpl(task.options.body, task.options, options, false)
-    if (Dbg.isOn && Dbg.trace.writes)
+    if (Dbg.isOn && Dbg.trace.write)
       Dbg.log('║', '  ♦', `${task.hint()}.options = ...`)
     return task.options
   }
@@ -132,11 +132,11 @@ export class TaskCtl extends Controller<any> {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
     const task: Task = this.from(r)
-    const isValid = task.options.kind !== Kind.Transaction && task.invalidatedSince !== INIT_TIMESTAMP &&
-      (ctx === task.revision.snapshot || ctx.timestamp < task.invalidatedSince) &&
+    const isValid = task.options.kind !== Kind.Transaction && task.obsoleteSince !== INIT_TIMESTAMP &&
+      (ctx === task.revision.snapshot || ctx.timestamp < task.obsoleteSince) &&
       (!task.options.sensitiveArgs || args === undefined || task.args.length === args.length && task.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
-    return { task, isValid, snapshot: ctx, revision: r }
+    return { task, isUpToDate: isValid, snapshot: ctx, revision: r }
   }
 
   private edit(): TaskContext {
@@ -151,7 +151,7 @@ export class TaskCtl extends Controller<any> {
       ctx.bumpBy(r.prev.revision.snapshot.timestamp)
       Snapshot.markEdited(task, true, r, m, h)
     }
-    return { task, isValid: true, snapshot: ctx, revision: r }
+    return { task, isUpToDate: true, snapshot: ctx, revision: r }
   }
 
   private from(r: ObjectRevision): Task {
@@ -167,7 +167,7 @@ export class TaskCtl extends Controller<any> {
         if (task2.controller !== this) {
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
           task2 = r2.data[m] = new Task(this, r2, task2)
-          task2.invalidatedSince = INIT_TIMESTAMP // indicates blank value
+          task2.obsoleteSince = INIT_TIMESTAMP // indicates blank value
           Snapshot.markEdited(task2, true, r2, m, h)
         }
         return task2
@@ -184,15 +184,15 @@ export class TaskCtl extends Controller<any> {
     const result = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
       if (!call.task.worker.isCanceled) { // first call
         call = this.edit()
-        if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
+        if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
           Dbg.log('║', ' (f)', `${call.task.why()}`)
         call.task.run(this.ownHolder.proxy, argsx)
       }
       else { // retry call
         call = this.current(argsx) // re-read on retry
-        if (call.task.options.kind === Kind.Transaction || !call.isValid) {
+        if (call.task.options.kind === Kind.Transaction || !call.isUpToDate) {
           call = this.edit()
-          if (Dbg.isOn && (Dbg.trace.transactions || Dbg.trace.methods || Dbg.trace.invalidations))
+          if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
             Dbg.log('║', ' (f)', `${call.task.why()}`)
           call.task.run(this.ownHolder.proxy, argsx)
         }
@@ -203,11 +203,11 @@ export class TaskCtl extends Controller<any> {
     return call
   }
 
-  private static invalidate(self: TaskCtl): void {
+  private static markObsolete(self: TaskCtl): void {
     const tc = self.current(undefined)
     const ctx = tc.snapshot
     const task: Task = tc.task
-    task.invalidateDueTo(task, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
+    task.markObsoleteDueTo(task, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
   }
 }
 
@@ -228,8 +228,8 @@ class Task extends Observable implements Observer {
   result: any
   error: any
   started: number
-  invalidatedDueTo: MemberInfo | undefined
-  invalidatedSince: number
+  obsoleteDueTo: MemberInfo | undefined
+  obsoleteSince: number
   subsequent: Task | undefined
 
   constructor(controller: TaskCtl, revision: ObjectRevision, prev: Task | OptionsImpl) {
@@ -243,7 +243,7 @@ class Task extends Observable implements Observer {
       this.options = prev.options
       this.args = prev.args
       // this.value = init.value
-      this.cause = prev.invalidatedDueTo
+      this.cause = prev.obsoleteDueTo
     }
     else { // init instanceof OptionsImpl
       this.options = prev
@@ -254,8 +254,8 @@ class Task extends Observable implements Observer {
     // this.ret = undefined
     // this.error = undefined
     this.started = 0
-    this.invalidatedSince = 0
-    this.invalidatedDueTo = undefined
+    this.obsoleteSince = 0
+    this.obsoleteDueTo = undefined
     this.subsequent = undefined
   }
 
@@ -288,12 +288,12 @@ class Task extends Observable implements Observer {
 
   bind<T>(func: F<T>): F<T> {
     const boundFunc: F<T> = (...args: any[]): T => {
-      if (Dbg.isOn && Dbg.trace.steps && this.result)
+      if (Dbg.isOn && Dbg.trace.step && this.result)
         Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${this.hint()} - step in  `, 0, '        │')
       const started = Date.now()
       const result = TaskCtl.run<T>(this, func, ...args)
       const ms = Date.now() - started
-      if (Dbg.isOn && Dbg.trace.steps && this.result)
+      if (Dbg.isOn && Dbg.trace.step && this.result)
         Dbg.logAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
       if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
         Dbg.log('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
@@ -305,36 +305,36 @@ class Task extends Observable implements Observer {
   run(proxy: any, args: any[] | undefined): void {
     if (args)
       this.args = args
-    this.invalidatedSince = MAX_TIMESTAMP
+    this.obsoleteSince = MAX_TIMESTAMP
     if (!this.error)
       TaskCtl.run<void>(this, Task.run, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
 
-  invalidateDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void {
-    if (this.invalidatedSince === MAX_TIMESTAMP || this.invalidatedSince <= 0) {
+  markObsoleteDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void {
+    if (this.obsoleteSince === MAX_TIMESTAMP || this.obsoleteSince <= 0) {
       const skip = !observable.isTask &&
         cause.revision.snapshot === this.revision.snapshot &&
         cause.revision.members.has(cause.member)
       if (!skip) {
-        this.invalidatedDueTo = cause
-        this.invalidatedSince = since
+        this.obsoleteDueTo = cause
+        this.obsoleteSince = since
         const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
-        if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log(Dbg.trace.transactions && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.revision === NIL_REV ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is invalidated due to ${Hints.rev(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+        if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
+          Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒', isReaction && cause.revision === NIL_REV ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})` : `${this.hint()} is obsoleted due to ${Hints.rev(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
-        if (isReaction) // stop cascade invalidation on reaction
+        if (isReaction) // stop cascade outdating on reaction
           reactions.push(this)
-        else if (this.observers) // cascade invalidation
-          this.observers.forEach(c => c.invalidateDueTo(this, {revision: this.revision, member: this.controller.memberName, times: 0}, since, reactions))
+        else if (this.observers) // cascade outdating
+          this.observers.forEach(c => c.markObsoleteDueTo(this, {revision: this.revision, member: this.controller.memberName, times: 0}, since, reactions))
         const worker = this.worker
         if (!worker.isFinished && this !== observable) // restart after itself if canceled
-          worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to invalidation by ${Hints.rev(cause.revision, cause.member)}`), null)
+          worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to outdating by ${Hints.rev(cause.revision, cause.member)}`), null)
       }
       else {
-        if (Dbg.isOn && (Dbg.trace.invalidations || this.options.trace?.invalidations))
-          Dbg.log(' ', 'x', `${this.hint()} invalidation is skipped for self-changed ${Hints.rev(cause.revision, cause.member)}`)
+        if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
+          Dbg.log(' ', 'x', `${this.hint()} outdating is skipped for self-changed ${Hints.rev(cause.revision, cause.member)}`)
 
         // Variant 2:
         // const hint = this.hint()
@@ -379,7 +379,7 @@ class Task extends Observable implements Observer {
     let error: Error | undefined = undefined
     const concurrent = head.subsequent
     if (concurrent && !concurrent.worker.isFinished) {
-      if (Dbg.isOn && Dbg.trace.invalidations)
+      if (Dbg.isOn && Dbg.trace.obsolete)
         Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${concurrent.hint()}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
@@ -426,7 +426,7 @@ class Task extends Observable implements Observer {
   private enter(): void {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
-    if (Dbg.isOn && Dbg.trace.methods)
+    if (Dbg.isOn && Dbg.trace.method)
       Dbg.log('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Hints.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
     this.started = Date.now()
   }
@@ -445,9 +445,9 @@ class Task extends Observable implements Observer {
           throw error
         })
       if (Dbg.isOn) {
-        if (Dbg.trace.methods)
+        if (Dbg.trace.method)
           Dbg.log('║', '_/', `${this.hint()} - leave... `, 0, 'ASYNC ──┐')
-        else if (Dbg.trace.transactions)
+        else if (Dbg.trace.transaction)
           Dbg.log('║', '  ', `${this.hint()}... `, 0, 'ASYNC')
       }
     }
@@ -460,7 +460,7 @@ class Task extends Observable implements Observer {
   private leave(main: boolean, op: string, message: string, highlight: string | undefined = undefined): void {
     const ms: number = Date.now() - this.started
     this.started = -this.started
-    if (Dbg.isOn && Dbg.trace.methods)
+    if (Dbg.isOn && Dbg.trace.method)
       Dbg.log('║', `${op}`, `${this.hint()} ${message}`, ms, highlight)
     if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
       Dbg.log('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
@@ -473,7 +473,7 @@ class Task extends Observable implements Observer {
     const options: SnapshotOptions = {
       hint: 'Monitor.enter',
       spawn: true,
-      trace: Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.global,
+      trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.global,
     }
     TaskCtl.run<void>(undefined, Transaction.runAs, options,
       MonitorImpl.enter, mon, this.worker)
@@ -485,7 +485,7 @@ class Task extends Observable implements Observer {
         const options: SnapshotOptions = {
           hint: 'Monitor.leave',
           spawn: true,
-          trace: Dbg.isOn && Dbg.trace.monitors ? undefined : Dbg.DefaultLevel,
+          trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.DefaultLevel,
         }
         TaskCtl.run<void>(undefined, Transaction.runAs, options,
           MonitorImpl.leave, mon, this.worker)
@@ -516,21 +516,21 @@ class Task extends Observable implements Observer {
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!task.subscribeTo(observable, r, m, h, t))
-          task.invalidateDueTo(observable, { revision: r, member: m, times: 0 }, ctx.timestamp, ctx.reactions)
+          task.markObsoleteDueTo(observable, { revision: r, member: m, times: 0 }, ctx.timestamp, ctx.reactions)
       }
     }
   }
 
   private static markEdited(value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
     edited ? r.members.add(m) : r.members.delete(m)
-    if (Dbg.isOn && Dbg.trace.writes)
+    if (Dbg.isOn && Dbg.trace.write)
       edited ? Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof Task && oldValue.invalidatedSince !== INIT_TIMESTAMP
+      result = oldValue instanceof Task && oldValue.obsoleteSince !== INIT_TIMESTAMP
     return result
   }
 
@@ -561,13 +561,13 @@ class Task extends Observable implements Observer {
       const prev = r.prev.revision.data[m]
       if (prev !== undefined && prev instanceof Observable) {
         const cause: MemberInfo = { revision: r, member: m, times: 0 }
-        if (prev instanceof Task && (prev.invalidatedSince === MAX_TIMESTAMP || prev.invalidatedSince <= 0)) {
-          prev.invalidatedDueTo = cause
-          prev.invalidatedSince = timestamp
+        if (prev instanceof Task && (prev.obsoleteSince === MAX_TIMESTAMP || prev.obsoleteSince <= 0)) {
+          prev.obsoleteDueTo = cause
+          prev.obsoleteSince = timestamp
           prev.unsubscribeFromAll()
         }
         if (prev.observers)
-          prev.observers.forEach(c => c.invalidateDueTo(prev, cause, timestamp, reactions))
+          prev.observers.forEach(c => c.markObsoleteDueTo(prev, cause, timestamp, reactions))
       }
     }
     const curr = r.data[m]
@@ -592,8 +592,8 @@ class Task extends Observable implements Observer {
       // Unsubscribe from self-changed observables
       curr.observers.forEach(o => {
         o.observables.delete(curr)
-        if (Dbg.isOn && Dbg.trace.reads)
-          Dbg.log(Dbg.trace.transactions && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.rev(r, m)}`)
+        if (Dbg.isOn && Dbg.trace.read)
+          Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.rev(r, m)}`)
       })
       curr.observers = undefined
     }
@@ -605,8 +605,8 @@ class Task extends Observable implements Observer {
       const observers = value.observers
       if (observers)
         observers.delete(this)
-      if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log(Dbg.trace.transactions && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
+      if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
+        Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
     })
     this.observables.clear()
   }
@@ -627,12 +627,12 @@ class Task extends Observable implements Observer {
       const info: MemberInfo = { revision: r, member: m, times }
       observable.observers.add(this)
       this.observables.set(observable, info)
-      if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
+      if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
         Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Hints.rev(r, m)}${info.times > 1 ? ` (${info.times} times)` : ''}`)
     }
     else {
-      if (Dbg.isOn && (Dbg.trace.reads || this.options.trace?.reads))
-        Dbg.log('║', '  x ', `${this.hint()} is NOT subscribed to already invalidated ${Hints.rev(r, m)}`)
+      if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
+        Dbg.log('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Hints.rev(r, m)}`)
     }
     return isValid // || observable.next === r
   }
@@ -640,7 +640,7 @@ class Task extends Observable implements Observer {
   private static isValid(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
     let result = !r.snapshot.sealed || observable === h.head.data[m]
     if (result && timestamp !== INIT_TIMESTAMP)
-      result = !(observable instanceof Task && timestamp >= observable.invalidatedSince)
+      result = !(observable instanceof Task && timestamp >= observable.obsoleteSince)
     return result
   }
 
@@ -714,9 +714,9 @@ class Task extends Observable implements Observer {
 function propagationHint(cause: MemberInfo, full: boolean): string[] {
   const result: string[] = []
   let observable: Observable = cause.revision.data[cause.member]
-  while (observable instanceof Task && observable.invalidatedDueTo) {
+  while (observable instanceof Task && observable.obsoleteDueTo) {
     full && result.push(Hints.rev(cause.revision, cause.member))
-    cause = observable.invalidatedDueTo
+    cause = observable.obsoleteDueTo
     observable = cause.revision.data[cause.member]
   }
   result.push(Hints.rev(cause.revision, cause.member))
