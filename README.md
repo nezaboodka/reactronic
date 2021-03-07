@@ -19,7 +19,7 @@ isolated data snapshot and then, once atomically applied, are
 **consistently propagated** to corresponding visual components for
 (re)rendering. All that is done in automatic, seamless, and fine-grained
 way, because reactronic **takes full care of tracking dependencies**
-between visual components (observers) and state objects (observables).
+between visual components (observers) and state (observable objects).
 
 ## Conceptual Model
 
@@ -110,7 +110,7 @@ changes made by a transaction in observable objects. Cache is a
 computed value having an associated function that is called
 on-demand to renew the value if it was invalidated. Reactive
 and cached functions are instrumented with hooks to seamlessly
-subscribe to those state objects and other cached functions
+subscribe to those observable objects and other cached functions
 (dependencies), which are used during their execution.
 
 ``` tsx
@@ -145,7 +145,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentDidMount(): void {
-    this.refresh() // initial reaction run
+    this.refresh() // run to subscribe for the first time
   }
 
   componentWillUnmount(): void {

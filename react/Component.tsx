@@ -14,18 +14,18 @@ export class Component<P> extends React.Component<P> {
     throw new Error('render method is undefined')
   }
 
-  @reaction
+  @reaction // called immediately in response to changes
   refresh(): void {
     if (this.shouldComponentUpdate())
-      isolatedRun(() => this.setState({}))
-  }
+      isolatedRun(() => this.setState({})) // ask React to re-render
+  } // refresh is subscribed to render
 
   shouldComponentUpdate(): boolean {
     return !Reactronic.getController(this.render).isValid
   }
 
   componentDidMount(): void {
-    this.refresh() // run for the first time to subscribe
+    this.refresh() // run to subscribe for the first time
   }
 
   componentWillUnmount(): void {
