@@ -26,8 +26,8 @@ export class TaskCtl extends Controller<any> {
   readonly memberName: MemberName
 
   configure(options: Partial<MethodOptions>): MethodOptions { return TaskCtl.configureImpl(this, options) }
-  get options(): MethodOptions { return this.get(undefined).task.options }
-  get unobservable(): any { return this.get(undefined).task.value }
+  get options(): MethodOptions { return this.peek(undefined).task.options }
+  get unobservable(): any { return this.peek(undefined).task.value }
   get args(): ReadonlyArray<any> { return this.use().task.args }
   get result(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.use().task.error }
@@ -43,7 +43,7 @@ export class TaskCtl extends Controller<any> {
   }
 
   call(weak: boolean, args: any[] | undefined): Task {
-    let tc: TaskContext = this.get(args)
+    let tc: TaskContext = this.peek(args)
     const ctx = tc.snapshot
     const task: Task = tc.task
     if (!tc.isUpToDate && tc.revision.data[Meta.Disposed] === undefined
@@ -121,10 +121,10 @@ export class TaskCtl extends Controller<any> {
 
   // Internal
 
-  private get(args: any[] | undefined): TaskContext {
+  private peek(args: any[] | undefined): TaskContext {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
-    const task: Task = this.getFromRev(r)
+    const task: Task = this.peekFromRev(r)
     const isValid = task.options.kind !== Kind.Transaction && task.obsoleteSince !== INIT_TIMESTAMP &&
       (ctx === task.revision.snapshot || ctx.timestamp < task.obsoleteSince) &&
       (!task.options.sensitiveArgs || args === undefined || task.args.length === args.length && task.args.every((t, i) => t === args[i])) ||
@@ -133,7 +133,7 @@ export class TaskCtl extends Controller<any> {
   }
 
   private use(): TaskContext {
-    const call = this.get(undefined)
+    const call = this.peek(undefined)
     Snapshot.markUsed(call.task, call.revision,
       this.memberName, this.ownHolder, call.task.options.kind, true)
     return call
@@ -144,7 +144,7 @@ export class TaskCtl extends Controller<any> {
     const m = this.memberName
     const ctx = Snapshot.edit()
     const r: ObjectRevision = ctx.getEditableRevision(h, m, Meta.Holder, this)
-    let task: Task = this.getFromRev(r)
+    let task: Task = this.peekFromRev(r)
     if (task.revision !== r) {
       const task2 = new Task(this, r, task)
       task = r.data[m] = task2.reenterOver(task)
@@ -154,7 +154,7 @@ export class TaskCtl extends Controller<any> {
     return { task, isUpToDate: true, snapshot: ctx, revision: r }
   }
 
-  private getFromRev(r: ObjectRevision): Task {
+  private peekFromRev(r: ObjectRevision): Task {
     const m = this.memberName
     let task: Task = r.data[m]
     if (task.controller !== this) {
@@ -189,7 +189,7 @@ export class TaskCtl extends Controller<any> {
         call.task.run(this.ownHolder.proxy, argsx)
       }
       else { // retry call
-        call = this.get(argsx) // re-read on retry
+        call = this.peek(argsx) // re-read on retry
         if (call.task.options.kind === Kind.Transaction || !call.isUpToDate) {
           call = this.edit()
           if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
@@ -204,7 +204,7 @@ export class TaskCtl extends Controller<any> {
   }
 
   private static markObsolete(self: TaskCtl): void {
-    const tc = self.get(undefined)
+    const tc = self.peek(undefined)
     const ctx = tc.snapshot
     const task: Task = tc.task
     task.markObsoleteDueTo(task, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
