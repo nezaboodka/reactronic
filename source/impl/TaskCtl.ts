@@ -121,13 +121,6 @@ export class TaskCtl extends Controller<any> {
 
   // Internal
 
-  private weak(): TaskContext {
-    const call = this.current(undefined)
-    Snapshot.markViewed(call.task, call.revision,
-      this.memberName, this.ownHolder, call.task.options.kind, true)
-    return call
-  }
-
   private current(args: any[] | undefined): TaskContext {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
@@ -137,6 +130,13 @@ export class TaskCtl extends Controller<any> {
       (!task.options.sensitiveArgs || args === undefined || task.args.length === args.length && task.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
     return { task, isUpToDate: isValid, snapshot: ctx, revision: r }
+  }
+
+  private weak(): TaskContext {
+    const call = this.current(undefined)
+    Snapshot.markViewed(call.task, call.revision,
+      this.memberName, this.ownHolder, call.task.options.kind, true)
+    return call
   }
 
   private edit(): TaskContext {
