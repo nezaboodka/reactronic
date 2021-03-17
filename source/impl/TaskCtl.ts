@@ -124,7 +124,7 @@ export class TaskCtl extends Controller<any> {
   private current(args: any[] | undefined): TaskContext {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
-    const task: Task = this.from(r)
+    const task: Task = this.getFrom(r)
     const isValid = task.options.kind !== Kind.Transaction && task.obsoleteSince !== INIT_TIMESTAMP &&
       (ctx === task.revision.snapshot || ctx.timestamp < task.obsoleteSince) &&
       (!task.options.sensitiveArgs || args === undefined || task.args.length === args.length && task.args.every((t, i) => t === args[i])) ||
@@ -144,7 +144,7 @@ export class TaskCtl extends Controller<any> {
     const m = this.memberName
     const ctx = Snapshot.edit()
     const r: ObjectRevision = ctx.getEditableRevision(h, m, Meta.Holder, this)
-    let task: Task = this.from(r)
+    let task: Task = this.getFrom(r)
     if (task.revision !== r) {
       const task2 = new Task(this, r, task)
       task = r.data[m] = task2.reenterOver(task)
@@ -154,7 +154,7 @@ export class TaskCtl extends Controller<any> {
     return { task, isUpToDate: true, snapshot: ctx, revision: r }
   }
 
-  private from(r: ObjectRevision): Task {
+  private getFrom(r: ObjectRevision): Task {
     const m = this.memberName
     let task: Task = r.data[m]
     if (task.controller !== this) {
