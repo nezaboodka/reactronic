@@ -26,13 +26,13 @@ export class TaskCtl extends Controller<any> {
   readonly memberName: MemberName
 
   configure(options: Partial<MethodOptions>): MethodOptions { return TaskCtl.configureImpl(this, options) }
-  get options(): MethodOptions { return this.current(undefined).task.options }
-  get unobservable(): any { return this.current(undefined).task.value }
-  get args(): ReadonlyArray<any> { return this.weak().task.args }
+  get options(): MethodOptions { return this.get(undefined).task.options }
+  get unobservable(): any { return this.get(undefined).task.value }
+  get args(): ReadonlyArray<any> { return this.use().task.args }
   get result(): any { return this.call(true, undefined).value }
-  get error(): boolean { return this.weak().task.error }
-  get stamp(): number { return this.weak().revision.snapshot.timestamp }
-  get isUpToDate(): boolean { return this.weak().isUpToDate }
+  get error(): boolean { return this.use().task.error }
+  get stamp(): number { return this.use().revision.snapshot.timestamp }
+  get isUpToDate(): boolean { return this.use().isUpToDate }
   markObsolete(): void { Transaction.runAs({ hint: Dbg.isOn ? `markObsolete(${Hints.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, TaskCtl.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.call(true, args).value }
 
@@ -43,7 +43,7 @@ export class TaskCtl extends Controller<any> {
   }
 
   call(weak: boolean, args: any[] | undefined): Task {
-    let tc: TaskContext = this.current(args)
+    let tc: TaskContext = this.get(args)
     const ctx = tc.snapshot
     const task: Task = tc.task
     if (!tc.isUpToDate && tc.revision.data[Meta.Disposed] === undefined
@@ -60,7 +60,7 @@ export class TaskCtl extends Controller<any> {
     else if (Dbg.isOn && Dbg.trace.method && (task.options.trace === undefined || task.options.trace.method === undefined || task.options.trace.method === true))
       Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.rev(tc.revision, this.memberName)} result is reused from T${tc.task.worker.id}[${tc.task.worker.hint}]`)
     const t = tc.task
-    Snapshot.markViewed(t, tc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
+    Snapshot.markUsed(t, tc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
     return t
   }
 
@@ -121,7 +121,7 @@ export class TaskCtl extends Controller<any> {
 
   // Internal
 
-  private current(args: any[] | undefined): TaskContext {
+  private get(args: any[] | undefined): TaskContext {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
     const task: Task = this.getFromRev(r)
@@ -132,9 +132,9 @@ export class TaskCtl extends Controller<any> {
     return { task, isUpToDate: isValid, snapshot: ctx, revision: r }
   }
 
-  private weak(): TaskContext {
-    const call = this.current(undefined)
-    Snapshot.markViewed(call.task, call.revision,
+  private use(): TaskContext {
+    const call = this.get(undefined)
+    Snapshot.markUsed(call.task, call.revision,
       this.memberName, this.ownHolder, call.task.options.kind, true)
     return call
   }
@@ -189,7 +189,7 @@ export class TaskCtl extends Controller<any> {
         call.task.run(this.ownHolder.proxy, argsx)
       }
       else { // retry call
-        call = this.current(argsx) // re-read on retry
+        call = this.get(argsx) // re-read on retry
         if (call.task.options.kind === Kind.Transaction || !call.isUpToDate) {
           call = this.edit()
           if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
@@ -204,7 +204,7 @@ export class TaskCtl extends Controller<any> {
   }
 
   private static markObsolete(self: TaskCtl): void {
-    const tc = self.current(undefined)
+    const tc = self.get(undefined)
     const ctx = tc.snapshot
     const task: Task = tc.task
     task.markObsoleteDueTo(task, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
@@ -507,7 +507,7 @@ class Task extends Observable implements Observer {
       t.ensureUpToDate(true, true)
   }
 
-  private static markViewed(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean): void {
+  private static markUsed(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transaction) {
       const task: Task | undefined = Task.current // alias
       if (task && task.options.kind !== Kind.Transaction && m !== Meta.Holder) {
@@ -679,7 +679,7 @@ class Task extends Observable implements Observer {
 
   static init(): void {
     Dbg.getMergedTraceOptions = getMergedTraceOptions
-    Snapshot.markViewed = Task.markViewed // override
+    Snapshot.markUsed = Task.markUsed // override
     Snapshot.markEdited = Task.markEdited // override
     Snapshot.isConflicting = Task.isConflicting // override
     Snapshot.propagateChanges = Task.propagateChanges // override

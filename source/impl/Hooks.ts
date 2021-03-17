@@ -109,7 +109,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     const r: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
     result = r.data[m]
     if (result instanceof Observable && !result.isTask) {
-      Snapshot.markViewed(result, r, m, h, Kind.Data, false)
+      Snapshot.markUsed(result, r, m, h, Kind.Data, false)
       result = result.value
     }
     else if (m === Meta.Holder) {
