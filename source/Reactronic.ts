@@ -62,7 +62,7 @@ export function unobservable(proto: object, prop: PropertyKey): any {
   return Hooks.decorateField(false, proto, prop)
 }
 
-export function transactional(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
   const opt = { kind: Kind.Transaction }
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }

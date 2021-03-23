@@ -19,5 +19,5 @@ export { Transaction } from './impl/Transaction'
 export { Monitor } from './impl/Monitor'
 export { TransactionJournal } from './impl/TransactionJournal'
 export { Reactronic, unobservableRun, isolatedRun, sensitiveRun, unobservable,
-  transactional, reaction, cached, priority, noSideEffects, observableArgs, throttling,
+  transaction, reaction, cached, priority, noSideEffects, observableArgs, throttling,
   reentrance, journal, monitor, trace } from './Reactronic'

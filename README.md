@@ -65,7 +65,7 @@ and isolation).
 ``` typescript
 class MyModel extends ObservableObject {
   // ...
-  @transactional
+  @transaction
   async load(url: string): Promise<void> {
     this.url = url
     this.content = await fetch(url)
@@ -239,14 +239,14 @@ class ObservableObject { }
 // Decorators & Operators
 
 function unobservable(proto, prop) // field only
-function transactional(proto, prop, pd) // method only
-function reactive(proto, prop, pd) // method only
+function transaction(proto, prop, pd) // method only
+function reaction(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
-function noSideEffects(value: boolean) // transactional & cached & reactive
-function observableArgs(value: boolean) // cached & reactive
-function throttling(milliseconds: number) // reactive only
-function reentrance(value: Reentrance) // transactional & reactive
+function noSideEffects(value: boolean) // transaction & cached & reaction
+function observableArgs(value: boolean) // cached & reaction
+function throttling(milliseconds: number) // reaction only
+function reentrance(value: Reentrance) // transaction & reaction
 function monitor(value: Monitor | null)
 function trace(value: Partial<TraceOptions>)
 

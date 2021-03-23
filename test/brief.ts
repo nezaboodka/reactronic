@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, transactional, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
+import { ObservableObject, unobservable, transaction, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
 
 export const output: string[] = []
 
@@ -18,22 +18,22 @@ export class Demo extends ObservableObject {
   collection2: Person[] = this.users
   usersWithoutLast: Person[] = this.users
 
-  @transactional
+  @transaction
   loadUsers(): void {
     this._loadUsers()
   }
 
-  @transactional
+  @transaction
   testCollectionSealing(): void {
     this.collection1 = this.collection2 = []
   }
 
-  @transactional
+  @transaction
   testImmutableCollection(): void {
     this.collection1.push(...this.users)
   }
 
-  @transactional @journal(Demo.UndoRedo)
+  @transaction @journal(Demo.UndoRedo)
   testUndo(): void {
     this.title = 'Demo - undo/redo'
   }
