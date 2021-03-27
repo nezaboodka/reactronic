@@ -11,6 +11,11 @@ export const output: string[] = []
 
 export class Demo extends ObservableObject {
   static UndoRedo = Transaction.run(() => TransactionJournal.create())
+
+  // @transaction @cached
+  // get dummy(): string { return 'dummy' }
+  // set dummy(value: string) { /* nop */ }
+
   @unobservable shared: string = 'for testing purposes'
   title: string = 'Demo'
   users: Person[] = []

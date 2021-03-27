@@ -62,17 +62,17 @@ export function unobservable(proto: object, prop: PropertyKey): any {
   return Hooks.decorateField(false, proto, prop)
 }
 
-export function transaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+export function transaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opt = { kind: Kind.Transaction }
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
-export function reaction(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opt = { kind: Kind.Reaction, throttling: -1 } // immediate reaction
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
-export function cached(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opt = { kind: Kind.Cache, noSideEffects: true }
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }

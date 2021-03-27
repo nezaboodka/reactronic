@@ -194,9 +194,14 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       Meta.acquire(proto, Meta.Blank)[m] = Meta.Unobservable
   }
 
-  static decorateMethod(implicit: boolean, options: Partial<MethodOptions>, proto: any, method: MemberName, pd: TypedPropertyDescriptor<F<any>>): any {
-    const enumerable: boolean = pd ? pd.enumerable === true : /* istanbul ignore next */ true
-    const configurable: boolean = true
+  static decorateMethod(implicit: boolean, options: Partial<MethodOptions>,
+    proto: any, method: MemberName, pd: PropertyDescriptor): any {
+    if (!pd || pd === proto)
+      pd = EMPTY_PROP_DESCRIPTOR
+    if (pd.get !== undefined || pd.set !== undefined)
+      throw misuse('property getters and setters are not supported by reactronic decorators')
+    const enumerable: boolean = pd.enumerable ?? true
+    const configurable: boolean = pd.configurable ?? true
     // Setup method trap
     const opts = Hooks.applyMethodOptions(proto, method, pd.value, true, configurable, options, implicit)
     const trap = function(this: any): any {
@@ -205,7 +210,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       Object.defineProperty(h.unobservable, method, { value, enumerable, configurable })
       return value
     }
-    return Object.defineProperty(proto, method, { get: trap, enumerable, configurable })
+    return Object.defineProperty(proto, method, { get: trap, enumerable, configurable: true })
   }
 
   static acquireObjectHolder(obj: any): ObjectHolder {
@@ -274,4 +279,10 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   static applyMethodOptions = function(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
     throw misuse('alterBlank should never be called')
   }
+}
+
+const EMPTY_PROP_DESCRIPTOR: PropertyDescriptor = {
+  configurable: true,
+  enumerable: true,
+  value: undefined,
 }
