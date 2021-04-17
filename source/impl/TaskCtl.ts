@@ -47,7 +47,7 @@ export class TaskCtl extends Controller<any> {
     const ctx = ic.snapshot
     const task: Task = ic.task
     if (!ic.isUpToDate && ic.revision.data[Meta.Disposed] === undefined
-      && (!weak || task.obsoleteSince === INIT_TIMESTAMP || !task.subsequent || task.subsequent.worker.isFinished)) {
+      && (!weak || task.obsoleteSince === INIT_TIMESTAMP || !task.successor || task.successor.worker.isFinished)) {
       const opt = task.options
       const spawn = weak || opt.kind === Kind.Reaction ||
         (opt.kind === Kind.Cache && (ic.revision.snapshot.sealed || ic.revision.prev.revision !== NIL_REV))
@@ -229,7 +229,7 @@ class Task extends Observable implements Observer {
   started: number
   obsoleteDueTo: MemberInfo | undefined
   obsoleteSince: number
-  subsequent: Task | undefined
+  successor: Task | undefined
 
   constructor(ctl: TaskCtl, revision: ObjectRevision, prev: Task | OptionsImpl) {
     super(undefined)
@@ -255,7 +255,7 @@ class Task extends Observable implements Observer {
     this.started = 0
     this.obsoleteSince = 0
     this.obsoleteDueTo = undefined
-    this.subsequent = undefined
+    this.successor = undefined
   }
 
   get isTask(): boolean { return true } // override
@@ -349,7 +349,7 @@ class Task extends Observable implements Observer {
     const hold = t ? t - interval : 0 // "started" is stored as negative value after reaction completion
     if (now || hold < 0) {
       if (!this.error && (this.options.kind === Kind.Transaction ||
-        !this.subsequent || this.subsequent.worker.isCanceled)) {
+        !this.successor || this.successor.worker.isCanceled)) {
         try {
           const task: Task = this.ctl.invoke(false, undefined)
           if (task.result instanceof Promise)
@@ -376,7 +376,7 @@ class Task extends Observable implements Observer {
 
   reenterOver(head: Task): this {
     let error: Error | undefined = undefined
-    const concurrent = head.subsequent
+    const concurrent = head.successor
     if (concurrent && !concurrent.worker.isFinished) {
       if (Dbg.isOn && Dbg.trace.obsolete)
         Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${concurrent.hint()}`)
@@ -404,7 +404,7 @@ class Task extends Observable implements Observer {
       }
     }
     if (!error)
-      head.subsequent = this
+      head.successor = this
     else
       this.error = error
     return this
