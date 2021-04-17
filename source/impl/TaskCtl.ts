@@ -19,7 +19,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 
-type TaskContext = { task: Task, isUpToDate: boolean, snapshot: Snapshot, revision: ObjectRevision }
+type InvocationContext = { task: Task, isUpToDate: boolean, snapshot: Snapshot, revision: ObjectRevision }
 
 export class TaskCtl extends Controller<any> {
   readonly ownHolder: ObjectHolder
@@ -43,24 +43,24 @@ export class TaskCtl extends Controller<any> {
   }
 
   invoke(weak: boolean, args: any[] | undefined): Task {
-    let tc: TaskContext = this.peek(args)
-    const ctx = tc.snapshot
-    const task: Task = tc.task
-    if (!tc.isUpToDate && tc.revision.data[Meta.Disposed] === undefined
+    let ic: InvocationContext = this.peek(args)
+    const ctx = ic.snapshot
+    const task: Task = ic.task
+    if (!ic.isUpToDate && ic.revision.data[Meta.Disposed] === undefined
       && (!weak || task.obsoleteSince === INIT_TIMESTAMP || !task.subsequent || task.subsequent.worker.isFinished)) {
       const opt = task.options
       const spawn = weak || opt.kind === Kind.Reaction ||
-        (opt.kind === Kind.Cache && (tc.revision.snapshot.sealed || tc.revision.prev.revision !== NIL_REV))
+        (opt.kind === Kind.Cache && (ic.revision.snapshot.sealed || ic.revision.prev.revision !== NIL_REV))
       const token = opt.noSideEffects ? this : undefined
-      const call2 = this.run(tc, spawn, opt, token, args)
-      const ctx2 = call2.task.revision.snapshot
+      const ic2 = this.run(ic, spawn, opt, token, args)
+      const ctx2 = ic2.task.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
-        tc = call2
+        ic = ic2
     }
     else if (Dbg.isOn && Dbg.trace.method && (task.options.trace === undefined || task.options.trace.method === undefined || task.options.trace.method === true))
-      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.rev(tc.revision, this.memberName)} result is reused from T${tc.task.worker.id}[${tc.task.worker.hint}]`)
-    const t = tc.task
-    Snapshot.markUsed(t, tc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
+      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.rev(ic.revision, this.memberName)} result is reused from T${ic.task.worker.id}[${ic.task.worker.hint}]`)
+    const t = ic.task
+    Snapshot.markUsed(t, ic.revision, this.memberName, this.ownHolder, t.options.kind, weak)
     return t
   }
 
@@ -121,7 +121,7 @@ export class TaskCtl extends Controller<any> {
 
   // Internal
 
-  private peek(args: any[] | undefined): TaskContext {
+  private peek(args: any[] | undefined): InvocationContext {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
     const task: Task = this.peekFromRev(r)
@@ -132,14 +132,14 @@ export class TaskCtl extends Controller<any> {
     return { task, isUpToDate: isValid, snapshot: ctx, revision: r }
   }
 
-  private use(): TaskContext {
-    const call = this.peek(undefined)
-    Snapshot.markUsed(call.task, call.revision,
-      this.memberName, this.ownHolder, call.task.options.kind, true)
-    return call
+  private use(): InvocationContext {
+    const ic = this.peek(undefined)
+    Snapshot.markUsed(ic.task, ic.revision,
+      this.memberName, this.ownHolder, ic.task.options.kind, true)
+    return ic
   }
 
-  private edit(): TaskContext {
+  private edit(): InvocationContext {
     const h = this.ownHolder
     const m = this.memberName
     const ctx = Snapshot.edit()
@@ -176,38 +176,37 @@ export class TaskCtl extends Controller<any> {
     return task
   }
 
-  private run(existing: TaskContext, spawn: boolean, options: MethodOptions, token: any, args: any[] | undefined): TaskContext {
+  private run(existing: InvocationContext, spawn: boolean, options: MethodOptions, token: any, args: any[] | undefined): InvocationContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.ownHolder, this.memberName)}`
-    let call = existing
+    let ic = existing
     const opt = { hint, spawn, journal: options.journal, trace: options.trace, token }
     const result = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
-      if (!call.task.worker.isCanceled) { // first call
-        call = this.edit()
+      if (!ic.task.worker.isCanceled) { // first invoke
+        ic = this.edit()
         if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
-          Dbg.log('║', ' (f)', `${call.task.why()}`)
-        call.task.run(this.ownHolder.proxy, argsx)
+          Dbg.log('║', ' (f)', `${ic.task.why()}`)
+        ic.task.run(this.ownHolder.proxy, argsx)
       }
-      else { // retry call
-        call = this.peek(argsx) // re-read on retry
-        if (call.task.options.kind === Kind.Transaction || !call.isUpToDate) {
-          call = this.edit()
+      else { // retry invoke
+        ic = this.peek(argsx) // re-read on retry
+        if (ic.task.options.kind === Kind.Transaction || !ic.isUpToDate) {
+          ic = this.edit()
           if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
-            Dbg.log('║', ' (f)', `${call.task.why()}`)
-          call.task.run(this.ownHolder.proxy, argsx)
+            Dbg.log('║', ' (f)', `${ic.task.why()}`)
+          ic.task.run(this.ownHolder.proxy, argsx)
         }
       }
-      return call.task.result
+      return ic.task.result
     }, args)
-    call.task.result = result
-    return call
+    ic.task.result = result
+    return ic
   }
 
   private static markObsolete(self: TaskCtl): void {
-    const tc = self.peek(undefined)
-    const ctx = tc.snapshot
-    const task: Task = tc.task
-    task.markObsoleteDueTo(task, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
+    const ic = self.peek(undefined)
+    const ctx = ic.snapshot
+    ic.task.markObsoleteDueTo(ic.task, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
   }
 }
 
