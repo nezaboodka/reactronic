@@ -29,12 +29,12 @@ export class TaskCtl extends Controller<any> {
   get options(): MethodOptions { return this.peek(undefined).task.options }
   get unobservable(): any { return this.peek(undefined).task.value }
   get args(): ReadonlyArray<any> { return this.use().task.args }
-  get result(): any { return this.call(true, undefined).value }
+  get result(): any { return this.invoke(true, undefined).value }
   get error(): boolean { return this.use().task.error }
   get stamp(): number { return this.use().revision.snapshot.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
   markObsolete(): void { Transaction.runAs({ hint: Dbg.isOn ? `markObsolete(${Hints.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, TaskCtl.markObsolete, this) }
-  pullLastResult(args?: any[]): any { return this.call(true, args).value }
+  pullLastResult(args?: any[]): any { return this.invoke(true, args).value }
 
   constructor(ownHolder: ObjectHolder, memberName: MemberName) {
     super()
@@ -42,7 +42,7 @@ export class TaskCtl extends Controller<any> {
     this.memberName = memberName
   }
 
-  call(weak: boolean, args: any[] | undefined): Task {
+  invoke(weak: boolean, args: any[] | undefined): Task {
     let tc: TaskContext = this.peek(args)
     const ctx = tc.snapshot
     const task: Task = tc.task
@@ -157,14 +157,14 @@ export class TaskCtl extends Controller<any> {
   private peekFromRev(r: ObjectRevision): Task {
     const m = this.memberName
     let task: Task = r.data[m]
-    if (task.controller !== this) {
+    if (task.ctl !== this) {
       const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, m)}/init` : /* istanbul ignore next */ 'MethodController/init'
       const spawn = r.snapshot.sealed || r.prev.revision !== NIL_REV
       task = Transaction.runAs<Task>({ hint, spawn, token: this }, (): Task => {
         const h = this.ownHolder
         let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
         let task2 = r2.data[m] as Task
-        if (task2.controller !== this) {
+        if (task2.ctl !== this) {
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
           task2 = r2.data[m] = new Task(this, r2, task2)
           task2.obsoleteSince = INIT_TIMESTAMP // indicates blank value
@@ -219,7 +219,7 @@ class Task extends Observable implements Observer {
 
   readonly margin: number
   readonly worker: Worker
-  readonly controller: TaskCtl
+  readonly ctl: TaskCtl
   readonly revision: ObjectRevision
   readonly observables: Map<Observable, MemberInfo>
   options: OptionsImpl
@@ -232,11 +232,11 @@ class Task extends Observable implements Observer {
   obsoleteSince: number
   subsequent: Task | undefined
 
-  constructor(controller: TaskCtl, revision: ObjectRevision, prev: Task | OptionsImpl) {
+  constructor(ctl: TaskCtl, revision: ObjectRevision, prev: Task | OptionsImpl) {
     super(undefined)
     this.margin = Task.current ? Task.current.margin + 1 : 1
     this.worker = Transaction.current
-    this.controller = controller
+    this.ctl = ctl
     this.revision = revision
     this.observables = new Map<Observable, MemberInfo>()
     if (prev instanceof Task) {
@@ -260,18 +260,18 @@ class Task extends Observable implements Observer {
   }
 
   get isTask(): boolean { return true } // override
-  hint(): string { return `${Hints.rev(this.revision, this.controller.memberName)}` } // override
+  hint(): string { return `${Hints.rev(this.revision, this.ctl.memberName)}` } // override
   get priority(): number { return this.options.priority }
 
   why(): string {
     let ms: number = Date.now()
-    const prev = this.revision.prev.revision.data[this.controller.memberName]
+    const prev = this.revision.prev.revision.data[this.ctl.memberName]
     if (prev instanceof Task)
       ms = Math.abs(this.started) - Math.abs(prev.started)
     let cause: string
     if (this.cause)
       cause = `   <<   ${propagationHint(this.cause, true).join('   <<   ')}`
-    else if (this.controller.options.kind === Kind.Transaction)
+    else if (this.ctl.options.kind === Kind.Transaction)
       cause = '   <<   transaction'
     else
       cause = `   <<   called within ${this.revision.snapshot.hint}`
@@ -327,7 +327,7 @@ class Task extends Observable implements Observer {
         if (isReaction) // stop cascade outdating on reaction
           reactions.push(this)
         else if (this.observers) // cascade outdating
-          this.observers.forEach(c => c.markObsoleteDueTo(this, {revision: this.revision, member: this.controller.memberName, times: 0}, since, reactions))
+          this.observers.forEach(c => c.markObsoleteDueTo(this, {revision: this.revision, member: this.ctl.memberName, times: 0}, since, reactions))
         const worker = this.worker
         if (!worker.isFinished && this !== observable) // restart after itself if canceled
           worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to outdating by ${Hints.rev(cause.revision, cause.member)}`), null)
@@ -352,7 +352,7 @@ class Task extends Observable implements Observer {
       if (!this.error && (this.options.kind === Kind.Transaction ||
         !this.subsequent || this.subsequent.worker.isCanceled)) {
         try {
-          const task: Task = this.controller.call(false, undefined)
+          const task: Task = this.ctl.invoke(false, undefined)
           if (task.result instanceof Promise)
             task.result.catch(error => {
               if (task.options.kind === Kind.Reaction)
@@ -427,7 +427,7 @@ class Task extends Observable implements Observer {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.method)
-      Dbg.log('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Hints.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
+      Dbg.log('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Hints.obj(this.ctl.ownHolder, this.ctl.memberName)} ]`)
     this.started = Date.now()
   }
 
@@ -647,7 +647,7 @@ class Task extends Observable implements Observer {
   private static createMethodTrap(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
     const taskCtl = new TaskCtl(h, m)
     const methodTrap: F<any> = (...args: any[]): any =>
-      taskCtl.call(false, args).result
+      taskCtl.invoke(false, args).result
     Meta.set(methodTrap, Meta.Method, taskCtl)
     return methodTrap
   }
@@ -656,7 +656,7 @@ class Task extends Observable implements Observer {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: Task | undefined = blank[m]
-    const ctl = existing ? existing.controller : new TaskCtl(NIL_HOLDER, m)
+    const ctl = existing ? existing.ctl : new TaskCtl(NIL_HOLDER, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
     const task =  new Task(ctl, NIL_REV, new OptionsImpl(body, opts, options, implicit))
     blank[m] = task
