@@ -31,7 +31,7 @@ export interface Observer {
   readonly priority: number
   readonly observables: Map<Observable, MemberInfo>
   readonly obsoleteSince: number
-  hint(notran?: boolean): string
+  hint(nop?: boolean): string
   markObsoleteDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void
   ensureUpToDate(now: boolean, nothrow: boolean): void
 }

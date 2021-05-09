@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, Operation as Tran, Reactronic as R, reaction } from 'api'
+import { ObservableObject, Operation, Reactronic as R, reaction } from 'api'
 import { TestingTraceLevel } from './brief'
 
 export class ReactiveDemo extends ObservableObject {
@@ -30,7 +30,7 @@ export class ReactiveDemo extends ObservableObject {
 
 test('reactive', t => {
   R.setTraceMode(true, TestingTraceLevel)
-  const demo = Tran.run(() => new ReactiveDemo())
+  const demo = Operation.run(() => new ReactiveDemo())
   t.is(demo.title, 'Title/2')
   t.is(demo.content, 'Content/1')
 })

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Operation as Tran, Kind, nonreactiveRun, isolatedRun, sensitiveRun, Sensitivity, Reactronic as R } from 'api'
+import { Operation, Kind, nonreactiveRun, isolatedRun, sensitiveRun, Sensitivity, Reactronic as R } from 'api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
@@ -42,7 +42,7 @@ test('brief', t => {
   R.setTraceMode(false)
   R.setTraceMode(true, TestingTraceLevel)
   // Simple operations
-  const app = Tran.run(() => new DemoView(new Demo()))
+  const app = Operation.run(() => new DemoView(new Demo()))
   try {
     t.is(R.why(), 'N/A')
     t.is(R.getController(app.print).options.priority, 123)
@@ -70,10 +70,10 @@ test('brief', t => {
     render.markObsolete()
     t.not(render.stamp, stamp)
     // Multi-part operations
-    const tran1 = Tran.create({ hint: 'tran1', journal: Demo.UndoRedo })
-    tran1.run(() => {
-      t.throws(() => tran1.apply(), { message: 'cannot apply operation having active functions running' })
-      app.model.shared = app.shared = tran1.hint
+    const op1 = Operation.create({ hint: 'op1', journal: Demo.UndoRedo })
+    op1.run(() => {
+      t.throws(() => op1.apply(), { message: 'cannot apply operation having active functions running' })
+      app.model.shared = app.shared = op1.hint
       daddy.id = 'field restored during operation'
       daddy.id = null // restore
       daddy.age += 2 // causes no execution of DemoApp.render
@@ -83,20 +83,20 @@ test('brief', t => {
       daddy.children[2].name = 'Steven Smith' // Steve
       t.is(daddy.name, 'John Smith')
       t.is(daddy.age, 40)
-      t.is(Tran.isolated(() => daddy.age), 38)
+      t.is(Operation.isolated(() => daddy.age), 38)
       t.is(isolatedRun(() => daddy.age), 38)
       t.is(nonreactiveRun(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = 'Jo' // set to the same value
     })
-    t.is(app.model.shared, tran1.hint)
+    t.is(app.model.shared, op1.hint)
     t.is(daddy.name, 'John')
-    t.is(tran1.inspect(() => daddy.name), 'John Smith')
-    t.throws(() => tran1.inspect(() => { daddy.name = 'Forbidden' }), { message: 'cannot make changes during operation inspection' })
+    t.is(op1.inspect(() => daddy.name), 'John Smith')
+    t.throws(() => op1.inspect(() => { daddy.name = 'Forbidden' }), { message: 'cannot make changes during operation inspection' })
     t.is(daddy.age, 38)
     t.is(daddy.children.length, 3)
     t.is(render.isUpToDate, true)
-    tran1.run(() => {
+    op1.run(() => {
       t.is(daddy.age, 40)
       daddy.age += 5
       app.userFilter = ''
@@ -120,7 +120,7 @@ test('brief', t => {
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(daddy.attributes.size, 0)
-    tran1.apply() // changes are applied, reactions are executed
+    op1.apply() // changes are applied, reactions are executed
     t.is(render.isUpToDate, true)
     t.not(render.stamp, stamp)
     t.is(daddy.name, 'John Smith')
@@ -136,22 +136,22 @@ test('brief', t => {
         emails.push('dad@mail.com')
       }
     }, undefined, 'observable property Person.emails #26 can only be modified inside operations and reactions')
-    t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run operation that is already sealed' })
+    t.throws(() => op1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run operation that is already sealed' })
     // Check protection and error handling
     t.throws(() => { R.getController(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
     t.throws(() => { console.log(R.getController(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
-    const tran2 = Tran.create({ hint: 'tran2' })
-    const zombi = tran2.run(() => new Person())
+    const op2 = Operation.create({ hint: 'op2' })
+    const zombi = op2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: 'object Person #30 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
-    t.throws(() => tran2.run(() => { throw new Error('test') }), { message: 'test' })
-    t.throws(() => tran2.apply(), { message: 'cannot apply operation that is already canceled: Error: test' })
-    const tran3 = Tran.create({ hint: 'tran3' })
-    t.throws(() => tran3.run(() => {
-      tran3.cancel(new Error('test'))
-      tran3.run(nop)
+    t.throws(() => op2.run(() => { throw new Error('test') }), { message: 'test' })
+    t.throws(() => op2.apply(), { message: 'cannot apply operation that is already canceled: Error: test' })
+    const op3 = Operation.create({ hint: 'op3' })
+    t.throws(() => op3.run(() => {
+      op3.cancel(new Error('test'))
+      op3.run(nop)
     }), { message: 'test' })
-    t.throws(() => tran3.apply(), { message: 'cannot apply operation that is already canceled: Error: test' })
-    Tran.run(sensitiveRun, Sensitivity.ReactEvenOnSameValueAssignment, () => {
+    t.throws(() => op3.apply(), { message: 'cannot apply operation that is already canceled: Error: test' })
+    Operation.run(sensitiveRun, Sensitivity.ReactEvenOnSameValueAssignment, () => {
       app.userFilter = app.userFilter
     })
     // Other
@@ -190,12 +190,12 @@ test('brief', t => {
     t.is(daddy.age, 45)
     t.is(app.userFilter, '')
     // Undo - decorator
-    // tran1undo.revert()
+    // op1undo.revert()
     // t.is(daddy.name, 'John Smith')
     // t.is(daddy.age, 45)
   }
   finally {
-    Tran.run(() => {
+    Operation.run(() => {
       R.dispose(app.model)
       R.dispose(app)
     })

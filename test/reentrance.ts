@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { ObservableObject, operation, reaction, cached, observableArgs, throttling, monitor,
-  reentrance, Operation as Tran, Monitor, Reentrance, Reactronic as R, all, sleep } from 'api'
+  reentrance, Operation, Monitor, Reentrance, Reactronic as R, all, sleep } from 'api'
 
 export const output: string[] = []
 export const busy = Monitor.create('Busy', 0, 0)
@@ -33,7 +33,7 @@ export class AsyncDemoView {
   @reaction @throttling(-1)
   async print(): Promise<void> {
     const lines: string[] = await this.render()
-    if (!Tran.current.isCanceled) {
+    if (!Operation.current.isCanceled) {
       for (const x of lines) {
         output.push(x) /* istanbul ignore next */
         if (R.isTraceEnabled && !R.traceOptions.silent) console.log(x)

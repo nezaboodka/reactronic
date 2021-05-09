@@ -13,7 +13,7 @@ import { ObjectRevision } from './Data'
 import { Snapshot, Hints } from './Snapshot'
 
 export abstract class Operation implements Worker {
-  static get current(): Operation { return TransactionImpl.current }
+  static get current(): Operation { return OperationImpl.current }
 
   abstract readonly id: number
   abstract readonly hint: string
@@ -33,15 +33,15 @@ export abstract class Operation implements Worker {
   abstract readonly isFinished: boolean
   async whenFinished(): Promise<void> { /* to be overridden */ }
 
-  static create(options: SnapshotOptions | null): Operation { return new TransactionImpl(options) }
-  static run<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(func, ...args) }
-  static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(options, func, ...args) }
-  static isolated<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.isolated<T>(func, ...args) }
+  static create(options: SnapshotOptions | null): Operation { return new OperationImpl(options) }
+  static run<T>(func: F<T>, ...args: any[]): T { return OperationImpl.run<T>(func, ...args) }
+  static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return OperationImpl.runAs<T>(options, func, ...args) }
+  static isolated<T>(func: F<T>, ...args: any[]): T { return OperationImpl.isolated<T>(func, ...args) }
 }
 
-class TransactionImpl extends Operation {
-  private static readonly none: TransactionImpl = new TransactionImpl({ hint: '<none>' })
-  private static curr: TransactionImpl = TransactionImpl.none
+class OperationImpl extends Operation {
+  private static readonly none: OperationImpl = new OperationImpl({ hint: '<none>' })
+  private static curr: OperationImpl = OperationImpl.none
   private static inspection: boolean = false
 
   readonly margin: number
@@ -49,14 +49,14 @@ class TransactionImpl extends Operation {
   private pending: number
   private sealed: boolean
   private canceled?: Error
-  private after?: TransactionImpl
+  private after?: OperationImpl
   private promise?: Promise<void>
   private resolve: (value?: void) => void
   private reject: (reason: any) => void
 
   constructor(options: SnapshotOptions | null) {
     super()
-    this.margin = TransactionImpl.curr ? TransactionImpl.curr.margin + 1 : -1
+    this.margin = OperationImpl.curr ? OperationImpl.curr.margin + 1 : -1
     this.snapshot = new Snapshot(options)
     this.pending = 0
     this.sealed = false
@@ -67,7 +67,7 @@ class TransactionImpl extends Operation {
     this.reject = UNDEF
   }
 
-  static get current(): TransactionImpl { return TransactionImpl.curr }
+  static get current(): OperationImpl { return OperationImpl.curr }
   get id(): number { return this.snapshot.id }
   get hint(): string { return this.snapshot.hint }
   get options(): SnapshotOptions { return this.snapshot.options }
@@ -80,15 +80,15 @@ class TransactionImpl extends Operation {
   }
 
   inspect<T>(func: F<T>, ...args: any[]): T {
-    const restore = TransactionImpl.inspection
+    const restore = OperationImpl.inspection
     try {
-      TransactionImpl.inspection = true
+      OperationImpl.inspection = true
       if (Dbg.isOn && Dbg.trace.operation)
-        Dbg.log(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.curr.id}[${TransactionImpl.curr.hint}]`)
+        Dbg.log(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${OperationImpl.curr.id}[${OperationImpl.curr.hint}]`)
       return this.runImpl(undefined, func, ...args)
     }
     finally {
-      TransactionImpl.inspection = restore
+      OperationImpl.inspection = restore
     }
   }
 
@@ -102,33 +102,33 @@ class TransactionImpl extends Operation {
 
   seal(): this { // t1.seal().whenFinished().then(onfulfilled, onrejected)
     if (!this.sealed)
-      this.run(TransactionImpl.seal, this)
+      this.run(OperationImpl.seal, this)
     return this
   }
 
   bind<T>(func: F<T>, error: boolean): F<T> {
     this.guard()
     const self = this
-    const inspect = TransactionImpl.inspection
+    const inspect = OperationImpl.inspection
     if (!inspect)
-      self.run(TransactionImpl.boundEnter, self, error)
+      self.run(OperationImpl.boundEnter, self, error)
     else
-      self.inspect(TransactionImpl.boundEnter, self, error)
-    const transactionBound: F<T> = (...args: any[]): T => {
+      self.inspect(OperationImpl.boundEnter, self, error)
+    const operationBound: F<T> = (...args: any[]): T => {
       if (!inspect)
-        return self.runImpl<T>(undefined, TransactionImpl.boundLeave, self, error, func, ...args)
+        return self.runImpl<T>(undefined, OperationImpl.boundLeave, self, error, func, ...args)
       else
-        return self.inspect<T>(TransactionImpl.boundLeave, self, error, func, ...args)
+        return self.inspect<T>(OperationImpl.boundLeave, self, error, func, ...args)
     }
-    return transactionBound
+    return operationBound
   }
 
-  private static boundEnter<T>(t: TransactionImpl, error: boolean): void {
+  private static boundEnter<T>(t: OperationImpl, error: boolean): void {
     if (!error)
       t.pending++
   }
 
-  private static boundLeave<T>(t: TransactionImpl, error: boolean, func: F<T>, ...args: any[]): T {
+  private static boundLeave<T>(t: OperationImpl, error: boolean, func: F<T>, ...args: any[]): T {
     t.pending--
     const result = func(...args)
     // if (t.error && !error)
@@ -137,8 +137,8 @@ class TransactionImpl extends Operation {
   }
 
   cancel(error: Error, restartAfter?: Worker | null): this {
-    this.runImpl(undefined, TransactionImpl.seal, this, error,
-      restartAfter === null ? TransactionImpl.none : restartAfter)
+    this.runImpl(undefined, OperationImpl.seal, this, error,
+      restartAfter === null ? OperationImpl.none : restartAfter)
     return this
   }
 
@@ -156,17 +156,17 @@ class TransactionImpl extends Operation {
   }
 
   static run<T>(func: F<T>, ...args: any[]): T {
-    return TransactionImpl.runAs<T>(null, func, ...args)
+    return OperationImpl.runAs<T>(null, func, ...args)
   }
 
   static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T {
-    const t: TransactionImpl = TransactionImpl.acquire(options)
-    const root = t !== TransactionImpl.curr
+    const t: OperationImpl = OperationImpl.acquire(options)
+    const root = t !== OperationImpl.curr
     t.guard()
     let result: any = t.runImpl<T>(options?.trace, func, ...args)
     if (root) {
       if (result instanceof Promise)
-        result = TransactionImpl.isolated(() => {
+        result = OperationImpl.isolated(() => {
           return t.wrapToRetry(t.wrapToWaitUntilFinish(result), func, ...args)
         })
       t.seal()
@@ -175,28 +175,28 @@ class TransactionImpl extends Operation {
   }
 
   static isolated<T>(func: F<T>, ...args: any[]): T {
-    const outer = TransactionImpl.curr
+    const outer = OperationImpl.curr
     try {
-      TransactionImpl.curr = TransactionImpl.none
+      OperationImpl.curr = OperationImpl.none
       return func(...args)
     }
     finally {
-      TransactionImpl.curr = outer
+      OperationImpl.curr = outer
     }
   }
 
   // Internal
 
-  private static acquire(options: SnapshotOptions | null): TransactionImpl {
-    return options?.spawn || TransactionImpl.curr.isFinished
-      ? new TransactionImpl(options)
-      : TransactionImpl.curr
+  private static acquire(options: SnapshotOptions | null): OperationImpl {
+    return options?.spawn || OperationImpl.curr.isFinished
+      ? new OperationImpl(options)
+      : OperationImpl.curr
   }
 
   private guard(): void {
     // if (this.error) // prevent from continuing canceled operation
     //   throw error(this.error.message, this.error)
-    if (this.sealed && TransactionImpl.curr !== this)
+    if (this.sealed && OperationImpl.curr !== this)
       throw misuse('cannot run operation that is already sealed')
   }
 
@@ -208,7 +208,7 @@ class TransactionImpl extends Operation {
       return result
     }
     catch (error) {
-      if (this.after !== TransactionImpl.none) {
+      if (this.after !== OperationImpl.none) {
         if (this.after) {
           // if (Dbg.logging.operations) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
           // if (this.after !== this)
@@ -221,7 +221,7 @@ class TransactionImpl extends Operation {
             trace: this.snapshot.options.trace,
             token: this.snapshot.options.token,
           }
-          return TransactionImpl.runAs<T>(options, func, ...args)
+          return OperationImpl.runAs<T>(options, func, ...args)
         }
         else
           throw error
@@ -241,9 +241,9 @@ class TransactionImpl extends Operation {
 
   private runImpl<T>(trace: Partial<TraceOptions> | undefined, func: F<T>, ...args: any[]): T {
     let result: T
-    const outer = TransactionImpl.curr
+    const outer = OperationImpl.curr
     try {
-      TransactionImpl.curr = this
+      OperationImpl.curr = this
       this.pending++
       this.snapshot.acquire(outer.snapshot)
       result = func(...args)
@@ -255,7 +255,7 @@ class TransactionImpl extends Operation {
       }
     }
     catch (e) {
-      if (!TransactionImpl.inspection)
+      if (!OperationImpl.inspection)
         this.cancel(e)
       throw e
     }
@@ -263,26 +263,26 @@ class TransactionImpl extends Operation {
       this.pending--
       if (this.sealed && this.pending === 0) {
         this.applyOrDiscard() // it's critical to have no exceptions inside this call
-        TransactionImpl.curr = outer
-        TransactionImpl.isolated(TransactionImpl.executeReactions, this)
+        OperationImpl.curr = outer
+        OperationImpl.isolated(OperationImpl.executeReactions, this)
       }
       else
-        TransactionImpl.curr = outer
+        OperationImpl.curr = outer
     }
     return result
   }
 
-  private static executeReactions(t: TransactionImpl): void {
+  private static executeReactions(t: OperationImpl): void {
     t.snapshot.reactions.forEach(x => x.ensureUpToDate(false, true))
   }
 
-  private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {
+  private static seal(t: OperationImpl, error?: Error, after?: OperationImpl): void {
     if (!t.canceled && error) {
       t.canceled = error
       t.after = after
       if (Dbg.isOn && Dbg.trace.operation) {
         Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
-        if (after && after !== TransactionImpl.none)
+        if (after && after !== OperationImpl.none)
           Dbg.log('║', ' [!]', `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ''}`)
       }
       Snapshot.propagateChanges(t.snapshot, error)
@@ -333,22 +333,22 @@ class TransactionImpl extends Operation {
   }
 
   private static getCurrentSnapshot(): Snapshot {
-    return TransactionImpl.curr.snapshot
+    return OperationImpl.curr.snapshot
   }
 
   private static editSnapshot(): Snapshot {
-    if (TransactionImpl.inspection)
+    if (OperationImpl.inspection)
       throw misuse('cannot make changes during operation inspection')
-    return TransactionImpl.curr.snapshot
+    return OperationImpl.curr.snapshot
   }
 
   static _init(): void {
-    Snapshot.current = TransactionImpl.getCurrentSnapshot // override
-    Snapshot.edit = TransactionImpl.editSnapshot // override
-    TransactionImpl.none.sealed = true
-    TransactionImpl.none.snapshot.applyOrDiscard()
+    Snapshot.current = OperationImpl.getCurrentSnapshot // override
+    Snapshot.edit = OperationImpl.editSnapshot // override
+    OperationImpl.none.sealed = true
+    OperationImpl.none.snapshot.applyOrDiscard()
     Snapshot._init()
   }
 }
 
-TransactionImpl._init()
+OperationImpl._init()

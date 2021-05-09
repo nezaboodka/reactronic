@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Operation as Tran, Reentrance, Reactronic as R, all, sleep } from 'api'
+import { Operation, Reentrance, Reactronic as R, all, sleep } from 'api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 import { TestingTraceLevel } from './brief'
 
@@ -31,7 +31,7 @@ const expected: Array<string | undefined> = [
 
 test('reentrance.restart', async t => {
   R.setTraceMode(true, TestingTraceLevel)
-  const app = Tran.run(() => {
+  const app = Operation.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getController(a.model.load).configure({reentrance: Reentrance.WaitAndRestart})
     return a
@@ -51,7 +51,7 @@ test('reentrance.restart', async t => {
     t.is(busy.workerCount, 0)
     t.is(busy.workers.size, 0)
     await sleep(100)
-    Tran.run(() => {
+    Operation.run(() => {
       R.dispose(app)
       R.dispose(app.model)
     })

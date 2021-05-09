@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, cached, Operation as Tran, Reactronic as R, trace, reaction, plain, noSideEffects } from 'api'
+import { ObservableObject, cached, Operation, Reactronic as R, trace, reaction, plain, noSideEffects } from 'api'
 import { TestingTraceLevel } from './brief'
 
 export class DemoBase extends ObservableObject {
@@ -63,7 +63,7 @@ export class Demo extends DemoBase {
 
 test('caching', t => {
   R.setTraceMode(true, TestingTraceLevel)
-  const demo = Tran.run(() => {
+  const demo = Operation.run(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')
     // d.title = 'Demo+'

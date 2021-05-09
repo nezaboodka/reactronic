@@ -36,7 +36,7 @@ export class OperationJournalImpl extends OperationJournal {
   get canRedo(): boolean { return this._position < this._items.length }
 
   remember(p: Patch): void {
-    Operation.runAs({ hint: 'TransactionJournal.remember', spawn: true }, () => {
+    Operation.runAs({ hint: 'OperationJournal.remember', spawn: true }, () => {
       const items = this._items = this._items.toMutable()
       if (items.length >= this._capacity)
         items.shift()
@@ -48,7 +48,7 @@ export class OperationJournalImpl extends OperationJournal {
   }
 
   undo(count: number = 1): void {
-    Operation.runAs({ hint: 'TransactionJournal.undo', spawn: true }, () => {
+    Operation.runAs({ hint: 'OperationJournal.undo', spawn: true }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._items[i]
@@ -60,7 +60,7 @@ export class OperationJournalImpl extends OperationJournal {
   }
 
   redo(count: number = 1): void {
-    Operation.runAs({ hint: 'TransactionJournal.redo', spawn: true }, () => {
+    Operation.runAs({ hint: 'OperationJournal.redo', spawn: true }, () => {
       let i: number = this._position
       while (i < this._items.length && count > 0) {
         const patch = this._items[i]

@@ -367,11 +367,11 @@ export class Snapshot implements AbstractSnapshot {
 // Hints
 
 export class Hints {
-  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, tran?: number, typeless?: boolean): string {
+  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, op?: number, typeless?: boolean): string {
     const member = m !== undefined ? `.${m.toString()}` : ''
     return h === undefined
       ? `nil${member}`
-      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${tran}v${stamp}`
+      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${op}v${stamp}`
   }
 
   static rev(r: ObjectRevision, m?: MemberName): string {

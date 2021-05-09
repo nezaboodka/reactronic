@@ -759,8 +759,8 @@ function reactronicHookedThen(this: any,
   resolve?: ((value: any) => any | PromiseLike<any>) | undefined | null,
   reject?: ((reason: any) => never | PromiseLike<never>) | undefined | null): Promise<any | never>
 {
-  const tran = Operation.current
-  if (!tran.isFinished) {
+  const op = Operation.current
+  if (!op.isFinished) {
     if (!resolve)
       resolve = resolveReturn
     if (!reject)
@@ -770,8 +770,8 @@ function reactronicHookedThen(this: any,
       resolve = task.bind(resolve)
       reject = task.bind(reject)
     }
-    resolve = tran.bind(resolve, false)
-    reject = tran.bind(reject, true)
+    resolve = op.bind(resolve, false)
+    reject = op.bind(reject, true)
   }
   return ORIGINAL_PROMISE_THEN.call(this, resolve, reject)
 }

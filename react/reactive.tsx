@@ -8,14 +8,14 @@
 import * as React from 'react'
 import { ObservableObject, Operation, plain, reaction, cached, isolatedRun, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
 
-export function autorender(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, tran?: Operation): JSX.Element {
+export function autorender(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, op?: Operation): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
     (!name && !trace) ? createReactState : () => createReactState(name, trace))
   const rx = state.rx
   rx.cycle = state.cycle
   rx.refresh = refresh // just in case React will change refresh on each rendering
   React.useEffect(rx.unmount, [])
-  return rx.render(render, tran)
+  return rx.render(render, op)
 }
 
 // Internal
@@ -24,8 +24,8 @@ type ReactState<V> = { rx: Rx<V>, cycle: number }
 
 class Rx<V> extends ObservableObject {
   @cached
-  render(emit: (cycle: number) => V, tran?: Operation): V {
-    return tran ? tran.inspect(() => emit(this.cycle)) : emit(this.cycle)
+  render(emit: (cycle: number) => V, op?: Operation): V {
+    return op ? op.inspect(() => emit(this.cycle)) : emit(this.cycle)
   }
 
   @reaction
