@@ -8,10 +8,10 @@
 import { ObservableObject } from './Hooks'
 import { ObjectHolder, ObjectRevision, Meta, Patch, ObjectPatch, Observable } from './Data'
 import { Snapshot, NIL_REV } from './Snapshot'
-import { Operation } from './Transaction'
+import { Operation } from './Operation'
 import { Sealant } from '../util/Sealant'
 
-export abstract class TransactionJournal extends ObservableObject {
+export abstract class OperationJournal extends ObservableObject {
   abstract capacity: number
   abstract readonly items: ReadonlyArray<Patch>
   abstract readonly canUndo: boolean
@@ -21,10 +21,10 @@ export abstract class TransactionJournal extends ObservableObject {
   abstract redo(count?: number): void
   abstract remember(patch: Patch): void
 
-  static create(): TransactionJournal { return new TransactionJournalImpl() }
+  static create(): OperationJournal { return new OperationJournalImpl() }
 }
 
-export class TransactionJournalImpl extends TransactionJournal {
+export class OperationJournalImpl extends OperationJournal {
   private _capacity: number = 5
   private _items: Patch[] = []
   private _position: number = 0
@@ -52,7 +52,7 @@ export class TransactionJournalImpl extends TransactionJournal {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._items[i]
-        TransactionJournalImpl.applyPatch(patch, true)
+        OperationJournalImpl.applyPatch(patch, true)
         i--, count--
       }
       this._position = i + 1
@@ -64,7 +64,7 @@ export class TransactionJournalImpl extends TransactionJournal {
       let i: number = this._position
       while (i < this._items.length && count > 0) {
         const patch = this._items[i]
-        TransactionJournalImpl.applyPatch(patch, false)
+        OperationJournalImpl.applyPatch(patch, false)
         i++, count--
       }
       this._position = i

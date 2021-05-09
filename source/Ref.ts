@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Operation } from './impl/Transaction'
+import { Operation } from './impl/Operation'
 import { nonreactiveRun } from './Reactronic'
 
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>

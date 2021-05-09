@@ -12,10 +12,10 @@ import { Worker } from '../Worker'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, MemberInfo, Meta } from './Data'
 import { Snapshot, Hints, NIL_REV, INIT_TIMESTAMP, MAX_TIMESTAMP } from './Snapshot'
-import { Operation } from './Transaction'
+import { Operation } from './Operation'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
-import { TransactionJournalImpl } from './TransactionJournal'
+import { OperationJournalImpl } from './OperationJournal'
 
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 
@@ -546,7 +546,7 @@ class Task extends Observable implements Observer {
       })
       reactions.sort(compareReactionsByPriority)
       snapshot.options.journal?.remember(
-        TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
+        OperationJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
     }
     else
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>

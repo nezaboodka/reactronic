@@ -12,7 +12,7 @@ import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta } from './Data'
 import { Snapshot, Hints, NIL_REV } from './Snapshot'
-import { TransactionJournal } from './TransactionJournal'
+import { OperationJournal } from './OperationJournal'
 import { Monitor } from './Monitor'
 
 // ObservableObject
@@ -65,7 +65,7 @@ export class OptionsImpl implements MethodOptions {
   readonly sensitiveArgs: boolean
   readonly throttling: number
   readonly reentrance: Reentrance
-  readonly journal: TransactionJournal | undefined
+  readonly journal: OperationJournal | undefined
   readonly monitor: Monitor | null
   readonly trace?: Partial<TraceOptions>
   static readonly INITIAL = Object.freeze(new OptionsImpl(UNDEF, { body: UNDEF, ...DEFAULT_OPTIONS }, {}, false))

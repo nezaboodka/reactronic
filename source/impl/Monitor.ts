@@ -7,7 +7,7 @@
 
 import { Worker } from '../Worker'
 import { ObservableObject, Hooks } from './Hooks'
-import { Operation } from './Transaction'
+import { Operation } from './Operation'
 
 export abstract class Monitor extends ObservableObject {
   abstract readonly isActive: boolean

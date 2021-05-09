@@ -7,13 +7,13 @@
 
 import { TraceOptions } from './Trace'
 export { TraceOptions, ProfilingOptions, TraceLevel } from './Trace'
-import { TransactionJournal } from './impl/TransactionJournal'
+import { OperationJournal } from './impl/OperationJournal'
 import { Monitor } from './impl/Monitor'
 
 export interface SnapshotOptions {
   readonly hint?: string
   readonly spawn?: boolean
-  readonly journal?: TransactionJournal
+  readonly journal?: OperationJournal
   readonly trace?: Partial<TraceOptions>
   readonly token?: any
 }
@@ -25,7 +25,7 @@ export interface MethodOptions {
   readonly sensitiveArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
-  readonly journal: TransactionJournal | undefined
+  readonly journal: OperationJournal | undefined
   readonly monitor: Monitor | null
   readonly trace?: Partial<TraceOptions>
 }
