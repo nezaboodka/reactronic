@@ -70,16 +70,16 @@ export class ObjectHolder {
   private static generator: number = 19
 
   readonly id: number
-  readonly unobservable: any
+  readonly plain: any
   readonly proxy: any
   head: ObjectRevision
   editing?: ObjectRevision
   editors: number
   hint: string
 
-  constructor(unobservable: any, proxy: any, handler: ProxyHandler<ObjectHolder>, head: ObjectRevision, hint: string) {
+  constructor(plain: any, proxy: any, handler: ProxyHandler<ObjectHolder>, head: ObjectRevision, hint: string) {
     this.id = ++ObjectHolder.generator
-    this.unobservable = unobservable
+    this.plain = plain
     this.proxy = proxy || new Proxy<ObjectHolder>(this, handler)
     this.head = head
     this.editing = undefined

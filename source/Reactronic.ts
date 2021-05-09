@@ -40,7 +40,7 @@ export class Reactronic {
 
 // Operators
 
-export function unobservableRun<T>(func: F<T>, ...args: any[]): T {
+export function nonreactiveRun<T>(func: F<T>, ...args: any[]): T {
   return TaskCtl.run<T>(undefined, func, ...args)
 }
 
@@ -58,7 +58,7 @@ export function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: a
 //   return Hooks.decorateField(true, proto, prop)
 // }
 
-export function unobservable(proto: object, prop: PropertyKey): any {
+export function plain(proto: object, prop: PropertyKey): any {
   return Hooks.decorateField(false, proto, prop)
 }
 

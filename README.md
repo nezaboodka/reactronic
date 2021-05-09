@@ -238,7 +238,7 @@ class ObservableObject { }
 
 // Decorators & Operators
 
-function unobservable(proto, prop) // field only
+function plain(proto, prop) // field only
 function operation(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
@@ -250,7 +250,7 @@ function reentrance(value: Reentrance) // operation & reaction
 function monitor(value: Monitor | null)
 function trace(value: Partial<TraceOptions>)
 
-function unobservableRun<T>(func: F<T>, ...args: any[]): T
+function nonreactiveRun<T>(func: F<T>, ...args: any[]): T
 function isolatedRun<T>(func: F<T>, ...args: any[]): T
 function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 

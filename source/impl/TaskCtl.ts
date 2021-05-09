@@ -27,7 +27,7 @@ export class TaskCtl extends Controller<any> {
 
   configure(options: Partial<MethodOptions>): MethodOptions { return TaskCtl.configureImpl(this, options) }
   get options(): MethodOptions { return this.peek(undefined).task.options }
-  get unobservable(): any { return this.peek(undefined).task.value }
+  get nonreactive(): any { return this.peek(undefined).task.value }
   get args(): ReadonlyArray<any> { return this.use().task.args }
   get result(): any { return this.invoke(true, undefined).value }
   get error(): boolean { return this.use().task.error }

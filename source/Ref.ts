@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Operation } from './impl/Transaction'
-import { unobservableRun } from './Reactronic'
+import { nonreactiveRun } from './Reactronic'
 
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
 export type GivenTypeOnly<T, V> = Pick<T, {[P in keyof T]: T[P] extends V ? P : never}[keyof T]>
@@ -32,8 +32,8 @@ export class Ref<T = any> {
       this.owner[this.name][this.index] = value
   }
 
-  unobservableValue(): T {
-    return unobservableRun(() => this.value)
+  nonreactiveValue(): T {
+    return nonreactiveRun(() => this.value)
   }
 
   observe(): T {
