@@ -210,11 +210,11 @@ class TransactionImpl extends Operation {
     catch (error) {
       if (this.after !== TransactionImpl.none) {
         if (this.after) {
-          // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
+          // if (Dbg.logging.operations) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
           // if (this.after !== this)
           //   await this.after.whenFinished()
           await this.after.whenFinished()
-          // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
+          // if (Dbg.logging.operations) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
             spawn: true,
@@ -249,7 +249,7 @@ class TransactionImpl extends Operation {
       result = func(...args)
       if (this.sealed && this.pending === 1) {
         if (!this.canceled)
-          this.checkForConflicts() // merge with concurrent transactions
+          this.checkForConflicts() // merge with concurrent operations
         else if (!this.after)
           throw this.canceled
       }

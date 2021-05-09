@@ -140,7 +140,7 @@ export class Snapshot implements AbstractSnapshot {
 
   private checkIfEditable(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): void {
     if (this.sealed)
-      throw misuse(`observable property ${Hints.obj(h, m)} can only be modified inside transactions and reactions`)
+      throw misuse(`observable property ${Hints.obj(h, m)} can only be modified inside operations and reactions`)
     // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== NIL))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.revision(r, m)}`)
     // if (r === NIL && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */

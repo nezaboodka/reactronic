@@ -89,9 +89,9 @@ snapshot is automatically maintained for each operation.
 That is a logical snapshot that does not create a full copy
 of all the data.
 
-Compensating transactions are not needed in case of the operation
-failure, because all the changes made by the operation in its
-logical snapshot are simply discarded. In case the operation
+Compensating rollback operations are not needed in case of the
+operation failure, because all the changes made by the operation
+in its logical snapshot are simply discarded. In case the operation
 is successfully applied, affected caches are marked as obsolete
 and corresponding caching functions are re-executed in a proper
 order (but only when all the data changes are fully applied).
@@ -193,7 +193,7 @@ There are multiple options to configure behavior of transactional reactivity.
   - `0` - execute reaction immediately via event loop (asynchronously with zero timeout);
   - `>= Number.MAX_SAFE_INTEGER` - never execute reaction (disabled reaction).
 
-**Reentrance** option defines how to handle reentrant calls of transactions and reactions:
+**Reentrance** option defines how to handle reentrant calls of operations and reactions:
 
   - `Reentrance.PreventWithError` - fail with error if there is an existing call in progress;
   - `Reentrance.WaitAndRestart` - wait for previous call to finish and then restart current one;
@@ -203,7 +203,7 @@ There are multiple options to configure behavior of transactional reactivity.
 
 **Monitor** is an object that maintains the status of running functions,
 which it is attached to. A single monitor object can be shared between
-multiple transactions, reactions, and cache functions, thus maintaining
+multiple operations, reactions, and cache functions, thus maintaining
 consolidated status for all of them (busy, workers, etc).
 
 ## Notes

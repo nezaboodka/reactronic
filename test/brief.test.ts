@@ -41,7 +41,7 @@ test('brief', t => {
   })
   R.setTraceMode(false)
   R.setTraceMode(true, TestingTraceLevel)
-  // Simple transactions
+  // Simple operations
   const app = Tran.run(() => new DemoView(new Demo()))
   try {
     t.is(R.why(), 'N/A')
@@ -69,7 +69,7 @@ test('brief', t => {
     t.is(render.stamp, stamp)
     render.markObsolete()
     t.not(render.stamp, stamp)
-    // Multi-part transactions
+    // Multi-part operations
     const tran1 = Tran.create({ hint: 'tran1', journal: Demo.UndoRedo })
     tran1.run(() => {
       t.throws(() => tran1.apply(), { message: 'cannot apply operation having active functions running' })
@@ -129,13 +129,13 @@ test('brief', t => {
     t.is(app.model.users !== app.model.usersWithoutLast, true)
     t.is(app.model.usersWithoutLast !== app.model.collection1, true)
     t.is(app.model.collection1 !== app.model.collection2, true)
-    // Protection from modification outside of transactions
+    // Protection from modification outside of operations
     t.throws(() => {
       if (daddy.emails) {
         const emails = daddy.emails = daddy.emails.toMutable()
         emails.push('dad@mail.com')
       }
-    }, undefined, 'observable property Person.emails #26 can only be modified inside transactions and reactions')
+    }, undefined, 'observable property Person.emails #26 can only be modified inside operations and reactions')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run operation that is already sealed' })
     // Check protection and error handling
     t.throws(() => { R.getController(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
