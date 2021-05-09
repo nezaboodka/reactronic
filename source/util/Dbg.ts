@@ -31,7 +31,7 @@ export class Dbg {
     silent: false,
     error: false,
     warning: false,
-    transaction: false,
+    operation: false,
     method: false,
     step: false,
     monitor: false,
@@ -75,7 +75,7 @@ export class Dbg {
     const silent = (options && options.silent !== undefined) ? options.silent : t.silent
     if (!silent) { /* istanbul ignore next */
       console.log('\x1b[37m%s\x1b[0m \x1b[' + t.color + 'm%s %s%s\x1b[0m \x1b[' + t.color + 'm%s%s\x1b[0m \x1b[' + t.color + 'm%s\x1b[0m%s',
-        '', t.prefix, t.transaction ? margin1 : '', t.transaction ? bar : bar.replace(/./g, ' '), margin2, operation, message,
+        '', t.prefix, t.operation ? margin1 : '', t.operation ? bar : bar.replace(/./g, ' '), margin2, operation, message,
         (highlight !== undefined ? `${highlight}` : '') + (ms > 2 ? `    [ ${ms}ms ]` : ''))
       if (dump) /* istanbul ignore next */
         console.log(dump)
@@ -85,7 +85,7 @@ export class Dbg {
   static merge(t: Partial<TraceOptions> | undefined, color: number | undefined, prefix: string | undefined, existing: TraceOptions): TraceOptions {
     const result = !t ? { ...existing } : {
       silent: t.silent !== undefined ? t.silent : existing.silent,
-      transaction: t.transaction !== undefined ? t.transaction : existing.transaction,
+      operation: t.operation !== undefined ? t.operation : existing.operation,
       method: t.method !== undefined ? t.method : existing.method,
       step: t.step !== undefined ? t.step : existing.step,
       monitor: t.monitor !== undefined ? t.monitor : existing.monitor,

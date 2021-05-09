@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, cached, Transaction as Tran, Reactronic as R, trace, reaction, unobservable, noSideEffects } from 'api'
+import { ObservableObject, cached, Operation as Tran, Reactronic as R, trace, reaction, unobservable, noSideEffects } from 'api'
 import { TestingTraceLevel } from './brief'
 
 export class DemoBase extends ObservableObject {
@@ -27,7 +27,7 @@ export class DemoBase extends ObservableObject {
     this.sideEffect = 'side effect'
   }
 
-  // @transaction
+  // @operation
   // setUninitialized(value: any): void {
   //   this.uninitialized = value
   // }

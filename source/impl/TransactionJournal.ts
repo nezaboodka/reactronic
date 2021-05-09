@@ -8,7 +8,7 @@
 import { ObservableObject } from './Hooks'
 import { ObjectHolder, ObjectRevision, Meta, Patch, ObjectPatch, Observable } from './Data'
 import { Snapshot, NIL_REV } from './Snapshot'
-import { Transaction } from './Transaction'
+import { Operation } from './Transaction'
 import { Sealant } from '../util/Sealant'
 
 export abstract class TransactionJournal extends ObservableObject {
@@ -36,7 +36,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   get canRedo(): boolean { return this._position < this._items.length }
 
   remember(p: Patch): void {
-    Transaction.runAs({ hint: 'TransactionJournal.remember', spawn: true }, () => {
+    Operation.runAs({ hint: 'TransactionJournal.remember', spawn: true }, () => {
       const items = this._items = this._items.toMutable()
       if (items.length >= this._capacity)
         items.shift()
@@ -48,7 +48,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 
   undo(count: number = 1): void {
-    Transaction.runAs({ hint: 'TransactionJournal.undo', spawn: true }, () => {
+    Operation.runAs({ hint: 'TransactionJournal.undo', spawn: true }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._items[i]
@@ -60,7 +60,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 
   redo(count: number = 1): void {
-    Transaction.runAs({ hint: 'TransactionJournal.redo', spawn: true }, () => {
+    Operation.runAs({ hint: 'TransactionJournal.redo', spawn: true }, () => {
       let i: number = this._position
       while (i < this._items.length && count > 0) {
         const patch = this._items[i]

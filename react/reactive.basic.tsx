@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, unobservable, reaction, cached, isolatedRun, Reactronic } from 'api' // from 'reactronic'
+import { ObservableObject, Operation, unobservable, reaction, cached, isolatedRun, Reactronic } from 'api' // from 'reactronic'
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -43,7 +43,7 @@ class Rx extends ObservableObject {
 }
 
 function createReactState(): ReactState {
-  const rx = Transaction.runAs<Rx>({ hint: '<rx>' }, Rx.create)
+  const rx = Operation.runAs<Rx>({ hint: '<rx>' }, Rx.create)
   return {rx}
 }
 

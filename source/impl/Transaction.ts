@@ -12,8 +12,8 @@ import { SnapshotOptions, TraceOptions } from '../Options'
 import { ObjectRevision } from './Data'
 import { Snapshot, Hints } from './Snapshot'
 
-export abstract class Transaction implements Worker {
-  static get current(): Transaction { return TransactionImpl.current }
+export abstract class Operation implements Worker {
+  static get current(): Operation { return TransactionImpl.current }
 
   abstract readonly id: number
   abstract readonly hint: string
@@ -33,13 +33,13 @@ export abstract class Transaction implements Worker {
   abstract readonly isFinished: boolean
   async whenFinished(): Promise<void> { /* to be overridden */ }
 
-  static create(options: SnapshotOptions | null): Transaction { return new TransactionImpl(options) }
+  static create(options: SnapshotOptions | null): Operation { return new TransactionImpl(options) }
   static run<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(func, ...args) }
   static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(options, func, ...args) }
   static isolated<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.isolated<T>(func, ...args) }
 }
 
-class TransactionImpl extends Transaction {
+class TransactionImpl extends Operation {
   private static readonly none: TransactionImpl = new TransactionImpl({ hint: '<none>' })
   private static curr: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false
@@ -83,7 +83,7 @@ class TransactionImpl extends Transaction {
     const restore = TransactionImpl.inspection
     try {
       TransactionImpl.inspection = true
-      if (Dbg.isOn && Dbg.trace.transaction)
+      if (Dbg.isOn && Dbg.trace.operation)
         Dbg.log(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.curr.id}[${TransactionImpl.curr.hint}]`)
       return this.runImpl(undefined, func, ...args)
     }
@@ -94,9 +94,9 @@ class TransactionImpl extends Transaction {
 
   apply(): void {
     if (this.pending > 0)
-      throw misuse('cannot apply transaction having active functions running')
+      throw misuse('cannot apply operation having active functions running')
     if (this.canceled)
-      throw misuse(`cannot apply transaction that is already canceled: ${this.canceled}`)
+      throw misuse(`cannot apply operation that is already canceled: ${this.canceled}`)
     this.seal() // apply immediately, because pending === 0
   }
 
@@ -194,10 +194,10 @@ class TransactionImpl extends Transaction {
   }
 
   private guard(): void {
-    // if (this.error) // prevent from continuing canceled transaction
+    // if (this.error) // prevent from continuing canceled operation
     //   throw error(this.error.message, this.error)
     if (this.sealed && TransactionImpl.curr !== this)
-      throw misuse('cannot run transaction that is already sealed')
+      throw misuse('cannot run operation that is already sealed')
   }
 
   private async wrapToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T | undefined> {
@@ -280,7 +280,7 @@ class TransactionImpl extends Transaction {
     if (!t.canceled && error) {
       t.canceled = error
       t.after = after
-      if (Dbg.isOn && Dbg.trace.transaction) {
+      if (Dbg.isOn && Dbg.trace.operation) {
         Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== TransactionImpl.none)
           Dbg.log('║', ' [!]', `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ''}`)
@@ -338,7 +338,7 @@ class TransactionImpl extends Transaction {
 
   private static editSnapshot(): Snapshot {
     if (TransactionImpl.inspection)
-      throw misuse('cannot make changes during transaction inspection')
+      throw misuse('cannot make changes during operation inspection')
     return TransactionImpl.curr.snapshot
   }
 

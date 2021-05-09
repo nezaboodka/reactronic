@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction as Tran, Reactronic as R, ObservableObject } from 'api'
+import { Operation as Tran, Reactronic as R, ObservableObject } from 'api'
 import { TestingTraceLevel } from './brief'
 
 class Serializable extends ObservableObject {

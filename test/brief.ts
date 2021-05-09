@@ -5,14 +5,14 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, transaction, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
+import { ObservableObject, unobservable, operation, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Operation } from 'api'
 
 export const output: string[] = []
 
 export class Demo extends ObservableObject {
-  static UndoRedo = Transaction.run(() => TransactionJournal.create())
+  static UndoRedo = Operation.run(() => TransactionJournal.create())
 
-  // @transaction @cached
+  // @operation @cached
   // get dummy(): string { return 'dummy' }
   // set dummy(value: string) { /* nop */ }
 
@@ -23,22 +23,22 @@ export class Demo extends ObservableObject {
   collection2: Person[] = this.users
   usersWithoutLast: Person[] = this.users
 
-  @transaction
+  @operation
   loadUsers(): void {
     this._loadUsers()
   }
 
-  @transaction
+  @operation
   testCollectionSealing(): void {
     this.collection1 = this.collection2 = []
   }
 
-  @transaction
+  @operation
   testImmutableCollection(): void {
     this.collection1.push(...this.users)
   }
 
-  @transaction @journal(Demo.UndoRedo)
+  @operation @journal(Demo.UndoRedo)
   testUndo(): void {
     this.title = 'Demo - undo/redo'
   }
@@ -92,7 +92,7 @@ export class DemoView extends ObservableObject {
     R.configureCurrentMethod({ priority: 123 })
   }
 
-  // @transaction @trace(log.noisy)
+  // @operation @trace(log.noisy)
   // subPrint(): void {
   //   this.render().forEach(x => output.push(x));
   // }
@@ -182,7 +182,7 @@ export class Person extends ObservableObject {
 
 export const TestingTraceLevel: TraceOptions = {
   silent: process.env.AVA_DEBUG === undefined,
-  transaction: true,
+  operation: true,
   method: true,
   step: true,
   monitor: true,

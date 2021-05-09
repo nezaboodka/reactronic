@@ -32,7 +32,7 @@ export interface MethodOptions {
 
 export enum Kind {
   Data = 0,
-  Transaction = 1,
+  Operation = 1,
   Reaction = 2,
   Cache = 3,
 }

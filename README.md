@@ -26,8 +26,8 @@ between visual components (observers) and state (observable objects).
 Transactional reactivity is based on four fundamental concepts:
 
   - **Observable Objects** - a set of objects that store data of an application;
-  - **Transaction** - a function that makes changes in observable objects in transactional (atomic) way;
-  - **Reaction** - a function that is called automatically in response to changes made by a transaction;
+  - **Operation** - a function that makes changes in observable objects in transactional (atomic) way;
+  - **Reaction** - a function that is called automatically in response to changes made by an operation;
   - **Cache** - a computed value having associated function that is called on-demand to renew the value if it was marked as obsolete.
 
 The following picture illustrates relationships between the concepts
@@ -55,9 +55,9 @@ In the example above, the class `MyModel` is based on Reactronic's
 `ObservableObject` class and all its properties `url`, `content`,
 and `timestamp` are hooked.
 
-### Transaction
+### Operation
 
-Transaction is a function that makes changes in observable objects
+Operation is a function that makes changes in observable objects
 in transactional (atomic) way. Such a function is instrumented with hooks
 to provide transparent atomicity (by implicit context switching
 and isolation).
@@ -65,7 +65,7 @@ and isolation).
 ``` typescript
 class MyModel extends ObservableObject {
   // ...
-  @transaction
+  @operation
   async load(url: string): Promise<void> {
     this.url = url
     this.content = await fetch(url)
@@ -76,40 +76,40 @@ class MyModel extends ObservableObject {
 
 In the example above, the transactional function `load` makes
 changes to `url`, `content` and `timestamp` properties. While
-transaction is running, the changes are visible only inside the
-transaction itself. The new values become atomically visible outside
-of the transaction only upon its completion.
+operation is running, the changes are visible only inside the
+operation itself. The new values become atomically visible outside
+of the operation only upon its completion.
 
 Atomicity is achieved by making changes in an isolated data
-snapshot that is not visible outside of the running transaction
+snapshot that is not visible outside of the running operation
 until it is fully finished and applied. Multiple objects
 and their properties can be changed with full respect
 to the all-or-nothing principle. To do so, separate data
-snapshot is automatically maintained for each transaction.
+snapshot is automatically maintained for each operation.
 That is a logical snapshot that does not create a full copy
 of all the data.
 
-Compensating transactions are not needed in case of the transaction
-failure, because all the changes made by the transaction in its
-logical snapshot are simply discarded. In case the transaction
+Compensating transactions are not needed in case of the operation
+failure, because all the changes made by the operation in its
+logical snapshot are simply discarded. In case the operation
 is successfully applied, affected caches are marked as obsolete
 and corresponding caching functions are re-executed in a proper
 order (but only when all the data changes are fully applied).
 
 Asynchronous operations (promises) are supported out of the box
-during transaction execution. The transaction may consist of a set of
-asynchronous calls prolonging the transaction until completion of
-all of them. An asynchronous call may spawn other
-asynchronous calls, which prolong transaction execution until
-the whole chain of asynchronous operations is fully completed.
+during operation execution. The operation may consist of a set of
+asynchronous calls prolonging the operation until completion of
+all of them. An asynchronous call may spawn other asynchronous
+calls, which prolong operation execution until the whole chain
+of asynchronous operations is fully completed.
 
 ### Reaction & Cache
 
 Reaction is a function that is immediately called in response to
-changes made by a transaction in observable objects. Cache is a
+changes made by a operation in observable objects. Cache is a
 computed value having an associated function that is called
 on-demand to renew the value if it was marked as obsolete due to changes
-made by a transaction. Reactive and cached functions are
+made by a operation. Reactive and cached functions are
 instrumented with hooks to seamlessly subscribe to those
 observable objects and other cached functions (dependencies),
 which are used during their execution.
@@ -189,7 +189,7 @@ There are multiple options to configure behavior of transactional reactivity.
 **Throttling** option defines how often reaction is executed in case of recurring changes:
 
   - `(ms)` - minimal delay in milliseconds between reaction execution;
-  - `-1` - execute reaction immediately once transaction is applied (synchronously);
+  - `-1` - execute reaction immediately once operation is applied (synchronously);
   - `0` - execute reaction immediately via event loop (asynchronously with zero timeout);
   - `>= Number.MAX_SAFE_INTEGER` - never execute reaction (disabled reaction).
 
@@ -239,14 +239,14 @@ class ObservableObject { }
 // Decorators & Operators
 
 function unobservable(proto, prop) // field only
-function transaction(proto, prop, pd) // method only
+function operation(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
-function noSideEffects(value: boolean) // transaction & cached & reaction
+function noSideEffects(value: boolean) // operation & cached & reaction
 function observableArgs(value: boolean) // cached & reaction
 function throttling(milliseconds: number) // reaction only
-function reentrance(value: Reentrance) // transaction & reaction
+function reentrance(value: Reentrance) // operation & reaction
 function monitor(value: Monitor | null)
 function trace(value: Partial<TraceOptions>)
 
@@ -268,7 +268,7 @@ interface Options {
 
 enum Kind {
   Data = 0,
-  Transaction = 1,
+  Operation = 1,
   Reaction = 2,
   Cache = 3
 }
@@ -300,13 +300,13 @@ interface Worker {
   readonly hint: string
   isCanceled: boolean
   isFinished: boolean
-  cancel(error?: Error, retryAfter?: Transaction): this
+  cancel(error?: Error, retryAfter?: Operation): this
   whenFinished(): Promise<void>
 }
 
 interface TraceOptions {
   readonly silent: boolean
-  readonly transaction: boolean
+  readonly operation: boolean
   readonly method: boolean
   readonly step: boolean
   readonly monitor: boolean
@@ -325,12 +325,12 @@ interface ProfilingOptions {
   asyncActionDurationWarningThreshold: number // default: 150 ms
 }
 
-// Transaction
+// Operation
 
 type F<T> = (...args: any[]) => T
 
-class Transaction implements Worker {
-  static readonly current: Transaction
+class Operation implements Worker {
+  static readonly current: Operation
 
   readonly id: number
   readonly hint: string
@@ -339,13 +339,13 @@ class Transaction implements Worker {
   wrap<T>(func: F<T>): F<T>
   apply(): void
   seal(): this // a1.seal().whenFinished().then(fulfill, reject)
-  cancel(error?: Error, retryAfter?: Transaction): this
+  cancel(error?: Error, retryAfter?: Operation): this
   isCanceled: boolean
   isFinished: boolean
   whenFinished(): Promise<void>
   join<T>(p: Promise<T>): Promise<T>
 
-  static create(hint: string): Transaction
+  static create(hint: string): Operation
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
     trace: Partial<TraceOptions | undefined>, func: F<T>, ...args: any[]): T

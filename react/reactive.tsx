@@ -6,9 +6,9 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, unobservable, reaction, cached, isolatedRun, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
+import { ObservableObject, Operation, unobservable, reaction, cached, isolatedRun, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
 
-export function autorender(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, tran?: Transaction): JSX.Element {
+export function autorender(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, tran?: Operation): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
     (!name && !trace) ? createReactState : () => createReactState(name, trace))
   const rx = state.rx
@@ -24,7 +24,7 @@ type ReactState<V> = { rx: Rx<V>, cycle: number }
 
 class Rx<V> extends ObservableObject {
   @cached
-  render(emit: (cycle: number) => V, tran?: Transaction): V {
+  render(emit: (cycle: number) => V, tran?: Operation): V {
     return tran ? tran.inspect(() => emit(this.cycle)) : emit(this.cycle)
   }
 
@@ -54,7 +54,7 @@ class Rx<V> extends ObservableObject {
 
 function createReactState<V>(name?: string, trace?: Partial<TraceOptions>): ReactState<V> {
   const hint = name || (R.isTraceEnabled ? getComponentName() : '<rx>')
-  const rx = Transaction.runAs<Rx<V>>({ hint, trace }, Rx.create, hint, trace)
+  const rx = Operation.runAs<Rx<V>>({ hint, trace }, Rx.create, hint, trace)
   return {rx, cycle: 0}
 }
 

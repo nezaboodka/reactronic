@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction as Tran, Kind, unobservableRun, isolatedRun, sensitiveRun, Sensitivity, Reactronic as R } from 'api'
+import { Operation as Tran, Kind, unobservableRun, isolatedRun, sensitiveRun, Sensitivity, Reactronic as R } from 'api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
@@ -72,9 +72,9 @@ test('brief', t => {
     // Multi-part transactions
     const tran1 = Tran.create({ hint: 'tran1', journal: Demo.UndoRedo })
     tran1.run(() => {
-      t.throws(() => tran1.apply(), { message: 'cannot apply transaction having active functions running' })
+      t.throws(() => tran1.apply(), { message: 'cannot apply operation having active functions running' })
       app.model.shared = app.shared = tran1.hint
-      daddy.id = 'field restored during transaction'
+      daddy.id = 'field restored during operation'
       daddy.id = null // restore
       daddy.age += 2 // causes no execution of DemoApp.render
       daddy.name = 'John Smith' // causes execution of DemoApp.render upon apply
@@ -92,7 +92,7 @@ test('brief', t => {
     t.is(app.model.shared, tran1.hint)
     t.is(daddy.name, 'John')
     t.is(tran1.inspect(() => daddy.name), 'John Smith')
-    t.throws(() => tran1.inspect(() => { daddy.name = 'Forbidden' }), { message: 'cannot make changes during transaction inspection' })
+    t.throws(() => tran1.inspect(() => { daddy.name = 'Forbidden' }), { message: 'cannot make changes during operation inspection' })
     t.is(daddy.age, 38)
     t.is(daddy.children.length, 3)
     t.is(render.isUpToDate, true)
@@ -136,7 +136,7 @@ test('brief', t => {
         emails.push('dad@mail.com')
       }
     }, undefined, 'observable property Person.emails #26 can only be modified inside transactions and reactions')
-    t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
+    t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run operation that is already sealed' })
     // Check protection and error handling
     t.throws(() => { R.getController(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
     t.throws(() => { console.log(R.getController(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
@@ -144,13 +144,13 @@ test('brief', t => {
     const zombi = tran2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: 'object Person #30 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
     t.throws(() => tran2.run(() => { throw new Error('test') }), { message: 'test' })
-    t.throws(() => tran2.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
+    t.throws(() => tran2.apply(), { message: 'cannot apply operation that is already canceled: Error: test' })
     const tran3 = Tran.create({ hint: 'tran3' })
     t.throws(() => tran3.run(() => {
       tran3.cancel(new Error('test'))
       tran3.run(nop)
     }), { message: 'test' })
-    t.throws(() => tran3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
+    t.throws(() => tran3.apply(), { message: 'cannot apply operation that is already canceled: Error: test' })
     Tran.run(sensitiveRun, Sensitivity.ReactEvenOnSameValueAssignment, () => {
       app.userFilter = app.userFilter
     })

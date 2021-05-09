@@ -13,7 +13,7 @@ import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
 import { TaskCtl } from './impl/TaskCtl'
-import { Transaction } from './impl/Transaction'
+import { Operation } from './impl/Transaction'
 import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 
@@ -45,7 +45,7 @@ export function unobservableRun<T>(func: F<T>, ...args: any[]): T {
 }
 
 export function isolatedRun<T>(func: F<T>, ...args: any[]): T {
-  return TaskCtl.run<T>(undefined, Transaction.isolated, func, ...args)
+  return TaskCtl.run<T>(undefined, Operation.isolated, func, ...args)
 }
 
 export function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T {
@@ -62,8 +62,8 @@ export function unobservable(proto: object, prop: PropertyKey): any {
   return Hooks.decorateField(false, proto, prop)
 }
 
-export function transaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opt = { kind: Kind.Transaction }
+export function operation(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+  const opt = { kind: Kind.Operation }
   return Hooks.decorateMethod(true, opt, proto, prop, pd)
 }
 
