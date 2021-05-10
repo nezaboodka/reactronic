@@ -195,7 +195,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       pd = EMPTY_PROP_DESCRIPTOR
     const enumerable: boolean = pd.enumerable ?? true
     const configurable: boolean = pd.configurable ?? true
-    const opts = Hooks.applyMethodOptions(proto, member, pd.value, true, configurable, options, implicit)
+    const opts = Hooks.applyOperationOptions(proto, member, pd.value, true, configurable, options, implicit)
     if (opts.body !== UNDEF) { // regular method
       const bootstrap = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)
@@ -280,8 +280,8 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   /* istanbul ignore next */
-  static applyMethodOptions = function(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
-    throw misuse('alterBlank should never be called')
+  static applyOperationOptions = function(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
+    throw misuse('applyOperationOptions should never be called')
   }
 }
 
