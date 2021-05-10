@@ -27,7 +27,7 @@ Transactional reactivity is based on four fundamental concepts:
 
   - **Observable Objects** - a set of objects that store data of an application (state);
   - **Operation** - a code block that makes changes in observable objects in transactional (atomic) way;
-  - **Reaction** - a code block that is called automatically in response to changes made by an operation;
+  - **Reaction** - an operation that is called automatically in response to changes made by another operation;
   - **Cache** - a computed value having associated code block that is called on-demand to renew the value if it was marked as obsolete.
 
 The following picture illustrates relationships between the concepts
