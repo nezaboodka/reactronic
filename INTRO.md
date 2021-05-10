@@ -19,7 +19,7 @@ class Demo extends ObservableObject {
 
   @reaction
   printContact() {
-    // depends on `name` and `email` and reacts on their changes
+    // depends on `name` and `email` and reacts to their changes
     if (!email.contains('@'))
       throw new Error(`wrong email ${email}`)
     Console.log(name + ' <' + email + '>')
