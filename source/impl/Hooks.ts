@@ -197,8 +197,10 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       pd = EMPTY_PROP_DESCRIPTOR
     const enumerable: boolean = pd.enumerable ?? true
     const configurable: boolean = pd.configurable ?? true
-    const opts = Hooks.applyOperationOptions(proto, member, pd.value, undefined, true, configurable, options, implicit)
-    if (opts.getter !== UNDEF) { // regular method
+    const getter = pd.value ?? pd.get
+    const setter = pd.value ?? pd.set
+    const opts = Hooks.applyOperationOptions(proto, member, getter, setter, true, configurable, options, implicit)
+    if (opts.getter === opts.setter) { // regular method
       const bootstrap = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)
         const hook = Hooks.createOperationHook(h, member, opts)
