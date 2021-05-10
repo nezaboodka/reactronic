@@ -209,8 +209,13 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       return Object.defineProperty(proto, member, { get: bootstrap, enumerable, configurable: true })
     }
     else if (opts.setter === UNDEF) { // property with getter only
-      misuse(`@${decorator.name} ${proto.constructor.name}.${member.toString()} is ignored, because not supported yet`, '')
-      return Object.defineProperty(proto, member, pd)
+      const bootstrap = function(this: any): any {
+        const h = Hooks.acquireObjectHolder(this)
+        const hook = Hooks.createControllerAndGetHook(h, member, opts)
+        Object.defineProperty(h.plain, member, { get: hook, enumerable, configurable })
+        return hook()
+      }
+      return Object.defineProperty(proto, member, { get: bootstrap, enumerable, configurable: true })
     }
     else // property having setter
       throw misuse(`${proto.constructor.name}.${member.toString()} has setter and cannot be decorated with @${decorator.name}`)

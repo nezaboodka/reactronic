@@ -72,6 +72,9 @@ test('brief', t => {
     // Multi-part transactions
     const tran1 = Transaction.create({ hint: 'tran1', journal: Demo.UndoRedo })
     tran1.run(() => {
+      const computed = app.model.computed
+      t.true(computed.startsWith('computed @ '))
+      t.is(computed, app.model.computed)
       t.throws(() => tran1.apply(), { message: 'cannot apply transaction having active operations running' })
       app.model.shared = app.shared = tran1.hint
       daddy.id = 'field restored during transaction'
@@ -158,7 +161,7 @@ test('brief', t => {
     t.throws(() => app.model.testImmutableCollection(), { message: 'use toMutable to modify sealed collection' })
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
-    t.is(app.raw, 'DemoView.userFilter #23t125v101')
+    t.is(app.raw, 'DemoView.userFilter #23t127v101')
     t.is(render.options.kind, Kind.Cache)
     t.is(render.error, undefined)
     t.is(R.getTraceHint(app), 'DemoView')
