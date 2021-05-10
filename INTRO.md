@@ -4,7 +4,7 @@
 
 Key concept of the transactionally reactive programming is reaction.
 Reaction is an operation that is executed automatically, when
-an another operation changes data, which the reaction uses thus
+an another operation changes data, which the reaction uses and thus
 depends on.
 
 ``` typescript
