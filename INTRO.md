@@ -4,8 +4,8 @@
 
 Key concept of the transactionally reactive programming is reaction.
 Reaction is an operation that is executed automatically, when
-an another operation changes data, which the reaction uses and thus
-depends on.
+an another operation changes data, which the reaction depends on by
+using them.
 
 ``` typescript
 class Demo extends ObservableObject {
