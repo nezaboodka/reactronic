@@ -88,7 +88,7 @@ export class Ctl extends Controller<any> {
       op = Operation.current
     if (!op || op.transaction.isFinished)
       throw misuse('a method is expected with reactronic decorator')
-    op.options = new OptionsImpl(op.options.body, op.options, options, false)
+    op.options = new OptionsImpl(op.options.getter, op.options.setter, op.options, options, false)
     if (Dbg.isOn && Dbg.trace.write)
       Dbg.log('║', '  ♦', `${op.hint()}.options = ...`)
     return op.options
@@ -429,7 +429,7 @@ class Operation extends Observable implements Observer {
   private static run(op: Operation, proxy: any): void {
     op.enter()
     try {
-      op.result = op.options.body.call(proxy, ...op.args)
+      op.result = op.options.getter.call(proxy, ...op.args)
     }
     finally {
       op.leaveOrAsync()
@@ -665,13 +665,13 @@ class Operation extends Observable implements Observer {
     return operationHook
   }
 
-  private static applyOperationOptions(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
+  private static applyOperationOptions(proto: any, m: MemberName, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
     let op: Operation | undefined = initial[m]
     const ctl = op ? op.controller : new Ctl(NIL_HOLDER, m)
     const opts = op ? op.options : OptionsImpl.INITIAL
-    initial[m] = op = new Operation(ctl, NIL_REV, new OptionsImpl(body, opts, options, implicit))
+    initial[m] = op = new Operation(ctl, NIL_REV, new OptionsImpl(getter, setter, opts, options, implicit))
     // Add to the list if it's a reaction
     if (op.options.kind === Kind.Reaction && op.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactions = Meta.acquire(proto, Meta.Reactions)

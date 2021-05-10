@@ -52,7 +52,8 @@ const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
 })
 
 export class OptionsImpl implements MemberOptions {
-  readonly body: Function
+  readonly getter: Function
+  readonly setter: Function
   readonly kind: Kind
   readonly priority: number
   readonly noSideEffects: boolean
@@ -62,10 +63,11 @@ export class OptionsImpl implements MemberOptions {
   readonly journal: TransactionJournal | undefined
   readonly monitor: Monitor | null
   readonly trace?: Partial<TraceOptions>
-  static readonly INITIAL = Object.freeze(new OptionsImpl(UNDEF, { body: UNDEF, ...DEFAULT_OPTIONS }, {}, false))
+  static readonly INITIAL = Object.freeze(new OptionsImpl(UNDEF, UNDEF, { getter: UNDEF, setter: UNDEF, ...DEFAULT_OPTIONS }, {}, false))
 
-  constructor(body: Function | undefined, existing: OptionsImpl, patch: Partial<OptionsImpl>, implicit: boolean) {
-    this.body = body !== undefined ? body : existing.body
+  constructor(getter: Function | undefined, setter: Function | undefined, existing: OptionsImpl, patch: Partial<OptionsImpl>, implicit: boolean) {
+    this.getter = getter !== undefined ? getter : existing.getter
+    this.setter = setter !== undefined ? setter : existing.setter
     this.kind = merge(DEFAULT_OPTIONS.kind, existing.kind, patch.kind, implicit)
     this.priority = merge(DEFAULT_OPTIONS.priority, existing.priority, patch.priority, implicit)
     this.noSideEffects = merge(DEFAULT_OPTIONS.noSideEffects, existing.noSideEffects, patch.noSideEffects, implicit)
@@ -195,8 +197,8 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       pd = EMPTY_PROP_DESCRIPTOR
     const enumerable: boolean = pd.enumerable ?? true
     const configurable: boolean = pd.configurable ?? true
-    const opts = Hooks.applyOperationOptions(proto, member, pd.value, true, configurable, options, implicit)
-    if (opts.body !== UNDEF) { // regular method
+    const opts = Hooks.applyOperationOptions(proto, member, pd.value, undefined, true, configurable, options, implicit)
+    if (opts.getter !== UNDEF) { // regular method
       const bootstrap = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)
         const hook = Hooks.createOperationHook(h, member, opts)
@@ -280,7 +282,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   /* istanbul ignore next */
-  static applyOperationOptions = function(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
+  static applyOperationOptions = function(proto: any, m: MemberName, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
     throw misuse('applyOperationOptions should never be called')
   }
 }
