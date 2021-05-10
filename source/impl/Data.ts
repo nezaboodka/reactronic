@@ -23,7 +23,7 @@ export interface AbstractSnapshot {
 export class Observable {
   value: any
   observers?: Set<Observer>
-  get isTask(): boolean { return false }
+  get isOperation(): boolean { return false }
   constructor(value: any) { this.value = value }
 }
 

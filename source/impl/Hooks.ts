@@ -108,7 +108,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     let result: any
     const r: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
     result = r.data[m]
-    if (result instanceof Observable && !result.isTask) {
+    if (result instanceof Observable && !result.isOperation) {
       Snapshot.markUsed(result, r, m, h, Kind.Data, false)
       result = result.value
     }
@@ -170,7 +170,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
-      if (!(value instanceof Observable) || !value.isTask)
+      if (!(value instanceof Observable) || !value.isOperation)
         result.push(m)
     }
     return result

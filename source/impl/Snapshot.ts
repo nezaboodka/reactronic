@@ -68,7 +68,7 @@ export class Snapshot implements AbstractSnapshot {
     this.sealed = false
   }
 
-  // To be redefined by Operation and Task implementations
+  // To be redefined by transaction implementation
   static current: () => Snapshot = UNDEF
   static edit: () => Snapshot = UNDEF
   static markUsed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF

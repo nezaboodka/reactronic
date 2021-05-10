@@ -325,12 +325,12 @@ interface ProfilingOptions {
   asyncActionDurationWarningThreshold: number // default: 150 ms
 }
 
-// Operation
+// Transaction
 
 type F<T> = (...args: any[]) => T
 
-class Operation implements Worker {
-  static readonly current: Operation
+class Transaction implements Worker {
+  static readonly current: Transaction
 
   readonly id: number
   readonly hint: string
@@ -339,13 +339,13 @@ class Operation implements Worker {
   wrap<T>(func: F<T>): F<T>
   apply(): void
   seal(): this // a1.seal().whenFinished().then(fulfill, reject)
-  cancel(error?: Error, retryAfter?: Operation): this
+  cancel(error?: Error, retryAfter?: Transaction): this
   isCanceled: boolean
   isFinished: boolean
   whenFinished(): Promise<void>
   join<T>(p: Promise<T>): Promise<T>
 
-  static create(hint: string): Operation
+  static create(hint: string): Transaction
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
     trace: Partial<TraceOptions | undefined>, func: F<T>, ...args: any[]): T
