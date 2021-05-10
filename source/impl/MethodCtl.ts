@@ -47,7 +47,7 @@ export class MethodCtl extends Controller<any> {
     const ctx = cc.snapshot
     const op: Operation = cc.op
     if (!cc.isUpToDate && cc.revision.data[Meta.Disposed] === undefined
-      && (!weak || op.obsoleteSince === INIT_TIMESTAMP || !op.successor || op.successor.worker.isFinished)) {
+      && (!weak || op.obsoleteSince === INIT_TIMESTAMP || !op.successor || op.successor.transaction.isFinished)) {
       const opt = op.options
       const spawn = weak || opt.kind === Kind.Reaction ||
         (opt.kind === Kind.Cache && (cc.revision.snapshot.sealed || cc.revision.prev.revision !== NIL_REV))
@@ -58,7 +58,7 @@ export class MethodCtl extends Controller<any> {
         cc = ic2
     }
     else if (Dbg.isOn && Dbg.trace.method && (op.options.trace === undefined || op.options.trace.method === undefined || op.options.trace.method === true))
-      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.rev(cc.revision, this.memberName)} result is reused from T${cc.op.worker.id}[${cc.op.worker.hint}]`)
+      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.rev(cc.revision, this.memberName)} result is reused from T${cc.op.transaction.id}[${cc.op.transaction.hint}]`)
     const t = cc.op
     Snapshot.markUsed(t, cc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
     return t
@@ -77,7 +77,7 @@ export class MethodCtl extends Controller<any> {
       op = self.edit().op
     else
       op = Operation.current
-    if (!op || op.worker.isFinished)
+    if (!op || op.transaction.isFinished)
       throw misuse('a method is expected with reactronic decorator')
     op.options = new OptionsImpl(op.options.body, op.options, options, false)
     if (Dbg.isOn && Dbg.trace.write)
@@ -157,14 +157,14 @@ export class MethodCtl extends Controller<any> {
   private peekFromRev(r: ObjectRevision): Operation {
     const m = this.memberName
     let op: Operation = r.data[m]
-    if (op.ctl !== this) {
+    if (op.controller !== this) {
       const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, m)}/init` : /* istanbul ignore next */ 'MethodController/init'
       const spawn = r.snapshot.sealed || r.prev.revision !== NIL_REV
       op = Transaction.runAs<Operation>({ hint, spawn, token: this }, (): Operation => {
         const h = this.ownHolder
         let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
         let op2 = r2.data[m] as Operation
-        if (op2.ctl !== this) {
+        if (op2.controller !== this) {
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
           op2 = r2.data[m] = new Operation(this, r2, op2)
           op2.obsoleteSince = INIT_TIMESTAMP // indicates blank value
@@ -182,7 +182,7 @@ export class MethodCtl extends Controller<any> {
     let cc = existing
     const opt = { hint, spawn, journal: options.journal, trace: options.trace, token }
     const result = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
-      if (!cc.op.worker.isCanceled) { // first invoke
+      if (!cc.op.transaction.isCanceled) { // first invoke
         cc = this.edit()
         if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
           Dbg.log('║', ' (f)', `${cc.op.why()}`)
@@ -217,8 +217,8 @@ class Operation extends Observable implements Observer {
   static asyncReactionsBatch: Operation[] = []
 
   readonly margin: number
-  readonly worker: Worker
-  readonly ctl: MethodCtl
+  readonly transaction: Worker
+  readonly controller: MethodCtl
   readonly revision: ObjectRevision
   readonly observables: Map<Observable, MemberInfo>
   options: OptionsImpl
@@ -231,11 +231,11 @@ class Operation extends Observable implements Observer {
   obsoleteSince: number
   successor: Operation | undefined
 
-  constructor(ctl: MethodCtl, revision: ObjectRevision, prev: Operation | OptionsImpl) {
+  constructor(controller: MethodCtl, revision: ObjectRevision, prev: Operation | OptionsImpl) {
     super(undefined)
     this.margin = Operation.current ? Operation.current.margin + 1 : 1
-    this.worker = Transaction.current
-    this.ctl = ctl
+    this.transaction = Transaction.current
+    this.controller = controller
     this.revision = revision
     this.observables = new Map<Observable, MemberInfo>()
     if (prev instanceof Operation) {
@@ -259,18 +259,18 @@ class Operation extends Observable implements Observer {
   }
 
   get isOperation(): boolean { return true } // override
-  hint(): string { return `${Hints.rev(this.revision, this.ctl.memberName)}` } // override
+  hint(): string { return `${Hints.rev(this.revision, this.controller.memberName)}` } // override
   get priority(): number { return this.options.priority }
 
   why(): string {
     let ms: number = Date.now()
-    const prev = this.revision.prev.revision.data[this.ctl.memberName]
+    const prev = this.revision.prev.revision.data[this.controller.memberName]
     if (prev instanceof Operation)
       ms = Math.abs(this.started) - Math.abs(prev.started)
     let cause: string
     if (this.cause)
       cause = `   <<   ${propagationHint(this.cause, true).join('   <<   ')}`
-    else if (this.ctl.options.kind === Kind.Operation)
+    else if (this.controller.options.kind === Kind.Operation)
       cause = '   <<   operation'
     else
       cause = `   <<   called within ${this.revision.snapshot.hint}`
@@ -326,10 +326,10 @@ class Operation extends Observable implements Observer {
         if (isReaction) // stop cascade outdating on reaction
           reactions.push(this)
         else if (this.observers) // cascade outdating
-          this.observers.forEach(c => c.markObsoleteDueTo(this, {revision: this.revision, member: this.ctl.memberName, times: 0}, since, reactions))
-        const worker = this.worker
-        if (!worker.isFinished && this !== observable) // restart after itself if canceled
-          worker.cancel(new Error(`T${worker.id}[${worker.hint}] is canceled due to outdating by ${Hints.rev(cause.revision, cause.member)}`), null)
+          this.observers.forEach(c => c.markObsoleteDueTo(this, {revision: this.revision, member: this.controller.memberName, times: 0}, since, reactions))
+        const tran = this.transaction
+        if (!tran.isFinished && this !== observable) // restart after itself if canceled
+          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to outdating by ${Hints.rev(cause.revision, cause.member)}`), null)
       }
       else {
         if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
@@ -349,9 +349,9 @@ class Operation extends Observable implements Observer {
     const hold = t ? t - interval : 0 // "started" is stored as negative value after reaction completion
     if (now || hold < 0) {
       if (!this.error && (this.options.kind === Kind.Operation ||
-        !this.successor || this.successor.worker.isCanceled)) {
+        !this.successor || this.successor.transaction.isCanceled)) {
         try {
-          const op: Operation = this.ctl.invoke(false, undefined)
+          const op: Operation = this.controller.invoke(false, undefined)
           if (op.result instanceof Promise)
             op.result.catch(error => {
               if (op.options.kind === Kind.Reaction)
@@ -377,27 +377,27 @@ class Operation extends Observable implements Observer {
   reenterOver(head: Operation): this {
     let error: Error | undefined = undefined
     const concurrent = head.successor
-    if (concurrent && !concurrent.worker.isFinished) {
+    if (concurrent && !concurrent.transaction.isFinished) {
       if (Dbg.isOn && Dbg.trace.obsolete)
         Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${concurrent.hint()}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
-          if (!concurrent.worker.isCanceled)
+          if (!concurrent.transaction.isCanceled)
             throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${concurrent.hint()} (${concurrent.why()})`)
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/PreventWithError due to canceled T${concurrent.worker.id}[${concurrent.worker.hint}]`)
-          this.worker.cancel(error, concurrent.worker)
+          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/PreventWithError due to canceled T${concurrent.transaction.id}[${concurrent.transaction.hint}]`)
+          this.transaction.cancel(error, concurrent.transaction)
           break
         case Reentrance.WaitAndRestart:
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/WaitAndRestart due to active T${concurrent.worker.id}[${concurrent.worker.hint}]`)
-          this.worker.cancel(error, concurrent.worker)
+          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/WaitAndRestart due to active T${concurrent.transaction.id}[${concurrent.transaction.hint}]`)
+          this.transaction.cancel(error, concurrent.transaction)
           break
         case Reentrance.CancelAndWaitPrevious:
-          error = new Error(`T${this.worker.id}[${this.worker.hint}] is on hold/CancelAndWaitPrevious due to active T${concurrent.worker.id}[${concurrent.worker.hint}]`)
-          this.worker.cancel(error, concurrent.worker)
-          concurrent.worker.cancel(new Error(`T${concurrent.worker.id}[${concurrent.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
+          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/CancelAndWaitPrevious due to active T${concurrent.transaction.id}[${concurrent.transaction.hint}]`)
+          this.transaction.cancel(error, concurrent.transaction)
+          concurrent.transaction.cancel(new Error(`T${concurrent.transaction.id}[${concurrent.transaction.hint}] is canceled due to re-entering T${this.transaction.id}[${this.transaction.hint}]`), null)
           break
         case Reentrance.CancelPrevious:
-          concurrent.worker.cancel(new Error(`T${concurrent.worker.id}[${concurrent.worker.hint}] is canceled due to re-entering T${this.worker.id}[${this.worker.hint}]`), null)
+          concurrent.transaction.cancel(new Error(`T${concurrent.transaction.id}[${concurrent.transaction.hint}] is canceled due to re-entering T${this.transaction.id}[${this.transaction.hint}]`), null)
           break
         case Reentrance.RunSideBySide:
           break // do nothing
@@ -426,7 +426,7 @@ class Operation extends Observable implements Observer {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.method)
-      Dbg.log('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Hints.obj(this.ctl.ownHolder, this.ctl.memberName)} ]`)
+      Dbg.log('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Hints.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
     this.started = Date.now()
   }
 
@@ -475,7 +475,7 @@ class Operation extends Observable implements Observer {
       trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.global,
     }
     MethodCtl.runWithin<void>(undefined, Transaction.runAs, options,
-      MonitorImpl.enter, mon, this.worker)
+      MonitorImpl.enter, mon, this.transaction)
   }
 
   private monitorLeave(mon: Monitor): void {
@@ -487,9 +487,9 @@ class Operation extends Observable implements Observer {
           trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.DefaultLevel,
         }
         MethodCtl.runWithin<void>(undefined, Transaction.runAs, options,
-          MonitorImpl.leave, mon, this.worker)
+          MonitorImpl.leave, mon, this.transaction)
       }
-      this.worker.whenFinished().then(leave, leave)
+      this.transaction.whenFinished().then(leave, leave)
     })
   }
 
@@ -655,7 +655,7 @@ class Operation extends Observable implements Observer {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: Operation | undefined = blank[m]
-    const ctl = existing ? existing.ctl : new MethodCtl(NIL_HOLDER, m)
+    const ctl = existing ? existing.controller : new MethodCtl(NIL_HOLDER, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
     const op =  new Operation(ctl, NIL_REV, new OptionsImpl(body, opts, options, implicit))
     blank[m] = op
