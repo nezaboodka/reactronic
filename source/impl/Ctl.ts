@@ -20,7 +20,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 
 type CallCtx = {
-  readonly op: Operation
+  readonly operation: Operation
   readonly isUpToDate: boolean
   readonly snapshot: Snapshot
   readonly revision: ObjectRevision
@@ -31,11 +31,11 @@ export class Ctl extends Controller<any> {
   readonly memberName: MemberName
 
   configure(options: Partial<MemberOptions>): MemberOptions { return Ctl.configureImpl(this, options) }
-  get options(): MemberOptions { return this.peek(undefined).op.options }
-  get nonreactive(): any { return this.peek(undefined).op.value }
-  get args(): ReadonlyArray<any> { return this.use().op.args }
+  get options(): MemberOptions { return this.peek(undefined).operation.options }
+  get nonreactive(): any { return this.peek(undefined).operation.value }
+  get args(): ReadonlyArray<any> { return this.use().operation.args }
   get result(): any { return this.invoke(true, undefined).value }
-  get error(): boolean { return this.use().op.error }
+  get error(): boolean { return this.use().operation.error }
   get stamp(): number { return this.use().revision.snapshot.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
   markObsolete(): void { Transaction.runAs({ hint: Dbg.isOn ? `markObsolete(${Hints.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, Ctl.markObsolete, this) }
@@ -50,7 +50,7 @@ export class Ctl extends Controller<any> {
   invoke(weak: boolean, args: any[] | undefined): Operation {
     let cc: CallCtx = this.peek(args)
     const ctx = cc.snapshot
-    const op: Operation = cc.op
+    const op: Operation = cc.operation
     if (!cc.isUpToDate && cc.revision.data[Meta.Disposed] === undefined
       && (!weak || op.obsoleteSince === INIT_TIMESTAMP || !op.successor ||
         op.successor.transaction.isFinished)) {
@@ -60,15 +60,15 @@ export class Ctl extends Controller<any> {
           cc.revision.prev.revision !== NIL_REV))
       const token = opt.noSideEffects ? this : undefined
       const ic2 = this.run(cc, spawn, opt, token, args)
-      const ctx2 = ic2.op.revision.snapshot
+      const ctx2 = ic2.operation.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         cc = ic2
     }
     else if (Dbg.isOn && Dbg.trace.method && (op.options.trace === undefined ||
       op.options.trace.method === undefined || op.options.trace.method === true))
       Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)',
-        `${Hints.rev(cc.revision, this.memberName)} result is reused from T${cc.op.transaction.id}[${cc.op.transaction.hint}]`)
-    const t = cc.op
+        `${Hints.rev(cc.revision, this.memberName)} result is reused from T${cc.operation.transaction.id}[${cc.operation.transaction.hint}]`)
+    const t = cc.operation
     Snapshot.markUsed(t, cc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
     return t
   }
@@ -83,7 +83,7 @@ export class Ctl extends Controller<any> {
   static configureImpl(self: Ctl | undefined, options: Partial<MemberOptions>): MemberOptions {
     let op: Operation | undefined
     if (self)
-      op = self.edit().op
+      op = self.edit().operation
     else
       op = Operation.current
     if (!op || op.transaction.isFinished)
@@ -139,13 +139,13 @@ export class Ctl extends Controller<any> {
       (!op.options.sensitiveArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
-    return { op, isUpToDate: isValid, snapshot: ctx, revision: r }
+    return { operation: op, isUpToDate: isValid, snapshot: ctx, revision: r }
   }
 
   private use(): CallCtx {
     const cc = this.peek(undefined)
-    Snapshot.markUsed(cc.op, cc.revision,
-      this.memberName, this.ownHolder, cc.op.options.kind, true)
+    Snapshot.markUsed(cc.operation, cc.revision,
+      this.memberName, this.ownHolder, cc.operation.options.kind, true)
     return cc
   }
 
@@ -161,7 +161,7 @@ export class Ctl extends Controller<any> {
       ctx.bumpBy(r.prev.revision.snapshot.timestamp)
       Snapshot.markEdited(op, true, r, m, h)
     }
-    return { op, isUpToDate: true, snapshot: ctx, revision: r }
+    return { operation: op, isUpToDate: true, snapshot: ctx, revision: r }
   }
 
   private peekFromRev(r: ObjectRevision): Operation {
@@ -192,31 +192,31 @@ export class Ctl extends Controller<any> {
     let cc = existing
     const opt = { hint, spawn, journal: options.journal, trace: options.trace, token }
     const result = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
-      if (!cc.op.transaction.isCanceled) { // first invoke
+      if (!cc.operation.transaction.isCanceled) { // first invoke
         cc = this.edit()
         if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
-          Dbg.log('║', ' (f)', `${cc.op.why()}`)
-        cc.op.run(this.ownHolder.proxy, argsx)
+          Dbg.log('║', ' (f)', `${cc.operation.why()}`)
+        cc.operation.run(this.ownHolder.proxy, argsx)
       }
       else { // retry invoke
         cc = this.peek(argsx) // re-read on retry
-        if (cc.op.options.kind === Kind.Operation || !cc.isUpToDate) {
+        if (cc.operation.options.kind === Kind.Operation || !cc.isUpToDate) {
           cc = this.edit()
           if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
-            Dbg.log('║', ' (f)', `${cc.op.why()}`)
-          cc.op.run(this.ownHolder.proxy, argsx)
+            Dbg.log('║', ' (f)', `${cc.operation.why()}`)
+          cc.operation.run(this.ownHolder.proxy, argsx)
         }
       }
-      return cc.op.result
+      return cc.operation.result
     }, args)
-    cc.op.result = result
+    cc.operation.result = result
     return cc
   }
 
   private static markObsolete(self: Ctl): void {
     const cc = self.peek(undefined)
     const ctx = cc.snapshot
-    cc.op.markObsoleteDueTo(cc.op, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
+    cc.operation.markObsoleteDueTo(cc.operation, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
   }
 }
 
