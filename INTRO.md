@@ -28,7 +28,7 @@ class Demo extends ObservableObject {
 ```
 
 In the example above, the operation `saveContact` triggers
-automatic execution of teh reaction `printContact`, which
+automatic execution of the reaction `printContact`, which
 depends on `name` and `email` fields changed by the operation.
 
 If reaction needs to use data without tracking their changes
