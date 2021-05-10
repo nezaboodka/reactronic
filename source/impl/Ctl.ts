@@ -20,10 +20,10 @@ import { TransactionJournalImpl } from './TransactionJournal'
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 
 type CallCtx = {
-  op: Operation
-  isUpToDate: boolean
-  snapshot: Snapshot
-  revision: ObjectRevision
+  readonly op: Operation
+  readonly isUpToDate: boolean
+  readonly snapshot: Snapshot
+  readonly revision: ObjectRevision
 }
 
 export class Ctl extends Controller<any> {
