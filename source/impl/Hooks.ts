@@ -213,7 +213,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       return Object.defineProperty(proto, member, { get: trap, enumerable, configurable: true })
     }
     else {
-      misuse(`@${decorator.name} ${member.toString()} is ignored, because is not supported yet`, '')
+      misuse(`@${decorator.name} ${member.toString()} is ignored, because not supported yet`, '')
       return Object.defineProperty(proto, member, pd)
     }
   }
