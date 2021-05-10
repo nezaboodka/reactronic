@@ -202,7 +202,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     if (opts.getter === opts.setter) { // regular method
       const bootstrap = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)
-        const hook = Hooks.createOperationHook(h, member, opts)
+        const hook = Hooks.createControllerAndGetHook(h, member, opts)
         Object.defineProperty(h.plain, member, { value: hook, enumerable, configurable })
         return hook
       }
@@ -280,8 +280,8 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   /* istanbul ignore next */
-  static createOperationHook = function(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
-    throw misuse('createOperationHook should never be called')
+  static createControllerAndGetHook = function(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
+    throw misuse('createControllerAndGetHook should never be called')
   }
 
   /* istanbul ignore next */

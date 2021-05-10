@@ -657,12 +657,13 @@ class Operation extends Observable implements Observer {
     return result
   }
 
-  private static createOperationHook(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
+  private static createControllerAndGetHook(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
     const ctl = new Ctl(h, m)
-    const operationHook: F<any> = (...args: any[]): any =>
-      ctl.invoke(false, args).result
-    Meta.set(operationHook, Meta.Controller, ctl)
-    return operationHook
+    const hook: F<any> = (...args: any[]): any => {
+      return ctl.invoke(false, args).result
+    }
+    Meta.set(hook, Meta.Controller, ctl)
+    return hook
   }
 
   private static rememberOperationOptions(proto: any, m: MemberName, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
@@ -695,7 +696,7 @@ class Operation extends Observable implements Observer {
     Snapshot.markEdited = Operation.markEdited // override
     Snapshot.isConflicting = Operation.isConflicting // override
     Snapshot.propagateChanges = Operation.propagateChanges // override
-    Hooks.createOperationHook = Operation.createOperationHook // override
+    Hooks.createControllerAndGetHook = Operation.createControllerAndGetHook // override
     Hooks.rememberOperationOptions = Operation.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
     try {
