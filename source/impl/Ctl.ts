@@ -665,7 +665,7 @@ class Operation extends Observable implements Observer {
     return operationHook
   }
 
-  private static applyOperationOptions(proto: any, m: MemberName, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
+  private static rememberOperationOptions(proto: any, m: MemberName, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
     let op: Operation | undefined = initial[m]
@@ -696,7 +696,7 @@ class Operation extends Observable implements Observer {
     Snapshot.isConflicting = Operation.isConflicting // override
     Snapshot.propagateChanges = Operation.propagateChanges // override
     Hooks.createOperationHook = Operation.createOperationHook // override
-    Hooks.applyOperationOptions = Operation.applyOperationOptions // override
+    Hooks.rememberOperationOptions = Operation.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {

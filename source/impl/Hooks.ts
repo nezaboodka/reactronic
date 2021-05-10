@@ -197,7 +197,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       pd = EMPTY_PROP_DESCRIPTOR
     const enumerable: boolean = pd.enumerable ?? true
     const configurable: boolean = pd.configurable ?? true
-    const opts = Hooks.applyOperationOptions(proto, member,
+    const opts = Hooks.rememberOperationOptions(proto, member,
       pd.value ?? pd.get, pd.value ?? pd.set, true, configurable, options, implicit)
     if (opts.getter === opts.setter) { // regular method
       const bootstrap = function(this: any): any {
@@ -285,8 +285,8 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   /* istanbul ignore next */
-  static applyOperationOptions = function(proto: any, m: MemberName, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
-    throw misuse('applyOperationOptions should never be called')
+  static rememberOperationOptions = function(proto: any, m: MemberName, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
+    throw misuse('rememberOperationOptions should never be called')
   }
 }
 
