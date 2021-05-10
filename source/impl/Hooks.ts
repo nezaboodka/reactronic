@@ -25,7 +25,7 @@ export abstract class ObservableObject {
     if (!Hooks.reactionsAutoStartDisabled) {
       const reactions = Meta.getFrom(proto, Meta.Reactions)
       for (const member in reactions)
-        (h.proxy[member][Meta.Method] as Controller<any>).markObsolete()
+        (h.proxy[member][Meta.Controller] as Controller<any>).markObsolete()
     }
     return h.proxy
   }
@@ -199,18 +199,17 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     pd: PropertyDescriptor): any {
     if (!pd || pd === proto) // pd === proto for all decorators except the first one
       pd = EMPTY_PROP_DESCRIPTOR
-    if (pd.get === undefined && pd.set === undefined) { // regular method
-      const enumerable: boolean = pd.enumerable ?? true
-      const configurable: boolean = pd.configurable ?? true
-      // Setup method trap
-      const opts = Hooks.applyMethodOptions(proto, member, pd.value, true, configurable, options, implicit)
-      const trap = function(this: any): any {
+    const enumerable: boolean = pd.enumerable ?? true
+    const configurable: boolean = pd.configurable ?? true
+    const opts = Hooks.applyMethodOptions(proto, member, pd.value, true, configurable, options, implicit)
+    if (opts.body !== UNDEF) { // regular method
+      const initializer = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)
-        const value = Hooks.createMethodTrap(h, member, opts)
-        Object.defineProperty(h.plain, member, { value, enumerable, configurable })
-        return value
+        const hook = Hooks.createOperationHook(h, member, opts)
+        Object.defineProperty(h.plain, member, { value: hook, enumerable, configurable })
+        return hook
       }
-      return Object.defineProperty(proto, member, { get: trap, enumerable, configurable: true })
+      return Object.defineProperty(proto, member, { get: initializer, enumerable, configurable: true })
     }
     else { // property getter, or setter, or both
       misuse(`@${decorator.name} ${proto.constructor.name}.${member.toString()} is ignored, because not supported yet`, '')
@@ -276,8 +275,8 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   /* istanbul ignore next */
-  static createMethodTrap = function(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
-    throw misuse('createMethodTrap should never be called')
+  static createOperationHook = function(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
+    throw misuse('createOperationHook should never be called')
   }
 
   /* istanbul ignore next */

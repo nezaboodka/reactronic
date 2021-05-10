@@ -74,7 +74,7 @@ export class Ctl extends Controller<any> {
   }
 
   static of(method: F<any>): Controller<any> {
-    const ctl = Meta.get<Controller<any> | undefined>(method, Meta.Method)
+    const ctl = Meta.get<Controller<any> | undefined>(method, Meta.Controller)
     if (!ctl)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return ctl
@@ -657,12 +657,12 @@ class Operation extends Observable implements Observer {
     return result
   }
 
-  private static createMethodTrap(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
+  private static createOperationHook(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
     const ctl = new Ctl(h, m)
-    const methodTrap: F<any> = (...args: any[]): any =>
+    const operationHook: F<any> = (...args: any[]): any =>
       ctl.invoke(false, args).result
-    Meta.set(methodTrap, Meta.Method, ctl)
-    return methodTrap
+    Meta.set(operationHook, Meta.Controller, ctl)
+    return operationHook
   }
 
   private static applyMethodOptions(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
@@ -696,7 +696,7 @@ class Operation extends Observable implements Observer {
     Snapshot.markEdited = Operation.markEdited // override
     Snapshot.isConflicting = Operation.isConflicting // override
     Snapshot.propagateChanges = Operation.propagateChanges // override
-    Hooks.createMethodTrap = Operation.createMethodTrap // override
+    Hooks.createOperationHook = Operation.createOperationHook // override
     Hooks.applyMethodOptions = Operation.applyMethodOptions // override
     Promise.prototype.then = reactronicHookedThen // override
     try {
