@@ -12,8 +12,7 @@ class Demo extends ObservableObject {
   email: 'contact@nezaboodka.com'
 
   @operation
-  saveContact(name: string, email: string)
-  {
+  saveContact(name: string, email: string) {
     this.name = name
     this.email = email
     // triggers `printContact` reaction
