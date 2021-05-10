@@ -1,6 +1,6 @@
 ﻿
 
-# Introduction to transactionally reactive programming with TypeScript
+# Introduction to Transactionally Reactive Programming with TypeScript
 
 Key concept of the transactionally reactive programming is reaction.
 Reaction is an operation that is executed automatically, when
