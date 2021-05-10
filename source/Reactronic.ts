@@ -11,7 +11,7 @@ import { Controller } from './Controller'
 import { Kind, Reentrance, MethodOptions, TraceOptions, ProfilingOptions, Sensitivity } from './Options'
 import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
-import { Hooks, decorateOperation } from './impl/Hooks'
+import { Hooks } from './impl/Hooks'
 import { Ctl } from './impl/Ctl'
 import { Transaction } from './impl/Transaction'
 import { TransactionJournal } from './impl/TransactionJournal'
@@ -78,33 +78,33 @@ export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor)
 }
 
 export function priority(value: number): F<any> {
-  return decorateOperation(priority, {priority: value})
+  return Hooks.decorateOperationParametrized(priority, {priority: value})
 }
 
 export function noSideEffects(value: boolean): F<any> {
-  return decorateOperation(noSideEffects, {noSideEffects: value})
+  return Hooks.decorateOperationParametrized(noSideEffects, {noSideEffects: value})
 }
 
 export function observableArgs(value: boolean): F<any> {
-  return decorateOperation(observableArgs, {sensitiveArgs: value})
+  return Hooks.decorateOperationParametrized(observableArgs, {sensitiveArgs: value})
 }
 
 export function throttling(milliseconds: number): F<any> {
-  return decorateOperation(throttling, {throttling: milliseconds})
+  return Hooks.decorateOperationParametrized(throttling, {throttling: milliseconds})
 }
 
 export function reentrance(value: Reentrance): F<any> {
-  return decorateOperation(reentrance, {reentrance: value})
+  return Hooks.decorateOperationParametrized(reentrance, {reentrance: value})
 }
 
 export function journal(value: TransactionJournal | undefined): F<any> {
-  return decorateOperation(journal, {journal: value})
+  return Hooks.decorateOperationParametrized(journal, {journal: value})
 }
 
 export function monitor(value: Monitor | null): F<any> {
-  return decorateOperation(monitor, {monitor: value})
+  return Hooks.decorateOperationParametrized(monitor, {monitor: value})
 }
 
 export function trace(value: Partial<TraceOptions>): F<any> {
-  return decorateOperation(trace, {trace: value})
+  return Hooks.decorateOperationParametrized(trace, {trace: value})
 }

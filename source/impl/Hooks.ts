@@ -37,12 +37,6 @@ export abstract class ObservableObject {
   }
 }
 
-export function decorateOperation(decorator: Function, options: Partial<MethodOptions>): F<any> {
-  return function(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-    return Hooks.decorateOperation(false, decorator, options, proto, prop, pd) /* istanbul ignore next */
-  }
-}
-
 // Options
 
 const DEFAULT_OPTIONS: MethodOptions = Object.freeze({
@@ -214,6 +208,12 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     else { // property with getter/setter
       misuse(`@${decorator.name} ${proto.constructor.name}.${member.toString()} is ignored, because not supported yet`, '')
       return Object.defineProperty(proto, member, pd)
+    }
+  }
+
+  static decorateOperationParametrized(decorator: Function, options: Partial<MethodOptions>): F<any> {
+    return function(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
+      return Hooks.decorateOperation(false, decorator, options, proto, prop, pd) /* istanbul ignore next */
     }
   }
 
