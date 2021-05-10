@@ -105,8 +105,8 @@ of asynchronous operations is fully completed.
 
 ### Reaction & Cache
 
-Reaction is a function that is immediately called in response to
-changes made by a operation in observable objects. Cache is a
+Reaction is an operation that is immediately called in response to
+changes made by another operation in observable objects. Cache is a
 computed value having an associated function that is called
 on-demand to renew the value if it was marked as obsolete due to changes
 made by a operation. Reactive and cached functions are
@@ -238,7 +238,7 @@ class ObservableObject { }
 
 // Decorators & Operators
 
-function plain(proto, prop) // field only
+function raw(proto, prop) // field only
 function operation(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
