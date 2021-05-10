@@ -11,7 +11,7 @@ import { Controller } from './Controller'
 import { Kind, Reentrance, MethodOptions, TraceOptions, ProfilingOptions, Sensitivity } from './Options'
 import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
-import { Hooks, decorateMethod } from './impl/Hooks'
+import { Hooks, decorateOperation } from './impl/Hooks'
 import { Ctl } from './impl/Ctl'
 import { Transaction } from './impl/Transaction'
 import { TransactionJournal } from './impl/TransactionJournal'
@@ -64,47 +64,47 @@ export function plain(proto: object, prop: PropertyKey): any {
 
 export function operation(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opt = { kind: Kind.Operation }
-  return Hooks.decorateMethod(true, opt, proto, prop, pd)
+  return Hooks.decorateOperation(true, operation, opt, proto, prop, pd)
 }
 
 export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opt = { kind: Kind.Reaction, throttling: -1 } // immediate reaction
-  return Hooks.decorateMethod(true, opt, proto, prop, pd)
+  return Hooks.decorateOperation(true, reaction, opt, proto, prop, pd)
 }
 
 export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opt = { kind: Kind.Cache, noSideEffects: true }
-  return Hooks.decorateMethod(true, opt, proto, prop, pd)
+  return Hooks.decorateOperation(true, cached, opt, proto, prop, pd)
 }
 
 export function priority(value: number): F<any> {
-  return decorateMethod({priority: value})
+  return decorateOperation(priority, {priority: value})
 }
 
 export function noSideEffects(value: boolean): F<any> {
-  return decorateMethod({noSideEffects: value})
+  return decorateOperation(noSideEffects, {noSideEffects: value})
 }
 
 export function observableArgs(value: boolean): F<any> {
-  return decorateMethod({sensitiveArgs: value})
+  return decorateOperation(observableArgs, {sensitiveArgs: value})
 }
 
 export function throttling(milliseconds: number): F<any> {
-  return decorateMethod({throttling: milliseconds})
+  return decorateOperation(throttling, {throttling: milliseconds})
 }
 
 export function reentrance(value: Reentrance): F<any> {
-  return decorateMethod({reentrance: value})
+  return decorateOperation(reentrance, {reentrance: value})
 }
 
 export function journal(value: TransactionJournal | undefined): F<any> {
-  return decorateMethod({journal: value})
+  return decorateOperation(journal, {journal: value})
 }
 
 export function monitor(value: Monitor | null): F<any> {
-  return decorateMethod({monitor: value})
+  return decorateOperation(monitor, {monitor: value})
 }
 
 export function trace(value: Partial<TraceOptions>): F<any> {
-  return decorateMethod({trace: value})
+  return decorateOperation(trace, {trace: value})
 }

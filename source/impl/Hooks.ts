@@ -37,9 +37,9 @@ export abstract class ObservableObject {
   }
 }
 
-export function decorateMethod(options: Partial<MethodOptions>): F<any> {
+export function decorateOperation(decorator: Function, options: Partial<MethodOptions>): F<any> {
   return function(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-    return Hooks.decorateMethod(false, options, proto, prop, pd) /* istanbul ignore next */
+    return Hooks.decorateOperation(false, decorator, options, proto, prop, pd) /* istanbul ignore next */
   }
 }
 
@@ -194,23 +194,28 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       Meta.acquire(proto, Meta.Blank)[m] = Meta.Plain
   }
 
-  static decorateMethod(implicit: boolean, options: Partial<MethodOptions>,
-    proto: any, method: MemberName, pd: PropertyDescriptor): any {
+  static decorateOperation(implicit: boolean, decorator: Function,
+    options: Partial<MethodOptions>, proto: any, member: MemberName,
+    pd: PropertyDescriptor): any {
     if (!pd || pd === proto)
       pd = EMPTY_PROP_DESCRIPTOR
-    if (pd.get !== undefined || pd.set !== undefined)
-      throw misuse('property getters and setters are not supported by reactronic decorators')
-    const enumerable: boolean = pd.enumerable ?? true
-    const configurable: boolean = pd.configurable ?? true
-    // Setup method trap
-    const opts = Hooks.applyMethodOptions(proto, method, pd.value, true, configurable, options, implicit)
-    const trap = function(this: any): any {
-      const h = Hooks.acquireObjectHolder(this)
-      const value = Hooks.createMethodTrap(h, method, opts)
-      Object.defineProperty(h.plain, method, { value, enumerable, configurable })
-      return value
+    if (pd.get === undefined && pd.set === undefined) {
+      const enumerable: boolean = pd.enumerable ?? true
+      const configurable: boolean = pd.configurable ?? true
+      // Setup method trap
+      const opts = Hooks.applyMethodOptions(proto, member, pd.value, true, configurable, options, implicit)
+      const trap = function(this: any): any {
+        const h = Hooks.acquireObjectHolder(this)
+        const value = Hooks.createMethodTrap(h, member, opts)
+        Object.defineProperty(h.plain, member, { value, enumerable, configurable })
+        return value
+      }
+      return Object.defineProperty(proto, member, { get: trap, enumerable, configurable: true })
     }
-    return Object.defineProperty(proto, method, { get: trap, enumerable, configurable: true })
+    else {
+      misuse(`@${decorator.name} ${member.toString()} is ignored, because is not supported yet`, '')
+      return Object.defineProperty(proto, member, pd)
+    }
   }
 
   static acquireObjectHolder(obj: any): ObjectHolder {
