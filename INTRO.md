@@ -8,8 +8,8 @@ an another operation changes data, which the reaction depends on.
 
 ``` typescript
 class Demo extends ObservableObject {
-  name: 'Nezaboodka Software'
-  email: 'contact@nezaboodka.com'
+  name: string = 'Nezaboodka Software'
+  email: string = 'contact@nezaboodka.com'
 
   @operation
   saveContact(name: string, email: string) {
@@ -47,4 +47,29 @@ In the example above the reaction `printContact` is executed
 only in case of `email` field change, but not `name` field that
 is used through `nonreactive`.
 
-[To be continued]
+It is possible to define cached computations:
+
+``` typescript
+class Demo extends ObservableObject {
+  name: string = 'Nezaboodka Software'
+  email: string = 'contact@nezaboodka.com'
+
+  @cached
+  get contact: string { // result is cached
+    return this.name + ' <' + this.email + '>'
+  }
+
+  @reaction
+  printContact() {
+    if (!this.contact === '')
+      Console.log(this.contact)
+  }
+```
+
+In the example above, the result of `contact` is computed from
+source fields `name` and `email`. Once computed, the result is
+cached and is reused until source fields `name` and `email` are
+changed. Once source fields changed, the computed result
+`contact` becomes invalidated, thus causing execution of
+depending reaction `printContact`. Then `printContact` during
+its execution causes `contact` recomputation on the first use.
