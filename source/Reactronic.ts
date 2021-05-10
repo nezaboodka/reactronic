@@ -8,7 +8,7 @@
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Controller } from './Controller'
-import { Kind, Reentrance, MethodOptions, TraceOptions, ProfilingOptions, Sensitivity } from './Options'
+import { Kind, Reentrance, MemberOptions, TraceOptions, ProfilingOptions, Sensitivity } from './Options'
 import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks } from './impl/Hooks'
@@ -21,7 +21,7 @@ export class Reactronic {
   static why(brief: boolean = false): string { return brief ? Ctl.briefWhy() : Ctl.why() }
   static getController<T>(method: F<T>): Controller<T> { return Ctl.of(method) }
   static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Reactronic.getController(method as any as F<T>).pullLastResult(args) }
-  static configureCurrentMethod(options: Partial<MethodOptions>): MethodOptions { return Ctl.configureImpl(undefined, options) }
+  static configureCurrentMethod(options: Partial<MemberOptions>): MemberOptions { return Ctl.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
   static takeSnapshot<T>(obj: T): T { return Snapshot.takeSnapshot(obj) }

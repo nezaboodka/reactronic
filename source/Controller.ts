@@ -5,17 +5,17 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { MethodOptions } from './Options'
+import { MemberOptions } from './Options'
 
 export abstract class Controller<T> {
-  abstract readonly options: MethodOptions
+  abstract readonly options: MemberOptions
   abstract readonly args: ReadonlyArray<any>
   abstract readonly result: T
   abstract readonly error: any
   abstract readonly stamp: number
   abstract readonly isUpToDate: boolean
 
-  abstract configure(options: Partial<MethodOptions>): MethodOptions
+  abstract configure(options: Partial<MemberOptions>): MemberOptions
   abstract markObsolete(): void
   abstract pullLastResult(args?: any[]): T | undefined
 }

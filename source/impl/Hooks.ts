@@ -7,7 +7,7 @@
 
 import { UNDEF, F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { MethodOptions, Kind, Reentrance, Sensitivity } from '../Options'
+import { MemberOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta } from './Data'
@@ -39,7 +39,7 @@ export abstract class ObservableObject {
 
 // Options
 
-const DEFAULT_OPTIONS: MethodOptions = Object.freeze({
+const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   kind: Kind.Data,
   priority: 0,
   noSideEffects: false,
@@ -51,7 +51,7 @@ const DEFAULT_OPTIONS: MethodOptions = Object.freeze({
   trace: undefined,
 })
 
-export class OptionsImpl implements MethodOptions {
+export class OptionsImpl implements MemberOptions {
   readonly body: Function
   readonly kind: Kind
   readonly priority: number
@@ -189,7 +189,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   static decorateOperation(implicit: boolean, decorator: Function,
-    options: Partial<MethodOptions>, proto: any, member: MemberName,
+    options: Partial<MemberOptions>, proto: any, member: MemberName,
     pd: PropertyDescriptor): any {
     if (!pd || pd === proto) // pd === proto for all decorators except the first one
       pd = EMPTY_PROP_DESCRIPTOR
@@ -211,7 +211,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     }
   }
 
-  static decorateOperationParametrized(decorator: Function, options: Partial<MethodOptions>): F<any> {
+  static decorateOperationParametrized(decorator: Function, options: Partial<MemberOptions>): F<any> {
     return function(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
       return Hooks.decorateOperation(false, decorator, options, proto, prop, pd) /* istanbul ignore next */
     }
@@ -280,7 +280,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   /* istanbul ignore next */
-  static applyOperationOptions = function(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
+  static applyOperationOptions = function(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
     throw misuse('applyOperationOptions should never be called')
   }
 }

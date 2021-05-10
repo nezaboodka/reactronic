@@ -7,7 +7,7 @@
 
 import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { MethodOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
+import { MemberOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Worker } from '../Worker'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, MemberInfo, Meta } from './Data'
@@ -30,8 +30,8 @@ export class Ctl extends Controller<any> {
   readonly ownHolder: ObjectHolder
   readonly memberName: MemberName
 
-  configure(options: Partial<MethodOptions>): MethodOptions { return Ctl.configureImpl(this, options) }
-  get options(): MethodOptions { return this.peek(undefined).op.options }
+  configure(options: Partial<MemberOptions>): MemberOptions { return Ctl.configureImpl(this, options) }
+  get options(): MemberOptions { return this.peek(undefined).op.options }
   get nonreactive(): any { return this.peek(undefined).op.value }
   get args(): ReadonlyArray<any> { return this.use().op.args }
   get result(): any { return this.invoke(true, undefined).value }
@@ -80,7 +80,7 @@ export class Ctl extends Controller<any> {
     return ctl
   }
 
-  static configureImpl(self: Ctl | undefined, options: Partial<MethodOptions>): MethodOptions {
+  static configureImpl(self: Ctl | undefined, options: Partial<MemberOptions>): MemberOptions {
     let op: Operation | undefined
     if (self)
       op = self.edit().op
@@ -186,7 +186,7 @@ export class Ctl extends Controller<any> {
     return op
   }
 
-  private run(existing: CallCtx, spawn: boolean, options: MethodOptions, token: any, args: any[] | undefined): CallCtx {
+  private run(existing: CallCtx, spawn: boolean, options: MemberOptions, token: any, args: any[] | undefined): CallCtx {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.ownHolder, this.memberName)}`
     let cc = existing
@@ -665,7 +665,7 @@ class Operation extends Observable implements Observer {
     return operationHook
   }
 
-  private static applyOperationOptions(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
+  private static applyOperationOptions(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
     let op: Operation | undefined = initial[m]
