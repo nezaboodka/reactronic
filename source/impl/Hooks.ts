@@ -197,9 +197,9 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   static decorateOperation(implicit: boolean, decorator: Function,
     options: Partial<MethodOptions>, proto: any, member: MemberName,
     pd: PropertyDescriptor): any {
-    if (!pd || pd === proto)
+    if (!pd || pd === proto) // pd === proto for all decorators except the first one
       pd = EMPTY_PROP_DESCRIPTOR
-    if (pd.get === undefined && pd.set === undefined) {
+    if (pd.get === undefined && pd.set === undefined) { // regular method
       const enumerable: boolean = pd.enumerable ?? true
       const configurable: boolean = pd.configurable ?? true
       // Setup method trap
@@ -212,8 +212,8 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       }
       return Object.defineProperty(proto, member, { get: trap, enumerable, configurable: true })
     }
-    else {
-      misuse(`@${decorator.name} ${member.toString()} is ignored, because not supported yet`, '')
+    else { // property getter, or setter, or both
+      misuse(`@${decorator.name} ${proto.constructor.name}.${member.toString()} is ignored, because not supported yet`, '')
       return Object.defineProperty(proto, member, pd)
     }
   }
