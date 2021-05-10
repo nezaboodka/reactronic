@@ -21,11 +21,11 @@ const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 
 
 type CallCtx = { op: Operation, isUpToDate: boolean, snapshot: Snapshot, revision: ObjectRevision }
 
-export class MethodCtl extends Controller<any> {
+export class ControllerImpl extends Controller<any> {
   readonly ownHolder: ObjectHolder
   readonly memberName: MemberName
 
-  configure(options: Partial<MethodOptions>): MethodOptions { return MethodCtl.configureImpl(this, options) }
+  configure(options: Partial<MethodOptions>): MethodOptions { return ControllerImpl.configureImpl(this, options) }
   get options(): MethodOptions { return this.peek(undefined).op.options }
   get nonreactive(): any { return this.peek(undefined).op.value }
   get args(): ReadonlyArray<any> { return this.use().op.args }
@@ -33,7 +33,7 @@ export class MethodCtl extends Controller<any> {
   get error(): boolean { return this.use().op.error }
   get stamp(): number { return this.use().revision.snapshot.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
-  markObsolete(): void { Transaction.runAs({ hint: Dbg.isOn ? `markObsolete(${Hints.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, MethodCtl.markObsolete, this) }
+  markObsolete(): void { Transaction.runAs({ hint: Dbg.isOn ? `markObsolete(${Hints.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, ControllerImpl.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.invoke(true, args).value }
 
   constructor(ownHolder: ObjectHolder, memberName: MemberName) {
@@ -71,7 +71,7 @@ export class MethodCtl extends Controller<any> {
     return ctl
   }
 
-  static configureImpl(self: MethodCtl | undefined, options: Partial<MethodOptions>): MethodOptions {
+  static configureImpl(self: ControllerImpl | undefined, options: Partial<MethodOptions>): MethodOptions {
     let op: Operation | undefined
     if (self)
       op = self.edit().op
@@ -203,7 +203,7 @@ export class MethodCtl extends Controller<any> {
     return cc
   }
 
-  private static markObsolete(self: MethodCtl): void {
+  private static markObsolete(self: ControllerImpl): void {
     const cc = self.peek(undefined)
     const ctx = cc.snapshot
     cc.op.markObsoleteDueTo(cc.op, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
@@ -218,7 +218,7 @@ class Operation extends Observable implements Observer {
 
   readonly margin: number
   readonly transaction: Worker
-  readonly controller: MethodCtl
+  readonly controller: ControllerImpl
   readonly revision: ObjectRevision
   readonly observables: Map<Observable, MemberInfo>
   options: OptionsImpl
@@ -231,7 +231,7 @@ class Operation extends Observable implements Observer {
   obsoleteSince: number
   successor: Operation | undefined
 
-  constructor(controller: MethodCtl, revision: ObjectRevision, prev: Operation | OptionsImpl) {
+  constructor(controller: ControllerImpl, revision: ObjectRevision, prev: Operation | OptionsImpl) {
     super(undefined)
     this.margin = Operation.current ? Operation.current.margin + 1 : 1
     this.transaction = Transaction.current
@@ -290,7 +290,7 @@ class Operation extends Observable implements Observer {
       if (Dbg.isOn && Dbg.trace.step && this.result)
         Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${this.hint()} - step in  `, 0, '        │')
       const started = Date.now()
-      const result = MethodCtl.runWithin<T>(this, func, ...args)
+      const result = ControllerImpl.runWithin<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Dbg.isOn && Dbg.trace.step && this.result)
         Dbg.logAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
@@ -306,7 +306,7 @@ class Operation extends Observable implements Observer {
       this.args = args
     this.obsoleteSince = MAX_TIMESTAMP
     if (!this.error)
-      MethodCtl.runWithin<void>(this, Operation.run, this, proxy)
+      ControllerImpl.runWithin<void>(this, Operation.run, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
@@ -474,7 +474,7 @@ class Operation extends Observable implements Observer {
       spawn: true,
       trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.global,
     }
-    MethodCtl.runWithin<void>(undefined, Transaction.runAs, options,
+    ControllerImpl.runWithin<void>(undefined, Transaction.runAs, options,
       MonitorImpl.enter, mon, this.transaction)
   }
 
@@ -486,7 +486,7 @@ class Operation extends Observable implements Observer {
           spawn: true,
           trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.DefaultLevel,
         }
-        MethodCtl.runWithin<void>(undefined, Transaction.runAs, options,
+        ControllerImpl.runWithin<void>(undefined, Transaction.runAs, options,
           MonitorImpl.leave, mon, this.transaction)
       }
       this.transaction.whenFinished().then(leave, leave)
@@ -644,7 +644,7 @@ class Operation extends Observable implements Observer {
   }
 
   private static createMethodTrap(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
-    const opCtl = new MethodCtl(h, m)
+    const opCtl = new ControllerImpl(h, m)
     const methodTrap: F<any> = (...args: any[]): any =>
       opCtl.invoke(false, args).result
     Meta.set(methodTrap, Meta.Method, opCtl)
@@ -655,7 +655,7 @@ class Operation extends Observable implements Observer {
     // Configure options
     const blank: any = Meta.acquire(proto, Meta.Blank)
     const existing: Operation | undefined = blank[m]
-    const ctl = existing ? existing.controller : new MethodCtl(NIL_HOLDER, m)
+    const ctl = existing ? existing.controller : new ControllerImpl(NIL_HOLDER, m)
     const opts = existing ? existing.options : OptionsImpl.INITIAL
     const op =  new Operation(ctl, NIL_REV, new OptionsImpl(body, opts, options, implicit))
     blank[m] = op
@@ -687,10 +687,10 @@ class Operation extends Observable implements Observer {
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {
-        get: MethodCtl.why, configurable: false, enumerable: false,
+        get: ControllerImpl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(globalThis, 'rBriefWhy', {
-        get: MethodCtl.briefWhy, configurable: false, enumerable: false,
+        get: ControllerImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -698,10 +698,10 @@ class Operation extends Observable implements Observer {
     }
     try {
       Object.defineProperty(global, 'rWhy', {
-        get: MethodCtl.why, configurable: false, enumerable: false,
+        get: ControllerImpl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(global, 'rBriefWhy', {
-        get: MethodCtl.briefWhy, configurable: false, enumerable: false,
+        get: ControllerImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
