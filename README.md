@@ -306,7 +306,7 @@ interface Worker {
 
 interface TraceOptions {
   readonly silent: boolean
-  readonly operation: boolean
+  readonly transaction: boolean
   readonly method: boolean
   readonly step: boolean
   readonly monitor: boolean

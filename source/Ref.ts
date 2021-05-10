@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Operation } from './impl/Operation'
+import { Transaction } from './impl/Transaction'
 import { nonreactiveRun } from './Reactronic'
 
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
@@ -78,7 +78,7 @@ export class ToggleRef<T = boolean> extends Ref<T> {
   toggle(): void {
     const o = this.owner
     const p = this.name
-    Operation.runAs({ hint: `toggle ${(o as any).constructor.name}.${p}` }, () => {
+    Transaction.runAs({ hint: `toggle ${(o as any).constructor.name}.${p}` }, () => {
       const v = o[p]
       const isValue1 = v === this.value1 || (
         v instanceof Ref && this.value1 instanceof Ref &&

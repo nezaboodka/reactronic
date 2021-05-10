@@ -8,10 +8,10 @@
 import { ObservableObject } from './Hooks'
 import { ObjectHolder, ObjectRevision, Meta, Patch, ObjectPatch, Observable } from './Data'
 import { Snapshot, NIL_REV } from './Snapshot'
-import { Operation } from './Operation'
+import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
 
-export abstract class OperationJournal extends ObservableObject {
+export abstract class TransactionJournal extends ObservableObject {
   abstract capacity: number
   abstract readonly items: ReadonlyArray<Patch>
   abstract readonly canUndo: boolean
@@ -21,10 +21,10 @@ export abstract class OperationJournal extends ObservableObject {
   abstract redo(count?: number): void
   abstract remember(patch: Patch): void
 
-  static create(): OperationJournal { return new OperationJournalImpl() }
+  static create(): TransactionJournal { return new TransactionJournalImpl() }
 }
 
-export class OperationJournalImpl extends OperationJournal {
+export class TransactionJournalImpl extends TransactionJournal {
   private _capacity: number = 5
   private _items: Patch[] = []
   private _position: number = 0
@@ -36,7 +36,7 @@ export class OperationJournalImpl extends OperationJournal {
   get canRedo(): boolean { return this._position < this._items.length }
 
   remember(p: Patch): void {
-    Operation.runAs({ hint: 'OperationJournal.remember', spawn: true }, () => {
+    Transaction.runAs({ hint: 'TransactionJournal.remember', spawn: true }, () => {
       const items = this._items = this._items.toMutable()
       if (items.length >= this._capacity)
         items.shift()
@@ -48,11 +48,11 @@ export class OperationJournalImpl extends OperationJournal {
   }
 
   undo(count: number = 1): void {
-    Operation.runAs({ hint: 'OperationJournal.undo', spawn: true }, () => {
+    Transaction.runAs({ hint: 'TransactionJournal.undo', spawn: true }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._items[i]
-        OperationJournalImpl.applyPatch(patch, true)
+        TransactionJournalImpl.applyPatch(patch, true)
         i--, count--
       }
       this._position = i + 1
@@ -60,11 +60,11 @@ export class OperationJournalImpl extends OperationJournal {
   }
 
   redo(count: number = 1): void {
-    Operation.runAs({ hint: 'OperationJournal.redo', spawn: true }, () => {
+    Transaction.runAs({ hint: 'TransactionJournal.redo', spawn: true }, () => {
       let i: number = this._position
       while (i < this._items.length && count > 0) {
         const patch = this._items[i]
-        OperationJournalImpl.applyPatch(patch, false)
+        TransactionJournalImpl.applyPatch(patch, false)
         i++, count--
       }
       this._position = i

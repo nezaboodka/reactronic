@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Operation, Reentrance, Reactronic as R, sleep } from 'api'
+import { Transaction, Reentrance, Reactronic as R, sleep } from 'api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 import { TestingTraceLevel } from './brief'
 
@@ -27,14 +27,14 @@ const expected: Array<string | undefined> = [
 
 test('reentrance.error', async t => {
   R.setTraceMode(true, TestingTraceLevel)
-  const app = Operation.run(() => {
+  const app = Transaction.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getController(a.model.load).configure({reentrance: Reentrance.PreventWithError})
     return a
   })
   try {
     // t.is(app.observableField, 'observable field')
-    // t.throws(() => app.observableField = 'test', { message: 'observable property AsyncDemoView.observableField #23 can only be modified inside operations and reactions' })
+    // t.throws(() => app.observableField = 'test', { message: 'observable property AsyncDemoView.observableField #23 can only be modified inside transaction' })
     await app.print() // reaction first run
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
@@ -52,7 +52,7 @@ test('reentrance.error', async t => {
     const r = R.pullLastResult(app.render)
     t.is(r && r.length, 2)
     await sleep(100)
-    Operation.run(() => {
+    Transaction.run(() => {
       R.dispose(app)
       R.dispose(app.model)
     })

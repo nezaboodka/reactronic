@@ -15,9 +15,9 @@ export { Controller } from './Controller'
 export { Ref, ToggleRef, BoolOnly, GivenTypeOnly } from './Ref'
 export { ObservableObject } from './impl/Hooks'
 export { Snapshot } from './impl/Snapshot'
-export { Operation } from './impl/Operation'
+export { Transaction } from './impl/Transaction'
 export { Monitor } from './impl/Monitor'
-export { OperationJournal } from './impl/OperationJournal'
+export { TransactionJournal } from './impl/TransactionJournal'
 export { Reactronic, nonreactiveRun, isolatedRun, sensitiveRun, plain,
   operation, reaction, cached, priority, noSideEffects, observableArgs, throttling,
   reentrance, journal, monitor, trace } from './Reactronic'

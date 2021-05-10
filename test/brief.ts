@@ -5,12 +5,12 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, plain, operation, reaction, cached, observableArgs, priority, OperationJournal, journal, Reactronic as R, TraceOptions, Operation } from 'api'
+import { ObservableObject, plain, operation, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
 
 export const output: string[] = []
 
 export class Demo extends ObservableObject {
-  static UndoRedo = Operation.run(() => OperationJournal.create())
+  static UndoRedo = Transaction.run(() => TransactionJournal.create())
 
   // @operation @cached
   // get dummy(): string { return 'dummy' }
@@ -182,7 +182,7 @@ export class Person extends ObservableObject {
 
 export const TestingTraceLevel: TraceOptions = {
   silent: process.env.AVA_DEBUG === undefined,
-  operation: true,
+  transaction: true,
   method: true,
   step: true,
   monitor: true,

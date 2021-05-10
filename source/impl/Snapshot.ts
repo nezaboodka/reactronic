@@ -68,7 +68,7 @@ export class Snapshot implements AbstractSnapshot {
     this.sealed = false
   }
 
-  // To be redefined by Operation and Cache implementations
+  // To be redefined by Operation and Task implementations
   static current: () => Snapshot = UNDEF
   static edit: () => Snapshot = UNDEF
   static markUsed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF
@@ -140,7 +140,7 @@ export class Snapshot implements AbstractSnapshot {
 
   private checkIfEditable(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): void {
     if (this.sealed)
-      throw misuse(`observable property ${Hints.obj(h, m)} can only be modified inside operations and reactions`)
+      throw misuse(`observable property ${Hints.obj(h, m)} can only be modified inside transaction`)
     // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== NIL))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.revision(r, m)}`)
     // if (r === NIL && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */
@@ -165,7 +165,7 @@ export class Snapshot implements AbstractSnapshot {
       Snapshot.pending.push(this)
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this
-      if (Dbg.isOn && Dbg.trace.operation)
+      if (Dbg.isOn && Dbg.trace.transaction)
         Dbg.log('╔══', `v${this.stamp}`, `${this.hint}`)
     }
   }
@@ -191,7 +191,7 @@ export class Snapshot implements AbstractSnapshot {
         }
       })
       if (this.options.token === undefined) {
-        if (this.bumper > 100) { // if operation ever touched existing objects
+        if (this.bumper > 100) { // if transaction ever touched existing objects
           this.bumper = this.stamp // just for debug and is not needed?
           this.stamp = ++Snapshot.stampGen
         }
@@ -265,7 +265,7 @@ export class Snapshot implements AbstractSnapshot {
           Dbg.log('║', '√', `${Hints.rev(r)} (${s}) is ${r.prev.revision === NIL_REV ? 'constructed' : `applied on top of ${Hints.rev(r.prev.revision)}`}`)
         })
       }
-      if (Dbg.trace.operation)
+      if (Dbg.trace.transaction)
         Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
     }
     Snapshot.propagateChanges(this, error)

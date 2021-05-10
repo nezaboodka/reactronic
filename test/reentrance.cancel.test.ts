@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Operation, Reentrance, Reactronic as R, all, sleep } from 'api'
+import { Transaction, Reentrance, Reactronic as R, all, sleep } from 'api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 import { TestingTraceLevel } from './brief'
 
@@ -27,7 +27,7 @@ const expected: Array<string | undefined> = [
 
 test('reentrance.cancel', async t => {
   R.setTraceMode(true, TestingTraceLevel)
-  const app = Operation.run(() => {
+  const app = Transaction.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getController(a.print).configure({ priority: 0 })
     R.getController(a.model.load).configure({reentrance: Reentrance.CancelPrevious})
@@ -50,7 +50,7 @@ test('reentrance.cancel', async t => {
     t.is(busy.workerCount, 0)
     t.is(busy.workers.size, 0)
     await sleep(100)
-    Operation.run(() => {
+    Transaction.run(() => {
       R.dispose(app)
       R.dispose(app.model)
     })

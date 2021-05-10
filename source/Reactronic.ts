@@ -13,8 +13,8 @@ import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks, decorateMethod } from './impl/Hooks'
 import { TaskCtl } from './impl/TaskCtl'
-import { Operation } from './impl/Operation'
-import { OperationJournal } from './impl/OperationJournal'
+import { Transaction } from './impl/Transaction'
+import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 
 export class Reactronic {
@@ -45,7 +45,7 @@ export function nonreactiveRun<T>(func: F<T>, ...args: any[]): T {
 }
 
 export function isolatedRun<T>(func: F<T>, ...args: any[]): T {
-  return TaskCtl.run<T>(undefined, Operation.isolated, func, ...args)
+  return TaskCtl.run<T>(undefined, Transaction.isolated, func, ...args)
 }
 
 export function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T {
@@ -97,7 +97,7 @@ export function reentrance(value: Reentrance): F<any> {
   return decorateMethod({reentrance: value})
 }
 
-export function journal(value: OperationJournal | undefined): F<any> {
+export function journal(value: TransactionJournal | undefined): F<any> {
   return decorateMethod({journal: value})
 }
 
