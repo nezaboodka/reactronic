@@ -209,10 +209,12 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       }
       return Object.defineProperty(proto, member, { get: bootstrap, enumerable, configurable: true })
     }
-    else { // property with getter/setter
+    else if (opts.setter === UNDEF) { // property with getter only
       misuse(`@${decorator.name} ${proto.constructor.name}.${member.toString()} is ignored, because not supported yet`, '')
       return Object.defineProperty(proto, member, pd)
     }
+    else // property having setter
+      throw misuse(`${proto.constructor.name}.${member.toString()} has setter and cannot be decorated with @${decorator.name}`)
   }
 
   static decorateOperationParametrized(decorator: Function, options: Partial<MemberOptions>): F<any> {
