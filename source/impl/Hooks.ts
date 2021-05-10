@@ -203,15 +203,15 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     const configurable: boolean = pd.configurable ?? true
     const opts = Hooks.applyMethodOptions(proto, member, pd.value, true, configurable, options, implicit)
     if (opts.body !== UNDEF) { // regular method
-      const initializer = function(this: any): any {
+      const bootstrap = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)
         const hook = Hooks.createOperationHook(h, member, opts)
         Object.defineProperty(h.plain, member, { value: hook, enumerable, configurable })
         return hook
       }
-      return Object.defineProperty(proto, member, { get: initializer, enumerable, configurable: true })
+      return Object.defineProperty(proto, member, { get: bootstrap, enumerable, configurable: true })
     }
-    else { // property getter, or setter, or both
+    else { // property with getter/setter
       misuse(`@${decorator.name} ${proto.constructor.name}.${member.toString()} is ignored, because not supported yet`, '')
       return Object.defineProperty(proto, member, pd)
     }
