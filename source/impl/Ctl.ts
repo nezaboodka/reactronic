@@ -667,12 +667,11 @@ class Operation extends Observable implements Observer {
 
   private static applyMethodOptions(proto: any, m: MemberName, body: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MethodOptions>, implicit: boolean): OptionsImpl {
     // Configure options
-    const blank: any = Meta.acquire(proto, Meta.Blank)
-    const existing: Operation | undefined = blank[m]
-    const ctl = existing ? existing.controller : new Ctl(NIL_HOLDER, m)
-    const opts = existing ? existing.options : OptionsImpl.INITIAL
-    const op =  new Operation(ctl, NIL_REV, new OptionsImpl(body, opts, options, implicit))
-    blank[m] = op
+    const initial: any = Meta.acquire(proto, Meta.Initial)
+    let op: Operation | undefined = initial[m]
+    const ctl = op ? op.controller : new Ctl(NIL_HOLDER, m)
+    const opts = op ? op.options : OptionsImpl.INITIAL
+    initial[m] = op = new Operation(ctl, NIL_REV, new OptionsImpl(body, opts, options, implicit))
     // Add to the list if it's a reaction
     if (op.options.kind === Kind.Reaction && op.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactions = Meta.acquire(proto, Meta.Reactions)

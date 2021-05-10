@@ -20,8 +20,8 @@ import { Monitor } from './Monitor'
 export abstract class ObservableObject {
   constructor() {
     const proto = new.target.prototype
-    const blank = Meta.getFrom(proto, Meta.Blank)
-    const h = Hooks.createObjectHolder(this, blank, new.target.name)
+    const initial = Meta.getFrom(proto, Meta.Initial)
+    const h = Hooks.createObjectHolder(this, initial, new.target.name)
     if (!Hooks.reactionsAutoStartDisabled) {
       const reactions = Meta.getFrom(proto, Meta.Reactions)
       for (const member in reactions)
@@ -191,7 +191,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Meta.acquire(proto, Meta.Blank)[m] = Meta.Plain
+      Meta.acquire(proto, Meta.Initial)[m] = Meta.Plain
   }
 
   static decorateOperation(implicit: boolean, decorator: Function,
@@ -222,12 +222,12 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
-      const blank = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Blank)
-      const initial = new ObjectRevision(NIL_REV.snapshot, NIL_REV, {...blank})
-      Meta.set(initial.data, Meta.Holder, h)
+      const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
+      const rev = new ObjectRevision(NIL_REV.snapshot, NIL_REV, {...initial})
+      Meta.set(rev.data, Meta.Holder, h)
       if (Dbg.isOn)
-        Snapshot.freezeObjectRevision(initial)
-      h = new ObjectHolder(obj, obj, Hooks.proxy, initial, obj.constructor.name)
+        Snapshot.freezeObjectRevision(rev)
+      h = new ObjectHolder(obj, obj, Hooks.proxy, rev, obj.constructor.name)
       Meta.set(obj, Meta.Holder, h)
     }
     return h

@@ -11,7 +11,7 @@ export abstract class Meta {
   static readonly Holder: unique symbol = Symbol('rxHolder')
   static readonly Controller: unique symbol = Symbol('rxController')
   static readonly Disposed: unique symbol = Symbol('rxDisposed')
-  static readonly Blank: unique symbol = Symbol('rxBlank')
+  static readonly Initial: unique symbol = Symbol('rxInitial')
   static readonly Reactions: unique symbol = Symbol('rxReactions')
   static readonly Plain: unique symbol = Symbol('rxPlain')
 
