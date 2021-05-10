@@ -19,7 +19,12 @@ import { TransactionJournalImpl } from './TransactionJournal'
 
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 
-type CallCtx = { op: Operation, isUpToDate: boolean, snapshot: Snapshot, revision: ObjectRevision }
+type CallCtx = {
+  op: Operation
+  isUpToDate: boolean
+  snapshot: Snapshot
+  revision: ObjectRevision
+}
 
 export class Ctl extends Controller<any> {
   readonly ownHolder: ObjectHolder
@@ -47,18 +52,22 @@ export class Ctl extends Controller<any> {
     const ctx = cc.snapshot
     const op: Operation = cc.op
     if (!cc.isUpToDate && cc.revision.data[Meta.Disposed] === undefined
-      && (!weak || op.obsoleteSince === INIT_TIMESTAMP || !op.successor || op.successor.transaction.isFinished)) {
+      && (!weak || op.obsoleteSince === INIT_TIMESTAMP || !op.successor ||
+        op.successor.transaction.isFinished)) {
       const opt = op.options
       const spawn = weak || opt.kind === Kind.Reaction ||
-        (opt.kind === Kind.Cache && (cc.revision.snapshot.sealed || cc.revision.prev.revision !== NIL_REV))
+        (opt.kind === Kind.Cache && (cc.revision.snapshot.sealed ||
+          cc.revision.prev.revision !== NIL_REV))
       const token = opt.noSideEffects ? this : undefined
       const ic2 = this.run(cc, spawn, opt, token, args)
       const ctx2 = ic2.op.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         cc = ic2
     }
-    else if (Dbg.isOn && Dbg.trace.method && (op.options.trace === undefined || op.options.trace.method === undefined || op.options.trace.method === true))
-      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.rev(cc.revision, this.memberName)} result is reused from T${cc.op.transaction.id}[${cc.op.transaction.hint}]`)
+    else if (Dbg.isOn && Dbg.trace.method && (op.options.trace === undefined ||
+      op.options.trace.method === undefined || op.options.trace.method === true))
+      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)',
+        `${Hints.rev(cc.revision, this.memberName)} result is reused from T${cc.op.transaction.id}[${cc.op.transaction.hint}]`)
     const t = cc.op
     Snapshot.markUsed(t, cc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
     return t
@@ -116,7 +125,7 @@ export class Ctl extends Controller<any> {
   /* istanbul ignore next */
   static dependencies(): string[] {
     const op = Operation.current
-    return op ? op.dependencies() : ['Reactronic.deps should be called from inside of reactive method']
+    return op ? op.dependencies() : ['Reactronic.dependencies should be called from inside of reactive method']
   }
 
   // Internal
@@ -127,7 +136,8 @@ export class Ctl extends Controller<any> {
     const op: Operation = this.peekFromRev(r)
     const isValid = op.options.kind !== Kind.Operation && op.obsoleteSince !== INIT_TIMESTAMP &&
       (ctx === op.revision.snapshot || ctx.timestamp < op.obsoleteSince) &&
-      (!op.options.sensitiveArgs || args === undefined || op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
+      (!op.options.sensitiveArgs || args === undefined ||
+        op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
     return { op, isUpToDate: isValid, snapshot: ctx, revision: r }
   }
@@ -326,7 +336,11 @@ class Operation extends Observable implements Observer {
         if (isReaction) // stop cascade outdating on reaction
           reactions.push(this)
         else if (this.observers) // cascade outdating
-          this.observers.forEach(c => c.markObsoleteDueTo(this, {revision: this.revision, member: this.controller.memberName, times: 0}, since, reactions))
+          this.observers.forEach(c => c.markObsoleteDueTo(this, {
+            revision: this.revision,
+            member: this.controller.memberName,
+            times: 0,
+          }, since, reactions))
         const tran = this.transaction
         if (!tran.isFinished && this !== observable) // restart after itself if canceled
           tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to outdating by ${Hints.rev(cause.revision, cause.member)}`), null)
