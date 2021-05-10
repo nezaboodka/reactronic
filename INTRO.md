@@ -33,12 +33,12 @@ depends on `name` and `email` fields changed by the operation.
 
 If reaction needs to use data without tracking their changes
 (thus not reacting on them), `nonreactiveRun` function can
-be used.
+be used:
 
 ``` typescript
 @reaction
 printContact() {
-  const name = nonreactiveRun(() => this.name 
+  const name = nonreactiveRun(() => this.name)
   Console.log(name + ' <' + this.email + '>')
 }
 ```
