@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Kind, nonreactiveRun, isolatedRun, sensitiveRun, Sensitivity, Reactronic as R } from 'api'
+import { Transaction, Kind, nonreactive, isolated, sensitive, Sensitivity, Reactronic as R } from 'api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
@@ -84,8 +84,8 @@ test('brief', t => {
       t.is(daddy.name, 'John Smith')
       t.is(daddy.age, 40)
       t.is(Transaction.isolated(() => daddy.age), 38)
-      t.is(isolatedRun(() => daddy.age), 38)
-      t.is(nonreactiveRun(() => daddy.age), 40)
+      t.is(isolated(() => daddy.age), 38)
+      t.is(nonreactive(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = 'Jo' // set to the same value
     })
@@ -151,7 +151,7 @@ test('brief', t => {
       op3.run(nop)
     }), { message: 'test' })
     t.throws(() => op3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
-    Transaction.run(sensitiveRun, Sensitivity.ReactEvenOnSameValueAssignment, () => {
+    Transaction.run(sensitive, Sensitivity.ReactEvenOnSameValueAssignment, () => {
       app.userFilter = app.userFilter
     })
     // Other

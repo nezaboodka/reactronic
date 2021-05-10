@@ -40,15 +40,15 @@ export class Reactronic {
 
 // Operators
 
-export function nonreactiveRun<T>(func: F<T>, ...args: any[]): T {
+export function nonreactive<T>(func: F<T>, ...args: any[]): T {
   return MethodCtl.runWithin<T>(undefined, func, ...args)
 }
 
-export function isolatedRun<T>(func: F<T>, ...args: any[]): T {
+export function isolated<T>(func: F<T>, ...args: any[]): T {
   return MethodCtl.runWithin<T>(undefined, Transaction.isolated, func, ...args)
 }
 
-export function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T {
+export function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T {
   return Hooks.sensitive(sensitivity, func, ...args)
 }
 

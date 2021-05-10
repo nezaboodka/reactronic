@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, plain, reaction, cached, isolatedRun, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
+import { ObservableObject, Transaction, plain, reaction, cached, isolated, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, op?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -31,13 +31,13 @@ class Rx<V> extends ObservableObject {
   @reaction
   protected ensureUpToDate(): void {
     if (!R.getController(this.render).isUpToDate)
-      isolatedRun(this.refresh, {rx: this, cycle: this.cycle + 1})
+      isolated(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
   @plain cycle: number = 0
   @plain refresh: (next: ReactState<V>) => void = nop
   @plain readonly unmount = (): (() => void) => {
-    return (): void => { isolatedRun(R.dispose, this) }
+    return (): void => { isolated(R.dispose, this) }
   }
 
   static create<V>(hint: string | undefined, trace: TraceOptions | undefined): Rx<V> {

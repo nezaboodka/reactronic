@@ -18,6 +18,6 @@ export { Snapshot } from './impl/Snapshot'
 export { Transaction } from './impl/Transaction'
 export { Monitor } from './impl/Monitor'
 export { TransactionJournal } from './impl/TransactionJournal'
-export { Reactronic, nonreactiveRun, isolatedRun, sensitiveRun, plain,
+export { Reactronic, nonreactive, isolated, sensitive, plain,
   operation, reaction, cached, priority, noSideEffects, observableArgs, throttling,
   reentrance, journal, monitor, trace } from './Reactronic'

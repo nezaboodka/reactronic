@@ -138,7 +138,7 @@ class Component<P> extends React.Component<P> {
   @reaction // called immediately in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
-      isolatedRun(() => this.setState({})) // ask React to re-render
+      isolated(() => this.setState({})) // ask React to re-render
   } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
@@ -150,7 +150,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    isolatedRun(Reactronic.dispose, this)
+    isolated(Reactronic.dispose, this)
   }
 }
 ```
@@ -250,9 +250,9 @@ function reentrance(value: Reentrance) // operation & reaction
 function monitor(value: Monitor | null)
 function trace(value: Partial<TraceOptions>)
 
-function nonreactiveRun<T>(func: F<T>, ...args: any[]): T
-function isolatedRun<T>(func: F<T>, ...args: any[]): T
-function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
+function nonreactive<T>(func: F<T>, ...args: any[]): T
+function isolated<T>(func: F<T>, ...args: any[]): T
+function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // Options, ObjectOptions, Kind, Reentrance, Monitor, TraceOptions, ProfilingOptions
 

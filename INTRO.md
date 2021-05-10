@@ -32,19 +32,19 @@ automatic execution of the reaction `printContact`, which
 depends on `name` and `email` fields changed by the operation.
 
 If reaction needs to use data without tracking their changes
-(thus not reacting on them), `nonreactiveRun` function can
+(thus not reacting on them), `nonreactive` function can
 be used:
 
 ``` typescript
 @reaction
 printContact() {
-  const name = nonreactiveRun(() => this.name)
+  const name = nonreactive(() => this.name)
   Console.log(name + ' <' + this.email + '>')
 }
 ```
 
 In the example above the reaction `printContact` is executed
 only in case of `email` field change, but not `name` field that
-is used through `nonreactiveRun`.
+is used through `nonreactive`.
 
 [To be continued]

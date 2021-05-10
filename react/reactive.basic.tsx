@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, plain, reaction, cached, isolatedRun, Reactronic } from 'api' // from 'reactronic'
+import { ObservableObject, Transaction, plain, reaction, cached, isolated, Reactronic } from 'api' // from 'reactronic'
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -29,12 +29,12 @@ class Rx extends ObservableObject {
   @reaction
   protected ensureUpToDate(): void {
     if (!Reactronic.getController(this.render).isUpToDate)
-      isolatedRun(this.refresh, {rx: this})
+      isolated(this.refresh, {rx: this})
   }
 
   @plain refresh: (next: ReactState) => void = nop
   @plain readonly unmount = (): (() => void) => {
-    return (): void => { isolatedRun(Reactronic.dispose, this) }
+    return (): void => { isolated(Reactronic.dispose, this) }
   }
 
   static create(): Rx {
