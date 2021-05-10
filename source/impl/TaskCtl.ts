@@ -19,7 +19,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 
-type InvocationContext = { op: Operation, isUpToDate: boolean, snapshot: Snapshot, revision: ObjectRevision }
+type CallCtx = { op: Operation, isUpToDate: boolean, snapshot: Snapshot, revision: ObjectRevision }
 
 export class MethodCtl extends Controller<any> {
   readonly ownHolder: ObjectHolder
@@ -43,24 +43,24 @@ export class MethodCtl extends Controller<any> {
   }
 
   invoke(weak: boolean, args: any[] | undefined): Operation {
-    let ic: InvocationContext = this.peek(args)
-    const ctx = ic.snapshot
-    const op: Operation = ic.op
-    if (!ic.isUpToDate && ic.revision.data[Meta.Disposed] === undefined
+    let cc: CallCtx = this.peek(args)
+    const ctx = cc.snapshot
+    const op: Operation = cc.op
+    if (!cc.isUpToDate && cc.revision.data[Meta.Disposed] === undefined
       && (!weak || op.obsoleteSince === INIT_TIMESTAMP || !op.successor || op.successor.worker.isFinished)) {
       const opt = op.options
       const spawn = weak || opt.kind === Kind.Reaction ||
-        (opt.kind === Kind.Cache && (ic.revision.snapshot.sealed || ic.revision.prev.revision !== NIL_REV))
+        (opt.kind === Kind.Cache && (cc.revision.snapshot.sealed || cc.revision.prev.revision !== NIL_REV))
       const token = opt.noSideEffects ? this : undefined
-      const ic2 = this.run(ic, spawn, opt, token, args)
+      const ic2 = this.run(cc, spawn, opt, token, args)
       const ctx2 = ic2.op.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
-        ic = ic2
+        cc = ic2
     }
     else if (Dbg.isOn && Dbg.trace.method && (op.options.trace === undefined || op.options.trace.method === undefined || op.options.trace.method === true))
-      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.rev(ic.revision, this.memberName)} result is reused from T${ic.op.worker.id}[${ic.op.worker.hint}]`)
-    const t = ic.op
-    Snapshot.markUsed(t, ic.revision, this.memberName, this.ownHolder, t.options.kind, weak)
+      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)', `${Hints.rev(cc.revision, this.memberName)} result is reused from T${cc.op.worker.id}[${cc.op.worker.hint}]`)
+    const t = cc.op
+    Snapshot.markUsed(t, cc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
     return t
   }
 
@@ -121,7 +121,7 @@ export class MethodCtl extends Controller<any> {
 
   // Internal
 
-  private peek(args: any[] | undefined): InvocationContext {
+  private peek(args: any[] | undefined): CallCtx {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRev(r)
@@ -132,14 +132,14 @@ export class MethodCtl extends Controller<any> {
     return { op, isUpToDate: isValid, snapshot: ctx, revision: r }
   }
 
-  private use(): InvocationContext {
-    const ic = this.peek(undefined)
-    Snapshot.markUsed(ic.op, ic.revision,
-      this.memberName, this.ownHolder, ic.op.options.kind, true)
-    return ic
+  private use(): CallCtx {
+    const cc = this.peek(undefined)
+    Snapshot.markUsed(cc.op, cc.revision,
+      this.memberName, this.ownHolder, cc.op.options.kind, true)
+    return cc
   }
 
-  private edit(): InvocationContext {
+  private edit(): CallCtx {
     const h = this.ownHolder
     const m = this.memberName
     const ctx = Snapshot.edit()
@@ -176,37 +176,37 @@ export class MethodCtl extends Controller<any> {
     return op
   }
 
-  private run(existing: InvocationContext, spawn: boolean, options: MethodOptions, token: any, args: any[] | undefined): InvocationContext {
+  private run(existing: CallCtx, spawn: boolean, options: MethodOptions, token: any, args: any[] | undefined): CallCtx {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.ownHolder, this.memberName)}`
-    let ic = existing
+    let cc = existing
     const opt = { hint, spawn, journal: options.journal, trace: options.trace, token }
     const result = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
-      if (!ic.op.worker.isCanceled) { // first invoke
-        ic = this.edit()
+      if (!cc.op.worker.isCanceled) { // first invoke
+        cc = this.edit()
         if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
-          Dbg.log('║', ' (f)', `${ic.op.why()}`)
-        ic.op.run(this.ownHolder.proxy, argsx)
+          Dbg.log('║', ' (f)', `${cc.op.why()}`)
+        cc.op.run(this.ownHolder.proxy, argsx)
       }
       else { // retry invoke
-        ic = this.peek(argsx) // re-read on retry
-        if (ic.op.options.kind === Kind.Operation || !ic.isUpToDate) {
-          ic = this.edit()
+        cc = this.peek(argsx) // re-read on retry
+        if (cc.op.options.kind === Kind.Operation || !cc.isUpToDate) {
+          cc = this.edit()
           if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
-            Dbg.log('║', ' (f)', `${ic.op.why()}`)
-          ic.op.run(this.ownHolder.proxy, argsx)
+            Dbg.log('║', ' (f)', `${cc.op.why()}`)
+          cc.op.run(this.ownHolder.proxy, argsx)
         }
       }
-      return ic.op.result
+      return cc.op.result
     }, args)
-    ic.op.result = result
-    return ic
+    cc.op.result = result
+    return cc
   }
 
   private static markObsolete(self: MethodCtl): void {
-    const ic = self.peek(undefined)
-    const ctx = ic.snapshot
-    ic.op.markObsoleteDueTo(ic.op, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
+    const cc = self.peek(undefined)
+    const ctx = cc.snapshot
+    cc.op.markObsoleteDueTo(cc.op, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
   }
 }
 
