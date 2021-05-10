@@ -176,7 +176,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return result
   }
 
-  static decorateField(observable: boolean, proto: any, m: MemberName): any {
+  static decorateData(observable: boolean, proto: any, m: MemberName): any {
     if (observable) {
       const get = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)

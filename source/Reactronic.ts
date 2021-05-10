@@ -59,7 +59,7 @@ export function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[
 // }
 
 export function plain(proto: object, prop: PropertyKey): any {
-  return Hooks.decorateField(false, proto, prop)
+  return Hooks.decorateData(false, proto, prop)
 }
 
 export function operation(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
