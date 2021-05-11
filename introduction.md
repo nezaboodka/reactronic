@@ -2,7 +2,7 @@
 
 # Introduction to Transactionally Reactive Programming in TypeScript
 
-Key concepts of transactionally reactive programming are:
+Transactional reactivity is based on four fundamental concepts:
 
   - **Observable Objects** - a set of objects that store data
     of an application (state);
@@ -13,7 +13,7 @@ Key concepts of transactionally reactive programming are:
   - **Cache** - a computed value having associated code block that is
     called on-demand to renew the value if it was marked as obsolete.
 
-Here is an example of operation and reaction:
+Here is an example of operation and reaction declared in TypeScript:
 
 ``` typescript
 class Demo extends ObservableObject {
