@@ -11,7 +11,7 @@ Transactional reactivity is based on four fundamental concepts:
   - **Reaction** - an operation that is called automatically in
     response to changes made by another operation;
   - **Cache** - a computed value having associated code block that is
-    called on-demand to renew the value if it was marked as obsolete.
+    called on-demand to renew the value if it becomes obsolete.
 
 Here is an example of operation and reaction declared in TypeScript:
 
