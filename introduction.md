@@ -38,11 +38,11 @@ class Demo extends ObservableObject {
 
 In the example above, `printContact` reaction depends on `name`
 and `email` fields. The reaction is executed automatically in
-response to changes in `name` and `email` made by `saveContact`
+response to changes of these fields made by `saveContact`
 operation.
 
-If reaction needs to use some data without tracking their changes
-(thus not reacting on them), `nonreactive` function can be used:
+If reaction needs to use some data without tracking their changes,
+thus not reacting on them, `nonreactive` function can be used:
 
 ``` typescript
 @reaction
@@ -56,9 +56,7 @@ In the example above, `printContact` reaction is executed
 only in case of `email` field change, but not `name` field
 change.
 
-It is possible to define on-demand cached computations.
-Computed result is reused until source data, which is
-depends on, is changed. For example:
+Here is an example of on-demand cached computation:
 
 ``` typescript
 class Demo extends ObservableObject {
@@ -77,10 +75,10 @@ class Demo extends ObservableObject {
   }
 ```
 
-In the example above, the result of `contact` is computed from
+In the example above, the value of `contact` is computed from
 source fields `name` and `email`. Once computed, the result is
 cached and is reused until source fields `name` and `email` are
 changed. Once source fields changed, `contact` value becomes
 invalidated, thus causing execution of depending reaction
 `printContact`. Then `printContact` reaction causes `contact`
-recomputation on the first use.
+re-computation on the first use.
