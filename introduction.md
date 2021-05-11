@@ -82,3 +82,36 @@ changed. Once source fields changed, `contact` value becomes
 invalidated, thus causing execution of depending reaction
 `printContact`. Then `printContact` reaction causes `contact`
 re-computation on the first use.
+
+## The order and mechanism of reactions execution
+
+Dependencies between data and reactions are detected dynamically
+at run time as a result of accessing data during execution of
+reactions, but not as a result of static analysis during code
+compilation. In order to start tracking data for the first time
+each reaction is executed automatically and unconditionally
+right after completion of an operation that creates an object,
+which reaction is defined in. All subsequent executions of
+reaction happens only upon changes of data, which reaction
+depends on.
+
+Reaction is executed at the end of an operation that makes
+changes in data, and only in case of new values are truly
+different from old ones. In case of exception inside an
+operation, depending reactions are not executed and all
+the changes made by the operation are discarded.
+
+Reaction depends only on data, which it reads, but never
+depends on data, which it changes. Moreover, if reaction
+reads some data and then changes it, then dependency is
+discarded and reaction doesn't react on its change.
+
+## Mechanism of transactional execution of operations and reactions
+
+Operations and reactions are executed in transactional way
+with full respect to principles of atomicity, consistency,
+and isolation. It means that an operation and depending
+reactions work with logical data snapshot, where all the
+changes are made.
+
+To be continued...
