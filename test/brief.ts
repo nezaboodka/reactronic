@@ -10,10 +10,11 @@ import { ObservableObject, plain, operation, reaction, cached, observableArgs, p
 export const output: string[] = []
 
 export class Demo extends ObservableObject {
+  static stamp = 0
   static UndoRedo = Transaction.run(() => TransactionJournal.create())
 
   @cached
-  get computed(): string { return `${this.title}.computed @ ${Date.now()}` }
+  get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
   // set computed(value: string) { /* nop */ }
 
   @plain shared: string = 'for testing purposes'
