@@ -73,7 +73,7 @@ test('brief', t => {
     const tran1 = Transaction.create({ hint: 'tran1', journal: Demo.UndoRedo })
     tran1.run(() => {
       const computed = app.model.computed
-      t.true(computed.startsWith('computed @ '))
+      t.true(computed.startsWith('Demo.computed @ '))
       t.is(computed, app.model.computed)
       t.throws(() => tran1.apply(), { message: 'cannot apply transaction having active operations running' })
       app.model.shared = app.shared = tran1.hint

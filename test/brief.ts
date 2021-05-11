@@ -13,7 +13,7 @@ export class Demo extends ObservableObject {
   static UndoRedo = Transaction.run(() => TransactionJournal.create())
 
   @cached
-  get computed(): string { return `computed @ ${Date.now()}` }
+  get computed(): string { return `${this.title}.computed @ ${Date.now()}` }
   // set computed(value: string) { /* nop */ }
 
   @plain shared: string = 'for testing purposes'

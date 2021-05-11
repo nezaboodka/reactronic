@@ -213,7 +213,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
         const h = Hooks.acquireObjectHolder(this)
         const hook = Hooks.createControllerAndGetHook(h, member, opts)
         Object.defineProperty(h.plain, member, { get: hook, enumerable, configurable })
-        return hook()
+        return hook.call(this)
       }
       return Object.defineProperty(proto, member, { get: bootstrap, enumerable, configurable: true })
     }
