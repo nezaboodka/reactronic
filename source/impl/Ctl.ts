@@ -516,8 +516,8 @@ class Operation extends Observable implements Observer {
   private static processAsyncReactionsBatch(): void {
     const reactions = Operation.asyncReactionsBatch
     Operation.asyncReactionsBatch = [] // reset
-    for (const t of reactions)
-      t.ensureUpToDate(true, true)
+    for (const x of reactions)
+      x.ensureUpToDate(true, true)
   }
 
   private static markUsed(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean): void {
