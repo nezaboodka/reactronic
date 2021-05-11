@@ -32,7 +32,7 @@ export class Dbg {
     error: false,
     warning: false,
     transaction: false,
-    method: false,
+    operation: false,
     step: false,
     monitor: false,
     read: false,
@@ -86,7 +86,7 @@ export class Dbg {
     const result = !t ? { ...existing } : {
       silent: t.silent !== undefined ? t.silent : existing.silent,
       transaction: t.transaction !== undefined ? t.transaction : existing.transaction,
-      method: t.method !== undefined ? t.method : existing.method,
+      operation: t.operation !== undefined ? t.operation : existing.operation,
       step: t.step !== undefined ? t.step : existing.step,
       monitor: t.monitor !== undefined ? t.monitor : existing.monitor,
       read: t.read !== undefined ? t.read : existing.read,

@@ -64,8 +64,8 @@ export class Ctl extends Controller<any> {
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         cc = ic2
     }
-    else if (Dbg.isOn && Dbg.trace.method && (op.options.trace === undefined ||
-      op.options.trace.method === undefined || op.options.trace.method === true))
+    else if (Dbg.isOn && Dbg.trace.operation && (op.options.trace === undefined ||
+      op.options.trace.operation === undefined || op.options.trace.operation === true))
       Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)',
         `${Hints.rev(cc.revision, this.memberName)} result is reused from T${cc.operation.transaction.id}[${cc.operation.transaction.hint}]`)
     const t = cc.operation
@@ -194,7 +194,7 @@ export class Ctl extends Controller<any> {
     const result = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
       if (!cc.operation.transaction.isCanceled) { // first invoke
         cc = this.edit()
-        if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
+        if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
           Dbg.log('║', ' (f)', `${cc.operation.why()}`)
         cc.operation.run(this.ownHolder.proxy, argsx)
       }
@@ -202,7 +202,7 @@ export class Ctl extends Controller<any> {
         cc = this.peek(argsx) // re-read on retry
         if (cc.operation.options.kind === Kind.Operation || !cc.isUpToDate) {
           cc = this.edit()
-          if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.method || Dbg.trace.obsolete))
+          if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
             Dbg.log('║', ' (f)', `${cc.operation.why()}`)
           cc.operation.run(this.ownHolder.proxy, argsx)
         }
@@ -439,7 +439,7 @@ class Operation extends Observable implements Observer {
   private enter(): void {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
-    if (Dbg.isOn && Dbg.trace.method)
+    if (Dbg.isOn && Dbg.trace.operation)
       Dbg.log('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Hints.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
     this.started = Date.now()
   }
@@ -458,7 +458,7 @@ class Operation extends Observable implements Observer {
           throw error
         })
       if (Dbg.isOn) {
-        if (Dbg.trace.method)
+        if (Dbg.trace.operation)
           Dbg.log('║', '_/', `${this.hint()} - leave... `, 0, 'ASYNC ──┐')
         else if (Dbg.trace.transaction)
           Dbg.log('║', '  ', `${this.hint()}... `, 0, 'ASYNC')
@@ -473,7 +473,7 @@ class Operation extends Observable implements Observer {
   private leave(main: boolean, op: string, message: string, highlight: string | undefined = undefined): void {
     const ms: number = Date.now() - this.started
     this.started = -this.started
-    if (Dbg.isOn && Dbg.trace.method)
+    if (Dbg.isOn && Dbg.trace.operation)
       Dbg.log('║', `${op}`, `${this.hint()} ${message}`, ms, highlight)
     if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
       Dbg.log('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')

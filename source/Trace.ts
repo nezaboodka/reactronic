@@ -8,7 +8,7 @@
 export interface TraceOptions {
   readonly silent: boolean
   readonly transaction: boolean
-  readonly method: boolean
+  readonly operation: boolean
   readonly step: boolean
   readonly monitor: boolean
   readonly read: boolean
@@ -42,7 +42,7 @@ export const TraceLevel: {
   Error: {
     silent: false,
     transaction: false,
-    method: false,
+    operation: false,
     step: false,
     monitor: false,
     read: false,
@@ -61,7 +61,7 @@ export const TraceLevel: {
   Minimal: {
     silent: false,
     transaction: true,
-    method: false,
+    operation: false,
     step: false,
     monitor: false,
     read: false,
@@ -80,7 +80,7 @@ export const TraceLevel: {
   Info: {
     silent: false,
     transaction: true,
-    method: true,
+    operation: true,
     step: false,
     monitor: true,
     read: false,
@@ -99,7 +99,7 @@ export const TraceLevel: {
   Debug: {
     silent: false,
     transaction: true,
-    method: true,
+    operation: true,
     step: true,
     monitor: true,
     read: true,
@@ -118,7 +118,7 @@ export const TraceLevel: {
   Suppress: {
     silent: true,
     transaction: false,
-    method: false,
+    operation: false,
     step: false,
     monitor: false,
     read: false,

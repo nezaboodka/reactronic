@@ -184,7 +184,7 @@ export class Person extends ObservableObject {
 export const TestingTraceLevel: TraceOptions = {
   silent: process.env.AVA_DEBUG === undefined,
   transaction: true,
-  method: true,
+  operation: true,
   step: true,
   monitor: true,
   read: true,
