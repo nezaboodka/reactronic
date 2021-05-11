@@ -106,7 +106,7 @@ depends on data, which it changes. Moreover, if reaction
 reads some data and then changes it, then dependency is
 discarded and reaction doesn't react on its change.
 
-## Mechanism of transactional execution of operations and reactions
+## Transactional execution of operations and reactions
 
 Operations and reactions are executed in transactional way
 with full respect to principles of atomicity, consistency,
