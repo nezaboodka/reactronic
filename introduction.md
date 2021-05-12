@@ -21,17 +21,17 @@ class Demo extends ObservableObject {
   email: string = 'contact@nezaboodka.com'
 
   @operation
-  saveContact(name: string, email: string) {
+  saveContact(name: string, email: string): void {
     this.name = name
     this.email = email
   }
 
   @reaction
-  printContact() {
+  printContact(): void {
     // depends on `name` and `email` and reacts to their changes
-    if (!this.email.contains('@'))
+    if (!this.email.indexOf('@') >= 0)
       throw new Error(`wrong email ${this.email}`)
-    Console.log(this.name + ' <' + this.email + '>')
+    console.log(this.name + ' <' + this.email + '>')
   }
 }
 ```
@@ -46,9 +46,9 @@ thus not reacting on them, `nonreactive` function can be used:
 
 ``` typescript
 @reaction
-printContact() {
+printContact(): void {
   const name = nonreactive(() => this.name)
-  Console.log(name + ' <' + this.email + '>')
+  console.log(name + ' <' + this.email + '>')
 }
 ```
 
@@ -69,10 +69,11 @@ class Demo extends ObservableObject {
   }
 
   @reaction
-  printContact() {
+  printContact(): void {
     if (this.contact !== '')
       Console.log(this.contact)
   }
+}
 ```
 
 In the example above, the value of `contact` is computed from
