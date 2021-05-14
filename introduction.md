@@ -29,7 +29,7 @@ class Demo extends ObservableObject {
   @reaction
   printContact(): void {
     // depends on `name` and `email` and reacts to their changes
-    if (!this.email.indexOf('@') >= 0)
+    if (this.email.indexOf('@') >= 0)
       throw new Error(`wrong email ${this.email}`)
     console.log(this.name + ' <' + this.email + '>')
   }
