@@ -62,9 +62,9 @@ export function plain(proto: object, prop: PropertyKey): any {
   return Hooks.decorateData(false, proto, prop)
 }
 
-export function operation(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opt = { kind: Kind.Operation }
-  return Hooks.decorateOperation(true, operation, opt, proto, prop, pd)
+export function transaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+  const opt = { kind: Kind.Transaction }
+  return Hooks.decorateOperation(true, transaction, opt, proto, prop, pd)
 }
 
 export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {

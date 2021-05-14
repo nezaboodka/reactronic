@@ -27,7 +27,7 @@ export class DemoBase extends ObservableObject {
     this.sideEffect = 'side effect'
   }
 
-  // @operation
+  // @transaction
   // setUninitialized(value: any): void {
   //   this.uninitialized = value
   // }

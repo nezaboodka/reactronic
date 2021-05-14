@@ -134,7 +134,7 @@ export class Ctl extends Controller<any> {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRev(r)
-    const isValid = op.options.kind !== Kind.Operation && op.obsoleteSince !== INIT_TIMESTAMP &&
+    const isValid = op.options.kind !== Kind.Transaction && op.obsoleteSince !== INIT_TIMESTAMP &&
       (ctx === op.revision.snapshot || ctx.timestamp < op.obsoleteSince) &&
       (!op.options.sensitiveArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
@@ -200,7 +200,7 @@ export class Ctl extends Controller<any> {
       }
       else { // retry invoke
         cc = this.peek(argsx) // re-read on retry
-        if (cc.operation.options.kind === Kind.Operation || !cc.isUpToDate) {
+        if (cc.operation.options.kind === Kind.Transaction || !cc.isUpToDate) {
           cc = this.edit()
           if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
             Dbg.log('║', ' (f)', `${cc.operation.why()}`)
@@ -280,7 +280,7 @@ class Operation extends Observable implements Observer {
     let cause: string
     if (this.cause)
       cause = `   <<   ${propagationHint(this.cause, true).join('   <<   ')}`
-    else if (this.controller.options.kind === Kind.Operation)
+    else if (this.controller.options.kind === Kind.Transaction)
       cause = '   <<   operation'
     else
       cause = `   <<   called within ${this.revision.snapshot.hint}`
@@ -362,7 +362,7 @@ class Operation extends Observable implements Observer {
     const interval = Date.now() + this.started // "started" is stored as negative value after reaction completion
     const hold = t ? t - interval : 0 // "started" is stored as negative value after reaction completion
     if (now || hold < 0) {
-      if (!this.error && (this.options.kind === Kind.Operation ||
+      if (!this.error && (this.options.kind === Kind.Transaction ||
         !this.successor || this.successor.transaction.isCanceled)) {
         try {
           const op: Operation = this.controller.invoke(false, undefined)
@@ -521,9 +521,9 @@ class Operation extends Observable implements Observer {
   }
 
   private static markUsed(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean): void {
-    if (kind !== Kind.Operation) {
+    if (kind !== Kind.Transaction) {
       const op: Operation | undefined = Operation.current // alias
-      if (op && op.options.kind !== Kind.Operation && m !== Meta.Holder) {
+      if (op && op.options.kind !== Kind.Transaction && m !== Meta.Holder) {
         const ctx = Snapshot.current()
         if (ctx !== r.snapshot) // snapshot should not bump itself
           ctx.bumpBy(r.snapshot.timestamp)

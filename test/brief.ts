@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, plain, operation, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
+import { ObservableObject, plain, transaction, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
 
 export const output: string[] = []
 
@@ -24,22 +24,22 @@ export class Demo extends ObservableObject {
   collection2: Person[] = this.users
   usersWithoutLast: Person[] = this.users
 
-  @operation
+  @transaction
   loadUsers(): void {
     this._loadUsers()
   }
 
-  @operation
+  @transaction
   testCollectionSealing(): void {
     this.collection1 = this.collection2 = []
   }
 
-  @operation
+  @transaction
   testImmutableCollection(): void {
     this.collection1.push(...this.users)
   }
 
-  @operation @journal(Demo.UndoRedo)
+  @transaction @journal(Demo.UndoRedo)
   testUndo(): void {
     this.title = 'Demo - undo/redo'
   }
@@ -93,7 +93,7 @@ export class DemoView extends ObservableObject {
     R.configureCurrentMethod({ priority: 123 })
   }
 
-  // @operation @trace(log.noisy)
+  // @transaction @trace(log.noisy)
   // subPrint(): void {
   //   this.render().forEach(x => output.push(x));
   // }
