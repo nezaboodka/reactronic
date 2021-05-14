@@ -50,7 +50,7 @@ test('reentrance.restart', async t => {
   finally {
     t.is(busy.workerCount, 0)
     t.is(busy.workers.size, 0)
-    await sleep(100)
+    await sleep(300)
     Transaction.run(() => {
       R.dispose(app)
       R.dispose(app.model)
