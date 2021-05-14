@@ -58,7 +58,7 @@ export function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[
 //   return Hooks.decorateField(true, proto, prop)
 // }
 
-export function plain(proto: object, prop: PropertyKey): any {
+export function unobservable(proto: object, prop: PropertyKey): any {
   return Hooks.decorateData(false, proto, prop)
 }
 

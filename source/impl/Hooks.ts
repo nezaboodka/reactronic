@@ -97,7 +97,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   static readonly proxy: Hooks = new Hooks()
 
   getPrototypeOf(h: ObjectHolder): object | null {
-    return Reflect.getPrototypeOf(h.plain)
+    return Reflect.getPrototypeOf(h.unobservable)
   }
 
   get(h: ObjectHolder, m: MemberName, receiver: any): any {
@@ -111,8 +111,8 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     else if (m === Meta.Holder) {
       // do nothing, just return instance
     }
-    else // result === PLAIN
-      result = Reflect.get(h.plain, m, receiver)
+    else // result === UNOBSERVABLE
+      result = Reflect.get(h.unobservable, m, receiver)
     return result
   }
 
@@ -121,7 +121,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     if (r !== NIL_REV) {
       const curr = r.data[m] as Observable
       if (curr !== undefined || (
-        r.prev.revision.snapshot === NIL_REV.snapshot && m in h.plain === false)) {
+        r.prev.revision.snapshot === NIL_REV.snapshot && m in h.unobservable === false)) {
         const prev = r.prev.revision.data[m] as Observable
         let edited = prev === undefined || prev.value !== value ||
           Hooks.sensitivity === Sensitivity.ReactEvenOnSameValueAssignment
@@ -140,16 +140,16 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
         Snapshot.markEdited(value, edited, r, m, h)
       }
       else
-        Reflect.set(h.plain, m, value, receiver)
+        Reflect.set(h.unobservable, m, value, receiver)
     }
     else
-      h.plain[m] = value
+      h.unobservable[m] = value
     return true
   }
 
   has(h: ObjectHolder, m: MemberName): boolean {
     const r: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
-    return m in r.data || m in h.plain
+    return m in r.data || m in h.unobservable
   }
 
   getOwnPropertyDescriptor(h: ObjectHolder, m: MemberName): PropertyDescriptor | undefined {
@@ -187,7 +187,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Meta.acquire(proto, Meta.Initial)[m] = Meta.Plain
+      Meta.acquire(proto, Meta.Initial)[m] = Meta.Unobservable
   }
 
   static decorateOperation(implicit: boolean, decorator: Function,
@@ -203,7 +203,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       const bootstrap = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)
         const hook = Hooks.createControllerAndGetHook(h, member, opts)
-        Object.defineProperty(h.plain, member, { value: hook, enumerable, configurable })
+        Object.defineProperty(h.unobservable, member, { value: hook, enumerable, configurable })
         return hook
       }
       return Object.defineProperty(proto, member, { get: bootstrap, enumerable, configurable: true })
@@ -212,7 +212,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       const bootstrap = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)
         const hook = Hooks.createControllerAndGetHook(h, member, opts)
-        Object.defineProperty(h.plain, member, { get: hook, enumerable, configurable })
+        Object.defineProperty(h.unobservable, member, { get: hook, enumerable, configurable })
         return hook.call(this)
       }
       return Object.defineProperty(proto, member, { get: bootstrap, enumerable, configurable: true })
@@ -243,9 +243,9 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return h
   }
 
-  static createObjectHolder(plain: any, blank: any, hint: string): ObjectHolder {
+  static createObjectHolder(unobservable: any, blank: any, hint: string): ObjectHolder {
     const ctx = Snapshot.edit()
-    const h = new ObjectHolder(plain, undefined, Hooks.proxy, NIL_REV, hint)
+    const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, NIL_REV, hint)
     ctx.getEditableRevision(h, Meta.Holder, blank)
     return h
   }

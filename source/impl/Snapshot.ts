@@ -27,8 +27,8 @@ Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
       const v = data[m]
       if (v instanceof Observable)
         result[m] = v.value
-      else if (v === Meta.Plain)
-        result[m] = this.plain[m]
+      else if (v === Meta.Unobservable)
+        result[m] = this.unobservable[m]
       else /* istanbul ignore next */
         result[m] = v
     }
@@ -102,7 +102,7 @@ export class Snapshot implements AbstractSnapshot {
   getEditableRevision(h: ObjectHolder, m: MemberName, value: any, token?: any): ObjectRevision {
     let r: ObjectRevision = this.findRevOf(h, m)
     const existing = r.data[m]
-    if (existing !== Meta.Plain) {
+    if (existing !== Meta.Unobservable) {
       this.checkIfEditable(h, r, m, existing, value, token)
       if (r.snapshot !== this) {
         const data = { ...m === Meta.Holder ? value : r.data }

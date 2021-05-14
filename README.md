@@ -238,7 +238,7 @@ class ObservableObject { }
 
 // Decorators & Operators
 
-function plain(proto, prop) // field only
+function unobservable(proto, prop) // field only
 function transaction(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only

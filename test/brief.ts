@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, plain, transaction, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
+import { ObservableObject, unobservable, transaction, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from 'api'
 
 export const output: string[] = []
 
@@ -17,7 +17,7 @@ export class Demo extends ObservableObject {
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
   // set computed(value: string) { /* nop */ }
 
-  @plain shared: string = 'for testing purposes'
+  @unobservable shared: string = 'for testing purposes'
   title: string = 'Demo'
   users: Person[] = []
   collection1: Person[] = this.users
@@ -72,9 +72,9 @@ export class Demo extends ObservableObject {
 }
 
 export class DemoView extends ObservableObject {
-  @plain raw: string = 'plain field'
-  @plain shared: string = 'for testing purposes'
-  @plain readonly model: Demo
+  @unobservable raw: string = 'unobservable field'
+  @unobservable shared: string = 'for testing purposes'
+  @unobservable readonly model: Demo
   userFilter: string = 'Jo'
 
   constructor(model: Demo) {
@@ -134,7 +134,7 @@ export class DemoView extends ObservableObject {
 
 /* istanbul ignore next */
 export class Person extends ObservableObject {
-  @plain dummy: string | null = null
+  @unobservable dummy: string | null = null
   id: string | null = null
   name: string | null = null
   age: number = 0
