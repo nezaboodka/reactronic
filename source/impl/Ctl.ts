@@ -11,7 +11,7 @@ import { MemberOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '
 import { Worker } from '../Worker'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, MemberInfo, Meta } from './Data'
-import { Snapshot, Hints, NIL_REV, INIT_TIMESTAMP, MAX_TIMESTAMP } from './Snapshot'
+import { Snapshot, Hints, NIL_REV, BOOT_TIMESTAMP, MAX_TIMESTAMP } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -52,7 +52,7 @@ export class Ctl extends Controller<any> {
     const ctx = cc.snapshot
     const op: Operation = cc.operation
     if (!cc.isUpToDate && cc.revision.data[Meta.Disposed] === undefined
-      && (!weak || op.obsoleteSince === INIT_TIMESTAMP || !op.successor ||
+      && (!weak || op.obsoleteSince === BOOT_TIMESTAMP || !op.successor ||
         op.successor.transaction.isFinished)) {
       const opt = op.options
       const spawn = weak || opt.kind === Kind.Reaction ||
@@ -134,7 +134,7 @@ export class Ctl extends Controller<any> {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRev(r)
-    const isValid = op.options.kind !== Kind.Transaction && op.obsoleteSince !== INIT_TIMESTAMP &&
+    const isValid = op.options.kind !== Kind.Transaction && op.obsoleteSince !== BOOT_TIMESTAMP &&
       (ctx === op.revision.snapshot || ctx.timestamp < op.obsoleteSince) &&
       (!op.options.sensitiveArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
@@ -168,7 +168,7 @@ export class Ctl extends Controller<any> {
     const m = this.memberName
     let op: Operation = r.data[m]
     if (op.controller !== this) {
-      const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, m)}/init` : /* istanbul ignore next */ 'MethodController/init'
+      const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
       const spawn = r.snapshot.sealed || r.prev.revision !== NIL_REV
       op = Transaction.runAs<Operation>({ hint, spawn, token: this }, (): Operation => {
         const h = this.ownHolder
@@ -177,7 +177,7 @@ export class Ctl extends Controller<any> {
         if (op2.controller !== this) {
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
           op2 = r2.data[m] = new Operation(this, r2, op2)
-          op2.obsoleteSince = INIT_TIMESTAMP // indicates blank value
+          op2.obsoleteSince = BOOT_TIMESTAMP // indicates blank value
           Snapshot.markEdited(op2, true, r2, m, h)
         }
         return op2
@@ -543,7 +543,7 @@ class Operation extends Observable implements Observer {
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof Operation && oldValue.obsoleteSince !== INIT_TIMESTAMP
+      result = oldValue instanceof Operation && oldValue.obsoleteSince !== BOOT_TIMESTAMP
     return result
   }
 
@@ -652,7 +652,7 @@ class Operation extends Observable implements Observer {
 
   private static isValid(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
     let result = !r.snapshot.sealed || observable === h.head.data[m]
-    if (result && timestamp !== INIT_TIMESTAMP)
+    if (result && timestamp !== BOOT_TIMESTAMP)
       result = !(observable instanceof Operation && timestamp >= observable.obsoleteSince)
     return result
   }
