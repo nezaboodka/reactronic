@@ -248,11 +248,8 @@ export class Snapshot implements AbstractSnapshot {
         h.head = r // switch object to a new version
         if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Snapshot.totalObjectRevisionCount++
-          // console.log('rec++')
-          if (r.prev.revision === NIL_REV) {
+          if (r.prev.revision === NIL_REV)
             Snapshot.totalObjectHolderCount++
-            // console.log('obj++')
-          }
         }
       }
     })
