@@ -102,7 +102,7 @@ class TransactionImpl extends Transaction {
 
   seal(): this { // t1.seal().whenFinished().then(onfulfilled, onrejected)
     if (!this.sealed)
-      this.run(TransactionImpl.seal, this)
+      this.run(TransactionImpl.seal, this, undefined, undefined)
     return this
   }
 
