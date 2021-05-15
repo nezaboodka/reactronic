@@ -550,7 +550,7 @@ class Operation extends Observable implements Observer {
     return result
   }
 
-  private static propagateOrRevokeDependencies(snapshot: Snapshot, error: Error | undefined): void {
+  private static propagateChangesToReactions(snapshot: Snapshot, error: Error | undefined): void {
     const since = snapshot.timestamp
     if (!error) {
       const reactions = snapshot.reactions
@@ -698,7 +698,7 @@ class Operation extends Observable implements Observer {
     Snapshot.markUsed = Operation.markUsed // override
     Snapshot.markEdited = Operation.markEdited // override
     Snapshot.isConflicting = Operation.isConflicting // override
-    Snapshot.propagateOrRevokeDependencies = Operation.propagateOrRevokeDependencies // override
+    Snapshot.propagateChangesToReactions = Operation.propagateChangesToReactions // override
     Hooks.createControllerAndGetHook = Operation.createControllerAndGetHook // override
     Hooks.rememberOperationOptions = Operation.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
