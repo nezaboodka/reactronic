@@ -216,7 +216,7 @@ export class Ctl extends Controller<any> {
   private static markObsolete(self: Ctl): void {
     const cc = self.peek(undefined)
     const ctx = cc.snapshot
-    cc.operation.markObsoleteDueTo(cc.operation, {revision: NIL_REV, member: self.memberName, times: 0}, ctx.timestamp, ctx.reactions)
+    cc.operation.markObsoleteDueTo(cc.operation, { revision: NIL_REV, member: self.memberName, times: 0 }, ctx.timestamp, ctx.reactions)
   }
 }
 
