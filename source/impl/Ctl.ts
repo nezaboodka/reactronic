@@ -34,12 +34,12 @@ export class Ctl extends Controller<any> {
   get options(): MemberOptions { return this.peek(undefined).operation.options }
   get nonreactive(): any { return this.peek(undefined).operation.value }
   get args(): ReadonlyArray<any> { return this.use().operation.args }
-  get result(): any { return this.invoke(true, undefined).value }
+  get result(): any { return this.call(true, undefined).value }
   get error(): boolean { return this.use().operation.error }
   get stamp(): number { return this.use().revision.snapshot.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
   markObsolete(): void { Transaction.runAs({ hint: Dbg.isOn ? `markObsolete(${Hints.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, Ctl.markObsolete, this) }
-  pullLastResult(args?: any[]): any { return this.invoke(true, args).value }
+  pullLastResult(args?: any[]): any { return this.call(true, args).value }
 
   constructor(ownHolder: ObjectHolder, memberName: MemberName) {
     super()
@@ -47,7 +47,7 @@ export class Ctl extends Controller<any> {
     this.memberName = memberName
   }
 
-  invoke(weak: boolean, args: any[] | undefined): Operation {
+  call(weak: boolean, args: any[] | undefined): Operation {
     let cc: CallCtx = this.peek(args)
     const ctx = cc.snapshot
     const op: Operation = cc.operation
@@ -192,13 +192,13 @@ export class Ctl extends Controller<any> {
     let cc = existing
     const opt = { hint, spawn, journal: options.journal, trace: options.trace, token }
     const result = Transaction.runAs(opt, (argsx: any[] | undefined): any => {
-      if (!cc.operation.transaction.isCanceled) { // first invoke
+      if (!cc.operation.transaction.isCanceled) { // first run
         cc = this.edit()
         if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
           Dbg.log('║', ' (f)', `${cc.operation.why()}`)
         cc.operation.run(this.ownHolder.proxy, argsx)
       }
-      else { // retry invoke
+      else { // retry run
         cc = this.peek(argsx) // re-read on retry
         if (cc.operation.options.kind === Kind.Transaction || !cc.isUpToDate) {
           cc = this.edit()
@@ -368,7 +368,7 @@ class Operation extends Observable implements Observer {
       if (!this.error && (this.options.kind === Kind.Transaction ||
         !this.successor || this.successor.transaction.isCanceled)) {
         try {
-          const op: Operation = this.controller.invoke(false, undefined)
+          const op: Operation = this.controller.call(false, undefined)
           if (op.result instanceof Promise)
             op.result.catch(error => {
               if (op.options.kind === Kind.Reaction)
@@ -663,7 +663,7 @@ class Operation extends Observable implements Observer {
   private static createControllerAndGetHook(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
     const ctl = new Ctl(h, m)
     const hook: F<any> = (...args: any[]): any => {
-      return ctl.invoke(false, args).result
+      return ctl.call(false, args).result
     }
     Meta.set(hook, Meta.Controller, ctl)
     return hook
