@@ -292,7 +292,7 @@ export class Snapshot implements AbstractSnapshot {
     }
   }
 
-  collect(): void {
+  collectGarbage(): void {
     if (Dbg.isOn) {
       Utils.freezeMap(this.changeset)
       Object.freeze(this.reactions)
@@ -353,7 +353,7 @@ export class Snapshot implements AbstractSnapshot {
     const nil = NIL_REV.snapshot as Snapshot // workaround
     nil.acquire(nil)
     nil.applyOrDiscard()
-    nil.collect()
+    nil.collectGarbage()
     Snapshot.freezeObjectRevision(NIL_REV)
     Snapshot.idGen = 100
     Snapshot.stampGen = 101

@@ -306,7 +306,7 @@ class TransactionImpl extends Transaction {
       if (Dbg.isOn && Dbg.trace.change)
         Dbg.log('╠══', '', '', undefined, ' changes')
       this.snapshot.applyOrDiscard(this.canceled)
-      this.snapshot.collect()
+      this.snapshot.collectGarbage()
       if (this.promise) {
         if (this.canceled && !this.after)
           this.reject(this.canceled)
