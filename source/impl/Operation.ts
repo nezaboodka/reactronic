@@ -17,6 +17,7 @@ import { Hooks, OptionsImpl } from './Hooks'
 import { TransactionJournalImpl } from './TransactionJournal'
 
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
+const NIL_ARGS: any[] = []
 
 type CallContext = {
   readonly operation: Operation
@@ -255,7 +256,7 @@ class Operation extends Observable implements Observer {
     }
     else { // prev: OptionsImpl
       this.options = prev
-      this.args = []
+      this.args = NIL_ARGS
       this.cause = undefined
       // this.value = undefined
     }
@@ -686,6 +687,7 @@ class Operation extends Observable implements Observer {
   // }
 
   static init(): void {
+    Object.freeze(NIL_ARGS)
     Dbg.getMergedTraceOptions = getMergedTraceOptions
     Snapshot.markUsed = Operation.markUsed // override
     Snapshot.markEdited = Operation.markEdited // override
