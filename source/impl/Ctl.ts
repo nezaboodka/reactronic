@@ -327,6 +327,7 @@ class Operation extends Observable implements Observer {
         cause.revision.snapshot === this.revision.snapshot &&
         cause.revision.changes.has(cause.member)
       if (!skip) {
+        this.unsubscribeFromAllObservables() // this.observables = undefined
         this.obsoleteDueTo = cause
         this.obsoleteSince = since
         const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
@@ -335,11 +336,10 @@ class Operation extends Observable implements Observer {
             isReaction && cause.revision === NIL_REV
               ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})`
               : `${this.hint()} is obsolete due to ${Hints.rev(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
-        this.unsubscribeFromAll()
         if (isReaction) // stop cascade outdating on reaction
           reactions.push(this)
-        else if (this.observers) // cascade outdating
-          this.observers.forEach(c => c.markObsoleteDueTo(this, {
+        else // cascade outdating
+          this.observers?.forEach(c => c.markObsoleteDueTo(this, {
             revision: this.revision,
             member: this.controller.memberName,
             times: 0,
@@ -581,10 +581,9 @@ class Operation extends Observable implements Observer {
         if (prev instanceof Operation && (prev.obsoleteSince === MAX_TIMESTAMP || prev.obsoleteSince <= 0)) {
           prev.obsoleteDueTo = cause
           prev.obsoleteSince = timestamp
-          prev.unsubscribeFromAll()
+          prev.unsubscribeFromAllObservables()
         }
-        if (prev.observers)
-          prev.observers.forEach(c => c.markObsoleteDueTo(prev, cause, timestamp, reactions))
+        prev.observers?.forEach(c => c.markObsoleteDueTo(prev, cause, timestamp, reactions))
       }
     }
     const curr = r.data[m]
@@ -597,7 +596,7 @@ class Operation extends Observable implements Observer {
           })
         }
         if (unsubscribe)
-          curr.unsubscribeFromAll()
+          curr.unsubscribeFromAllObservables()
       }
     }
     else if (curr instanceof Observable && curr.observers) {
@@ -612,12 +611,10 @@ class Operation extends Observable implements Observer {
     }
   }
 
-  private unsubscribeFromAll(): void {
+  private unsubscribeFromAllObservables(): void {
     // It's critical to have no exceptions here
     this.observables?.forEach((hint, value) => {
-      const observers = value.observers
-      if (observers)
-        observers.delete(this)
+      value.observers?.delete(this)
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
         Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
     })
