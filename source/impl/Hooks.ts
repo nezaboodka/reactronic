@@ -11,7 +11,7 @@ import { MemberOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta } from './Data'
-import { Snapshot, Hints, NIL_REV } from './Snapshot'
+import { Snapshot, Dump, NIL_REV } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
 
@@ -33,7 +33,7 @@ export abstract class ObservableObject {
   /* istanbul ignore next */
   [Symbol.toStringTag](): string {
     const h = Meta.get<ObjectHolder>(this, Meta.Holder)
-    return Hints.obj(h)
+    return Dump.obj(h)
   }
 }
 

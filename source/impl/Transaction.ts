@@ -10,7 +10,7 @@ import { Dbg, misuse, error, fatal } from '../util/Dbg'
 import { Worker } from '../Worker'
 import { SnapshotOptions, TraceOptions } from '../Options'
 import { ObjectRevision } from './Data'
-import { Snapshot, Hints } from './Snapshot'
+import { Snapshot, Dump } from './Snapshot'
 
 export abstract class Transaction implements Worker {
   static get current(): Transaction { return TransactionImpl.current }
@@ -297,7 +297,7 @@ class TransactionImpl extends Transaction {
   }
 
   private tryResolveConflicts(conflicts: ObjectRevision[]): void {
-    throw error(`T${this.id}[${this.hint}] conflicts with: ${Hints.conflicts(conflicts)}`, undefined)
+    throw error(`T${this.id}[${this.hint}] conflicts with: ${Dump.conflicts(conflicts)}`, undefined)
   }
 
   private applyOrDiscard(): void {
