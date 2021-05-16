@@ -277,7 +277,7 @@ class Operation extends Observable implements Observer {
     let ms: number = Date.now()
     const prev = this.revision.prev.revision.data[this.controller.memberName]
     if (prev instanceof Operation)
-      ms = Math.abs(this.started) - Math.abs(prev.started)
+      ms = prev.started !== 0 ? Math.abs(this.started || ms) - Math.abs(prev.started) : Infinity
     let cause: string
     if (this.cause)
       cause = `   <<   ${propagationHint(this.cause, true).join('   <<   ')}`
@@ -285,7 +285,7 @@ class Operation extends Observable implements Observer {
       cause = '   <<   operation'
     else
       cause = `   <<   called within ${this.revision.snapshot.hint}`
-    return `${this.hint()}${cause}   (${ms}ms since previous revalidation)`
+    return `${this.hint()}${cause}   (${ms !== Infinity ? `${ms}ms since previous run` : 'initial run'})`
   }
 
   briefWhy(): string {
