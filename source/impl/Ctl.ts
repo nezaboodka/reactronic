@@ -540,7 +540,8 @@ class Operation extends Observable implements Observer {
   }
 
   private static markEdited(value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
-    edited ? r.changes.add(m) : r.changes.delete(m)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    edited ? r.changes.set(m, Operation.current!) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
       edited ? Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
@@ -557,7 +558,7 @@ class Operation extends Observable implements Observer {
     const reactions = snapshot.reactions
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       if (!r.changes.has(Meta.Disposed))
-        r.changes.forEach(m => Operation.propagateMemberChangeThroughSubscriptions(false, since, r, m, h, reactions))
+        r.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(false, since, r, m, h, reactions))
       else
         for (const m in r.prev.revision.data)
           Operation.propagateMemberChangeThroughSubscriptions(true, since, r, m, h, reactions)
@@ -569,7 +570,7 @@ class Operation extends Observable implements Observer {
 
   private static revokeAllSubscriptions(snapshot: Snapshot): void {
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-      r.changes.forEach(m => Operation.propagateMemberChangeThroughSubscriptions(
+      r.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(
         true, snapshot.timestamp, r, m, h, undefined)))
   }
 

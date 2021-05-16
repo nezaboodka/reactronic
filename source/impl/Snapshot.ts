@@ -213,7 +213,7 @@ export class Snapshot implements AbstractSnapshot {
     let counter: number = 0
     const disposed: boolean = head.changes.has(Meta.Disposed)
     const merged = { ...head.data } // clone
-    ours.changes.forEach(m => {
+    ours.changes.forEach((o, m) => {
       counter++
       merged[m] = ours.data[m]
       if (disposed || m === Meta.Disposed) {
@@ -258,7 +258,7 @@ export class Snapshot implements AbstractSnapshot {
       if (Dbg.trace.change) {
         this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
           const members: string[] = []
-          r.changes.forEach(m => members.push(m.toString()))
+          r.changes.forEach((o, m) => members.push(m.toString()))
           const s = members.join(', ')
           Dbg.log('║', '√', `${Hints.rev(r)} (${s}) is ${r.prev.revision === NIL_REV ? 'constructed' : `applied on top of ${Hints.rev(r.prev.revision)}`}`)
         })
@@ -272,7 +272,7 @@ export class Snapshot implements AbstractSnapshot {
 
   static sealObjectRevision(h: ObjectHolder, r: ObjectRevision): void {
     if (!r.changes.has(Meta.Disposed))
-      r.changes.forEach(m => Snapshot.sealObservable(r.data[m], m, h.proxy.constructor.name))
+      r.changes.forEach((o, m) => Snapshot.sealObservable(r.data[m], m, h.proxy.constructor.name))
     else
       for (const m in r.prev.revision.data)
         r.data[m] = Meta.Disposed
@@ -302,7 +302,7 @@ export class Snapshot implements AbstractSnapshot {
 
   static freezeObjectRevision(r: ObjectRevision): ObjectRevision {
     Object.freeze(r.data)
-    Utils.freezeSet(r.changes)
+    Utils.freezeMap(r.changes)
     Utils.freezeMap(r.conflicts)
     return r
   }
