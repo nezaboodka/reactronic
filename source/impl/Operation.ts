@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, MemberInfo, Meta } from './Data'
-import { Snapshot, Hints, NIL_REV, BOOT_TIMESTAMP, MAX_TIMESTAMP } from './Snapshot'
+import { Snapshot, Hints, NIL_REV, MAX_TIMESTAMP } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -18,6 +18,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 const NIL_ARGS: any[] = []
+const NIL_CAUSE: MemberInfo = { revision: NIL_REV, memberName: '<nil>', usageCount: 0 }
 
 type CallContext = {
   readonly operation: Operation
@@ -53,7 +54,7 @@ export class OperationController extends Controller<any> {
     const op: Operation = cc.operation
     const opts = op.options
     if (!cc.isUpToDate && cc.revision.data[Meta.Disposed] === undefined
-      && (!weak || op.obsoleteSince === BOOT_TIMESTAMP || !op.successor ||
+      && (!weak || op.cause === NIL_CAUSE || !op.successor ||
         op.successor.transaction.isFinished)) {
       const spawn = weak || opts.kind === Kind.Reaction ||
         (opts.kind === Kind.Cache && (cc.revision.snapshot.sealed ||
@@ -134,7 +135,7 @@ export class OperationController extends Controller<any> {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.seekRevision(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRevision(r)
-    const isValid = op.options.kind !== Kind.Transaction && op.obsoleteSince !== BOOT_TIMESTAMP &&
+    const isValid = op.options.kind !== Kind.Transaction && op.cause !== NIL_CAUSE &&
       (ctx === op.revision.snapshot || ctx.timestamp < op.obsoleteSince) &&
       (!op.options.sensitiveArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
@@ -177,7 +178,7 @@ export class OperationController extends Controller<any> {
         if (op2.controller !== this) {
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
           op2 = r2.data[m] = new Operation(this, r2, op2)
-          op2.obsoleteSince = BOOT_TIMESTAMP // indicates blank value
+          op2.cause = NIL_CAUSE
           Snapshot.markEdited(op2, true, r2, m, h)
         }
         return op2
@@ -542,7 +543,7 @@ class Operation extends Observable implements Observer {
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof Operation && oldValue.obsoleteSince !== BOOT_TIMESTAMP
+      result = oldValue instanceof Operation && oldValue.cause !== NIL_CAUSE
     return result
   }
 
@@ -648,7 +649,7 @@ class Operation extends Observable implements Observer {
 
   private static isValid(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
     let result = !r.snapshot.sealed || observable === h.head.data[m]
-    if (result && timestamp !== BOOT_TIMESTAMP)
+    if (result && timestamp !== -1)
       result = !(observable instanceof Operation && timestamp >= observable.obsoleteSince)
     return result
   }
@@ -688,6 +689,7 @@ class Operation extends Observable implements Observer {
 
   static init(): void {
     Object.freeze(NIL_ARGS)
+    Object.freeze(NIL_CAUSE)
     Dbg.getMergedTraceOptions = getMergedTraceOptions
     Snapshot.markUsed = Operation.markUsed // override
     Snapshot.markEdited = Operation.markEdited // override

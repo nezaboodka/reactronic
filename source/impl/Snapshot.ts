@@ -14,7 +14,6 @@ import { SealedSet } from '../util/SealedSet'
 import { Kind, SnapshotOptions } from '../Options'
 import { AbstractSnapshot, ObjectRevision, MemberName, ObjectHolder, Observable, Observer, Meta } from './Data'
 
-export const BOOT_TIMESTAMP = -1
 export const MAX_TIMESTAMP = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_TIMESTAMP = MAX_TIMESTAMP - 1
 
