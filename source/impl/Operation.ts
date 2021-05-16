@@ -16,8 +16,8 @@ import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
 import { TransactionJournalImpl } from './TransactionJournal'
 
-const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 const NIL_ARGS: any[] = []
+const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 const NIL_CAUSE: MemberInfo = { revision: NIL_REV, memberName: '<nil>', usageCount: 0 }
 
 type CallContext = {
