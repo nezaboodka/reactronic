@@ -614,7 +614,8 @@ class Operation extends Observable implements Observer {
   private unsubscribeFromAllObservables(): void {
     // It's critical to have no exceptions here
     this.observables?.forEach((hint, value) => {
-      value.observers?.delete(this)
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      value.observers!.delete(this)
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
         Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
     })
