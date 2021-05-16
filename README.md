@@ -30,11 +30,7 @@ Transactional reactivity is based on four fundamental concepts:
   - **Reaction** - an operation that is called automatically in response to changes made by a transaction;
   - **Cache** - a computed value having associated code block that is called on-demand to renew the value if it becomes obsolete.
 
-Below is quick example and the detailed description of each concept.
-
-### Quick example
-
-Here is an example transaction and reaction:
+Here is an example observable object, transaction and reaction:
 
 ``` typescript
 class Demo extends ObservableObject {
