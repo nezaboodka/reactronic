@@ -12,16 +12,16 @@ import { Kind, Reentrance, MemberOptions, TraceOptions, ProfilingOptions, Sensit
 import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks } from './impl/Hooks'
-import { OperationCtl } from './impl/Operation'
+import { OperationController } from './impl/Operation'
 import { Transaction } from './impl/Transaction'
 import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 
 export class Reactronic {
-  static why(brief: boolean = false): string { return brief ? OperationCtl.briefWhy() : OperationCtl.why() }
-  static getController<T>(method: F<T>): Controller<T> { return OperationCtl.of(method) }
+  static why(brief: boolean = false): string { return brief ? OperationController.briefWhy() : OperationController.why() }
+  static getController<T>(method: F<T>): Controller<T> { return OperationController.of(method) }
   static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Reactronic.getController(method as any as F<T>).pullLastResult(args) }
-  static configureCurrentMethod(options: Partial<MemberOptions>): MemberOptions { return OperationCtl.configureImpl(undefined, options) }
+  static configureCurrentMethod(options: Partial<MemberOptions>): MemberOptions { return OperationController.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity): void { Hooks.assign(obj, prop, value, sensitivity) }
   static takeSnapshot<T>(obj: T): T { return Snapshot.takeSnapshot(obj) }
@@ -41,11 +41,11 @@ export class Reactronic {
 // Operators
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return OperationCtl.runWithin<T>(undefined, func, ...args)
+  return OperationController.runWithin<T>(undefined, func, ...args)
 }
 
 export function isolated<T>(func: F<T>, ...args: any[]): T {
-  return OperationCtl.runWithin<T>(undefined, Transaction.isolated, func, ...args)
+  return OperationController.runWithin<T>(undefined, Transaction.isolated, func, ...args)
 }
 
 export function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T {
