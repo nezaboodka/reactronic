@@ -389,28 +389,28 @@ class Operation extends Observable implements Observer {
 
   reenterOver(head: Operation): this {
     let error: Error | undefined = undefined
-    const concurrent = head.successor
-    if (concurrent && !concurrent.transaction.isFinished) {
+    const opponent = head.successor
+    if (opponent && !opponent.transaction.isFinished) {
       if (Dbg.isOn && Dbg.trace.obsolete)
-        Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${concurrent.hint()}`)
+        Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
-          if (!concurrent.transaction.isCanceled)
-            throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${concurrent.hint()} (${concurrent.why()})`)
-          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/PreventWithError due to canceled T${concurrent.transaction.id}[${concurrent.transaction.hint}]`)
-          this.transaction.cancel(error, concurrent.transaction)
+          if (!opponent.transaction.isCanceled)
+            throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${opponent.hint()} (${opponent.why()})`)
+          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/PreventWithError due to canceled T${opponent.transaction.id}[${opponent.transaction.hint}]`)
+          this.transaction.cancel(error, opponent.transaction)
           break
         case Reentrance.WaitAndRestart:
-          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/WaitAndRestart due to active T${concurrent.transaction.id}[${concurrent.transaction.hint}]`)
-          this.transaction.cancel(error, concurrent.transaction)
+          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/WaitAndRestart due to active T${opponent.transaction.id}[${opponent.transaction.hint}]`)
+          this.transaction.cancel(error, opponent.transaction)
           break
         case Reentrance.CancelAndWaitPrevious:
-          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/CancelAndWaitPrevious due to active T${concurrent.transaction.id}[${concurrent.transaction.hint}]`)
-          this.transaction.cancel(error, concurrent.transaction)
-          concurrent.transaction.cancel(new Error(`T${concurrent.transaction.id}[${concurrent.transaction.hint}] is canceled due to re-entering T${this.transaction.id}[${this.transaction.hint}]`), null)
+          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/CancelAndWaitPrevious due to active T${opponent.transaction.id}[${opponent.transaction.hint}]`)
+          this.transaction.cancel(error, opponent.transaction)
+          opponent.transaction.cancel(new Error(`T${opponent.transaction.id}[${opponent.transaction.hint}] is canceled due to re-entering T${this.transaction.id}[${this.transaction.hint}]`), null)
           break
         case Reentrance.CancelPrevious:
-          concurrent.transaction.cancel(new Error(`T${concurrent.transaction.id}[${concurrent.transaction.hint}] is canceled due to re-entering T${this.transaction.id}[${this.transaction.hint}]`), null)
+          opponent.transaction.cancel(new Error(`T${opponent.transaction.id}[${opponent.transaction.hint}] is canceled due to re-entering T${this.transaction.id}[${this.transaction.hint}]`), null)
           break
         case Reentrance.RunSideBySide:
           break // do nothing
