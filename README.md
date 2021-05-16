@@ -86,7 +86,7 @@ invalidated, thus causing execution of depending reaction
 `printContact`. Then `printContact` reaction causes `contact`
 re-computation on the first use.
 
-### Observable Objects
+## Observable Objects
 
 Observable objects store data of an application. All such objects
 are transparently hooked to track access to their properties,
@@ -104,7 +104,7 @@ In the example above, the class `MyModel` is based on Reactronic's
 `ObservableObject` class and all its properties `url`, `content`,
 and `timestamp` are hooked.
 
-### Transaction
+## Transaction
 
 Transaction is a function that makes changes in observable objects
 in transactional (atomic) way. Such a function is instrumented with hooks
@@ -152,7 +152,7 @@ all of them. An asynchronous call may spawn other asynchronous
 calls, which prolong transaction execution until the whole chain
 of asynchronous operations is fully completed.
 
-### Reaction & Cache
+## Reaction & Cache
 
 Reaction is an code block that is immediately called in response to
 changes made by a transaction in observable objects. Cache is a
@@ -227,7 +227,7 @@ in one set of objects, subscribe to these events in other objects,
 and manually maintain switching from the previous object version
 to a new one.
 
-### Behavior Options
+## Behavior Options
 
 There are multiple options to configure behavior of transactional reactivity.
 
