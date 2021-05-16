@@ -30,11 +30,6 @@ Transactional reactivity is based on four fundamental concepts:
   - **Reaction** - an operation that is called automatically in response to changes made by a transaction;
   - **Cache** - a computed value having associated code block that is called on-demand to renew the value if it becomes obsolete.
 
-The following picture illustrates relationships between the concepts
-in the source code:
-
-![Reactronic](https://github.com/nezaboodka/reactronic/raw/master/reactronic.jpg)
-
 Below is quick example and the detailed description of each concept.
 
 ### Quick example
