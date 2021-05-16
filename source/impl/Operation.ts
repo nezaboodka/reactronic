@@ -224,7 +224,7 @@ export class OperationController extends Controller<any> {
 
 class Operation extends Observable implements Observer {
   static current?: Operation = undefined
-  static asyncReactionsBatch: Operation[] = []
+  static deferredReactions: Operation[] = []
 
   readonly margin: number
   readonly transaction: Worker
@@ -379,7 +379,7 @@ class Operation extends Observable implements Observer {
       if (hold > 0)
         setTimeout(() => this.runIfNotUpToDate(true, true), hold)
       else
-        this.addToAsyncReactionsBatch()
+        this.addToDeferredReactions()
     }
   }
 
@@ -502,15 +502,15 @@ class Operation extends Observable implements Observer {
     })
   }
 
-  private addToAsyncReactionsBatch(): void {
-    Operation.asyncReactionsBatch.push(this)
-    if (Operation.asyncReactionsBatch.length === 1)
-      setTimeout(Operation.processAsyncReactionsBatch, 0)
+  private addToDeferredReactions(): void {
+    Operation.deferredReactions.push(this)
+    if (Operation.deferredReactions.length === 1)
+      setTimeout(Operation.processDeferredReactions, 0)
   }
 
-  private static processAsyncReactionsBatch(): void {
-    const reactions = Operation.asyncReactionsBatch
-    Operation.asyncReactionsBatch = [] // reset
+  private static processDeferredReactions(): void {
+    const reactions = Operation.deferredReactions
+    Operation.deferredReactions = [] // reset
     for (const x of reactions)
       x.runIfNotUpToDate(true, true)
   }
