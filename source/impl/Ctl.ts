@@ -251,16 +251,16 @@ class Operation extends Observable implements Observer {
     if (prev instanceof Operation) {
       this.options = prev.options
       this.args = prev.args
-      // this.value = init.value
+      // this.value = prev.value
       this.cause = prev.obsoleteDueTo
     }
-    else { // init instanceof OptionsImpl
+    else { // prev: OptionsImpl
       this.options = prev
       this.args = []
       this.cause = undefined
       // this.value = undefined
     }
-    // this.ret = undefined
+    // this.result = undefined
     // this.error = undefined
     this.started = 0
     this.obsoleteSince = 0
