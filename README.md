@@ -28,6 +28,8 @@ Transactional reactivity is based on four fundamental concepts:
   - **Reaction** - an operation that is executed automatically in response to changes made by a transaction;
   - **Cache** - a computed value having associated operation that is executed on-demand to renew the value if it becomes obsolete.
 
+Quick example and detailed description is below.
+
 ## Quick Example
 
 Here is an example observable object, transaction and reaction:
