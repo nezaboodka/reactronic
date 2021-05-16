@@ -396,7 +396,7 @@ export const NIL_REV = new ObjectRevision(new Snapshot({ hint: '<nil>' }), undef
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',
-  separate: false,
+  standalone: false,
   journal: undefined,
   trace: undefined,
   token: undefined,

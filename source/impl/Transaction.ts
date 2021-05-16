@@ -188,7 +188,7 @@ class TransactionImpl extends Transaction {
   // Internal
 
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
-    return options?.separate || TransactionImpl.curr.isFinished
+    return options?.standalone || TransactionImpl.curr.isFinished
       ? new TransactionImpl(options)
       : TransactionImpl.curr
   }
@@ -217,7 +217,7 @@ class TransactionImpl extends Transaction {
           // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
-            separate: true,
+            standalone: true,
             trace: this.snapshot.options.trace,
             token: this.snapshot.options.token,
           }

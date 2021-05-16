@@ -56,11 +56,11 @@ export class OperationController extends Controller<any> {
     if (!cc.isUpToDate && cc.revision.data[Meta.Disposed] === undefined
       && (!weak || op.cause === NIL_CAUSE || !op.successor ||
         op.successor.transaction.isFinished)) {
-      const separate = weak || opts.kind === Kind.Reaction ||
+      const standalone = weak || opts.kind === Kind.Reaction ||
         (opts.kind === Kind.Cache && (cc.revision.snapshot.sealed ||
           cc.revision.prev.revision !== NIL_REV))
       const token = opts.noSideEffects ? this : undefined
-      const cc2 = this.run(cc, separate, opts, token, args)
+      const cc2 = this.run(cc, standalone, opts, token, args)
       const ctx2 = cc2.operation.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         cc = cc2
@@ -170,8 +170,8 @@ export class OperationController extends Controller<any> {
     let op: Operation = r.data[m]
     if (op.controller !== this) {
       const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
-      const separate = r.snapshot.sealed || r.prev.revision !== NIL_REV
-      op = Transaction.runAs<Operation>({ hint, separate, token: this }, (): Operation => {
+      const standalone = r.snapshot.sealed || r.prev.revision !== NIL_REV
+      op = Transaction.runAs<Operation>({ hint, standalone, token: this }, (): Operation => {
         const h = this.ownHolder
         let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
         let op2 = r2.data[m] as Operation
@@ -187,11 +187,11 @@ export class OperationController extends Controller<any> {
     return op
   }
 
-  private run(existing: CallContext, separate: boolean, options: MemberOptions, token: any, args: any[] | undefined): CallContext {
+  private run(existing: CallContext, standalone: boolean, options: MemberOptions, token: any, args: any[] | undefined): CallContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Hints.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Hints.obj(this.ownHolder, this.memberName)}`
     let cc = existing
-    const opts = { hint, separate, journal: options.journal, trace: options.trace, token }
+    const opts = { hint, standalone, journal: options.journal, trace: options.trace, token }
     const result = Transaction.runAs(opts, (argsx: any[] | undefined): any => {
       if (!cc.operation.transaction.isCanceled) { // first run
         cc = this.edit()
@@ -484,7 +484,7 @@ class Operation extends Observable implements Observer {
   private monitorEnter(mon: Monitor): void {
     const options: SnapshotOptions = {
       hint: 'Monitor.enter',
-      separate: true,
+      standalone: true,
       trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.global,
     }
     OperationController.runWithin<void>(undefined, Transaction.runAs, options,
@@ -496,7 +496,7 @@ class Operation extends Observable implements Observer {
       const leave = (): void => {
         const options: SnapshotOptions = {
           hint: 'Monitor.leave',
-          separate: true,
+          standalone: true,
           trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.DefaultLevel,
         }
         OperationController.runWithin<void>(undefined, Transaction.runAs, options,

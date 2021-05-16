@@ -347,7 +347,7 @@ class Transaction implements Worker {
 
   static create(hint: string): Transaction
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
-  static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
+  static runEx<T>(hint: string, standalone: boolean, sidebyside: boolean,
     trace: Partial<TraceOptions | undefined>, func: F<T>, ...args: any[]): T
   static standalone<T>(func: F<T>, ...args: any[]): T
 }

@@ -36,7 +36,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   get canRedo(): boolean { return this._position < this._items.length }
 
   remember(p: Patch): void {
-    Transaction.runAs({ hint: 'TransactionJournal.remember', separate: true }, () => {
+    Transaction.runAs({ hint: 'TransactionJournal.remember', standalone: true }, () => {
       const items = this._items = this._items.toMutable()
       if (items.length >= this._capacity)
         items.shift()
@@ -48,7 +48,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 
   undo(count: number = 1): void {
-    Transaction.runAs({ hint: 'TransactionJournal.undo', separate: true }, () => {
+    Transaction.runAs({ hint: 'TransactionJournal.undo', standalone: true }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._items[i]
@@ -60,7 +60,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 
   redo(count: number = 1): void {
-    Transaction.runAs({ hint: 'TransactionJournal.redo', separate: true }, () => {
+    Transaction.runAs({ hint: 'TransactionJournal.redo', standalone: true }, () => {
       let i: number = this._position
       while (i < this._items.length && count > 0) {
         const patch = this._items[i]
