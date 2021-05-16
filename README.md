@@ -35,7 +35,65 @@ in the source code:
 
 ![Reactronic](https://github.com/nezaboodka/reactronic/raw/master/reactronic.jpg)
 
-Below is the detailed description of each concept.
+Below is quick example and the detailed description of each concept.
+
+### Quick example
+
+Here is an example transaction and reaction:
+
+``` typescript
+class Demo extends ObservableObject {
+  name: string = 'Nezaboodka Software'
+  email: string = 'contact@nezaboodka.com'
+
+  @transaction
+  saveContact(name: string, email: string): void {
+    this.name = name
+    this.email = email
+  }
+
+  @reaction
+  printContact(): void {
+    // depends on `name` and `email` and reacts to their changes
+    if (this.email.indexOf('@') >= 0)
+      throw new Error(`wrong email ${this.email}`)
+    console.log(this.name + ' <' + this.email + '>')
+  }
+}
+```
+
+In the example above, `printContact` reaction depends on `name`
+and `email` fields. The reaction is executed automatically in
+response to changes of these fields made by `saveContact`
+transaction.
+
+Here is an example of on-demand cached computation:
+
+``` typescript
+class Demo extends ObservableObject {
+  name: string = 'Nezaboodka Software'
+  email: string = 'contact@nezaboodka.com'
+
+  @cached
+  get contact(): string {
+    return this.name + ' <' + this.email + '>'
+  }
+
+  @reaction
+  printContact(): void {
+    if (this.contact !== '')
+      Console.log(this.contact)
+  }
+}
+```
+
+In the example above, the value of `contact` is computed from
+source fields `name` and `email`. Once computed, the result is
+cached and is reused until source fields `name` and `email` are
+changed. Once source fields changed, `contact` value becomes
+invalidated, thus causing execution of depending reaction
+`printContact`. Then `printContact` reaction causes `contact`
+re-computation on the first use.
 
 ### Observable Objects
 
