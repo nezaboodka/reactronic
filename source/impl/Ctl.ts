@@ -589,19 +589,14 @@ class Operation extends Observable implements Observer {
     const curr = r.data[m]
     if (curr instanceof Operation) {
       if (curr.revision === r) {
-        if (unsubscribe)
-          curr.unsubscribeFromAll()
-        // Clear recomputing status of previous cached result
-        // const prev = cache.revision.prev.revision.data[m]
-        // if (prev instanceof CallResult && prev.revalidation === cache)
-        //   prev.revalidation = undefined
-        // Performance tracking
         if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
-          curr.observables.forEach((hint, v) => {
+          curr.observables.forEach((hint, v) => { // performance tracking info
             if (hint.times > Hooks.repetitiveReadWarningThreshold)
               Dbg.log('', '[!]', `${curr.hint()} uses ${Hints.rev(hint.revision, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
+        if (unsubscribe)
+          curr.unsubscribeFromAll()
       }
     }
     else if (curr instanceof Observable && curr.observers) {
