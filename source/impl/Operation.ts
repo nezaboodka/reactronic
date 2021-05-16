@@ -8,7 +8,6 @@
 import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
-import { Worker } from '../Worker'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, MemberInfo, Meta } from './Data'
 import { Snapshot, Hints, NIL_REV, BOOT_TIMESTAMP, MAX_TIMESTAMP } from './Snapshot'
@@ -227,7 +226,7 @@ class Operation extends Observable implements Observer {
   static deferredReactions: Operation[] = []
 
   readonly margin: number
-  readonly transaction: Worker
+  readonly transaction: Transaction
   readonly controller: OperationController
   readonly revision: ObjectRevision
   observables: Map<Observable, MemberInfo> | undefined
@@ -344,7 +343,10 @@ class Operation extends Observable implements Observer {
 
         // Cancel own transaction if it is still in progress
         const tran = this.transaction
-        if (!tran.isFinished && this !== observable) // restart after itself if canceled
+        if (tran.snapshot === cause.revision.snapshot) {
+          misuse('not implemented: running reactions within original transaction')
+        }
+        else if (!tran.isFinished && this !== observable) // restart after itself if canceled
           tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Hints.rev(cause.revision, cause.memberName)} changed by T${cause.revision.snapshot.id}[${cause.revision.snapshot.hint}]`), null)
       }
       else if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
