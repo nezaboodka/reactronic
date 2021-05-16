@@ -5,7 +5,7 @@
 [![Package Size](https://img.shields.io/bundlephobia/minzip/reactronic.svg?colorB=success)](https://bundlephobia.com/result?p=reactronic)
 [![CircleCI Status](https://circleci.com/gh/nezaboodka/reactronic.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/nezaboodka/reactronic)
 ![Coverage](https://img.shields.io/badge/coverage-97%25-success.svg)
-![Lines](https://img.shields.io/badge/lines-1540-success.svg)
+![Lines](https://img.shields.io/badge/lines-1715-success.svg)
 [![Demo](https://img.shields.io/badge/demo-live-success.svg)](https://nezaboodka.github.io/reactronic-demo/)
 
 # **Reactronic** - Transactionally Reactive State Management
@@ -272,7 +272,7 @@ Key Reactronic principles and differentiators:
   - Minimalism and zero boilerplating (it's not a framework bloating your code);
   - Asynchrony, patches, undo/redo, conflict resolving are provided out of the box;
   - Seamless integration with transactionally reactive object-oriented databases like [Nezaboodka](https://nezaboodka.com/#products);
-  - Compact dependency-free implementation consisting of just about 1K lines of code.
+  - Compact dependency-free implementation consisting of less than 2K lines of code.
 
 Roadmap:
 
