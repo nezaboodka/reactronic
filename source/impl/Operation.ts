@@ -342,7 +342,7 @@ class Operation extends Observable implements Observer {
         else
           this.observers?.forEach(c => c.markObsoleteDueTo(this, { revision: this.revision, memberName: this.controller.memberName, usageCount: 0 }, since, reactions))
 
-        // Cancel transaction if it is still in progress
+        // Cancel own transaction if it is still in progress
         const tran = this.transaction
         if (!tran.isFinished && this !== observable) // restart after itself if canceled
           tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Hints.rev(cause.revision, cause.memberName)} changed by T${cause.revision.snapshot.id}[${cause.revision.snapshot.hint}]`), null)
