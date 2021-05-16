@@ -550,7 +550,7 @@ class Operation extends Observable implements Observer {
     return result
   }
 
-  private static propagateChangesThroughSubscriptions(snapshot: Snapshot): void {
+  private static propagateAllChangesThroughSubscriptions(snapshot: Snapshot): void {
     const since = snapshot.timestamp
     const reactions = snapshot.reactions
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
@@ -697,7 +697,7 @@ class Operation extends Observable implements Observer {
     Snapshot.markUsed = Operation.markUsed // override
     Snapshot.markEdited = Operation.markEdited // override
     Snapshot.isConflicting = Operation.isConflicting // override
-    Snapshot.propagateChangesThroughSubscriptions = Operation.propagateChangesThroughSubscriptions // override
+    Snapshot.propagateAllChangesThroughSubscriptions = Operation.propagateAllChangesThroughSubscriptions // override
     Snapshot.revokeAllSubscriptions = Operation.revokeAllSubscriptions // override
     Hooks.createControllerAndGetHook = Operation.createControllerAndGetHook // override
     Hooks.rememberOperationOptions = Operation.rememberOperationOptions // override
