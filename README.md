@@ -21,14 +21,14 @@ isolated data snapshot and then, once atomically applied, are
 way, because reactronic **takes full care of tracking dependencies**
 between visual components (observers) and state (observable objects).
 
-## Conceptual Model
-
 Transactional reactivity is based on four fundamental concepts:
 
   - **Observable Objects** - a set of objects that store data of an application (state);
   - **Transaction** - an operation that makes changes in observable objects in transactional (atomic) way;
   - **Reaction** - an operation that is called automatically in response to changes made by a transaction;
   - **Cache** - a computed value having associated code block that is called on-demand to renew the value if it becomes obsolete.
+
+## Quick Example
 
 Here is an example observable object, transaction and reaction:
 
