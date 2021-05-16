@@ -593,12 +593,12 @@ class Operation extends Observable implements Observer {
       }
     }
     else if (curr instanceof Observable && curr.observers) {
-      // Unsubscribe from self-changed observables
+      // Unsubscribe from own-changed observables
       curr.observers.forEach(o => {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         o.observables!.delete(curr)
         if (Dbg.isOn && Dbg.trace.read)
-          Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.rev(r, m)}`)
+          Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Hints.rev(r, m)}`)
       })
       curr.observers = undefined
     }
