@@ -322,10 +322,10 @@ class Operation extends Observable implements Observer {
   }
 
   markObsoleteDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void {
-    if (this.observables !== undefined) {
+    if (this.observables !== undefined) { // if not yet marked as obsolete
       if (observable.isOperation || this !== cause.revision.changes.get(cause.memberName)) {
-        // Mark obsolete
-        this.unsubscribeFromAllObservables() // this.observables = undefined
+        // Mark obsolete (this.observables = undefined)
+        this.unsubscribeFromAllObservables()
         this.obsoleteDueTo = cause
         this.obsoleteSince = since
 
