@@ -555,10 +555,10 @@ class Operation extends Observable implements Observer {
     const reactions = snapshot.reactions
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       if (!r.changes.has(Meta.Disposed))
-        r.changes.forEach(m => Operation.propagateMemberChangeToReactions(false, since, r, m, h, reactions))
+        r.changes.forEach(m => Operation.propagateMemberChangeThroughSubscriptions(false, since, r, m, h, reactions))
       else
         for (const m in r.prev.revision.data)
-          Operation.propagateMemberChangeToReactions(true, since, r, m, h, reactions)
+          Operation.propagateMemberChangeThroughSubscriptions(true, since, r, m, h, reactions)
     })
     reactions.sort(compareReactionsByPriority)
     snapshot.options.journal?.remember(
@@ -567,11 +567,11 @@ class Operation extends Observable implements Observer {
 
   private static revokeAllSubscriptions(snapshot: Snapshot): void {
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-      r.changes.forEach(m => Operation.propagateMemberChangeToReactions(
+      r.changes.forEach(m => Operation.propagateMemberChangeThroughSubscriptions(
         true, snapshot.timestamp, r, m, h, undefined)))
   }
 
-  private static propagateMemberChangeToReactions(unsubscribe: boolean, timestamp: number,
+  private static propagateMemberChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,
     r: ObjectRevision, m: MemberName, h: ObjectHolder, reactions?: Observer[]): void {
     if (reactions) {
       // Propagate change to reactions
