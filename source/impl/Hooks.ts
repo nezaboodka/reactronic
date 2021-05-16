@@ -90,7 +90,7 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 
 export class Hooks implements ProxyHandler<ObjectHolder> {
   static reactionsAutoStartDisabled: boolean = false
-  static repetitiveReadWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
+  static repetitiveUsageWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static sensitivity: Sensitivity = Sensitivity.ReactOnFinalDifferenceOnly
@@ -252,13 +252,13 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void {
     if (enabled) {
-      Hooks.repetitiveReadWarningThreshold = options && options.repetitiveReadWarningThreshold !== undefined ? options.repetitiveReadWarningThreshold : 10
+      Hooks.repetitiveUsageWarningThreshold = options && options.repetitiveUsageWarningThreshold !== undefined ? options.repetitiveUsageWarningThreshold : 10
       Hooks.mainThreadBlockingWarningThreshold = options && options.mainThreadBlockingWarningThreshold !== undefined ? options.mainThreadBlockingWarningThreshold : 16.6
       Hooks.asyncActionDurationWarningThreshold = options && options.asyncActionDurationWarningThreshold !== undefined ? options.asyncActionDurationWarningThreshold : 150
       Snapshot.garbageCollectionSummaryInterval = options && options.garbageCollectionSummaryInterval !== undefined ? options.garbageCollectionSummaryInterval : 100
     }
     else {
-      Hooks.repetitiveReadWarningThreshold = Number.MAX_SAFE_INTEGER
+      Hooks.repetitiveUsageWarningThreshold = Number.MAX_SAFE_INTEGER
       Hooks.mainThreadBlockingWarningThreshold = Number.MAX_SAFE_INTEGER
       Hooks.asyncActionDurationWarningThreshold = Number.MAX_SAFE_INTEGER
       Snapshot.garbageCollectionSummaryInterval = Number.MAX_SAFE_INTEGER

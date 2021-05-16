@@ -216,7 +216,7 @@ export class Ctl extends Controller<any> {
   private static markObsolete(self: Ctl): void {
     const cc = self.peek(undefined)
     const ctx = cc.snapshot
-    cc.operation.markObsoleteDueTo(cc.operation, { revision: NIL_REV, member: self.memberName, times: 0 }, ctx.timestamp, ctx.reactions)
+    cc.operation.markObsoleteDueTo(cc.operation, { revision: NIL_REV, memberName: self.memberName, usageCount: 0 }, ctx.timestamp, ctx.reactions)
   }
 }
 
@@ -325,7 +325,7 @@ class Operation extends Observable implements Observer {
     if (this.observables !== undefined) {
       const skip = !observable.isOperation &&
         cause.revision.snapshot === this.revision.snapshot &&
-        cause.revision.changes.has(cause.member)
+        cause.revision.changes.has(cause.memberName)
       if (!skip) {
         this.unsubscribeFromAllObservables() // this.observables = undefined
         this.obsoleteDueTo = cause
@@ -335,22 +335,22 @@ class Operation extends Observable implements Observer {
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
             isReaction && cause.revision === NIL_REV
               ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})`
-              : `${this.hint()} is obsolete due to ${Hints.rev(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+              : `${this.hint()} is obsolete due to ${Hints.rev(cause.revision, cause.memberName)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         if (isReaction) // stop cascade outdating on reaction
           reactions.push(this)
         else // cascade outdating
           this.observers?.forEach(c => c.markObsoleteDueTo(this, {
             revision: this.revision,
-            member: this.controller.memberName,
-            times: 0,
+            memberName: this.controller.memberName,
+            usageCount: 0,
           }, since, reactions))
         const tran = this.transaction
         if (!tran.isFinished && this !== observable) // restart after itself if canceled
-          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to outdating by ${Hints.rev(cause.revision, cause.member)}`), null)
+          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to outdating by ${Hints.rev(cause.revision, cause.memberName)}`), null)
       }
       else {
         if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
-          Dbg.log(' ', 'x', `${this.hint()} outdating is skipped for self-changed ${Hints.rev(cause.revision, cause.member)}`)
+          Dbg.log(' ', 'x', `${this.hint()} outdating is skipped for self-changed ${Hints.rev(cause.revision, cause.memberName)}`)
 
         // Variant 2:
         // const hint = this.hint()
@@ -532,7 +532,7 @@ class Operation extends Observable implements Observer {
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!op.subscribeTo(observable, r, m, h, t))
-          op.markObsoleteDueTo(observable, { revision: r, member: m, times: 0 }, ctx.timestamp, ctx.reactions)
+          op.markObsoleteDueTo(observable, { revision: r, memberName: m, usageCount: 0 }, ctx.timestamp, ctx.reactions)
       }
     }
   }
@@ -577,7 +577,7 @@ class Operation extends Observable implements Observer {
       // Propagate change to reactions
       const prev = r.prev.revision.data[m]
       if (prev !== undefined && prev instanceof Observable) {
-        const cause: MemberInfo = { revision: r, member: m, times: 0 }
+        const cause: MemberInfo = { revision: r, memberName: m, usageCount: 0 }
         if (prev instanceof Operation && (prev.obsoleteSince === MAX_TIMESTAMP || prev.obsoleteSince <= 0)) {
           prev.obsoleteDueTo = cause
           prev.obsoleteSince = timestamp
@@ -589,10 +589,10 @@ class Operation extends Observable implements Observer {
     const curr = r.data[m]
     if (curr instanceof Operation) {
       if (curr.revision === r && curr.observables !== undefined) {
-        if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
+        if (Hooks.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
           curr.observables.forEach((hint, v) => { // performance tracking info
-            if (hint.times > Hooks.repetitiveReadWarningThreshold)
-              Dbg.log('', '[!]', `${curr.hint()} uses ${Hints.rev(hint.revision, hint.member)} ${hint.times} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
+            if (hint.usageCount > Hooks.repetitiveUsageWarningThreshold)
+              Dbg.log('', '[!]', `${curr.hint()} uses ${Hints.rev(hint.revision, hint.memberName)} ${hint.usageCount} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
         if (unsubscribe)
@@ -617,7 +617,7 @@ class Operation extends Observable implements Observer {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       value.observers!.delete(this)
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
+        Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.memberName)}`)
     })
     this.observables = undefined
   }
@@ -627,21 +627,21 @@ class Operation extends Observable implements Observer {
     if (isValid) {
       // Performance tracking
       let times: number = 0
-      if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
+      if (Hooks.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const existing = this.observables!.get(observable)
-        times = existing ? existing.times + 1 : 1
+        times = existing ? existing.usageCount + 1 : 1
       }
       // Acquire observers
       if (!observable.observers)
         observable.observers = new Set<Operation>()
       // Two-way linking
-      const info: MemberInfo = { revision: r, member: m, times }
+      const info: MemberInfo = { revision: r, memberName: m, usageCount: times }
       observable.observers.add(this)
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.observables!.set(observable, info)
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Hints.rev(r, m)}${info.times > 1 ? ` (${info.times} times)` : ''}`)
+        Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Hints.rev(r, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
     }
     else {
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
@@ -727,13 +727,13 @@ class Operation extends Observable implements Observer {
 
 function propagationHint(cause: MemberInfo, full: boolean): string[] {
   const result: string[] = []
-  let observable: Observable = cause.revision.data[cause.member]
+  let observable: Observable = cause.revision.data[cause.memberName]
   while (observable instanceof Operation && observable.obsoleteDueTo) {
-    full && result.push(Hints.rev(cause.revision, cause.member))
+    full && result.push(Hints.rev(cause.revision, cause.memberName))
     cause = observable.obsoleteDueTo
-    observable = cause.revision.data[cause.member]
+    observable = cause.revision.data[cause.memberName]
   }
-  result.push(Hints.rev(cause.revision, cause.member))
+  result.push(Hints.rev(cause.revision, cause.memberName))
   full && result.push(cause.revision.snapshot.hint)
   return result
 }

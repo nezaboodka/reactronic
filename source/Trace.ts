@@ -25,7 +25,7 @@ export interface TraceOptions {
 }
 
 export interface ProfilingOptions {
-  repetitiveReadWarningThreshold: number // default: 10 times
+  repetitiveUsageWarningThreshold: number // default: 10 times
   mainThreadBlockingWarningThreshold: number // default: 16.6 ms
   asyncActionDurationWarningThreshold: number // default: 150 ms
   garbageCollectionSummaryInterval: number // default: 3000 ms
