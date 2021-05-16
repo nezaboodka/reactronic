@@ -38,7 +38,7 @@ test('reentrance.error', async t => {
     await app.print() // reaction first run
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
-    t.is(busy.workerCount, 1)
+    t.is(busy.counter, 1)
     t.is(busy.workers.size, 1)
     await first
   }
@@ -47,7 +47,7 @@ test('reentrance.error', async t => {
     if (R.isTraceEnabled && !R.traceOptions.silent) console.log(error.toString())
   }
   finally {
-    t.is(busy.workerCount, 0)
+    t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
     const r = R.pullLastResult(app.render)
     t.is(r && r.length, 2)

@@ -11,7 +11,7 @@ import { Transaction } from './Transaction'
 
 export abstract class Monitor extends ObservableObject {
   abstract readonly isActive: boolean
-  abstract readonly workerCount: number
+  abstract readonly counter: number
   abstract readonly workers: ReadonlySet<Worker>
 
   static create(hint: string, activationDelay: number, deactivationDelay: number): Monitor {
@@ -21,7 +21,7 @@ export abstract class Monitor extends ObservableObject {
 
 export class MonitorImpl extends Monitor {
   isActive: boolean = false
-  workerCount: number = 0
+  counter: number = 0
   workers = new Set<Worker>()
   internals = {
     activationDelay: -1,
@@ -31,14 +31,14 @@ export class MonitorImpl extends Monitor {
   }
 
   enter(worker: Worker): void {
-    this.workerCount++
+    this.counter++
     const workers = this.workers = this.workers.toMutable()
     workers.add(worker)
     MonitorImpl.activate(this, this.internals.activationDelay)
   }
 
   leave(worker: Worker): void {
-    this.workerCount--
+    this.counter--
     const workers = this.workers = this.workers.toMutable()
     workers.delete(worker)
     MonitorImpl.deactivate(this, this.internals.deactivationDelay)
@@ -74,7 +74,7 @@ export class MonitorImpl extends Monitor {
           Transaction.runAs<void>({ hint: 'Monitor.activate', standalone: true },
             MonitorImpl.activate, mon, -1), delay) as any
     }
-    else if (mon.workerCount > 0)
+    else if (mon.counter > 0)
       mon.isActive = true
   }
 
@@ -86,7 +86,7 @@ export class MonitorImpl extends Monitor {
         Transaction.runAs<void>({ hint: 'Monitor.deactivate', standalone: true },
           MonitorImpl.deactivate, mon, -1), delay) as any
     }
-    else if (mon.workerCount <= 0) {
+    else if (mon.counter <= 0) {
       mon.isActive = false
       mon.internals.activationTimeout = undefined
     }

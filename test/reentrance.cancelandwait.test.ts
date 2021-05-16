@@ -35,7 +35,7 @@ test('reentrance.cancelandwait', async t => {
   try {
     await app.print() // reaction first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
-    t.is(busy.workerCount, 1)
+    t.is(busy.counter, 1)
     t.is(busy.workers.size, 1)
     busy.workers.forEach(w =>
       t.assert(w.hint.indexOf('AsyncDemo.load #23 - ') === 0))
@@ -46,7 +46,7 @@ test('reentrance.cancelandwait', async t => {
     if (R.isTraceEnabled && !R.traceOptions.silent) console.log(error.toString())
   }
   finally {
-    t.is(busy.workerCount, 0)
+    t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
     await sleep(300)
     Transaction.run(() => {

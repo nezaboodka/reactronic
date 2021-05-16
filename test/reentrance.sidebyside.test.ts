@@ -38,7 +38,7 @@ test('reentrance.sidebyside', async t => {
   try {
     await app.print() // reaction first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
-    t.is(busy.workerCount, 3)
+    t.is(busy.counter, 3)
     t.is(busy.workers.size, 3)
     await all(responses)
   }
@@ -47,7 +47,7 @@ test('reentrance.sidebyside', async t => {
     if (R.isTraceEnabled && !R.traceOptions.silent) console.log(error.toString())
   }
   finally {
-    t.is(busy.workerCount, 0)
+    t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
     await sleep(300)
     Transaction.run(() => {
