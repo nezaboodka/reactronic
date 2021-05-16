@@ -230,7 +230,7 @@ class Operation extends Observable implements Observer {
   readonly transaction: Worker
   readonly controller: Ctl
   readonly revision: ObjectRevision
-  readonly observables: Map<Observable, MemberInfo>
+  observables: Map<Observable, MemberInfo> | undefined
   options: OptionsImpl
   cause: MemberInfo | undefined
   args: any[]
@@ -322,7 +322,7 @@ class Operation extends Observable implements Observer {
   }
 
   markObsoleteDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void {
-    if (this.obsoleteSince === MAX_TIMESTAMP || this.obsoleteSince <= 0) {
+    if (this.observables !== undefined) {
       const skip = !observable.isOperation &&
         cause.revision.snapshot === this.revision.snapshot &&
         cause.revision.changes.has(cause.member)
@@ -588,7 +588,7 @@ class Operation extends Observable implements Observer {
     }
     const curr = r.data[m]
     if (curr instanceof Operation) {
-      if (curr.revision === r) {
+      if (curr.revision === r && curr.observables !== undefined) {
         if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
           curr.observables.forEach((hint, v) => { // performance tracking info
             if (hint.times > Hooks.repetitiveReadWarningThreshold)
@@ -602,7 +602,8 @@ class Operation extends Observable implements Observer {
     else if (curr instanceof Observable && curr.observers) {
       // Unsubscribe from self-changed observables
       curr.observers.forEach(o => {
-        o.observables.delete(curr)
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        o.observables!.delete(curr)
         if (Dbg.isOn && Dbg.trace.read)
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from self-changed ${Hints.rev(r, m)}`)
       })
@@ -612,14 +613,14 @@ class Operation extends Observable implements Observer {
 
   private unsubscribeFromAll(): void {
     // It's critical to have no exceptions here
-    this.observables.forEach((hint, value) => {
+    this.observables?.forEach((hint, value) => {
       const observers = value.observers
       if (observers)
         observers.delete(this)
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
         Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Hints.rev(hint.revision, hint.member)}`)
     })
-    this.observables.clear()
+    this.observables = undefined
   }
 
   private subscribeTo(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
@@ -628,7 +629,8 @@ class Operation extends Observable implements Observer {
       // Performance tracking
       let times: number = 0
       if (Hooks.repetitiveReadWarningThreshold < Number.MAX_SAFE_INTEGER) {
-        const existing = this.observables.get(observable)
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const existing = this.observables!.get(observable)
         times = existing ? existing.times + 1 : 1
       }
       // Acquire observers
@@ -637,7 +639,8 @@ class Operation extends Observable implements Observer {
       // Two-way linking
       const info: MemberInfo = { revision: r, member: m, times }
       observable.observers.add(this)
-      this.observables.set(observable, info)
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      this.observables!.set(observable, info)
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
         Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Hints.rev(r, m)}${info.times > 1 ? ` (${info.times} times)` : ''}`)
     }
