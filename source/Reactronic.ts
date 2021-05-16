@@ -12,7 +12,7 @@ import { Kind, Reentrance, MemberOptions, TraceOptions, ProfilingOptions, Sensit
 import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks } from './impl/Hooks'
-import { Ctl } from './impl/Ctl'
+import { Ctl } from './impl/Operation'
 import { Transaction } from './impl/Transaction'
 import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
