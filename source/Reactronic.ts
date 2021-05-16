@@ -63,18 +63,18 @@ export function unobservable(proto: object, prop: PropertyKey): any {
 }
 
 export function transaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opt = { kind: Kind.Transaction }
-  return Hooks.decorateOperation(true, transaction, opt, proto, prop, pd)
+  const opts = { kind: Kind.Transaction }
+  return Hooks.decorateOperation(true, transaction, opts, proto, prop, pd)
 }
 
 export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opt = { kind: Kind.Reaction, throttling: -1 } // immediate reaction
-  return Hooks.decorateOperation(true, reaction, opt, proto, prop, pd)
+  const opts = { kind: Kind.Reaction, throttling: -1 } // immediate reaction
+  return Hooks.decorateOperation(true, reaction, opts, proto, prop, pd)
 }
 
 export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opt = { kind: Kind.Cache, noSideEffects: true }
-  return Hooks.decorateOperation(true, cached, opt, proto, prop, pd)
+  const opts = { kind: Kind.Cache, noSideEffects: true }
+  return Hooks.decorateOperation(true, cached, opts, proto, prop, pd)
 }
 
 export function priority(value: number): F<any> {
