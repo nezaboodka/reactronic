@@ -18,7 +18,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 
 const NIL_ARGS: any[] = []
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
-const NIL_CAUSE: MemberInfo = { revision: NIL_REV, memberName: '<nil>', usageCount: 0 }
+const NIL_CAUSE: MemberInfo = { revision: NIL_REV, memberName: '???', usageCount: 0 }
 
 type CallContext = {
   readonly operation: Operation
