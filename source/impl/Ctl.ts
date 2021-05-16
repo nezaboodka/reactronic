@@ -325,7 +325,7 @@ class Operation extends Observable implements Observer {
     if (this.obsoleteSince === MAX_TIMESTAMP || this.obsoleteSince <= 0) {
       const skip = !observable.isOperation &&
         cause.revision.snapshot === this.revision.snapshot &&
-        cause.revision.members.has(cause.member)
+        cause.revision.changes.has(cause.member)
       if (!skip) {
         this.obsoleteDueTo = cause
         this.obsoleteSince = since
@@ -538,7 +538,7 @@ class Operation extends Observable implements Observer {
   }
 
   private static markEdited(value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
-    edited ? r.members.add(m) : r.members.delete(m)
+    edited ? r.changes.add(m) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
       edited ? Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Hints.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
@@ -555,8 +555,8 @@ class Operation extends Observable implements Observer {
     if (!error) {
       const reactions = snapshot.reactions
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-        if (!r.members.has(Meta.Disposed))
-          r.members.forEach(m => Operation.propagateMemberChangeToReactions(false, since, r, m, h, reactions))
+        if (!r.changes.has(Meta.Disposed))
+          r.changes.forEach(m => Operation.propagateMemberChangeToReactions(false, since, r, m, h, reactions))
         else
           for (const m in r.prev.revision.data)
             Operation.propagateMemberChangeToReactions(true, since, r, m, h, reactions)
@@ -567,7 +567,7 @@ class Operation extends Observable implements Observer {
     }
     else
       snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-        r.members.forEach(m => Operation.propagateMemberChangeToReactions(true, since, r, m, h, undefined)))
+        r.changes.forEach(m => Operation.propagateMemberChangeToReactions(true, since, r, m, h, undefined)))
   }
 
   private static propagateMemberChangeToReactions(unsubscribe: boolean, timestamp: number,
