@@ -133,7 +133,7 @@ export class Ctl extends Controller<any> {
   private peek(args: any[] | undefined): CallCtx {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.seekRevision(this.ownHolder, this.memberName)
-    const op: Operation = this.peekFromRev(r)
+    const op: Operation = this.peekFromRevision(r)
     const isValid = op.options.kind !== Kind.Transaction && op.obsoleteSince !== BOOT_TIMESTAMP &&
       (ctx === op.revision.snapshot || ctx.timestamp < op.obsoleteSince) &&
       (!op.options.sensitiveArgs || args === undefined ||
@@ -154,7 +154,7 @@ export class Ctl extends Controller<any> {
     const m = this.memberName
     const ctx = Snapshot.edit()
     const r: ObjectRevision = ctx.getEditableRevision(h, m, Meta.Holder, this)
-    let op: Operation = this.peekFromRev(r)
+    let op: Operation = this.peekFromRevision(r)
     if (op.revision !== r) {
       const op2 = new Operation(this, r, op)
       op = r.data[m] = op2.reenterOver(op)
@@ -164,7 +164,7 @@ export class Ctl extends Controller<any> {
     return { operation: op, isUpToDate: true, snapshot: ctx, revision: r }
   }
 
-  private peekFromRev(r: ObjectRevision): Operation {
+  private peekFromRevision(r: ObjectRevision): Operation {
     const m = this.memberName
     let op: Operation = r.data[m]
     if (op.controller !== this) {
