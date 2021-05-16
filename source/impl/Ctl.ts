@@ -362,7 +362,7 @@ class Operation extends Observable implements Observer {
     }
   }
 
-  ensureUpToDate(now: boolean, nothrow: boolean): void {
+  runIfNotUpToDate(now: boolean, nothrow: boolean): void {
     const t = this.options.throttling
     const interval = Date.now() + this.started // "started" is stored as negative value after reaction completion
     const hold = t ? t - interval : 0 // "started" is stored as negative value after reaction completion
@@ -387,7 +387,7 @@ class Operation extends Observable implements Observer {
     }
     else if (t < Number.MAX_SAFE_INTEGER) {
       if (hold > 0)
-        setTimeout(() => this.ensureUpToDate(true, true), hold)
+        setTimeout(() => this.runIfNotUpToDate(true, true), hold)
       else
         this.addToAsyncReactionsBatch()
     }
@@ -522,7 +522,7 @@ class Operation extends Observable implements Observer {
     const reactions = Operation.asyncReactionsBatch
     Operation.asyncReactionsBatch = [] // reset
     for (const x of reactions)
-      x.ensureUpToDate(true, true)
+      x.runIfNotUpToDate(true, true)
   }
 
   private static markUsed(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean): void {

@@ -264,7 +264,7 @@ class TransactionImpl extends Transaction {
       if (this.sealed && this.pending === 0) {
         this.applyOrDiscard() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
-        TransactionImpl.isolated(TransactionImpl.executeReactions, this)
+        TransactionImpl.isolated(TransactionImpl.runReactions, this)
       }
       else
         TransactionImpl.curr = outer
@@ -272,8 +272,8 @@ class TransactionImpl extends Transaction {
     return result
   }
 
-  private static executeReactions(t: TransactionImpl): void {
-    t.snapshot.reactions.forEach(x => x.ensureUpToDate(false, true))
+  private static runReactions(t: TransactionImpl): void {
+    t.snapshot.reactions.forEach(x => x.runIfNotUpToDate(false, true))
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {
