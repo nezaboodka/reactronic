@@ -138,7 +138,7 @@ class Component<P> extends React.Component<P> {
   @reaction // called immediately in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
-      isolated(() => this.setState({})) // ask React to re-render
+      standalone(() => this.setState({})) // ask React to re-render
   } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
@@ -150,7 +150,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    isolated(Reactronic.dispose, this)
+    standalone(Reactronic.dispose, this)
   }
 }
 ```
@@ -251,7 +251,7 @@ function monitor(value: Monitor | null)
 function trace(value: Partial<TraceOptions>)
 
 function nonreactive<T>(func: F<T>, ...args: any[]): T
-function isolated<T>(func: F<T>, ...args: any[]): T
+function standalone<T>(func: F<T>, ...args: any[]): T
 function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // Options, ObjectOptions, Kind, Reentrance, Monitor, TraceOptions, ProfilingOptions
@@ -349,7 +349,7 @@ class Transaction implements Worker {
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, separate: boolean, sidebyside: boolean,
     trace: Partial<TraceOptions | undefined>, func: F<T>, ...args: any[]): T
-  static isolated<T>(func: F<T>, ...args: any[]): T
+  static standalone<T>(func: F<T>, ...args: any[]): T
 }
 
 // Controller
