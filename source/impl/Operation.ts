@@ -345,7 +345,7 @@ class Operation extends Observable implements Observer {
         // Cancel transaction if it is still in progress
         const tran = this.transaction
         if (!tran.isFinished && this !== observable) // restart after itself if canceled
-          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Hints.rev(cause.revision, cause.memberName)}`), null)
+          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Hints.rev(cause.revision, cause.memberName)} changed by T${cause.revision.snapshot.id}[${cause.revision.snapshot.hint}]`), null)
       }
       else if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
         Dbg.log(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Hints.rev(cause.revision, cause.memberName)}`)
