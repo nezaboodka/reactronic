@@ -31,7 +31,7 @@ export interface MemberOptions {
 }
 
 export enum Kind {
-  Data = 0,
+  Plain = 0,
   Transaction = 1,
   Reaction = 2,
   Cache = 3,

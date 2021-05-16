@@ -40,7 +40,7 @@ export abstract class ObservableObject {
 // Options
 
 const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
-  kind: Kind.Data,
+  kind: Kind.Plain,
   priority: 0,
   noSideEffects: false,
   sensitiveArgs: false,
@@ -105,7 +105,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     const r: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
     result = r.data[m]
     if (result instanceof Observable && !result.isOperation) {
-      Snapshot.markUsed(result, r, m, h, Kind.Data, false)
+      Snapshot.markUsed(result, r, m, h, Kind.Plain, false)
       result = result.value
     }
     else if (m === Meta.Holder) {
