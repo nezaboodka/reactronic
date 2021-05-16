@@ -132,7 +132,7 @@ export class Ctl extends Controller<any> {
 
   private peek(args: any[] | undefined): CallCtx {
     const ctx = Snapshot.current()
-    const r: ObjectRevision = ctx.findRevOf(this.ownHolder, this.memberName)
+    const r: ObjectRevision = ctx.seekRevision(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRev(r)
     const isValid = op.options.kind !== Kind.Transaction && op.obsoleteSince !== BOOT_TIMESTAMP &&
       (ctx === op.revision.snapshot || ctx.timestamp < op.obsoleteSince) &&

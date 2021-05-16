@@ -77,7 +77,7 @@ export class Snapshot implements AbstractSnapshot {
   static propagateAllChangesThroughSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
   static revokeAllSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
 
-  findRevOf(h: ObjectHolder, m: MemberName): ObjectRevision {
+  seekRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     // TODO: Take into account timestamp of the member
     let r: ObjectRevision | undefined = h.editing
     if (r && r.snapshot !== this) {
@@ -94,14 +94,14 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   getCurrentRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
-    const r = this.findRevOf(h, m)
+    const r = this.seekRevision(h, m)
     if (r === NIL_REV)
       throw misuse(`object ${Hints.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
 
   getEditableRevision(h: ObjectHolder, m: MemberName, value: any, token?: any): ObjectRevision {
-    let r: ObjectRevision = this.findRevOf(h, m)
+    let r: ObjectRevision = this.seekRevision(h, m)
     const existing = r.data[m]
     if (existing !== Meta.Unobservable) {
       this.checkIfEditable(h, r, m, existing, value, token)
