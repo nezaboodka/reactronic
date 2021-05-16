@@ -158,7 +158,7 @@ test('brief', t => {
       app.userFilter = app.userFilter
     })
     // Other
-    t.throws(() => app.model.testImmutableCollection(), { message: 'use toMutable to modify sealed collection' })
+    t.throws(() => app.model.testImmutableCollection(), { message: 'use toMutable to create mutable copy of sealed collection' })
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
     t.is(app.raw, 'DemoView.userFilter #23t127v101')

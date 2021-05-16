@@ -41,6 +41,6 @@ export abstract class Sealant {
   }
 
   static error(collection: Sealed<any>): Error {
-    return misuse('use toMutable to modify sealed collection')
+    return misuse('use toMutable to create mutable copy of sealed collection')
   }
 }
