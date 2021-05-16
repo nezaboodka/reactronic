@@ -59,10 +59,10 @@ export class Ctl extends Controller<any> {
         (opts.kind === Kind.Cache && (cc.revision.snapshot.sealed ||
           cc.revision.prev.revision !== NIL_REV))
       const token = opts.noSideEffects ? this : undefined
-      const ic2 = this.run(cc, spawn, opts, token, args)
-      const ctx2 = ic2.operation.revision.snapshot
+      const cc2 = this.run(cc, spawn, opts, token, args)
+      const ctx2 = cc2.operation.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
-        cc = ic2
+        cc = cc2
     }
     else if (Dbg.isOn && Dbg.trace.operation && (opts.trace === undefined ||
       opts.trace.operation === undefined || opts.trace.operation === true))
