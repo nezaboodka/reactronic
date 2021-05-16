@@ -323,16 +323,15 @@ class Operation extends Observable implements Observer {
 
   markObsoleteDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void {
     if (this.observables !== undefined) {
-      const skip = !observable.isOperation &&
-        cause.revision.snapshot === this.revision.snapshot &&
-        cause.revision.changes.has(cause.memberName)
-      if (!skip) {
-        const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
-
+      const ownChange = !observable.isOperation &&
+        this === cause.revision.changes.get(cause.memberName)
+      if (!ownChange) {
         // Mark obsolete
         this.unsubscribeFromAllObservables() // this.observables = undefined
         this.obsoleteDueTo = cause
         this.obsoleteSince = since
+
+        const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
         if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
             isReaction && cause.revision === NIL_REV
@@ -350,15 +349,8 @@ class Operation extends Observable implements Observer {
         if (!tran.isFinished && this !== observable) // restart after itself if canceled
           tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Hints.rev(cause.revision, cause.memberName)}`), null)
       }
-      else {
-        if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
-          Dbg.log(' ', 'x', `${this.hint()} outdating is skipped for self-changed ${Hints.rev(cause.revision, cause.memberName)}`)
-
-        // Variant 2:
-        // const hint = this.hint()
-        // const causeHint = Hints.revision(cause.revision, cause.member)
-        // throw misuse(`reaction ${hint} should either read or write ${causeHint}, but not both (consider using untracked read)`)
-      }
+      else if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
+        Dbg.log(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Hints.rev(cause.revision, cause.memberName)}`)
     }
   }
 
