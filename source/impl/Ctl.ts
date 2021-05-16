@@ -327,22 +327,28 @@ class Operation extends Observable implements Observer {
         cause.revision.snapshot === this.revision.snapshot &&
         cause.revision.changes.has(cause.memberName)
       if (!skip) {
+        const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
+
+        // Mark obsolete
         this.unsubscribeFromAllObservables() // this.observables = undefined
         this.obsoleteDueTo = cause
         this.obsoleteSince = since
-        const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
         if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
             isReaction && cause.revision === NIL_REV
               ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})`
               : `${this.hint()} is obsolete due to ${Hints.rev(cause.revision, cause.memberName)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
-        if (isReaction) // stop cascade propagation on reaction
+
+        // Stop cascade propagation on reaction, or continue otherwise
+        if (isReaction)
           reactions.push(this)
-        else // continue cascade propagation
+        else
           this.observers?.forEach(c => c.markObsoleteDueTo(this, { revision: this.revision, memberName: this.controller.memberName, usageCount: 0 }, since, reactions))
+
+        // Cancel transaction if it is still in progress
         const tran = this.transaction
         if (!tran.isFinished && this !== observable) // restart after itself if canceled
-          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to outdating by ${Hints.rev(cause.revision, cause.memberName)}`), null)
+          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to ${Hints.rev(cause.revision, cause.memberName)}`), null)
       }
       else {
         if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
