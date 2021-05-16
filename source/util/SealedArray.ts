@@ -21,7 +21,7 @@ export abstract class SealedArray<T> extends Array<T> implements Sealed<Array<T>
   splice(start: number, deleteCount?: number): T[]
   splice(start: number, deleteCount: number, ...items: T[]): T[] { throw Sealant.error(this) }
   unshift(...items: T[]): number { throw Sealant.error(this) }
-  [Sealant.Clone](): Array<T> { return this.slice() }
+  [Sealant.CreateCopy](): Array<T> { return this.slice() }
 
   slice(start?: number, end?: number): T[] {
     const result = super.slice(start, end)

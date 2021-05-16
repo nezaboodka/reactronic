@@ -18,7 +18,7 @@ export abstract class SealedMap<K, V> extends Map<K, V> implements Sealed<Map<K,
   clear(): void { throw Sealant.error(this) }
   delete(key: K): boolean { throw Sealant.error(this) }
   set(key: K, value: V): this { throw Sealant.error(this) }
-  [Sealant.Clone](): Map<K, V> { return new Map<K, V>(this.entries()) }
+  [Sealant.CreateCopy](): Map<K, V> { return new Map<K, V>(this.entries()) }
 }
 
 Object.defineProperty(Map.prototype, 'toMutable', {

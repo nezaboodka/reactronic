@@ -114,6 +114,6 @@ export class TransactionJournalImpl extends TransactionJournal {
 
 function unseal(observable: Observable): any {
   const result = observable.value
-  const clone = result?.[Sealant.Clone] as () => any
-  return clone ? clone.call(result) : result
+  const createCopy = result?.[Sealant.CreateCopy] as () => any
+  return createCopy ? createCopy.call(result) : result
 }

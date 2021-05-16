@@ -13,18 +13,18 @@ export interface Sealable<T> {
 }
 
 export interface Sealed<T> {
-  [Sealant.Clone]?: () => T
+  [Sealant.CreateCopy]?: () => T
 }
 
 export abstract class Sealant {
   static readonly SealedType: unique symbol = Symbol('rxSealedType')
-  static readonly Clone: unique symbol = Symbol('rxClone')
+  static readonly CreateCopy: unique symbol = Symbol('rxCreateCopy')
 
   static seal<T extends Sealable<T>>(collection: T, sealedType: object, typeName: string, member: any): T {
     let result: T & Sealed<T> = collection as any
-    const clone = result[Sealant.Clone]
-    if (clone)
-      result = clone.call(result) as any
+    const createCopy = result[Sealant.CreateCopy]
+    if (createCopy)
+      result = createCopy.call(result) as any
     if (Dbg.isOn && Dbg.trace.write)
       Dbg.log('║', ' ', `${typeName}.${member.toString()} - collection is sealed`)
     Object.setPrototypeOf(result, sealedType)
@@ -33,10 +33,10 @@ export abstract class Sealant {
   }
 
   static toMutable<T extends Sealable<T>>(collection: T): T {
-    const col: Sealed<T> = collection as any
-    const clone = col[Sealant.Clone]
-    if (clone)
-      collection = clone.call(collection)
+    const a: Sealed<T> = collection as any
+    const createCopy = a[Sealant.CreateCopy]
+    if (createCopy)
+      collection = createCopy.call(collection)
     return collection
   }
 
