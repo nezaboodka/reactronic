@@ -51,21 +51,21 @@ export class Ctl extends Controller<any> {
     let cc: CallCtx = this.peek(args)
     const ctx = cc.snapshot
     const op: Operation = cc.operation
+    const opts = op.options
     if (!cc.isUpToDate && cc.revision.data[Meta.Disposed] === undefined
       && (!weak || op.obsoleteSince === BOOT_TIMESTAMP || !op.successor ||
         op.successor.transaction.isFinished)) {
-      const opt = op.options
-      const spawn = weak || opt.kind === Kind.Reaction ||
-        (opt.kind === Kind.Cache && (cc.revision.snapshot.sealed ||
+      const spawn = weak || opts.kind === Kind.Reaction ||
+        (opts.kind === Kind.Cache && (cc.revision.snapshot.sealed ||
           cc.revision.prev.revision !== NIL_REV))
-      const token = opt.noSideEffects ? this : undefined
-      const ic2 = this.run(cc, spawn, opt, token, args)
+      const token = opts.noSideEffects ? this : undefined
+      const ic2 = this.run(cc, spawn, opts, token, args)
       const ctx2 = ic2.operation.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         cc = ic2
     }
-    else if (Dbg.isOn && Dbg.trace.operation && (op.options.trace === undefined ||
-      op.options.trace.operation === undefined || op.options.trace.operation === true))
+    else if (Dbg.isOn && Dbg.trace.operation && (opts.trace === undefined ||
+      opts.trace.operation === undefined || opts.trace.operation === true))
       Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)',
         `${Hints.rev(cc.revision, this.memberName)} result is reused from T${cc.operation.transaction.id}[${cc.operation.transaction.hint}]`)
     const t = cc.operation
