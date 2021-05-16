@@ -336,14 +336,10 @@ class Operation extends Observable implements Observer {
             isReaction && cause.revision === NIL_REV
               ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})`
               : `${this.hint()} is obsolete due to ${Hints.rev(cause.revision, cause.memberName)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
-        if (isReaction) // stop cascade outdating on reaction
+        if (isReaction) // stop cascade propagation on reaction
           reactions.push(this)
-        else // cascade outdating
-          this.observers?.forEach(c => c.markObsoleteDueTo(this, {
-            revision: this.revision,
-            memberName: this.controller.memberName,
-            usageCount: 0,
-          }, since, reactions))
+        else // continue cascade propagation
+          this.observers?.forEach(c => c.markObsoleteDueTo(this, { revision: this.revision, memberName: this.controller.memberName, usageCount: 0 }, since, reactions))
         const tran = this.transaction
         if (!tran.isFinished && this !== observable) // restart after itself if canceled
           tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to outdating by ${Hints.rev(cause.revision, cause.memberName)}`), null)
