@@ -334,7 +334,7 @@ class Operation extends Observable implements Observer {
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
             isReaction && cause.revision === NIL_REV
               ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})`
-              : `${this.hint()} is obsoleted due to ${Hints.rev(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+              : `${this.hint()} is obsolete due to ${Hints.rev(cause.revision, cause.member)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
         this.unsubscribeFromAll()
         if (isReaction) // stop cascade outdating on reaction
           reactions.push(this)
