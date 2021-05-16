@@ -74,7 +74,8 @@ export class Snapshot implements AbstractSnapshot {
   static markUsed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF
   static markEdited: (value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
-  static propagateChangesToReactions = (snapshot: Snapshot, error: Error | undefined): void => { /* nop */ }
+  static propagateChangesThroughSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
+  static revokeAllSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
 
   findRevOf(h: ObjectHolder, m: MemberName): ObjectRevision {
     // TODO: Take into account timestamp of the member
@@ -265,7 +266,8 @@ export class Snapshot implements AbstractSnapshot {
       if (Dbg.trace.transaction)
         Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
     }
-    Snapshot.propagateChangesToReactions(this, error)
+    if (!error)
+      Snapshot.propagateChangesThroughSubscriptions(this)
   }
 
   static sealObjectRevision(h: ObjectHolder, r: ObjectRevision): void {

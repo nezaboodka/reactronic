@@ -550,24 +550,25 @@ class Operation extends Observable implements Observer {
     return result
   }
 
-  private static propagateChangesToReactions(snapshot: Snapshot, error: Error | undefined): void {
+  private static propagateChangesThroughSubscriptions(snapshot: Snapshot): void {
     const since = snapshot.timestamp
-    if (!error) {
-      const reactions = snapshot.reactions
-      snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-        if (!r.changes.has(Meta.Disposed))
-          r.changes.forEach(m => Operation.propagateMemberChangeToReactions(false, since, r, m, h, reactions))
-        else
-          for (const m in r.prev.revision.data)
-            Operation.propagateMemberChangeToReactions(true, since, r, m, h, reactions)
-      })
-      reactions.sort(compareReactionsByPriority)
-      snapshot.options.journal?.remember(
-        TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
-    }
-    else
-      snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-        r.changes.forEach(m => Operation.propagateMemberChangeToReactions(true, since, r, m, h, undefined)))
+    const reactions = snapshot.reactions
+    snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
+      if (!r.changes.has(Meta.Disposed))
+        r.changes.forEach(m => Operation.propagateMemberChangeToReactions(false, since, r, m, h, reactions))
+      else
+        for (const m in r.prev.revision.data)
+          Operation.propagateMemberChangeToReactions(true, since, r, m, h, reactions)
+    })
+    reactions.sort(compareReactionsByPriority)
+    snapshot.options.journal?.remember(
+      TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
+  }
+
+  private static revokeAllSubscriptions(snapshot: Snapshot): void {
+    snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
+      r.changes.forEach(m => Operation.propagateMemberChangeToReactions(
+        true, snapshot.timestamp, r, m, h, undefined)))
   }
 
   private static propagateMemberChangeToReactions(unsubscribe: boolean, timestamp: number,
@@ -696,7 +697,8 @@ class Operation extends Observable implements Observer {
     Snapshot.markUsed = Operation.markUsed // override
     Snapshot.markEdited = Operation.markEdited // override
     Snapshot.isConflicting = Operation.isConflicting // override
-    Snapshot.propagateChangesToReactions = Operation.propagateChangesToReactions // override
+    Snapshot.propagateChangesThroughSubscriptions = Operation.propagateChangesThroughSubscriptions // override
+    Snapshot.revokeAllSubscriptions = Operation.revokeAllSubscriptions // override
     Hooks.createControllerAndGetHook = Operation.createControllerAndGetHook // override
     Hooks.rememberOperationOptions = Operation.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
