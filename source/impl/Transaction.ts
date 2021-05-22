@@ -27,7 +27,7 @@ export abstract class Transaction implements Worker {
   abstract inspect<T>(func: F<T>, ...args: any[]): T
   abstract apply(): void
   abstract seal(): this
-  abstract attach<T>(func: F<T>, secondary: boolean): F<T>
+  abstract wrap<T>(func: F<T>, secondary: boolean): F<T>
   abstract cancel(error: Error, retryAfterOrIgnore?: Worker | null): this
   abstract readonly isCanceled: boolean
   abstract readonly isFinished: boolean
@@ -106,29 +106,29 @@ class TransactionImpl extends Transaction {
     return this
   }
 
-  attach<T>(func: F<T>, error: boolean): F<T> {
+  wrap<T>(func: F<T>, error: boolean): F<T> {
     this.guard()
     const self = this
     const inspect = TransactionImpl.inspection
     if (!inspect)
-      self.run(TransactionImpl.attachedEnter, self, error)
+      self.run(TransactionImpl.wrapperEnter, self, error)
     else
-      self.inspect(TransactionImpl.attachedEnter, self, error)
-    const attachedToTransaction: F<T> = (...args: any[]): T => {
+      self.inspect(TransactionImpl.wrapperEnter, self, error)
+    const wrappedForTransaction: F<T> = (...args: any[]): T => {
       if (!inspect)
-        return self.runImpl<T>(undefined, TransactionImpl.attachedLeave, self, error, func, ...args)
+        return self.runImpl<T>(undefined, TransactionImpl.wrapperLeave, self, error, func, ...args)
       else
-        return self.inspect<T>(TransactionImpl.attachedLeave, self, error, func, ...args)
+        return self.inspect<T>(TransactionImpl.wrapperLeave, self, error, func, ...args)
     }
-    return attachedToTransaction
+    return wrappedForTransaction
   }
 
-  private static attachedEnter<T>(t: TransactionImpl, error: boolean): void {
+  private static wrapperEnter<T>(t: TransactionImpl, error: boolean): void {
     if (!error)
       t.pending++
   }
 
-  private static attachedLeave<T>(t: TransactionImpl, error: boolean, func: F<T>, ...args: any[]): T {
+  private static wrapperLeave<T>(t: TransactionImpl, error: boolean, func: F<T>, ...args: any[]): T {
     t.pending--
     const result = func(...args)
     // if (t.error && !error)
