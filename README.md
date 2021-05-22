@@ -61,11 +61,10 @@ class Demo extends ObservableObject {
 ```
 
 In the example above, `printContact` reaction depends on `name`
-and `email` fields. The reaction is executed automatically in
-response to changes of these fields made by `saveContact`
-transaction.
+and `email` fields. It is executed automatically in response
+to changes of these fields made by `saveContact` transaction.
 
-Here is an example of on-demand cached computation:
+Here is an example of if cached value computed on-demand:
 
 ``` typescript
 class Demo extends ObservableObject {
