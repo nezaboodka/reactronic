@@ -8,10 +8,10 @@
 ![Lines](https://img.shields.io/badge/lines-1715-success.svg)
 [![Demo](https://img.shields.io/badge/demo-live-success.svg)](https://nezaboodka.github.io/reactronic-demo/)
 
-# **Reactronic** - Transactionally Reactive State Management
+# **Reactronic** - Transactionally-Reactive State Management
 
 Reactronic is a JavaScript library that provides
-[transactionally reactive](https://blog.nezaboodka.com/post/2019/593-modern-database-should-natively-support-transactionally-reactive-programming)
+[transactionally-reactive](https://blog.nezaboodka.com/post/2019/593-modern-database-should-natively-support-transactionally-reactive-programming)
 state management in a Web application.
 
 Transactional reactivity means that state changes are being made in an
@@ -36,7 +36,7 @@ Quick introduction and detailed description is below.
 
 ## Quick Introduction
 
-Here is an example of transactionally reactive code with an observable
+Here is an example of transactionally-reactive code with an observable
 object, transaction and reaction:
 
 ``` typescript
@@ -101,7 +101,7 @@ both on reads and writes.
 ``` typescript
 class MyModel extends ObservableObject {
   url: string = "https://github.com/nezaboodka/reactronic"
-  content: string = "transactionally reactive state management"
+  content: string = "transactionally-reactive state management"
   timestamp: Date = Date.now()
 }
 ```
@@ -270,7 +270,7 @@ Key Reactronic principles and differentiators:
   - No compromises on consistency, clarity, and simplicity;
   - Minimalism and zero boilerplating (it's not a framework bloating your code);
   - Asynchrony, patches, undo/redo, conflict resolving are provided out of the box;
-  - Seamless integration with transactionally reactive object-oriented databases like [Nezaboodka](https://nezaboodka.com/#products);
+  - Seamless integration with transactionally-reactive object-oriented databases like [Nezaboodka](https://nezaboodka.com/#products);
   - Compact dependency-free implementation consisting of less than 2K lines of code.
 
 Roadmap:
