@@ -11,7 +11,7 @@ import { MemberOptions, Kind, Reentrance, Sensitivity } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta } from './Data'
-import { Snapshot, Dump, NIL_REV } from './Snapshot'
+import { Snapshot, Dump, ROOT_REV } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
 
@@ -118,10 +118,10 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   set(h: ObjectHolder, m: MemberName, value: any, receiver: any): boolean {
     const r: ObjectRevision = Snapshot.edit().getEditableRevision(h, m, value)
-    if (r !== NIL_REV) {
+    if (r !== ROOT_REV) {
       const curr = r.data[m] as Observable
       if (curr !== undefined || (
-        r.prev.revision.snapshot === NIL_REV.snapshot && m in h.unobservable === false)) {
+        r.prev.revision.snapshot === ROOT_REV.snapshot && m in h.unobservable === false)) {
         const prev = r.prev.revision.data[m] as Observable
         let edited = prev === undefined || prev.value !== value ||
           Hooks.sensitivity === Sensitivity.ReactEvenOnSameValueAssignment
@@ -233,7 +233,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
-      const rev = new ObjectRevision(NIL_REV.snapshot, NIL_REV, {...initial})
+      const rev = new ObjectRevision(ROOT_REV.snapshot, ROOT_REV, {...initial})
       Meta.set(rev.data, Meta.Holder, h)
       if (Dbg.isOn)
         Snapshot.freezeObjectRevision(rev)
@@ -245,7 +245,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   static createObjectHolder(unobservable: any, blank: any, hint: string): ObjectHolder {
     const ctx = Snapshot.edit()
-    const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, NIL_REV, hint)
+    const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, ROOT_REV, hint)
     ctx.getEditableRevision(h, Meta.Holder, blank)
     return h
   }

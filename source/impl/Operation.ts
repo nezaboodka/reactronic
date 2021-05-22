@@ -10,15 +10,15 @@ import { Dbg, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, MemberInfo, Meta } from './Data'
-import { Snapshot, Dump, NIL_REV, MAX_TIMESTAMP } from './Snapshot'
+import { Snapshot, Dump, ROOT_REV, MAX_TIMESTAMP } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
 import { TransactionJournalImpl } from './TransactionJournal'
 
-const NIL_ARGS: any[] = []
-const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
-const NIL_CAUSE: MemberInfo = { revision: NIL_REV, memberName: '???', usageCount: 0 }
+const ROOT_ARGS: any[] = []
+const ROOT_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, ROOT_REV, 'root-holder')
+const ROOT_CAUSE: MemberInfo = { revision: ROOT_REV, memberName: 'root-cause', usageCount: 0 }
 
 type OperationContext = {
   readonly operation: Operation
@@ -54,11 +54,11 @@ export class OperationController extends Controller<any> {
     const op: Operation = oc.operation
     const opts = op.options
     if (!oc.isUpToDate && oc.revision.data[Meta.Disposed] === undefined
-      && (!weak || op.cause === NIL_CAUSE || !op.successor ||
+      && (!weak || op.cause === ROOT_CAUSE || !op.successor ||
         op.successor.transaction.isFinished)) {
       const standalone = weak || opts.kind === Kind.Reaction ||
         (opts.kind === Kind.Cache && (oc.revision.snapshot.sealed ||
-          oc.revision.prev.revision !== NIL_REV))
+          oc.revision.prev.revision !== ROOT_REV))
       const token = opts.noSideEffects ? this : undefined
       const oc2 = this.run(oc, standalone, opts, token, args)
       const ctx2 = oc2.operation.revision.snapshot
@@ -115,12 +115,12 @@ export class OperationController extends Controller<any> {
 
   static why(): string {
     const op = Operation.current
-    return op ? op.why() : NIL_HOLDER.hint
+    return op ? op.why() : ROOT_HOLDER.hint
   }
 
   static briefWhy(): string {
     const op = Operation.current
-    return op ? op.briefWhy() : NIL_HOLDER.hint
+    return op ? op.briefWhy() : ROOT_HOLDER.hint
   }
 
   /* istanbul ignore next */
@@ -135,7 +135,7 @@ export class OperationController extends Controller<any> {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.seekRevision(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRevision(r)
-    const isValid = op.options.kind !== Kind.Transaction && op.cause !== NIL_CAUSE &&
+    const isValid = op.options.kind !== Kind.Transaction && op.cause !== ROOT_CAUSE &&
       (ctx === op.revision.snapshot || ctx.timestamp < op.obsoleteSince) &&
       (!op.options.sensitiveArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
@@ -170,7 +170,7 @@ export class OperationController extends Controller<any> {
     let op: Operation = r.data[m]
     if (op.controller !== this) {
       const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
-      const standalone = r.snapshot.sealed || r.prev.revision !== NIL_REV
+      const standalone = r.snapshot.sealed || r.prev.revision !== ROOT_REV
       op = Transaction.runAs<Operation>({ hint, standalone, token: this }, (): Operation => {
         const h = this.ownHolder
         let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
@@ -178,7 +178,7 @@ export class OperationController extends Controller<any> {
         if (op2.controller !== this) {
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
           op2 = r2.data[m] = new Operation(this, r2, op2)
-          op2.cause = NIL_CAUSE
+          op2.cause = ROOT_CAUSE
           Snapshot.markEdited(op2, true, r2, m, h)
         }
         return op2
@@ -215,9 +215,9 @@ export class OperationController extends Controller<any> {
   }
 
   private static markObsolete(self: OperationController): void {
-    const cc = self.peek(undefined)
-    const ctx = cc.snapshot
-    cc.operation.markObsoleteDueTo(cc.operation, { revision: NIL_REV, memberName: self.memberName, usageCount: 0 }, ctx.timestamp, ctx.reactions)
+    const oc = self.peek(undefined)
+    const ctx = oc.snapshot
+    oc.operation.markObsoleteDueTo(oc.operation, { revision: ROOT_REV, memberName: self.memberName, usageCount: 0 }, ctx.timestamp, ctx.reactions)
   }
 }
 
@@ -257,7 +257,7 @@ class Operation extends Observable implements Observer {
     }
     else { // prev: OptionsImpl
       this.options = prev
-      this.args = NIL_ARGS
+      this.args = ROOT_ARGS
       this.cause = undefined
       // this.value = undefined
     }
@@ -289,7 +289,7 @@ class Operation extends Observable implements Observer {
   }
 
   briefWhy(): string {
-    return this.cause ? propagationHint(this.cause, false)[0] : NIL_HOLDER.hint
+    return this.cause ? propagationHint(this.cause, false)[0] : ROOT_HOLDER.hint
   }
 
   dependencies(): string[] {
@@ -333,7 +333,7 @@ class Operation extends Observable implements Observer {
         const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
         if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
-            isReaction && cause.revision === NIL_REV
+            isReaction && cause.revision === ROOT_REV
               ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})`
               : `${this.hint()} is obsolete due to ${Dump.rev(cause.revision, cause.memberName)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
 
@@ -543,7 +543,7 @@ class Operation extends Observable implements Observer {
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof Operation && oldValue.cause !== NIL_CAUSE
+      result = oldValue instanceof Operation && oldValue.cause !== ROOT_CAUSE
     return result
   }
 
@@ -667,9 +667,9 @@ class Operation extends Observable implements Observer {
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
     let op: Operation | undefined = initial[m]
-    const ctl = op ? op.controller : new OperationController(NIL_HOLDER, m)
+    const ctl = op ? op.controller : new OperationController(ROOT_HOLDER, m)
     const opts = op ? op.options : OptionsImpl.INITIAL
-    initial[m] = op = new Operation(ctl, NIL_REV, new OptionsImpl(getter, setter, opts, options, implicit))
+    initial[m] = op = new Operation(ctl, ROOT_REV, new OptionsImpl(getter, setter, opts, options, implicit))
     // Add to the list if it's a reaction
     if (op.options.kind === Kind.Reaction && op.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactions = Meta.acquire(proto, Meta.Reactions)
@@ -688,8 +688,8 @@ class Operation extends Observable implements Observer {
   // }
 
   static init(): void {
-    Object.freeze(NIL_ARGS)
-    Object.freeze(NIL_CAUSE)
+    Object.freeze(ROOT_ARGS)
+    Object.freeze(ROOT_CAUSE)
     Dbg.getMergedTraceOptions = getMergedTraceOptions
     Snapshot.markUsed = Operation.markUsed // override
     Snapshot.markEdited = Operation.markEdited // override

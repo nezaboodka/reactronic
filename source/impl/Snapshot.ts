@@ -86,7 +86,7 @@ export class Snapshot implements AbstractSnapshot {
     }
     if (!r) {
       r = h.head
-      while (r !== NIL_REV && r.snapshot.timestamp > this.timestamp)
+      while (r !== ROOT_REV && r.snapshot.timestamp > this.timestamp)
         r = r.prev.revision
     }
     return r
@@ -94,7 +94,7 @@ export class Snapshot implements AbstractSnapshot {
 
   getCurrentRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     const r = this.seekRevision(h, m)
-    if (r === NIL_REV)
+    if (r === ROOT_REV)
       throw misuse(`object ${Dump.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
@@ -114,7 +114,7 @@ export class Snapshot implements AbstractSnapshot {
       }
     }
     else
-      r = NIL_REV
+      r = ROOT_REV
     return r
   }
 
@@ -131,7 +131,7 @@ export class Snapshot implements AbstractSnapshot {
 
   static doDispose(ctx: Snapshot, h: ObjectHolder): ObjectRevision {
     const r: ObjectRevision = ctx.getEditableRevision(h, Meta.Disposed, Meta.Disposed)
-    if (r !== NIL_REV) {
+    if (r !== ROOT_REV) {
       r.data[Meta.Disposed] = Meta.Disposed
       Snapshot.markEdited(Meta.Disposed, true, r, Meta.Disposed, h)
     }
@@ -141,19 +141,19 @@ export class Snapshot implements AbstractSnapshot {
   private checkIfEditable(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): void {
     if (this.sealed)
       throw misuse(`observable property ${Dump.obj(h, m)} can only be modified inside transaction`)
-    // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== NIL))
+    // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.revision(r, m)}`)
-    // if (r === NIL && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */
+    // if (r === ROOT_REV && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */
     //   throw misuse(`member ${Hints.revision(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     if (m !== Meta.Holder && value !== Meta.Holder) {
-      if (r.snapshot !== this || r.prev.revision !== NIL_REV) {
+      if (r.snapshot !== this || r.prev.revision !== ROOT_REV) {
         if (this.options.token !== undefined && token !== this.options.token)
           throw misuse(`${this.hint} should not have side effects (trying to change ${Dump.rev(r, m)})`)
         // TODO: Detect uninitialized members
         // if (existing === undefined)
         //   throw misuse(`uninitialized member is detected: ${Hints.revision(r, m)}`)
       }
-      if (r === NIL_REV)
+      if (r === ROOT_REV)
         throw misuse(`member ${Dump.rev(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     }
   }
@@ -248,7 +248,7 @@ export class Snapshot implements AbstractSnapshot {
         h.head = r // switch object to a new version
         if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Snapshot.totalObjectRevisionCount++
-          if (r.prev.revision === NIL_REV)
+          if (r.prev.revision === ROOT_REV)
             Snapshot.totalObjectHolderCount++
         }
       }
@@ -259,7 +259,7 @@ export class Snapshot implements AbstractSnapshot {
           const members: string[] = []
           r.changes.forEach((o, m) => members.push(m.toString()))
           const s = members.join(', ')
-          Dbg.log('║', '√', `${Dump.rev(r)} (${s}) is ${r.prev.revision === NIL_REV ? 'constructed' : `applied on top of ${Dump.rev(r.prev.revision)}`}`)
+          Dbg.log('║', '√', `${Dump.rev(r)} (${s}) is ${r.prev.revision === ROOT_REV ? 'constructed' : `applied on top of ${Dump.rev(r.prev.revision)}`}`)
         })
       }
       if (Dbg.trace.transaction)
@@ -331,10 +331,10 @@ export class Snapshot implements AbstractSnapshot {
     if (Dbg.isOn && Dbg.trace.gc)
       Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      if (Dbg.isOn && Dbg.trace.gc && r.prev.revision !== NIL_REV)
+      if (Dbg.isOn && Dbg.trace.gc && r.prev.revision !== ROOT_REV)
         Dbg.log(' ', '  ', `${Dump.rev(r.prev.revision)} is ready for GC because overwritten by ${Dump.rev(r)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
-        if (r.prev.revision !== NIL_REV) {
+        if (r.prev.revision !== ROOT_REV) {
           Snapshot.totalObjectRevisionCount--
           // console.log('rec--')
         }
@@ -343,16 +343,16 @@ export class Snapshot implements AbstractSnapshot {
           // console.log('obj--')
         }
       }
-      r.prev.revision = NIL_REV // unlink history
+      r.prev.revision = ROOT_REV // unlink history
     })
   }
 
   static _init(): void {
-    const nil = NIL_REV.snapshot as Snapshot // workaround
-    nil.acquire(nil)
-    nil.applyOrDiscard()
-    nil.collectGarbage()
-    Snapshot.freezeObjectRevision(NIL_REV)
+    const root = ROOT_REV.snapshot as Snapshot // workaround
+    root.acquire(root)
+    root.applyOrDiscard()
+    root.collectGarbage()
+    Snapshot.freezeObjectRevision(ROOT_REV)
     Snapshot.idGen = 100
     Snapshot.stampGen = 101
     Snapshot.oldest = undefined
@@ -368,7 +368,7 @@ export class Dump {
   static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, op?: number, typeless?: boolean): string {
     const member = m !== undefined ? `.${m.toString()}` : ''
     return h === undefined
-      ? `nil${member}`
+      ? `root${member}`
       : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${op}v${stamp}`
   }
 
@@ -392,7 +392,7 @@ export class Dump {
   }
 }
 
-export const NIL_REV = new ObjectRevision(new Snapshot({ hint: '<nil>' }), undefined, {})
+export const ROOT_REV = new ObjectRevision(new Snapshot({ hint: 'root' }), undefined, {})
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',
