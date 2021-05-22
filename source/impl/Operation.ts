@@ -20,7 +20,7 @@ const NIL_ARGS: any[] = []
 const NIL_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, NIL_REV, 'N/A')
 const NIL_CAUSE: MemberInfo = { revision: NIL_REV, memberName: '???', usageCount: 0 }
 
-type CallContext = {
+type OperationContext = {
   readonly operation: Operation
   readonly isUpToDate: boolean
   readonly snapshot: Snapshot
@@ -35,12 +35,12 @@ export class OperationController extends Controller<any> {
   get options(): MemberOptions { return this.peek(undefined).operation.options }
   get nonreactive(): any { return this.peek(undefined).operation.value }
   get args(): ReadonlyArray<any> { return this.use().operation.args }
-  get result(): any { return this.call(true, undefined).value }
+  get result(): any { return this.useOrRun(true, undefined).value }
   get error(): boolean { return this.use().operation.error }
   get stamp(): number { return this.use().revision.snapshot.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
   markObsolete(): void { Transaction.runAs({ hint: Dbg.isOn ? `markObsolete(${Dump.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, OperationController.markObsolete, this) }
-  pullLastResult(args?: any[]): any { return this.call(true, args).value }
+  pullLastResult(args?: any[]): any { return this.useOrRun(true, args).value }
 
   constructor(ownHolder: ObjectHolder, memberName: MemberName) {
     super()
@@ -48,29 +48,29 @@ export class OperationController extends Controller<any> {
     this.memberName = memberName
   }
 
-  call(weak: boolean, args: any[] | undefined): Operation {
-    let cc: CallContext = this.peek(args)
-    const ctx = cc.snapshot
-    const op: Operation = cc.operation
+  useOrRun(weak: boolean, args: any[] | undefined): Operation {
+    let oc: OperationContext = this.peek(args)
+    const ctx = oc.snapshot
+    const op: Operation = oc.operation
     const opts = op.options
-    if (!cc.isUpToDate && cc.revision.data[Meta.Disposed] === undefined
+    if (!oc.isUpToDate && oc.revision.data[Meta.Disposed] === undefined
       && (!weak || op.cause === NIL_CAUSE || !op.successor ||
         op.successor.transaction.isFinished)) {
       const standalone = weak || opts.kind === Kind.Reaction ||
-        (opts.kind === Kind.Cache && (cc.revision.snapshot.sealed ||
-          cc.revision.prev.revision !== NIL_REV))
+        (opts.kind === Kind.Cache && (oc.revision.snapshot.sealed ||
+          oc.revision.prev.revision !== NIL_REV))
       const token = opts.noSideEffects ? this : undefined
-      const cc2 = this.run(cc, standalone, opts, token, args)
-      const ctx2 = cc2.operation.revision.snapshot
+      const oc2 = this.run(oc, standalone, opts, token, args)
+      const ctx2 = oc2.operation.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
-        cc = cc2
+        oc = oc2
     }
     else if (Dbg.isOn && Dbg.trace.operation && (opts.trace === undefined ||
       opts.trace.operation === undefined || opts.trace.operation === true))
       Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)',
-        `${Dump.rev(cc.revision, this.memberName)} result is reused from T${cc.operation.transaction.id}[${cc.operation.transaction.hint}]`)
-    const t = cc.operation
-    Snapshot.markUsed(t, cc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
+        `${Dump.rev(oc.revision, this.memberName)} result is reused from T${oc.operation.transaction.id}[${oc.operation.transaction.hint}]`)
+    const t = oc.operation
+    Snapshot.markUsed(t, oc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
     return t
   }
 
@@ -131,7 +131,7 @@ export class OperationController extends Controller<any> {
 
   // Internal
 
-  private peek(args: any[] | undefined): CallContext {
+  private peek(args: any[] | undefined): OperationContext {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.seekRevision(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRevision(r)
@@ -143,14 +143,14 @@ export class OperationController extends Controller<any> {
     return { operation: op, isUpToDate: isValid, snapshot: ctx, revision: r }
   }
 
-  private use(): CallContext {
-    const cc = this.peek(undefined)
-    Snapshot.markUsed(cc.operation, cc.revision,
-      this.memberName, this.ownHolder, cc.operation.options.kind, true)
-    return cc
+  private use(): OperationContext {
+    const oc = this.peek(undefined)
+    Snapshot.markUsed(oc.operation, oc.revision,
+      this.memberName, this.ownHolder, oc.operation.options.kind, true)
+    return oc
   }
 
-  private edit(): CallContext {
+  private edit(): OperationContext {
     const h = this.ownHolder
     const m = this.memberName
     const ctx = Snapshot.edit()
@@ -187,31 +187,31 @@ export class OperationController extends Controller<any> {
     return op
   }
 
-  private run(existing: CallContext, standalone: boolean, options: MemberOptions, token: any, args: any[] | undefined): CallContext {
+  private run(existing: OperationContext, standalone: boolean, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.ownHolder, this.memberName)}`
-    let cc = existing
+    let oc = existing
     const opts = { hint, standalone, journal: options.journal, trace: options.trace, token }
     const result = Transaction.runAs(opts, (argsx: any[] | undefined): any => {
-      if (!cc.operation.transaction.isCanceled) { // first run
-        cc = this.edit()
+      if (!oc.operation.transaction.isCanceled) { // first run
+        oc = this.edit()
         if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
-          Dbg.log('║', ' (f)', `${cc.operation.why()}`)
-        cc.operation.run(this.ownHolder.proxy, argsx)
+          Dbg.log('║', ' (f)', `${oc.operation.why()}`)
+        oc.operation.run(this.ownHolder.proxy, argsx)
       }
       else { // retry run
-        cc = this.peek(argsx) // re-read on retry
-        if (cc.operation.options.kind === Kind.Transaction || !cc.isUpToDate) {
-          cc = this.edit()
+        oc = this.peek(argsx) // re-read on retry
+        if (oc.operation.options.kind === Kind.Transaction || !oc.isUpToDate) {
+          oc = this.edit()
           if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
-            Dbg.log('║', ' (f)', `${cc.operation.why()}`)
-          cc.operation.run(this.ownHolder.proxy, argsx)
+            Dbg.log('║', ' (f)', `${oc.operation.why()}`)
+          oc.operation.run(this.ownHolder.proxy, argsx)
         }
       }
-      return cc.operation.result
+      return oc.operation.result
     }, args)
-    cc.operation.result = result
-    return cc
+    oc.operation.result = result
+    return oc
   }
 
   private static markObsolete(self: OperationController): void {
@@ -364,7 +364,7 @@ class Operation extends Observable implements Observer {
       if (!this.error && (this.options.kind === Kind.Transaction ||
         !this.successor || this.successor.transaction.isCanceled)) {
         try {
-          const op: Operation = this.controller.call(false, undefined)
+          const op: Operation = this.controller.useOrRun(false, undefined)
           if (op.result instanceof Promise)
             op.result.catch(error => {
               if (op.options.kind === Kind.Reaction)
@@ -657,7 +657,7 @@ class Operation extends Observable implements Observer {
   private static createControllerAndGetHook(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
     const ctl = new OperationController(h, m)
     const hook: F<any> = (...args: any[]): any => {
-      return ctl.call(false, args).result
+      return ctl.useOrRun(false, args).result
     }
     Meta.set(hook, Meta.Controller, ctl)
     return hook
