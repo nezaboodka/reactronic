@@ -296,8 +296,8 @@ class Operation extends Observable implements Observer {
     throw misuse('not implemented yet')
   }
 
-  bind<T>(func: F<T>): F<T> {
-    const boundFunc: F<T> = (...args: any[]): T => {
+  attach<T>(func: F<T>): F<T> {
+    const attachedToOperation: F<T> = (...args: any[]): T => {
       if (Dbg.isOn && Dbg.trace.step && this.result)
         Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${this.hint()} - step in  `, 0, '        │')
       const started = Date.now()
@@ -309,7 +309,7 @@ class Operation extends Observable implements Observer {
         Dbg.log('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
       return result
     }
-    return boundFunc
+    return attachedToOperation
   }
 
   run(proxy: any, args: any[] | undefined): void {
@@ -781,11 +781,11 @@ function reactronicHookedThen(this: any,
       reject = rejectRethrow
     const op = Operation.current
     if (op) {
-      resolve = op.bind(resolve)
-      reject = op.bind(reject)
+      resolve = op.attach(resolve)
+      reject = op.attach(reject)
     }
-    resolve = tran.bind(resolve, false)
-    reject = tran.bind(reject, true)
+    resolve = tran.attach(resolve, false)
+    reject = tran.attach(reject, true)
   }
   return ORIGINAL_PROMISE_THEN.call(this, resolve, reject)
 }
