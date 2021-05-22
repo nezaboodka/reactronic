@@ -250,11 +250,11 @@ There are multiple options to configure behavior of transactional reactivity.
 
 **Reentrance** option defines how to handle reentrant calls of transactions and reactions:
 
-  - `Reentrance.PreventWithError` - fail with error if there is an existing call in progress;
-  - `Reentrance.WaitAndRestart` - wait for previous call to finish and then restart current one;
-  - `Reentrance.CancelPrevious` - cancel previous call in favor of recent one;
+  - `PreventWithError` - fail with error if there is an existing call in progress;
+  - `WaitAndRestart` - wait for previous call to finish and then restart current one;
+  - `CancelPrevious` - cancel previous call in favor of recent one;
   - `CancelAndWaitPrevious` - cancel previous call in favor of recent one (but wait until canceling is completed)
-  - `Reentrance.RunSideBySide` - multiple simultaneous calls are allowed.
+  - `RunSideBySide` - multiple simultaneous calls are allowed.
 
 **Monitor** is an object that maintains the status of running functions,
 which it is attached to. A single monitor object can be shared between
