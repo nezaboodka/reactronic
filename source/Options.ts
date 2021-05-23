@@ -20,6 +20,7 @@ export interface SnapshotOptions {
 
 export interface MemberOptions {
   readonly kind: Kind
+  readonly standalone: boolean
   readonly priority: number
   readonly noSideEffects: boolean
   readonly sensitiveArgs: boolean

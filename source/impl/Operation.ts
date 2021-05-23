@@ -178,11 +178,11 @@ export class OperationController extends Controller<any> {
     return op
   }
 
-  private run(existing: OperationContext, standalone: boolean, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
+  private run(existing: OperationContext, weak: boolean, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.ownHolder, this.memberName)}`
     let oc = existing
-    const opts = { hint, standalone, journal: options.journal, trace: options.trace, token }
+    const opts = { hint, standalone: weak || options.standalone, journal: options.journal, trace: options.trace, token }
     const result = Transaction.runAs(opts, (argsx: any[] | undefined): any => {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()

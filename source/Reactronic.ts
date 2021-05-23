@@ -8,14 +8,12 @@
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Controller } from './Controller'
-import { Kind, Reentrance, MemberOptions, TraceOptions, ProfilingOptions, Sensitivity } from './Options'
+import { Kind, MemberOptions, TraceOptions, ProfilingOptions, Sensitivity } from './Options'
 import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks } from './impl/Hooks'
 import { OperationController } from './impl/Operation'
 import { Transaction } from './impl/Transaction'
-import { TransactionJournal } from './impl/TransactionJournal'
-import { Monitor } from './impl/Monitor'
 
 export class Reactronic {
   static why(brief: boolean = false): string { return brief ? OperationController.briefWhy() : OperationController.why() }
@@ -54,10 +52,6 @@ export function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[
 
 // Decorators
 
-// export function state(proto: object, prop: PropertyKey): any {
-//   return Hooks.decorateField(true, proto, prop)
-// }
-
 export function unobservable(proto: object, prop: PropertyKey): any {
   return Hooks.decorateData(false, proto, prop)
 }
@@ -77,34 +71,6 @@ export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor)
   return Hooks.decorateOperation(true, cached, opts, proto, prop, pd)
 }
 
-export function priority(value: number): F<any> {
-  return Hooks.decorateOperationParametrized(priority, {priority: value})
-}
-
-export function noSideEffects(value: boolean): F<any> {
-  return Hooks.decorateOperationParametrized(noSideEffects, {noSideEffects: value})
-}
-
-export function observableArgs(value: boolean): F<any> {
-  return Hooks.decorateOperationParametrized(observableArgs, {sensitiveArgs: value})
-}
-
-export function throttling(milliseconds: number): F<any> {
-  return Hooks.decorateOperationParametrized(throttling, {throttling: milliseconds})
-}
-
-export function reentrance(value: Reentrance): F<any> {
-  return Hooks.decorateOperationParametrized(reentrance, {reentrance: value})
-}
-
-export function journal(value: TransactionJournal | undefined): F<any> {
-  return Hooks.decorateOperationParametrized(journal, {journal: value})
-}
-
-export function monitor(value: Monitor | null): F<any> {
-  return Hooks.decorateOperationParametrized(monitor, {monitor: value})
-}
-
-export function trace(value: Partial<TraceOptions>): F<any> {
-  return Hooks.decorateOperationParametrized(trace, {trace: value})
+export function options(value: Partial<MemberOptions>): F<any> {
+  return Hooks.decorateOperationParametrized(options, value)
 }

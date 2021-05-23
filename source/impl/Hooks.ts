@@ -36,6 +36,7 @@ export abstract class ObservableObject {
 
 const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   kind: Kind.Plain,
+  standalone: false,
   priority: 0,
   noSideEffects: false,
   sensitiveArgs: false,
@@ -50,6 +51,7 @@ export class OptionsImpl implements MemberOptions {
   readonly getter: Function
   readonly setter: Function
   readonly kind: Kind
+  readonly standalone: boolean
   readonly priority: number
   readonly noSideEffects: boolean
   readonly sensitiveArgs: boolean
@@ -64,6 +66,7 @@ export class OptionsImpl implements MemberOptions {
     this.getter = getter !== undefined ? getter : existing.getter
     this.setter = setter !== undefined ? setter : existing.setter
     this.kind = merge(DEFAULT_OPTIONS.kind, existing.kind, patch.kind, implicit)
+    this.standalone = merge(DEFAULT_OPTIONS.standalone, existing.standalone, patch.standalone, implicit)
     this.priority = merge(DEFAULT_OPTIONS.priority, existing.priority, patch.priority, implicit)
     this.noSideEffects = merge(DEFAULT_OPTIONS.noSideEffects, existing.noSideEffects, patch.noSideEffects, implicit)
     this.sensitiveArgs = merge(DEFAULT_OPTIONS.sensitiveArgs, existing.sensitiveArgs, patch.sensitiveArgs, implicit)
