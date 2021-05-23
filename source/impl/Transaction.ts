@@ -270,17 +270,19 @@ class TransactionImpl extends Transaction {
     }
     finally {
       this.pending--
-      if (this.sealed && this.pending === 0)
+      if (this.sealed && this.pending === 0) {
         this.applyOrDiscard() // it's critical to have no exceptions inside this call
+        TransactionImpl.runReactions(this, true)
+      }
       TransactionImpl.curr = outer
-      // TransactionImpl.runReactions(this, true)
     }
     return result
   }
 
   private static runReactions(t: TransactionImpl, nothrow: boolean): void {
     const reactions = t.snapshot.reactions
-    t.snapshot.reactions = []
+    if (!nothrow)
+      t.snapshot.reactions = []
     reactions.forEach(x => x.runIfNotUpToDate(false, nothrow))
   }
 
