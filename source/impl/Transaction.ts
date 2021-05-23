@@ -56,7 +56,7 @@ class TransactionImpl extends Transaction {
 
   constructor(options: SnapshotOptions | null) {
     super()
-    this.margin = TransactionImpl.curr ? TransactionImpl.curr.margin + 1 : -1
+    this.margin = TransactionImpl.curr !== undefined ? TransactionImpl.curr.margin + 1 : -1
     this.snapshot = new Snapshot(options)
     this.pending = 0
     this.sealed = false

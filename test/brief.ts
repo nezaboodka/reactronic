@@ -178,7 +178,7 @@ export class Person extends ObservableObject {
   }
 
   appendChildren(children: ReadonlyArray<Person>): void {
-    if (children)
+    if (children !== undefined)
       for (const x of children)
         x.setParent(this)
   }

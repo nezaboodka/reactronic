@@ -69,6 +69,7 @@ export class MonitorImpl extends Monitor {
 
   private static activate(mon: MonitorImpl, delay: number): void {
     if (delay >= 0) {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (!mon.internals.activationTimeout) // only once
         mon.internals.activationTimeout = setTimeout(() =>
           Transaction.runAs<void>({ hint: 'Monitor.activate', standalone: true },

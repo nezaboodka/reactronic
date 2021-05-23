@@ -25,6 +25,9 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': ['error', { allowExpressions: true }],
     '@typescript-eslint/ban-types': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/ban-types': 'off',
+    '@typescript-eslint/strict-boolean-expressions': ['error', { allowNullableObject: true, allowNullableString: true, allowNullableBoolean: true, allowAny: true }],
+    'no-useless-rename': 'error',
   },
   'overrides': [
     {

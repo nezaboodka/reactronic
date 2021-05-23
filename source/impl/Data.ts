@@ -88,7 +88,7 @@ export class ObjectHolder {
   }
 
   static getHint(obj: object, full: boolean): string | undefined {
-    const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
+    const h = Meta.get<ObjectHolder | undefined>(obj, Meta.Holder)
     return h ? (full ? `${h.hint}#${h.id}` : h.hint) : /* istanbul ignore next */ undefined
   }
 }
