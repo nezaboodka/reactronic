@@ -30,9 +30,8 @@ export class Observable {
 export interface Observer {
   readonly priority: number
   readonly observables: Map<Observable, MemberInfo> | undefined
-  readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void
+  markObsoleteDueTo(observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void
   runIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 

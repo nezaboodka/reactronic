@@ -105,6 +105,7 @@ export class Snapshot implements AbstractSnapshot {
     if (existing !== Meta.Unobservable) {
       this.checkIfEditable(h, r, m, existing, value, token)
       if (r.snapshot !== this) {
+        this.bumpBy(r.snapshot.timestamp)
         const data = { ...m === Meta.Holder ? value : r.data }
         Reflect.set(data, Meta.Holder, h)
         r = new ObjectRevision(this, r, data)
@@ -265,8 +266,6 @@ export class Snapshot implements AbstractSnapshot {
       if (Dbg.trace.transaction)
         Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
     }
-    if (!error)
-      Snapshot.propagateAllChangesThroughSubscriptions(this)
   }
 
   static sealObjectRevision(h: ObjectHolder, r: ObjectRevision): void {
@@ -392,7 +391,7 @@ export class Dump {
   }
 }
 
-export const ROOT_REV = new ObjectRevision(new Snapshot({ hint: 'root' }), undefined, {})
+export const ROOT_REV = new ObjectRevision(new Snapshot({ hint: 'root-rev' }), undefined, {})
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',

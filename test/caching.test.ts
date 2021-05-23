@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, cached, Transaction, Reactronic as R, trace, reaction, unobservable, noSideEffects } from 'api'
+import { ObservableObject, cached, Transaction, Reactronic as R, trace, reaction, unobservable } from 'api'
 import { TestingTraceLevel } from './brief'
 
 export class DemoBase extends ObservableObject {
@@ -22,10 +22,10 @@ export class DemoBase extends ObservableObject {
     this.title = `${t} - ${stamp}`
   }
 
-  @reaction @noSideEffects(true)
-  reactionWithNoSideEffects(): void {
-    this.sideEffect = 'side effect'
-  }
+  // @reaction @noSideEffects(true)
+  // reactionWithNoSideEffects(): void {
+  //   this.sideEffect = 'side effect'
+  // }
 
   // @transaction
   // setUninitialized(value: any): void {
@@ -72,9 +72,9 @@ test('caching', t => {
   })
   t.is(demo.sideEffect, 'no side effect')
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
-  t.throws(() => demo.produceSideEffect(), { message: 'Demo.produceSideEffect #22 should not have side effects (trying to change Demo.title #22t107v103)' })
+  t.throws(() => demo.produceSideEffect(), { message: 'Demo.produceSideEffect #22 should not have side effects (trying to change Demo.title #22t104v102)' })
   // t.throws(() => demo.setUninitialized('someValue'), { message: 'uninitialized member is detected: v103t107#21 Demo.uninitialized' })
-  t.assert(demo.raw.startsWith('Demo.produceSideEffect #22t107v103   <<   called within Demo.produceSideEffect #22'))
+  t.assert(demo.raw.startsWith('Demo.produceSideEffect #22t104v102   <<   called within Demo.produceSideEffect #22'))
   t.is(demo.uninitialized, undefined)
   t.is(demo.cachedMap().size, 0)
   t.is(demo.cachedSet().size, 0)

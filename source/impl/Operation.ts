@@ -9,8 +9,8 @@ import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
-import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, MemberInfo, Meta } from './Data'
-import { Snapshot, Dump, ROOT_REV, MAX_TIMESTAMP } from './Snapshot'
+import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, MemberInfo, Meta, AbstractSnapshot } from './Data'
+import { Snapshot, Dump, ROOT_REV } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -18,7 +18,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 
 const ROOT_ARGS: any[] = []
 const ROOT_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, ROOT_REV, 'root-holder')
-const ROOT_CAUSE: MemberInfo = { revision: ROOT_REV, memberName: 'root-cause', usageCount: 0 }
+const ROOT_TRIGGER: MemberInfo = { revision: ROOT_REV, memberName: 'root-trigger', usageCount: 0 }
 
 type OperationContext = {
   readonly operation: Operation
@@ -39,7 +39,7 @@ export class OperationController extends Controller<any> {
   get error(): boolean { return this.use().operation.error }
   get stamp(): number { return this.use().revision.snapshot.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
-  markObsolete(): void { Transaction.runAs({ hint: Dbg.isOn ? `markObsolete(${Dump.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, OperationController.markObsolete, this) }
+  markObsolete(): void { OperationController.markObsolete(this) }
   pullLastResult(args?: any[]): any { return this.useOrRun(true, args).value }
 
   constructor(ownHolder: ObjectHolder, memberName: MemberName) {
@@ -54,13 +54,9 @@ export class OperationController extends Controller<any> {
     const op: Operation = oc.operation
     const opts = op.options
     if (!oc.isUpToDate && oc.revision.data[Meta.Disposed] === undefined
-      && (!weak || op.cause === ROOT_CAUSE || !op.successor ||
-        op.successor.transaction.isFinished)) {
-      const standalone = weak || opts.kind === Kind.Reaction ||
-        (opts.kind === Kind.Cache && (oc.revision.snapshot.sealed ||
-          oc.revision.prev.revision !== ROOT_REV))
+      && (!weak || op.started === 0 || !op.successor || op.successor.transaction.isFinished)) {
       const token = opts.noSideEffects ? this : undefined
-      const oc2 = this.run(oc, standalone, opts, token, args)
+      const oc2 = this.run(oc, weak, opts, token, args)
       const ctx2 = oc2.operation.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         oc = oc2
@@ -135,12 +131,11 @@ export class OperationController extends Controller<any> {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.seekRevision(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRevision(r)
-    const isValid = op.options.kind !== Kind.Transaction && op.cause !== ROOT_CAUSE &&
-      (ctx === op.revision.snapshot || ctx.timestamp < op.obsoleteSince) &&
+    const isUpToDate = op.options.kind !== Kind.Transaction && op.started !== 0 &&
       (!op.options.sensitiveArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
-    return { operation: op, isUpToDate: isValid, snapshot: ctx, revision: r }
+    return { operation: op, isUpToDate, snapshot: ctx, revision: r }
   }
 
   private use(): OperationContext {
@@ -150,16 +145,14 @@ export class OperationController extends Controller<any> {
     return oc
   }
 
-  private edit(): OperationContext {
+  edit(): OperationContext {
     const h = this.ownHolder
     const m = this.memberName
     const ctx = Snapshot.edit()
     const r: ObjectRevision = ctx.getEditableRevision(h, m, Meta.Holder, this)
     let op: Operation = this.peekFromRevision(r)
     if (op.revision !== r) {
-      const op2 = new Operation(this, r, op)
-      op = r.data[m] = op2.reenterOver(op)
-      ctx.bumpBy(r.prev.revision.snapshot.timestamp)
+      op = r.data[m] = new Operation(this, r, op)
       Snapshot.markEdited(op, true, r, m, h)
     }
     return { operation: op, isUpToDate: true, snapshot: ctx, revision: r }
@@ -171,14 +164,13 @@ export class OperationController extends Controller<any> {
     if (op.controller !== this) {
       const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
       const standalone = r.snapshot.sealed || r.prev.revision !== ROOT_REV
-      op = Transaction.runAs<Operation>({ hint, standalone, token: this }, (): Operation => {
+      op = Transaction.runAs<Operation>({ hint, standalone }, (): Operation => {
         const h = this.ownHolder
         let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
         let op2 = r2.data[m] as Operation
         if (op2.controller !== this) {
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
           op2 = r2.data[m] = new Operation(this, r2, op2)
-          op2.cause = ROOT_CAUSE
           Snapshot.markEdited(op2, true, r2, m, h)
         }
         return op2
@@ -217,7 +209,8 @@ export class OperationController extends Controller<any> {
   private static markObsolete(self: OperationController): void {
     const oc = self.peek(undefined)
     const ctx = oc.snapshot
-    oc.operation.markObsoleteDueTo(oc.operation, { revision: ROOT_REV, memberName: self.memberName, usageCount: 0 }, ctx.timestamp, ctx.reactions)
+    const trigger: MemberInfo = { revision: ROOT_REV, memberName: self.memberName, usageCount: 0 }
+    oc.operation.markObsoleteDueTo(oc.operation, trigger, ctx, ctx.timestamp, ctx.reactions)
   }
 }
 
@@ -227,24 +220,21 @@ class Operation extends Observable implements Observer {
   static current?: Operation = undefined
   static deferredReactions: Operation[] = []
 
-  readonly margin: number
   readonly transaction: Transaction
   readonly controller: OperationController
   readonly revision: ObjectRevision
   observables: Map<Observable, MemberInfo> | undefined
   options: OptionsImpl
-  cause: MemberInfo | undefined
+  trigger: MemberInfo | undefined
   args: any[]
   result: any
   error: any
-  started: number
-  obsoleteDueTo: MemberInfo | undefined
-  obsoleteSince: number
   successor: Operation | undefined
+  margin: number
+  started: number
 
   constructor(controller: OperationController, revision: ObjectRevision, prev: Operation | OptionsImpl) {
     super(undefined)
-    this.margin = Operation.current ? Operation.current.margin + 1 : 1
     this.transaction = Transaction.current
     this.controller = controller
     this.revision = revision
@@ -253,19 +243,16 @@ class Operation extends Observable implements Observer {
       this.options = prev.options
       this.args = prev.args
       // this.value = prev.value
-      this.cause = prev.obsoleteDueTo
     }
     else { // prev: OptionsImpl
       this.options = prev
       this.args = ROOT_ARGS
-      this.cause = undefined
       // this.value = undefined
     }
     // this.result = undefined
     // this.error = undefined
+    this.margin = 0
     this.started = 0
-    this.obsoleteSince = 0
-    this.obsoleteDueTo = undefined
     this.successor = undefined
   }
 
@@ -278,18 +265,18 @@ class Operation extends Observable implements Observer {
     const prev = this.revision.prev.revision.data[this.controller.memberName]
     if (prev instanceof Operation)
       ms = prev.started !== 0 ? Math.abs(this.started || ms) - Math.abs(prev.started) : Infinity
-    let cause: string
-    if (this.cause)
-      cause = `   <<   ${propagationHint(this.cause, true).join('   <<   ')}`
+    let trigger: string
+    if (this.trigger)
+      trigger = `   <<   ${propagationHint(this.trigger, true).join('   <<   ')}`
     else if (this.controller.options.kind === Kind.Transaction)
-      cause = '   <<   operation'
+      trigger = '   <<   operation'
     else
-      cause = `   <<   called within ${this.revision.snapshot.hint}`
-    return `${this.hint()}${cause}   (${ms !== Infinity ? `${ms}ms since previous run` : 'initial run'})`
+      trigger = `   <<   called within ${this.revision.snapshot.hint}`
+    return `${this.hint()}${trigger}   (${ms !== Infinity ? `${ms}ms since previous run` : 'initial run'})`
   }
 
   briefWhy(): string {
-    return this.cause ? propagationHint(this.cause, false)[0] : ROOT_HOLDER.hint
+    return this.trigger ? propagationHint(this.trigger, false)[0] : ROOT_HOLDER.hint
   }
 
   dependencies(): string[] {
@@ -313,46 +300,48 @@ class Operation extends Observable implements Observer {
   }
 
   run(proxy: any, args: any[] | undefined): void {
+    this.margin = Operation.current ? Operation.current.margin + 1 : 1
     if (args)
       this.args = args
-    this.obsoleteSince = MAX_TIMESTAMP
     if (!this.error)
       OperationController.runWithin<void>(this, Operation.run, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void {
-    if (this.observables !== undefined) { // if not yet marked as obsolete
-      if (observable.isOperation || this !== cause.revision.changes.get(cause.memberName)) {
-        // Mark obsolete (this.observables = undefined)
-        this.unsubscribeFromAllObservables()
-        this.obsoleteDueTo = cause
-        this.obsoleteSince = since
+  markObsoleteDueTo(observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void {
+    const restart = this.revision.snapshot === trigger.revision.snapshot
+    if (!restart || this.started < 0)
+    {
+      if (this !== trigger.revision.changes.get(trigger.memberName)) // if not an own change
+      {
+        // Mark obsolete
+        const op = restart ? this : this.controller.edit().operation
+        const isReaction = op.options.kind === Kind.Reaction
+        op.trigger = trigger
+        op.started = 0
 
-        const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
-        if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
+        // Logging
+        if (Dbg.isOn && (Dbg.trace.obsolete || op.options.trace?.obsolete))
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
-            isReaction && cause.revision === ROOT_REV
-              ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})`
-              : `${this.hint()} is obsolete due to ${Dump.rev(cause.revision, cause.memberName)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+            isReaction && trigger.revision === ROOT_REV
+              ? `${op.hint()} is a reaction and will run automatically (priority ${op.options.priority})`
+              : `${op.hint()} is obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}${isReaction ? ` and will run automatically (priority ${op.options.priority})` : ''}`)
 
         // Stop cascade propagation on reaction, or continue otherwise
         if (isReaction)
-          reactions.push(this)
+          reactions.push(op)
         else
-          this.observers?.forEach(c => c.markObsoleteDueTo(this, { revision: this.revision, memberName: this.controller.memberName, usageCount: 0 }, since, reactions))
+          op.observers?.forEach(c => c.markObsoleteDueTo(op, { revision: op.revision, memberName: op.controller.memberName, usageCount: 0 }, snapshot, since, reactions))
 
         // Cancel own transaction if it is still in progress
-        const tran = this.transaction
-        if (tran.snapshot === cause.revision.snapshot) {
-          misuse('not implemented: running reactions within original transaction')
-        }
-        else if (!tran.isFinished && this !== observable) // restart after itself if canceled
-          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.rev(cause.revision, cause.memberName)} changed by T${cause.revision.snapshot.id}[${cause.revision.snapshot.hint}]`), null)
+        const tran = op.transaction
+        if (tran.snapshot !== snapshot && !tran.isFinished && op !== observable) // restart after itself if canceled
+          if (!tran.isFinished && op !== observable) // restart after itself if canceled
+            tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.rev(trigger.revision, trigger.memberName)} changed by T${trigger.revision.snapshot.id}[${trigger.revision.snapshot.hint}]`), null)
       }
       else if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
-        Dbg.log(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.rev(cause.revision, cause.memberName)}`)
+        Dbg.log(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.rev(trigger.revision, trigger.memberName)}`)
     }
   }
 
@@ -387,7 +376,7 @@ class Operation extends Observable implements Observer {
     }
   }
 
-  reenterOver(head: Operation): this {
+  checkReentranceOver(head: Operation): this {
     let error: Error | undefined = undefined
     const opponent = head.successor
     if (opponent && !opponent.transaction.isFinished) {
@@ -436,6 +425,9 @@ class Operation extends Observable implements Observer {
   }
 
   private enter(): void {
+    const prev = this.revision.prev.revision.data[this.controller.memberName]
+    if (prev !== undefined)
+      this.checkReentranceOver(prev)
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.operation)
@@ -528,7 +520,7 @@ class Operation extends Observable implements Observer {
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!op.subscribeTo(observable, r, m, h, t))
-          op.markObsoleteDueTo(observable, { revision: r, memberName: m, usageCount: 0 }, ctx.timestamp, ctx.reactions)
+          op.markObsoleteDueTo(observable, { revision: r, memberName: m, usageCount: 0 }, ctx, ctx.timestamp, ctx.reactions)
       }
     }
   }
@@ -543,7 +535,7 @@ class Operation extends Observable implements Observer {
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof Operation && oldValue.cause !== ROOT_CAUSE
+      result = oldValue instanceof Operation && oldValue.started !== 0
     return result
   }
 
@@ -552,10 +544,10 @@ class Operation extends Observable implements Observer {
     const reactions = snapshot.reactions
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       if (!r.changes.has(Meta.Disposed))
-        r.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(false, since, r, m, h, reactions))
+        r.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(snapshot, false, since, r, m, h, reactions))
       else
         for (const m in r.prev.revision.data)
-          Operation.propagateMemberChangeThroughSubscriptions(true, since, r, m, h, reactions)
+          Operation.propagateMemberChangeThroughSubscriptions(snapshot, true, since, r, m, h, reactions)
     })
     reactions.sort(compareReactionsByPriority)
     snapshot.options.journal?.remember(
@@ -565,22 +557,18 @@ class Operation extends Observable implements Observer {
   private static revokeAllSubscriptions(snapshot: Snapshot): void {
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
       r.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(
-        true, snapshot.timestamp, r, m, h, undefined)))
+        snapshot, true, snapshot.timestamp, r, m, h, undefined)))
   }
 
-  private static propagateMemberChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,
+  private static propagateMemberChangeThroughSubscriptions(
+    snapshot: Snapshot, unsubscribe: boolean, timestamp: number,
     r: ObjectRevision, m: MemberName, h: ObjectHolder, reactions?: Observer[]): void {
     if (reactions) {
       // Propagate change to reactions
       const prev = r.prev.revision.data[m]
       if (prev !== undefined && prev instanceof Observable) {
-        const cause: MemberInfo = { revision: r, memberName: m, usageCount: 0 }
-        if (prev instanceof Operation && (prev.obsoleteSince === MAX_TIMESTAMP || prev.obsoleteSince <= 0)) {
-          prev.obsoleteDueTo = cause
-          prev.obsoleteSince = timestamp
-          prev.unsubscribeFromAllObservables()
-        }
-        prev.observers?.forEach(c => c.markObsoleteDueTo(prev, cause, timestamp, reactions))
+        const trigger: MemberInfo = { revision: r, memberName: m, usageCount: 0 }
+        prev.observers?.forEach(c => c.markObsoleteDueTo(prev, trigger, snapshot, timestamp, reactions))
       }
     }
     const curr = r.data[m]
@@ -620,8 +608,8 @@ class Operation extends Observable implements Observer {
   }
 
   private subscribeTo(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
-    const isValid = Operation.isValid(observable, r, m, h, timestamp)
-    if (isValid) {
+    const ok = Operation.canSubscribeTo(observable, r, m, h, timestamp)
+    if (ok) {
       // Performance tracking
       let times: number = 0
       if (Hooks.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
@@ -635,22 +623,19 @@ class Operation extends Observable implements Observer {
       // Two-way linking
       const info: MemberInfo = { revision: r, memberName: m, usageCount: times }
       observable.observers.add(this)
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.observables!.set(observable, info)
+      this.observables?.set(observable, info)
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
         Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.rev(r, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
     }
-    else {
-      if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Dump.rev(r, m)}`)
-    }
-    return isValid // || observable.next === r
+    else if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
+      Dbg.log('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Dump.rev(r, m)}`)
+    return ok
   }
 
-  private static isValid(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
+  private static canSubscribeTo(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
     let result = !r.snapshot.sealed || observable === h.head.data[m]
     if (result && timestamp !== -1)
-      result = !(observable instanceof Operation && timestamp >= observable.obsoleteSince)
+      result = !(observable instanceof Operation && observable.observables === undefined)
     return result
   }
 
@@ -689,7 +674,7 @@ class Operation extends Observable implements Observer {
 
   static init(): void {
     Object.freeze(ROOT_ARGS)
-    Object.freeze(ROOT_CAUSE)
+    Object.freeze(ROOT_TRIGGER)
     Dbg.getMergedTraceOptions = getMergedTraceOptions
     Snapshot.markUsed = Operation.markUsed // override
     Snapshot.markEdited = Operation.markEdited // override
@@ -724,16 +709,16 @@ class Operation extends Observable implements Observer {
   }
 }
 
-function propagationHint(cause: MemberInfo, full: boolean): string[] {
+function propagationHint(trigger: MemberInfo, full: boolean): string[] {
   const result: string[] = []
-  let observable: Observable = cause.revision.data[cause.memberName]
-  while (observable instanceof Operation && observable.obsoleteDueTo) {
-    full && result.push(Dump.rev(cause.revision, cause.memberName))
-    cause = observable.obsoleteDueTo
-    observable = cause.revision.data[cause.memberName]
+  let observable: Observable = trigger.revision.data[trigger.memberName]
+  while (observable instanceof Operation && observable.successor?.trigger) {
+    full && result.push(Dump.rev(trigger.revision, trigger.memberName))
+    trigger = observable.successor.trigger
+    observable = trigger.revision.data[trigger.memberName]
   }
-  result.push(Dump.rev(cause.revision, cause.memberName))
-  full && result.push(cause.revision.snapshot.hint)
+  result.push(Dump.rev(trigger.revision, trigger.memberName))
+  full && result.push(trigger.revision.snapshot.hint)
   return result
 }
 

@@ -248,8 +248,14 @@ class TransactionImpl extends Transaction {
       this.snapshot.acquire(outer.snapshot)
       result = func(...args)
       if (this.sealed && this.pending === 1) {
-        if (!this.canceled)
+        if (!this.canceled) {
           this.checkForConflicts() // merge with concurrent transactions
+          Snapshot.propagateAllChangesThroughSubscriptions(this.snapshot)
+          if (Dbg.isOn && Dbg.trace.transaction)
+            if (this.snapshot.reactions.length > 0)
+              Dbg.log('╠══', '', '', undefined, ' reactions')
+          TransactionImpl.runReactions(this)
+        }
         else if (!this.after)
           throw this.canceled
       }
@@ -261,13 +267,9 @@ class TransactionImpl extends Transaction {
     }
     finally {
       this.pending--
-      if (this.sealed && this.pending === 0) {
+      if (this.sealed && this.pending === 0)
         this.applyOrDiscard() // it's critical to have no exceptions inside this call
-        TransactionImpl.curr = outer
-        TransactionImpl.standalone(TransactionImpl.runReactions, this)
-      }
-      else
-        TransactionImpl.curr = outer
+      TransactionImpl.curr = outer
     }
     return result
   }

@@ -52,7 +52,8 @@ test('brief', t => {
     t.is(render.args.length, 1)
     t.is(render.result.length, 1)
     app.model.loadUsers()
-    t.is(app.model.users.length - 1, app.model.usersWithoutLast.length)
+    t.is(app.model.usersWithoutLast.length, 1)
+    t.is(app.model.users.length, 2)
     t.is(render.result.length, 2)
     const daddy: Person = app.model.users[0]
     t.is(daddy.hasOwnProperty('name'), true)
@@ -67,9 +68,12 @@ test('brief', t => {
     const stamp = render.stamp
     app.render(0)
     t.is(render.stamp, stamp)
-    render.markObsolete()
+    Transaction.runAs({ hint: 'markObsolete' }, () => render.markObsolete())
     t.not(render.stamp, stamp)
-    // Multi-part transactions
+    app.render(0)
+    t.not(render.stamp, stamp)
+
+    // Multi-part transaction
     const tran1 = Transaction.create({ hint: 'tran1', journal: Demo.UndoRedo })
     tran1.run(() => {
       const computed = app.model.computed
@@ -79,8 +83,8 @@ test('brief', t => {
       app.model.shared = app.shared = tran1.hint
       daddy.id = 'field restored during transaction'
       daddy.id = null // restore
-      daddy.age += 2 // causes no execution of DemoApp.render
-      daddy.name = 'John Smith' // causes execution of DemoApp.render upon apply
+      daddy.age += 2 // triggers no execution of DemoApp.render
+      daddy.name = 'John Smith' // triggers execution of DemoApp.render upon apply
       daddy.children[0].name = 'Barry' // Barry
       daddy.children[1].name = 'William Smith' // Billy
       daddy.children[2].name = 'Steven Smith' // Steve
@@ -124,6 +128,7 @@ test('brief', t => {
     t.is(daddy.age, 38)
     t.is(daddy.attributes.size, 0)
     tran1.apply() // changes are applied, reactions are executed
+
     t.is(render.isUpToDate, true)
     t.not(render.stamp, stamp)
     t.is(daddy.name, 'John Smith')
@@ -143,17 +148,19 @@ test('brief', t => {
     // Check protection and error handling
     t.throws(() => { R.getController(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
     t.throws(() => { console.log(R.getController(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
-    const op2 = Transaction.create({ hint: 'op2' })
-    const zombi = op2.run(() => new Person())
+
+    const tran2 = Transaction.create({ hint: 'tran2' })
+    const zombi = tran2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: 'object Person #30 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
-    t.throws(() => op2.run(() => { throw new Error('test') }), { message: 'test' })
-    t.throws(() => op2.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
-    const op3 = Transaction.create({ hint: 'op3' })
-    t.throws(() => op3.run(() => {
-      op3.cancel(new Error('test'))
-      op3.run(nop)
+    t.throws(() => tran2.run(() => { throw new Error('test') }), { message: 'test' })
+    t.throws(() => tran2.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
+
+    const tran3 = Transaction.create({ hint: 'tran3' })
+    t.throws(() => tran3.run(() => {
+      tran3.cancel(new Error('test'))
+      tran3.run(nop)
     }), { message: 'test' })
-    t.throws(() => op3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
+    t.throws(() => tran3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
     Transaction.run(sensitive, Sensitivity.ReactEvenOnSameValueAssignment, () => {
       app.userFilter = app.userFilter
     })
@@ -161,7 +168,7 @@ test('brief', t => {
     t.throws(() => app.model.testImmutableCollection(), { message: 'use toMutable to create mutable copy of sealed collection' })
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
-    t.is(app.raw, 'DemoView.userFilter #23t127v101')
+    t.is(app.raw, 'DemoView.filteredUsers #23t112v108')
     t.is(render.options.kind, Kind.Cache)
     t.is(render.error, undefined)
     t.is(R.getTraceHint(app), 'DemoView')
@@ -171,6 +178,7 @@ test('brief', t => {
     t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
     t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
+
     // Undo
     t.is(app.model.title, 'Demo')
     t.is(Demo.UndoRedo.items.length, 1)
@@ -192,6 +200,7 @@ test('brief', t => {
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)
     t.is(app.userFilter, '')
+
     // Undo - decorator
     // op1undo.revert()
     // t.is(daddy.name, 'John Smith')
