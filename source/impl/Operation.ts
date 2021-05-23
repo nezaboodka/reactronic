@@ -164,7 +164,7 @@ export class OperationController extends Controller<any> {
     if (op.controller !== this) {
       const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
       const standalone = r.snapshot.sealed || r.prev.revision !== ROOT_REV
-      op = Transaction.runAs<Operation>({ hint, standalone }, (): Operation => {
+      op = Transaction.runAs<Operation>({ hint, standalone, token: this }, (): Operation => {
         const h = this.ownHolder
         let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
         let op2 = r2.data[m] as Operation
