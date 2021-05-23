@@ -229,9 +229,9 @@ class Operation extends Observable implements Observer {
   args: any[]
   result: any
   error: any
-  successor: Operation | undefined
   margin: number
   started: number
+  successor: Operation | undefined
 
   constructor(controller: OperationController, revision: ObjectRevision, prev: Operation | OptionsImpl) {
     super(undefined)
@@ -326,7 +326,7 @@ class Operation extends Observable implements Observer {
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
             isReaction && trigger.revision === ROOT_REV
               ? `${op.hint()} is a reaction and will run automatically (priority ${op.options.priority})`
-              : `${op.hint()} is obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}${isReaction ? ` and will run automatically (priority ${op.options.priority})` : ''}`)
+              : `${op.hint()} is now obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}${isReaction ? ` and will run automatically (priority ${op.options.priority})` : ''}`)
 
         // Stop cascade propagation on reaction, or continue otherwise
         if (isReaction)
@@ -385,7 +385,7 @@ class Operation extends Observable implements Observer {
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
           if (!opponent.transaction.isCanceled)
-            throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${opponent.hint()} (${opponent.why()})`)
+            throw misuse(`${this.hint()} (${this.why()}) cannot reenter over ${opponent.hint()} (${opponent.why()})`)
           error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/PreventWithError due to canceled T${opponent.transaction.id}[${opponent.transaction.hint}]`)
           this.transaction.cancel(error, opponent.transaction)
           break
