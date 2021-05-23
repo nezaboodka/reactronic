@@ -12,7 +12,7 @@ import { SealedArray } from '../util/SealedArray'
 import { SealedMap } from '../util/SealedMap'
 import { SealedSet } from '../util/SealedSet'
 import { Kind, SnapshotOptions } from '../Options'
-import { AbstractSnapshot, ObjectRevision, MemberName, ObjectHolder, Observable, Observer, Meta } from './Data'
+import { AbstractSnapshot, ObjectRevision, MemberName, ObjectHolder, Observable, Observer, Meta, Patch } from './Data'
 
 export const MAX_TIMESTAMP = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_TIMESTAMP = MAX_TIMESTAMP - 1
@@ -75,6 +75,7 @@ export class Snapshot implements AbstractSnapshot {
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
   static revokeAllSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
+  static createPatch: (hint: string, changeset: Map<ObjectHolder, ObjectRevision>) => Patch = UNDEF
 
   seekRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     // TODO: Take into account timestamp of the member
@@ -254,6 +255,9 @@ export class Snapshot implements AbstractSnapshot {
         }
       }
     })
+    if (!error)
+      this.options.journal?.remember(
+        Snapshot.createPatch(this.hint, this.changeset))
     if (Dbg.isOn) {
       if (Dbg.trace.change) {
         this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {

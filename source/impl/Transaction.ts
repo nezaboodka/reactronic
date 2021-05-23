@@ -250,6 +250,8 @@ class TransactionImpl extends Transaction {
       if (this.sealed && this.pending === 1) {
         if (!this.canceled) {
           this.checkForConflicts() // merge with concurrent transactions
+          if (Dbg.isOn && Dbg.trace.transaction)
+            Dbg.log('╠══', '', '', undefined, ' propagation')
           Snapshot.propagateAllChangesThroughSubscriptions(this.snapshot)
           if (Dbg.isOn && Dbg.trace.transaction)
             if (this.snapshot.reactions.length > 0)

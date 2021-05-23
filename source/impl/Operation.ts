@@ -550,8 +550,6 @@ class Operation extends Observable implements Observer {
           Operation.propagateMemberChangeThroughSubscriptions(snapshot, true, since, r, m, h, reactions)
     })
     reactions.sort(compareReactionsByPriority)
-    snapshot.options.journal?.remember(
-      TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
   }
 
   private static revokeAllSubscriptions(snapshot: Snapshot): void {
@@ -681,6 +679,7 @@ class Operation extends Observable implements Observer {
     Snapshot.isConflicting = Operation.isConflicting // override
     Snapshot.propagateAllChangesThroughSubscriptions = Operation.propagateAllChangesThroughSubscriptions // override
     Snapshot.revokeAllSubscriptions = Operation.revokeAllSubscriptions // override
+    Snapshot.createPatch = TransactionJournalImpl.createPatch
     Hooks.createControllerAndGetHook = Operation.createControllerAndGetHook // override
     Hooks.rememberOperationOptions = Operation.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
