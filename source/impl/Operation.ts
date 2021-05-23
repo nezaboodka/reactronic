@@ -151,10 +151,9 @@ export class OperationController extends Controller<any> {
     const ctx = Snapshot.edit()
     const r: ObjectRevision = ctx.getEditableRevision(h, m, Meta.Holder, this)
     let op: Operation = this.peekFromRevision(r)
-    if (op.revision !== r) {
+    if (op.revision !== r)
       op = r.data[m] = new Operation(this, r, op)
-      Snapshot.markEdited(op, true, r, m, h)
-    }
+    Snapshot.markEdited(op, true, r, m, h)
     return { operation: op, isUpToDate: true, snapshot: ctx, revision: r }
   }
 
@@ -313,7 +312,9 @@ class Operation extends Observable implements Observer {
     const restart = this.revision.snapshot === trigger.revision.snapshot
     if (!restart || this.started < 0)
     {
-      if (this !== trigger.revision.changes.get(trigger.memberName)) // if not an own change
+      const triggerRound = trigger.revision.changes.get(trigger.memberName) ?? 0
+      const operationRound = this.revision.changes.get(this.controller.memberName)
+      if (triggerRound === operationRound)
       {
         // Mark obsolete
         const op = restart ? this : this.controller.edit().operation
@@ -527,7 +528,7 @@ class Operation extends Observable implements Observer {
 
   private static markEdited(value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    edited ? r.changes.set(m, Operation.current!) : r.changes.delete(m)
+    edited ? r.changes.set(m, r.snapshot.round) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
       edited ? Dbg.log('║', '  ♦', `${Dump.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Dump.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
@@ -543,11 +544,17 @@ class Operation extends Observable implements Observer {
     const since = snapshot.timestamp
     const reactions = snapshot.reactions
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      if (!r.changes.has(Meta.Disposed))
-        r.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(snapshot, false, since, r, m, h, reactions))
-      else
+      const n = r.changes.get(Meta.Disposed)
+      if (n === undefined) {
+        r.changes.forEach((round, m) => {
+          if (round === snapshot.round)
+            Operation.propagateMemberChangeThroughSubscriptions(snapshot, false, since, r, m, h, reactions)
+        })
+      }
+      else if (n === snapshot.round) {
         for (const m in r.prev.revision.data)
-          Operation.propagateMemberChangeThroughSubscriptions(snapshot, true, since, r, m, h, reactions)
+          Operation.propagateMemberChangeThroughSubscriptions(snapshot, false, since, r, m, h, reactions)
+      }
     })
     reactions.sort(compareReactionsByPriority)
   }

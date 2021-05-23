@@ -76,14 +76,14 @@ export class TransactionJournalImpl extends TransactionJournal {
     changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       const p: ObjectPatch = { current: {}, former: {} }
       const old = r.prev.revision !== ROOT_REV ? r.prev.revision.data : undefined
-      r.changes.forEach((o, m) => {
+      r.changes.forEach((round, m) => {
         p.current[m] = unseal(r.data[m])
         if (old)
           p.former[m] = unseal(old[m])
       })
       if (!old) {
         delete p.current[Meta.Disposed] // object restore
-        p.former[Meta.Disposed] = Meta.Disposed // object dispose
+        p.former[Meta.Disposed] = 0 // object disposed at round 0
       }
       patch.objects.set(h.proxy, p)
     })
@@ -95,7 +95,7 @@ export class TransactionJournalImpl extends TransactionJournal {
     patch.objects.forEach((p: ObjectPatch, obj: object) => {
       const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
       const data = undo ? p.former : p.current
-      if (data[Meta.Disposed] !== Meta.Disposed) {
+      if (data[Meta.Disposed] === undefined) {
         for (const m in data) {
           const value = data[m]
           const r: ObjectRevision = ctx.getEditableRevision(h, m, value)

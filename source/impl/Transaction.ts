@@ -251,12 +251,13 @@ class TransactionImpl extends Transaction {
         if (!this.canceled) {
           this.checkForConflicts() // merge with concurrent transactions
           if (Dbg.isOn && Dbg.trace.transaction)
-            Dbg.log('╠══', '', '', undefined, ' propagation')
+            Dbg.log('╠══', '', '', undefined, ` propagation (round ${this.snapshot.round})`)
           Snapshot.propagateAllChangesThroughSubscriptions(this.snapshot)
           if (Dbg.isOn && Dbg.trace.transaction)
             if (this.snapshot.reactions.length > 0)
               Dbg.log('╠══', '', '', undefined, ' reactions')
           TransactionImpl.runReactions(this)
+          this.snapshot.round++
         }
         else if (!this.after)
           throw this.canceled
@@ -277,7 +278,9 @@ class TransactionImpl extends Transaction {
   }
 
   private static runReactions(t: TransactionImpl): void {
-    t.snapshot.reactions.forEach(x => x.runIfNotUpToDate(false, true))
+    const reactions = t.snapshot.reactions
+    t.snapshot.reactions = []
+    reactions.forEach(x => x.runIfNotUpToDate(false, true))
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {

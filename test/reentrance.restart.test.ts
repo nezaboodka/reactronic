@@ -25,6 +25,8 @@ const expected: Array<string | undefined> = [
   '[...] Log: RTA, google.com/300',
   '[...] Url: microsoft.com',
   '[...] Log: RTA, google.com/300, microsoft.com/200',
+  '[...] Url: nezaboodka.com',
+  '[...] Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500',
   'Url: nezaboodka.com',
   'Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500',
 ]
@@ -39,8 +41,8 @@ test('reentrance.restart', async t => {
   try {
     await app.print() // reaction first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
-    t.is(busy.counter, 1)
-    t.is(busy.workers.size, 1)
+    t.is(busy.counter, 3)
+    t.is(busy.workers.size, 3)
     await all(responses)
   }
   catch (error) { /* istanbul ignore next */

@@ -21,6 +21,8 @@ const expected: Array<string | undefined> = [
   'Log: RTA',
   '[...] Url: reactronic',
   '[...] Log: RTA',
+  '[...] Url: nezaboodka.com',
+  '[...] Log: RTA, nezaboodka.com/500',
   'Url: nezaboodka.com',
   'Log: RTA, nezaboodka.com/500',
 ]
@@ -35,8 +37,8 @@ test('reentrance.cancelandwait', async t => {
   try {
     await app.print() // reaction first run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
-    t.is(busy.counter, 1)
-    t.is(busy.workers.size, 1)
+    t.is(busy.counter, 3)
+    t.is(busy.workers.size, 3)
     busy.workers.forEach(w =>
       t.assert(w.hint.indexOf('AsyncDemo.load #23 - ') === 0))
     await all(responses)

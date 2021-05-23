@@ -23,7 +23,7 @@ const expected: Array<string | undefined> = [
   '[...] Log: RTA',
   '[...] Url: nezaboodka.com',
   '[...] Log: RTA, nezaboodka.com/100',
-  'Error: T112[AsyncDemo.load #23 - microsoft.com] conflicts with: AsyncDemo.load #23 - nezaboodka.com on AsyncDemo.load #23t108v104',
+  'Error: T112[AsyncDemo.load #23 - microsoft.com] conflicts with: AsyncDemo.load #23 - nezaboodka.com on AsyncDemo.load #23t108v109',
   'Url: nezaboodka.com',
   'Log: RTA, nezaboodka.com/100',
 ]

@@ -15,6 +15,7 @@ export interface AbstractSnapshot {
   readonly id: number
   readonly hint: string
   readonly timestamp: number
+  readonly round: number
   readonly sealed: boolean
 }
 
@@ -49,14 +50,14 @@ export class ObjectRevision {
   readonly snapshot: AbstractSnapshot
   readonly prev: { revision: ObjectRevision }
   readonly data: any
-  readonly changes: Map<MemberName, Observer>
+  readonly changes: Map<MemberName, number>
   readonly conflicts: Map<MemberName, ObjectRevision>
 
   constructor(snapshot: AbstractSnapshot, prev: ObjectRevision | undefined, data: object) {
     this.snapshot = snapshot
     this.prev = { revision: prev || this } // undefined prev means initialization of  ROOT_REV
     this.data = data
-    this.changes = new Map<MemberName, Observer>()
+    this.changes = new Map<MemberName, number>()
     this.conflicts = new Map<MemberName, ObjectRevision>()
     if (Dbg.isOn)
       Object.freeze(this)
