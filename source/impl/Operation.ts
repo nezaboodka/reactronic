@@ -188,7 +188,7 @@ export class OperationController extends Controller<any> {
         oc = this.edit()
         if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
           Dbg.log('║', ' (f)', `${oc.operation.why()}`)
-        oc.operation.run(this.ownHolder.proxy, argsx)
+        oc.operation.run(oc.snapshot, this.ownHolder.proxy, argsx)
       }
       else { // retry run
         oc = this.peek(argsx) // re-read on retry
@@ -196,7 +196,7 @@ export class OperationController extends Controller<any> {
           oc = this.edit()
           if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
             Dbg.log('║', ' (f)', `${oc.operation.why()}`)
-          oc.operation.run(this.ownHolder.proxy, argsx)
+          oc.operation.run(oc.snapshot, this.ownHolder.proxy, argsx)
         }
       }
       return oc.operation.result
@@ -230,6 +230,7 @@ class Operation extends Observable implements Observer {
   error: any
   margin: number
   started: number
+  phase: number
   successor: Operation | undefined
 
   constructor(controller: OperationController, revision: ObjectRevision, prev: Operation | OptionsImpl) {
@@ -252,6 +253,7 @@ class Operation extends Observable implements Observer {
     // this.error = undefined
     this.margin = 0
     this.started = 0
+    this.phase = -1
     this.successor = undefined
   }
 
@@ -298,8 +300,9 @@ class Operation extends Observable implements Observer {
     return wrappedForOperation
   }
 
-  run(proxy: any, args: any[] | undefined): void {
+  run(snapshot: Snapshot, proxy: any, args: any[] | undefined): void {
     this.margin = Operation.current ? Operation.current.margin + 1 : 1
+    this.phase = snapshot.phase
     if (args)
       this.args = args
     if (!this.error)
@@ -310,18 +313,14 @@ class Operation extends Observable implements Observer {
 
   markObsoleteDueTo(observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void {
     const restart = this.revision.snapshot === trigger.revision.snapshot
-    if (!restart || this.started < 0)
-    {
-      const triggerRound = trigger.revision.changes.get(trigger.memberName) ?? 0
-      const operationRound = this.revision.changes.get(this.controller.memberName)
-      if (triggerRound === operationRound)
-      {
-        // Mark obsolete
-        const op = restart ? this : this.controller.edit().operation
-        const isReaction = op.options.kind === Kind.Reaction
-        op.trigger = trigger
-        op.started = 0
+    if (!restart || this.started < 0) {
+      // Mark obsolete
+      const op = restart ? this : this.controller.edit().operation
+      const isReaction = op.options.kind === Kind.Reaction
+      op.trigger = trigger
+      op.started = 0
 
+      if (op.phase < (trigger.revision.changes.get(trigger.memberName) ?? 0)) {
         // Logging
         if (Dbg.isOn && (Dbg.trace.obsolete || op.options.trace?.obsolete))
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
@@ -346,7 +345,7 @@ class Operation extends Observable implements Observer {
     }
   }
 
-  refreshIfNotUpToDate(reactions: Observer[] | undefined): void
+  runIfNotUpToDate(reactions: Observer[] | undefined): void
   {
     this.refreshIfNotUpToDateImpl(false, reactions)
   }
@@ -390,7 +389,7 @@ class Operation extends Observable implements Observer {
   checkReentranceOver(head: Operation): this {
     let error: Error | undefined = undefined
     const opponent = head.successor
-    if (opponent && !opponent.transaction.isFinished) {
+    if (opponent && (opponent !== this || opponent.started !== 0) && !opponent.transaction.isFinished) {
       if (Dbg.isOn && Dbg.trace.obsolete)
         Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
       switch (head.options.reentrance) {
@@ -442,7 +441,7 @@ class Operation extends Observable implements Observer {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.operation)
-      Dbg.log('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
+      Dbg.log('║', '‾\\', `${this.hint()} - enter:${this.phase}`, undefined, `    [ ${Dump.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
     this.started = Date.now()
   }
 
@@ -487,9 +486,8 @@ class Operation extends Observable implements Observer {
   private monitorEnter(mon: Monitor): void {
     const options: SnapshotOptions = {
       hint: 'Monitor.enter',
-      standalone: true,
-      trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.global,
-    }
+      standalone: 'isolated',
+      trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.global }
     OperationController.runWithin<void>(undefined, Transaction.runAs, options,
       MonitorImpl.enter, mon, this.transaction)
   }
@@ -499,9 +497,8 @@ class Operation extends Observable implements Observer {
       const leave = (): void => {
         const options: SnapshotOptions = {
           hint: 'Monitor.leave',
-          standalone: true,
-          trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.DefaultLevel,
-        }
+          standalone: 'isolated',
+          trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.DefaultLevel }
         OperationController.runWithin<void>(undefined, Transaction.runAs, options,
           MonitorImpl.leave, mon, this.transaction)
       }
@@ -519,7 +516,7 @@ class Operation extends Observable implements Observer {
     const reactions = Operation.deferredReactions
     Operation.deferredReactions = [] // reset
     for (const x of reactions)
-      x.refreshIfNotUpToDate(undefined)
+      x.runIfNotUpToDate(undefined)
   }
 
   private static markUsed(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean): void {
@@ -538,7 +535,7 @@ class Operation extends Observable implements Observer {
 
   private static markEdited(value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    edited ? r.changes.set(m, r.snapshot.round) : r.changes.delete(m)
+    edited ? r.changes.set(m, r.snapshot.phase) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
       edited ? Dbg.log('║', '  ♦', `${Dump.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Dump.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
@@ -554,30 +551,28 @@ class Operation extends Observable implements Observer {
     const since = snapshot.timestamp
     const reactions = snapshot.reactions
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      const n = r.changes.get(Meta.Disposed)
-      if (n === undefined) {
-        r.changes.forEach((round, m) => {
-          if (round === snapshot.round)
-            Operation.propagateMemberChangeThroughSubscriptions(snapshot, false, since, r, m, h, reactions)
-        })
-      }
-      else if (n === snapshot.round) {
+      const ph = r.changes.get(Meta.Disposed)
+      if (ph === undefined)
+        r.changes.forEach((phase, m) =>
+          Operation.propagateMemberChangeThroughSubscriptions(
+            snapshot, false, since, r, m, h, phase, reactions))
+      else
         for (const m in r.prev.revision.data)
-          Operation.propagateMemberChangeThroughSubscriptions(snapshot, false, since, r, m, h, reactions)
-      }
+          Operation.propagateMemberChangeThroughSubscriptions(
+            snapshot, false, since, r, m, h, ph, reactions)
     })
     reactions.sort(compareReactionsByPriority)
   }
 
   private static revokeAllSubscriptions(snapshot: Snapshot): void {
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-      r.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(
-        snapshot, true, snapshot.timestamp, r, m, h, undefined)))
+      r.changes.forEach((phase, m) => Operation.propagateMemberChangeThroughSubscriptions(
+        snapshot, true, snapshot.timestamp, r, m, h, 0, undefined)))
   }
 
   private static propagateMemberChangeThroughSubscriptions(
     snapshot: Snapshot, unsubscribe: boolean, timestamp: number,
-    r: ObjectRevision, m: MemberName, h: ObjectHolder, reactions?: Observer[]): void {
+    r: ObjectRevision, m: MemberName, h: ObjectHolder, phase: number, reactions?: Observer[]): void {
     if (reactions) {
       // Propagate change to reactions
       const prev = r.prev.revision.data[m]

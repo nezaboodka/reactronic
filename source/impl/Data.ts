@@ -15,7 +15,7 @@ export interface AbstractSnapshot {
   readonly id: number
   readonly hint: string
   readonly timestamp: number
-  readonly round: number
+  readonly phase: number
   readonly sealed: boolean
 }
 
@@ -31,9 +31,10 @@ export class Observable {
 export interface Observer {
   readonly priority: number
   readonly observables: Map<Observable, MemberInfo> | undefined
+  readonly phase: number
   hint(nop?: boolean): string
   markObsoleteDueTo(observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void
-  refreshIfNotUpToDate(reactions: Observer[] | undefined): void
+  runIfNotUpToDate(reactions: Observer[] | undefined): void
 }
 
 export type MemberName = PropertyKey

@@ -12,7 +12,7 @@ import { Monitor } from './impl/Monitor'
 
 export interface SnapshotOptions {
   readonly hint?: string
-  readonly standalone?: boolean
+  readonly standalone?: boolean | 'isolated'
   readonly journal?: TransactionJournal
   readonly trace?: Partial<TraceOptions>
   readonly token?: any

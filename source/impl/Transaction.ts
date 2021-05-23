@@ -188,6 +188,7 @@ class TransactionImpl extends Transaction {
   // Internal
 
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     return options?.standalone || TransactionImpl.curr.isFinished
       ? new TransactionImpl(options)
       : TransactionImpl.curr
@@ -217,7 +218,7 @@ class TransactionImpl extends Transaction {
           // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
-            standalone: true,
+            standalone: this.options.standalone === 'isolated' ? 'isolated' : true,
             trace: this.snapshot.options.trace,
             token: this.snapshot.options.token,
           }
@@ -251,13 +252,14 @@ class TransactionImpl extends Transaction {
         if (!this.canceled) {
           this.checkForConflicts() // merge with concurrent transactions
           if (Dbg.isOn && Dbg.trace.transaction && this.snapshot.options.token === undefined)
-            Dbg.log('╠══', '', '', undefined, ` propagation (round ${this.snapshot.round})`)
+            Dbg.log('╠══', '', '', undefined, ` propagation (phase ${this.snapshot.phase})`)
           Snapshot.propagateAllChangesThroughSubscriptions(this.snapshot)
-          if (Dbg.isOn && Dbg.trace.transaction)
-            if (this.snapshot.reactions.length > 0)
-              Dbg.log('╠══', '', '', undefined, ' reactions')
-          TransactionImpl.runReactions(this, false)
-          this.snapshot.round++
+          if (this.options.standalone !== 'isolated') {
+            if (Dbg.isOn && Dbg.trace.transaction)
+              if (this.snapshot.reactions.length > 0)
+                Dbg.log('╠══', '', '', undefined, ' reactions')
+            TransactionImpl.runReactions(this, false)
+          }
         }
         else if (!this.after)
           throw this.canceled
@@ -282,13 +284,17 @@ class TransactionImpl extends Transaction {
   }
 
   private static runReactions(t: TransactionImpl, end: boolean): void {
-    const reactions = t.snapshot.reactions
+    const ctx = t.snapshot
+    const reactions = ctx.reactions
     if (!end) {
-      t.snapshot.reactions = []
-      reactions.forEach(x => x.refreshIfNotUpToDate(t.snapshot.reactions))
+      ctx.reactions = []
+      reactions.forEach(x => {
+        ctx.phase++
+        x.runIfNotUpToDate(ctx.reactions)
+      })
     }
     else
-      reactions.forEach(x => x.refreshIfNotUpToDate(undefined))
+      reactions.forEach(x => x.runIfNotUpToDate(undefined))
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {

@@ -36,7 +36,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   get canRedo(): boolean { return this._position < this._items.length }
 
   remember(p: Patch): void {
-    Transaction.runAs({ hint: 'TransactionJournal.remember', standalone: true }, () => {
+    Transaction.runAs({ hint: 'TransactionJournal.remember', standalone: 'isolated' }, () => {
       const items = this._items = this._items.toMutable()
       if (items.length >= this._capacity)
         items.shift()
@@ -48,7 +48,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 
   undo(count: number = 1): void {
-    Transaction.runAs({ hint: 'TransactionJournal.undo', standalone: true }, () => {
+    Transaction.runAs({ hint: 'TransactionJournal.undo', standalone: 'isolated' }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._items[i]
@@ -60,7 +60,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 
   redo(count: number = 1): void {
-    Transaction.runAs({ hint: 'TransactionJournal.redo', standalone: true }, () => {
+    Transaction.runAs({ hint: 'TransactionJournal.redo', standalone: 'isolated' }, () => {
       let i: number = this._position
       while (i < this._items.length && count > 0) {
         const patch = this._items[i]
@@ -76,14 +76,14 @@ export class TransactionJournalImpl extends TransactionJournal {
     changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       const p: ObjectPatch = { current: {}, former: {} }
       const old = r.prev.revision !== ROOT_REV ? r.prev.revision.data : undefined
-      r.changes.forEach((round, m) => {
+      r.changes.forEach((phase, m) => {
         p.current[m] = unseal(r.data[m])
         if (old)
           p.former[m] = unseal(old[m])
       })
       if (!old) {
         delete p.current[Meta.Disposed] // object restore
-        p.former[Meta.Disposed] = 0 // object disposed at round 0
+        p.former[Meta.Disposed] = Meta.Disposed // object disposed at round 0
       }
       patch.objects.set(h.proxy, p)
     })
