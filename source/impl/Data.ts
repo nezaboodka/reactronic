@@ -33,7 +33,7 @@ export interface Observer {
   readonly observables: Map<Observable, MemberInfo> | undefined
   hint(nop?: boolean): string
   markObsoleteDueTo(observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void
-  runIfNotUpToDate(now: boolean, nothrow: boolean): void
+  refreshIfNotUpToDate(reactions: Observer[] | undefined): void
 }
 
 export type MemberName = PropertyKey
