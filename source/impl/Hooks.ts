@@ -21,12 +21,7 @@ export abstract class ObservableObject {
   constructor() {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
-    const h = Hooks.createObjectHolder(this, initial, new.target.name)
-    if (!Hooks.reactionsAutoStartDisabled) {
-      const reactions = Meta.getFrom(proto, Meta.Reactions)
-      for (const member in reactions)
-        (h.proxy[member][Meta.Controller] as Controller<any>).markObsolete()
-    }
+    const h = Hooks.createObjectHolder(proto, this, initial, new.target.name)
     return h.proxy
   }
 
@@ -243,10 +238,13 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return h
   }
 
-  static createObjectHolder(unobservable: any, blank: any, hint: string): ObjectHolder {
+  static createObjectHolder(proto: any, unobservable: any, blank: any, hint: string): ObjectHolder {
     const ctx = Snapshot.edit()
     const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, ROOT_REV, hint)
     ctx.getEditableRevision(h, Meta.Holder, blank)
+    if (!Hooks.reactionsAutoStartDisabled)
+      for (const m in Meta.getFrom(proto, Meta.Reactions))
+        (h.proxy[m][Meta.Controller] as Controller<any>).markObsolete()
     return h
   }
 
