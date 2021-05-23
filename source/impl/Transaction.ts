@@ -256,7 +256,7 @@ class TransactionImpl extends Transaction {
           if (Dbg.isOn && Dbg.trace.transaction)
             if (this.snapshot.reactions.length > 0)
               Dbg.log('╠══', '', '', undefined, ' reactions')
-          TransactionImpl.runReactions(this)
+          TransactionImpl.runReactions(this, false)
           this.snapshot.round++
         }
         else if (!this.after)
@@ -273,14 +273,15 @@ class TransactionImpl extends Transaction {
       if (this.sealed && this.pending === 0)
         this.applyOrDiscard() // it's critical to have no exceptions inside this call
       TransactionImpl.curr = outer
+      // TransactionImpl.runReactions(this, true)
     }
     return result
   }
 
-  private static runReactions(t: TransactionImpl): void {
+  private static runReactions(t: TransactionImpl, nothrow: boolean): void {
     const reactions = t.snapshot.reactions
     t.snapshot.reactions = []
-    reactions.forEach(x => x.runIfNotUpToDate(false, true))
+    reactions.forEach(x => x.runIfNotUpToDate(false, nothrow))
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {
