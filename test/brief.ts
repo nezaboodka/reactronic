@@ -86,6 +86,7 @@ export class DemoView extends ObservableObject {
   }
 
   @reaction
+  @options({ standalone: true })
   print(): void {
     const lines = this.render(0)
     lines.forEach(x => {

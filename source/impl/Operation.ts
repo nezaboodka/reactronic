@@ -241,11 +241,13 @@ class Operation extends Observable implements Observer {
     this.observables = new Map<Observable, MemberInfo>()
     if (prev instanceof Operation) {
       this.options = prev.options
+      this.trigger = prev.trigger
       this.args = prev.args
       // this.value = prev.value
     }
     else { // prev: OptionsImpl
       this.options = prev
+      this.trigger = undefined
       this.args = ROOT_ARGS
       // this.value = undefined
     }
@@ -314,13 +316,13 @@ class Operation extends Observable implements Observer {
   markObsoleteDueTo(observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void {
     const restart = this.revision.snapshot === trigger.revision.snapshot
     if (!restart || this.started < 0) {
-      // Mark obsolete
       const op = restart ? this : this.controller.edit().operation
-      const isReaction = op.options.kind === Kind.Reaction
-      op.trigger = trigger
-      op.started = 0
-
       if (op.phase < (trigger.revision.changes.get(trigger.memberName) ?? 0)) {
+        // Mark obsolete
+        const isReaction = op.options.kind === Kind.Reaction
+        op.trigger = trigger
+        op.started = 0
+
         // Logging
         if (Dbg.isOn && (Dbg.trace.obsolete || op.options.trace?.obsolete))
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
@@ -441,7 +443,7 @@ class Operation extends Observable implements Observer {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Dbg.isOn && Dbg.trace.operation)
-      Dbg.log('║', '‾\\', `${this.hint()} - enter:${this.phase}`, undefined, `    [ ${Dump.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
+      Dbg.log('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
     this.started = Date.now()
   }
 
