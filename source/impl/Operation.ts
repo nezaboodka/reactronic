@@ -404,7 +404,7 @@ class Operation extends Observable implements Observer {
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
           if (!opponent.transaction.isCanceled)
-            throw misuse(`${this.hint()} (${this.why()}) cannot reenter over ${opponent.hint()} (${opponent.why()})`)
+            throw misuse(`${this.hint()} cannot reenter over ${opponent.hint()}`)
           error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/PreventWithError due to canceled T${opponent.transaction.id}[${opponent.transaction.hint}]`)
           this.transaction.cancel(error, opponent.transaction)
           break
@@ -551,8 +551,8 @@ class Operation extends Observable implements Observer {
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
-    if (result)
-      result = oldValue instanceof Operation && oldValue.trigger !== undefined
+    if (result && oldValue instanceof Operation && newValue instanceof Operation)
+      result = oldValue.phase >= 0 || oldValue.value !== newValue.value
     return result
   }
 
