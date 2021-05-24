@@ -232,9 +232,9 @@ class Operation extends Observable implements Observer {
   args: any[]
   result: any
   error: any
-  margin: number
-  started: number
   phase: number
+  started: number
+  margin: number
   successor: Operation | undefined
 
   constructor(controller: OperationController, revision: ObjectRevision, prev: Operation | OptionsImpl) {
@@ -257,9 +257,9 @@ class Operation extends Observable implements Observer {
     }
     // this.result = undefined
     // this.error = undefined
-    this.margin = 0
-    this.started = 0
     this.phase = -1
+    this.started = 0
+    this.margin = 0
     this.successor = undefined
   }
 
@@ -307,8 +307,8 @@ class Operation extends Observable implements Observer {
   }
 
   run(snapshot: Snapshot, proxy: any, args: any[] | undefined): void {
-    this.margin = Operation.current ? Operation.current.margin + 1 : 1
     this.phase = snapshot.phase
+    this.margin = Operation.current ? Operation.current.margin + 1 : 1
     if (args)
       this.args = args
     if (!this.error)
