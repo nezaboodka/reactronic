@@ -320,15 +320,16 @@ class Operation extends Observable implements Observer {
   }
 
   markObsoleteDueTo(observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void {
-    const restart = this.revision.snapshot === trigger.revision.snapshot
-    if (!restart || this.phase >= 0) {
-      const op = restart ? this : this.controller.edit().operation
-      if (op.phase < (trigger.revision.changes.get(trigger.memberName) ?? 0)) {
+    const other = this.revision.snapshot !== trigger.revision.snapshot
+    if (other || this.phase >= 0) {
+      const op = other ? this.controller.edit().operation : this
+      const triggerPhase = trigger.revision.changes.get(trigger.memberName) ?? 0
+      if (op.phase >= -1 && op.phase < triggerPhase) {
         // Mark obsolete
         const isReaction = op.options.kind === Kind.Reaction
         op.trigger = trigger
         op.started = 0
-        op.phase = -1
+        op.phase = -2
 
         // Logging
         if (Dbg.isOn && (Dbg.trace.obsolete || op.options.trace?.obsolete))
@@ -349,8 +350,10 @@ class Operation extends Observable implements Observer {
           if (!tran.isFinished && op !== observable) // restart after itself if canceled
             tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.rev(trigger.revision, trigger.memberName)} changed by T${trigger.revision.snapshot.id}[${trigger.revision.snapshot.hint}]`), null)
       }
-      else if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
-        Dbg.log(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.rev(trigger.revision, trigger.memberName)}`)
+      else if (op.phase >= 0) {
+        if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
+          Dbg.log(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.rev(trigger.revision, trigger.memberName)}`)
+      }
     }
   }
 
@@ -459,10 +462,12 @@ class Operation extends Observable implements Observer {
       this.result = this.result.then(
         value => {
           this.value = value
+          this.error = undefined
           this.leave(false, '  □ ', '- finished ', ' OK ──┘')
           return value
         },
         error => {
+          this.value = undefined
           this.error = error
           this.leave(false, '  □ ', '- finished ', 'ERR ──┘')
           throw error
@@ -476,6 +481,7 @@ class Operation extends Observable implements Observer {
     }
     else {
       this.value = this.result
+      this.error = undefined
       this.leave(true, '_/', '- leave')
     }
   }
@@ -549,10 +555,10 @@ class Operation extends Observable implements Observer {
       edited ? Dbg.log('║', '  ♦', `${Dump.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Dump.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
-  private static isConflicting(oldValue: any, newValue: any): boolean {
-    let result = oldValue !== newValue
-    if (result && oldValue instanceof Operation && newValue instanceof Operation)
-      result = oldValue.phase >= 0 || oldValue.value !== newValue.value
+  private static isConflicting(theirValue: any, ourValue: any): boolean {
+    let result = theirValue !== ourValue
+    if (result && theirValue instanceof Operation && ourValue instanceof Operation)
+      result = theirValue.phase >= 0 || theirValue.result !== ourValue.result
     return result
   }
 

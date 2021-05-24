@@ -74,7 +74,7 @@ export class Snapshot implements AbstractSnapshot {
   static edit: () => Snapshot = UNDEF
   static markUsed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF
   static markEdited: (value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
-  static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
+  static isConflicting: (theirValue: any, ourValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
   static revokeAllSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
   static createPatch: (hint: string, changeset: Map<ObjectHolder, ObjectRevision>) => Patch = UNDEF
