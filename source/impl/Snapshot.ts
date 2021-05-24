@@ -393,7 +393,7 @@ export class Dump {
   }
 
   static conflictingMemberHint(m: MemberName, ours: ObjectRevision, theirs: ObjectRevision): string {
-    return `${theirs.snapshot.hint} on ${Dump.rev(theirs, m)}`
+    return `${theirs.snapshot.hint} (${Dump.rev(theirs, m)})`
   }
 }
 
