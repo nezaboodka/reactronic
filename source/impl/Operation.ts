@@ -55,7 +55,7 @@ export class OperationController extends Controller<any> {
     const rev = oc.revision
     const opts = op.options
     if (!oc.isUpToDate && rev.data[Meta.Disposed] === undefined
-      && (!weak || op.started === 0 || !op.successor || op.successor.transaction.isFinished)) {
+      && (!weak || op.phase <= 0 || !op.successor || op.successor.transaction.isFinished)) {
       const standalone = weak || op.options.standalone ||
         op.options.kind === Kind.Cache && (
           rev.snapshot.sealed || rev.prev.revision !== ROOT_REV)
@@ -135,7 +135,7 @@ export class OperationController extends Controller<any> {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.seekRevision(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRevision(r)
-    const isUpToDate = op.options.kind !== Kind.Transaction && op.started !== 0 &&
+    const isUpToDate = op.options.kind !== Kind.Transaction && op.phase >= 0 &&
       (!op.options.sensitiveArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
@@ -298,7 +298,7 @@ class Operation extends Observable implements Observer {
       const result = OperationController.runWithin<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Dbg.isOn && Dbg.trace.step && this.result)
-        Dbg.logAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
+        Dbg.logAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.phase >= 0 ? '        │' : '')
       if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
         Dbg.log('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
       return result
@@ -319,13 +319,14 @@ class Operation extends Observable implements Observer {
 
   markObsoleteDueTo(observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void {
     const restart = this.revision.snapshot === trigger.revision.snapshot
-    if (!restart || this.started < 0) {
+    if (!restart || this.phase >= 0) {
       const op = restart ? this : this.controller.edit().operation
       if (op.phase < (trigger.revision.changes.get(trigger.memberName) ?? 0)) {
         // Mark obsolete
         const isReaction = op.options.kind === Kind.Reaction
         op.trigger = trigger
         op.started = 0
+        op.phase = -1
 
         // Logging
         if (Dbg.isOn && (Dbg.trace.obsolete || op.options.trace?.obsolete))
@@ -395,7 +396,7 @@ class Operation extends Observable implements Observer {
   checkReentranceOver(head: Operation): this {
     let error: Error | undefined = undefined
     const opponent = head.successor
-    if (opponent && (opponent !== this || opponent.started !== 0) && !opponent.transaction.isFinished) {
+    if (opponent && (opponent !== this || opponent.phase >=0) && !opponent.transaction.isFinished) {
       if (Dbg.isOn && Dbg.trace.obsolete)
         Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
       switch (head.options.reentrance) {
