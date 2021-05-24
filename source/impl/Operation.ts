@@ -345,10 +345,10 @@ class Operation extends Observable implements Observer {
           op.observers?.forEach(c => c.markObsoleteDueTo(op, { revision: op.revision, memberName: op.controller.memberName, usageCount: 0 }, snapshot, since, reactions))
 
         // Cancel own transaction if it is still in progress
-        const tran = op.transaction
-        if (tran.snapshot !== snapshot && !tran.isFinished && op !== observable) // restart after itself if canceled
-          if (!tran.isFinished && op !== observable) // restart after itself if canceled
-            tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.rev(trigger.revision, trigger.memberName)} changed by T${trigger.revision.snapshot.id}[${trigger.revision.snapshot.hint}]`), null)
+        const t = op.transaction
+        if (t.snapshot !== snapshot && !t.isFinished && op !== observable) // restart after itself if canceled
+          if (!t.isFinished && op !== observable) // restart after itself if canceled
+            t.cancel(new Error(`T${t.id}[${t.hint}] is canceled due to obsolete ${Dump.rev(trigger.revision, trigger.memberName)} changed by T${trigger.revision.snapshot.id}[${trigger.revision.snapshot.hint}]`), null)
       }
       else if (op.phase >= 0) {
         if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
