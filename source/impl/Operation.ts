@@ -51,12 +51,16 @@ export class OperationController extends Controller<any> {
   useOrRun(weak: boolean, args: any[] | undefined): Operation {
     let oc: OperationContext = this.peek(args)
     const ctx = oc.snapshot
-    const op: Operation = oc.operation
+    const op = oc.operation
+    const rev = oc.revision
     const opts = op.options
-    if (!oc.isUpToDate && oc.revision.data[Meta.Disposed] === undefined
+    if (!oc.isUpToDate && rev.data[Meta.Disposed] === undefined
       && (!weak || op.started === 0 || !op.successor || op.successor.transaction.isFinished)) {
+      const standalone = weak || op.options.standalone ||
+        op.options.kind === Kind.Cache && (
+          rev.snapshot.sealed || rev.prev.revision !== ROOT_REV)
       const token = opts.noSideEffects ? this : undefined
-      const oc2 = this.run(oc, weak, opts, token, args)
+      const oc2 = this.run(oc, standalone, opts, token, args)
       const ctx2 = oc2.operation.revision.snapshot
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         oc = oc2
@@ -178,11 +182,11 @@ export class OperationController extends Controller<any> {
     return op
   }
 
-  private run(existing: OperationContext, weak: boolean, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
+  private run(existing: OperationContext, standalone: boolean, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.ownHolder, this.memberName)}`
     let oc = existing
-    const opts = { hint, standalone: weak || options.standalone, journal: options.journal, trace: options.trace, token }
+    const opts = { hint, standalone, journal: options.journal, trace: options.trace, token }
     const result = Transaction.runAs(opts, (argsx: any[] | undefined): any => {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()
@@ -545,7 +549,7 @@ class Operation extends Observable implements Observer {
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof Operation && oldValue.started !== 0
+      result = oldValue instanceof Operation && oldValue.trigger !== undefined
     return result
   }
 

@@ -31,7 +31,7 @@ export class AsyncDemoView {
   }
 
   @reaction
-  @options({ throttling: -1 })
+  @options({ standalone: true, throttling: -1 })
   async print(): Promise<void> {
     const lines: string[] = await this.render()
     if (!Transaction.current.isCanceled) {
