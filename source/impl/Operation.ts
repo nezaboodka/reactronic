@@ -324,7 +324,7 @@ class Operation extends Observable implements Observer {
     if (other || this.phase >= 0) {
       const op = other ? this.controller.edit().operation : this
       const triggerPhase = trigger.revision.changes.get(trigger.memberName) ?? 0
-      if (op.phase >= -1 && op.phase < triggerPhase) {
+      if (snapshot !== trigger.revision.snapshot || (op.phase >= -1 && op.phase < triggerPhase)) {
         // Mark obsolete
         const isReaction = op.options.kind === Kind.Reaction
         op.trigger = trigger
@@ -650,10 +650,10 @@ class Operation extends Observable implements Observer {
       observable.observers.add(this)
       this.observables?.set(observable, info)
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.rev(r, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
+        Dbg.log('║', '  ∞', `${this.hint()} is subscribed to ${Dump.rev(r, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
     }
     else if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-      Dbg.log('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Dump.rev(r, m)}`)
+      Dbg.log('║', '  x', `${this.hint()} is NOT subscribed to already obsolete ${Dump.rev(r, m)}`)
     return ok
   }
 

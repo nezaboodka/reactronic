@@ -25,6 +25,8 @@ const expected: Array<string | undefined> = [
   '[...] Log: RTA, nezaboodka.com/500',
   'Url: nezaboodka.com',
   'Log: RTA, nezaboodka.com/500',
+  'Url: nezaboodka.com',
+  'Log: RTA, nezaboodka.com/500',
 ]
 
 test('reentrance.cancel', async t => {
