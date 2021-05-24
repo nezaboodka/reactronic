@@ -247,16 +247,18 @@ class Operation extends Observable implements Observer {
       this.options = prev.options
       this.trigger = prev.trigger
       this.args = prev.args
-      // this.value = prev.value
+      this.result = prev.result
+      this.error = prev.error
+      this.value = prev.value
     }
     else { // prev: OptionsImpl
       this.options = prev
       this.trigger = undefined
       this.args = ROOT_ARGS
-      // this.value = undefined
+      this.result = undefined
+      this.error = undefined
+      this.value = undefined
     }
-    // this.result = undefined
-    // this.error = undefined
     this.phase = -1
     this.started = 0
     this.margin = 0
