@@ -40,7 +40,7 @@ test('brief', t => {
     garbageCollectionSummaryInterval: 2000, // default: 3000 ms
   })
   R.setTraceMode(false)
-  R.setTraceMode(true, TestingTraceLevel)
+  R.setTraceMode(true, TestingTraceLevel.Auto)
   // Simple transactions
   const app = Transaction.run(() => new DemoView(new Demo()))
   try {

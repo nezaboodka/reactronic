@@ -29,7 +29,7 @@ export class ReactiveDemo extends ObservableObject {
 }
 
 test('reactive', t => {
-  R.setTraceMode(true, TestingTraceLevel)
+  R.setTraceMode(true, TestingTraceLevel.Auto)
   const demo = Transaction.run(() => new ReactiveDemo())
   t.is(demo.title, 'Title/2')
   t.is(demo.content, 'Content/1')

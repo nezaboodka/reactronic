@@ -251,11 +251,11 @@ class TransactionImpl extends Transaction {
       if (this.sealed && this.pending === 1) {
         if (!this.canceled) {
           this.checkForConflicts() // merge with concurrent transactions
-          if (Dbg.isOn && Dbg.trace.transaction && this.snapshot.options.token === undefined)
+          if (Dbg.isOn && Dbg.trace.operation && this.snapshot.options.token === undefined)
             Dbg.log('╠══', '', '', undefined, ` propagation (phase ${this.snapshot.phase})`)
           Snapshot.propagateAllChangesThroughSubscriptions(this.snapshot)
           if (this.options.standalone !== 'isolated') {
-            if (Dbg.isOn && Dbg.trace.transaction)
+            if (Dbg.isOn && Dbg.trace.operation)
               if (this.snapshot.reactions.length > 0)
                 Dbg.log('╠══', '', '', undefined, ' reactions')
             TransactionImpl.runReactions(this, false)
@@ -324,7 +324,7 @@ class TransactionImpl extends Transaction {
   private applyOrDiscard(): void {
     // It's critical to have no exceptions in this block
     try {
-      if (Dbg.isOn && Dbg.trace.change)
+      if (Dbg.isOn && Dbg.trace.operation)
         Dbg.log('╠══', '', '', undefined, ' changes')
       this.snapshot.applyOrDiscard(this.canceled)
       this.snapshot.collectGarbage()

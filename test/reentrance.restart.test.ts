@@ -34,7 +34,7 @@ const expected: Array<string | undefined> = [
 ]
 
 test('reentrance.restart', async t => {
-  R.setTraceMode(true, TestingTraceLevel)
+  R.setTraceMode(true, TestingTraceLevel.Mini)
   const app = Transaction.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getController(a.model.load).configure({reentrance: Reentrance.WaitAndRestart})

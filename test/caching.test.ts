@@ -63,7 +63,7 @@ export class Demo extends DemoBase {
 }
 
 test('caching', t => {
-  R.setTraceMode(true, TestingTraceLevel)
+  R.setTraceMode(true, TestingTraceLevel.Auto)
   const demo = Transaction.run(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')

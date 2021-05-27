@@ -30,7 +30,7 @@ const expected: Array<string | undefined> = [
 ]
 
 test('reentrance.cancel', async t => {
-  R.setTraceMode(true, TestingTraceLevel)
+  R.setTraceMode(true, TestingTraceLevel.Auto)
   const app = Transaction.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     R.getController(a.print).configure({ priority: 0 })
