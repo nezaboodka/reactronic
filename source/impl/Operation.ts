@@ -67,7 +67,7 @@ export class OperationController extends Controller<any> {
     }
     else if (Dbg.isOn && Dbg.trace.operation && (opts.trace === undefined ||
       opts.trace.operation === undefined || opts.trace.operation === true))
-      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)',
+      Dbg.log(Transaction.current.isFinished ? '' : '║', ' ==',
         `${Dump.rev(oc.revision, this.memberName)} result is reused from T${oc.operation.transaction.id}[${oc.operation.transaction.hint}]`)
     const t = oc.operation
     Snapshot.markUsed(t, oc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
@@ -91,7 +91,7 @@ export class OperationController extends Controller<any> {
       throw misuse('a method is expected with reactronic decorator')
     op.options = new OptionsImpl(op.options.getter, op.options.setter, op.options, options, false)
     if (Dbg.isOn && Dbg.trace.write)
-      Dbg.log('║', '  ♦', `${op.hint()}.options = ...`)
+      Dbg.log('║', '  ✎', `${op.hint()}.options = ...`)
     return op.options
   }
 
@@ -191,7 +191,7 @@ export class OperationController extends Controller<any> {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()
         if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
-          Dbg.log('║', ' (f)', `${oc.operation.why()}`)
+          Dbg.log('║', ' =>', `${oc.operation.why()}`)
         oc.operation.run(oc.snapshot, this.ownHolder.proxy, argsx)
       }
       else { // retry run
@@ -199,7 +199,7 @@ export class OperationController extends Controller<any> {
         if (oc.operation.options.kind === Kind.Transaction || !oc.isUpToDate) {
           oc = this.edit()
           if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
-            Dbg.log('║', ' (f)', `${oc.operation.why()}`)
+            Dbg.log('║', ' =>', `${oc.operation.why()}`)
           oc.operation.run(oc.snapshot, this.ownHolder.proxy, argsx)
         }
       }
@@ -552,7 +552,7 @@ class Operation extends Observable implements Observer {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     edited ? r.changes.set(m, r.snapshot.phase) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
-      edited ? Dbg.log('║', '  ♦', `${Dump.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Dump.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
+      edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(theirValue: any, ourValue: any): boolean {
