@@ -280,7 +280,7 @@ class Operation extends Observable implements Observer {
     else if (this.controller.options.kind === Kind.Transaction)
       trigger = '   <<   operation'
     else
-      trigger = `   <<   called within ${this.revision.snapshot.hint}`
+      trigger = `   <<   T${this.revision.snapshot.id}[${this.revision.snapshot.hint}]`
     return `${this.hint()}${trigger}   (${ms !== Infinity ? `${ms}ms since previous run` : 'initial run'})`
   }
 
