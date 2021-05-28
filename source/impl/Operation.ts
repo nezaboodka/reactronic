@@ -463,13 +463,13 @@ class Operation extends Observable implements Observer {
         value => {
           this.value = value
           this.error = undefined
-          this.leave(false, '  □ ', '- finished ', ' OK ──┘')
+          this.leave(false, '  ⚐ ', '- finished ', ' OK ──┘')
           return value
         },
         error => {
           this.value = undefined
           this.error = error
-          this.leave(false, '  □ ', '- finished ', 'ERR ──┘')
+          this.leave(false, '  ⚐ ', '- finished ', 'ERR ──┘')
           throw error
         })
       if (Dbg.isOn) {
