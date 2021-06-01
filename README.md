@@ -32,7 +32,7 @@ Transactional reactivity is based on four fundamental concepts:
   - **Cache** - a computed value having associated function that is
     executed on-demand to renew the value if it becomes obsolete.
 
-Demo application built with Reactronic: https://nevod.io/#/playground.
+Demo application built with Reactronic: https://nevod.io.
 Source code of the demo: https://gitlab.com/nezaboodka/nevod.web.public/-/blob/master/README.md.
 
 Quick introduction and detailed description is below.
