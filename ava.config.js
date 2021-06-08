@@ -3,4 +3,5 @@ export default {
   extensions: ['ts'],
   files: ['test/**/*.test.ts'],
   require: ['ts-node/register', 'tsconfig-paths/register'],
+  timeout: '20s',
 }
