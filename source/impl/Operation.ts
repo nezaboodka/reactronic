@@ -599,6 +599,9 @@ class Operation extends Observable implements Observer {
     const curr = r.data[m]
     if (curr instanceof Operation) {
       if (curr.revision === r && curr.observables !== undefined) {
+        // TODO: Rerun reactions after pause
+        // if (reactions && r.prev.revision !== ROOT_REV && curr.started === 0 && curr.options.throttling < Number.MAX_SAFE_INTEGER)
+        //   reactions.push(curr)
         if (Hooks.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
           curr.observables.forEach((hint, v) => { // performance tracking info
             if (hint.usageCount > Hooks.repetitiveUsageWarningThreshold)
