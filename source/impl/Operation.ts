@@ -568,7 +568,7 @@ class Operation extends Observable implements Observer {
         true, snapshot.timestamp, r, m, h, undefined)))
   }
 
-  private static propagateMemberChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,
+  private static propagateMemberChangeThroughSubscriptions(discard: boolean, timestamp: number,
     r: ObjectRevision, m: MemberName, h: ObjectHolder, reactions?: Observer[]): void {
     if (reactions) {
       // Propagate change to reactions
@@ -592,7 +592,7 @@ class Operation extends Observable implements Observer {
               Dbg.log('', '[!]', `${curr.hint()} uses ${Dump.rev(hint.revision, hint.memberName)} ${hint.usageCount} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
-        if (unsubscribe)
+        if (discard)
           curr.unsubscribeFromAllObservables()
       }
     }
