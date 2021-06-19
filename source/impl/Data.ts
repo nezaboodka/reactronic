@@ -33,7 +33,7 @@ export interface Observer {
   readonly observables: Map<Observable, MemberInfo> | undefined
   readonly phase: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void
+  markObsoleteDueTo(bubbling: number, observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void
   runIfNotUpToDate(reactions: Observer[] | undefined): void
 }
 

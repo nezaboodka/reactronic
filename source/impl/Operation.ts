@@ -58,7 +58,7 @@ export class OperationController extends Controller<any> {
       && (!weak || op.phase <= 0 || !op.successor || op.successor.transaction.isFinished)) {
       const standalone = weak || op.options.standalone ||
         op.options.kind === Kind.Cache && (
-          rev.snapshot.sealed || rev.prev.revision !== ROOT_REV)
+          rev.snapshot.sealed || (rev.snapshot !== ctx && rev.prev.revision !== ROOT_REV))
       const token = opts.noSideEffects ? this : undefined
       const oc2 = this.run(oc, standalone, opts, token, args)
       const ctx2 = oc2.operation.revision.snapshot
@@ -213,7 +213,7 @@ export class OperationController extends Controller<any> {
     const oc = self.peek(undefined)
     const ctx = oc.snapshot
     const trigger: MemberInfo = { revision: ROOT_REV, memberName: self.memberName, usageCount: 0 }
-    oc.operation.markObsoleteDueTo(oc.operation, trigger, ctx, ctx.timestamp, ctx.reactions)
+    oc.operation.markObsoleteDueTo(0, oc.operation, trigger, ctx, ctx.timestamp, ctx.reactions)
   }
 }
 
@@ -259,7 +259,7 @@ class Operation extends Observable implements Observer {
       this.error = undefined
       this.value = undefined
     }
-    this.phase = -1
+    this.phase = -1 // means not yet computed
     this.started = 0
     this.margin = 0
     this.successor = undefined
@@ -319,12 +319,12 @@ class Operation extends Observable implements Observer {
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void {
+  markObsoleteDueTo(bubbling: number, observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void {
     const other = this.revision.snapshot !== trigger.revision.snapshot
     if (other || this.phase >= 0) {
       const op = other ? this.controller.edit().operation : this
       const triggerPhase = trigger.revision.changes.get(trigger.memberName) ?? 0
-      if (snapshot !== trigger.revision.snapshot || (op.phase >= -1 && op.phase < triggerPhase)) {
+      if (snapshot !== trigger.revision.snapshot || bubbling > 0 || (op.phase >= -1 && op.phase < triggerPhase)) {
         // Mark obsolete
         const isReaction = op.options.kind === Kind.Reaction
         op.trigger = trigger
@@ -342,7 +342,7 @@ class Operation extends Observable implements Observer {
         if (isReaction)
           reactions.push(op)
         else
-          op.observers?.forEach(c => c.markObsoleteDueTo(op, { revision: op.revision, memberName: op.controller.memberName, usageCount: 0 }, snapshot, since, reactions))
+          op.observers?.forEach(c => c.markObsoleteDueTo(bubbling + 1, op, { revision: op.revision, memberName: op.controller.memberName, usageCount: 0 }, snapshot, since, reactions))
 
         // Cancel own transaction if it is still in progress
         const t = op.transaction
@@ -543,7 +543,7 @@ class Operation extends Observable implements Observer {
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!op.subscribeTo(observable, r, m, h, t))
-          op.markObsoleteDueTo(observable, { revision: r, memberName: m, usageCount: 0 }, ctx, ctx.timestamp, ctx.reactions)
+          op.markObsoleteDueTo(0, observable, { revision: r, memberName: m, usageCount: 0 }, ctx, ctx.timestamp, ctx.reactions)
       }
     }
   }
@@ -593,7 +593,7 @@ class Operation extends Observable implements Observer {
       const prev = r.prev.revision.data[m]
       if (prev !== undefined && prev instanceof Observable) {
         const trigger: MemberInfo = { revision: r, memberName: m, usageCount: 0 }
-        prev.observers?.forEach(c => c.markObsoleteDueTo(prev, trigger, snapshot, timestamp, reactions))
+        prev.observers?.forEach(c => c.markObsoleteDueTo(0, prev, trigger, snapshot, timestamp, reactions))
       }
     }
     const curr = r.data[m]

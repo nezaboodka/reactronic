@@ -257,7 +257,7 @@ class TransactionImpl extends Transaction {
           if (this.options.standalone !== 'isolated') {
             if (Dbg.isOn && Dbg.trace.operation)
               if (this.snapshot.reactions.length > 0)
-                Dbg.log('╠══', '', '', undefined, ' reactions')
+                Dbg.log('╠══', '', '', undefined, ` reactions (phase > ${this.snapshot.phase})`)
             TransactionImpl.runReactions(this, false)
           }
         }

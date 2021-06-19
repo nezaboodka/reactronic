@@ -29,8 +29,6 @@ const expected: Array<string | undefined> = [
   '[...] Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500',
   'Url: nezaboodka.com',
   'Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500',
-  'Url: nezaboodka.com',
-  'Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500',
 ]
 
 test('reentrance.restart', async t => {
