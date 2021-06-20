@@ -337,7 +337,7 @@ class Operation extends Observable implements Observer {
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
             isReaction && trigger.revision === ROOT_REV
               ? `${op.hint()} is a reaction and will run automatically (priority ${op.options.priority})`
-              : `${op.hint()} is now obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}${isReaction ? ` and will run automatically (priority ${op.options.priority})` : ''}`)
+              : `${op.hint()} is now obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}/ph${triggerPhase}${isReaction ? ` and will run automatically (priority ${op.options.priority})` : ''}`)
 
         // Stop cascade propagation on reaction, or continue otherwise
         if (isReaction)
@@ -402,7 +402,8 @@ class Operation extends Observable implements Observer {
   checkReentranceOver(head: Operation): this {
     let error: Error | undefined = undefined
     const opponent = head.successor
-    if (opponent && (opponent !== this || opponent.phase >=0) && !opponent.transaction.isFinished) {
+    if (opponent && (opponent !== this || opponent.phase >=0) &&
+      opponent.transaction !== this.transaction && !opponent.transaction.isFinished) {
       if (Dbg.isOn && Dbg.trace.obsolete)
         Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
       switch (head.options.reentrance) {
