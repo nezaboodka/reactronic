@@ -8,7 +8,7 @@
 import { F } from './util/Utils'
 import { Dbg } from './util/Dbg'
 import { Controller } from './Controller'
-import { Kind, MemberOptions, TraceOptions, ProfilingOptions, Sensitivity } from './Options'
+import { Kind, MemberOptions, TraceOptions, ProfilingOptions } from './Options'
 import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks } from './impl/Hooks'
@@ -46,7 +46,7 @@ export function standalone<T>(func: F<T>, ...args: any[]): T {
   return OperationController.runWithin<T>(undefined, Transaction.standalone, func, ...args)
 }
 
-export function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T {
+export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
   return Hooks.sensitive(sensitivity, func, ...args)
 }
 

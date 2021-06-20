@@ -187,19 +187,21 @@ export class Person extends ObservableObject {
 }
 
 export class Dumper extends ObservableObject {
-  tracking: string = `tran:${Transaction.current.id}`
+  tracking1: string = 'initial1'
+  tracking2: string = 'initial2'
 
   @reaction @options({ priority: 1 })
   dumper1(): void {
-    output.push(this.tracking) /* istanbul ignore next */
-    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(this.tracking)
+    output.push(this.tracking2) /* istanbul ignore next */
+    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(this.tracking2)
+    this.tracking1 = `tracking1 tran:${Transaction.current.id}`
   }
 
   @reaction @options({ priority: 2 })
   dumper2(): void {
-    output.push(this.tracking) /* istanbul ignore next */
-    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(this.tracking)
-    this.tracking = `tran:${Transaction.current.id}`
+    output.push(this.tracking1) /* istanbul ignore next */
+    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(this.tracking1)
+    this.tracking2 = `tracking2 tran:${Transaction.current.id}`
   }
 }
 

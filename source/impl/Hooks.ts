@@ -7,7 +7,7 @@
 
 import { UNDEF, F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
-import { MemberOptions, Kind, Reentrance, Sensitivity } from '../Options'
+import { MemberOptions, Kind, Reentrance } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta } from './Data'
@@ -91,7 +91,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   static repetitiveUsageWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
-  static sensitivity: Sensitivity = Sensitivity.ReactOnFinalDifferenceOnly
+  static sensitivity: boolean = false
   static readonly proxy: Hooks = new Hooks()
 
   getPrototypeOf(h: ObjectHolder): object | null {
@@ -117,25 +117,17 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   set(h: ObjectHolder, m: MemberName, value: any, receiver: any): boolean {
     const r: ObjectRevision = Snapshot.edit().getEditableRevision(h, m, value)
     if (r !== ROOT_REV) {
-      const curr = r.data[m] as Observable
+      let curr = r.data[m] as Observable
       if (curr !== undefined || (
         r.prev.revision.snapshot === ROOT_REV.snapshot && m in h.unobservable === false)) {
-        const prev = r.prev.revision.data[m] as Observable
-        let edited = prev === undefined || prev.value !== value ||
-          Hooks.sensitivity === Sensitivity.ReactEvenOnSameValueAssignment
-        if (edited) {
-          if (prev === curr)
-            r.data[m] = new Observable(value)
-          else
-            curr.value = value
+        if (curr === undefined || r.prev.revision.data[m] === curr) {
+          curr = r.data[m] = new Observable(value)
+          Snapshot.markEdited(value, true, r, m, h)
         }
-        else if (prev !== curr) { // if there was an assignment before
-          if (Hooks.sensitivity === Sensitivity.ReactOnFinalDifferenceOnly)
-            r.data[m] = prev // restore previous value
-          else
-            edited = true // Sensitivity.ReactOnFinalAndIntermediateDifference
+        else if (curr.value !== value || Hooks.sensitivity) {
+          curr.value = value
+          Snapshot.markEdited(value, true, r, m, h)
         }
-        Snapshot.markEdited(value, edited, r, m, h)
       }
       else
         Reflect.set(h.unobservable, m, value, receiver)
@@ -266,7 +258,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     }
   }
 
-  static sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T {
+  static sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
     const restore = Hooks.sensitivity
     Hooks.sensitivity = sensitivity
     try {

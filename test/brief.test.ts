@@ -6,17 +6,17 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Kind, nonreactive, standalone, sensitive, Sensitivity, Reactronic as R } from 'api'
+import { Transaction, Kind, nonreactive, standalone, sensitive, Reactronic as R } from 'api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
-  'tran:102',
-  'tran:102',
-  'tran:102',
+  'initial2',
+  'tracking1 tran:102',
+  'tracking2 tran:102',
   'Filter: Jo',
-  'tran:109',
-  'tran:109',
-  'tran:109',
+  'initial2',
+  'tracking1 tran:109',
+  'tracking2 tran:109',
   'Filter: Jo',
   'John\'s children: Billy, Barry, Steve',
   'Filter: Jo',
@@ -167,7 +167,7 @@ test('brief', t => {
       tran3.run(nop)
     }), { message: 'test' })
     t.throws(() => tran3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
-    Transaction.run(sensitive, Sensitivity.ReactEvenOnSameValueAssignment, () => {
+    Transaction.run(sensitive, true, () => {
       app.userFilter = app.userFilter
     })
     // Other

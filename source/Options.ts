@@ -47,13 +47,3 @@ export enum Reentrance {
   OverwritePrevious = -3, // allow previous to complete, but overwrite it with ignoring any conflicts
   RunSideBySide = -4, // multiple simultaneous operations are allowed
 }
-
-// export interface ObjectOptions {
-//   readonly sensitivity: Sensitivity // not supported
-// }
-
-export enum Sensitivity {
-  ReactOnFinalDifferenceOnly = 0, // default
-  ReactOnFinalAndIntermediateDifference = 1,
-  ReactEvenOnSameValueAssignment = 2,
-}
