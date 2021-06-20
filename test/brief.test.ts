@@ -10,7 +10,13 @@ import { Transaction, Kind, nonreactive, standalone, sensitive, Sensitivity, Rea
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
+  'tran:102',
+  'tran:102',
+  'tran:102',
   'Filter: Jo',
+  'tran:109',
+  'tran:109',
+  'tran:109',
   'Filter: Jo',
   'John\'s children: Billy, Barry, Steve',
   'Filter: Jo',
@@ -151,7 +157,7 @@ test('brief', t => {
 
     const tran2 = Transaction.create({ hint: 'tran2' })
     const zombi = tran2.run(() => new Person())
-    t.throws(() => console.log(zombi.age), { message: 'object Person #30 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
+    t.throws(() => console.log(zombi.age), { message: 'object Person #32 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
     t.throws(() => tran2.run(() => { throw new Error('test') }), { message: 'test' })
     t.throws(() => tran2.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
 

@@ -251,14 +251,19 @@ class TransactionImpl extends Transaction {
       if (this.sealed && this.pending === 1) {
         if (!this.canceled) {
           this.checkForConflicts() // merge with concurrent transactions
-          if (Dbg.isOn && Dbg.trace.operation && this.snapshot.options.token === undefined)
-            Dbg.log('╠══', '', '', undefined, ` propagation (phase ${this.snapshot.phase})`)
-          Snapshot.propagateAllChangesThroughSubscriptions(this.snapshot)
-          if (this.options.standalone !== 'isolated') {
-            if (Dbg.isOn && Dbg.trace.operation)
-              if (this.snapshot.reactions.length > 0)
-                Dbg.log('╠══', '', '', undefined, ` reactions (phase > ${this.snapshot.phase})`)
-            TransactionImpl.runReactions(this, false)
+          let more = true
+          while (more) {
+            if (Dbg.isOn && Dbg.trace.operation && this.snapshot.options.token === undefined)
+              Dbg.log('╠══', '', '', undefined, ` propagation: phase ${this.snapshot.phase}`)
+            Snapshot.propagateAllChangesThroughSubscriptions(this.snapshot)
+            if (this.options.standalone !== 'isolated') {
+              if (Dbg.isOn && Dbg.trace.operation)
+                if (this.snapshot.reactions.length > 0)
+                  Dbg.log('╠══', '', '', undefined, ` reactions: phase ${this.snapshot.phase + 1}`)
+              more = TransactionImpl.runReactions(this, false)
+            }
+            else
+              more = false
           }
         }
         else if (!this.after)
@@ -283,18 +288,22 @@ class TransactionImpl extends Transaction {
     return result
   }
 
-  private static runReactions(t: TransactionImpl, end: boolean): void {
+  private static runReactions(t: TransactionImpl, end: boolean): boolean {
+    let result = false
     const ctx = t.snapshot
     const reactions = ctx.reactions
     if (!end) {
       ctx.reactions = []
       reactions.forEach(x => {
+        if (x.standalone === false)
+          result = true
         ctx.phase++
         x.runIfNotUpToDate(ctx.reactions)
       })
     }
     else
       reactions.forEach(x => x.runIfNotUpToDate(undefined))
+    return result
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {

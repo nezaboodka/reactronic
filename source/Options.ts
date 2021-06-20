@@ -7,12 +7,13 @@
 
 import { TraceOptions } from './Trace'
 export { TraceOptions, ProfilingOptions, TraceLevel } from './Trace'
+import { StandaloneMode } from './impl/Data'
 import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 
 export interface SnapshotOptions {
   readonly hint?: string
-  readonly standalone?: boolean | 'isolated'
+  readonly standalone?: StandaloneMode
   readonly journal?: TransactionJournal
   readonly trace?: Partial<TraceOptions>
   readonly token?: any

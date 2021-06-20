@@ -9,7 +9,7 @@ import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
-import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, MemberInfo, Meta, AbstractSnapshot } from './Data'
+import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, StandaloneMode, MemberInfo, Meta, AbstractSnapshot } from './Data'
 import { Snapshot, Dump, ROOT_REV } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -267,6 +267,7 @@ class Operation extends Observable implements Observer {
 
   get isOperation(): boolean { return true } // override
   hint(): string { return `${Dump.rev(this.revision, this.controller.memberName)}` } // override
+  get standalone(): StandaloneMode { return this.options.standalone }
   get priority(): number { return this.options.priority }
 
   why(): string {
@@ -395,7 +396,7 @@ class Operation extends Observable implements Observer {
       }
     }
     else
-      reactions.push(this)
+      reactions.push(this) // return standalone reaction back to the queue
   }
 
   checkReentranceOver(head: Operation): this {
@@ -576,7 +577,7 @@ class Operation extends Observable implements Observer {
           Operation.propagateMemberChangeThroughSubscriptions(
             snapshot, false, since, r, m, h, ph, reactions)
     })
-    reactions.sort(compareReactionsByPriority)
+    reactions.sort(compareReactions)
   }
 
   private static revokeAllSubscriptions(snapshot: Snapshot): void {
@@ -613,14 +614,27 @@ class Operation extends Observable implements Observer {
       }
     }
     else if (curr instanceof Observable && curr.observers) {
+      // TODO: Take PHASE into account
       // Unsubscribe from own-changed observables
+      let preserved: Set<Observer> | undefined = undefined
       curr.observers.forEach(o => {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        o.observables!.delete(curr)
-        if (Dbg.isOn && Dbg.trace.read)
-          Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.rev(r, m)}`)
+        if (phase < o.phase) {
+          if (preserved === undefined)
+            preserved = new Set<Observer>()
+          preserved.add(o)
+        }
+        else if (phase === o.phase) {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          o.observables!.delete(curr)
+          if (Dbg.isOn && Dbg.trace.read)
+            Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.rev(r, m)} (change phase ${phase}, observer phase ${o.phase})`)
+        }
+        else if (reactions) {
+          const trigger: MemberInfo = { revision: r, memberName: m, usageCount: 0 }
+          o.markObsoleteDueTo(0, curr, trigger, snapshot, timestamp, reactions)
+        }
       })
-      curr.observers = undefined
+      curr.observers = preserved
     }
   }
 
@@ -653,7 +667,7 @@ class Operation extends Observable implements Observer {
       observable.observers.add(this)
       this.observables?.set(observable, info)
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log('║', '  ∞', `${this.hint()} is subscribed to ${Dump.rev(r, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
+        Dbg.log('║', '  +', `${this.hint()} is subscribed to ${Dump.rev(r, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
     }
     else if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
       Dbg.log('║', '  x', `${this.hint()} is NOT subscribed to already obsolete ${Dump.rev(r, m)}`)
@@ -804,8 +818,14 @@ function reactronicHookedThen(this: any,
   return ORIGINAL_PROMISE_THEN.call(this, resolve, reject)
 }
 
-function compareReactionsByPriority(a: Observer, b: Observer): number {
+function compareReactions(a: Observer, b: Observer): number {
   return a.priority - b.priority
+  // let result: number
+  // if (a.standalone === false)
+  //   result = b.standalone === false ? a.priority - b.priority : -1
+  // else
+  //   result = b.standalone === false ? 1 : a.priority - b.priority
+  // return result
 }
 
 /* istanbul ignore next */

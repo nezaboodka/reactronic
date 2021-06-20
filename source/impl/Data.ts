@@ -28,7 +28,10 @@ export class Observable {
   constructor(value: any) { this.value = value }
 }
 
+export type StandaloneMode = boolean | 'isolated'
+
 export interface Observer {
+  readonly standalone: StandaloneMode
   readonly priority: number
   readonly observables: Map<Observable, MemberInfo> | undefined
   readonly phase: number

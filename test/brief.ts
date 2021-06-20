@@ -50,6 +50,7 @@ export class Demo extends ObservableObject {
   protected backup(): void {
     this.usersWithoutLast = this.users.slice()
     this.usersWithoutLast.pop()
+    new Dumper()
   }
 
   private _loadUsers(): void {
@@ -182,6 +183,23 @@ export class Person extends ObservableObject {
     if (children !== undefined)
       for (const x of children)
         x.setParent(this)
+  }
+}
+
+export class Dumper extends ObservableObject {
+  tracking: string = `tran:${Transaction.current.id}`
+
+  @reaction @options({ priority: 1 })
+  dumper1(): void {
+    output.push(this.tracking) /* istanbul ignore next */
+    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(this.tracking)
+  }
+
+  @reaction @options({ priority: 2 })
+  dumper2(): void {
+    output.push(this.tracking) /* istanbul ignore next */
+    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(this.tracking)
+    this.tracking = `tran:${Transaction.current.id}`
   }
 }
 
