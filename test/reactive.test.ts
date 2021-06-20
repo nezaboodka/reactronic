@@ -13,7 +13,7 @@ export class ReactiveDemo extends ObservableObject {
   title: string = 'ReactiveDemo'
   content: string = 'Content'
 
-  @reaction @options({ priority: 2})
+  @reaction @options({ order: 2})
   actualize2(): void {
     this.title
     this.title = 'Title/1'
@@ -21,7 +21,7 @@ export class ReactiveDemo extends ObservableObject {
     this.title
   }
 
-  @reaction @options({ priority: 1})
+  @reaction @options({ order: 1})
   actualize1(): void {
     this.content
     this.title = 'Title/2'

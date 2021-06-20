@@ -269,7 +269,7 @@ class Operation extends Observable implements Observer {
   get isOperation(): boolean { return true } // override
   hint(): string { return `${Dump.rev(this.revision, this.controller.memberName)}` } // override
   get standalone(): StandaloneMode { return this.options.standalone }
-  get priority(): number { return this.options.priority }
+  get order(): number { return this.options.order }
 
   why(): string {
     let ms: number = Date.now()
@@ -337,8 +337,8 @@ class Operation extends Observable implements Observer {
         if (Dbg.isOn && (Dbg.trace.obsolete || op.options.trace?.obsolete))
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '  █' : '  ▒',
             isReaction && trigger.revision === ROOT_REV
-              ? `${op.hint()} is a reaction and will run automatically (priority ${op.options.priority})`
-              : `${op.hint()} is now obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}/ph${triggerPhase}${isReaction ? ` and will run automatically (priority ${op.options.priority})` : ''}`)
+              ? `${op.hint()} is a reaction and will run automatically (order ${op.options.order})`
+              : `${op.hint()} is now obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}/ph${triggerPhase}${isReaction ? ` and will run automatically (order ${op.options.order})` : ''}`)
 
         // Stop cascade propagation on reaction, or continue otherwise
         if (isReaction)
@@ -821,12 +821,12 @@ function reactronicHookedThen(this: any,
 }
 
 function compareReactions(a: Observer, b: Observer): number {
-  return a.priority - b.priority
+  return a.order - b.order
   // let result: number
   // if (a.standalone === false)
-  //   result = b.standalone === false ? a.priority - b.priority : -1
+  //   result = b.standalone === false ? a.order - b.order : -1
   // else
-  //   result = b.standalone === false ? 1 : a.priority - b.priority
+  //   result = b.standalone === false ? 1 : a.order - b.order
   // return result
 }
 

@@ -46,7 +46,7 @@ export class Demo extends ObservableObject {
   }
 
   @reaction
-  @options({ priority: 1 })
+  @options({ order: 1 })
   protected backup(): void {
     this.usersWithoutLast = this.users.slice()
     this.usersWithoutLast.pop()
@@ -94,7 +94,7 @@ export class DemoView extends ObservableObject {
       output.push(x) /* istanbul ignore next */
       if (R.isTraceEnabled && !R.traceOptions.silent) console.log(x)
     })
-    R.configureCurrentMethod({ priority: 123 })
+    R.configureCurrentMethod({ order: 123 })
   }
 
   // @transaction @trace(log.noisy)
@@ -190,14 +190,14 @@ export class Dumper extends ObservableObject {
   tracking1: string = 'initial1'
   tracking2: string = 'initial2'
 
-  @reaction @options({ priority: 1 })
+  @reaction @options({ order: 1 })
   dumper1(): void {
     output.push(this.tracking2) /* istanbul ignore next */
     if (R.isTraceEnabled && !R.traceOptions.silent) console.log(this.tracking2)
     this.tracking1 = `tracking1 tran:${Transaction.current.id}`
   }
 
-  @reaction @options({ priority: 2 })
+  @reaction @options({ order: 2 })
   dumper2(): void {
     output.push(this.tracking1) /* istanbul ignore next */
     if (R.isTraceEnabled && !R.traceOptions.silent) console.log(this.tracking1)

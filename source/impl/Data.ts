@@ -32,7 +32,7 @@ export type StandaloneMode = boolean | 'isolated'
 
 export interface Observer {
   readonly standalone: StandaloneMode
-  readonly priority: number
+  readonly order: number
   readonly observables: Map<Observable, MemberInfo> | undefined
   readonly phase: number
   hint(nop?: boolean): string

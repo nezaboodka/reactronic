@@ -240,7 +240,7 @@ to a new one.
 
 There are multiple options to configure behavior of transactional reactivity.
 
-**Priority** options defines order of reactions execution:
+**Order** options defines order of reactions execution:
 
   - (TBD)
 
