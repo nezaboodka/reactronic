@@ -189,9 +189,12 @@ class TransactionImpl extends Transaction {
 
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    return options?.standalone || TransactionImpl.curr.isFinished
-      ? new TransactionImpl(options)
-      : TransactionImpl.curr
+    const curr = TransactionImpl.curr
+    if ((options !== null && options.standalone !== false) ||
+      curr.isFinished || curr.options.standalone === 'isolated')
+      return new TransactionImpl(options)
+    else
+      return TransactionImpl.curr
   }
 
   private guard(): void {
