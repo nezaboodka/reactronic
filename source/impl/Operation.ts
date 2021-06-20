@@ -183,7 +183,7 @@ export class OperationController extends Controller<any> {
     return op
   }
 
-  private run(existing: OperationContext, standalone: boolean, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
+  private run(existing: OperationContext, standalone: StandaloneMode, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.ownHolder, this.memberName)}`
     let oc = existing
@@ -366,7 +366,7 @@ class Operation extends Observable implements Observer {
 
   private refreshIfNotUpToDateImpl(now: boolean, reactions: Observer[] | undefined): void {
     const o = this.options
-    if (!o.standalone || reactions === undefined) {
+    if (o.standalone === false || reactions === undefined) {
       const t = o.throttling
       const interval = Date.now() + this.started // "started" is stored as negative value after reaction completion
       const hold = t ? t - interval : 0 // "started" is stored as negative value after reaction completion

@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
-import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta } from './Data'
+import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta, StandaloneMode } from './Data'
 import { Snapshot, Dump, ROOT_REV } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
@@ -51,7 +51,7 @@ export class OptionsImpl implements MemberOptions {
   readonly getter: Function
   readonly setter: Function
   readonly kind: Kind
-  readonly standalone: boolean
+  readonly standalone: StandaloneMode
   readonly order: number
   readonly noSideEffects: boolean
   readonly sensitiveArgs: boolean
