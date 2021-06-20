@@ -254,12 +254,12 @@ class TransactionImpl extends Transaction {
           let more = true
           while (more) {
             if (Dbg.isOn && Dbg.trace.operation && this.snapshot.options.token === undefined)
-              Dbg.log('╠══', '', '', undefined, ` propagation: phase ${this.snapshot.phase}`)
+              Dbg.log('╠═', '', '', undefined, `propagation: phase ${this.snapshot.phase}`)
             Snapshot.propagateAllChangesThroughSubscriptions(this.snapshot)
             if (this.options.standalone !== 'isolated') {
               if (Dbg.isOn && Dbg.trace.operation)
                 if (this.snapshot.reactions.length > 0)
-                  Dbg.log('╠══', '', '', undefined, ` reactions: phase ${this.snapshot.phase + 1}`)
+                  Dbg.log('╠═', '', '', undefined, `reactions: phase ${this.snapshot.phase + 1}`)
               more = TransactionImpl.runReactions(this, false)
             }
             else
@@ -334,7 +334,7 @@ class TransactionImpl extends Transaction {
     // It's critical to have no exceptions in this block
     try {
       if (Dbg.isOn && Dbg.trace.operation)
-        Dbg.log('╠══', '', '', undefined, ' changes')
+        Dbg.log('╠═', '', '', undefined, 'changes')
       this.snapshot.applyOrDiscard(this.canceled)
       this.snapshot.collectGarbage()
       if (this.promise) {

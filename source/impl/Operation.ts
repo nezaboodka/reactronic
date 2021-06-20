@@ -155,9 +155,10 @@ export class OperationController extends Controller<any> {
     const ctx = Snapshot.edit()
     const r: ObjectRevision = ctx.getEditableRevision(h, m, Meta.Holder, this)
     let op: Operation = this.peekFromRevision(r)
-    if (op.revision !== r)
+    if (op.revision !== r) {
       op = r.data[m] = new Operation(this, r, op)
-    Snapshot.markEdited(op, true, r, m, h)
+      Snapshot.markEdited(op, true, r, m, h)
+    }
     return { operation: op, isUpToDate: true, snapshot: ctx, revision: r }
   }
 
@@ -191,7 +192,7 @@ export class OperationController extends Controller<any> {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()
         if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
-          Dbg.log('║', ' =>', `${oc.operation.why()}`)
+          Dbg.log('║', '  >', `${oc.operation.why()}`)
         oc.operation.run(oc.snapshot, this.ownHolder.proxy, argsx)
       }
       else { // retry run
@@ -199,7 +200,7 @@ export class OperationController extends Controller<any> {
         if (oc.operation.options.kind === Kind.Transaction || !oc.isUpToDate) {
           oc = this.edit()
           if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
-            Dbg.log('║', ' =>', `${oc.operation.why()}`)
+            Dbg.log('║', '  >', `${oc.operation.why()}`)
           oc.operation.run(oc.snapshot, this.ownHolder.proxy, argsx)
         }
       }
@@ -334,7 +335,7 @@ class Operation extends Observable implements Observer {
 
         // Logging
         if (Dbg.isOn && (Dbg.trace.obsolete || op.options.trace?.obsolete))
-          Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
+          Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '  █' : '  ▒',
             isReaction && trigger.revision === ROOT_REV
               ? `${op.hint()} is a reaction and will run automatically (priority ${op.options.priority})`
               : `${op.hint()} is now obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}/ph${triggerPhase}${isReaction ? ` and will run automatically (priority ${op.options.priority})` : ''}`)
@@ -775,7 +776,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Operation)
-    result = `<edit of ${Dump.rev(value.revision.prev.revision)}>`
+    result = `<fork from ${Dump.rev(value.revision.prev.revision)}>`
   else if (value === Meta.Disposed)
     result = '<disposed>'
   else if (value !== undefined && value !== null)
