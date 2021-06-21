@@ -67,7 +67,7 @@ export class OperationController extends Controller<any> {
     }
     else if (Dbg.isOn && Dbg.trace.operation && (opts.trace === undefined ||
       opts.trace.operation === undefined || opts.trace.operation === true))
-      Dbg.log(Transaction.current.isFinished ? '' : '║', ' ==',
+      Dbg.log(Transaction.current.isFinished ? '' : '║', '  <',
         `${Dump.rev(oc.revision, this.memberName)} result is reused from T${oc.operation.transaction.id}[${oc.operation.transaction.hint}]`)
     const t = oc.operation
     Snapshot.markUsed(t, oc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
@@ -267,6 +267,7 @@ class Operation extends Observable implements Observer {
   }
 
   get isOperation(): boolean { return true } // override
+  get selfSnapshotId(): number { return this.revision.snapshot.id } // override
   hint(): string { return `${Dump.rev(this.revision, this.controller.memberName)}` } // override
   get standalone(): StandaloneMode { return this.options.standalone }
   get order(): number { return this.options.order }
@@ -338,7 +339,7 @@ class Operation extends Observable implements Observer {
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '  █' : '  ▒',
             isReaction && trigger.revision === ROOT_REV
               ? `${op.hint()} is a reaction and will run automatically (order ${op.options.order})`
-              : `${op.hint()} is now obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}/ph${triggerPhase}${isReaction ? ` and will run automatically (order ${op.options.order})` : ''}`)
+              : `${op.hint()} is marked obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}/ph${triggerPhase}${isReaction ? ` and will run automatically (order ${op.options.order})` : ''}`)
 
         // Stop cascade propagation on reaction, or continue otherwise
         if (isReaction)
@@ -558,12 +559,19 @@ class Operation extends Observable implements Observer {
       edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
-  private static isConflicting(theirValue: any, ourValue: any): boolean {
-    let result = theirValue !== ourValue
-    if (result && theirValue instanceof Operation && ourValue instanceof Operation)
-      result = theirValue.phase >= 0 || theirValue.result !== ourValue.result
+  private static isConflicting(theirValue: any, ourPrevValue: any, ourValue: any): boolean {
+    let result = theirValue !== ourPrevValue
+    if (result && theirValue instanceof Operation && ourPrevValue instanceof Operation)
+      result = theirValue.phase >= 0 || theirValue.result !== ourPrevValue.result
     return result
   }
+
+  // private static isConflicting(theirValue: any, ourPrevValue: any, ourValue: any): boolean {
+  //   let result = theirValue !== ourPrevValue
+  //   if (result && theirValue instanceof Operation && ourPrevValue instanceof Operation && ourValue instanceof Operation)
+  //     result = ourValue.phase > -1 && (theirValue.phase >= 0 || theirValue.result !== ourPrevValue.result)
+  //   return result
+  // }
 
   private static propagateAllChangesThroughSubscriptions(snapshot: Snapshot): void {
     const since = snapshot.timestamp

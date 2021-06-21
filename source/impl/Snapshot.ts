@@ -74,7 +74,7 @@ export class Snapshot implements AbstractSnapshot {
   static edit: () => Snapshot = UNDEF
   static markUsed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF
   static markEdited: (value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
-  static isConflicting: (theirValue: any, ourValue: any) => boolean = UNDEF
+  static isConflicting: (theirValue: any, ourPrevValue: any, ourValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
   static revokeAllSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
   static createPatch: (hint: string, changeset: Map<ObjectHolder, ObjectRevision>) => Patch = UNDEF
@@ -115,6 +115,8 @@ export class Snapshot implements AbstractSnapshot {
         this.changeset.set(h, r)
         h.editing = r
         h.editors++
+        if (Dbg.isOn && Dbg.trace.write)
+          Dbg.log('║', '  ⎘', `${Dump.obj(h)} is cloned`)
       }
     }
     else
@@ -218,7 +220,8 @@ export class Snapshot implements AbstractSnapshot {
     const merged = { ...head.data } // clone
     ours.changes.forEach((phase, m) => {
       counter++
-      merged[m] = ours.data[m]
+      const ourValue = ours.data[m]
+      merged[m] = ourValue
       if (disposed || m === Meta.Disposed) {
         if (disposed !== (m === Meta.Disposed)) {
           if (Dbg.isOn && Dbg.trace.change)
@@ -227,10 +230,10 @@ export class Snapshot implements AbstractSnapshot {
         }
       }
       else {
-        const conflict = Snapshot.isConflicting(head.data[m], ours.prev.revision.data[m])
+        const conflict = Snapshot.isConflicting(head.data[m], ours.prev.revision.data[m], ourValue)
         if (conflict)
           ours.conflicts.set(m, head)
-        if (Dbg.isOn && Dbg.trace.change)
+        if (Dbg.isOn && Dbg.trace.transaction)
           Dbg.log('║╠', '', `${Dump.rev(ours, m)} ${conflict ? '<>' : '=='} ${Dump.rev(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
       }
     })
@@ -370,16 +373,17 @@ export class Snapshot implements AbstractSnapshot {
 // Dump
 
 export class Dump {
-  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, op?: number, typeless?: boolean): string {
+  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, op?: number, xop?: number, typeless?: boolean): string {
     const member = m !== undefined ? `.${m.toString()}` : ''
     return h === undefined
       ? `root${member}`
-      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${op}v${stamp}`
+      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${op}v${stamp}${xop !== undefined && xop !== 0 ? `t${xop}` : ''}`
   }
 
   static rev(r: ObjectRevision, m?: MemberName): string {
     const h = Meta.get<ObjectHolder | undefined>(r.data, Meta.Holder)
-    return Dump.obj(h, m, r.snapshot.timestamp, r.snapshot.id)
+    const value = m !== undefined ? r.data[m] as Observable : undefined
+    return Dump.obj(h, m, r.snapshot.timestamp, r.snapshot.id, value?.selfSnapshotId)
   }
 
   static conflicts(conflicts: ObjectRevision[]): string {
