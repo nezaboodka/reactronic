@@ -91,7 +91,7 @@ export class OperationController extends Controller<any> {
       throw misuse('a method is expected with reactronic decorator')
     op.options = new OptionsImpl(op.options.getter, op.options.setter, op.options, options, false)
     if (Dbg.isOn && Dbg.trace.write)
-      Dbg.log('║', '  ✎', `${op.hint()}.options = ...`)
+      Dbg.log('║', '  ✎', `${op.hint()}.options is changed`)
     return op.options
   }
 
@@ -156,8 +156,9 @@ export class OperationController extends Controller<any> {
     const r: ObjectRevision = ctx.getEditableRevision(h, m, Meta.Holder, this)
     let op: Operation = this.peekFromRevision(r)
     if (op.revision !== r) {
+      const old = op
       op = r.data[m] = new Operation(this, r, op)
-      Snapshot.markEdited(op, true, r, m, h)
+      Snapshot.markEdited(old, op, true, r, m, h)
     }
     return { operation: op, isUpToDate: true, snapshot: ctx, revision: r }
   }
@@ -173,9 +174,10 @@ export class OperationController extends Controller<any> {
         let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
         let op2 = r2.data[m] as Operation
         if (op2.controller !== this) {
+          const old = op2
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
           op2 = r2.data[m] = new Operation(this, r2, op2)
-          Snapshot.markEdited(op2, true, r2, m, h)
+          Snapshot.markEdited(old, op2, true, r2, m, h)
         }
         return op2
       })
@@ -192,7 +194,7 @@ export class OperationController extends Controller<any> {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()
         if (Dbg.isOn && Dbg.trace.operation)
-          Dbg.log('║', '  >', `${oc.operation.why()}`)
+          Dbg.log('║', '  𝑓', `${oc.operation.why()}`)
         oc.operation.run(oc.snapshot, this.ownHolder.proxy, argsx)
       }
       else { // retry run
@@ -200,7 +202,7 @@ export class OperationController extends Controller<any> {
         if (oc.operation.options.kind === Kind.Transaction || !oc.isUpToDate) {
           oc = this.edit()
           if (Dbg.isOn && Dbg.trace.operation)
-            Dbg.log('║', '  >', `${oc.operation.why()}`)
+            Dbg.log('║', '  𝑓', `${oc.operation.why()}`)
           oc.operation.run(oc.snapshot, this.ownHolder.proxy, argsx)
         }
       }
@@ -467,13 +469,13 @@ class Operation extends Observable implements Observer {
         value => {
           this.value = value
           this.error = undefined
-          this.leave(false, '  ⚐ ', '- finished ', ' OK ──┘')
+          this.leave(false, '  ⚐', '- finished  ', ' OK ──┘')
           return value
         },
         error => {
           this.value = undefined
           this.error = error
-          this.leave(false, '  ⚐ ', '- finished ', 'ERR ──┘')
+          this.leave(false, '  ⚐', '- finished  ', 'ERR ──┘')
           throw error
         })
       if (Dbg.isOn) {
@@ -552,11 +554,11 @@ class Operation extends Observable implements Observer {
     }
   }
 
-  private static markEdited(value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
+  private static markEdited(oldValue: any, newValue: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     edited ? r.changes.set(m, r.snapshot.phase) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
-      edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
+      edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(theirValue: any, ourPrevValue: any, ourValue: any): boolean {
@@ -775,7 +777,7 @@ function propagationHint(trigger: MemberInfo, full: boolean): string[] {
   return result
 }
 
-function valueHint(value: any): string {
+function valueHint(value: any, m?: MemberName): string {
   let result: string = ''
   if (Array.isArray(value))
     result = `Array(${value.length})`
@@ -784,13 +786,13 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Operation)
-    result = `<fork from ${Dump.rev(value.revision.prev.revision)}>`
+    result = `${Dump.rev(value.revision, m)}`
   else if (value === Meta.Disposed)
     result = '<disposed>'
   else if (value !== undefined && value !== null)
     result = value.toString().slice(0, 20)
   else
-    result = '◌'
+    result = '∅'
   return result
 }
 

@@ -73,7 +73,7 @@ export class Snapshot implements AbstractSnapshot {
   static current: () => Snapshot = UNDEF
   static edit: () => Snapshot = UNDEF
   static markUsed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF
-  static markEdited: (value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
+  static markEdited: (oldValue: any, newValue: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
   static isConflicting: (theirValue: any, ourPrevValue: any, ourValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
   static revokeAllSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
@@ -139,7 +139,7 @@ export class Snapshot implements AbstractSnapshot {
     const r: ObjectRevision = ctx.getEditableRevision(h, Meta.Disposed, Meta.Disposed)
     if (r !== ROOT_REV) {
       r.data[Meta.Disposed] = Meta.Disposed
-      Snapshot.markEdited(Meta.Disposed, true, r, Meta.Disposed, h)
+      Snapshot.markEdited(Meta.Disposed, Meta.Disposed, true, r, Meta.Disposed, h)
     }
     return r
   }
