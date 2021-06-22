@@ -192,7 +192,7 @@ export class Snapshot implements AbstractSnapshot {
               conflicts = []
             conflicts.push(r)
           }
-          if (Dbg.isOn && Dbg.trace.change)
+          if (Dbg.isOn && Dbg.trace.transaction)
             Dbg.log('╠╝', '', `${Dump.rev(r)} is merged with ${Dump.rev(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
@@ -224,7 +224,7 @@ export class Snapshot implements AbstractSnapshot {
       merged[m] = ourValue
       if (disposed || m === Meta.Disposed) {
         if (disposed !== (m === Meta.Disposed)) {
-          if (Dbg.isOn && Dbg.trace.change)
+          if (Dbg.isOn && Dbg.trace.transaction)
             Dbg.log('║╠', '', `${Dump.rev(ours, m)} <> ${Dump.rev(head, m)}`, 0, ' *** CONFLICT ***')
           ours.conflicts.set(m, head)
         }

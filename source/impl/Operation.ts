@@ -191,7 +191,7 @@ export class OperationController extends Controller<any> {
     const result = Transaction.runAs(opts, (argsx: any[] | undefined): any => {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()
-        if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
+        if (Dbg.isOn && Dbg.trace.operation)
           Dbg.log('║', '  >', `${oc.operation.why()}`)
         oc.operation.run(oc.snapshot, this.ownHolder.proxy, argsx)
       }
@@ -199,7 +199,7 @@ export class OperationController extends Controller<any> {
         oc = this.peek(argsx) // re-read on retry
         if (oc.operation.options.kind === Kind.Transaction || !oc.isUpToDate) {
           oc = this.edit()
-          if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
+          if (Dbg.isOn && Dbg.trace.operation)
             Dbg.log('║', '  >', `${oc.operation.why()}`)
           oc.operation.run(oc.snapshot, this.ownHolder.proxy, argsx)
         }
@@ -354,7 +354,7 @@ class Operation extends Observable implements Observer {
             t.cancel(new Error(`T${t.id}[${t.hint}] is canceled due to obsolete ${Dump.rev(trigger.revision, trigger.memberName)} changed by T${trigger.revision.snapshot.id}[${trigger.revision.snapshot.hint}]`), null)
       }
       else if (op.phase >= 0) {
-        if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
+        if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
           Dbg.log(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.rev(trigger.revision, trigger.memberName)}`)
       }
     }
@@ -406,7 +406,7 @@ class Operation extends Observable implements Observer {
     const opponent = head.successor
     if (opponent && (opponent !== this || opponent.phase >=0) &&
       opponent.transaction !== this.transaction && !opponent.transaction.isFinished) {
-      if (Dbg.isOn && Dbg.trace.obsolete)
+      if (Dbg.isOn && Dbg.trace.operation)
         Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:

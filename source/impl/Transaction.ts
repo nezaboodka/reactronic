@@ -336,7 +336,7 @@ class TransactionImpl extends Transaction {
   private applyOrDiscard(): void {
     // It's critical to have no exceptions in this block
     try {
-      if (Dbg.isOn && Dbg.trace.operation)
+      if (Dbg.isOn && Dbg.trace.change)
         Dbg.log('╠═', '', '', undefined, 'changes')
       this.snapshot.applyOrDiscard(this.canceled)
       this.snapshot.collectGarbage()
