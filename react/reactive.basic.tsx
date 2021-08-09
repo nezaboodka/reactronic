@@ -34,7 +34,7 @@ class Rx extends ObservableObject {
 
   @unobservable refresh: (next: ReactState) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
-    return (): void => { standalone(Reactronic.dispose, this) }
+    return (): void => { standalone(() => Transaction.run(() => Reactronic.dispose(this))) }
   }
 
   static create(): Rx {
