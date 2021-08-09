@@ -6,14 +6,17 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, unobservable, reaction, cached, standalone, Reactronic } from 'api' // from 'reactronic'
+import { ObservableObject, Transaction, unobservable, reaction, cached, standalone, Reactronic, observableArgs } from 'api' // from 'reactronic'
 
-export function autorender(render: () => JSX.Element): JSX.Element {
+export function autorender(render: () => JSX.Element, externalDeps?: any[]): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
   const rx = state.rx
   rx.refresh = refresh // just in case React will change refresh on each rendering
+  rx.emit = render
   React.useEffect(rx.unmount, [])
-  return rx.render(render)
+  if (!externalDeps || !externalDeps.length)
+    externalDeps = NO_EXTERNAL_DEPS
+  return rx.render(...externalDeps)
 }
 
 // Internal
@@ -21,18 +24,19 @@ export function autorender(render: () => JSX.Element): JSX.Element {
 type ReactState = { rx: Rx }
 
 class Rx extends ObservableObject {
-  @cached
-  render(emit: () => JSX.Element): JSX.Element {
-    return emit()
+  @cached @observableArgs(true)
+  render(..._deps: any[]): JSX.Element {
+    return this.emit()
   }
 
   @reaction
   protected ensureUpToDate(): void {
     if (!Reactronic.getController(this.render).isUpToDate)
-      standalone(this.refresh, {rx: this})
+      standalone(this.refresh, { rx: this })
   }
 
   @unobservable refresh: (next: ReactState) => void = nop
+  @unobservable emit: () => JSX.Element = () => <></>
   @unobservable readonly unmount = (): (() => void) => {
     return (): void => { standalone(() => Transaction.run(() => Reactronic.dispose(this))) }
   }
@@ -44,9 +48,11 @@ class Rx extends ObservableObject {
 
 function createReactState(): ReactState {
   const rx = Transaction.runAs<Rx>({ hint: '<rx>' }, Rx.create)
-  return {rx}
+  return { rx }
 }
 
-function nop(...args: any[]): void {
+function nop(..._args: any[]): void {
   // do nothing
 }
+
+const NO_EXTERNAL_DEPS: any[] = []
