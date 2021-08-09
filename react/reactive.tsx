@@ -37,7 +37,7 @@ class Rx<V> extends ObservableObject {
   @unobservable cycle: number = 0
   @unobservable refresh: (next: ReactState<V>) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
-    return (): void => { standalone(R.dispose, this) }
+    return (): void => standalone(() => Transaction.run(() => R.dispose(this)))
   }
 
   static create<V>(hint: string | undefined, trace: TraceOptions | undefined): Rx<V> {
