@@ -257,12 +257,12 @@ class TransactionImpl extends Transaction {
           let more = true
           while (more) {
             if (Dbg.isOn && Dbg.trace.operation && this.snapshot.options.token === undefined)
-              Dbg.log('╠═', '', '', undefined, `propagation: phase ${this.snapshot.phase}`)
+              Dbg.log('╠═', '', '', undefined, `propagation: round ${this.snapshot.round}`)
             Snapshot.propagateAllChangesThroughSubscriptions(this.snapshot)
             if (this.options.standalone !== 'isolated') {
               if (Dbg.isOn && Dbg.trace.operation)
                 if (this.snapshot.reactions.length > 0)
-                  Dbg.log('╠═', '', '', undefined, `reactions: phase ${this.snapshot.phase + 1}`)
+                  Dbg.log('╠═', '', '', undefined, `reactions: round ${this.snapshot.round + 1}`)
               more = TransactionImpl.runReactions(this, false)
             }
             else
@@ -300,7 +300,7 @@ class TransactionImpl extends Transaction {
       reactions.forEach(x => {
         if (x.standalone === false)
           result = true
-        ctx.phase++
+        ctx.round++
         x.runIfNotUpToDate(ctx.reactions)
       })
     }

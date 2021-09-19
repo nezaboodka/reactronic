@@ -15,7 +15,7 @@ export interface AbstractSnapshot {
   readonly id: number
   readonly hint: string
   readonly timestamp: number
-  readonly phase: number
+  readonly round: number
   readonly sealed: boolean
 }
 
@@ -35,7 +35,7 @@ export interface Observer {
   readonly standalone: StandaloneMode
   readonly order: number
   readonly observables: Map<Observable, MemberInfo> | undefined
-  readonly phase: number
+  readonly round: number
   hint(nop?: boolean): string
   markObsoleteDueTo(bubbling: number, observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void
   runIfNotUpToDate(reactions: Observer[] | undefined): void

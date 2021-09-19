@@ -55,7 +55,7 @@ export class Snapshot implements AbstractSnapshot {
   private bumper: number
   readonly changeset: Map<ObjectHolder, ObjectRevision>
   reactions: Observer[]
-  phase: number
+  round: number
   sealed: boolean
 
   constructor(options: SnapshotOptions | null) {
@@ -65,7 +65,7 @@ export class Snapshot implements AbstractSnapshot {
     this.bumper = 100
     this.changeset = new Map<ObjectHolder, ObjectRevision>()
     this.reactions = []
-    this.phase = 0
+    this.round = 0
     this.sealed = false
   }
 
@@ -218,7 +218,7 @@ export class Snapshot implements AbstractSnapshot {
     let counter: number = 0
     const disposed: boolean = head.changes.has(Meta.Disposed)
     const merged = { ...head.data } // clone
-    ours.changes.forEach((phase, m) => {
+    ours.changes.forEach((round, m) => {
       counter++
       const ourValue = ours.data[m]
       merged[m] = ourValue
@@ -267,7 +267,7 @@ export class Snapshot implements AbstractSnapshot {
       if (Dbg.trace.change) {
         this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
           const members: string[] = []
-          r.changes.forEach((phase, m) => members.push(m.toString()))
+          r.changes.forEach((round, m) => members.push(m.toString()))
           const s = members.join(', ')
           Dbg.log('║', '√', `${Dump.rev(r)} (${s}) is ${r.prev.revision === ROOT_REV ? 'constructed' : `applied on top of ${Dump.rev(r.prev.revision)}`}`)
         })
@@ -279,7 +279,7 @@ export class Snapshot implements AbstractSnapshot {
 
   static sealObjectRevision(h: ObjectHolder, r: ObjectRevision): void {
     if (!r.changes.has(Meta.Disposed))
-      r.changes.forEach((phase, m) => Snapshot.sealObservable(r.data[m], m, h.proxy.constructor.name))
+      r.changes.forEach((round, m) => Snapshot.sealObservable(r.data[m], m, h.proxy.constructor.name))
     else
       for (const m in r.prev.revision.data)
         r.data[m] = Meta.Disposed

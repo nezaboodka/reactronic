@@ -55,7 +55,7 @@ export class OperationController extends Controller<any> {
     const rev = oc.revision
     const opts = op.options
     if (!oc.isUpToDate && rev.data[Meta.Disposed] === undefined
-      && (!weak || op.phase <= 0 || !op.successor || op.successor.transaction.isFinished)) {
+      && (!weak || op.round <= 0 || !op.successor || op.successor.transaction.isFinished)) {
       const standalone = weak || op.options.standalone ||
         op.options.kind === Kind.Cache && (
           rev.snapshot.sealed || (rev.snapshot !== ctx && rev.prev.revision !== ROOT_REV))
@@ -135,7 +135,7 @@ export class OperationController extends Controller<any> {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.seekRevision(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRevision(r)
-    const isUpToDate = op.options.kind !== Kind.Transaction && op.phase >= 0 &&
+    const isUpToDate = op.options.kind !== Kind.Transaction && op.round >= 0 &&
       (!op.options.sensitiveArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
@@ -235,7 +235,7 @@ class Operation extends Observable implements Observer {
   args: any[]
   result: any
   error: any
-  phase: number
+  round: number
   started: number
   margin: number
   successor: Operation | undefined
@@ -262,7 +262,7 @@ class Operation extends Observable implements Observer {
       this.error = undefined
       this.value = undefined
     }
-    this.phase = -1 // means not yet computed
+    this.round = -1 // means not yet computed
     this.started = 0
     this.margin = 0
     this.successor = undefined
@@ -305,7 +305,7 @@ class Operation extends Observable implements Observer {
       const result = OperationController.runWithin<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Dbg.isOn && Dbg.trace.step && this.result)
-        Dbg.logAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.phase >= 0 ? '        │' : '')
+        Dbg.logAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.round >= 0 ? '        │' : '')
       if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
         Dbg.log('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
       return result
@@ -314,7 +314,7 @@ class Operation extends Observable implements Observer {
   }
 
   run(snapshot: Snapshot, proxy: any, args: any[] | undefined): void {
-    this.phase = snapshot.phase
+    this.round = snapshot.round
     this.margin = Operation.current ? Operation.current.margin + 1 : 1
     if (args)
       this.args = args
@@ -326,22 +326,22 @@ class Operation extends Observable implements Observer {
 
   markObsoleteDueTo(bubbling: number, observable: Observable, trigger: MemberInfo, snapshot: AbstractSnapshot, since: number, reactions: Observer[]): void {
     const other = this.revision.snapshot !== trigger.revision.snapshot
-    if (other || this.phase >= 0) {
+    if (other || this.round >= 0) {
       const op = other ? this.controller.edit().operation : this
-      const triggerPhase = trigger.revision.changes.get(trigger.memberName) ?? 0
-      if (snapshot !== trigger.revision.snapshot || bubbling > 0 || (op.phase >= -1 && op.phase < triggerPhase)) {
+      const triggerRound = trigger.revision.changes.get(trigger.memberName) ?? 0
+      if (snapshot !== trigger.revision.snapshot || bubbling > 0 || (op.round >= -1 && op.round < triggerRound)) {
         // Mark obsolete
         const isReaction = op.options.kind === Kind.Reaction
         op.trigger = trigger
         op.started = 0
-        op.phase = -2
+        op.round = -2 // -2 means marked obsolete
 
         // Logging
         if (Dbg.isOn && (Dbg.trace.obsolete || op.options.trace?.obsolete))
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '  █' : '  ▒',
             isReaction && trigger.revision === ROOT_REV
               ? `${op.hint()} is a reaction and will run automatically (order ${op.options.order})`
-              : `${op.hint()} is marked obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}/ph${triggerPhase}${isReaction ? ` and will run automatically (order ${op.options.order})` : ''}`)
+              : `${op.hint()} is marked obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}/ph${triggerRound}${isReaction ? ` and will run automatically (order ${op.options.order})` : ''}`)
 
         // Stop cascade propagation on reaction, or continue otherwise
         if (isReaction)
@@ -355,7 +355,7 @@ class Operation extends Observable implements Observer {
           if (!t.isFinished && op !== observable) // restart after itself if canceled
             t.cancel(new Error(`T${t.id}[${t.hint}] is canceled due to obsolete ${Dump.rev(trigger.revision, trigger.memberName)} changed by T${trigger.revision.snapshot.id}[${trigger.revision.snapshot.hint}]`), null)
       }
-      else if (op.phase >= 0) {
+      else if (op.round >= 0) {
         if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
           Dbg.log(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.rev(trigger.revision, trigger.memberName)}`)
       }
@@ -406,7 +406,7 @@ class Operation extends Observable implements Observer {
   checkReentranceOver(head: Operation): this {
     let error: Error | undefined = undefined
     const opponent = head.successor
-    if (opponent && (opponent !== this || opponent.phase >=0) &&
+    if (opponent && (opponent !== this || opponent.round >=0) &&
       opponent.transaction !== this.transaction && !opponent.transaction.isFinished) {
       if (Dbg.isOn && Dbg.trace.operation)
         Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
@@ -556,7 +556,7 @@ class Operation extends Observable implements Observer {
 
   private static markEdited(oldValue: any, newValue: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    edited ? r.changes.set(m, r.snapshot.phase) : r.changes.delete(m)
+    edited ? r.changes.set(m, r.snapshot.round) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
       edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`, undefined, ' (same as previous)')
   }
@@ -564,14 +564,14 @@ class Operation extends Observable implements Observer {
   private static isConflicting(theirValue: any, ourPrevValue: any, ourValue: any): boolean {
     let result = theirValue !== ourPrevValue
     if (result && theirValue instanceof Operation && ourPrevValue instanceof Operation)
-      result = theirValue.phase >= 0 || theirValue.result !== ourPrevValue.result
+      result = theirValue.round >= 0 || theirValue.result !== ourPrevValue.result
     return result
   }
 
   // private static isConflicting(theirValue: any, ourPrevValue: any, ourValue: any): boolean {
   //   let result = theirValue !== ourPrevValue
   //   if (result && theirValue instanceof Operation && ourPrevValue instanceof Operation && ourValue instanceof Operation)
-  //     result = ourValue.phase > -1 && (theirValue.phase >= 0 || theirValue.result !== ourPrevValue.result)
+  //     result = ourValue.round > -1 && (theirValue.round >= 0 || theirValue.result !== ourPrevValue.result)
   //   return result
   // }
 
@@ -581,9 +581,9 @@ class Operation extends Observable implements Observer {
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       const ph = r.changes.get(Meta.Disposed)
       if (ph === undefined)
-        r.changes.forEach((phase, m) =>
+        r.changes.forEach((round, m) =>
           Operation.propagateMemberChangeThroughSubscriptions(
-            snapshot, false, since, r, m, h, phase, reactions))
+            snapshot, false, since, r, m, h, round, reactions))
       else
         for (const m in r.prev.revision.data)
           Operation.propagateMemberChangeThroughSubscriptions(
@@ -594,13 +594,13 @@ class Operation extends Observable implements Observer {
 
   private static revokeAllSubscriptions(snapshot: Snapshot): void {
     snapshot.changeset.forEach((r: ObjectRevision, h: ObjectHolder) =>
-      r.changes.forEach((phase, m) => Operation.propagateMemberChangeThroughSubscriptions(
+      r.changes.forEach((round, m) => Operation.propagateMemberChangeThroughSubscriptions(
         snapshot, true, snapshot.timestamp, r, m, h, 0, undefined)))
   }
 
   private static propagateMemberChangeThroughSubscriptions(
     snapshot: Snapshot, unsubscribe: boolean, timestamp: number,
-    r: ObjectRevision, m: MemberName, h: ObjectHolder, phase: number, reactions?: Observer[]): void {
+    r: ObjectRevision, m: MemberName, h: ObjectHolder, round: number, reactions?: Observer[]): void {
     if (reactions) {
       // Propagate change to reactions
       const prev = r.prev.revision.data[m]
@@ -626,20 +626,20 @@ class Operation extends Observable implements Observer {
       }
     }
     else if (curr instanceof Observable && curr.observers) {
-      // TODO: Take PHASE into account
+      // TODO: Take ROUND into account
       // Unsubscribe from own-changed observables
       let preserved: Set<Observer> | undefined = undefined
       curr.observers.forEach(o => {
-        if (phase < o.phase) {
+        if (round < o.round) {
           if (preserved === undefined)
             preserved = new Set<Observer>()
           preserved.add(o)
         }
-        else if (phase === o.phase) {
+        else if (round === o.round) {
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           o.observables!.delete(curr)
           if (Dbg.isOn && Dbg.trace.read)
-            Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.rev(r, m)} (change phase ${phase}, observer phase ${o.phase})`)
+            Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.rev(r, m)} (change round ${round}, observer round ${o.round})`)
         }
         else if (reactions) {
           const trigger: MemberInfo = { revision: r, memberName: m, usageCount: 0 }

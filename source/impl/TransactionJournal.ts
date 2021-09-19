@@ -76,7 +76,7 @@ export class TransactionJournalImpl extends TransactionJournal {
     changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       const p: ObjectPatch = { current: {}, former: {} }
       const old = r.prev.revision !== ROOT_REV ? r.prev.revision.data : undefined
-      r.changes.forEach((phase, m) => {
+      r.changes.forEach((round, m) => {
         p.current[m] = unseal(r.data[m])
         if (old)
           p.former[m] = unseal(old[m])
