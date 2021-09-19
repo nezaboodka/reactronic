@@ -406,7 +406,7 @@ class Operation extends Observable implements Observer {
   checkReentranceOver(head: Operation): this {
     let error: Error | undefined = undefined
     const opponent = head.successor
-    if (opponent && (opponent !== this || opponent.episode >=0) &&
+    if (opponent && (opponent !== this || opponent.episode >= 0) &&
       opponent.transaction !== this.transaction && !opponent.transaction.isFinished) {
       if (Dbg.isOn && Dbg.trace.operation)
         Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
