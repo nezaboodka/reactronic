@@ -18,7 +18,7 @@ import { TransactionJournalImpl } from './TransactionJournal'
 
 const ROOT_ARGS: any[] = []
 const ROOT_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, ROOT_REV, 'root-holder')
-const ROOT_CAUSE: MemberInfo = { revision: ROOT_REV, memberName: 'root-cause', usageCount: 0 }
+const ROOT_TRIGGER: MemberInfo = { revision: ROOT_REV, memberName: 'root-trigger', usageCount: 0 }
 
 type OperationContext = {
   readonly operation: Operation
@@ -54,7 +54,7 @@ export class OperationController extends Controller<any> {
     const op: Operation = oc.operation
     const opts = op.options
     if (!oc.isUpToDate && oc.revision.data[Meta.Disposed] === undefined
-      && (!weak || op.cause === ROOT_CAUSE || !op.successor ||
+      && (!weak || op.cause === ROOT_TRIGGER || !op.successor ||
         op.successor.transaction.isFinished)) {
       const standalone = weak || opts.kind === Kind.Reaction ||
         (opts.kind === Kind.Cache && (oc.revision.snapshot.sealed ||
@@ -91,7 +91,7 @@ export class OperationController extends Controller<any> {
       throw misuse('a method is expected with reactronic decorator')
     op.options = new OptionsImpl(op.options.getter, op.options.setter, op.options, options, false)
     if (Dbg.isOn && Dbg.trace.write)
-      Dbg.log('║', '  ♦', `${op.hint()}.options = ...`)
+      Dbg.log('║', '  ✎', `${op.hint()}.options = ...`)
     return op.options
   }
 
@@ -135,7 +135,7 @@ export class OperationController extends Controller<any> {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.seekRevision(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRevision(r)
-    const isValid = op.options.kind !== Kind.Transaction && op.cause !== ROOT_CAUSE &&
+    const isValid = op.options.kind !== Kind.Transaction && op.cause !== ROOT_TRIGGER &&
       (ctx === op.revision.snapshot || ctx.timestamp < op.obsoleteSince) &&
       (!op.options.sensitiveArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
@@ -178,7 +178,7 @@ export class OperationController extends Controller<any> {
         if (op2.controller !== this) {
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
           op2 = r2.data[m] = new Operation(this, r2, op2)
-          op2.cause = ROOT_CAUSE
+          op2.cause = ROOT_TRIGGER
           Snapshot.markEdited(op2, true, r2, m, h)
         }
         return op2
@@ -196,7 +196,7 @@ export class OperationController extends Controller<any> {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()
         if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
-          Dbg.log('║', ' (f)', `${oc.operation.why()}`)
+          Dbg.log('║', '  𝑓', `${oc.operation.why()}`)
         oc.operation.run(this.ownHolder.proxy, argsx)
       }
       else { // retry run
@@ -204,7 +204,7 @@ export class OperationController extends Controller<any> {
         if (oc.operation.options.kind === Kind.Transaction || !oc.isUpToDate) {
           oc = this.edit()
           if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
-            Dbg.log('║', ' (f)', `${oc.operation.why()}`)
+            Dbg.log('║', '  𝑓', `${oc.operation.why()}`)
           oc.operation.run(this.ownHolder.proxy, argsx)
         }
       }
@@ -278,14 +278,14 @@ class Operation extends Observable implements Observer {
     const prev = this.revision.prev.revision.data[this.controller.memberName]
     if (prev instanceof Operation)
       ms = prev.started !== 0 ? Math.abs(this.started || ms) - Math.abs(prev.started) : Infinity
-    let cause: string
+    let trigger: string
     if (this.cause)
-      cause = `   <<   ${propagationHint(this.cause, true).join('   <<   ')}`
+      trigger = `   <<   ${propagationHint(this.cause, true).join('   <<   ')}`
     else if (this.controller.options.kind === Kind.Transaction)
-      cause = '   <<   operation'
+      trigger = '   <<   operation'
     else
-      cause = `   <<   called within ${this.revision.snapshot.hint}`
-    return `${this.hint()}${cause}   (${ms !== Infinity ? `${ms}ms since previous run` : 'initial run'})`
+      trigger = `   <<   called within ${this.revision.snapshot.hint}`
+    return `${this.hint()}${trigger}   (${ms !== Infinity ? `${ms}ms since previous run` : 'initial run'})`
   }
 
   briefWhy(): string {
@@ -537,13 +537,13 @@ class Operation extends Observable implements Observer {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     edited ? r.changes.set(m, Operation.current!) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
-      edited ? Dbg.log('║', '  ♦', `${Dump.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ♦', `${Dump.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
+      edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof Operation && oldValue.cause !== ROOT_CAUSE
+      result = oldValue instanceof Operation && oldValue.cause !== ROOT_TRIGGER
     return result
   }
 
@@ -689,7 +689,7 @@ class Operation extends Observable implements Observer {
 
   static init(): void {
     Object.freeze(ROOT_ARGS)
-    Object.freeze(ROOT_CAUSE)
+    Object.freeze(ROOT_TRIGGER)
     Dbg.getMergedTraceOptions = getMergedTraceOptions
     Snapshot.markUsed = Operation.markUsed // override
     Snapshot.markEdited = Operation.markEdited // override
