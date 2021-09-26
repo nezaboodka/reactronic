@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, transaction, reaction, cached, options, Transaction, Monitor, Reentrance, Reactronic as R, all, sleep } from 'api'
+import { ObservableObject, transaction, reaction, cached, options, Transaction, Monitor, Reentrance, Reactronic as R, all, sleep } from '../source/api'
 
 export const output: string[] = []
 export const busy = Monitor.create('Busy', 0, 0)

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Reentrance, Reactronic as R, all, sleep } from 'api'
+import { Transaction, Reentrance, Reactronic as R, all, sleep } from '../source/api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 import { TestingTraceLevel } from './brief'
 
@@ -44,7 +44,7 @@ test('reentrance.cancel', async t => {
       t.assert(w.hint.indexOf('AsyncDemo.load #23 - ') === 0))
     await all(responses)
   }
-  catch (error) { /* istanbul ignore next */
+  catch (error: any) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
     if (R.isTraceEnabled && !R.traceOptions.silent) console.log(error.toString())
   }

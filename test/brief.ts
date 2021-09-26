@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, transaction, reaction, cached, options, TransactionJournal, Reactronic as R, TraceOptions, Transaction } from 'api'
+import { ObservableObject, unobservable, transaction, reaction, cached, options, TransactionJournal, Reactronic as R, TraceOptions, Transaction } from '../source/api'
 
 export const output: string[] = []
 

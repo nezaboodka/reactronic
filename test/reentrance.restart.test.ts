@@ -45,7 +45,7 @@ test('reentrance.restart', async t => {
     t.is(busy.workers.size, 3)
     await all(responses)
   }
-  catch (error) { /* istanbul ignore next */
+  catch (error: any) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
     if (R.isTraceEnabled && !R.traceOptions.silent) console.log(error.toString())
   }

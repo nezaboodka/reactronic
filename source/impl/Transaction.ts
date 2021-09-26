@@ -273,7 +273,7 @@ class TransactionImpl extends Transaction {
           throw this.canceled
       }
     }
-    catch (e) {
+    catch (e: any) {
       if (!TransactionImpl.inspection)
         this.cancel(e)
       throw e
@@ -349,7 +349,7 @@ class TransactionImpl extends Transaction {
       if (Dbg.isOn)
         Object.freeze(this)
     }
-    catch (e) {
+    catch (e: any) {
       fatal(e)
       throw e
     }
