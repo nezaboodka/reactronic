@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Reentrance, Reactronic as R, all, sleep } from 'api'
+import { Transaction, Reentrance, Reactronic as R, all, sleep } from '../source/api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 import { TestingTraceLevel } from './brief'
 
