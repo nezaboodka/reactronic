@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Kind, nonreactive, standalone, sensitive, Sensitivity, Reactronic as R } from '../source/api'
+import { Transaction, Kind, nonreactive, standalone, sensitive, Reactronic as R } from '../source/api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
@@ -154,7 +154,7 @@ test('brief', t => {
       op3.run(nop)
     }), { message: 'test' })
     t.throws(() => op3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
-    Transaction.run(sensitive, Sensitivity.ReactEvenOnSameValueAssignment, () => {
+    Transaction.run(sensitive, true, () => {
       app.userFilter = app.userFilter
     })
     // Other
