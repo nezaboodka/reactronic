@@ -69,7 +69,7 @@ export class MonitorImpl extends Monitor {
 
   private static activate(mon: MonitorImpl, delay: number): void {
     if (delay >= 0) {
-      if (!mon.internals.activationTimeout) // only once
+      if (mon.internals.activationTimeout === undefined) // only once
         mon.internals.activationTimeout = setTimeout(() =>
           Transaction.runAs<void>({ hint: 'Monitor.activate', standalone: true },
             MonitorImpl.activate, mon, -1), delay) as any
