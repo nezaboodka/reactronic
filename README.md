@@ -302,7 +302,7 @@ function reaction(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 
 function noSideEffects(value: boolean) // transaction & cached & reaction
-function observableArgs(value: boolean) // cached & reaction
+function sensitiveArgs(value: boolean) // cached & reaction
 function throttling(milliseconds: number) // reaction only
 function reentrance(value: Reentrance) // transaction & reaction
 function monitor(value: Monitor | null)
