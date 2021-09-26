@@ -77,8 +77,8 @@ export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor)
   return Hooks.decorateOperation(true, cached, opts, proto, prop, pd)
 }
 
-export function priority(value: number): F<any> {
-  return Hooks.decorateOperationParametrized(priority, {priority: value})
+export function order(value: number): F<any> {
+  return Hooks.decorateOperationParametrized(order, {order: value})
 }
 
 export function noSideEffects(value: boolean): F<any> {

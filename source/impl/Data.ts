@@ -28,7 +28,7 @@ export class Observable {
 }
 
 export interface Observer {
-  readonly priority: number
+  readonly order: number
   readonly observables: Map<Observable, MemberInfo> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string

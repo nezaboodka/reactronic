@@ -41,7 +41,7 @@ export abstract class ObservableObject {
 
 const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   kind: Kind.Plain,
-  priority: 0,
+  order: 0,
   noSideEffects: false,
   sensitiveArgs: false,
   throttling: Number.MAX_SAFE_INTEGER, // disabled reaction
@@ -55,7 +55,7 @@ export class OptionsImpl implements MemberOptions {
   readonly getter: Function
   readonly setter: Function
   readonly kind: Kind
-  readonly priority: number
+  readonly order: number
   readonly noSideEffects: boolean
   readonly sensitiveArgs: boolean
   readonly throttling: number
@@ -69,7 +69,7 @@ export class OptionsImpl implements MemberOptions {
     this.getter = getter !== undefined ? getter : existing.getter
     this.setter = setter !== undefined ? setter : existing.setter
     this.kind = merge(DEFAULT_OPTIONS.kind, existing.kind, patch.kind, implicit)
-    this.priority = merge(DEFAULT_OPTIONS.priority, existing.priority, patch.priority, implicit)
+    this.order = merge(DEFAULT_OPTIONS.order, existing.order, patch.order, implicit)
     this.noSideEffects = merge(DEFAULT_OPTIONS.noSideEffects, existing.noSideEffects, patch.noSideEffects, implicit)
     this.sensitiveArgs = merge(DEFAULT_OPTIONS.sensitiveArgs, existing.sensitiveArgs, patch.sensitiveArgs, implicit)
     this.throttling = merge(DEFAULT_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)

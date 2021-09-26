@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, transaction, reaction, cached, observableArgs, priority, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from '../source/api'
+import { ObservableObject, unobservable, transaction, reaction, cached, observableArgs, order, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from '../source/api'
 
 export const output: string[] = []
 
@@ -44,7 +44,7 @@ export class Demo extends ObservableObject {
     this.title = 'Demo - undo/redo'
   }
 
-  @reaction @priority(1)
+  @reaction @order(1)
   protected backup(): void {
     this.usersWithoutLast = this.users.slice()
     this.usersWithoutLast.pop()
@@ -90,7 +90,7 @@ export class DemoView extends ObservableObject {
       output.push(x) /* istanbul ignore next */
       if (R.isTraceEnabled && !R.traceOptions.silent) console.log(x)
     })
-    R.configureCurrentMethod({ priority: 123 })
+    R.configureCurrentMethod({ order: 123 })
   }
 
   // @transaction @trace(log.noisy)

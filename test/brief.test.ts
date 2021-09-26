@@ -45,7 +45,7 @@ test('brief', t => {
   const app = Transaction.run(() => new DemoView(new Demo()))
   try {
     t.is(R.why(), 'root-holder')
-    t.is(R.getController(app.print).options.priority, 123)
+    t.is(R.getController(app.print).options.order, 123)
     t.notThrows(() => DemoView.test())
     const render = R.getController(app.render)
     t.is(render.isUpToDate, true)

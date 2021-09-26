@@ -20,7 +20,7 @@ export interface SnapshotOptions {
 
 export interface MemberOptions {
   readonly kind: Kind
-  readonly priority: number
+  readonly order: number
   readonly noSideEffects: boolean
   readonly sensitiveArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never

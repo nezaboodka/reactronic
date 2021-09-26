@@ -271,7 +271,7 @@ class Operation extends Observable implements Observer {
 
   get isOperation(): boolean { return true } // override
   hint(): string { return `${Dump.rev(this.revision, this.controller.memberName)}` } // override
-  get priority(): number { return this.options.priority }
+  get order(): number { return this.options.order }
 
   why(): string {
     let ms: number = Date.now()
@@ -334,8 +334,8 @@ class Operation extends Observable implements Observer {
         if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
             isReaction && cause.revision === ROOT_REV
-              ? `${this.hint()} is a reaction and will run automatically (priority ${this.options.priority})`
-              : `${this.hint()} is obsolete due to ${Dump.rev(cause.revision, cause.memberName)} since v${since}${isReaction ? ` and will run automatically (priority ${this.options.priority})` : ''}`)
+              ? `${this.hint()} is a reaction and will run automatically (order ${this.options.order})`
+              : `${this.hint()} is obsolete due to ${Dump.rev(cause.revision, cause.memberName)} since v${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ''}`)
 
         // Stop cascade propagation on reaction, or continue otherwise
         if (isReaction)
@@ -557,7 +557,7 @@ class Operation extends Observable implements Observer {
         for (const m in r.prev.revision.data)
           Operation.propagateMemberChangeThroughSubscriptions(true, since, r, m, h, reactions)
     })
-    reactions.sort(compareReactionsByPriority)
+    reactions.sort(compareReactionsByOrder)
     snapshot.options.journal?.remember(
       TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
   }
@@ -790,8 +790,8 @@ function reactronicHookedThen(this: any,
   return ORIGINAL_PROMISE_THEN.call(this, resolve, reject)
 }
 
-function compareReactionsByPriority(a: Observer, b: Observer): number {
-  return a.priority - b.priority
+function compareReactionsByOrder(a: Observer, b: Observer): number {
+  return a.order - b.order
 }
 
 /* istanbul ignore next */
