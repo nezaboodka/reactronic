@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, transaction, reaction, cached, observableArgs, order, TransactionJournal, journal, Reactronic as R, TraceOptions, Transaction } from '../source/api'
+import { ObservableObject, unobservable, transaction, reaction, cached, TransactionJournal, Reactronic as R, TraceOptions, Transaction, options } from '../source/api'
 
 export const output: string[] = []
 
@@ -39,12 +39,12 @@ export class Demo extends ObservableObject {
     this.collection1.push(...this.users)
   }
 
-  @transaction @journal(Demo.UndoRedo)
+  @transaction @options({ journal: Demo.UndoRedo })
   testUndo(): void {
     this.title = 'Demo - undo/redo'
   }
 
-  @reaction @order(1)
+  @reaction @options({ order: 1 })
   protected backup(): void {
     this.usersWithoutLast = this.users.slice()
     this.usersWithoutLast.pop()
@@ -111,7 +111,7 @@ export class DemoView extends ObservableObject {
     return result
   }
 
-  @cached @observableArgs(true)
+  @cached @options({ sensitiveArgs: true })
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
     this.raw = R.why(true)

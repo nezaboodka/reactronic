@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, cached, Transaction, Reactronic as R, trace, reaction, unobservable, noSideEffects } from '../source/api'
+import { ObservableObject, cached, Transaction, Reactronic as R, reaction, unobservable, options } from '../source/api'
 import { TestingTraceLevel } from './brief'
 
 export class DemoBase extends ObservableObject {
@@ -22,7 +22,7 @@ export class DemoBase extends ObservableObject {
     this.title = `${t} - ${stamp}`
   }
 
-  @reaction @noSideEffects(true)
+  @reaction @options({ noSideEffects: true })
   reactionWithNoSideEffects(): void {
     this.sideEffect = 'side effect'
   }
@@ -37,7 +37,7 @@ export class DemoBase extends ObservableObject {
     return this.title
   }
 
-  @cached @trace({})
+  @cached @options({ trace: {} })
   produceSideEffect(): void {
     this.raw = R.why()
     this.title = 'should fail on this line'
