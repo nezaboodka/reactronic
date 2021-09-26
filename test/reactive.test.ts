@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, Transaction, Reactronic as R, reaction } from 'api'
+import { ObservableObject, Transaction, Reactronic as R, reaction } from '../source/api'
 import { TestingTraceLevel } from './brief'
 
 export class ReactiveDemo extends ObservableObject {

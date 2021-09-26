@@ -56,7 +56,7 @@ class TransactionImpl extends Transaction {
 
   constructor(options: SnapshotOptions | null) {
     super()
-    this.margin = TransactionImpl.curr ? TransactionImpl.curr.margin + 1 : -1
+    this.margin = TransactionImpl.curr !== undefined ? TransactionImpl.curr.margin + 1 : -1
     this.snapshot = new Snapshot(options)
     this.pending = 0
     this.sealed = false
@@ -254,7 +254,7 @@ class TransactionImpl extends Transaction {
           throw this.canceled
       }
     }
-    catch (e) {
+    catch (e: any) {
       if (!TransactionImpl.inspection)
         this.cancel(e)
       throw e
@@ -316,7 +316,7 @@ class TransactionImpl extends Transaction {
       if (Dbg.isOn)
         Object.freeze(this)
     }
-    catch (e) {
+    catch (e: any) {
       fatal(e)
       throw e
     }

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { ObservableObject, transaction, reaction, cached, observableArgs, throttling, monitor,
-  reentrance, Transaction, Monitor, Reentrance, Reactronic as R, all, sleep } from 'api'
+  reentrance, Transaction, Monitor, Reentrance, Reactronic as R, all, sleep } from '../source/api'
 
 export const output: string[] = []
 export const busy = Monitor.create('Busy', 0, 0)

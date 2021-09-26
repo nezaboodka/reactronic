@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Kind, nonreactive, standalone, sensitive, Sensitivity, Reactronic as R } from 'api'
+import { Transaction, Kind, nonreactive, standalone, sensitive, Sensitivity, Reactronic as R } from '../source/api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
