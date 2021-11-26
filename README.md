@@ -6,7 +6,7 @@
 [![CircleCI Status](https://circleci.com/gh/nezaboodka/reactronic.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/nezaboodka/reactronic)
 ![Coverage](https://img.shields.io/badge/coverage-97%25-success.svg)
 ![Lines](https://img.shields.io/badge/lines-1715-success.svg)
-[![Demo](https://img.shields.io/badge/demo-live-success.svg)](https://gitlab.com/nezaboodka/nevod.web.public/-/blob/master/README.md)
+[![Demo](https://img.shields.io/badge/demo-live-success.svg)](https://gitlab.com/nezaboodka/nevod.website/-/blob/master/README.md)
 
 # **Reactronic** - Transactional Reactive State Management
 
