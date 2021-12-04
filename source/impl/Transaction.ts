@@ -48,7 +48,7 @@ class TransactionImpl extends Transaction {
   private static curr: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false
   private static startTime: number = 0
-  private static durationLimit: number = 14 // ms
+  private static timeLimit: number = 14 // ms
   private static checkCount: number = 0
 
   readonly margin: number
@@ -194,10 +194,10 @@ class TransactionImpl extends Transaction {
 
   static isTimeOver(everyN: number = 1): boolean {
     TransactionImpl.checkCount++
-    let result = TransactionImpl.checkCount % everyN !== 0
+    let result = TransactionImpl.checkCount % everyN === 0
     if (result) {
       const ms = performance.now() - TransactionImpl.startTime
-      result = ms > TransactionImpl.durationLimit
+      result = ms > TransactionImpl.timeLimit
     }
     return result
   }
