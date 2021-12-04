@@ -70,8 +70,8 @@ export class ToggleRef<T = boolean> extends Ref<T> {
   constructor(
     owner: any,
     name: string,
-    readonly value1: T,
-    readonly value2: T) {
+    readonly valueOn: T,
+    readonly valueOff: T) {
     super(owner, name)
   }
 
@@ -80,13 +80,13 @@ export class ToggleRef<T = boolean> extends Ref<T> {
     const p = this.name
     Transaction.runAs({ hint: `toggle ${(o as any).constructor.name}.${p}` }, () => {
       const v = o[p]
-      const isValue1 = v === this.value1 || (
-        v instanceof Ref && this.value1 instanceof Ref &&
-        Ref.sameRefs(v, this.value1))
-      if (!isValue1)
-        o[p] = this.value1
+      const isOn = v === this.valueOn || (
+        v instanceof Ref && this.valueOn instanceof Ref &&
+        Ref.sameRefs(v, this.valueOn))
+      if (!isOn)
+        o[p] = this.valueOn
       else
-        o[p] = this.value2
+        o[p] = this.valueOff
     })
   }
 }
