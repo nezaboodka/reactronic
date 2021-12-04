@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-export { all, sleep } from './util/Utils'
+export { all, pause } from './util/Utils'
 export { SealedArray } from './util/SealedArray'
 export { SealedMap } from './util/SealedMap'
 export { SealedSet } from './util/SealedSet'

@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, transaction, reaction, cached, options, Transaction, Monitor, Reentrance, Reactronic as R, all, sleep } from '../source/api'
+import { ObservableObject, transaction, reaction, cached, options, Transaction, Monitor, Reentrance, Reactronic as R, all, pause } from '../source/api'
 
 export const output: string[] = []
 export const busy = Monitor.create('Busy', 0, 0)
@@ -17,7 +17,7 @@ export class AsyncDemo extends ObservableObject {
   @transaction @options({ monitor: busy, reentrance: Reentrance.PreventWithError })
   async load(url: string, delay: number): Promise<void> {
     this.url = url
-    await all([sleep(delay)])
+    await all([pause(delay)])
     const log = this.log = this.log.toMutable()
     log.push(`${this.url}/${delay}`)
   }
@@ -44,7 +44,7 @@ export class AsyncDemoView {
   async render(): Promise<string[]> {
     const result: string[] = []
     result.push(`${busy.isActive ? '[...] ' : ''}Url: ${this.model.url}`)
-    await sleep(10)
+    await pause(10)
     result.push(`${busy.isActive ? '[...] ' : ''}Log: ${this.model.log.join(', ')}`)
     return result
   }

@@ -64,7 +64,7 @@ export async function all(promises: Array<Promise<any>>): Promise<any[]> {
 }
 
 /* istanbul ignore next */
-export function sleep<T>(timeout: number): Promise<T> {
+export function pause<T>(timeout: number): Promise<T> {
   return new Promise(function(resolve: any): void {
     setTimeout(resolve.bind(null, () => resolve), timeout)
   })

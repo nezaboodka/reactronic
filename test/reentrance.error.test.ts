@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Reentrance, Reactronic as R, sleep } from '../source/api'
+import { Transaction, Reentrance, Reactronic as R, pause } from '../source/api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 import { TestingTraceLevel } from './brief'
 
@@ -51,7 +51,7 @@ test('reentrance.error', async t => {
     t.is(busy.workers.size, 0)
     const r = R.pullLastResult(app.render)
     t.is(r && r.length, 2)
-    await sleep(300)
+    await pause(300)
     Transaction.run(() => {
       R.dispose(app)
       R.dispose(app.model)
