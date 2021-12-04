@@ -33,10 +33,10 @@ export interface ProfilingOptions {
 
 export const TraceLevel: {
   Error: TraceOptions,
-  Minimal: TraceOptions,
-  Info: TraceOptions,
+  Transactions: TraceOptions,
+  Operations: TraceOptions,
   Debug: TraceOptions,
-  Suppress: TraceOptions,
+  Silent: TraceOptions,
 } = {
 
   Error: {
@@ -58,7 +58,7 @@ export const TraceLevel: {
     margin2: 0,
   },
 
-  Minimal: {
+  Transactions: {
     silent: false,
     transaction: true,
     operation: false,
@@ -77,7 +77,7 @@ export const TraceLevel: {
     margin2: 0,
   },
 
-  Info: {
+  Operations: {
     silent: false,
     transaction: true,
     operation: true,
@@ -115,7 +115,7 @@ export const TraceLevel: {
     margin2: 0,
   },
 
-  Suppress: {
+  Silent: {
     silent: true,
     transaction: false,
     operation: false,
