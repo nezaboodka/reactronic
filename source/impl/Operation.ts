@@ -56,7 +56,9 @@ export class OperationController extends Controller<any> {
     if (!oc.isUpToDate && oc.revision.data[Meta.Disposed] === undefined
       && (!weak || op.cause === ROOT_TRIGGER || !op.successor ||
         op.successor.transaction.isFinished)) {
+      const outerOpts = Operation.current?.options
       const standalone = weak || opts.kind === Kind.Reaction ||
+        (opts.kind === Kind.Transaction && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cache)) ||
         (opts.kind === Kind.Cache && (oc.revision.snapshot.sealed ||
           oc.revision.prev.revision !== ROOT_REV))
       const token = opts.noSideEffects ? this : undefined
