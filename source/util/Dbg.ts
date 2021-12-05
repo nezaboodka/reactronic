@@ -58,7 +58,7 @@ export class Dbg {
       const t = Dbg.global as any
       const o = Object.keys(Dbg.global).filter(x => t[x] === true).join(', ')
       Dbg.log('', '', `Reactronic trace is enabled: ${o}`)
-      Dbg.log('', '', 'Method-level trace can be configured with @trace decorator')
+      Dbg.log('', '', 'Method-level trace can be configured with @options({ trace: ... }) decorator')
     }
     else
       Dbg.log('', '', 'Reactronic trace is disabled')

@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { UNDEF, F } from '../util/Utils'
+import { UNDEF, F, pause } from '../util/Utils'
 import { Dbg, misuse, error, fatal } from '../util/Dbg'
 import { Worker } from '../Worker'
 import { SnapshotOptions, TraceOptions } from '../Options'
@@ -37,12 +37,19 @@ export abstract class Transaction implements Worker {
   static run<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(func, ...args) }
   static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(options, func, ...args) }
   static standalone<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.standalone<T>(func, ...args) }
+
+  static isTimeOver(everyN: number = 1): boolean { return TransactionImpl.isTimeOver(everyN) }
+  static requestMoreTime(): Promise<void> { return TransactionImpl.requestMoreTime() }
+  static get isCanceled(): boolean { return TransactionImpl.current.isCanceled }
 }
 
 class TransactionImpl extends Transaction {
   private static readonly none: TransactionImpl = new TransactionImpl({ hint: '<none>' })
   private static curr: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false
+  private static startTime: number = 0
+  private static timeLimit: number = 14 // ms
+  private static checkCount: number = 0
 
   readonly margin: number
   readonly snapshot: Snapshot
@@ -185,6 +192,20 @@ class TransactionImpl extends Transaction {
     }
   }
 
+  static isTimeOver(everyN: number = 1): boolean {
+    TransactionImpl.checkCount++
+    let result = TransactionImpl.checkCount % everyN === 0
+    if (result) {
+      const ms = performance.now() - TransactionImpl.startTime
+      result = ms > TransactionImpl.timeLimit
+    }
+    return result
+  }
+
+  static requestMoreTime(sleepTime: number = 0): Promise<void> {
+    return pause(sleepTime)
+  }
+
   // Internal
 
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
@@ -247,6 +268,10 @@ class TransactionImpl extends Transaction {
     let result: T
     const outer = TransactionImpl.curr
     try {
+      if (outer === TransactionImpl.none) {
+        TransactionImpl.startTime = performance.now()
+        TransactionImpl.checkCount = 0
+      }
       TransactionImpl.curr = this
       this.pending++
       this.snapshot.acquire(outer.snapshot)

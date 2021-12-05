@@ -56,7 +56,9 @@ export class OperationController extends Controller<any> {
     const opts = op.options
     if (!oc.isUpToDate && rev.data[Meta.Disposed] === undefined
       && (!weak || op.episode <= 0 || !op.successor || op.successor.transaction.isFinished)) {
+      const outerOpts = Operation.current?.options
       const standalone = weak || op.options.standalone ||
+        (opts.kind === Kind.Transaction && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cache)) ||
         op.options.kind === Kind.Cache && (
           rev.snapshot.sealed || (rev.snapshot !== ctx && rev.prev.revision !== ROOT_REV))
       const token = opts.noSideEffects ? this : undefined
@@ -91,7 +93,7 @@ export class OperationController extends Controller<any> {
       throw misuse('a method is expected with reactronic decorator')
     op.options = new OptionsImpl(op.options.getter, op.options.setter, op.options, options, false)
     if (Dbg.isOn && Dbg.trace.write)
-      Dbg.log('║', '  ✎', `${op.hint()}.options is changed`)
+      Dbg.log('║', '  ✎', `${op.hint()}.options are changed`)
     return op.options
   }
 

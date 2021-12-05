@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Reentrance, Reactronic as R, all, sleep } from '../source/api'
+import { Transaction, Reentrance, Reactronic as R, all, pause } from '../source/api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 import { TestingTraceLevel } from './brief'
 
@@ -50,7 +50,7 @@ test('reentrance.cancelandwait', async t => {
   finally {
     t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
-    await sleep(300)
+    await pause(300)
     Transaction.run(() => {
       R.dispose(app)
       R.dispose(app.model)

@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, transaction, reaction, cached, options, TransactionJournal, Reactronic as R, TraceOptions, Transaction } from '../source/api'
+import { ObservableObject, unobservable, transaction, reaction, cached, TransactionJournal, Reactronic as R, TraceOptions, Transaction, options } from '../source/api'
 
 export const output: string[] = []
 
@@ -179,7 +179,7 @@ export class Person extends ObservableObject {
     }
   }
 
-  appendChildren(children: ReadonlyArray<Person>): void {
+  appendChildren(children: ReadonlyArray<Person> | undefined): void {
     if (children !== undefined)
       for (const x of children)
         x.setParent(this)

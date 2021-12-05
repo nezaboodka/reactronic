@@ -131,7 +131,7 @@ export class Snapshot implements AbstractSnapshot {
   static dispose(obj: any): void {
     const ctx = Snapshot.edit()
     const h = Meta.get<ObjectHolder | undefined>(obj, Meta.Holder)
-    if (h)
+    if (h !== undefined)
       Snapshot.doDispose(ctx, h)
   }
 

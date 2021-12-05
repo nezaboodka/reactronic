@@ -6,8 +6,8 @@
 // automatically licensed under the license referred above.
 
 import { TraceOptions } from './Trace'
-export { TraceOptions, ProfilingOptions, TraceLevel } from './Trace'
 import { StandaloneMode } from './impl/Data'
+export { TraceOptions, ProfilingOptions, TraceLevel } from './Trace'
 import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 

@@ -118,8 +118,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     const r: ObjectRevision = Snapshot.edit().getEditableRevision(h, m, value)
     if (r !== ROOT_REV) {
       let curr = r.data[m] as Observable
-      if (curr !== undefined || (
-        r.prev.revision.snapshot === ROOT_REV.snapshot && (m in h.unobservable) === false)) {
+      if (curr !== undefined || (r.prev.revision.snapshot === ROOT_REV.snapshot && (m in h.unobservable) === false)) {
         if (curr === undefined || curr.value !== value || Hooks.sensitivity) {
           if (r.prev.revision.data[m] === curr) {
             const old = curr?.value
@@ -187,7 +186,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   static decorateOperation(implicit: boolean, decorator: Function,
     options: Partial<MemberOptions>, proto: any, member: MemberName,
     pd: PropertyDescriptor | undefined): any {
-    if (!pd || pd === proto) // pd !== proto only for the first decorator in a chain
+    if (pd === undefined || pd === proto) // pd !== proto only for the first decorator in a chain
       pd = EMPTY_PROP_DESCRIPTOR
     const enumerable: boolean = pd.enumerable ?? true
     const configurable: boolean = pd.configurable ?? true
