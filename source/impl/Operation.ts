@@ -255,6 +255,7 @@ class Operation extends Observable implements Observer {
       this.result = prev.result
       this.error = prev.error
       this.value = prev.value
+      this.successor = prev.successor
     }
     else { // prev: OptionsImpl
       this.options = prev
@@ -263,11 +264,11 @@ class Operation extends Observable implements Observer {
       this.result = undefined
       this.error = undefined
       this.value = undefined
+      this.successor = undefined
     }
     this.episode = -1 // means not yet computed
     this.started = 0
     this.margin = 0
-    this.successor = undefined
   }
 
   get isOperation(): boolean { return true } // override
@@ -343,7 +344,7 @@ class Operation extends Observable implements Observer {
           Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '  █' : '  ▒',
             isReaction && trigger.revision === ROOT_REV
               ? `${op.hint()} is a reaction and will run automatically (order ${op.options.order})`
-              : `${op.hint()} is marked obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}/ph${triggerEpisode}${isReaction ? ` and will run automatically (order ${op.options.order})` : ''}`)
+              : `${this.hint()} became obsolete due to ${Dump.rev(trigger.revision, trigger.memberName)} since v${since}/e${triggerEpisode}${isReaction ? ` and will run automatically (order ${op.options.order})` : ''}`)
 
         // Stop cascade propagation on reaction, or continue otherwise
         if (isReaction)
@@ -352,10 +353,10 @@ class Operation extends Observable implements Observer {
           op.observers?.forEach(c => c.markObsoleteDueTo(bubbling + 1, op, { revision: op.revision, memberName: op.controller.memberName, usageCount: 0 }, snapshot, since, reactions))
 
         // Cancel own transaction if it is still in progress
-        const t = op.transaction
-        if (t.snapshot !== snapshot && !t.isFinished && op !== observable) // restart after itself if canceled
-          if (!t.isFinished && op !== observable) // restart after itself if canceled
-            t.cancel(new Error(`T${t.id}[${t.hint}] is canceled due to obsolete ${Dump.rev(trigger.revision, trigger.memberName)} changed by T${trigger.revision.snapshot.id}[${trigger.revision.snapshot.hint}]`), null)
+        const tran = this.transaction
+        if (tran.snapshot !== snapshot && !tran.isFinished && op !== observable) // restart after itself if canceled
+          if (!tran.isFinished && op !== observable) // restart after itself if canceled
+            tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.rev(trigger.revision, trigger.memberName)} changed by T${trigger.revision.snapshot.id}[${trigger.revision.snapshot.hint}]`), null)
       }
       else if (op.episode >= 0) {
         if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
@@ -484,7 +485,7 @@ class Operation extends Observable implements Observer {
         if (Dbg.trace.operation)
           Dbg.log('║', '_/', `${this.hint()} - leave... `, 0, 'ASYNC ──┐')
         else if (Dbg.trace.transaction)
-          Dbg.log('║', '  ', `${this.hint()}... `, 0, 'ASYNC')
+          Dbg.log('║', '  ', `${this.why()} ...`, 0, 'ASYNC')
       }
     }
     else {
@@ -566,7 +567,7 @@ class Operation extends Observable implements Observer {
   private static isConflicting(theirValue: any, ourPrevValue: any, ourValue: any): boolean {
     let result = theirValue !== ourPrevValue
     if (result && theirValue instanceof Operation && ourPrevValue instanceof Operation)
-      result = theirValue.episode >= 0 || theirValue.result !== ourPrevValue.result
+      result = theirValue.result !== ourPrevValue.result
     return result
   }
 
