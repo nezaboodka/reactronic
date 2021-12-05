@@ -577,6 +577,14 @@ class Operation extends Observable implements Observer {
   //   return result
   // }
 
+  // Original:
+  // private static isConflicting(oldValue: any, newValue: any): boolean {
+  //   let result = oldValue !== newValue
+  //   if (result)
+  //     result = oldValue instanceof Operation && oldValue.cause !== ROOT_TRIGGER
+  //   return result
+  // }
+
   private static propagateAllChangesThroughSubscriptions(snapshot: Snapshot): void {
     const since = snapshot.timestamp
     const reactions = snapshot.reactions
