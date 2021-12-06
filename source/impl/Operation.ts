@@ -631,16 +631,19 @@ class Operation extends Observable implements Observer {
         const existing = this.observables!.get(observable)
         times = existing ? existing.usageCount + 1 : 1
       }
-      // Acquire observers
-      if (!observable.observers)
-        observable.observers = new Set<Operation>()
-      // Two-way linking
-      const info: MemberInfo = { revision: r, memberName: m, usageCount: times }
-      observable.observers.add(this)
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.observables!.set(observable, info)
-      if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.rev(r, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
+      if (this.observables !== undefined) {
+        // Acquire observers
+        if (!observable.observers)
+          observable.observers = new Set<Operation>()
+        // Two-way linking
+        const info: MemberInfo = { revision: r, memberName: m, usageCount: times }
+        observable.observers.add(this)
+        this.observables!.set(observable, info)
+        if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
+          Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.rev(r, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
+      }
+      else if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
+        Dbg.log('║', '  x ', `${this.hint()} is obsolete and is NOT subscribed to ${Dump.rev(r, m)}`)
     }
     else {
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
