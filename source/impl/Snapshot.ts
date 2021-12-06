@@ -254,7 +254,7 @@ export class Snapshot implements AbstractSnapshot {
       }
     })
     if (Dbg.isOn) {
-      if (Dbg.trace.change) {
+      if (Dbg.trace.change && !error) {
         this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
           const members: string[] = []
           r.changes.forEach((o, m) => members.push(m.toString()))
