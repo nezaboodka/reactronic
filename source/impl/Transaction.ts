@@ -329,7 +329,7 @@ class TransactionImpl extends Transaction {
     // It's critical to have no exceptions in this block
     try {
       if (Dbg.isOn && Dbg.trace.change)
-        Dbg.log('╠══', '', '', undefined, ' changes')
+        Dbg.log('╠═', '', '', undefined, 'changes')
       this.snapshot.applyOrDiscard(this.canceled)
       this.snapshot.collectGarbage()
       if (this.promise) {

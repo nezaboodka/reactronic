@@ -93,7 +93,7 @@ export class OperationController extends Controller<any> {
       throw misuse('a method is expected with reactronic decorator')
     op.options = new OptionsImpl(op.options.getter, op.options.setter, op.options, options, false)
     if (Dbg.isOn && Dbg.trace.write)
-      Dbg.log('║', '  ✎', `${op.hint()}.options = ...`)
+      Dbg.log('║', '  ✎', `${op.hint()}.options are changed`)
     return op.options
   }
 
@@ -197,7 +197,7 @@ export class OperationController extends Controller<any> {
     const result = Transaction.runAs(opts, (argsx: any[] | undefined): any => {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()
-        if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
+        if (Dbg.isOn && Dbg.trace.operation)
           Dbg.log('║', '  𝑓', `${oc.operation.why()}`)
         oc.operation.run(this.ownHolder.proxy, argsx)
       }
@@ -205,7 +205,7 @@ export class OperationController extends Controller<any> {
         oc = this.peek(argsx) // re-read on retry
         if (oc.operation.options.kind === Kind.Transaction || !oc.isUpToDate) {
           oc = this.edit()
-          if (Dbg.isOn && (Dbg.trace.transaction || Dbg.trace.operation || Dbg.trace.obsolete))
+          if (Dbg.isOn && Dbg.trace.operation)
             Dbg.log('║', '  𝑓', `${oc.operation.why()}`)
           oc.operation.run(this.ownHolder.proxy, argsx)
         }
@@ -286,7 +286,7 @@ class Operation extends Observable implements Observer {
     else if (this.controller.options.kind === Kind.Transaction)
       trigger = '   <<   operation'
     else
-      trigger = `   <<   called within ${this.revision.snapshot.hint}`
+      trigger = `   <<   T${this.revision.snapshot.id}[${this.revision.snapshot.hint}]`
     return `${this.hint()}${trigger}   (${ms !== Infinity ? `${ms}ms since previous run` : 'initial run'})`
   }
 
@@ -450,19 +450,19 @@ class Operation extends Observable implements Observer {
       this.result = this.result.then(
         value => {
           this.value = value
-          this.leave(false, '  □ ', '- finished ', ' OK ──┘')
+          this.leave(false, '  ⚐', '- finished  ', ' OK ──┘')
           return value
         },
         error => {
           this.error = error
-          this.leave(false, '  □ ', '- finished ', 'ERR ──┘')
+          this.leave(false, '  ⚐', '- finished  ', 'ERR ──┘')
           throw error
         })
       if (Dbg.isOn) {
         if (Dbg.trace.operation)
           Dbg.log('║', '_/', `${this.hint()} - leave... `, 0, 'ASYNC ──┐')
         else if (Dbg.trace.transaction)
-          Dbg.log('║', '  ', `${this.hint()}... `, 0, 'ASYNC')
+          Dbg.log('║', '  ', `${this.why()} ...`, 0, 'ASYNC')
       }
     }
     else {
@@ -487,8 +487,7 @@ class Operation extends Observable implements Observer {
     const options: SnapshotOptions = {
       hint: 'Monitor.enter',
       standalone: true,
-      trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.global,
-    }
+      trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.global }
     OperationController.runWithin<void>(undefined, Transaction.runAs, options,
       MonitorImpl.enter, mon, this.transaction)
   }
@@ -499,8 +498,7 @@ class Operation extends Observable implements Observer {
         const options: SnapshotOptions = {
           hint: 'Monitor.leave',
           standalone: true,
-          trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.DefaultLevel,
-        }
+          trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.DefaultLevel }
         OperationController.runWithin<void>(undefined, Transaction.runAs, options,
           MonitorImpl.leave, mon, this.transaction)
       }
@@ -539,7 +537,7 @@ class Operation extends Observable implements Observer {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     edited ? r.changes.set(m, Operation.current!) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
-      edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} = ${valueHint(value)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} = ${valueHint(value)}`, undefined, ' (same as previous)')
+      edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed to ${valueHint(value, m)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed to ${valueHint(value, m)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -742,7 +740,7 @@ function propagationHint(cause: MemberInfo, full: boolean): string[] {
   return result
 }
 
-function valueHint(value: any): string {
+function valueHint(value: any, m?: MemberName): string {
   let result: string = ''
   if (Array.isArray(value))
     result = `Array(${value.length})`
@@ -751,13 +749,13 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Operation)
-    result = `<rerun over ${Dump.rev(value.revision.prev.revision)}>`
+    result = `${Dump.rev(value.revision, m)}`
   else if (value === Meta.Disposed)
     result = '<disposed>'
   else if (value !== undefined && value !== null)
     result = value.toString().slice(0, 20)
   else
-    result = '◌'
+    result = '∅'
   return result
 }
 

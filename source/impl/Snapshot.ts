@@ -111,6 +111,8 @@ export class Snapshot implements AbstractSnapshot {
         this.changeset.set(h, r)
         h.editing = r
         h.editors++
+        if (Dbg.isOn && Dbg.trace.write)
+          Dbg.log('║', '  ⎘', `${Dump.obj(h)} is cloned`)
       }
     }
     else
@@ -124,7 +126,7 @@ export class Snapshot implements AbstractSnapshot {
 
   static dispose(obj: any): void {
     const ctx = Snapshot.edit()
-    const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
+    const h = Meta.get<ObjectHolder | undefined>(obj, Meta.Holder)
     if (h !== undefined)
       Snapshot.doDispose(ctx, h)
   }
@@ -186,7 +188,7 @@ export class Snapshot implements AbstractSnapshot {
               conflicts = []
             conflicts.push(r)
           }
-          if (Dbg.isOn && Dbg.trace.change)
+          if (Dbg.isOn && Dbg.trace.transaction)
             Dbg.log('╠╝', '', `${Dump.rev(r)} is merged with ${Dump.rev(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
@@ -392,7 +394,7 @@ export class Dump {
   }
 }
 
-export const ROOT_REV = new ObjectRevision(new Snapshot({ hint: 'root' }), undefined, {})
+export const ROOT_REV = new ObjectRevision(new Snapshot({ hint: 'root-rev' }), undefined, {})
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',
