@@ -10,7 +10,7 @@ import { Dbg, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance } from '../Options'
 import { TraceOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
-import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta } from './Data'
+import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta, StandaloneMode } from './Data'
 import { Snapshot, Dump, ROOT_REV } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
@@ -21,12 +21,7 @@ export abstract class ObservableObject {
   constructor() {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
-    const h = Hooks.createObjectHolder(this, initial, new.target.name)
-    if (!Hooks.reactionsAutoStartDisabled) {
-      const reactions = Meta.getFrom(proto, Meta.Reactions)
-      for (const member in reactions)
-        (h.proxy[member][Meta.Controller] as Controller<any>).markObsolete()
-    }
+    const h = Hooks.createObjectHolder(proto, this, initial, new.target.name)
     return h.proxy
   }
 
@@ -41,6 +36,7 @@ export abstract class ObservableObject {
 
 const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   kind: Kind.Plain,
+  standalone: false,
   order: 0,
   noSideEffects: false,
   sensitiveArgs: false,
@@ -55,6 +51,7 @@ export class OptionsImpl implements MemberOptions {
   readonly getter: Function
   readonly setter: Function
   readonly kind: Kind
+  readonly standalone: StandaloneMode
   readonly order: number
   readonly noSideEffects: boolean
   readonly sensitiveArgs: boolean
@@ -69,6 +66,7 @@ export class OptionsImpl implements MemberOptions {
     this.getter = getter !== undefined ? getter : existing.getter
     this.setter = setter !== undefined ? setter : existing.setter
     this.kind = merge(DEFAULT_OPTIONS.kind, existing.kind, patch.kind, implicit)
+    this.standalone = merge(DEFAULT_OPTIONS.standalone, existing.standalone, patch.standalone, implicit)
     this.order = merge(DEFAULT_OPTIONS.order, existing.order, patch.order, implicit)
     this.noSideEffects = merge(DEFAULT_OPTIONS.noSideEffects, existing.noSideEffects, patch.noSideEffects, implicit)
     this.sensitiveArgs = merge(DEFAULT_OPTIONS.sensitiveArgs, existing.sensitiveArgs, patch.sensitiveArgs, implicit)
@@ -122,13 +120,14 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       let curr = r.data[m] as Observable
       if (curr !== undefined || (r.prev.revision.snapshot === ROOT_REV.snapshot && (m in h.unobservable) === false)) {
         if (curr === undefined || curr.value !== value || Hooks.sensitivity) {
+          const old = curr?.value
           if (r.prev.revision.data[m] === curr) {
             curr = r.data[m] = new Observable(value)
-            Snapshot.markEdited(value, true, r, m, h)
+            Snapshot.markEdited(old, value, true, r, m, h)
           }
           else {
             curr.value = value
-            Snapshot.markEdited(value, true, r, m, h)
+            Snapshot.markEdited(old, value, true, r, m, h)
           }
         }
       }
@@ -236,10 +235,13 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return h
   }
 
-  static createObjectHolder(unobservable: any, blank: any, hint: string): ObjectHolder {
+  static createObjectHolder(proto: any, unobservable: any, blank: any, hint: string): ObjectHolder {
     const ctx = Snapshot.edit()
     const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, ROOT_REV, hint)
     ctx.getEditableRevision(h, Meta.Holder, blank)
+    if (!Hooks.reactionsAutoStartDisabled)
+      for (const m in Meta.getFrom(proto, Meta.Reactions))
+        (h.proxy[m][Meta.Controller] as Controller<any>).markObsolete()
     return h
   }
 

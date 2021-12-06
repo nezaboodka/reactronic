@@ -71,7 +71,7 @@ export class Snapshot implements AbstractSnapshot {
   static current: () => Snapshot = UNDEF
   static edit: () => Snapshot = UNDEF
   static markUsed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF
-  static markEdited: (value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
+  static markEdited: (oldValue: any, newValue: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
   static revokeAllSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
@@ -135,7 +135,7 @@ export class Snapshot implements AbstractSnapshot {
     const r: ObjectRevision = ctx.getEditableRevision(h, Meta.Disposed, Meta.Disposed)
     if (r !== ROOT_REV) {
       r.data[Meta.Disposed] = Meta.Disposed
-      Snapshot.markEdited(Meta.Disposed, true, r, Meta.Disposed, h)
+      Snapshot.markEdited(Meta.Disposed, Meta.Disposed, true, r, Meta.Disposed, h)
     }
     return r
   }
@@ -367,16 +367,17 @@ export class Snapshot implements AbstractSnapshot {
 // Dump
 
 export class Dump {
-  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, op?: number, typeless?: boolean): string {
+  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, op?: number, xop?: number, typeless?: boolean): string {
     const member = m !== undefined ? `.${m.toString()}` : ''
     return h === undefined
       ? `root${member}`
-      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${op}v${stamp}`
+      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${op}v${stamp}${xop !== undefined && xop !== 0 ? `t${xop}` : ''}`
   }
 
   static rev(r: ObjectRevision, m?: MemberName): string {
     const h = Meta.get<ObjectHolder | undefined>(r.data, Meta.Holder)
-    return Dump.obj(h, m, r.snapshot.timestamp, r.snapshot.id)
+    const value = m !== undefined ? r.data[m] as Observable : undefined
+    return Dump.obj(h, m, r.snapshot.timestamp, r.snapshot.id, value?.selfSnapshotId)
   }
 
   static conflicts(conflicts: ObjectRevision[]): string {
@@ -390,7 +391,7 @@ export class Dump {
   }
 
   static conflictingMemberHint(m: MemberName, ours: ObjectRevision, theirs: ObjectRevision): string {
-    return `${theirs.snapshot.hint} on ${Dump.rev(theirs, m)}`
+    return `${theirs.snapshot.hint} (${Dump.rev(theirs, m)})`
   }
 }
 

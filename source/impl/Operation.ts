@@ -9,7 +9,7 @@ import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
-import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, MemberInfo, Meta } from './Data'
+import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, StandaloneMode, MemberInfo, Meta } from './Data'
 import { Snapshot, Dump, ROOT_REV, MAX_TIMESTAMP } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -57,7 +57,7 @@ export class OperationController extends Controller<any> {
       && (!weak || op.cause === ROOT_TRIGGER || !op.successor ||
         op.successor.transaction.isFinished)) {
       const outerOpts = Operation.current?.options
-      const standalone = weak || opts.kind === Kind.Reaction ||
+      const standalone = weak || opts.standalone || opts.kind === Kind.Reaction ||
         (opts.kind === Kind.Transaction && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cache)) ||
         (opts.kind === Kind.Cache && (oc.revision.snapshot.sealed ||
           oc.revision.prev.revision !== ROOT_REV))
@@ -160,9 +160,10 @@ export class OperationController extends Controller<any> {
     let op: Operation = this.peekFromRevision(r)
     if (op.revision !== r) {
       const op2 = new Operation(this, r, op)
-      op = r.data[m] = op2.reenterOver(op)
+      r.data[m] = op2.reenterOver(op)
       ctx.bumpBy(r.prev.revision.snapshot.timestamp)
-      Snapshot.markEdited(op, true, r, m, h)
+      Snapshot.markEdited(op, op2, true, r, m, h)
+      op = op2
     }
     return { operation: op, isUpToDate: true, snapshot: ctx, revision: r }
   }
@@ -179,9 +180,11 @@ export class OperationController extends Controller<any> {
         let op2 = r2.data[m] as Operation
         if (op2.controller !== this) {
           r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
-          op2 = r2.data[m] = new Operation(this, r2, op2)
-          op2.cause = ROOT_TRIGGER
-          Snapshot.markEdited(op2, true, r2, m, h)
+          const t = new Operation(this, r2, op2)
+          t.cause = ROOT_TRIGGER
+          r2.data[m] = t
+          Snapshot.markEdited(op2, t, true, r2, m, h)
+          op2 = t
         }
         return op2
       })
@@ -189,7 +192,7 @@ export class OperationController extends Controller<any> {
     return op
   }
 
-  private run(existing: OperationContext, standalone: boolean, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
+  private run(existing: OperationContext, standalone: StandaloneMode, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.ownHolder, this.memberName)}`
     let oc = existing
@@ -272,6 +275,7 @@ class Operation extends Observable implements Observer {
   }
 
   get isOperation(): boolean { return true } // override
+  get selfSnapshotId(): number { return this.revision.snapshot.id } // override
   hint(): string { return `${Dump.rev(this.revision, this.controller.memberName)}` } // override
   get order(): number { return this.options.order }
 
@@ -486,7 +490,7 @@ class Operation extends Observable implements Observer {
   private monitorEnter(mon: Monitor): void {
     const options: SnapshotOptions = {
       hint: 'Monitor.enter',
-      standalone: true,
+      standalone: 'isolated',
       trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.global }
     OperationController.runWithin<void>(undefined, Transaction.runAs, options,
       MonitorImpl.enter, mon, this.transaction)
@@ -497,7 +501,7 @@ class Operation extends Observable implements Observer {
       const leave = (): void => {
         const options: SnapshotOptions = {
           hint: 'Monitor.leave',
-          standalone: true,
+          standalone: 'isolated',
           trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.DefaultLevel }
         OperationController.runWithin<void>(undefined, Transaction.runAs, options,
           MonitorImpl.leave, mon, this.transaction)
@@ -533,11 +537,11 @@ class Operation extends Observable implements Observer {
     }
   }
 
-  private static markEdited(value: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
+  private static markEdited(oldValue: any, newValue: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     edited ? r.changes.set(m, Operation.current!) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
-      edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed to ${valueHint(value, m)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed to ${valueHint(value, m)}`, undefined, ' (same as previous)')
+      edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -620,8 +624,8 @@ class Operation extends Observable implements Observer {
   }
 
   private subscribeTo(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
-    const isValid = Operation.isValid(observable, r, m, h, timestamp)
-    if (isValid) {
+    const ok = Operation.canSubscribe(observable, r, m, h, timestamp)
+    if (ok) {
       // Performance tracking
       let times: number = 0
       if (Hooks.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
@@ -647,10 +651,10 @@ class Operation extends Observable implements Observer {
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
         Dbg.log('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Dump.rev(r, m)}`)
     }
-    return isValid // || observable.next === r
+    return ok // || observable.next === r
   }
 
-  private static isValid(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
+  private static canSubscribe(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, timestamp: number): boolean {
     let result = !r.snapshot.sealed || observable === h.head.data[m]
     if (result && timestamp !== -1)
       result = !(observable instanceof Operation && timestamp >= observable.obsoleteSince)

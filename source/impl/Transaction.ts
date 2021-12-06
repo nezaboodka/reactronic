@@ -209,9 +209,12 @@ class TransactionImpl extends Transaction {
   // Internal
 
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
-    return options?.standalone || TransactionImpl.curr.isFinished
-      ? new TransactionImpl(options)
-      : TransactionImpl.curr
+    const curr = TransactionImpl.curr
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    if (options?.standalone || curr.isFinished || curr.options.standalone === 'isolated')
+      return new TransactionImpl(options)
+    else
+      return TransactionImpl.curr
   }
 
   private guard(): void {
@@ -238,7 +241,7 @@ class TransactionImpl extends Transaction {
           // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
-            standalone: true,
+            standalone: this.options.standalone === 'isolated' ? 'isolated' : true,
             trace: this.snapshot.options.trace,
             token: this.snapshot.options.token,
           }

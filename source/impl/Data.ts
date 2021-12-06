@@ -24,8 +24,11 @@ export class Observable {
   value: any
   observers?: Set<Observer>
   get isOperation(): boolean { return false }
+  get selfSnapshotId(): number | undefined { return 0 }
   constructor(value: any) { this.value = value }
 }
+
+export type StandaloneMode = boolean | 'isolated'
 
 export interface Observer {
   readonly order: number

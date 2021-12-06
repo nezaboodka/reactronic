@@ -71,7 +71,7 @@ export class MonitorImpl extends Monitor {
     if (delay >= 0) {
       if (mon.internals.activationTimeout === undefined) // only once
         mon.internals.activationTimeout = setTimeout(() =>
-          Transaction.runAs<void>({ hint: 'Monitor.activate', standalone: true },
+          Transaction.runAs<void>({ hint: 'Monitor.activate', standalone: 'isolated' },
             MonitorImpl.activate, mon, -1), delay) as any
     }
     else if (mon.counter > 0)
@@ -83,7 +83,7 @@ export class MonitorImpl extends Monitor {
       // Discard existing timer and start new one
       clearTimeout(mon.internals.deactivationTimeout)
       mon.internals.deactivationTimeout = setTimeout(() =>
-        Transaction.runAs<void>({ hint: 'Monitor.deactivate', standalone: true },
+        Transaction.runAs<void>({ hint: 'Monitor.deactivate', standalone: 'isolated' },
           MonitorImpl.deactivate, mon, -1), delay) as any
     }
     else if (mon.counter <= 0) {

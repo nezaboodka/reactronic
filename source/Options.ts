@@ -6,13 +6,14 @@
 // automatically licensed under the license referred above.
 
 import { TraceOptions } from './Trace'
+import { StandaloneMode } from './impl/Data'
 export { TraceOptions, ProfilingOptions, TraceLevel } from './Trace'
 import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 
 export interface SnapshotOptions {
   readonly hint?: string
-  readonly standalone?: boolean
+  readonly standalone?: StandaloneMode
   readonly journal?: TransactionJournal
   readonly trace?: Partial<TraceOptions>
   readonly token?: any
@@ -20,6 +21,7 @@ export interface SnapshotOptions {
 
 export interface MemberOptions {
   readonly kind: Kind
+  readonly standalone: StandaloneMode
   readonly order: number
   readonly noSideEffects: boolean
   readonly sensitiveArgs: boolean
