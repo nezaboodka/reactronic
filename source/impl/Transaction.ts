@@ -172,10 +172,11 @@ class TransactionImpl extends Transaction {
     t.guard()
     let result: any = t.runImpl<T>(options?.trace, func, ...args)
     if (root) {
-      if (result instanceof Promise)
+      if (result instanceof Promise) {
         result = TransactionImpl.standalone(() => {
           return t.wrapToRetry(t.wrapToWaitUntilFinish(result), func, ...args)
         })
+      }
       t.seal()
     }
     return result
