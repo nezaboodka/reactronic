@@ -38,8 +38,8 @@ export abstract class Transaction implements Worker {
   static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(options, func, ...args) }
   static standalone<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.standalone<T>(func, ...args) }
 
-  static isTimeOver(everyN: number = 1): boolean { return TransactionImpl.isTimeOver(everyN) }
-  static requestMoreTime(): Promise<void> { return TransactionImpl.requestMoreTime() }
+  static isFrameOver(everyN: number = 1): boolean { return TransactionImpl.isFrameOver(everyN) }
+  static requestNextFrame(): Promise<void> { return TransactionImpl.requestNextFrame() }
   static get isCanceled(): boolean { return TransactionImpl.current.isCanceled }
 }
 
@@ -193,7 +193,7 @@ class TransactionImpl extends Transaction {
     }
   }
 
-  static isTimeOver(everyN: number = 1): boolean {
+  static isFrameOver(everyN: number = 1): boolean {
     TransactionImpl.checkCount++
     let result = TransactionImpl.checkCount % everyN === 0
     if (result) {
@@ -203,7 +203,7 @@ class TransactionImpl extends Transaction {
     return result
   }
 
-  static requestMoreTime(sleepTime: number = 0): Promise<void> {
+  static requestNextFrame(sleepTime: number = 0): Promise<void> {
     return pause(sleepTime)
   }
 
