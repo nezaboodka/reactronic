@@ -300,6 +300,7 @@ function unobservable(proto, prop) // field only
 function transaction(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
+function options(value: Partial<MemberOptions>): F<any>
 
 function noSideEffects(value: boolean) // transaction & cached & reaction
 function sensitiveArgs(value: boolean) // cached & reaction
@@ -320,6 +321,19 @@ interface Options {
   readonly sensitiveArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
+  readonly monitor: Monitor | null
+  readonly trace?: Partial<TraceOptions>
+}
+
+export interface MemberOptions {
+  readonly kind: Kind
+  readonly standalone: StandaloneMode
+  readonly order: number
+  readonly noSideEffects: boolean
+  readonly sensitiveArgs: boolean
+  readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
+  readonly reentrance: Reentrance
+  readonly journal: TransactionJournal | undefined
   readonly monitor: Monitor | null
   readonly trace?: Partial<TraceOptions>
 }
@@ -430,7 +444,7 @@ abstract class Controller<T> {
 class Reactronic {
   static why(short: boolean = false): string
   static getMethodCache<T>(method: F<T>): Cache<T>
-  static configureCurrentMethod(options: Partial<Options>): Options
+  static configureCurrentOperation(options: Partial<Options>): Options
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void
   // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity)
   static takeSnapshot<T>(obj: T): T
