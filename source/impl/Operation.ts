@@ -279,6 +279,10 @@ class Operation extends Observable implements Observer {
   hint(): string { return `${Dump.rev(this.revision, this.controller.memberName)}` } // override
   get order(): number { return this.options.order }
 
+  get ['#this'](): string {
+    return `Operation: ${this.why()}`
+  }
+
   why(): string {
     let ms: number = Date.now()
     const prev = this.revision.prev.revision.data[this.controller.memberName]

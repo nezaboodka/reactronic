@@ -32,14 +32,14 @@ export interface ProfilingOptions {
 }
 
 export const TraceLevel: {
-  Error: TraceOptions,
+  ErrorsOnly: TraceOptions,
   Transactions: TraceOptions,
   Operations: TraceOptions,
   Debug: TraceOptions,
   Silent: TraceOptions,
 } = {
 
-  Error: {
+  ErrorsOnly: {
     silent: false,
     transaction: false,
     operation: false,

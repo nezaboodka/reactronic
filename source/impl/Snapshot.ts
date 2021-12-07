@@ -17,11 +17,11 @@ import { AbstractSnapshot, ObjectRevision, MemberName, ObjectHolder, Observable,
 export const MAX_TIMESTAMP = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_TIMESTAMP = MAX_TIMESTAMP - 1
 
-Object.defineProperty(ObjectHolder.prototype, '<snapshot>', {
+Object.defineProperty(ObjectHolder.prototype, '#this', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
-    const data = Snapshot.current().getCurrentRevision(this, '<snapshot>').data
+    const data = Snapshot.current().getCurrentRevision(this, '#this').data
     for (const m in data) {
       const v = data[m]
       if (v instanceof Observable)
@@ -121,7 +121,7 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   static takeSnapshot<T>(obj: T): T {
-    return (obj as any)[Meta.Holder]['<snapshot>']
+    return (obj as any)[Meta.Holder]['#this']
   }
 
   static dispose(obj: any): void {
