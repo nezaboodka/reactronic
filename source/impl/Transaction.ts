@@ -38,7 +38,7 @@ export abstract class Transaction implements Worker {
   static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(options, func, ...args) }
   static standalone<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.standalone<T>(func, ...args) }
 
-  static isFrameOver(everyN: number = 1): boolean { return TransactionImpl.isFrameOver(everyN) }
+  static isFrameOver(everyN: number = 1, timeLimit: number = 14): boolean { return TransactionImpl.isFrameOver(everyN, timeLimit) }
   static requestNextFrame(sleepTime: number = 0): Promise<void> { return TransactionImpl.requestNextFrame(sleepTime) }
   static get isCanceled(): boolean { return TransactionImpl.current.isCanceled }
 }
@@ -47,9 +47,8 @@ class TransactionImpl extends Transaction {
   private static readonly none: TransactionImpl = new TransactionImpl({ hint: '<none>' })
   private static curr: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false
-  private static startTime: number = 0
-  private static timeLimit: number = 14 // ms
-  private static checkCount: number = 0
+  private static frameStartTime: number = 0
+  private static frameOverCounter: number = 0
 
   readonly margin: number
   readonly snapshot: Snapshot
@@ -193,12 +192,12 @@ class TransactionImpl extends Transaction {
     }
   }
 
-  static isFrameOver(everyN: number = 1): boolean {
-    TransactionImpl.checkCount++
-    let result = TransactionImpl.checkCount % everyN === 0
+  static isFrameOver(everyN: number = 1, timeLimit: number = 14): boolean {
+    TransactionImpl.frameOverCounter++
+    let result = TransactionImpl.frameOverCounter % everyN === 0
     if (result) {
-      const ms = performance.now() - TransactionImpl.startTime
-      result = ms > TransactionImpl.timeLimit
+      const ms = performance.now() - TransactionImpl.frameStartTime
+      result = ms > timeLimit
     }
     return result
   }
@@ -269,8 +268,8 @@ class TransactionImpl extends Transaction {
     const outer = TransactionImpl.curr
     try {
       if (outer === TransactionImpl.none) {
-        TransactionImpl.startTime = performance.now()
-        TransactionImpl.checkCount = 0
+        TransactionImpl.frameStartTime = performance.now()
+        TransactionImpl.frameOverCounter = 0
       }
       TransactionImpl.curr = this
       this.pending++
