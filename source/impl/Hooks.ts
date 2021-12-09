@@ -40,7 +40,7 @@ const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   order: 0,
   noSideEffects: false,
   sensitiveArgs: false,
-  throttling: Number.MAX_SAFE_INTEGER, // disabled reaction
+  throttling: Number.MAX_SAFE_INTEGER, // disabled reaction, @reaction sets it to -1 to enable
   reentrance: Reentrance.PreventWithError,
   journal: undefined,
   monitor: null,
