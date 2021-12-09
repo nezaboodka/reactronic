@@ -75,6 +75,7 @@ export class Snapshot implements AbstractSnapshot {
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
   static revokeAllSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
+  static enqueueDetectedReactions = (snapshot: Snapshot): void => { /* nop */ }
 
   seekRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     // TODO: Take into account timestamp of the member

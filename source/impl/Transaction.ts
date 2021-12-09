@@ -292,16 +292,12 @@ class TransactionImpl extends Transaction {
       if (this.sealed && this.pending === 0) {
         this.applyOrDiscard() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
-        TransactionImpl.standalone(TransactionImpl.runReactions, this)
+        TransactionImpl.standalone(Snapshot.enqueueDetectedReactions, this.snapshot)
       }
       else
         TransactionImpl.curr = outer
     }
     return result
-  }
-
-  private static runReactions(t: TransactionImpl): void {
-    t.snapshot.reactions.forEach(x => x.enqueueForExecution(false, true))
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {
