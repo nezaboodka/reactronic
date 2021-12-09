@@ -232,7 +232,7 @@ export class OperationController extends Controller<any> {
 
 class Operation extends Observable implements Observer {
   static current?: Operation = undefined
-  static deferredReactions: Operation[] = []
+  static deferredReactions: Array<Operation> = []
 
   readonly margin: number
   readonly transaction: Transaction
@@ -368,35 +368,43 @@ class Operation extends Observable implements Observer {
     }
   }
 
-  runIfNotUpToDate(now: boolean, nothrow: boolean): void {
+  enqueueForExecution(now: boolean, nothrow: boolean): void {
     const t = this.options.throttling
     const interval = Date.now() + this.started // "started" is stored as negative value after reaction completion
     const hold = t ? t - interval : 0 // "started" is stored as negative value after reaction completion
     if (now || hold < 0) {
-      if (!this.error && (this.options.kind === Kind.Transaction ||
-        !this.successor || this.successor.transaction.isCanceled)) {
-        try {
-          const op: Operation = this.controller.useOrRun(false, undefined)
-          if (op.result instanceof Promise)
-            op.result.catch(error => {
-              if (op.options.kind === Kind.Reaction)
-                misuse(`reaction ${op.hint()} failed and will not run anymore: ${error}`, error)
-            })
-        }
-        catch (e) {
-          if (!nothrow)
-            throw e
-          else if (this.options.kind === Kind.Reaction)
-            misuse(`reaction ${this.hint()} failed and will not run anymore: ${e}`, e)
-        }
-      }
+      this.runIfNotUpToDate(nothrow)
     }
     else if (t < Number.MAX_SAFE_INTEGER) {
       if (hold > 0)
-        setTimeout(() => this.runIfNotUpToDate(true, true), hold)
+        setTimeout(() => this.enqueueForExecution(true, true), hold)
       else
         this.addToDeferredReactions()
     }
+  }
+
+  runIfNotUpToDate(nothrow: boolean): void {
+    if (this.isNotUpToDate()) {
+      try {
+        const op: Operation = this.controller.useOrRun(false, undefined)
+        if (op.result instanceof Promise)
+          op.result.catch(error => {
+            if (op.options.kind === Kind.Reaction)
+              misuse(`reaction ${op.hint()} failed and will not run anymore: ${error}`, error)
+          })
+      }
+      catch (e) {
+        if (!nothrow)
+          throw e
+        else if (this.options.kind === Kind.Reaction)
+          misuse(`reaction ${this.hint()} failed and will not run anymore: ${e}`, e)
+      }
+    }
+  }
+
+  isNotUpToDate(): boolean {
+    return !this.error && (this.options.kind === Kind.Transaction ||
+      !this.successor || this.successor.transaction.isCanceled)
   }
 
   reenterOver(head: Operation): this {
@@ -526,7 +534,7 @@ class Operation extends Observable implements Observer {
     const reactions = Operation.deferredReactions
     Operation.deferredReactions = [] // reset
     for (const x of reactions)
-      x.runIfNotUpToDate(true, true)
+      x.enqueueForExecution(true, true)
   }
 
   private static markUsed(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean): void {

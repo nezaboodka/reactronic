@@ -301,7 +301,7 @@ class TransactionImpl extends Transaction {
   }
 
   private static runReactions(t: TransactionImpl): void {
-    t.snapshot.reactions.forEach(x => x.runIfNotUpToDate(false, true))
+    t.snapshot.reactions.forEach(x => x.enqueueForExecution(false, true))
   }
 
   private static seal(t: TransactionImpl, error?: Error, after?: TransactionImpl): void {
