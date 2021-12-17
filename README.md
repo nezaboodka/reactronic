@@ -200,7 +200,7 @@ class Component<P> extends React.Component<P> {
   } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
-    return !Reactronic.getController(this.render).isUpToDate
+    return !Rx.getController(this.render).isUpToDate
   }
 
   componentDidMount(): void {
@@ -208,7 +208,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    standalone(Reactronic.dispose, this)
+    standalone(Rx.dispose, this)
   }
 }
 ```

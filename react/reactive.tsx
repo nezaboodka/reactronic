@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, unobservable, reaction, cached, standalone, Reactronic as R, TraceOptions } from 'api' // from 'reactronic'
+import { ObservableObject, Transaction, unobservable, reaction, cached, standalone, Rx, TraceOptions } from 'api' // from 'reactronic'
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, op?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -20,9 +20,9 @@ export function autorender(render: (cycle: number) => JSX.Element, name?: string
 
 // Internal
 
-type ReactState<V> = { rx: Rx<V>, cycle: number }
+type ReactState<V> = { rx: RxComponent<V>, cycle: number }
 
-class Rx<V> extends ObservableObject {
+class RxComponent<V> extends ObservableObject {
   @cached
   render(emit: (cycle: number) => V, op?: Transaction): V {
     return op ? op.inspect(() => emit(this.cycle)) : emit(this.cycle)
@@ -30,31 +30,31 @@ class Rx<V> extends ObservableObject {
 
   @reaction
   protected ensureUpToDate(): void {
-    if (!R.getController(this.render).isUpToDate)
+    if (!Rx.getController(this.render).isUpToDate)
       standalone(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
   @unobservable cycle: number = 0
   @unobservable refresh: (next: ReactState<V>) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
-    return (): void => { standalone(R.dispose, this) }
+    return (): void => { standalone(Rx.dispose, this) }
   }
 
-  static create<V>(hint: string | undefined, trace: TraceOptions | undefined): Rx<V> {
-    const rx = new Rx<V>()
+  static create<V>(hint: string | undefined, trace: TraceOptions | undefined): RxComponent<V> {
+    const rx = new RxComponent<V>()
     if (hint)
-      R.setTraceHint(rx, hint)
+      Rx.setTraceHint(rx, hint)
     if (trace) {
-      R.getController(rx.render).configure({trace})
-      R.getController(rx.ensureUpToDate).configure({trace})
+      Rx.getController(rx.render).configure({trace})
+      Rx.getController(rx.ensureUpToDate).configure({trace})
     }
     return rx
   }
 }
 
 function createReactState<V>(name?: string, trace?: Partial<TraceOptions>): ReactState<V> {
-  const hint = name || (R.isTraceEnabled ? getComponentName() : '<rx>')
-  const rx = Transaction.runAs<Rx<V>>({ hint, trace }, Rx.create, hint, trace)
+  const hint = name || (Rx.isTraceEnabled ? getComponentName() : '<rx>')
+  const rx = Transaction.runAs<RxComponent<V>>({ hint, trace }, RxComponent.create, hint, trace)
   return {rx, cycle: 0}
 }
 

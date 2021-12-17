@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, unobservable, reaction, cached, standalone, Reactronic } from 'api' // from 'reactronic'
+import { ObservableObject, Transaction, unobservable, reaction, cached, standalone, Rx } from 'api' // from 'reactronic'
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -18,9 +18,9 @@ export function autorender(render: () => JSX.Element): JSX.Element {
 
 // Internal
 
-type ReactState = { rx: Rx }
+type ReactState = { rx: RxComponent }
 
-class Rx extends ObservableObject {
+class RxComponent extends ObservableObject {
   @cached
   render(emit: () => JSX.Element): JSX.Element {
     return emit()
@@ -28,22 +28,22 @@ class Rx extends ObservableObject {
 
   @reaction
   protected ensureUpToDate(): void {
-    if (!Reactronic.getController(this.render).isUpToDate)
+    if (!Rx.getController(this.render).isUpToDate)
       standalone(this.refresh, {rx: this})
   }
 
   @unobservable refresh: (next: ReactState) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
-    return (): void => { standalone(Reactronic.dispose, this) }
+    return (): void => { standalone(Rx.dispose, this) }
   }
 
-  static create(): Rx {
-    return new Rx()
+  static create(): RxComponent {
+    return new RxComponent()
   }
 }
 
 function createReactState(): ReactState {
-  const rx = Transaction.runAs<Rx>({ hint: '<rx>' }, Rx.create)
+  const rx = Transaction.runAs<RxComponent>({ hint: '<rx>' }, RxComponent.create)
   return {rx}
 }
 

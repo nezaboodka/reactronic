@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Reentrance, Reactronic as R, all, pause } from '../source/api'
+import { Transaction, Reentrance, Rx, all, pause } from '../source/api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
 import { TestingTraceLevel } from './brief'
 
@@ -26,10 +26,10 @@ const expected: Array<string | undefined> = [
 ]
 
 test('reentrance.cancelandwait', async t => {
-  R.setTraceMode(true, TestingTraceLevel)
+  Rx.setTraceMode(true, TestingTraceLevel)
   const app = Transaction.run(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    R.getController(a.model.load).configure({reentrance: Reentrance.CancelAndWaitPrevious})
+    Rx.getController(a.model.load).configure({reentrance: Reentrance.CancelAndWaitPrevious})
     return a
   })
   try {
@@ -43,18 +43,18 @@ test('reentrance.cancelandwait', async t => {
   }
   catch (error: any) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
-    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(error.toString())
+    if (Rx.isTraceEnabled && !Rx.traceOptions.silent) console.log(error.toString())
   }
   finally {
     t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
     await pause(300)
     Transaction.run(() => {
-      R.dispose(app)
-      R.dispose(app.model)
+      Rx.dispose(app)
+      Rx.dispose(app.model)
     })
   } /* istanbul ignore next */
-  if (R.isTraceEnabled && !R.traceOptions.silent) {
+  if (Rx.isTraceEnabled && !Rx.traceOptions.silent) {
     console.log('\nResults:\n')
     for (const x of output)
       console.log(x)
@@ -62,7 +62,7 @@ test('reentrance.cancelandwait', async t => {
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
+    if (Rx.isTraceEnabled && !Rx.traceOptions.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
     t.is(output[i], expected[i])
   }
 })

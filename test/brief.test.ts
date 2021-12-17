@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Kind, nonreactive, standalone, sensitive, Reactronic as R } from '../source/api'
+import { Transaction, Kind, nonreactive, standalone, sensitive, Rx } from '../source/api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
@@ -29,25 +29,25 @@ const expected: string[] = [
 ]
 
 test('brief', t => {
-  R.reactionsAutoStartDisabled = !R.reactionsAutoStartDisabled
-  R.reactionsAutoStartDisabled = false
-  R.setProfilingMode(false)
-  R.setProfilingMode(true, {})
-  R.setProfilingMode(true, {
+  Rx.reactionsAutoStartDisabled = !Rx.reactionsAutoStartDisabled
+  Rx.reactionsAutoStartDisabled = false
+  Rx.setProfilingMode(false)
+  Rx.setProfilingMode(true, {})
+  Rx.setProfilingMode(true, {
     repetitiveUsageWarningThreshold: 3, // default: 10 times
     mainThreadBlockingWarningThreshold: 10, // default: 16.6 ms
     asyncActionDurationWarningThreshold: 100, // default: 150 ms
     garbageCollectionSummaryInterval: 2000, // default: 3000 ms
   })
-  R.setTraceMode(false)
-  R.setTraceMode(true, TestingTraceLevel)
+  Rx.setTraceMode(false)
+  Rx.setTraceMode(true, TestingTraceLevel)
   // Simple transactions
   const app = Transaction.run(() => new DemoView(new Demo()))
   try {
-    t.is(R.why(), 'root-holder')
-    t.is(R.getController(app.print).options.order, 123)
+    t.is(Rx.why(), 'root-holder')
+    t.is(Rx.getController(app.print).options.order, 123)
     t.notThrows(() => DemoView.test())
-    const render = R.getController(app.render)
+    const render = Rx.getController(app.render)
     t.is(render.isUpToDate, true)
     t.is(render.args.length, 1)
     t.is(render.result.length, 1)
@@ -63,7 +63,7 @@ test('brief', t => {
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(render.isUpToDate, true)
-    t.is(R.takeSnapshot(daddy).age, 38)
+    t.is(Rx.takeSnapshot(daddy).age, 38)
     const stamp = render.stamp
     app.render(0)
     t.is(render.stamp, stamp)
@@ -141,8 +141,8 @@ test('brief', t => {
     }, undefined, 'observable property Person.emails #26 can only be modified inside transaction')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
-    t.throws(() => { R.getController(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
-    t.throws(() => { console.log(R.getController(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { Rx.getController(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { console.log(Rx.getController(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
     const op2 = Transaction.create({ hint: 'op2' })
     const zombi = op2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: 'object Person #30 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
@@ -164,10 +164,10 @@ test('brief', t => {
     t.is(app.raw, 'DemoView.userFilter #23t127v101')
     t.is(render.options.kind, Kind.Cache)
     t.is(render.error, undefined)
-    t.is(R.getTraceHint(app), 'DemoView')
-    R.setTraceHint(app, 'App')
-    t.is(R.getTraceHint(app, false), 'App')
-    t.is(R.getTraceHint(app, true), 'App#23')
+    t.is(Rx.getTraceHint(app), 'DemoView')
+    Rx.setTraceHint(app, 'App')
+    t.is(Rx.getTraceHint(app, false), 'App')
+    t.is(Rx.getTraceHint(app, true), 'App#23')
     t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
     t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
@@ -199,15 +199,15 @@ test('brief', t => {
   }
   finally {
     Transaction.run(() => {
-      R.dispose(app.model)
-      R.dispose(app)
+      Rx.dispose(app.model)
+      Rx.dispose(app)
     })
     t.is(app.model.title, undefined)
     t.is(app.userFilter, undefined)
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (R.isTraceEnabled && !R.traceOptions.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (Rx.isTraceEnabled && !Rx.traceOptions.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

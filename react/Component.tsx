@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { reaction, cached, standalone, Reactronic } from 'api' // from 'reactronic'
+import { reaction, cached, standalone, Rx } from 'api' // from 'reactronic'
 
 export class Component<P> extends React.Component<P> {
   @cached
@@ -21,7 +21,7 @@ export class Component<P> extends React.Component<P> {
   } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
-    return !Reactronic.getController(this.render).isUpToDate
+    return !Rx.getController(this.render).isUpToDate
   }
 
   componentDidMount(): void {
@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    standalone(Reactronic.dispose, this)
+    standalone(Rx.dispose, this)
   }
 }

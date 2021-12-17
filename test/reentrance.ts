@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, transaction, reaction, cached, options, Transaction, Monitor, Reentrance, Reactronic as R, all, pause } from '../source/api'
+import { ObservableObject, transaction, reaction, cached, options, Transaction, Monitor, Reentrance, Rx, all, pause } from '../source/api'
 
 export const output: string[] = []
 export const busy = Monitor.create('Busy', 0, 0)
@@ -35,7 +35,7 @@ export class AsyncDemoView {
     if (!Transaction.current.isCanceled) {
       for (const x of lines) {
         output.push(x) /* istanbul ignore next */
-        if (R.isTraceEnabled && !R.traceOptions.silent) console.log(x)
+        if (Rx.isTraceEnabled && !Rx.traceOptions.silent) console.log(x)
       }
     }
   }

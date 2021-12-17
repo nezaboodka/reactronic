@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Reactronic as R, ObservableObject } from '../source/api'
+import { Transaction, Rx, ObservableObject } from '../source/api'
 import { TestingTraceLevel } from './brief'
 
 class Serializable extends ObservableObject {
@@ -15,7 +15,7 @@ class Serializable extends ObservableObject {
 }
 
 test('serializing', t => {
-  R.setTraceMode(true, TestingTraceLevel)
+  Rx.setTraceMode(true, TestingTraceLevel)
   const serializable = Transaction.run(() => {
     const s1 = new Serializable()
     s1.text = 's1'

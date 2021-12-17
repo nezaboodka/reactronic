@@ -18,5 +18,5 @@ export { Snapshot } from './impl/Snapshot'
 export { Transaction } from './impl/Transaction'
 export { Monitor } from './impl/Monitor'
 export { TransactionJournal } from './impl/TransactionJournal'
-export { Reactronic, nonreactive, standalone, sensitive, unobservable,
-  transaction, reaction, cached, options } from './Reactronic'
+export { Rx, nonreactive, standalone, sensitive, unobservable,
+  transaction, reaction, cached, options } from './Rx'

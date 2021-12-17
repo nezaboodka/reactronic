@@ -128,7 +128,7 @@ export class OperationController extends Controller<any> {
   /* istanbul ignore next */
   static dependencies(): string[] {
     const op = Operation.current
-    return op ? op.dependencies() : ['Reactronic.dependencies should be called from inside of reactive method']
+    return op ? op.dependencies() : ['Rx.dependencies should be called from inside of reactive method']
   }
 
   // Internal

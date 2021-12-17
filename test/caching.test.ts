@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, cached, Transaction, Reactronic as R, reaction, unobservable, options } from '../source/api'
+import { ObservableObject, cached, Transaction, Rx, reaction, unobservable, options } from '../source/api'
 import { TestingTraceLevel } from './brief'
 
 export class DemoBase extends ObservableObject {
@@ -39,7 +39,7 @@ export class DemoBase extends ObservableObject {
 
   @cached @options({ trace: {} })
   produceSideEffect(): void {
-    this.raw = R.why()
+    this.raw = Rx.why()
     this.title = 'should fail on this line'
   }
 
@@ -62,7 +62,7 @@ export class Demo extends DemoBase {
 }
 
 test('caching', t => {
-  R.setTraceMode(true, TestingTraceLevel)
+  Rx.setTraceMode(true, TestingTraceLevel)
   const demo = Transaction.run(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')

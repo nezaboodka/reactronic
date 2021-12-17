@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, transaction, reaction, cached, TransactionJournal, Reactronic as R, TraceOptions, Transaction, options } from '../source/api'
+import { ObservableObject, unobservable, transaction, reaction, cached, TransactionJournal, Rx, TraceOptions, Transaction, options } from '../source/api'
 
 export const output: string[] = []
 
@@ -88,9 +88,9 @@ export class DemoView extends ObservableObject {
     const lines = this.render(0)
     lines.forEach(x => {
       output.push(x) /* istanbul ignore next */
-      if (R.isTraceEnabled && !R.traceOptions.silent) console.log(x)
+      if (Rx.isTraceEnabled && !Rx.traceOptions.silent) console.log(x)
     })
-    R.configureCurrentOperation({ order: 123 })
+    Rx.configureCurrentOperation({ order: 123 })
   }
 
   // @transaction @trace(log.noisy)
@@ -114,7 +114,7 @@ export class DemoView extends ObservableObject {
   @cached @options({ sensitiveArgs: true })
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
-    this.raw = R.why(true)
+    this.raw = Rx.why(true)
     const r: string[] = []
     r.push(`Filter: ${this.userFilter}`)
     const a = this.filteredUsers()
