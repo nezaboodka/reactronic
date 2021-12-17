@@ -44,17 +44,17 @@ export class Ref<T = any> {
     throw new Error('not implemented')
   }
 
-  static to<O = any>(owner: O): { readonly [P in keyof O]-?: Ref<O[P]> } {
-    return new Proxy<{ readonly [P in keyof O]-?: Ref<O[P]> }>(owner as any, RefGettingProxy)
+  static to<O extends object = object>(owner: O): { readonly [P in keyof O]-?: Ref<O[P]> } {
+    return new Proxy<O>(owner, RefGettingProxy) as any
   }
 
-  static toToggle<O = any>(owner: O): { readonly [P in keyof BoolOnly<O>]: ToggleRef<O[P]> } {
-    return new Proxy<{ readonly [P in keyof BoolOnly<O>]: ToggleRef<O[P]> }>(owner, BoolRefGettingProxy)
+  static toToggle<O extends object = object>(owner: O): { readonly [P in keyof BoolOnly<O>]: ToggleRef<O[P]> } {
+    return new Proxy<O>(owner, BoolRefGettingProxy) as any
   }
 
   static toCustomToggle<T, O extends object = any>(owner: O, value1: T, value2: T): { readonly [P in keyof GivenTypeOnly<O, T | any>]: ToggleRef<O[P]> } {
     const handler: any = new CustomToggleRefGettingProxy<T>(value1, value2)
-    return new Proxy<O>(owner, handler)
+    return new Proxy<O>(owner, handler) as any
   }
 
   static sameRefs(v1: Ref, v2: Ref): boolean {
