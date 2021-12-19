@@ -625,18 +625,22 @@ class Operation extends Observable implements Observer {
 
   private static enqueueDetectedReactions(snapshot: Snapshot): void {
     const queue = Operation.queuedReactions
-    const isRoot = queue.length === 0
+    const isReactionLoopRequired = queue.length === 0
     for (const r of snapshot.reactions)
       queue.push(r)
-    if (isRoot) {
-      let i = 0
-      while (i < queue.length) {
-        const reaction = queue[i]
-        reaction.runIfNotUpToDate(false, true)
-        i++
-      }
-      Operation.queuedReactions = [] // reset
+    if (isReactionLoopRequired)
+      OperationController.runWithin<void>(undefined, Operation.runQueuedReactionsLoop)
+  }
+
+  private static runQueuedReactionsLoop(): void {
+    const queue = Operation.queuedReactions
+    let i = 0
+    while (i < queue.length) {
+      const reaction = queue[i]
+      reaction.runIfNotUpToDate(false, true)
+      i++
     }
+    Operation.queuedReactions = [] // reset loop
   }
 
   private unsubscribeFromAllObservables(): void {
