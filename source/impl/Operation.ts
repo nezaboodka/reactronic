@@ -583,22 +583,27 @@ class Operation extends Observable implements Observer {
         true, snapshot.timestamp, r, m, h, undefined)))
   }
 
-  private static propagateMemberChangeThroughSubscriptions(discard: boolean, timestamp: number,
+  private static propagateMemberChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,
     r: ObjectRevision, m: MemberName, h: ObjectHolder, reactions?: Observer[]): void {
+    const curr = r.data[m]
     if (reactions) {
       // Propagate change to reactions
       const prev = r.prev.revision.data[m]
       if (prev !== undefined && prev instanceof Observable) {
         const cause: MemberInfo = { revision: r, memberName: m, usageCount: 0 }
-        if (prev instanceof Operation && (prev.obsoleteSince === MAX_TIMESTAMP || prev.obsoleteSince <= 0)) {
-          prev.obsoleteDueTo = cause
-          prev.obsoleteSince = timestamp
-          prev.unsubscribeFromAllObservables()
+        if (prev instanceof Operation) {
+          if ((prev.obsoleteSince === MAX_TIMESTAMP || prev.obsoleteSince <= 0)) {
+            prev.obsoleteDueTo = cause
+            prev.obsoleteSince = timestamp
+            prev.unsubscribeFromAllObservables()
+          }
+          const opponent = prev.successor
+          if (opponent !== curr && opponent)
+            opponent.transaction.cancel(new Error(`T${opponent.transaction.id}[${opponent.transaction.hint}] is canceled by T${r.snapshot.id}[${r.snapshot.hint}] and will not run anymore`), null)
         }
         prev.observers?.forEach(c => c.markObsoleteDueTo(prev, cause, timestamp, reactions))
       }
     }
-    const curr = r.data[m]
     if (curr instanceof Operation) {
       if (curr.revision === r && curr.observables !== undefined) {
         if (Hooks.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
@@ -607,7 +612,7 @@ class Operation extends Observable implements Observer {
               Dbg.log('', '[!]', `${curr.hint()} uses ${Dump.rev(hint.revision, hint.memberName)} ${hint.usageCount} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
-        if (discard)
+        if (unsubscribe)
           curr.unsubscribeFromAllObservables()
       }
     }
