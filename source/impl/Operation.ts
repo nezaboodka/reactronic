@@ -598,7 +598,7 @@ class Operation extends Observable implements Observer {
             prev.unsubscribeFromAllObservables()
           }
           const opponent = prev.successor
-          if (opponent !== curr && opponent)
+          if (opponent !== curr && opponent && !opponent.transaction.isFinished)
             opponent.transaction.cancel(new Error(`T${opponent.transaction.id}[${opponent.transaction.hint}] is canceled by T${r.snapshot.id}[${r.snapshot.hint}] and will not run anymore`), null)
         }
         prev.observers?.forEach(c => c.markObsoleteDueTo(prev, cause, timestamp, reactions))
