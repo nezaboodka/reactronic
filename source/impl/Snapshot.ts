@@ -337,14 +337,10 @@ export class Snapshot implements AbstractSnapshot {
       if (Dbg.isOn && Dbg.trace.gc && r.prev.revision !== ROOT_REV)
         Dbg.log(' ', '  ', `${Dump.rev(r.prev.revision)} is ready for GC because overwritten by ${Dump.rev(r)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
-        if (r.prev.revision !== ROOT_REV) {
+        if (r.prev.revision !== ROOT_REV)
           Snapshot.totalObjectRevisionCount--
-          // console.log('rec--')
-        }
-        if (r.changes.has(Meta.Disposed)) {
+        if (r.changes.has(Meta.Disposed))
           Snapshot.totalObjectHolderCount--
-          // console.log('obj--')
-        }
       }
       r.prev.revision = ROOT_REV // unlink history
     })
