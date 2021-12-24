@@ -337,7 +337,10 @@ class Operation extends Observable implements Observer {
 
   markObsoleteDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void {
     if (this.observables !== undefined) { // if not yet marked as obsolete
-      if (observable.isOperation || this !== cause.revision.changes.get(cause.memberName)) {
+      const skip = !observable.isOperation &&
+        cause.revision.snapshot === this.revision.snapshot &&
+        cause.revision.changes.has(cause.memberName)
+      if (!skip) {
         // Mark obsolete (this.observables = undefined)
         this.unsubscribeFromAllObservables()
         this.obsoleteDueTo = cause
@@ -493,6 +496,7 @@ class Operation extends Observable implements Observer {
       Dbg.log('║', `${op}`, `${this.hint()} ${message}`, ms, highlight)
     if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
       Dbg.log('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
+    this.cause = undefined
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
     // CachedResult.freeze(this)
@@ -549,8 +553,7 @@ class Operation extends Observable implements Observer {
   }
 
   private static markEdited(oldValue: any, newValue: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    edited ? r.changes.set(m, Operation.current!) : r.changes.delete(m)
+    edited ? r.changes.add(m) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
       edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`, undefined, ' (same as previous)')
   }

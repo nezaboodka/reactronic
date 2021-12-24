@@ -304,7 +304,7 @@ export class Snapshot implements AbstractSnapshot {
 
   static freezeObjectRevision(r: ObjectRevision): ObjectRevision {
     Object.freeze(r.data)
-    Utils.freezeMap(r.changes)
+    Utils.freezeSet(r.changes)
     Utils.freezeMap(r.conflicts)
     return r
   }

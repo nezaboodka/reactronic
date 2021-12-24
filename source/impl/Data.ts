@@ -53,14 +53,14 @@ export class ObjectRevision {
   readonly snapshot: AbstractSnapshot
   readonly prev: { revision: ObjectRevision }
   readonly data: any
-  readonly changes: Map<MemberName, Observer>
+  readonly changes: Set<MemberName>
   readonly conflicts: Map<MemberName, ObjectRevision>
 
   constructor(snapshot: AbstractSnapshot, prev: ObjectRevision | undefined, data: object) {
     this.snapshot = snapshot
     this.prev = { revision: prev || this } // undefined prev means initialization of  ROOT_REV
     this.data = data
-    this.changes = new Map<MemberName, Observer>()
+    this.changes = new Set<MemberName>()
     this.conflicts = new Map<MemberName, ObjectRevision>()
     if (Dbg.isOn)
       Object.freeze(this)
