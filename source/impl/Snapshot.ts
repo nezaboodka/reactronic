@@ -37,6 +37,9 @@ Object.defineProperty(ObjectHolder.prototype, '#this', {
 
 // Snapshot
 
+const EMPTY_ARRAY: Array<any> = Object.freeze([]) as any
+const EMPTY_MAP: Map<any, any> = Utils.freezeMap(new Map<any, any>()) as any
+
 export class Snapshot implements AbstractSnapshot {
   static idGen: number = -1
   private static stampGen: number = 1
@@ -53,8 +56,8 @@ export class Snapshot implements AbstractSnapshot {
   get timestamp(): number { return this.stamp }
   private stamp: number
   private bumper: number
-  readonly changeset: Map<ObjectHolder, ObjectRevision>
-  readonly reactions: Observer[]
+  changeset: Map<ObjectHolder, ObjectRevision>
+  reactions: Observer[]
   sealed: boolean
 
   constructor(options: SnapshotOptions | null) {
@@ -75,7 +78,7 @@ export class Snapshot implements AbstractSnapshot {
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
   static revokeAllSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
-  static enqueueDetectedReactions = (snapshot: Snapshot): void => { /* nop */ }
+  static enqueueReactionsToRun = (reactions: Array<Observer>): void => { /* nop */ }
 
   seekRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     // TODO: Take into account timestamp of the member
@@ -238,7 +241,7 @@ export class Snapshot implements AbstractSnapshot {
     return counter
   }
 
-  applyOrDiscard(error?: any): void {
+  applyOrDiscard(error?: any): Array<Observer> {
     this.sealed = true
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       Snapshot.sealObjectRevision(h, r)
@@ -270,6 +273,7 @@ export class Snapshot implements AbstractSnapshot {
     }
     if (!error)
       Snapshot.propagateAllChangesThroughSubscriptions(this)
+    return this.reactions
   }
 
   static sealObjectRevision(h: ObjectHolder, r: ObjectRevision): void {
@@ -294,6 +298,8 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   collectGarbage(): void {
+    this.changeset = EMPTY_MAP // release for GC
+    this.reactions = EMPTY_ARRAY // release for GC
     if (Dbg.isOn) {
       Utils.freezeMap(this.changeset)
       Object.freeze(this.reactions)

@@ -631,10 +631,10 @@ class Operation extends Observable implements Observer {
     }
   }
 
-  private static enqueueDetectedReactions(snapshot: Snapshot): void {
+  private static enqueueReactionsToRun(reactions: Array<Observer>): void {
     const queue = Operation.queuedReactions
     const isReactionLoopRequired = queue.length === 0
-    for (const r of snapshot.reactions)
+    for (const r of reactions)
       queue.push(r)
     if (isReactionLoopRequired)
       OperationController.runWithin<void>(undefined, Operation.runQueuedReactionsLoop)
@@ -742,7 +742,7 @@ class Operation extends Observable implements Observer {
     Snapshot.isConflicting = Operation.isConflicting // override
     Snapshot.propagateAllChangesThroughSubscriptions = Operation.propagateAllChangesThroughSubscriptions // override
     Snapshot.revokeAllSubscriptions = Operation.revokeAllSubscriptions // override
-    Snapshot.enqueueDetectedReactions = Operation.enqueueDetectedReactions
+    Snapshot.enqueueReactionsToRun = Operation.enqueueReactionsToRun
     Hooks.createControllerAndGetHook = Operation.createControllerAndGetHook // override
     Hooks.rememberOperationOptions = Operation.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override

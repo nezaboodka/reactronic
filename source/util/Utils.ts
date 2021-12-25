@@ -8,7 +8,7 @@
 export type F<T> = (...args: any[]) => T
 
 export class Utils {
-  static freezeSet<T>(obj?: Set<T>): void {
+  static freezeSet<T>(obj?: Set<T>): Set<T> | undefined {
     if (obj instanceof Set) {
       const pd = { configurable: false, enumerable: false, get: UNDEF, set: UNDEF }
       Object.defineProperty(obj, 'add', pd)
@@ -16,9 +16,10 @@ export class Utils {
       Object.defineProperty(obj, 'clear', pd)
       Object.freeze(obj)
     }
+    return obj
   }
 
-  static freezeMap<K, V>(obj?: Map<K, V>): void {
+  static freezeMap<K, V>(obj?: Map<K, V>): Map<K, V> | undefined {
     if (obj instanceof Map) {
       const pd = { configurable: false, enumerable: false, get: UNDEF, set: UNDEF }
       Object.defineProperty(obj, 'set', pd)
@@ -26,6 +27,7 @@ export class Utils {
       Object.defineProperty(obj, 'clear', pd)
       Object.freeze(obj)
     }
+    return obj
   }
 
   static copyAllMembers(source: any, target: any): any {

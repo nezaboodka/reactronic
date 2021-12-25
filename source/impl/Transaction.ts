@@ -9,7 +9,7 @@ import { UNDEF, F, pause } from '../util/Utils'
 import { Dbg, misuse, error, fatal } from '../util/Dbg'
 import { Worker } from '../Worker'
 import { SnapshotOptions, TraceOptions } from '../Options'
-import { ObjectRevision } from './Data'
+import { ObjectRevision, Observer } from './Data'
 import { Snapshot, Dump } from './Snapshot'
 
 export abstract class Transaction implements Worker {
@@ -290,9 +290,9 @@ class TransactionImpl extends Transaction {
     finally {
       this.pending--
       if (this.sealed && this.pending === 0) {
-        this.applyOrDiscard() // it's critical to have no exceptions inside this call
+        const reactions = this.applyOrDiscard() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
-        TransactionImpl.standalone(Snapshot.enqueueDetectedReactions, this.snapshot)
+        TransactionImpl.standalone(Snapshot.enqueueReactionsToRun, reactions)
       }
       else
         TransactionImpl.curr = outer
@@ -324,12 +324,13 @@ class TransactionImpl extends Transaction {
     throw error(`T${this.id}[${this.hint}] conflicts with: ${Dump.conflicts(conflicts)}`, undefined)
   }
 
-  private applyOrDiscard(): void {
+  private applyOrDiscard(): Array<Observer> {
     // It's critical to have no exceptions in this block
+    let reactions: Array<Observer>
     try {
       if (Dbg.isOn && Dbg.trace.change)
         Dbg.log('╠═', '', '', undefined, 'changes')
-      this.snapshot.applyOrDiscard(this.canceled)
+      reactions = this.snapshot.applyOrDiscard(this.canceled)
       this.snapshot.collectGarbage()
       if (this.promise) {
         if (this.canceled && !this.after)
@@ -344,6 +345,7 @@ class TransactionImpl extends Transaction {
       fatal(e)
       throw e
     }
+    return reactions
   }
 
   private acquirePromise(): Promise<void> {
