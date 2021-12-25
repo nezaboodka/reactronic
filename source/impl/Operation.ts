@@ -70,7 +70,7 @@ export class OperationController extends Controller<any> {
     else if (Dbg.isOn && Dbg.trace.operation && (opts.trace === undefined ||
       opts.trace.operation === undefined || opts.trace.operation === true))
       Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)',
-        `${Dump.rev(oc.revision, this.memberName)} result is reused from T${oc.operation.transaction.id}[${oc.operation.transaction.hint}]`)
+        `${Dump.rev2(oc.operation.controller.ownHolder, oc.revision, this.memberName)} result is reused from T${oc.operation.transaction.id}[${oc.operation.transaction.hint}]`)
     const t = oc.operation
     Snapshot.markUsed(t, oc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
     return t
@@ -279,7 +279,7 @@ class Operation extends Observable implements Observer {
 
   get isOperation(): boolean { return true } // override
   get selfSnapshotId(): number { return this.revision.snapshot.id } // override
-  hint(): string { return `${Dump.rev(this.revision, this.controller.memberName)}` } // override
+  hint(): string { return `${Dump.rev2(this.controller.ownHolder, this.revision, this.controller.memberName)}` } // override
   get order(): number { return this.options.order }
 
   get ['#this'](): string {
@@ -555,7 +555,7 @@ class Operation extends Observable implements Observer {
   private static markEdited(oldValue: any, newValue: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
     edited ? r.changes.add(m) : r.changes.delete(m)
     if (Dbg.isOn && Dbg.trace.write)
-      edited ? Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`) : Dbg.log('║', '  ✎', `${Dump.rev(r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`, undefined, ' (same as previous)')
+      edited ? Dbg.log('║', '  ✎', `${Dump.rev2(h, r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`) : Dbg.log('║', '  ✎', `${Dump.rev2(h, r, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -685,14 +685,14 @@ class Operation extends Observable implements Observer {
         observable.observers.add(this)
         this.observables!.set(observable, info)
         if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-          Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.rev(r, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
+          Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.rev2(h, r, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
       }
       else if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log('║', '  x ', `${this.hint()} is obsolete and is NOT subscribed to ${Dump.rev(r, m)}`)
+        Dbg.log('║', '  x ', `${this.hint()} is obsolete and is NOT subscribed to ${Dump.rev2(h, r, m)}`)
     }
     else {
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Dump.rev(r, m)}`)
+        Dbg.log('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Dump.rev2(h, r, m)}`)
     }
     return ok // || observable.next === r
   }
@@ -797,7 +797,7 @@ function valueHint(value: any, m?: MemberName): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Operation)
-    result = `${Dump.rev(value.revision, m)}`
+    result = `${Dump.rev2(value.controller.ownHolder, value.revision, m)}`
   else if (value === Meta.Disposed)
     result = '<disposed>'
   else if (value !== undefined && value !== null)

@@ -193,7 +193,7 @@ export class Snapshot implements AbstractSnapshot {
             conflicts.push(r)
           }
           if (Dbg.isOn && Dbg.trace.transaction)
-            Dbg.log('╠╝', '', `${Dump.rev(r)} is merged with ${Dump.rev(h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
+            Dbg.log('╠╝', '', `${Dump.rev2(h, r)} is merged with ${Dump.rev2(h, h.head)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
       if (this.options.token === undefined) {
@@ -225,7 +225,7 @@ export class Snapshot implements AbstractSnapshot {
       if (disposed || m === Meta.Disposed) {
         if (disposed !== (m === Meta.Disposed)) {
           if (Dbg.isOn && Dbg.trace.change)
-            Dbg.log('║╠', '', `${Dump.rev(ours, m)} <> ${Dump.rev(head, m)}`, 0, ' *** CONFLICT ***')
+            Dbg.log('║╠', '', `${Dump.rev2(h, ours, m)} <> ${Dump.rev2(h, head, m)}`, 0, ' *** CONFLICT ***')
           ours.conflicts.set(m, head)
         }
       }
@@ -234,7 +234,7 @@ export class Snapshot implements AbstractSnapshot {
         if (conflict)
           ours.conflicts.set(m, head)
         if (Dbg.isOn && Dbg.trace.change)
-          Dbg.log('║╠', '', `${Dump.rev(ours, m)} ${conflict ? '<>' : '=='} ${Dump.rev(head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
+          Dbg.log('║╠', '', `${Dump.rev2(h, ours, m)} ${conflict ? '<>' : '=='} ${Dump.rev2(h, head, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
       }
     })
     Utils.copyAllMembers(merged, ours.data) // overwrite with merged copy
@@ -266,7 +266,7 @@ export class Snapshot implements AbstractSnapshot {
           const members: string[] = []
           r.changes.forEach((o, m) => members.push(m.toString()))
           const s = members.join(', ')
-          Dbg.log('║', '√', `${Dump.rev(r)} (${s}) is ${r.prev.revision === ROOT_REV ? 'constructed' : `applied on top of ${Dump.rev(r.prev.revision)}`}`)
+          Dbg.log('║', '√', `${Dump.rev2(h, r)} (${s}) is ${r.prev.revision === ROOT_REV ? 'constructed' : `applied on top of ${Dump.rev2(h, r.prev.revision)}`}`)
         })
       }
       if (Dbg.trace.transaction)
@@ -331,7 +331,7 @@ export class Snapshot implements AbstractSnapshot {
       Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       if (Dbg.isOn && Dbg.trace.gc && r.prev.revision !== ROOT_REV)
-        Dbg.log(' ', '  ', `${Dump.rev(r.prev.revision)} is ready for GC because overwritten by ${Dump.rev(r)}`)
+        Dbg.log(' ', '  ', `${Dump.rev2(h, r.prev.revision)} is ready for GC because overwritten by ${Dump.rev2(h, r)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
         if (r.prev.revision !== ROOT_REV)
           Snapshot.totalObjectRevisionCount--
@@ -369,6 +369,10 @@ export class Dump {
     return h === undefined
       ? `root${member}`
       : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${op}v${stamp}${xop !== undefined && xop !== 0 ? `t${xop}` : ''}`
+  }
+
+  static rev2(h: ObjectHolder, r: ObjectRevision, m?: MemberName, value?: Observable): string {
+    return Dump.obj(h, m, r.snapshot.timestamp, r.snapshot.id, value?.selfSnapshotId)
   }
 
   static rev(r: ObjectRevision, m?: MemberName): string {
