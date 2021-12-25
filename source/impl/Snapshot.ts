@@ -297,17 +297,6 @@ export class Snapshot implements AbstractSnapshot {
     }
   }
 
-  collectGarbage(): void {
-    this.changeset = EMPTY_MAP // release for GC
-    this.reactions = EMPTY_ARRAY // release for GC
-    if (Dbg.isOn) {
-      Utils.freezeMap(this.changeset)
-      Object.freeze(this.reactions)
-      Object.freeze(this)
-    }
-    this.triggerGarbageCollection()
-  }
-
   static freezeObjectRevision(r: ObjectRevision): ObjectRevision {
     Object.freeze(r.data)
     Utils.freezeSet(r.changes)
@@ -315,7 +304,7 @@ export class Snapshot implements AbstractSnapshot {
     return r
   }
 
-  private triggerGarbageCollection(): void {
+  triggerGarbageCollection(): void {
     if (this.stamp !== 0) {
       if (this === Snapshot.oldest) {
         const p = Snapshot.pending
@@ -350,13 +339,17 @@ export class Snapshot implements AbstractSnapshot {
       }
       r.prev.revision = ROOT_REV // unlink history
     })
+    this.changeset = EMPTY_MAP // release for GC
+    this.reactions = EMPTY_ARRAY // release for GC
+    if (Dbg.isOn)
+      Object.freeze(this)
   }
 
   static _init(): void {
     const root = ROOT_REV.snapshot as Snapshot // workaround
     root.acquire(root)
     root.applyOrDiscard()
-    root.collectGarbage()
+    root.triggerGarbageCollection()
     Snapshot.freezeObjectRevision(ROOT_REV)
     Snapshot.idGen = 100
     Snapshot.stampGen = 101
