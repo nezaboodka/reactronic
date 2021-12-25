@@ -186,7 +186,7 @@ export class Snapshot implements AbstractSnapshot {
     if (this.changeset.size > 0) {
       this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
         if (r.prev.revision !== h.head) {
-          const merged = Snapshot.merge(r, h.head)
+          const merged = Snapshot.merge(h, r)
           if (r.conflicts.size > 0) {
             if (!conflicts)
               conflicts = []
@@ -214,8 +214,9 @@ export class Snapshot implements AbstractSnapshot {
     return conflicts
   }
 
-  private static merge(ours: ObjectRevision, head: ObjectRevision): number {
+  private static merge(h: ObjectHolder, ours: ObjectRevision): number {
     let counter: number = 0
+    const head = h.head
     const disposed: boolean = head.changes.has(Meta.Disposed)
     const merged = { ...head.data } // clone
     ours.changes.forEach((o, m) => {
