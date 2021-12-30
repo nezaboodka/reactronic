@@ -35,14 +35,15 @@ export interface Observer {
   readonly observables: Map<Observable, MemberInfo> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(observable: Observable, cause: MemberInfo, since: number, reactions: Observer[]): void
+  markObsoleteDueTo(observable: Observable, memberName: MemberName, snapshot: AbstractSnapshot, holder: ObjectHolder, outer: string, since: number, reactions: Observer[]): void
   runIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 
 export type MemberName = PropertyKey
 
 export interface MemberInfo {
-  readonly revision: ObjectRevision
+  readonly holder: ObjectHolder
+  readonly snapshot: AbstractSnapshot
   readonly memberName: MemberName
   readonly usageCount: number
 }
