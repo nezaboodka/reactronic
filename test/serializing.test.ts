@@ -16,7 +16,7 @@ class Serializable extends ObservableObject {
 
 test('serializing', t => {
   Rx.setTraceMode(true, TestingTraceLevel)
-  const serializable = Transaction.run(() => {
+  const serializable = Transaction.run(null, () => {
     const s1 = new Serializable()
     s1.text = 's1'
     const s2 = new Serializable()

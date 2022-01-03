@@ -34,8 +34,8 @@ export abstract class Transaction implements Worker {
   async whenFinished(): Promise<void> { /* to be overridden */ }
 
   static create(options: SnapshotOptions | null): Transaction { return new TransactionImpl(options) }
-  static run<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(func, ...args) }
-  static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(options, func, ...args) }
+  static run<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(options, func, ...args) }
+  static standalone<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.standalone(func, ...args) }
   static off<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.off<T>(func, ...args) }
 
   static isFrameOver(everyN: number = 1, timeLimit: number = 14): boolean { return TransactionImpl.isFrameOver(everyN, timeLimit) }
@@ -161,11 +161,7 @@ class TransactionImpl extends Transaction {
       await this.acquirePromise()
   }
 
-  static run<T>(func: F<T>, ...args: any[]): T {
-    return TransactionImpl.runAs<T>(null, func, ...args)
-  }
-
-  static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T {
+  static run<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T {
     const t: TransactionImpl = TransactionImpl.acquire(options)
     const root = t !== TransactionImpl.curr
     t.guard()
@@ -179,6 +175,10 @@ class TransactionImpl extends Transaction {
       t.seal()
     }
     return result
+  }
+
+  static standalone<T>(func: F<T>, ...args: any[]): T {
+    return TransactionImpl.run({ standalone: true }, func, ...args)
   }
 
   static off<T>(func: F<T>, ...args: any[]): T {
@@ -245,7 +245,7 @@ class TransactionImpl extends Transaction {
             trace: this.snapshot.options.trace,
             token: this.snapshot.options.token,
           }
-          return TransactionImpl.runAs<T>(options, func, ...args)
+          return TransactionImpl.run<T>(options, func, ...args)
         }
         else
           throw error

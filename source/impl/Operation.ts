@@ -39,7 +39,7 @@ export class OperationController extends Controller<any> {
   get error(): boolean { return this.use().operation.error }
   get stamp(): number { return this.use().revision.snapshot.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
-  markObsolete(): void { Transaction.runAs({ hint: Dbg.isOn ? `markObsolete(${Dump.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, OperationController.markObsolete, this) }
+  markObsolete(): void { Transaction.run({ hint: Dbg.isOn ? `markObsolete(${Dump.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, OperationController.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.useOrRun(true, args).value }
 
   constructor(ownHolder: ObjectHolder, memberName: MemberName) {
@@ -174,7 +174,7 @@ export class OperationController extends Controller<any> {
     if (op.controller !== this) {
       const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
       const standalone = r.snapshot.sealed || r.prev.revision !== ROOT_REV
-      op = Transaction.runAs<Operation>({ hint, standalone, token: this }, (): Operation => {
+      op = Transaction.run<Operation>({ hint, standalone, token: this }, (): Operation => {
         const h = this.ownHolder
         let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
         let op2 = r2.data[m] as Operation
@@ -199,7 +199,7 @@ export class OperationController extends Controller<any> {
     const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.ownHolder, this.memberName)}`
     let oc = existing
     const opts = { hint, standalone, journal: options.journal, trace: options.trace, token }
-    const result = Transaction.runAs(opts, (argsx: any[] | undefined): any => {
+    const result = Transaction.run(opts, (argsx: any[] | undefined): any => {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()
         if (Dbg.isOn && Dbg.trace.operation)
@@ -504,7 +504,7 @@ class Operation extends Observable implements Observer {
       hint: 'Monitor.enter',
       standalone: 'isolated',
       trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.global }
-    OperationController.runWithin<void>(undefined, Transaction.runAs, options,
+    OperationController.runWithin<void>(undefined, Transaction.run, options,
       MonitorImpl.enter, mon, this.transaction)
   }
 
@@ -515,7 +515,7 @@ class Operation extends Observable implements Observer {
           hint: 'Monitor.leave',
           standalone: 'isolated',
           trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.DefaultLevel }
-        OperationController.runWithin<void>(undefined, Transaction.runAs, options,
+        OperationController.runWithin<void>(undefined, Transaction.run, options,
           MonitorImpl.leave, mon, this.transaction)
       }
       this.transaction.whenFinished().then(leave, leave)

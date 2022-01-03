@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    Transaction.run(Rx.dispose, this)
+    Transaction.run(null, Rx.dispose, this)
   }
 }

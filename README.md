@@ -208,7 +208,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    Transaction.runAs({ standalone: true }, Rx.dispose, this)
+    Transaction.run(null, Rx.dispose, this)
   }
 }
 ```
@@ -418,8 +418,7 @@ class Transaction implements Worker {
   join<T>(p: Promise<T>): Promise<T>
 
   static create(options: SnapshotOptions | null): Transaction
-  static run<T>(func: F<T>, ...args: any[]): T
-  static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T
+  static run<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T
   static off<T>(func: F<T>, ...args: any[]): T
 
   static isFrameOver(everyN: number, timeLimit: number): boolean

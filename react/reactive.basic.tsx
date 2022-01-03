@@ -34,7 +34,7 @@ class RxComponent extends ObservableObject {
 
   @unobservable refresh: (next: ReactState) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
-    return (): void => { Transaction.run(Rx.dispose, this) }
+    return (): void => { Transaction.run(null, Rx.dispose, this) }
   }
 
   static create(): RxComponent {
@@ -43,7 +43,7 @@ class RxComponent extends ObservableObject {
 }
 
 function createReactState(): ReactState {
-  const rx = Transaction.runAs<RxComponent>({ hint: '<rx>' }, RxComponent.create)
+  const rx = Transaction.run<RxComponent>({ hint: '<rx>' }, RxComponent.create)
   return {rx}
 }
 

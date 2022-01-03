@@ -27,7 +27,7 @@ const expected: Array<string | undefined> = [
 
 test('reentrance.error', async t => {
   Rx.setTraceMode(true, TestingTraceLevel)
-  const app = Transaction.run(() => {
+  const app = Transaction.run(null, () => {
     const a = new AsyncDemoView(new AsyncDemo())
     Rx.getController(a.model.load).configure({reentrance: Reentrance.PreventWithError})
     return a
@@ -52,7 +52,7 @@ test('reentrance.error', async t => {
     const r = Rx.pullLastResult(app.render)
     t.is(r && r.length, 2)
     await pause(300)
-    Transaction.run(() => {
+    Transaction.run(null, () => {
       Rx.dispose(app)
       Rx.dispose(app.model)
     })

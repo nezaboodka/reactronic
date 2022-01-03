@@ -78,7 +78,7 @@ export class ToggleRef<T = boolean> extends Ref<T> {
   toggle(): void {
     const o = this.owner
     const p = this.name
-    Transaction.runAs({ hint: `toggle ${(o as any).constructor.name}.${p}` }, () => {
+    Transaction.run({ hint: `toggle ${(o as any).constructor.name}.${p}` }, () => {
       const v = o[p]
       const isOn = v === this.valueOn || (
         v instanceof Ref && this.valueOn instanceof Ref &&

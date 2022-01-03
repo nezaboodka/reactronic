@@ -42,7 +42,7 @@ test('brief', t => {
   Rx.setTraceMode(false)
   Rx.setTraceMode(true, TestingTraceLevel)
   // Simple transactions
-  const app = Transaction.run(() => new DemoView(new Demo()))
+  const app = Transaction.run(null, () => new DemoView(new Demo()))
   try {
     t.is(Rx.why(), 'root-holder')
     t.is(Rx.getController(app.print).options.order, 123)
@@ -154,7 +154,7 @@ test('brief', t => {
       op3.run(nop)
     }), { message: 'test' })
     t.throws(() => op3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
-    Transaction.run(sensitive, true, () => {
+    Transaction.run(null, sensitive, true, () => {
       app.userFilter = app.userFilter
     })
     // Other
@@ -198,7 +198,7 @@ test('brief', t => {
     // t.is(daddy.age, 45)
   }
   finally {
-    Transaction.run(() => {
+    Transaction.run(null, () => {
       Rx.dispose(app.model)
       Rx.dispose(app)
     })

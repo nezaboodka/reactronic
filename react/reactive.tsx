@@ -37,7 +37,7 @@ class RxComponent<V> extends ObservableObject {
   @unobservable cycle: number = 0
   @unobservable refresh: (next: ReactState<V>) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
-    return (): void => { Transaction.run(Rx.dispose, this) }
+    return (): void => { Transaction.run(null, Rx.dispose, this) }
   }
 
   static create<V>(hint: string | undefined, trace: TraceOptions | undefined): RxComponent<V> {
@@ -54,7 +54,7 @@ class RxComponent<V> extends ObservableObject {
 
 function createReactState<V>(name?: string, trace?: Partial<TraceOptions>): ReactState<V> {
   const hint = name || (Rx.isTraceEnabled ? getComponentName() : '<rx>')
-  const rx = Transaction.runAs<RxComponent<V>>({ hint, trace }, RxComponent.create, hint, trace)
+  const rx = Transaction.run<RxComponent<V>>({ hint, trace }, RxComponent.create, hint, trace)
   return {rx, cycle: 0}
 }
 

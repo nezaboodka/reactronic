@@ -27,7 +27,7 @@ const expected: Array<string | undefined> = [
 
 test('reentrance.cancel', async t => {
   Rx.setTraceMode(true, TestingTraceLevel)
-  const app = Transaction.run(() => {
+  const app = Transaction.run(null, () => {
     const a = new AsyncDemoView(new AsyncDemo())
     Rx.getController(a.print).configure({ order: 0 })
     Rx.getController(a.model.load).configure({reentrance: Reentrance.CancelPrevious})
@@ -50,7 +50,7 @@ test('reentrance.cancel', async t => {
     t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
     await pause(300)
-    Transaction.run(() => {
+    Transaction.run(null, () => {
       Rx.dispose(app)
       Rx.dispose(app.model)
     })

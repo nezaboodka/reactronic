@@ -11,7 +11,7 @@ export const output: string[] = []
 
 export class Demo extends ObservableObject {
   static stamp = 0
-  static UndoRedo = Transaction.run(() => TransactionJournal.create())
+  static UndoRedo = Transaction.run(null, () => TransactionJournal.create())
 
   @cached
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
