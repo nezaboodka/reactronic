@@ -417,11 +417,14 @@ class Transaction implements Worker {
   whenFinished(): Promise<void>
   join<T>(p: Promise<T>): Promise<T>
 
-  static create(hint: string): Transaction
-  static run<T>(hint: string, func: F<T>, ...args: any[]): T
-  static runEx<T>(hint: string, standalone: boolean, sidebyside: boolean,
-    trace: Partial<TraceOptions | undefined>, func: F<T>, ...args: any[]): T
-  static nontransactional<T>(func: F<T>, ...args: any[]): T
+  static create(options: SnapshotOptions | null): Transaction
+  static run<T>(func: F<T>, ...args: any[]): T
+  static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T
+  static off<T>(func: F<T>, ...args: any[]): T
+
+  static isFrameOver(everyN: number, timeLimit: number): boolean
+  static requestNextFrame(sleepTime: number): Promise<void>
+  static isCanceled: boolean
 }
 
 // Controller
