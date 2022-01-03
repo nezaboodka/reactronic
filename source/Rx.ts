@@ -43,7 +43,7 @@ export function nonreactive<T>(func: F<T>, ...args: any[]): T {
 }
 
 export function nontransactional<T>(func: F<T>, ...args: any[]): T {
-  return OperationController.runWithin<T>(undefined, Transaction.nontransactional, func, ...args)
+  return Transaction.off(func, ...args)
 }
 
 export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {

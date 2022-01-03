@@ -86,7 +86,7 @@ test('brief', t => {
       daddy.children[2].name = 'Steven Smith' // Steve
       t.is(daddy.name, 'John Smith')
       t.is(daddy.age, 40)
-      t.is(Transaction.nontransactional(() => daddy.age), 38)
+      t.is(Transaction.off(() => daddy.age), 38)
       t.is(nontransactional(() => daddy.age), 38)
       t.is(nonreactive(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
