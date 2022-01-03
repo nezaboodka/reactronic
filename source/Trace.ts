@@ -33,6 +33,7 @@ export interface ProfilingOptions {
 
 export const TraceLevel: {
   ErrorsOnly: TraceOptions,
+  Reactions: TraceOptions,
   Transactions: TraceOptions,
   Operations: TraceOptions,
   Debug: TraceOptions,
@@ -49,6 +50,25 @@ export const TraceLevel: {
     write: false,
     change: false,
     obsolete: false,
+    error: true,
+    warning: true,
+    gc: false,
+    color: 37,
+    prefix: '',
+    margin1: 0,
+    margin2: 0,
+  },
+
+  Reactions: {
+    silent: false,
+    transaction: false,
+    operation: false,
+    step: false,
+    monitor: false,
+    read: false,
+    write: false,
+    change: false,
+    obsolete: true,
     error: true,
     warning: true,
     gc: false,
