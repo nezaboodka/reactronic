@@ -538,7 +538,8 @@ class Operation extends Observable implements Observer {
   private static markUsed(observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transaction) {
       const op: Operation | undefined = Operation.current // alias
-      if (op && op.options.kind !== Kind.Transaction && m !== Meta.Holder) {
+      if (op && op.options.kind !== Kind.Transaction &&
+        op.transaction === Transaction.current && m !== Meta.Holder) {
         const ctx = Snapshot.current()
         if (ctx !== r.snapshot) // snapshot should not bump itself
           ctx.bumpBy(r.snapshot.timestamp)
