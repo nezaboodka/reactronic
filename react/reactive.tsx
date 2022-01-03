@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, unobservable, reaction, cached, nontransactional, Rx, TraceOptions } from 'api' // from 'reactronic'
+import { ObservableObject, Transaction, unobservable, reaction, cached, Rx, TraceOptions } from 'api' // from 'reactronic'
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, op?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -31,7 +31,7 @@ class RxComponent<V> extends ObservableObject {
   @reaction
   protected ensureUpToDate(): void {
     if (!Rx.getController(this.render).isUpToDate)
-      nontransactional(this.refresh, {rx: this, cycle: this.cycle + 1})
+      Transaction.off(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
   @unobservable cycle: number = 0

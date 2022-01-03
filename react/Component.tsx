@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { reaction, cached, nontransactional, Transaction, Rx } from 'api' // from 'reactronic'
+import { reaction, cached, Transaction, Rx } from 'api' // from 'reactronic'
 
 export class Component<P> extends React.Component<P> {
   @cached
@@ -17,7 +17,7 @@ export class Component<P> extends React.Component<P> {
   @reaction // called immediately in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
-      nontransactional(() => this.setState({})) // ask React to re-render
+      Transaction.off(() => this.setState({})) // ask React to re-render
   } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {

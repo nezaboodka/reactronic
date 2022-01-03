@@ -196,7 +196,7 @@ class Component<P> extends React.Component<P> {
   @reaction // called immediately in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
-      nontransactional(() => this.setState({})) // ask React to re-render
+      Transaction.off(() => this.setState({})) // ask React to re-render
   } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
@@ -310,7 +310,6 @@ function monitor(value: Monitor | null)
 function trace(value: Partial<TraceOptions>)
 
 function nonreactive<T>(func: F<T>, ...args: any[]): T
-function nontransactional<T>(func: F<T>, ...args: any[]): T
 function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // Options, ObjectOptions, Kind, Reentrance, Monitor, TraceOptions, ProfilingOptions
