@@ -368,7 +368,7 @@ export class Dump {
     const member = m !== undefined ? `.${m.toString()}` : ''
     return h === undefined
       ? `root${member}`
-      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${op}${xop !== undefined && xop !== 0 ? `t${xop}` : ''}`
+      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${op}v${stamp}${xop !== undefined && xop !== 0 ? `t${xop}` : ''}`
   }
 
   static rev2(h: ObjectHolder, s: AbstractSnapshot, m?: MemberName, value?: Observable): string {
