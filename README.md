@@ -196,7 +196,7 @@ class Component<P> extends React.Component<P> {
   @reaction // called immediately in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
-      standalone(() => this.setState({})) // ask React to re-render
+      nontransactional(() => this.setState({})) // ask React to re-render
   } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
@@ -208,7 +208,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    standalone(Rx.dispose, this)
+    Transaction.runAs({ standalone: true }, Rx.dispose, this)
   }
 }
 ```
@@ -310,7 +310,7 @@ function monitor(value: Monitor | null)
 function trace(value: Partial<TraceOptions>)
 
 function nonreactive<T>(func: F<T>, ...args: any[]): T
-function standalone<T>(func: F<T>, ...args: any[]): T
+function nontransactional<T>(func: F<T>, ...args: any[]): T
 function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // Options, ObjectOptions, Kind, Reentrance, Monitor, TraceOptions, ProfilingOptions
@@ -421,7 +421,7 @@ class Transaction implements Worker {
   static run<T>(hint: string, func: F<T>, ...args: any[]): T
   static runEx<T>(hint: string, standalone: boolean, sidebyside: boolean,
     trace: Partial<TraceOptions | undefined>, func: F<T>, ...args: any[]): T
-  static standalone<T>(func: F<T>, ...args: any[]): T
+  static nontransactional<T>(func: F<T>, ...args: any[]): T
 }
 
 // Controller

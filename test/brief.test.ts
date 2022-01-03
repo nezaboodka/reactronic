@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Kind, nonreactive, standalone, sensitive, Rx } from '../source/api'
+import { Transaction, Kind, nonreactive, nontransactional, sensitive, Rx } from '../source/api'
 import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
 
 const expected: string[] = [
@@ -86,8 +86,8 @@ test('brief', t => {
       daddy.children[2].name = 'Steven Smith' // Steve
       t.is(daddy.name, 'John Smith')
       t.is(daddy.age, 40)
-      t.is(Transaction.standalone(() => daddy.age), 38)
-      t.is(standalone(() => daddy.age), 38)
+      t.is(Transaction.nontransactional(() => daddy.age), 38)
+      t.is(nontransactional(() => daddy.age), 38)
       t.is(nonreactive(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = 'Jo' // set to the same value

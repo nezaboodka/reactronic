@@ -509,7 +509,7 @@ class Operation extends Observable implements Observer {
   }
 
   private monitorLeave(mon: Monitor): void {
-    Transaction.standalone<void>(() => {
+    Transaction.nontransactional<void>(() => {
       const leave = (): void => {
         const options: SnapshotOptions = {
           hint: 'Monitor.leave',

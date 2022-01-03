@@ -36,7 +36,7 @@ export abstract class Transaction implements Worker {
   static create(options: SnapshotOptions | null): Transaction { return new TransactionImpl(options) }
   static run<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(func, ...args) }
   static runAs<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.runAs<T>(options, func, ...args) }
-  static standalone<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.standalone<T>(func, ...args) }
+  static nontransactional<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.nontransactional<T>(func, ...args) }
 
   static isFrameOver(everyN: number = 1, timeLimit: number = 14): boolean { return TransactionImpl.isFrameOver(everyN, timeLimit) }
   static requestNextFrame(sleepTime: number = 0): Promise<void> { return TransactionImpl.requestNextFrame(sleepTime) }
@@ -172,7 +172,7 @@ class TransactionImpl extends Transaction {
     let result: any = t.runImpl<T>(options?.trace, func, ...args)
     if (root) {
       if (result instanceof Promise) {
-        result = TransactionImpl.standalone(() => {
+        result = TransactionImpl.nontransactional(() => {
           return t.wrapToRetry(t.wrapToWaitUntilFinish(result), func, ...args)
         })
       }
@@ -181,7 +181,7 @@ class TransactionImpl extends Transaction {
     return result
   }
 
-  static standalone<T>(func: F<T>, ...args: any[]): T {
+  static nontransactional<T>(func: F<T>, ...args: any[]): T {
     const outer = TransactionImpl.curr
     try {
       TransactionImpl.curr = TransactionImpl.none
@@ -292,7 +292,7 @@ class TransactionImpl extends Transaction {
       if (this.sealed && this.pending === 0) {
         const reactions = this.applyOrDiscard() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
-        TransactionImpl.standalone(Snapshot.enqueueReactionsToRun, reactions)
+        TransactionImpl.nontransactional(Snapshot.enqueueReactionsToRun, reactions)
       }
       else
         TransactionImpl.curr = outer
