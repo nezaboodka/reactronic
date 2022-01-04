@@ -278,7 +278,7 @@ class Operation extends Observable implements Observer {
   }
 
   get isOperation(): boolean { return true } // override
-  get selfSnapshotId(): number { return this.snapshot.id } // override
+  get originSnapshotId(): number { return this.snapshot.id } // override
   hint(): string { return `${Dump.rev2(this.controller.ownHolder, this.snapshot, this.controller.memberName)}` } // override
   get order(): number { return this.options.order }
 

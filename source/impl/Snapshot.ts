@@ -372,13 +372,13 @@ export class Dump {
   }
 
   static rev2(h: ObjectHolder, s: AbstractSnapshot, m?: MemberName, value?: Observable): string {
-    return Dump.obj(h, m, s.timestamp, s.id, value?.selfSnapshotId)
+    return Dump.obj(h, m, s.timestamp, s.id, value?.originSnapshotId)
   }
 
   static rev(r: ObjectRevision, m?: MemberName): string {
     const h = Meta.get<ObjectHolder | undefined>(r.data, Meta.Holder)
     const value = m !== undefined ? r.data[m] as Observable : undefined
-    return Dump.obj(h, m, r.snapshot.timestamp, r.snapshot.id, value?.selfSnapshotId)
+    return Dump.obj(h, m, r.snapshot.timestamp, r.snapshot.id, value?.originSnapshotId)
   }
 
   static conflicts(conflicts: ObjectRevision[]): string {
