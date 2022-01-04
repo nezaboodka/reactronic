@@ -32,7 +32,7 @@ export type StandaloneMode = boolean | 'isolated'
 
 export interface Observer {
   readonly order: number
-  readonly observables: Map<Observable, MemberInfo> | undefined
+  readonly observables: Map<Observable, ObservableInfo> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
   markObsoleteDueTo(observable: Observable, memberName: MemberName, snapshot: AbstractSnapshot, holder: ObjectHolder, outer: string, since: number, reactions: Observer[]): void
@@ -41,10 +41,8 @@ export interface Observer {
 
 export type MemberName = PropertyKey
 
-export interface MemberInfo {
-  readonly holder: ObjectHolder
-  readonly snapshot: AbstractSnapshot
-  readonly memberName: MemberName
+export interface ObservableInfo {
+  readonly memberHint: string
   readonly usageCount: number
 }
 

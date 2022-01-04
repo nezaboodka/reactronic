@@ -9,7 +9,7 @@ import { F } from '../util/Utils'
 import { Dbg, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
-import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, StandaloneMode, MemberInfo, Meta, AbstractSnapshot } from './Data'
+import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, StandaloneMode, ObservableInfo, Meta, AbstractSnapshot } from './Data'
 import { Snapshot, Dump, ROOT_REV, MAX_TIMESTAMP } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -239,7 +239,7 @@ class Operation extends Observable implements Observer {
   readonly transaction: Transaction
   readonly controller: OperationController
   readonly snapshot: AbstractSnapshot
-  observables: Map<Observable, MemberInfo> | undefined
+  observables: Map<Observable, ObservableInfo> | undefined
   options: OptionsImpl
   cause: string | undefined
   args: any[]
@@ -256,7 +256,7 @@ class Operation extends Observable implements Observer {
     this.transaction = Transaction.current
     this.controller = controller
     this.snapshot = snapshot
-    this.observables = new Map<Observable, MemberInfo>()
+    this.observables = new Map<Observable, ObservableInfo>()
     if (prev instanceof Operation) {
       this.options = prev.options
       this.args = prev.args
@@ -614,9 +614,9 @@ class Operation extends Observable implements Observer {
     if (curr instanceof Operation) {
       if (curr.snapshot === r.snapshot && curr.observables !== undefined) {
         if (Hooks.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
-          curr.observables.forEach((hint, v) => { // performance tracking info
-            if (hint.usageCount > Hooks.repetitiveUsageWarningThreshold)
-              Dbg.log('', '[!]', `${curr.hint()} uses ${Dump.rev2(hint.holder, hint.snapshot, hint.memberName)} ${hint.usageCount} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
+          curr.observables.forEach((info, v) => { // performance tracking info
+            if (info.usageCount > Hooks.repetitiveUsageWarningThreshold)
+              Dbg.log('', '[!]', `${curr.hint()} uses ${info.memberHint} ${info.usageCount} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
         if (unsubscribe)
@@ -657,11 +657,11 @@ class Operation extends Observable implements Observer {
 
   private unsubscribeFromAllObservables(): void {
     // It's critical to have no exceptions here
-    this.observables?.forEach((hint, value) => {
+    this.observables?.forEach((info, value) => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       value.observers!.delete(this)
       if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${Dump.rev2(hint.holder, hint.snapshot, hint.memberName)}`)
+        Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${info.memberHint}`)
     })
     this.observables = undefined
   }
@@ -681,7 +681,7 @@ class Operation extends Observable implements Observer {
         if (!observable.observers)
           observable.observers = new Set<Operation>()
         // Two-way linking
-        const info: MemberInfo = { holder: h, snapshot: r.snapshot, memberName: m, usageCount: times }
+        const info: ObservableInfo = { memberHint: Dump.rev2(h, r.snapshot, m), usageCount: times }
         observable.observers.add(this)
         this.observables!.set(observable, info)
         if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
