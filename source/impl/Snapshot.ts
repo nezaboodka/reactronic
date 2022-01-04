@@ -364,11 +364,11 @@ export class Snapshot implements AbstractSnapshot {
 // Dump
 
 export class Dump {
-  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, op?: number, xop?: number, typeless?: boolean): string {
+  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, typeless?: boolean): string {
     const member = m !== undefined ? `.${m.toString()}` : ''
     return h === undefined
       ? `root${member}`
-      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${op}v${stamp}${xop !== undefined && xop !== 0 ? `t${xop}` : ''}`
+      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${snapshotId}v${stamp}${originSnapshotId !== undefined && originSnapshotId !== 0 ? `t${originSnapshotId}` : ''}`
   }
 
   static rev2(h: ObjectHolder, s: AbstractSnapshot, m?: MemberName, value?: Observable): string {
