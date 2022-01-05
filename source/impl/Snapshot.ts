@@ -186,7 +186,7 @@ export class Snapshot implements AbstractSnapshot {
     if (this.changeset.size > 0) {
       this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
         if (r.prev.revision !== h.head) {
-          const merged = Snapshot.merge(h, r)
+          const merged = this.merge(h, r)
           if (r.conflicts.size > 0) {
             if (!conflicts)
               conflicts = []
@@ -214,19 +214,21 @@ export class Snapshot implements AbstractSnapshot {
     return conflicts
   }
 
-  private static merge(h: ObjectHolder, ours: ObjectRevision): number {
+  private merge(h: ObjectHolder, ours: ObjectRevision): number {
     let counter: number = 0
     const head = h.head
-    const disposed: boolean = head.changes.has(Meta.Disposed)
+    const headDisposed: boolean = head.changes.has(Meta.Disposed)
     const merged = { ...head.data } // clone
     ours.changes.forEach((o, m) => {
       counter++
       merged[m] = ours.data[m]
-      if (disposed || m === Meta.Disposed) {
-        if (disposed !== (m === Meta.Disposed)) {
-          if (Dbg.isOn && Dbg.trace.change)
-            Dbg.log('║╠', '', `${Dump.rev2(h, ours.snapshot, m)} <> ${Dump.rev2(h, head.snapshot, m)}`, 0, ' *** CONFLICT ***')
-          ours.conflicts.set(m, head)
+      if (headDisposed || m === Meta.Disposed) {
+        if (headDisposed !== (m === Meta.Disposed)) {
+          if (headDisposed || this.options.standalone !== 'disposal') {
+            if (Dbg.isOn && Dbg.trace.change)
+              Dbg.log('║╠', '', `${Dump.rev2(h, ours.snapshot, m)} <> ${Dump.rev2(h, head.snapshot, m)}`, 0, ' *** CONFLICT ***')
+            ours.conflicts.set(m, head)
+          }
         }
       }
       else {

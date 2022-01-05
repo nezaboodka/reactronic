@@ -28,7 +28,7 @@ export class Observable {
   constructor(value: any) { this.value = value }
 }
 
-export type StandaloneMode = boolean | 'isolated'
+export type StandaloneMode = boolean | 'isolated' | 'disposal'
 
 export interface Observer {
   readonly order: number
