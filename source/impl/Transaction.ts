@@ -38,7 +38,7 @@ export abstract class Transaction implements Worker {
   static standalone<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.standalone(func, ...args) }
   static off<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.off<T>(func, ...args) }
 
-  static isFrameOver(everyN: number = 1, timeLimit: number = 14): boolean { return TransactionImpl.isFrameOver(everyN, timeLimit) }
+  static isFrameOver(everyN: number = 1, timeLimit: number = 10): boolean { return TransactionImpl.isFrameOver(everyN, timeLimit) }
   static requestNextFrame(sleepTime: number = 0): Promise<void> { return TransactionImpl.requestNextFrame(sleepTime) }
   static get isCanceled(): boolean { return TransactionImpl.current.isCanceled }
 }
@@ -192,7 +192,7 @@ class TransactionImpl extends Transaction {
     }
   }
 
-  static isFrameOver(everyN: number = 1, timeLimit: number = 14): boolean {
+  static isFrameOver(everyN: number = 1, timeLimit: number = 10): boolean {
     TransactionImpl.frameOverCounter++
     let result = TransactionImpl.frameOverCounter % everyN === 0
     if (result) {
