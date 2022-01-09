@@ -54,7 +54,7 @@ class RxComponent<V> extends ObservableObject {
 
 function createReactState<V>(name?: string, logging?: Partial<LoggingOptions>): ReactState<V> {
   const hint = name || (Rx.isLogging ? getComponentName() : '<rx>')
-  const rx = Transaction.run<RxComponent<V>>({ hint, logging: logging }, RxComponent.create, hint, logging)
+  const rx = Transaction.run<RxComponent<V>>({ hint, logging }, RxComponent.create, hint, logging)
   return {rx, cycle: 0}
 }
 
