@@ -7,7 +7,7 @@
 
 import test from 'ava'
 import { Transaction, Rx, ObservableObject } from '../source/api'
-import { TestingTraceLevel } from './brief'
+import { TestsLoggingLevel } from './brief'
 
 class Serializable extends ObservableObject {
   text: string = ''
@@ -15,7 +15,7 @@ class Serializable extends ObservableObject {
 }
 
 test('serializing', t => {
-  Rx.setTraceMode(true, TestingTraceLevel)
+  Rx.setLoggingMode(true, TestsLoggingLevel)
   const serializable = Transaction.run(null, () => {
     const s1 = new Serializable()
     s1.text = 's1'

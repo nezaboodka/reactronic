@@ -6,9 +6,9 @@
 // automatically licensed under the license referred above.
 
 import { F } from './util/Utils'
-import { Dbg } from './util/Dbg'
+import { Log } from './util/Dbg'
 import { Controller } from './Controller'
-import { Kind, MemberOptions, TraceOptions, ProfilingOptions } from './Options'
+import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options'
 import { ObjectHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks } from './impl/Hooks'
@@ -26,13 +26,13 @@ export class Rx {
   // Configuration
   static get reactionsAutoStartDisabled(): boolean { return Hooks.reactionsAutoStartDisabled }
   static set reactionsAutoStartDisabled(value: boolean) { Hooks.reactionsAutoStartDisabled = value }
-  // Trace
-  static get isTraceEnabled(): boolean { return Dbg.isOn }
-  static get traceOptions(): TraceOptions { return Dbg.trace }
-  static setTraceMode(enabled: boolean, options?: TraceOptions): void { Dbg.setTraceMode(enabled, options) }
-  static setTraceHint<T extends object>(obj: T, name: string | undefined): void { Hooks.setHint(obj, name) }
-  static getTraceHint<T extends object>(obj: T, full: boolean = false): string | undefined { return ObjectHolder.getHint(obj, full) }
-  static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(enabled, options) }
+  // Logging
+  static get isLogging(): boolean { return Log.isOn }
+  static get loggingOptions(): LoggingOptions { return Log.opt }
+  static setLoggingMode(isOn: boolean, options?: LoggingOptions): void { Log.setMode(isOn, options) }
+  static setLoggingHint<T extends object>(obj: T, name: string | undefined): void { Hooks.setHint(obj, name) }
+  static getLoggingHint<T extends object>(obj: T, full: boolean = false): string | undefined { return ObjectHolder.getHint(obj, full) }
+  static setProfilingMode(isOn: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(isOn, options) }
 }
 
 // Operators

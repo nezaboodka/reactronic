@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, unobservable, reaction, cached, Rx, TraceOptions } from 'api' // from 'reactronic'
+import { ObservableObject, Transaction, unobservable, reaction, cached, Rx, LoggingOptions } from 'api' // from 'reactronic'
 
-export function autorender(render: (cycle: number) => JSX.Element, name?: string, trace?: Partial<TraceOptions>, op?: Transaction): JSX.Element {
+export function autorender(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
-    (!name && !trace) ? createReactState : () => createReactState(name, trace))
+    (!name && !logging) ? createReactState : () => createReactState(name, logging))
   const rx = state.rx
   rx.cycle = state.cycle
   rx.refresh = refresh // just in case React will change refresh on each rendering
@@ -40,21 +40,21 @@ class RxComponent<V> extends ObservableObject {
     return (): void => { Transaction.run(null, Rx.dispose, this) }
   }
 
-  static create<V>(hint: string | undefined, trace: TraceOptions | undefined): RxComponent<V> {
+  static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): RxComponent<V> {
     const rx = new RxComponent<V>()
     if (hint)
-      Rx.setTraceHint(rx, hint)
-    if (trace) {
-      Rx.getController(rx.render).configure({trace})
-      Rx.getController(rx.ensureUpToDate).configure({trace})
+      Rx.setLoggingHint(rx, hint)
+    if (logging) {
+      Rx.getController(rx.render).configure({ logging })
+      Rx.getController(rx.ensureUpToDate).configure({ logging })
     }
     return rx
   }
 }
 
-function createReactState<V>(name?: string, trace?: Partial<TraceOptions>): ReactState<V> {
-  const hint = name || (Rx.isTraceEnabled ? getComponentName() : '<rx>')
-  const rx = Transaction.run<RxComponent<V>>({ hint, trace }, RxComponent.create, hint, trace)
+function createReactState<V>(name?: string, logging?: Partial<LoggingOptions>): ReactState<V> {
+  const hint = name || (Rx.isLogging ? getComponentName() : '<rx>')
+  const rx = Transaction.run<RxComponent<V>>({ hint, logging: logging }, RxComponent.create, hint, logging)
   return {rx, cycle: 0}
 }
 

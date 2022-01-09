@@ -302,29 +302,20 @@ function reaction(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 function options(value: Partial<MemberOptions>): F<any>
 
-function noSideEffects(value: boolean) // transaction & cached & reaction
-function sensitiveArgs(value: boolean) // cached & reaction
-function throttling(milliseconds: number) // reaction only
-function reentrance(value: Reentrance) // transaction & reaction
-function monitor(value: Monitor | null)
-function trace(value: Partial<TraceOptions>)
-
 function nonreactive<T>(func: F<T>, ...args: any[]): T
 function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
-// Options, ObjectOptions, Kind, Reentrance, Monitor, TraceOptions, ProfilingOptions
+// SnapshotOptions, MemberOptions, Kind, Reentrance, Monitor, LoggingOptions, ProfilingOptions
 
-interface Options {
-  readonly kind: Kind
-  readonly noSideEffects: boolean
-  readonly sensitiveArgs: boolean
-  readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
-  readonly reentrance: Reentrance
-  readonly monitor: Monitor | null
-  readonly trace?: Partial<TraceOptions>
+export interface SnapshotOptions {
+  readonly hint?: string
+  readonly standalone?: StandaloneMode
+  readonly journal?: TransactionJournal
+  readonly logging?: Partial<LoggingOptions>
+  readonly token?: any
 }
 
-export interface MemberOptions {
+interface MemberOptions {
   readonly kind: Kind
   readonly standalone: StandaloneMode
   readonly order: number
@@ -334,7 +325,7 @@ export interface MemberOptions {
   readonly reentrance: Reentrance
   readonly journal: TransactionJournal | undefined
   readonly monitor: Monitor | null
-  readonly trace?: Partial<TraceOptions>
+  readonly logging?: Partial<LoggingOptions>
 }
 
 enum Kind {
@@ -375,7 +366,7 @@ interface Worker {
   whenFinished(): Promise<void>
 }
 
-interface TraceOptions {
+interface LoggingOptions {
   readonly silent: boolean
   readonly transaction: boolean
   readonly operation: boolean
@@ -451,12 +442,12 @@ class Reactronic {
   static takeSnapshot<T>(obj: T): T
   static dispose(obj: any): void
   static reactionsAutoStartDisabled: boolean
-  static readonly isTraceEnabled: boolean
-  static readonly traceOptions: TraceOptions
-  static setTraceMode(enabled: boolean, options?: TraceOptions)
-  static setTraceHint<T extends object>(obj: T, name: string | undefined): void
-  static getTraceHint<T extends object>(obj: T): string | undefined
-  static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void
+  static readonly isLogging: boolean
+  static readonly loggingOptions: LoggingOptions
+  static setLoggingMode(isOn: boolean, options?: LoggingOptions)
+  static setLoggingHint<T extends object>(obj: T, name: string | undefined): void
+  static getLoggingHint<T extends object>(obj: T): string | undefined
+  static setProfilingMode(isOn: boolean, options?: Partial<ProfilingOptions>): void
 }
 
 ```

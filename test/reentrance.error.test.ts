@@ -8,7 +8,7 @@
 import test from 'ava'
 import { Transaction, Reentrance, Rx, pause } from '../source/api'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
-import { TestingTraceLevel } from './brief'
+import { TestsLoggingLevel } from './brief'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: 'nezaboodka.com', delay: 500 },
@@ -26,7 +26,7 @@ const expected: Array<string | undefined> = [
 ]
 
 test('reentrance.error', async t => {
-  Rx.setTraceMode(true, TestingTraceLevel)
+  Rx.setLoggingMode(true, TestsLoggingLevel)
   const app = Transaction.run(null, () => {
     const a = new AsyncDemoView(new AsyncDemo())
     Rx.getController(a.model.load).configure({reentrance: Reentrance.PreventWithError})
@@ -44,7 +44,7 @@ test('reentrance.error', async t => {
   }
   catch (error: any) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
-    if (Rx.isTraceEnabled && !Rx.traceOptions.silent) console.log(error.toString())
+    if (Rx.isLogging && !Rx.loggingOptions.silent) console.log(error.toString())
   }
   finally {
     t.is(busy.counter, 0)
@@ -57,12 +57,12 @@ test('reentrance.error', async t => {
       Rx.dispose(app.model)
     })
   } /* istanbul ignore next */
-  if (Rx.isTraceEnabled && !Rx.traceOptions.silent)
+  if (Rx.isLogging && !Rx.loggingOptions.silent)
     for (const x of output)
       console.log(x)
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (Rx.isTraceEnabled && !Rx.traceOptions.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
+    if (Rx.isLogging && !Rx.loggingOptions.silent) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
     t.is(output[i], expected[i])
   }
 })

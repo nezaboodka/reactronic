@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Dbg } from '../util/Dbg'
+import { Log } from '../util/Dbg'
 import { Meta } from './Meta'
 export { Meta } from './Meta'
 
@@ -61,7 +61,7 @@ export class ObjectRevision {
     this.data = data
     this.changes = new Set<MemberName>()
     this.conflicts = new Map<MemberName, ObjectRevision>()
-    if (Dbg.isOn)
+    if (Log.isOn)
       Object.freeze(this)
   }
 }

@@ -7,7 +7,7 @@
 
 import test from 'ava'
 import { ObservableObject, Transaction, Rx, reaction } from '../source/api'
-import { TestingTraceLevel } from './brief'
+import { TestsLoggingLevel } from './brief'
 
 export class ReactiveDemo extends ObservableObject {
   title: string = 'ReactiveDemo'
@@ -29,7 +29,7 @@ export class ReactiveDemo extends ObservableObject {
 }
 
 test('reactive', t => {
-  Rx.setTraceMode(true, TestingTraceLevel)
+  Rx.setLoggingMode(true, TestsLoggingLevel)
   const demo = Transaction.run(null, () => new ReactiveDemo())
   t.is(demo.title, 'Title/2')
   t.is(demo.content, 'Content/1')

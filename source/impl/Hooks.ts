@@ -6,9 +6,9 @@
 // automatically licensed under the license referred above.
 
 import { UNDEF, F } from '../util/Utils'
-import { Dbg, misuse } from '../util/Dbg'
+import { Log, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance } from '../Options'
-import { TraceOptions, ProfilingOptions } from '../Trace'
+import { LoggingOptions, ProfilingOptions } from '../Trace'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta, StandaloneMode } from './Data'
 import { Snapshot, Dump, ROOT_REV } from './Snapshot'
@@ -44,7 +44,7 @@ const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   reentrance: Reentrance.PreventWithError,
   journal: undefined,
   monitor: null,
-  trace: undefined,
+  logging: undefined,
 })
 
 export class OptionsImpl implements MemberOptions {
@@ -59,7 +59,7 @@ export class OptionsImpl implements MemberOptions {
   readonly reentrance: Reentrance
   readonly journal: TransactionJournal | undefined
   readonly monitor: Monitor | null
-  readonly trace?: Partial<TraceOptions>
+  readonly logging?: Partial<LoggingOptions>
   static readonly INITIAL = Object.freeze(new OptionsImpl(UNDEF, UNDEF, { getter: UNDEF, setter: UNDEF, ...DEFAULT_OPTIONS }, {}, false))
 
   constructor(getter: Function | undefined, setter: Function | undefined, existing: OptionsImpl, patch: Partial<OptionsImpl>, implicit: boolean) {
@@ -74,8 +74,8 @@ export class OptionsImpl implements MemberOptions {
     this.reentrance = merge(DEFAULT_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.journal = merge(DEFAULT_OPTIONS.journal, existing.journal, patch.journal, implicit)
     this.monitor = merge(DEFAULT_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
-    this.trace = merge(DEFAULT_OPTIONS.trace, existing.trace, patch.trace, implicit)
-    if (Dbg.isOn)
+    this.logging = merge(DEFAULT_OPTIONS.logging, existing.logging, patch.logging, implicit)
+    if (Log.isOn)
       Object.freeze(this)
   }
 }
@@ -227,7 +227,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
       const rev = new ObjectRevision(ROOT_REV.snapshot, ROOT_REV, {...initial})
       Meta.set(rev.data, Meta.Holder, h)
-      if (Dbg.isOn)
+      if (Log.isOn)
         Snapshot.freezeObjectRevision(rev)
       h = new ObjectHolder(obj, obj, Hooks.proxy, rev, obj.constructor.name)
       Meta.set(obj, Meta.Holder, h)
@@ -245,11 +245,11 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return h
   }
 
-  static setProfilingMode(enabled: boolean, options?: Partial<ProfilingOptions>): void {
-    if (enabled) {
+  static setProfilingMode(isOn: boolean, options?: Partial<ProfilingOptions>): void {
+    if (isOn) {
       Hooks.repetitiveUsageWarningThreshold = options && options.repetitiveUsageWarningThreshold !== undefined ? options.repetitiveUsageWarningThreshold : 10
-      Hooks.mainThreadBlockingWarningThreshold = options && options.mainThreadBlockingWarningThreshold !== undefined ? options.mainThreadBlockingWarningThreshold : 16.6
-      Hooks.asyncActionDurationWarningThreshold = options && options.asyncActionDurationWarningThreshold !== undefined ? options.asyncActionDurationWarningThreshold : 150
+      Hooks.mainThreadBlockingWarningThreshold = options && options.mainThreadBlockingWarningThreshold !== undefined ? options.mainThreadBlockingWarningThreshold : 14
+      Hooks.asyncActionDurationWarningThreshold = options && options.asyncActionDurationWarningThreshold !== undefined ? options.asyncActionDurationWarningThreshold : 300
       Snapshot.garbageCollectionSummaryInterval = options && options.garbageCollectionSummaryInterval !== undefined ? options.garbageCollectionSummaryInterval : 100
     }
     else {

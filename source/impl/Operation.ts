@@ -6,8 +6,8 @@
 // automatically licensed under the license referred above.
 
 import { F } from '../util/Utils'
-import { Dbg, misuse } from '../util/Dbg'
-import { MemberOptions, Kind, Reentrance, TraceOptions, SnapshotOptions } from '../Options'
+import { Log, misuse } from '../util/Dbg'
+import { MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, StandaloneMode, ObservableInfo, Meta, AbstractSnapshot } from './Data'
 import { Snapshot, Dump, ROOT_REV, MAX_TIMESTAMP } from './Snapshot'
@@ -39,7 +39,7 @@ export class OperationController extends Controller<any> {
   get error(): boolean { return this.use().operation.error }
   get stamp(): number { return this.use().revision.snapshot.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
-  markObsolete(): void { Transaction.run({ hint: Dbg.isOn ? `markObsolete(${Dump.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, OperationController.markObsolete, this) }
+  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, OperationController.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.useOrRun(true, args).value }
 
   constructor(ownHolder: ObjectHolder, memberName: MemberName) {
@@ -67,9 +67,9 @@ export class OperationController extends Controller<any> {
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         oc = oc2
     }
-    else if (Dbg.isOn && Dbg.trace.operation && (opts.trace === undefined ||
-      opts.trace.operation === undefined || opts.trace.operation === true))
-      Dbg.log(Transaction.current.isFinished ? '' : '║', ' (=)',
+    else if (Log.isOn && Log.opt.operation && (opts.logging === undefined ||
+      opts.logging.operation === undefined || opts.logging.operation === true))
+      Log.write(Transaction.current.isFinished ? '' : '║', ' (=)',
         `${Dump.rev2(oc.operation.controller.ownHolder, oc.snapshot, this.memberName)} result is reused from T${oc.operation.transaction.id}[${oc.operation.transaction.hint}]`)
     const t = oc.operation
     Snapshot.markUsed(t, oc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
@@ -92,8 +92,8 @@ export class OperationController extends Controller<any> {
     if (!op || op.transaction.isFinished)
       throw misuse('a method is expected with reactronic decorator')
     op.options = new OptionsImpl(op.options.getter, op.options.setter, op.options, options, false)
-    if (Dbg.isOn && Dbg.trace.write)
-      Dbg.log('║', '  ✎', `${op.hint()}.options are changed`)
+    if (Log.isOn && Log.opt.write)
+      Log.write('║', '  ✎', `${op.hint()}.options are changed`)
     return op.options
   }
 
@@ -172,7 +172,7 @@ export class OperationController extends Controller<any> {
     const m = this.memberName
     let op: Operation = r.data[m]
     if (op.controller !== this) {
-      const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
+      const hint: string = Log.isOn ? `${Dump.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
       const standalone = r.snapshot.sealed || r.prev.revision !== ROOT_REV
       op = Transaction.run<Operation>({ hint, standalone, token: this }, (): Operation => {
         const h = this.ownHolder
@@ -196,22 +196,22 @@ export class OperationController extends Controller<any> {
 
   private run(existing: OperationContext, standalone: StandaloneMode, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
     // TODO: Cleaner implementation is needed
-    const hint: string = Dbg.isOn ? `${Dump.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.ownHolder, this.memberName)}`
+    const hint: string = Log.isOn ? `${Dump.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.ownHolder, this.memberName)}`
     let oc = existing
-    const opts = { hint, standalone, journal: options.journal, trace: options.trace, token }
+    const opts = { hint, standalone, journal: options.journal, logging: options.logging, token }
     const result = Transaction.run(opts, (argsx: any[] | undefined): any => {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()
-        if (Dbg.isOn && Dbg.trace.operation)
-          Dbg.log('║', '  𝑓', `${oc.operation.why()}`)
+        if (Log.isOn && Log.opt.operation)
+          Log.write('║', '  𝑓', `${oc.operation.why()}`)
         oc.operation.run(this.ownHolder.proxy, argsx)
       }
       else { // retry run
         oc = this.peek(argsx) // re-read on retry
         if (oc.operation.options.kind === Kind.Transaction || !oc.isUpToDate) {
           oc = this.edit()
-          if (Dbg.isOn && Dbg.trace.operation)
-            Dbg.log('║', '  𝑓', `${oc.operation.why()}`)
+          if (Log.isOn && Log.opt.operation)
+            Log.write('║', '  𝑓', `${oc.operation.why()}`)
           oc.operation.run(this.ownHolder.proxy, argsx)
         }
       }
@@ -307,15 +307,15 @@ class Operation extends Observable implements Observer {
 
   wrap<T>(func: F<T>): F<T> {
     const wrappedForOperation: F<T> = (...args: any[]): T => {
-      if (Dbg.isOn && Dbg.trace.step && this.result)
-        Dbg.logAs({margin2: this.margin}, '║', '‾\\', `${this.hint()} - step in  `, 0, '        │')
+      if (Log.isOn && Log.opt.step && this.result)
+        Log.writeAs({margin2: this.margin}, '║', '‾\\', `${this.hint()} - step in  `, 0, '        │')
       const started = Date.now()
       const result = OperationController.runWithin<T>(this, func, ...args)
       const ms = Date.now() - started
-      if (Dbg.isOn && Dbg.trace.step && this.result)
-        Dbg.logAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
+      if (Log.isOn && Log.opt.step && this.result)
+        Log.writeAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
       if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
-        Dbg.log('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
+        Log.write('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
       return result
     }
     return wrappedForOperation
@@ -344,8 +344,8 @@ class Operation extends Observable implements Observer {
         this.obsoleteSince = since
 
         const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
-        if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
-          Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
+        if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
+          Log.write(Log.opt.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
             isReaction && snapshot === ROOT_REV.snapshot
               ? `${this.hint()} is a reaction and will run automatically (order ${this.options.order})`
               : `${this.hint()} is obsolete due to ${Dump.rev2(holder, snapshot, memberName)} since v${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ''}`)
@@ -364,8 +364,8 @@ class Operation extends Observable implements Observer {
         else if (!tran.isFinished && this !== observable) // restart after itself if canceled
           tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.rev2(holder, snapshot, memberName)} changed by T${snapshot.id}[${snapshot.hint}]`), null)
       }
-      else if (Dbg.isOn && (Dbg.trace.obsolete || this.options.trace?.obsolete))
-        Dbg.log(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.rev2(holder, snapshot, memberName)}`)
+      else if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
+        Log.write(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.rev2(holder, snapshot, memberName)}`)
     }
   }
 
@@ -408,8 +408,8 @@ class Operation extends Observable implements Observer {
     let error: Error | undefined = undefined
     const opponent = head.successor
     if (opponent && !opponent.transaction.isFinished) {
-      if (Dbg.isOn && Dbg.trace.obsolete)
-        Dbg.log('║', ' [!]', `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
+      if (Log.isOn && Log.opt.obsolete)
+        Log.write('║', ' [!]', `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
           if (!opponent.transaction.isCanceled)
@@ -455,8 +455,8 @@ class Operation extends Observable implements Observer {
   private enter(): void {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
-    if (Dbg.isOn && Dbg.trace.operation)
-      Dbg.log('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
+    if (Log.isOn && Log.opt.operation)
+      Log.write('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
     this.started = Date.now()
   }
 
@@ -473,11 +473,11 @@ class Operation extends Observable implements Observer {
           this.leave(false, '  ⚐', '- finished  ', 'ERR ──┘')
           throw error
         })
-      if (Dbg.isOn) {
-        if (Dbg.trace.operation)
-          Dbg.log('║', '_/', `${this.hint()} - leave... `, 0, 'ASYNC ──┐')
-        else if (Dbg.trace.transaction)
-          Dbg.log('║', '  ', `${this.why()} ...`, 0, 'ASYNC')
+      if (Log.isOn) {
+        if (Log.opt.operation)
+          Log.write('║', '_/', `${this.hint()} - leave... `, 0, 'ASYNC ──┐')
+        else if (Log.opt.transaction)
+          Log.write('║', '  ', `${this.why()} ...`, 0, 'ASYNC')
       }
     }
     else {
@@ -489,10 +489,10 @@ class Operation extends Observable implements Observer {
   private leave(main: boolean, op: string, message: string, highlight: string | undefined = undefined): void {
     const ms: number = Date.now() - this.started
     this.started = -this.started
-    if (Dbg.isOn && Dbg.trace.operation)
-      Dbg.log('║', `${op}`, `${this.hint()} ${message}`, ms, highlight)
+    if (Log.isOn && Log.opt.operation)
+      Log.write('║', `${op}`, `${this.hint()} ${message}`, ms, highlight)
     if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
-      Dbg.log('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
+      Log.write('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
     this.cause = undefined
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
@@ -503,7 +503,7 @@ class Operation extends Observable implements Observer {
     const options: SnapshotOptions = {
       hint: 'Monitor.enter',
       standalone: 'isolated',
-      trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.global }
+      logging: Log.isOn && Log.opt.monitor ? undefined : Log.global }
     OperationController.runWithin<void>(undefined, Transaction.run, options,
       MonitorImpl.enter, mon, this.transaction)
   }
@@ -514,7 +514,7 @@ class Operation extends Observable implements Observer {
         const options: SnapshotOptions = {
           hint: 'Monitor.leave',
           standalone: 'isolated',
-          trace: Dbg.isOn && Dbg.trace.monitor ? undefined : Dbg.DefaultLevel }
+          logging: Log.isOn && Log.opt.monitor ? undefined : Log.DefaultLevel }
         OperationController.runWithin<void>(undefined, Transaction.run, options,
           MonitorImpl.leave, mon, this.transaction)
       }
@@ -552,8 +552,8 @@ class Operation extends Observable implements Observer {
 
   private static markEdited(oldValue: any, newValue: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder): void {
     edited ? r.changes.add(m) : r.changes.delete(m)
-    if (Dbg.isOn && Dbg.trace.write)
-      edited ? Dbg.log('║', '  ✎', `${Dump.rev2(h, r.snapshot, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`) : Dbg.log('║', '  ✎', `${Dump.rev2(h, r.snapshot, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`, undefined, ' (same as previous)')
+    if (Log.isOn && Log.opt.write)
+      edited ? Log.write('║', '  ✎', `${Dump.rev2(h, r.snapshot, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`) : Log.write('║', '  ✎', `${Dump.rev2(h, r.snapshot, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -616,7 +616,7 @@ class Operation extends Observable implements Observer {
         if (Hooks.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
           curr.observables.forEach((info, v) => { // performance tracking info
             if (info.usageCount > Hooks.repetitiveUsageWarningThreshold)
-              Dbg.log('', '[!]', `${curr.hint()} uses ${info.memberHint} ${info.usageCount} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
+              Log.write('', '[!]', `${curr.hint()} uses ${info.memberHint} ${info.usageCount} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
         if (unsubscribe)
@@ -628,8 +628,8 @@ class Operation extends Observable implements Observer {
       curr.observers.forEach(o => {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         o.observables!.delete(curr)
-        if (Dbg.isOn && Dbg.trace.read)
-          Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.rev(r, m)}`)
+        if (Log.isOn && Log.opt.read)
+          Log.write(Log.opt.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.rev(r, m)}`)
       })
       curr.observers = undefined
     }
@@ -660,8 +660,8 @@ class Operation extends Observable implements Observer {
     this.observables?.forEach((info, value) => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       value.observers!.delete(this)
-      if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log(Dbg.trace.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${info.memberHint}`)
+      if (Log.isOn && (Log.opt.read || this.options.logging?.read))
+        Log.write(Log.opt.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${info.memberHint}`)
     })
     this.observables = undefined
   }
@@ -684,15 +684,15 @@ class Operation extends Observable implements Observer {
         const info: ObservableInfo = { memberHint: Dump.rev2(h, r.snapshot, m), usageCount: times }
         observable.observers.add(this)
         this.observables!.set(observable, info)
-        if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-          Dbg.log('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.rev2(h, r.snapshot, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
+        if (Log.isOn && (Log.opt.read || this.options.logging?.read))
+          Log.write('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.rev2(h, r.snapshot, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
       }
-      else if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log('║', '  x ', `${this.hint()} is obsolete and is NOT subscribed to ${Dump.rev2(h, r.snapshot, m)}`)
+      else if (Log.isOn && (Log.opt.read || this.options.logging?.read))
+        Log.write('║', '  x ', `${this.hint()} is obsolete and is NOT subscribed to ${Dump.rev2(h, r.snapshot, m)}`)
     }
     else {
-      if (Dbg.isOn && (Dbg.trace.read || this.options.trace?.read))
-        Dbg.log('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Dump.rev2(h, r.snapshot, m)}`)
+      if (Log.isOn && (Log.opt.read || this.options.logging?.read))
+        Log.write('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Dump.rev2(h, r.snapshot, m)}`)
     }
     return ok // || observable.next === r
   }
@@ -739,7 +739,7 @@ class Operation extends Observable implements Observer {
 
   static init(): void {
     Object.freeze(ROOT_ARGS)
-    Dbg.getMergedTraceOptions = getMergedTraceOptions
+    Log.getMergedLoggingOptions = getMergedLoggingOptions
     Snapshot.markUsed = Operation.markUsed // override
     Snapshot.markEdited = Operation.markEdited // override
     Snapshot.isConflicting = Operation.isConflicting // override
@@ -806,14 +806,14 @@ function valueHint(value: any, m?: MemberName): string {
   return result
 }
 
-function getMergedTraceOptions(local: Partial<TraceOptions> | undefined): TraceOptions {
+function getMergedLoggingOptions(local: Partial<LoggingOptions> | undefined): LoggingOptions {
   const t = Transaction.current
-  let res = Dbg.merge(t.options.trace, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Snapshot.idGen.toString().replace(/[0-9]/g, '-')}`, Dbg.global)
-  res = Dbg.merge({margin1: t.margin}, undefined, undefined, res)
+  let res = Log.merge(t.options.logging, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Snapshot.idGen.toString().replace(/[0-9]/g, '-')}`, Log.global)
+  res = Log.merge({margin1: t.margin}, undefined, undefined, res)
   if (Operation.current)
-    res = Dbg.merge({margin2: Operation.current.margin}, undefined, undefined, res)
+    res = Log.merge({margin2: Operation.current.margin}, undefined, undefined, res)
   if (local)
-    res = Dbg.merge(local, undefined, undefined, res)
+    res = Log.merge(local, undefined, undefined, res)
   return res
 }
 

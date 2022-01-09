@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Dbg, misuse } from './Dbg'
+import { Log, misuse } from './Dbg'
 
 export interface Sealable<T> {
   toMutable(): T
@@ -25,8 +25,8 @@ export abstract class Sealant {
     const createCopy = result[Sealant.CreateCopy]
     if (createCopy)
       result = createCopy.call(result) as any
-    if (Dbg.isOn && Dbg.trace.write)
-      Dbg.log('║', ' ', `${typeName}.${member.toString()} - collection is sealed`)
+    if (Log.isOn && Log.opt.write)
+      Log.write('║', ' ', `${typeName}.${member.toString()} - collection is sealed`)
     Object.setPrototypeOf(result, sealedType)
     Object.freeze(result)
     return result

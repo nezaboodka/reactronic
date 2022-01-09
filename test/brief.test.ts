@@ -7,7 +7,7 @@
 
 import test from 'ava'
 import { Transaction, Kind, nonreactive, sensitive, Rx } from '../source/api'
-import { Person, Demo, DemoView, output, TestingTraceLevel } from './brief'
+import { Person, Demo, DemoView, output, TestsLoggingLevel } from './brief'
 
 const expected: string[] = [
   'Filter: Jo',
@@ -39,8 +39,8 @@ test('brief', t => {
     asyncActionDurationWarningThreshold: 100, // default: 150 ms
     garbageCollectionSummaryInterval: 2000, // default: 3000 ms
   })
-  Rx.setTraceMode(false)
-  Rx.setTraceMode(true, TestingTraceLevel)
+  Rx.setLoggingMode(false)
+  Rx.setLoggingMode(true, TestsLoggingLevel)
   // Simple transactions
   const app = Transaction.run(null, () => new DemoView(new Demo()))
   try {
@@ -163,10 +163,10 @@ test('brief', t => {
     t.is(app.raw, 'DemoView.render #23t129v107   <<   DemoView.userFilter #23t127v101    <<    T127[noname]')
     t.is(render.options.kind, Kind.Cache)
     t.is(render.error, undefined)
-    t.is(Rx.getTraceHint(app), 'DemoView')
-    Rx.setTraceHint(app, 'App')
-    t.is(Rx.getTraceHint(app, false), 'App')
-    t.is(Rx.getTraceHint(app, true), 'App#23')
+    t.is(Rx.getLoggingHint(app), 'DemoView')
+    Rx.setLoggingHint(app, 'App')
+    t.is(Rx.getLoggingHint(app, false), 'App')
+    t.is(Rx.getLoggingHint(app, true), 'App#23')
     t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
     t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
@@ -206,7 +206,7 @@ test('brief', t => {
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (Rx.isTraceEnabled && !Rx.traceOptions.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (Rx.isLogging && !Rx.loggingOptions.silent) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

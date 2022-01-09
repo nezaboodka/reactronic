@@ -7,7 +7,7 @@
 
 import test from 'ava'
 import { ObservableObject, cached, Transaction, Rx, reaction, unobservable, options } from '../source/api'
-import { TestingTraceLevel } from './brief'
+import { TestsLoggingLevel } from './brief'
 
 export class DemoBase extends ObservableObject {
   @unobservable raw: string = 'unobservable data'
@@ -37,7 +37,7 @@ export class DemoBase extends ObservableObject {
     return this.title
   }
 
-  @cached @options({ trace: {} })
+  @cached @options({ logging: {} })
   produceSideEffect(): void {
     this.raw = Rx.why()
     this.title = 'should fail on this line'
@@ -62,7 +62,7 @@ export class Demo extends DemoBase {
 }
 
 test('caching', t => {
-  Rx.setTraceMode(true, TestingTraceLevel)
+  Rx.setLoggingMode(true, TestsLoggingLevel)
   const demo = Transaction.run(null, () => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')

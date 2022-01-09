@@ -5,9 +5,9 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { TraceOptions } from './Trace'
+import { LoggingOptions } from './Trace'
 import { StandaloneMode } from './impl/Data'
-export { TraceOptions, ProfilingOptions, TraceLevel } from './Trace'
+export { LoggingOptions, ProfilingOptions, LoggingLevel } from './Trace'
 import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 
@@ -15,7 +15,7 @@ export interface SnapshotOptions {
   readonly hint?: string
   readonly standalone?: StandaloneMode
   readonly journal?: TransactionJournal
-  readonly trace?: Partial<TraceOptions>
+  readonly logging?: Partial<LoggingOptions>
   readonly token?: any
 }
 
@@ -29,7 +29,7 @@ export interface MemberOptions {
   readonly reentrance: Reentrance
   readonly journal: TransactionJournal | undefined
   readonly monitor: Monitor | null
-  readonly trace?: Partial<TraceOptions>
+  readonly logging?: Partial<LoggingOptions>
 }
 
 export enum Kind {

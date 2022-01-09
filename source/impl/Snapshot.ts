@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Utils, UNDEF } from '../util/Utils'
-import { Dbg, misuse } from '../util/Dbg'
+import { Log, misuse } from '../util/Dbg'
 import { Sealant } from '../util/Sealant'
 import { SealedArray } from '../util/SealedArray'
 import { SealedMap } from '../util/SealedMap'
@@ -115,8 +115,8 @@ export class Snapshot implements AbstractSnapshot {
         this.changeset.set(h, r)
         h.editing = r
         h.editors++
-        if (Dbg.isOn && Dbg.trace.write)
-          Dbg.log('║', '  ⎘', `${Dump.obj(h)} is cloned`)
+        if (Log.isOn && Log.opt.write)
+          Log.write('║', '  ⎘', `${Dump.obj(h)} is cloned`)
       }
     }
     else
@@ -171,8 +171,8 @@ export class Snapshot implements AbstractSnapshot {
       Snapshot.pending.push(this)
       if (Snapshot.oldest === undefined)
         Snapshot.oldest = this
-      if (Dbg.isOn && Dbg.trace.transaction)
-        Dbg.log('╔══', `v${this.stamp}`, `${this.hint}`)
+      if (Log.isOn && Log.opt.transaction)
+        Log.write('╔══', `v${this.stamp}`, `${this.hint}`)
     }
   }
 
@@ -192,8 +192,8 @@ export class Snapshot implements AbstractSnapshot {
               conflicts = []
             conflicts.push(r)
           }
-          if (Dbg.isOn && Dbg.trace.transaction)
-            Dbg.log('╠╝', '', `${Dump.rev2(h, r.snapshot)} is merged with ${Dump.rev2(h, h.head.snapshot)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
+          if (Log.isOn && Log.opt.transaction)
+            Log.write('╠╝', '', `${Dump.rev2(h, r.snapshot)} is merged with ${Dump.rev2(h, h.head.snapshot)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
         }
       })
       if (this.options.token === undefined) {
@@ -225,8 +225,8 @@ export class Snapshot implements AbstractSnapshot {
       if (headDisposed || m === Meta.Disposed) {
         if (headDisposed !== (m === Meta.Disposed)) {
           if (headDisposed || this.options.standalone !== 'disposal') {
-            if (Dbg.isOn && Dbg.trace.change)
-              Dbg.log('║╠', '', `${Dump.rev2(h, ours.snapshot, m)} <> ${Dump.rev2(h, head.snapshot, m)}`, 0, ' *** CONFLICT ***')
+            if (Log.isOn && Log.opt.change)
+              Log.write('║╠', '', `${Dump.rev2(h, ours.snapshot, m)} <> ${Dump.rev2(h, head.snapshot, m)}`, 0, ' *** CONFLICT ***')
             ours.conflicts.set(m, head)
           }
         }
@@ -235,8 +235,8 @@ export class Snapshot implements AbstractSnapshot {
         const conflict = Snapshot.isConflicting(head.data[m], ours.prev.revision.data[m])
         if (conflict)
           ours.conflicts.set(m, head)
-        if (Dbg.isOn && Dbg.trace.change)
-          Dbg.log('║╠', '', `${Dump.rev2(h, ours.snapshot, m)} ${conflict ? '<>' : '=='} ${Dump.rev2(h, head.snapshot, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
+        if (Log.isOn && Log.opt.change)
+          Log.write('║╠', '', `${Dump.rev2(h, ours.snapshot, m)} ${conflict ? '<>' : '=='} ${Dump.rev2(h, head.snapshot, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
       }
     })
     Utils.copyAllMembers(merged, ours.data) // overwrite with merged copy
@@ -262,17 +262,17 @@ export class Snapshot implements AbstractSnapshot {
         }
       }
     })
-    if (Dbg.isOn) {
-      if (Dbg.trace.change && !error) {
+    if (Log.isOn) {
+      if (Log.opt.change && !error) {
         this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
           const members: string[] = []
           r.changes.forEach((o, m) => members.push(m.toString()))
           const s = members.join(', ')
-          Dbg.log('║', '√', `${Dump.rev2(h, r.snapshot)} (${s}) is ${r.prev.revision === ROOT_REV ? 'constructed' : `applied on top of ${Dump.rev2(h, r.prev.revision.snapshot)}`}`)
+          Log.write('║', '√', `${Dump.rev2(h, r.snapshot)} (${s}) is ${r.prev.revision === ROOT_REV ? 'constructed' : `applied on top of ${Dump.rev2(h, r.prev.revision.snapshot)}`}`)
         })
       }
-      if (Dbg.trace.transaction)
-        Dbg.log(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
+      if (Log.opt.transaction)
+        Log.write(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
     }
     if (!error)
       Snapshot.propagateAllChangesThroughSubscriptions(this)
@@ -285,7 +285,7 @@ export class Snapshot implements AbstractSnapshot {
     else
       for (const m in r.prev.revision.data)
         r.data[m] = Meta.Disposed
-    if (Dbg.isOn)
+    if (Log.isOn)
       Snapshot.freezeObjectRevision(r)
   }
 
@@ -321,7 +321,7 @@ export class Snapshot implements AbstractSnapshot {
         Snapshot.oldest = Snapshot.pending[0] // undefined is OK
         const now = Date.now()
         if (now - Snapshot.lastGarbageCollectionSummaryTimestamp > Snapshot.garbageCollectionSummaryInterval) {
-          Dbg.log('', '[G]', `Total object/revision count: ${Snapshot.totalObjectHolderCount}/${Snapshot.totalObjectRevisionCount}`)
+          Log.write('', '[G]', `Total object/revision count: ${Snapshot.totalObjectHolderCount}/${Snapshot.totalObjectRevisionCount}`)
           Snapshot.lastGarbageCollectionSummaryTimestamp = now
         }
       }
@@ -329,11 +329,11 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   private unlinkHistory(): void {
-    if (Dbg.isOn && Dbg.trace.gc)
-      Dbg.log('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
+    if (Log.isOn && Log.opt.gc)
+      Log.write('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      if (Dbg.isOn && Dbg.trace.gc && r.prev.revision !== ROOT_REV)
-        Dbg.log(' ', '  ', `${Dump.rev2(h, r.prev.revision.snapshot)} is ready for GC because overwritten by ${Dump.rev2(h, r.snapshot)}`)
+      if (Log.isOn && Log.opt.gc && r.prev.revision !== ROOT_REV)
+        Log.write(' ', '  ', `${Dump.rev2(h, r.prev.revision.snapshot)} is ready for GC because overwritten by ${Dump.rev2(h, r.snapshot)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
         if (r.prev.revision !== ROOT_REV)
           Snapshot.totalObjectRevisionCount--
@@ -344,7 +344,7 @@ export class Snapshot implements AbstractSnapshot {
     })
     this.changeset = EMPTY_MAP // release for GC
     this.reactions = EMPTY_ARRAY // release for GC
-    if (Dbg.isOn)
+    if (Log.isOn)
       Object.freeze(this)
   }
 
@@ -404,6 +404,6 @@ export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',
   standalone: false,
   journal: undefined,
-  trace: undefined,
+  logging: undefined,
   token: undefined,
 })

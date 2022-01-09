@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-export interface TraceOptions {
+export interface LoggingOptions {
   readonly silent: boolean
   readonly transaction: boolean
   readonly operation: boolean
@@ -31,13 +31,13 @@ export interface ProfilingOptions {
   garbageCollectionSummaryInterval: number // default: 3000 ms
 }
 
-export const TraceLevel: {
-  ErrorsOnly: TraceOptions,
-  Reactions: TraceOptions,
-  Transactions: TraceOptions,
-  Operations: TraceOptions,
-  Debug: TraceOptions,
-  Silent: TraceOptions,
+export const LoggingLevel: {
+  ErrorsOnly: LoggingOptions,
+  Reactions: LoggingOptions,
+  Transactions: LoggingOptions,
+  Operations: LoggingOptions,
+  Debug: LoggingOptions,
+  Silent: LoggingOptions,
 } = {
 
   ErrorsOnly: {

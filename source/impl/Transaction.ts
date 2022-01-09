@@ -6,9 +6,9 @@
 // automatically licensed under the license referred above.
 
 import { UNDEF, F, pause } from '../util/Utils'
-import { Dbg, misuse, error, fatal } from '../util/Dbg'
+import { Log, misuse, error, fatal } from '../util/Dbg'
 import { Worker } from '../Worker'
-import { SnapshotOptions, TraceOptions } from '../Options'
+import { SnapshotOptions, LoggingOptions } from '../Options'
 import { ObjectRevision, Observer } from './Data'
 import { Snapshot, Dump } from './Snapshot'
 
@@ -89,8 +89,8 @@ class TransactionImpl extends Transaction {
     const restore = TransactionImpl.inspection
     try {
       TransactionImpl.inspection = true
-      if (Dbg.isOn && Dbg.trace.transaction)
-        Dbg.log(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.curr.id}[${TransactionImpl.curr.hint}]`)
+      if (Log.isOn && Log.opt.transaction)
+        Log.write(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.curr.id}[${TransactionImpl.curr.hint}]`)
       return this.runImpl(undefined, func, ...args)
     }
     finally {
@@ -165,7 +165,7 @@ class TransactionImpl extends Transaction {
     const t: TransactionImpl = TransactionImpl.acquire(options)
     const root = t !== TransactionImpl.curr
     t.guard()
-    let result: any = t.runImpl<T>(options?.trace, func, ...args)
+    let result: any = t.runImpl<T>(options?.logging, func, ...args)
     if (root) {
       if (result instanceof Promise) {
         result = TransactionImpl.off(() => {
@@ -242,7 +242,7 @@ class TransactionImpl extends Transaction {
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
             standalone: this.options.standalone === 'isolated' ? 'isolated' : true,
-            trace: this.snapshot.options.trace,
+            logging: this.snapshot.options.logging,
             token: this.snapshot.options.token,
           }
           return TransactionImpl.run<T>(options, func, ...args)
@@ -263,7 +263,7 @@ class TransactionImpl extends Transaction {
 
   // Internal
 
-  private runImpl<T>(trace: Partial<TraceOptions> | undefined, func: F<T>, ...args: any[]): T {
+  private runImpl<T>(logging: Partial<LoggingOptions> | undefined, func: F<T>, ...args: any[]): T {
     let result: T
     const outer = TransactionImpl.curr
     try {
@@ -304,10 +304,10 @@ class TransactionImpl extends Transaction {
     if (!t.canceled && error) {
       t.canceled = error
       t.after = after
-      if (Dbg.isOn && Dbg.trace.transaction) {
-        Dbg.log('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
+      if (Log.isOn && Log.opt.transaction) {
+        Log.write('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
         if (after && after !== TransactionImpl.none)
-          Dbg.log('║', ' [!]', `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ''}`)
+          Log.write('║', ' [!]', `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ''}`)
       }
       Snapshot.revokeAllSubscriptions(t.snapshot)
     }
@@ -328,8 +328,8 @@ class TransactionImpl extends Transaction {
     // It's critical to have no exceptions in this block
     let reactions: Array<Observer>
     try {
-      if (Dbg.isOn && Dbg.trace.change)
-        Dbg.log('╠═', '', '', undefined, 'changes')
+      if (Log.isOn && Log.opt.change)
+        Log.write('╠═', '', '', undefined, 'changes')
       reactions = this.snapshot.applyOrDiscard(this.canceled)
       this.snapshot.triggerGarbageCollection()
       if (this.promise) {
@@ -338,7 +338,7 @@ class TransactionImpl extends Transaction {
         else
           this.resolve()
       }
-      if (Dbg.isOn)
+      if (Log.isOn)
         Object.freeze(this)
     }
     catch (e: any) {

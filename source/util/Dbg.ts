@@ -5,29 +5,29 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { TraceOptions } from '../Trace'
+import { LoggingOptions } from '../Trace'
 
 export function error(message: string, dump: Error | undefined): Error {
-  if (Dbg.isOn && Dbg.trace.error)
-    Dbg.log('█', ' ███', message, undefined, ' *** ERROR ***', dump)
+  if (Log.isOn && Log.opt.error)
+    Log.write('█', ' ███', message, undefined, ' *** ERROR ***', dump)
   return new Error(message)
 }
 
 export function misuse(message: string, dump?: any): Error {
   const error = new Error(message)
-  Dbg.log(' ', ' ███', message, undefined, ' *** ERROR / MISUSE ***', dump ?? error)
+  Log.write(' ', ' ███', message, undefined, ' *** ERROR / MISUSE ***', dump ?? error)
   return error
 }
 
 export function fatal(error: Error): Error {
-  Dbg.log(' ', ' ███', error.message, undefined, ' *** FATAL ***', error)
+  Log.write(' ', ' ███', error.message, undefined, ' *** FATAL ***', error)
   return error
 }
 
-// Dbg
+// Log
 
-export class Dbg {
-  static DefaultLevel: TraceOptions = {
+export class Log {
+  static DefaultLevel: LoggingOptions = {
     silent: false,
     error: false,
     warning: false,
@@ -47,29 +47,29 @@ export class Dbg {
   }
 
   static isOn: boolean = false
-  static global: TraceOptions = Dbg.DefaultLevel
-  static get trace(): TraceOptions { return this.getMergedTraceOptions(undefined) }
-  static getMergedTraceOptions = (local: Partial<TraceOptions> | undefined): TraceOptions => Dbg.global
+  static global: LoggingOptions = Log.DefaultLevel
+  static get opt(): LoggingOptions { return this.getMergedLoggingOptions(undefined) }
+  static getMergedLoggingOptions = (local: Partial<LoggingOptions> | undefined): LoggingOptions => Log.global
 
-  static setTraceMode(enabled: boolean, options?: TraceOptions): void {
-    Dbg.isOn = enabled
-    Dbg.global = options || Dbg.DefaultLevel
-    if (enabled) {
-      const t = Dbg.global as any
-      const o = Object.keys(Dbg.global).filter(x => t[x] === true).join(', ')
-      Dbg.log('', '', `Reactronic trace is enabled: ${o}`)
-      Dbg.log('', '', 'Method-level trace can be configured with @options({ trace: ... }) decorator')
+  static setMode(isOn: boolean, options?: LoggingOptions): void {
+    Log.global = options || Log.DefaultLevel
+    if (isOn) {
+      const t = Log.global as any
+      const o = Object.keys(Log.global).filter(x => t[x] === true).join(', ')
+      Log.write('', '', `Reactronic logging is turned on: ${o}`)
+      Log.write('', '', 'Member-level logging can be configured with @options({ logging: ... }) decorator')
     }
-    else
-      Dbg.log('', '', 'Reactronic trace is disabled')
+    else if (Log.isOn)
+      Log.write('', '', 'Reactronic logging is turned off')
+    Log.isOn = isOn
   }
 
-  static log(bar: string, tran: string, message: string, ms: number = 0, highlight: string | undefined = undefined, dump?: any): void {
-    Dbg.logAs(undefined, bar, tran, message, ms, highlight, dump)
+  static write(bar: string, tran: string, message: string, ms: number = 0, highlight: string | undefined = undefined, dump?: any): void {
+    Log.writeAs(undefined, bar, tran, message, ms, highlight, dump)
   }
 
-  static logAs(options: Partial<TraceOptions> | undefined, bar: string, tran: string, message: string, ms: number = 0, highlight: string | undefined = undefined, dump?: any): void {
-    const t = Dbg.getMergedTraceOptions(options)
+  static writeAs(options: Partial<LoggingOptions> | undefined, bar: string, tran: string, message: string, ms: number = 0, highlight: string | undefined = undefined, dump?: any): void {
+    const t = Log.getMergedLoggingOptions(options)
     const margin1: string = '  '.repeat(t.margin1 >= 0 ? t.margin1 : 0)
     const margin2: string = '  '.repeat(t.margin2)
     const silent = (options && options.silent !== undefined) ? options.silent : t.silent
@@ -82,7 +82,7 @@ export class Dbg {
     }
   }
 
-  static merge(t: Partial<TraceOptions> | undefined, color: number | undefined, prefix: string | undefined, existing: TraceOptions): TraceOptions {
+  static merge(t: Partial<LoggingOptions> | undefined, color: number | undefined, prefix: string | undefined, existing: LoggingOptions): LoggingOptions {
     const result = !t ? { ...existing } : {
       silent: t.silent !== undefined ? t.silent : existing.silent,
       transaction: t.transaction !== undefined ? t.transaction : existing.transaction,

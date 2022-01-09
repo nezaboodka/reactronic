@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, transaction, reaction, cached, TransactionJournal, Rx, TraceOptions, Transaction, options } from '../source/api'
+import { ObservableObject, unobservable, transaction, reaction, cached, TransactionJournal, Rx, LoggingOptions, Transaction, options } from '../source/api'
 
 export const output: string[] = []
 
@@ -88,12 +88,12 @@ export class DemoView extends ObservableObject {
     const lines = this.render(0)
     lines.forEach(x => {
       output.push(x) /* istanbul ignore next */
-      if (Rx.isTraceEnabled && !Rx.traceOptions.silent) console.log(x)
+      if (Rx.isLogging && !Rx.loggingOptions.silent) console.log(x)
     })
     Rx.configureCurrentOperation({ order: 123 })
   }
 
-  // @transaction @trace(log.noisy)
+  // @transaction @options({ logging: LoggingLevel.Debug })
   // subPrint(): void {
   //   this.render().forEach(x => output.push(x));
   // }
@@ -181,7 +181,7 @@ export class Person extends ObservableObject {
   }
 }
 
-export const TestingTraceLevel: TraceOptions = {
+export const TestsLoggingLevel: LoggingOptions = {
   silent: process.env.AVA_DEBUG === undefined,
   transaction: true,
   operation: true,
