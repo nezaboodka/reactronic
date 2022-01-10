@@ -88,7 +88,7 @@ export class DemoView extends ObservableObject {
     const lines = this.render(0)
     lines.forEach(x => {
       output.push(x) /* istanbul ignore next */
-      if (Rx.isLogging && !Rx.loggingOptions.off) console.log(x)
+      if (Rx.isLogging && Rx.loggingOptions.enabled) console.log(x)
     })
     Rx.configureCurrentOperation({ order: 123 })
   }
@@ -182,7 +182,7 @@ export class Person extends ObservableObject {
 }
 
 export const TestsLoggingLevel: LoggingOptions = {
-  off: process.env.AVA_DEBUG === undefined,
+  enabled: process.env.AVA_DEBUG !== undefined,
   transaction: true,
   operation: true,
   step: true,

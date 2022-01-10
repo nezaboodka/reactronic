@@ -28,7 +28,7 @@ export function fatal(error: Error): Error {
 
 export class Log {
   static DefaultLevel: LoggingOptions = {
-    off: false,
+    enabled: true,
     error: false,
     warning: false,
     transaction: false,
@@ -72,8 +72,8 @@ export class Log {
     const t = Log.getMergedLoggingOptions(options)
     const margin1: string = '  '.repeat(t.margin1 >= 0 ? t.margin1 : 0)
     const margin2: string = '  '.repeat(t.margin2)
-    const off = (options && options.off !== undefined) ? options.off : t.off
-    if (!off) { /* istanbul ignore next */
+    const enabled = (options && options.enabled !== undefined) ? options.enabled : t.enabled
+    if (enabled) { /* istanbul ignore next */
       console.log('\x1b[37m%s\x1b[0m \x1b[' + t.color + 'm%s %s%s\x1b[0m \x1b[' + t.color + 'm%s%s\x1b[0m \x1b[' + t.color + 'm%s\x1b[0m%s',
         '', t.prefix, t.transaction ? margin1 : '', t.transaction ? bar : bar.replace(/./g, ' '), margin2, tran, message,
         (highlight !== undefined ? `${highlight}` : '') + (ms > 2 ? `    [ ${ms}ms ]` : ''))
@@ -84,7 +84,7 @@ export class Log {
 
   static merge(t: Partial<LoggingOptions> | undefined, color: number | undefined, prefix: string | undefined, existing: LoggingOptions): LoggingOptions {
     const result = !t ? { ...existing } : {
-      off: t.off !== undefined ? t.off : existing.off,
+      enabled: t.enabled !== undefined ? t.enabled : existing.enabled,
       transaction: t.transaction !== undefined ? t.transaction : existing.transaction,
       operation: t.operation !== undefined ? t.operation : existing.operation,
       step: t.step !== undefined ? t.step : existing.step,

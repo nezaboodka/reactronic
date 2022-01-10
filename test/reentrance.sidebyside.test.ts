@@ -44,7 +44,7 @@ test('reentrance.sidebyside', async t => {
   }
   catch (error: any) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
-    if (Rx.isLogging && !Rx.loggingOptions.off) console.log(error.toString())
+    if (Rx.isLogging && Rx.loggingOptions.enabled) console.log(error.toString())
   }
   finally {
     t.is(busy.counter, 0)
@@ -55,12 +55,12 @@ test('reentrance.sidebyside', async t => {
       Rx.dispose(app.model)
     })
   } /* istanbul ignore next */
-  if (Rx.isLogging && !Rx.loggingOptions.off)
+  if (Rx.isLogging && Rx.loggingOptions.enabled)
     for (const x of output)
       console.log(x)
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (Rx.isLogging && !Rx.loggingOptions.off) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (Rx.isLogging && Rx.loggingOptions.enabled) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

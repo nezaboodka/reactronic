@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 export interface LoggingOptions {
-  readonly off: boolean
+  readonly enabled: boolean
   readonly transaction: boolean
   readonly operation: boolean
   readonly step: boolean
@@ -32,16 +32,35 @@ export interface ProfilingOptions {
 }
 
 export const LoggingLevel: {
+  Off: LoggingOptions,
   ErrorsOnly: LoggingOptions,
   Reactions: LoggingOptions,
   Transactions: LoggingOptions,
   Operations: LoggingOptions,
   Debug: LoggingOptions,
-  Off: LoggingOptions,
 } = {
 
+  Off: {
+    enabled: false,
+    transaction: false,
+    operation: false,
+    step: false,
+    monitor: false,
+    read: false,
+    write: false,
+    change: false,
+    obsolete: false,
+    error: true,
+    warning: true,
+    gc: false,
+    color: 37,
+    prefix: '',
+    margin1: 0,
+    margin2: 0,
+  },
+
   ErrorsOnly: {
-    off: false,
+    enabled: true,
     transaction: false,
     operation: false,
     step: false,
@@ -60,7 +79,7 @@ export const LoggingLevel: {
   },
 
   Reactions: {
-    off: false,
+    enabled: true,
     transaction: false,
     operation: false,
     step: false,
@@ -79,7 +98,7 @@ export const LoggingLevel: {
   },
 
   Transactions: {
-    off: false,
+    enabled: true,
     transaction: true,
     operation: false,
     step: false,
@@ -98,7 +117,7 @@ export const LoggingLevel: {
   },
 
   Operations: {
-    off: false,
+    enabled: true,
     transaction: true,
     operation: true,
     step: false,
@@ -117,7 +136,7 @@ export const LoggingLevel: {
   },
 
   Debug: {
-    off: false,
+    enabled: true,
     transaction: true,
     operation: true,
     step: true,
@@ -126,25 +145,6 @@ export const LoggingLevel: {
     write: true,
     change: true,
     obsolete: true,
-    error: true,
-    warning: true,
-    gc: false,
-    color: 37,
-    prefix: '',
-    margin1: 0,
-    margin2: 0,
-  },
-
-  Off: {
-    off: true,
-    transaction: false,
-    operation: false,
-    step: false,
-    monitor: false,
-    read: false,
-    write: false,
-    change: false,
-    obsolete: false,
     error: true,
     warning: true,
     gc: false,
