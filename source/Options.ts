@@ -5,9 +5,9 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { LoggingOptions } from './Trace'
+import { LoggingOptions } from './Logging'
 import { StandaloneMode } from './impl/Data'
-export { LoggingOptions, ProfilingOptions, LoggingLevel } from './Trace'
+export { LoggingOptions, ProfilingOptions, LoggingLevel } from './Logging'
 import { TransactionJournal } from './impl/TransactionJournal'
 import { Monitor } from './impl/Monitor'
 

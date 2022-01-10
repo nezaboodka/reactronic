@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 export interface LoggingOptions {
-  readonly silent: boolean
+  readonly off: boolean
   readonly transaction: boolean
   readonly operation: boolean
   readonly step: boolean
@@ -37,11 +37,11 @@ export const LoggingLevel: {
   Transactions: LoggingOptions,
   Operations: LoggingOptions,
   Debug: LoggingOptions,
-  Silent: LoggingOptions,
+  Off: LoggingOptions,
 } = {
 
   ErrorsOnly: {
-    silent: false,
+    off: false,
     transaction: false,
     operation: false,
     step: false,
@@ -60,7 +60,7 @@ export const LoggingLevel: {
   },
 
   Reactions: {
-    silent: false,
+    off: false,
     transaction: false,
     operation: false,
     step: false,
@@ -79,7 +79,7 @@ export const LoggingLevel: {
   },
 
   Transactions: {
-    silent: false,
+    off: false,
     transaction: true,
     operation: false,
     step: false,
@@ -98,7 +98,7 @@ export const LoggingLevel: {
   },
 
   Operations: {
-    silent: false,
+    off: false,
     transaction: true,
     operation: true,
     step: false,
@@ -117,7 +117,7 @@ export const LoggingLevel: {
   },
 
   Debug: {
-    silent: false,
+    off: false,
     transaction: true,
     operation: true,
     step: true,
@@ -135,8 +135,8 @@ export const LoggingLevel: {
     margin2: 0,
   },
 
-  Silent: {
-    silent: true,
+  Off: {
+    off: true,
     transaction: false,
     operation: false,
     step: false,

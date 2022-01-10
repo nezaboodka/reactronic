@@ -8,7 +8,7 @@
 import { UNDEF, F } from '../util/Utils'
 import { Log, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance } from '../Options'
-import { LoggingOptions, ProfilingOptions } from '../Trace'
+import { LoggingOptions, ProfilingOptions } from '../Logging'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta, StandaloneMode } from './Data'
 import { Snapshot, Dump, ROOT_REV } from './Snapshot'

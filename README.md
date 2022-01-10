@@ -367,7 +367,7 @@ interface Worker {
 }
 
 interface LoggingOptions {
-  readonly silent: boolean
+  readonly off: boolean
   readonly transaction: boolean
   readonly operation: boolean
   readonly step: boolean
