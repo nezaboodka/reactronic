@@ -21,7 +21,7 @@ export abstract class ObservableObject {
   constructor() {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
-    const h = Hooks.createObjectHolder(proto, this, initial, new.target.name)
+    const h = Hooks.createObjectHolderForObservableObject(proto, this, initial, new.target.name)
     return h.proxy
   }
 
@@ -235,7 +235,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     return h
   }
 
-  static createObjectHolder(proto: any, unobservable: any, blank: any, hint: string): ObjectHolder {
+  static createObjectHolderForObservableObject(proto: any, unobservable: any, blank: any, hint: string): ObjectHolder {
     const ctx = Snapshot.edit()
     const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, ROOT_REV, hint)
     ctx.getEditableRevision(h, Meta.Holder, blank)
