@@ -706,11 +706,11 @@ class Operation extends Observable implements Observer {
 
   private static createOperation(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
     const ctl = new OperationController(h, m)
-    const hook: F<any> = (...args: any[]): any => {
+    const operation: F<any> = (...args: any[]): any => {
       return ctl.useOrRun(false, args).result
     }
-    Meta.set(hook, Meta.Controller, ctl)
-    return hook
+    Meta.set(operation, Meta.Controller, ctl)
+    return operation
   }
 
   private static rememberOperationOptions(proto: any, m: MemberName, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
