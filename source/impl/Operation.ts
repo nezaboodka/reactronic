@@ -704,7 +704,7 @@ class Operation extends Observable implements Observer {
     return result
   }
 
-  private static createControllerAndGetHook(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
+  private static createOperation(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
     const ctl = new OperationController(h, m)
     const hook: F<any> = (...args: any[]): any => {
       return ctl.useOrRun(false, args).result
@@ -746,7 +746,7 @@ class Operation extends Observable implements Observer {
     Snapshot.propagateAllChangesThroughSubscriptions = Operation.propagateAllChangesThroughSubscriptions // override
     Snapshot.revokeAllSubscriptions = Operation.revokeAllSubscriptions // override
     Snapshot.enqueueReactionsToRun = Operation.enqueueReactionsToRun
-    Hooks.createControllerAndGetHook = Operation.createControllerAndGetHook // override
+    Hooks.createOperation = Operation.createOperation // override
     Hooks.rememberOperationOptions = Operation.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
     try {

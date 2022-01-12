@@ -194,18 +194,18 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     if (opts.getter === opts.setter) { // regular method
       const bootstrap = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)
-        const hook = Hooks.createControllerAndGetHook(h, member, opts)
-        Object.defineProperty(h.unobservable, member, { value: hook, enumerable, configurable })
-        return hook
+        const operation = Hooks.createOperation(h, member, opts)
+        Object.defineProperty(h.unobservable, member, { value: operation, enumerable, configurable })
+        return operation
       }
       return Object.defineProperty(proto, member, { get: bootstrap, enumerable, configurable: true })
     }
     else if (opts.setter === UNDEF) { // property with getter only
       const bootstrap = function(this: any): any {
         const h = Hooks.acquireObjectHolder(this)
-        const hook = Hooks.createControllerAndGetHook(h, member, opts)
-        Object.defineProperty(h.unobservable, member, { get: hook, enumerable, configurable })
-        return hook.call(this)
+        const operation = Hooks.createOperation(h, member, opts)
+        Object.defineProperty(h.unobservable, member, { get: operation, enumerable, configurable })
+        return operation.call(this)
       }
       return Object.defineProperty(proto, member, { get: bootstrap, enumerable, configurable: true })
     }
@@ -280,8 +280,8 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   }
 
   /* istanbul ignore next */
-  static createControllerAndGetHook = function(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
-    throw misuse('createControllerAndGetHook should never be called')
+  static createOperation = function(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
+    throw misuse('createOperation should never be called')
   }
 
   /* istanbul ignore next */
