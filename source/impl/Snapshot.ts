@@ -107,8 +107,7 @@ export class Snapshot implements AbstractSnapshot {
     let r: ObjectRevision = this.seekRevision(h, m)
     const existing = r.data[m]
     if (existing !== Meta.Unobservable) {
-      this.checkIfEditable(h, r, m, existing, value, token)
-      if (r.snapshot !== this) {
+      if (this.isNewRevisionRequired(h, r, m, existing, value, token)) {
         const data = { ...m === Meta.Holder ? value : r.data }
         Reflect.set(data, Meta.Holder, h)
         r = new ObjectRevision(this, r, data)
@@ -144,7 +143,7 @@ export class Snapshot implements AbstractSnapshot {
     return r
   }
 
-  private checkIfEditable(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): void {
+  private isNewRevisionRequired(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): boolean {
     if (this.sealed /* && r.snapshot !== ROOT_REV.snapshot */)
       throw misuse(`observable property ${Dump.obj(h, m)} can only be modified inside transaction`)
     // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== ROOT_REV))
@@ -162,6 +161,7 @@ export class Snapshot implements AbstractSnapshot {
       if (r === ROOT_REV)
         throw misuse(`member ${Dump.rev(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     }
+    return r.snapshot !== this /* && !this.sealed */
   }
 
   acquire(outer: Snapshot): void {
