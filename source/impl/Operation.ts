@@ -134,7 +134,7 @@ export class OperationController extends Controller<any> {
   private peek(args: any[] | undefined): OperationContext {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.seekRevision(this.ownHolder, this.memberName)
-    const op: Operation = this.peekFromRevision(r, args)
+    const op: Operation = this.acquireFromRevision(r, args)
     const isValid = op.options.kind !== Kind.Transaction && op.cause !== BOOT_CAUSE &&
       (ctx === op.snapshot || ctx.timestamp < op.obsoleteSince) &&
       (!op.options.sensitiveArgs || args === undefined ||
@@ -155,7 +155,7 @@ export class OperationController extends Controller<any> {
     const m = this.memberName
     const ctx = Snapshot.edit()
     const r: ObjectRevision = ctx.getEditableRevision(h, m, Meta.Holder, this)
-    let op: Operation = this.peekFromRevision(r, undefined)
+    let op: Operation = this.acquireFromRevision(r, undefined)
     if (op.snapshot !== r.snapshot) {
       const op2 = new Operation(this, r.snapshot, op)
       r.data[m] = op2.reenterOver(op)
@@ -166,7 +166,7 @@ export class OperationController extends Controller<any> {
     return { operation: op, isUpToDate: true, snapshot: ctx, revision: r }
   }
 
-  private peekFromRevision(r: ObjectRevision, args: any[] | undefined): Operation {
+  private acquireFromRevision(r: ObjectRevision, args: any[] | undefined): Operation {
     const m = this.memberName
     let op: Operation = r.data[m]
     if (op.controller !== this) {
