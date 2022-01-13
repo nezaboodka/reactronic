@@ -35,8 +35,9 @@ test('reentrance.error', async t => {
   try {
     // t.is(app.observableField, 'observable field')
     // t.throws(() => app.observableField = 'test', { message: 'observable property AsyncDemoView.observableField #23 can only be modified inside transaction' })
-    // Rx.getController(app.print).configure({ logging: LoggingLevel.Off })
+    Rx.getController(app.print).configure({ logging: TestsLoggingLevel })
     await app.print() // reaction first run
+    t.throws(() => Rx.getController(app.print).configure({ logging: TestsLoggingLevel }))
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
     t.is(busy.counter, 1)

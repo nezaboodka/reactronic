@@ -144,7 +144,7 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   private isNewRevisionRequired(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): boolean {
-    if (this.sealed /* && r.snapshot !== ROOT_REV.snapshot */)
+    if (this.sealed && r.snapshot !== ROOT_REV.snapshot)
       throw misuse(`observable property ${Dump.obj(h, m)} can only be modified inside transaction`)
     // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.revision(r, m)}`)
@@ -161,7 +161,7 @@ export class Snapshot implements AbstractSnapshot {
       if (r === ROOT_REV)
         throw misuse(`member ${Dump.rev(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     }
-    return r.snapshot !== this /* && !this.sealed */
+    return r.snapshot !== this && !this.sealed
   }
 
   acquire(outer: Snapshot): void {

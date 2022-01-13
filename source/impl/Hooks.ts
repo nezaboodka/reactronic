@@ -227,8 +227,6 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
       const rev = new ObjectRevision(ROOT_REV.snapshot, ROOT_REV, {...initial})
       Meta.set(rev.data, Meta.Holder, h)
-      if (Log.isOn)
-        Snapshot.freezeObjectRevision(rev)
       h = new ObjectHolder(obj, obj, Hooks.proxy, rev, obj.constructor.name)
       Meta.set(obj, Meta.Holder, h)
     }

@@ -89,8 +89,8 @@ export class OperationController extends Controller<any> {
       op = self.edit().operation
     else
       op = Operation.current
-    if (!op || op.transaction.isFinished)
-      throw misuse('a method is expected with reactronic decorator')
+    if (!op)
+      throw misuse('reactronic decorator is only applicable to methods')
     op.options = new OptionsImpl(op.options.getter, op.options.setter, op.options, options, false)
     if (Log.isOn && Log.opt.write)
       Log.write('║', '  ✎', `${op.hint()}.options are changed`)
@@ -170,24 +170,36 @@ export class OperationController extends Controller<any> {
     const m = this.memberName
     let op: Operation = r.data[m]
     if (op.controller !== this) {
-      const hint: string = Log.isOn ? `${Dump.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
-      const standalone = r.snapshot.sealed || r.prev.revision !== ROOT_REV
-      op = Transaction.run<Operation>({ hint, standalone, token: this }, (): Operation => {
-        const h = this.ownHolder
-        let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
-        let op2 = r2.data[m] as Operation
-        if (op2.controller !== this) {
-          r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
-          const t = new Operation(this, r2.snapshot, op2)
-          if (args)
-            t.args = args
-          t.cause = BOOT_CAUSE
-          r2.data[m] = t
-          Snapshot.markEdited(op2, t, true, r2, m, h)
-          op2 = t
-        }
-        return op2
-      })
+      if (r.snapshot !== ROOT_REV.snapshot) {
+        const hint: string = Log.isOn ? `${Dump.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
+        const standalone = r.snapshot.sealed || r.prev.revision !== ROOT_REV
+        op = Transaction.run<Operation>({ hint, standalone, token: this }, (): Operation => {
+          const h = this.ownHolder
+          let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
+          let op2 = r2.data[m] as Operation
+          if (op2.controller !== this) {
+            r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
+            const t = new Operation(this, r2.snapshot, op2)
+            if (args)
+              t.args = args
+            t.cause = BOOT_CAUSE
+            r2.data[m] = t
+            Snapshot.markEdited(op2, t, true, r2, m, h)
+            op2 = t
+          }
+          return op2
+        })
+      }
+      else {
+        const t = new Operation(this, r.snapshot, op)
+        if (args)
+          t.args = args
+        t.cause = BOOT_CAUSE
+        r.data[m] = t
+        op = t
+        if (Log.isOn && Log.opt.write)
+          Log.write('║', '  ⎘', `${Dump.obj(this.ownHolder, m)} is cloned outside of transaction`)
+      }
     }
     return op
   }
