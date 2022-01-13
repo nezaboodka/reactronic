@@ -7,7 +7,7 @@
 
 import { ObservableObject } from './Hooks'
 import { ObjectHolder, ObjectRevision, Meta, Patch, ObjectPatch, Observable } from './Data'
-import { Snapshot, BOOT_REV } from './Snapshot'
+import { Snapshot, ROOT_REV } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
 
@@ -75,7 +75,7 @@ export class TransactionJournalImpl extends TransactionJournal {
     const patch: Patch = { hint, objects: new Map<object, ObjectPatch>() }
     changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       const p: ObjectPatch = { current: {}, former: {} }
-      const old = r.prev.revision !== BOOT_REV ? r.prev.revision.data : undefined
+      const old = r.prev.revision !== ROOT_REV ? r.prev.revision.data : undefined
       r.changes.forEach((episode, m) => {
         p.current[m] = unseal(r.data[m])
         if (old)

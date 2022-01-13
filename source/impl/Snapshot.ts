@@ -90,7 +90,7 @@ export class Snapshot implements AbstractSnapshot {
     }
     if (!r) {
       r = h.head
-      while (r !== BOOT_REV && r.snapshot.timestamp > this.timestamp)
+      while (r !== ROOT_REV && r.snapshot.timestamp > this.timestamp)
         r = r.prev.revision
     }
     return r
@@ -98,7 +98,7 @@ export class Snapshot implements AbstractSnapshot {
 
   getCurrentRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
     const r = this.seekRevision(h, m)
-    if (r === BOOT_REV)
+    if (r === ROOT_REV)
       throw misuse(`object ${Dump.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
@@ -120,7 +120,7 @@ export class Snapshot implements AbstractSnapshot {
       }
     }
     else
-      r = BOOT_REV
+      r = ROOT_REV
     return r
   }
 
@@ -137,7 +137,7 @@ export class Snapshot implements AbstractSnapshot {
 
   static doDispose(ctx: Snapshot, h: ObjectHolder): ObjectRevision {
     const r: ObjectRevision = ctx.getEditableRevision(h, Meta.Disposed, Meta.Disposed)
-    if (r !== BOOT_REV) {
+    if (r !== ROOT_REV) {
       r.data[Meta.Disposed] = Meta.Disposed
       Snapshot.markEdited(Meta.Disposed, Meta.Disposed, true, r, Meta.Disposed, h)
     }
@@ -145,21 +145,21 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   private checkIfEditable(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): void {
-    if (this.sealed /* && r.snapshot !== BOOT_REV.snapshot */)
+    if (this.sealed /* && r.snapshot !== ROOT_REV.snapshot */)
       throw misuse(`observable property ${Dump.obj(h, m)} can only be modified inside transaction`)
-    // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== BOOT_REV))
+    // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.revision(r, m)}`)
-    // if (r === BOOT_REV && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */
+    // if (r === ROOT_REV && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */
     //   throw misuse(`member ${Hints.revision(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     if (m !== Meta.Holder && value !== Meta.Holder) {
-      if (r.snapshot !== this || r.prev.revision !== BOOT_REV) {
+      if (r.snapshot !== this || r.prev.revision !== ROOT_REV) {
         if (this.options.token !== undefined && token !== this.options.token)
           throw misuse(`${this.hint} should not have side effects (trying to change ${Dump.rev(r, m)})`)
         // TODO: Detect uninitialized members
         // if (existing === undefined)
         //   throw misuse(`uninitialized member is detected: ${Hints.revision(r, m)}`)
       }
-      if (r === BOOT_REV)
+      if (r === ROOT_REV)
         throw misuse(`member ${Dump.rev(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     }
   }
@@ -257,7 +257,7 @@ export class Snapshot implements AbstractSnapshot {
         h.head = r // switch object to a new version
         if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Snapshot.totalObjectRevisionCount++
-          if (r.prev.revision === BOOT_REV)
+          if (r.prev.revision === ROOT_REV)
             Snapshot.totalObjectHolderCount++
         }
       }
@@ -268,7 +268,7 @@ export class Snapshot implements AbstractSnapshot {
           const members: string[] = []
           r.changes.forEach((o, m) => members.push(m.toString()))
           const s = members.join(', ')
-          Log.write('║', '√', `${Dump.rev2(h, r.snapshot)} (${s}) is ${r.prev.revision === BOOT_REV ? 'constructed' : `applied on top of ${Dump.rev2(h, r.prev.revision.snapshot)}`}`)
+          Log.write('║', '√', `${Dump.rev2(h, r.snapshot)} (${s}) is ${r.prev.revision === ROOT_REV ? 'constructed' : `applied on top of ${Dump.rev2(h, r.prev.revision.snapshot)}`}`)
         })
       }
       if (Log.opt.transaction)
@@ -332,15 +332,15 @@ export class Snapshot implements AbstractSnapshot {
     if (Log.isOn && Log.opt.gc)
       Log.write('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      if (Log.isOn && Log.opt.gc && r.prev.revision !== BOOT_REV)
+      if (Log.isOn && Log.opt.gc && r.prev.revision !== ROOT_REV)
         Log.write(' ', '  ', `${Dump.rev2(h, r.prev.revision.snapshot)} is ready for GC because overwritten by ${Dump.rev2(h, r.snapshot)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
-        if (r.prev.revision !== BOOT_REV)
+        if (r.prev.revision !== ROOT_REV)
           Snapshot.totalObjectRevisionCount--
         if (r.changes.has(Meta.Disposed))
           Snapshot.totalObjectHolderCount--
       }
-      r.prev.revision = BOOT_REV // unlink history
+      r.prev.revision = ROOT_REV // unlink history
     })
     this.changeset = EMPTY_MAP // release for GC
     this.reactions = EMPTY_ARRAY // release for GC
@@ -349,11 +349,11 @@ export class Snapshot implements AbstractSnapshot {
   }
 
   static _init(): void {
-    const boot = BOOT_REV.snapshot as Snapshot // workaround
+    const boot = ROOT_REV.snapshot as Snapshot // workaround
     boot.acquire(boot)
     boot.applyOrDiscard()
     boot.triggerGarbageCollection()
-    Snapshot.freezeObjectRevision(BOOT_REV)
+    Snapshot.freezeObjectRevision(ROOT_REV)
     Snapshot.idGen = 100
     Snapshot.stampGen = 101
     Snapshot.oldest = undefined
@@ -398,7 +398,7 @@ export class Dump {
   }
 }
 
-export const BOOT_REV = new ObjectRevision(new Snapshot({ hint: '<boot>' }), undefined, {})
+export const ROOT_REV = new ObjectRevision(new Snapshot({ hint: '<root>' }), undefined, {})
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',

@@ -57,7 +57,7 @@ export class ObjectRevision {
 
   constructor(snapshot: AbstractSnapshot, prev: ObjectRevision | undefined, data: object) {
     this.snapshot = snapshot
-    this.prev = { revision: prev || this } // undefined prev means initialization of BOOT_REV
+    this.prev = { revision: prev || this } // undefined prev means initialization of ROOT_REV
     this.data = data
     this.changes = new Set<MemberName>()
     this.conflicts = new Map<MemberName, ObjectRevision>()
