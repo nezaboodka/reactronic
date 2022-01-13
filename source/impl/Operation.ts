@@ -116,13 +116,11 @@ export class OperationController extends Controller<any> {
   }
 
   static why(): string {
-    const op = Operation.current
-    return op ? op.why() : BOOT_CAUSE
+    return Operation.current?.why() ?? BOOT_CAUSE
   }
 
   static briefWhy(): string {
-    const op = Operation.current
-    return op ? op.briefWhy() : BOOT_CAUSE
+    return Operation.current?.briefWhy() ?? BOOT_CAUSE
   }
 
   /* istanbul ignore next */
