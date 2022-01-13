@@ -44,7 +44,7 @@ test('brief', t => {
   // Simple transactions
   const app = Transaction.run(null, () => new DemoView(new Demo()))
   try {
-    t.is(Rx.why(), 'root-holder')
+    t.is(Rx.why(), '<boot>')
     t.is(Rx.getController(app.print).options.order, 123)
     t.notThrows(() => DemoView.test())
     const render = Rx.getController(app.render)
@@ -144,7 +144,7 @@ test('brief', t => {
     t.throws(() => { console.log(Rx.getController(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
     const op2 = Transaction.create({ hint: 'op2' })
     const zombi = op2.run(() => new Person())
-    t.throws(() => console.log(zombi.age), { message: 'object Person #30 doesn\'t exist in snapshot v9007199254740990 (<none>)' })
+    t.throws(() => console.log(zombi.age), { message: 'object Person #30 doesn\'t exist in snapshot v9007199254740990 (Transaction.off)' })
     t.throws(() => op2.run(() => { throw new Error('test') }), { message: 'test' })
     t.throws(() => op2.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
     const op3 = Transaction.create({ hint: 'op3' })

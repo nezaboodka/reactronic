@@ -11,7 +11,7 @@ import { MemberOptions, Kind, Reentrance } from '../Options'
 import { LoggingOptions, ProfilingOptions } from '../Logging'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta, StandaloneMode } from './Data'
-import { Snapshot, Dump, ROOT_REV } from './Snapshot'
+import { Snapshot, Dump, BOOT_REV } from './Snapshot'
 import { TransactionJournal } from './TransactionJournal'
 import { Monitor } from './Monitor'
 
@@ -116,9 +116,9 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   set(h: ObjectHolder, m: MemberName, value: any, receiver: any): boolean {
     const r: ObjectRevision = Snapshot.edit().getEditableRevision(h, m, value)
-    if (r !== ROOT_REV) {
+    if (r !== BOOT_REV) {
       let curr = r.data[m] as Observable
-      if (curr !== undefined || (r.prev.revision.snapshot === ROOT_REV.snapshot && (m in h.unobservable) === false)) {
+      if (curr !== undefined || (r.prev.revision.snapshot === BOOT_REV.snapshot && (m in h.unobservable) === false)) {
         if (curr === undefined || curr.value !== value || Hooks.sensitivity) {
           const old = curr?.value
           if (r.prev.revision.data[m] === curr) {
@@ -225,7 +225,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
-      const rev = new ObjectRevision(ROOT_REV.snapshot, ROOT_REV, {...initial})
+      const rev = new ObjectRevision(BOOT_REV.snapshot, BOOT_REV, {...initial})
       Meta.set(rev.data, Meta.Holder, h)
       if (Log.isOn)
         Snapshot.freezeObjectRevision(rev)
@@ -237,7 +237,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   static createObjectHolderForObservableObject(proto: any, unobservable: any, blank: any, hint: string): ObjectHolder {
     const ctx = Snapshot.edit()
-    const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, ROOT_REV, hint)
+    const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, BOOT_REV, hint)
     ctx.getEditableRevision(h, Meta.Holder, blank)
     if (!Hooks.reactionsAutoStartDisabled)
       for (const m in Meta.getFrom(proto, Meta.Reactions))

@@ -10,15 +10,15 @@ import { Log, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Observer, StandaloneMode, ObservableInfo, Meta, AbstractSnapshot } from './Data'
-import { Snapshot, Dump, ROOT_REV, MAX_TIMESTAMP } from './Snapshot'
+import { Snapshot, Dump, BOOT_REV, MAX_TIMESTAMP } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
 import { TransactionJournalImpl } from './TransactionJournal'
 
-const ROOT_ARGS: any[] = []
-const ROOT_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, ROOT_REV, 'root-holder')
-const INITIAL_CAUSE = 'initial'
+const BOOT_ARGS: any[] = []
+const BOOT_HOLDER = new ObjectHolder(undefined, undefined, Hooks.proxy, BOOT_REV, '<boot>')
+const BOOT_CAUSE = '<boot>'
 
 type OperationContext = {
   readonly operation: Operation
@@ -54,13 +54,13 @@ export class OperationController extends Controller<any> {
     const op: Operation = oc.operation
     const opts = op.options
     if (!oc.isUpToDate && oc.revision.data[Meta.Disposed] === undefined
-      && (!weak || op.cause === INITIAL_CAUSE || !op.successor ||
+      && (!weak || op.cause === BOOT_CAUSE || !op.successor ||
         op.successor.transaction.isFinished)) {
       const outerOpts = Operation.current?.options
       const standalone = weak || opts.standalone || opts.kind === Kind.Reaction ||
         (opts.kind === Kind.Transaction && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cache)) ||
         (opts.kind === Kind.Cache && (oc.revision.snapshot.sealed ||
-          oc.revision.prev.revision !== ROOT_REV))
+          oc.revision.prev.revision !== BOOT_REV))
       const token = opts.noSideEffects ? this : undefined
       const oc2 = this.run(oc, standalone, opts, token, args)
       const ctx2 = oc2.operation.snapshot
@@ -117,12 +117,12 @@ export class OperationController extends Controller<any> {
 
   static why(): string {
     const op = Operation.current
-    return op ? op.why() : ROOT_HOLDER.hint
+    return op ? op.why() : BOOT_HOLDER.hint
   }
 
   static briefWhy(): string {
     const op = Operation.current
-    return op ? op.briefWhy() : ROOT_HOLDER.hint
+    return op ? op.briefWhy() : BOOT_HOLDER.hint
   }
 
   /* istanbul ignore next */
@@ -137,7 +137,7 @@ export class OperationController extends Controller<any> {
     const ctx = Snapshot.current()
     const r: ObjectRevision = ctx.seekRevision(this.ownHolder, this.memberName)
     const op: Operation = this.peekFromRevision(r, args)
-    const isValid = op.options.kind !== Kind.Transaction && op.cause !== INITIAL_CAUSE &&
+    const isValid = op.options.kind !== Kind.Transaction && op.cause !== BOOT_CAUSE &&
       (ctx === op.snapshot || ctx.timestamp < op.obsoleteSince) &&
       (!op.options.sensitiveArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
@@ -173,7 +173,7 @@ export class OperationController extends Controller<any> {
     let op: Operation = r.data[m]
     if (op.controller !== this) {
       const hint: string = Log.isOn ? `${Dump.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
-      const standalone = r.snapshot.sealed || r.prev.revision !== ROOT_REV
+      const standalone = r.snapshot.sealed || r.prev.revision !== BOOT_REV
       op = Transaction.run<Operation>({ hint, standalone, token: this }, (): Operation => {
         const h = this.ownHolder
         let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
@@ -183,7 +183,7 @@ export class OperationController extends Controller<any> {
           const t = new Operation(this, r2.snapshot, op2)
           if (args)
             t.args = args
-          t.cause = INITIAL_CAUSE
+          t.cause = BOOT_CAUSE
           r2.data[m] = t
           Snapshot.markEdited(op2, t, true, r2, m, h)
           op2 = t
@@ -224,7 +224,7 @@ export class OperationController extends Controller<any> {
   private static markObsolete(self: OperationController): void {
     const oc = self.peek(undefined)
     const ctx = oc.snapshot
-    oc.operation.markObsoleteDueTo(oc.operation, self.memberName, ROOT_REV.snapshot, ROOT_HOLDER, INITIAL_CAUSE, ctx.timestamp, ctx.reactions)
+    oc.operation.markObsoleteDueTo(oc.operation, self.memberName, BOOT_REV.snapshot, BOOT_HOLDER, BOOT_CAUSE, ctx.timestamp, ctx.reactions)
   }
 }
 
@@ -265,7 +265,7 @@ class Operation extends Observable implements Observer {
     }
     else { // prev: OptionsImpl
       this.options = prev
-      this.args = ROOT_ARGS
+      this.args = BOOT_ARGS
       this.cause = undefined
       // this.value = undefined
     }
@@ -346,7 +346,7 @@ class Operation extends Observable implements Observer {
         const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
         if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
           Log.write(Log.opt.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
-            isReaction && snapshot === ROOT_REV.snapshot
+            isReaction && snapshot === BOOT_REV.snapshot
               ? `${this.hint()} is a reaction and will run automatically (order ${this.options.order})`
               : `${this.hint()} is obsolete due to ${Dump.rev2(holder, snapshot, memberName)} since v${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ''}`)
 
@@ -545,7 +545,7 @@ class Operation extends Observable implements Observer {
           ctx.bumpBy(r.snapshot.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!op.subscribeTo(observable, r, m, h, t))
-          op.markObsoleteDueTo(observable, m, r.snapshot, h, INITIAL_CAUSE, ctx.timestamp, ctx.reactions)
+          op.markObsoleteDueTo(observable, m, r.snapshot, h, BOOT_CAUSE, ctx.timestamp, ctx.reactions)
       }
     }
   }
@@ -559,7 +559,7 @@ class Operation extends Observable implements Observer {
   private static isConflicting(oldValue: any, newValue: any): boolean {
     let result = oldValue !== newValue
     if (result)
-      result = oldValue instanceof Operation && oldValue.cause !== INITIAL_CAUSE
+      result = oldValue instanceof Operation && oldValue.cause !== BOOT_CAUSE
     return result
   }
 
@@ -717,9 +717,9 @@ class Operation extends Observable implements Observer {
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
     let op: Operation | undefined = initial[m]
-    const ctl = op ? op.controller : new OperationController(ROOT_HOLDER, m)
+    const ctl = op ? op.controller : new OperationController(BOOT_HOLDER, m)
     const opts = op ? op.options : OptionsImpl.INITIAL
-    initial[m] = op = new Operation(ctl, ROOT_REV.snapshot, new OptionsImpl(getter, setter, opts, options, implicit))
+    initial[m] = op = new Operation(ctl, BOOT_REV.snapshot, new OptionsImpl(getter, setter, opts, options, implicit))
     // Add to the list if it's a reaction
     if (op.options.kind === Kind.Reaction && op.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactions = Meta.acquire(proto, Meta.Reactions)
@@ -738,7 +738,7 @@ class Operation extends Observable implements Observer {
   // }
 
   static init(): void {
-    Object.freeze(ROOT_ARGS)
+    Object.freeze(BOOT_ARGS)
     Log.getMergedLoggingOptions = getMergedLoggingOptions
     Snapshot.markUsed = Operation.markUsed // override
     Snapshot.markEdited = Operation.markEdited // override

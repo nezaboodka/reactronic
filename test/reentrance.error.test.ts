@@ -35,6 +35,7 @@ test('reentrance.error', async t => {
   try {
     // t.is(app.observableField, 'observable field')
     // t.throws(() => app.observableField = 'test', { message: 'observable property AsyncDemoView.observableField #23 can only be modified inside transaction' })
+    // Rx.getController(app.print).configure({ logging: LoggingLevel.Off })
     await app.print() // reaction first run
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
