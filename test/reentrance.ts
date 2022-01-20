@@ -40,7 +40,7 @@ export class AsyncDemoView {
     }
   }
 
-  @cached @options({ sensitiveArgs: false })
+  @cached @options({ triggeringArgs: false })
   async render(): Promise<string[]> {
     const result: string[] = []
     result.push(`${busy.isActive ? '[...] ' : ''}Url: ${this.model.url}`)

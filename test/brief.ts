@@ -111,7 +111,7 @@ export class DemoView extends ObservableObject {
     return result
   }
 
-  @cached @options({ sensitiveArgs: true })
+  @cached @options({ triggeringArgs: true })
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
     this.raw = Rx.why(true)

@@ -39,7 +39,7 @@ const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   standalone: false,
   order: 0,
   noSideEffects: false,
-  sensitiveArgs: false,
+  triggeringArgs: false,
   throttling: Number.MAX_SAFE_INTEGER, // disabled reaction, @reaction sets it to -1 to enable
   reentrance: Reentrance.PreventWithError,
   journal: undefined,
@@ -54,7 +54,7 @@ export class OptionsImpl implements MemberOptions {
   readonly standalone: StandaloneMode
   readonly order: number
   readonly noSideEffects: boolean
-  readonly sensitiveArgs: boolean
+  readonly triggeringArgs: boolean
   readonly throttling: number
   readonly reentrance: Reentrance
   readonly journal: TransactionJournal | undefined
@@ -69,7 +69,7 @@ export class OptionsImpl implements MemberOptions {
     this.standalone = merge(DEFAULT_OPTIONS.standalone, existing.standalone, patch.standalone, implicit)
     this.order = merge(DEFAULT_OPTIONS.order, existing.order, patch.order, implicit)
     this.noSideEffects = merge(DEFAULT_OPTIONS.noSideEffects, existing.noSideEffects, patch.noSideEffects, implicit)
-    this.sensitiveArgs = merge(DEFAULT_OPTIONS.sensitiveArgs, existing.sensitiveArgs, patch.sensitiveArgs, implicit)
+    this.triggeringArgs = merge(DEFAULT_OPTIONS.triggeringArgs, existing.triggeringArgs, patch.triggeringArgs, implicit)
     this.throttling = merge(DEFAULT_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
     this.reentrance = merge(DEFAULT_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.journal = merge(DEFAULT_OPTIONS.journal, existing.journal, patch.journal, implicit)

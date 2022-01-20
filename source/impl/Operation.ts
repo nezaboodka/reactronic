@@ -137,7 +137,7 @@ export class OperationController extends Controller<any> {
     const op: Operation = this.acquireFromRevision(r, args)
     const isValid = op.options.kind !== Kind.Transaction && op.cause !== BOOT_CAUSE &&
       (ctx === op.snapshot || ctx.timestamp < op.obsoleteSince) &&
-      (!op.options.sensitiveArgs || args === undefined ||
+      (!op.options.triggeringArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
       r.data[Meta.Disposed] !== undefined
     return { operation: op, isUpToDate: isValid, snapshot: ctx, revision: r }
