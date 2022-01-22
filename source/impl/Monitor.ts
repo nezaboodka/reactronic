@@ -13,21 +13,25 @@ export abstract class Monitor extends ObservableObject {
   abstract readonly isActive: boolean
   abstract readonly counter: number
   abstract readonly workers: ReadonlySet<Worker>
+  abstract readonly duration: number
 
-  static create(hint: string, activationDelay: number, deactivationDelay: number): Monitor {
-    return MonitorImpl.create(hint, activationDelay, deactivationDelay)
+  static create(hint: string, activationDelay: number, deactivationDelay: number, durationResolution: number): Monitor {
+    return MonitorImpl.create(hint, activationDelay, deactivationDelay, durationResolution)
   }
 }
 
 export class MonitorImpl extends Monitor {
-  isActive: boolean = false
-  counter: number = 0
+  isActive = false
+  counter = 0
   workers = new Set<Worker>()
+  duration = 0
   internals = {
+    started: 0,
     activationDelay: -1,
     activationTimeout: undefined,
     deactivationDelay: -1,
     deactivationTimeout: undefined,
+    durationResolution: 1,
   }
 
   enter(worker: Worker): void {
@@ -44,9 +48,9 @@ export class MonitorImpl extends Monitor {
     MonitorImpl.deactivate(this, this.internals.deactivationDelay)
   }
 
-  static create(hint: string, activationDelay: number, deactivationDelay: number): MonitorImpl {
+  static create(hint: string, activationDelay: number, deactivationDelay: number, durationResolution: number): MonitorImpl {
     return Transaction.run({ hint: 'Monitor.create' },
-      MonitorImpl.doCreate, hint, activationDelay, deactivationDelay)
+      MonitorImpl.doCreate, hint, activationDelay, deactivationDelay, durationResolution)
   }
 
   static enter(mon: MonitorImpl, worker: Worker): void {
@@ -59,15 +63,21 @@ export class MonitorImpl extends Monitor {
 
   // Internal
 
-  private static doCreate(hint: string, activationDelay: number, deactivationDelay: number): MonitorImpl {
+  private static doCreate(hint: string, activationDelay: number, deactivationDelay: number, durationResolution: number): MonitorImpl {
     const m = new MonitorImpl()
     Hooks.setHint(m, hint)
     m.internals.activationDelay = activationDelay
     m.internals.deactivationDelay = deactivationDelay
+    m.internals.durationResolution = durationResolution
     return m
   }
 
   private static activate(mon: MonitorImpl, delay: number): void {
+    if (mon.internals.started === 0) {
+      mon.duration = 0
+      mon.internals.started = performance.now()
+      MonitorImpl.tick(mon)
+    }
     if (delay >= 0) {
       if (mon.internals.activationTimeout === undefined) // only once
         mon.internals.activationTimeout = setTimeout(() =>
@@ -89,6 +99,21 @@ export class MonitorImpl extends Monitor {
     else if (mon.counter <= 0) {
       mon.isActive = false
       mon.internals.activationTimeout = undefined
+    }
+    if (mon.counter === 0 && mon.internals.started !== 0) {
+      const resolution = mon.internals.durationResolution
+      mon.duration = Math.round(resolution * (performance.now() - mon.internals.started)) / resolution
+      mon.internals.started = 0
+    }
+  }
+
+  private static tick(mon: MonitorImpl): void {
+    if (mon.internals.started !== 0) {
+      Transaction.run(null, () => {
+        const resolution = mon.internals.durationResolution
+        mon.duration = Math.round(resolution * (performance.now() - mon.internals.started)) / resolution
+      })
+      requestAnimationFrame(() => MonitorImpl.tick(mon))
     }
   }
 }

@@ -8,7 +8,7 @@
 import { ObservableObject, transaction, reaction, cached, options, Transaction, Monitor, Reentrance, Rx, all, pause } from '../source/api'
 
 export const output: string[] = []
-export const busy = Monitor.create('Busy', 0, 0)
+export const busy = Monitor.create('Busy', 0, 0, 1)
 
 export class AsyncDemo extends ObservableObject {
   url: string = 'reactronic'
