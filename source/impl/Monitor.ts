@@ -113,7 +113,9 @@ export class MonitorImpl extends Monitor {
         const resolution = mon.internals.durationResolution
         mon.duration = Math.round(resolution * (performance.now() - mon.internals.started)) / resolution
       })
-      requestAnimationFrame(() => MonitorImpl.tick(mon))
+      const t: any = globalThis ?? global as any
+      if (t.requestAnimationFrame)
+        requestAnimationFrame(() => MonitorImpl.tick(mon))
     }
   }
 }
