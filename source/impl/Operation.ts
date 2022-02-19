@@ -347,7 +347,7 @@ class Operation extends Observable implements Observer {
         snapshot === this.snapshot /* &&
         revision.changes.has(memberName) */
       if (!skip) {
-        const why = `${Dump.rev2(holder, snapshot, memberName)}    <<    ${outer}`
+        const why = `${Dump.rev2(holder, snapshot, memberName, observable)}    <<    ${outer}`
         // Mark obsolete (this.observables = undefined)
         this.unsubscribeFromAllObservables()
         this.obsoleteDueTo = why
@@ -750,6 +750,7 @@ class Operation extends Observable implements Observer {
   static init(): void {
     Object.freeze(BOOT_ARGS)
     Log.getMergedLoggingOptions = getMergedLoggingOptions
+    Dump.valueHint = valueHint
     Snapshot.markUsed = Operation.markUsed // override
     Snapshot.markEdited = Operation.markEdited // override
     Snapshot.isConflicting = Operation.isConflicting // override
@@ -809,10 +810,14 @@ function valueHint(value: any, m?: MemberName): string {
     result = `${Dump.rev2(value.controller.ownHolder, value.snapshot, m)}`
   else if (value === Meta.Disposed)
     result = '<disposed>'
+  else if (value === Meta.Undefined)
+    result = '◌'
+  else if (typeof(value) === 'string')
+    result = `"${value.toString().slice(0, 20)}"`
   else if (value !== undefined && value !== null)
     result = value.toString().slice(0, 20)
   else
-    result = '∅'
+    result = '◌'
   return result
 }
 

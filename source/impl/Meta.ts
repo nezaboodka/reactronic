@@ -14,6 +14,7 @@ export abstract class Meta {
   static readonly Initial: unique symbol = Symbol('rxInitial')
   static readonly Reactions: unique symbol = Symbol('rxReactions')
   static readonly Unobservable: unique symbol = Symbol('rxUnobservable')
+  static readonly Undefined: unique symbol = Symbol('rxUndefined')
 
   static get<T>(obj: any, sym: symbol): T {
     return obj[sym]

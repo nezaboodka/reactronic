@@ -366,15 +366,19 @@ export class Snapshot implements AbstractSnapshot {
 // Dump
 
 export class Dump {
-  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, typeless?: boolean): string {
+  static valueHint = (value: any, m?: MemberName): string => '???'
+
+  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, value?: any): string {
     const member = m !== undefined ? `.${m.toString()}` : ''
     return h === undefined
       ? `boot${member}`
-      : stamp === undefined ? `${h.hint}${member} #${h.id}` : `${h.hint}${member} #${h.id}t${snapshotId}v${stamp}${originSnapshotId !== undefined && originSnapshotId !== 0 ? `t${originSnapshotId}` : ''}`
+      : stamp === undefined
+        ? `${h.hint}${member}${value !== undefined ? `[=${Dump.valueHint(value)}]` : ''} #${h.id}`
+        : `${h.hint}${member}${value !== undefined ? `[=${Dump.valueHint(value)}]` : ''} #${h.id}t${snapshotId}v${stamp}${originSnapshotId !== undefined && originSnapshotId !== 0 ? `t${originSnapshotId}` : ''}`
   }
 
-  static rev2(h: ObjectHolder, s: AbstractSnapshot, m?: MemberName, value?: Observable): string {
-    return Dump.obj(h, m, s.timestamp, s.id, value?.originSnapshotId)
+  static rev2(h: ObjectHolder, s: AbstractSnapshot, m?: MemberName, o?: Observable): string {
+    return Dump.obj(h, m, s.timestamp, s.id, o?.originSnapshotId, o?.value ?? Meta.Undefined)
   }
 
   static rev(r: ObjectRevision, m?: MemberName): string {
