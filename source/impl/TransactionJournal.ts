@@ -34,7 +34,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   private _isSaving: boolean = false
   private _edits: Patch[] = []
   private _position: number = 0
-  private _savedPosition: number = 0
+  private _saved: number = 0
 
   get capacity(): number { return this._capacity }
   set capacity(value: number) { this._capacity = value; if (value < this._edits.length) this._edits.splice(0, this._edits.length - value) }
@@ -69,8 +69,8 @@ export class TransactionJournalImpl extends TransactionJournal {
 
   getUnsaved(): Patch | undefined {
     let result: Patch | undefined = undefined
-    const direction = Math.sign(this._position - this._savedPosition)
-    const length = Math.abs(this._position - this._savedPosition)
+    const direction = Math.sign(this._position - this._saved)
+    const length = Math.abs(this._position - this._saved)
     if (length !== 0) {
       result = { hint: 'unsaved changes', objects: new Map<object, ObjectPatch>() }
       let i = 0
@@ -97,7 +97,7 @@ export class TransactionJournalImpl extends TransactionJournal {
 
   endSave(success: boolean): void {
     if (success)
-      this._savedPosition = this._position
+      this._saved = this._position
     this._isSaving = false
   }
 
