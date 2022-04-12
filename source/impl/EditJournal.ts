@@ -13,6 +13,7 @@ import { Sealant } from '../util/Sealant'
 
 export abstract class EditJournal extends ObservableObject {
   abstract capacity: number
+  abstract autoSave: boolean
   abstract readonly isSaving: boolean
   abstract readonly edits: ReadonlyArray<Patch>
   abstract readonly canUndo: boolean
@@ -20,9 +21,7 @@ export abstract class EditJournal extends ObservableObject {
 
   abstract undo(count?: number): void
   abstract redo(count?: number): void
-  abstract getUnsaved(): Patch | undefined
-  abstract beginSave(): void
-  abstract endSave(success: boolean): void
+  abstract save(): void
 
   abstract register(patch: Patch): void
 
@@ -31,6 +30,7 @@ export abstract class EditJournal extends ObservableObject {
 
 export class EditJournalImpl extends EditJournal {
   private _capacity: number = 5
+  private _autoSave: boolean = false
   private _isSaving: boolean = false
   private _edits: Patch[] = []
   private _position: number = 0
@@ -38,6 +38,8 @@ export class EditJournalImpl extends EditJournal {
 
   get capacity(): number { return this._capacity }
   set capacity(value: number) { this._capacity = value; if (value < this._edits.length) this._edits.splice(0, this._edits.length - value) }
+  get autoSave(): boolean { return this._autoSave }
+  set autoSave(value: boolean) { this._autoSave = value }
   get isSaving(): boolean { return this._isSaving }
   get edits(): ReadonlyArray<Patch> { return this._edits }
   get canUndo(): boolean { return this._edits.length > 0 && this._position > 0 }
@@ -65,6 +67,10 @@ export class EditJournalImpl extends EditJournal {
       }
       this._position = i
     })
+  }
+
+  save(): void {
+    //
   }
 
   getUnsaved(): Patch | undefined {
