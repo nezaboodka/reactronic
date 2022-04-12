@@ -13,14 +13,16 @@ import { Sealant } from '../util/Sealant'
 
 export abstract class TransactionJournal extends ObservableObject {
   abstract capacity: number
-  abstract isSaving: boolean
+  abstract readonly isSaving: boolean
   abstract readonly edits: ReadonlyArray<Patch>
-  abstract readonly unsaved: Patch | undefined
   abstract readonly canUndo: boolean
   abstract readonly canRedo: boolean
 
   abstract undo(count?: number): void
   abstract redo(count?: number): void
+  abstract getUnsaved(): Patch | undefined
+  abstract beginSave(): void
+  abstract endSave(success: boolean): void
 
   abstract register(patch: Patch): void
 
@@ -32,13 +34,12 @@ export class TransactionJournalImpl extends TransactionJournal {
   private _isSaving: boolean = false
   private _edits: Patch[] = []
   private _position: number = 0
+  private _savedPosition: number = 0
 
   get capacity(): number { return this._capacity }
   set capacity(value: number) { this._capacity = value; if (value < this._edits.length) this._edits.splice(0, this._edits.length - value) }
   get isSaving(): boolean { return this._isSaving }
-  set isSaving(value: boolean) { this._isSaving = value }
   get edits(): ReadonlyArray<Patch> { return this._edits }
-  get unsaved(): Patch | undefined { return undefined }
   get canUndo(): boolean { return this._edits.length > 0 && this._position > 0 }
   get canRedo(): boolean { return this._position < this._edits.length }
 
@@ -64,6 +65,40 @@ export class TransactionJournalImpl extends TransactionJournal {
       }
       this._position = i
     })
+  }
+
+  getUnsaved(): Patch | undefined {
+    let result: Patch | undefined = undefined
+    const direction = Math.sign(this._position - this._savedPosition)
+    const length = Math.abs(this._position - this._savedPosition)
+    if (length !== 0) {
+      result = { hint: 'unsaved changes', objects: new Map<object, ObjectPatch>() }
+      let i = 0
+      while (i < length) {
+        const patch = this._edits[this._position + direction * (i + 1)]
+        patch.objects.forEach((p, obj) => {
+          // WIP:
+          // let objPatch = result!.objects.get(obj)
+          // if (!objPatch)
+          //   result!.objects.set(obj, objPatch = { current: {}, former: p.current })
+          // p.current
+          // p.former
+        })
+        // ...
+        i += direction
+      }
+    }
+    return result
+  }
+
+  beginSave(): void {
+    this._isSaving = true
+  }
+
+  endSave(success: boolean): void {
+    if (success)
+      this._savedPosition = this._position
+    this._isSaving = false
   }
 
   register(p: Patch): void {
