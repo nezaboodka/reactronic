@@ -70,7 +70,7 @@ test('brief', t => {
     render.markObsolete()
     t.not(render.stamp, stamp)
     // Multi-part transactions
-    const tran1 = Transaction.create({ hint: 'tran1', journal: Demo.UndoRedo })
+    const tran1 = Transaction.create({ hint: 'tran1', journal: Demo.journal })
     tran1.run(() => {
       const computed = app.model.computed
       t.true(computed.startsWith('Demo.computed @ '))
@@ -172,22 +172,22 @@ test('brief', t => {
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
     // Undo
     t.is(app.model.title, 'Demo')
-    t.is(Demo.UndoRedo.items.length, 1)
+    t.is(Demo.journal.edits.length, 1)
     app.model.testUndo()
-    t.is(Demo.UndoRedo.items.length, 2)
+    t.is(Demo.journal.edits.length, 2)
     t.is(app.model.title, 'Demo - undo/redo')
-    Demo.UndoRedo.undo()
-    t.is(Demo.UndoRedo.items.length, 2)
+    Demo.journal.undo()
+    t.is(Demo.journal.edits.length, 2)
     t.is(app.model.title, 'Demo')
     // Undo
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)
     t.is(app.userFilter, '')
-    Demo.UndoRedo.undo()
+    Demo.journal.undo()
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(app.userFilter, 'Jo')
-    Demo.UndoRedo.redo()
+    Demo.journal.redo()
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)
     t.is(app.userFilter, '')

@@ -584,8 +584,8 @@ class Operation extends Observable implements Observer {
           Operation.propagateMemberChangeThroughSubscriptions(true, since, r, m, h, reactions)
     })
     reactions.sort(compareReactionsByOrder)
-    snapshot.options.journal?.remember(
-      TransactionJournalImpl.createPatch(snapshot.hint, snapshot.changeset))
+    snapshot.options.journal?.register(
+      TransactionJournalImpl.buildPatch(snapshot.hint, snapshot.changeset))
   }
 
   private static revokeAllSubscriptions(snapshot: Snapshot): void {

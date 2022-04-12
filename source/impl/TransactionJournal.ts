@@ -13,45 +13,40 @@ import { Sealant } from '../util/Sealant'
 
 export abstract class TransactionJournal extends ObservableObject {
   abstract capacity: number
-  abstract readonly items: ReadonlyArray<Patch>
+  abstract isSaving: boolean
+  abstract readonly edits: ReadonlyArray<Patch>
+  abstract readonly unsaved: Patch | undefined
   abstract readonly canUndo: boolean
   abstract readonly canRedo: boolean
 
   abstract undo(count?: number): void
   abstract redo(count?: number): void
-  abstract remember(patch: Patch): void
+
+  abstract register(patch: Patch): void
 
   static create(): TransactionJournal { return new TransactionJournalImpl() }
 }
 
 export class TransactionJournalImpl extends TransactionJournal {
   private _capacity: number = 5
-  private _items: Patch[] = []
+  private _isSaving: boolean = false
+  private _edits: Patch[] = []
   private _position: number = 0
 
   get capacity(): number { return this._capacity }
-  set capacity(value: number) { this._capacity = value; if (value < this._items.length) this._items.splice(0, this._items.length - value) }
-  get items(): ReadonlyArray<Patch> { return this._items }
-  get canUndo(): boolean { return this._items.length > 0 && this._position > 0 }
-  get canRedo(): boolean { return this._position < this._items.length }
-
-  remember(p: Patch): void {
-    Transaction.run({ hint: 'TransactionJournal.remember', standalone: 'isolated' }, () => {
-      const items = this._items = this._items.toMutable()
-      if (items.length >= this._capacity)
-        items.shift()
-      else
-        items.splice(this._position)
-      items.push(p)
-      this._position = items.length
-    })
-  }
+  set capacity(value: number) { this._capacity = value; if (value < this._edits.length) this._edits.splice(0, this._edits.length - value) }
+  get isSaving(): boolean { return this._isSaving }
+  set isSaving(value: boolean) { this._isSaving = value }
+  get edits(): ReadonlyArray<Patch> { return this._edits }
+  get unsaved(): Patch | undefined { return undefined }
+  get canUndo(): boolean { return this._edits.length > 0 && this._position > 0 }
+  get canRedo(): boolean { return this._position < this._edits.length }
 
   undo(count: number = 1): void {
     Transaction.run({ hint: 'TransactionJournal.undo', standalone: 'isolated' }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
-        const patch = this._items[i]
+        const patch = this._edits[i]
         TransactionJournalImpl.applyPatch(patch, true)
         i--, count--
       }
@@ -62,8 +57,8 @@ export class TransactionJournalImpl extends TransactionJournal {
   redo(count: number = 1): void {
     Transaction.run({ hint: 'TransactionJournal.redo', standalone: 'isolated' }, () => {
       let i: number = this._position
-      while (i < this._items.length && count > 0) {
-        const patch = this._items[i]
+      while (i < this._edits.length && count > 0) {
+        const patch = this._edits[i]
         TransactionJournalImpl.applyPatch(patch, false)
         i++, count--
       }
@@ -71,7 +66,19 @@ export class TransactionJournalImpl extends TransactionJournal {
     })
   }
 
-  static createPatch(hint: string, changeset: Map<ObjectHolder, ObjectRevision>): Patch {
+  register(p: Patch): void {
+    Transaction.run({ hint: 'TransactionJournal.remember', standalone: 'isolated' }, () => {
+      const items = this._edits = this._edits.toMutable()
+      if (items.length >= this._capacity)
+        items.shift()
+      else
+        items.splice(this._position)
+      items.push(p)
+      this._position = items.length
+    })
+  }
+
+  static buildPatch(hint: string, changeset: Map<ObjectHolder, ObjectRevision>): Patch {
     const patch: Patch = { hint, objects: new Map<object, ObjectPatch>() }
     changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       const p: ObjectPatch = { current: {}, former: {} }

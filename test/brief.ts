@@ -11,7 +11,7 @@ export const output: string[] = []
 
 export class Demo extends ObservableObject {
   static stamp = 0
-  static UndoRedo = Transaction.run(null, () => TransactionJournal.create())
+  static journal = Transaction.run(null, () => TransactionJournal.create())
 
   @cached
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
@@ -39,7 +39,7 @@ export class Demo extends ObservableObject {
     this.collection1.push(...this.users)
   }
 
-  @transaction @options({ journal: Demo.UndoRedo })
+  @transaction @options({ journal: Demo.journal })
   testUndo(): void {
     this.title = 'Demo - undo/redo'
   }
