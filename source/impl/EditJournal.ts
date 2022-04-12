@@ -11,7 +11,7 @@ import { Snapshot, ROOT_REV } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
 
-export abstract class TransactionJournal extends ObservableObject {
+export abstract class EditJournal extends ObservableObject {
   abstract capacity: number
   abstract readonly isSaving: boolean
   abstract readonly edits: ReadonlyArray<Patch>
@@ -26,10 +26,10 @@ export abstract class TransactionJournal extends ObservableObject {
 
   abstract register(patch: Patch): void
 
-  static create(): TransactionJournal { return new TransactionJournalImpl() }
+  static create(): EditJournal { return new EditJournalImpl() }
 }
 
-export class TransactionJournalImpl extends TransactionJournal {
+export class EditJournalImpl extends EditJournal {
   private _capacity: number = 5
   private _isSaving: boolean = false
   private _edits: Patch[] = []
@@ -44,11 +44,11 @@ export class TransactionJournalImpl extends TransactionJournal {
   get canRedo(): boolean { return this._position < this._edits.length }
 
   undo(count: number = 1): void {
-    Transaction.run({ hint: 'TransactionJournal.undo', standalone: 'isolated' }, () => {
+    Transaction.run({ hint: 'EditJournal.undo', standalone: 'isolated' }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._edits[i]
-        TransactionJournalImpl.applyPatch(patch, true)
+        EditJournalImpl.applyPatch(patch, true)
         i--, count--
       }
       this._position = i + 1
@@ -56,11 +56,11 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 
   redo(count: number = 1): void {
-    Transaction.run({ hint: 'TransactionJournal.redo', standalone: 'isolated' }, () => {
+    Transaction.run({ hint: 'EditJournal.redo', standalone: 'isolated' }, () => {
       let i: number = this._position
       while (i < this._edits.length && count > 0) {
         const patch = this._edits[i]
-        TransactionJournalImpl.applyPatch(patch, false)
+        EditJournalImpl.applyPatch(patch, false)
         i++, count--
       }
       this._position = i
@@ -69,10 +69,10 @@ export class TransactionJournalImpl extends TransactionJournal {
 
   getUnsaved(): Patch | undefined {
     let result: Patch | undefined = undefined
-    const direction = Math.sign(this._position - this._saved)
     const length = Math.abs(this._position - this._saved)
     if (length !== 0) {
       result = { hint: 'unsaved changes', objects: new Map<object, ObjectPatch>() }
+      const direction = Math.sign(this._position - this._saved)
       let i = 0
       while (i < length) {
         const patch = this._edits[this._position + direction * (i + 1)]
@@ -85,7 +85,7 @@ export class TransactionJournalImpl extends TransactionJournal {
           // p.former
         })
         // ...
-        i += direction
+        i++
       }
     }
     return result
@@ -102,7 +102,7 @@ export class TransactionJournalImpl extends TransactionJournal {
   }
 
   register(p: Patch): void {
-    Transaction.run({ hint: 'TransactionJournal.remember', standalone: 'isolated' }, () => {
+    Transaction.run({ hint: 'EditJournal.remember', standalone: 'isolated' }, () => {
       const items = this._edits = this._edits.toMutable()
       if (items.length >= this._capacity)
         items.shift()
