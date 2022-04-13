@@ -11,13 +11,18 @@ import { Snapshot, ROOT_REV } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
 
+export type Saver = (patch: Patch) => Promise<void>
+
 export abstract class EditJournal extends ObservableObject {
   abstract capacity: number
   abstract autoSave: boolean
-  abstract readonly isSaving: boolean
+  abstract saver: Saver | undefined
+
   abstract readonly edits: ReadonlyArray<Patch>
-  abstract readonly canUndo: boolean
-  abstract readonly canRedo: boolean
+  abstract readonly hasChangesToUndo: boolean
+  abstract readonly hasChangesToRedo: boolean
+  abstract readonly hasChangesToSave: boolean
+  abstract readonly isSaving: boolean
 
   abstract undo(count?: number): void
   abstract redo(count?: number): void
@@ -31,19 +36,24 @@ export abstract class EditJournal extends ObservableObject {
 export class EditJournalImpl extends EditJournal {
   private _capacity: number = 5
   private _autoSave: boolean = false
-  private _isSaving: boolean = false
+  private _saver: Saver | undefined = undefined
   private _edits: Patch[] = []
   private _position: number = 0
+  private _isSaving: boolean = false
   private _saved: number = 0
 
   get capacity(): number { return this._capacity }
   set capacity(value: number) { this._capacity = value; if (value < this._edits.length) this._edits.splice(0, this._edits.length - value) }
   get autoSave(): boolean { return this._autoSave }
   set autoSave(value: boolean) { this._autoSave = value }
-  get isSaving(): boolean { return this._isSaving }
+  get saver(): Saver | undefined { return this._saver }
+  set saver(value: Saver | undefined) { this._saver = value }
+
   get edits(): ReadonlyArray<Patch> { return this._edits }
-  get canUndo(): boolean { return this._edits.length > 0 && this._position > 0 }
-  get canRedo(): boolean { return this._position < this._edits.length }
+  get hasChangesToUndo(): boolean { return this._edits.length > 0 && this._position > 0 }
+  get hasChangesToRedo(): boolean { return this._position < this._edits.length }
+  get hasChangesToSave(): boolean { return false }
+  get isSaving(): boolean { return this._isSaving }
 
   undo(count: number = 1): void {
     Transaction.run({ hint: 'EditJournal.undo', standalone: 'isolated' }, () => {
@@ -69,11 +79,24 @@ export class EditJournalImpl extends EditJournal {
     })
   }
 
-  save(): void {
-    //
+  async save(): Promise<void> {
+    if (this._saver) {
+      const changes = this.getChangesToSave()
+      if (changes) {
+        try
+        {
+          Transaction.standalone(() => this._isSaving = true)
+          await this._saver(changes)
+        }
+        finally {
+          Transaction.standalone(() => this._isSaving = false)
+        }
+        this._saved = this._position
+      }
+    }
   }
 
-  getUnsaved(): Patch | undefined {
+  private getChangesToSave(): Patch | undefined {
     let result: Patch | undefined = undefined
     const length = Math.abs(this._position - this._saved)
     if (length !== 0) {
@@ -95,16 +118,6 @@ export class EditJournalImpl extends EditJournal {
       }
     }
     return result
-  }
-
-  beginSave(): void {
-    this._isSaving = true
-  }
-
-  endSave(success: boolean): void {
-    if (success)
-      this._saved = this._position
-    this._isSaving = false
   }
 
   register(p: Patch): void {
