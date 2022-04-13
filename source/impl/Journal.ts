@@ -13,7 +13,7 @@ import { Sealant } from '../util/Sealant'
 
 export type Saver = (patch: Patch) => Promise<void>
 
-export abstract class EditJournal extends ObservableObject {
+export abstract class Journal extends ObservableObject {
   abstract capacity: number
   abstract autoSave: boolean
   abstract saver: Saver | undefined
@@ -30,10 +30,10 @@ export abstract class EditJournal extends ObservableObject {
 
   abstract register(patch: Patch): void
 
-  static create(): EditJournal { return new EditJournalImpl() }
+  static create(): Journal { return new JournalImpl() }
 }
 
-export class EditJournalImpl extends EditJournal {
+export class JournalImpl extends Journal {
   private _capacity: number = 5
   private _autoSave: boolean = false
   private _saver: Saver | undefined = undefined
@@ -56,11 +56,11 @@ export class EditJournalImpl extends EditJournal {
   get isSaving(): boolean { return this._isSaving }
 
   undo(count: number = 1): void {
-    Transaction.run({ hint: 'EditJournal.undo', standalone: 'isolated' }, () => {
+    Transaction.run({ hint: 'Journal.undo', standalone: 'isolated' }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._edits[i]
-        EditJournalImpl.applyPatch(patch, true)
+        JournalImpl.applyPatch(patch, true)
         i--, count--
       }
       this._position = i + 1
@@ -68,11 +68,11 @@ export class EditJournalImpl extends EditJournal {
   }
 
   redo(count: number = 1): void {
-    Transaction.run({ hint: 'EditJournal.redo', standalone: 'isolated' }, () => {
+    Transaction.run({ hint: 'Journal.redo', standalone: 'isolated' }, () => {
       let i: number = this._position
       while (i < this._edits.length && count > 0) {
         const patch = this._edits[i]
-        EditJournalImpl.applyPatch(patch, false)
+        JournalImpl.applyPatch(patch, false)
         i++, count--
       }
       this._position = i
@@ -100,20 +100,19 @@ export class EditJournalImpl extends EditJournal {
     let result: Patch | undefined = undefined
     const length = Math.abs(this._position - this._saved)
     if (length !== 0) {
-      result = { hint: 'unsaved changes', objects: new Map<object, ObjectPatch>() }
+      result = { hint: 'changes-to-save', objects: new Map<object, ObjectPatch>() }
       const direction = Math.sign(this._position - this._saved)
       let i = 0
       while (i < length) {
         const patch = this._edits[this._position + direction * (i + 1)]
-        patch.objects.forEach((p, obj) => {
-          // WIP:
-          // let objPatch = result!.objects.get(obj)
-          // if (!objPatch)
-          //   result!.objects.set(obj, objPatch = { current: {}, former: p.current })
-          // p.current
-          // p.former
+        patch.objects.forEach((p, o) => {
+          let savings = result!.objects.get(o)
+          if (!savings)
+            result!.objects.set(o, savings = { current: {}, former: p.current })
+          const data = direction > 0 ? p.current : p.former
+          for (const m in data)
+            savings.current[m] = data[m]
         })
-        // ...
         i++
       }
     }

@@ -12,7 +12,7 @@ import { LoggingOptions, ProfilingOptions } from '../Logging'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta, StandaloneMode } from './Data'
 import { Snapshot, Dump, ROOT_REV } from './Snapshot'
-import { EditJournal } from './Journal'
+import { Journal } from './Journal'
 import { Monitor } from './Monitor'
 
 // ObservableObject
@@ -57,7 +57,7 @@ export class OptionsImpl implements MemberOptions {
   readonly triggeringArgs: boolean
   readonly throttling: number
   readonly reentrance: Reentrance
-  readonly journal: EditJournal | undefined
+  readonly journal: Journal | undefined
   readonly monitor: Monitor | null
   readonly logging?: Partial<LoggingOptions>
   static readonly INITIAL = Object.freeze(new OptionsImpl(UNDEF, UNDEF, { getter: UNDEF, setter: UNDEF, ...DEFAULT_OPTIONS }, {}, false))

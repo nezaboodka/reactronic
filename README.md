@@ -310,7 +310,7 @@ function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 export interface SnapshotOptions {
   readonly hint?: string
   readonly standalone?: StandaloneMode
-  readonly journal?: EditJournal
+  readonly journal?: Journal
   readonly logging?: Partial<LoggingOptions>
   readonly token?: any
 }
@@ -323,7 +323,7 @@ interface MemberOptions {
   readonly triggeringArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
-  readonly journal: EditJournal | undefined
+  readonly journal: Journal | undefined
   readonly monitor: Monitor | null
   readonly logging?: Partial<LoggingOptions>
 }

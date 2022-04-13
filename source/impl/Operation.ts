@@ -14,7 +14,7 @@ import { Snapshot, Dump, ROOT_REV, MAX_TIMESTAMP } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
-import { EditJournalImpl } from './Journal'
+import { JournalImpl } from './Journal'
 
 const BOOT_ARGS: any[] = []
 const BOOT_CAUSE = '<boot>'
@@ -585,7 +585,7 @@ class Operation extends Observable implements Observer {
     })
     reactions.sort(compareReactionsByOrder)
     snapshot.options.journal?.register(
-      EditJournalImpl.buildPatch(snapshot.hint, snapshot.changeset))
+      JournalImpl.buildPatch(snapshot.hint, snapshot.changeset))
   }
 
   private static revokeAllSubscriptions(snapshot: Snapshot): void {

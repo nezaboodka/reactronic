@@ -8,13 +8,13 @@
 import { LoggingOptions } from './Logging'
 import { StandaloneMode } from './impl/Data'
 export { LoggingOptions, ProfilingOptions, LoggingLevel } from './Logging'
-import { EditJournal } from './impl/Journal'
+import { Journal } from './impl/Journal'
 import { Monitor } from './impl/Monitor'
 
 export interface SnapshotOptions {
   readonly hint?: string
   readonly standalone?: StandaloneMode
-  readonly journal?: EditJournal
+  readonly journal?: Journal
   readonly logging?: Partial<LoggingOptions>
   readonly token?: any
 }
@@ -27,7 +27,7 @@ export interface MemberOptions {
   readonly triggeringArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
-  readonly journal: EditJournal | undefined
+  readonly journal: Journal | undefined
   readonly monitor: Monitor | null
   readonly logging?: Partial<LoggingOptions>
 }
