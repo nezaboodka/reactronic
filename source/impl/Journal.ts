@@ -15,18 +15,14 @@ export type Saver = (patch: Patch) => Promise<void>
 
 export abstract class Journal extends ObservableObject {
   abstract capacity: number
-  abstract autoSave: boolean
-  abstract saver: Saver | undefined
-
-  abstract readonly edits: ReadonlyArray<Patch>
+  abstract readonly patches: ReadonlyArray<Patch>
   abstract readonly hasChangesToUndo: boolean
   abstract readonly hasChangesToRedo: boolean
   abstract readonly hasChangesToSave: boolean
-  abstract readonly isSaving: boolean
 
   abstract undo(count?: number): void
   abstract redo(count?: number): void
-  abstract save(): void
+  abstract saved(): void
 
   abstract register(patch: Patch): void
 
@@ -35,31 +31,22 @@ export abstract class Journal extends ObservableObject {
 
 export class JournalImpl extends Journal {
   private _capacity: number = 5
-  private _autoSave: boolean = false
-  private _saver: Saver | undefined = undefined
-  private _edits: Patch[] = []
+  private _patches: Patch[] = []
   private _position: number = 0
-  private _isSaving: boolean = false
   private _saved: number = 0
 
   get capacity(): number { return this._capacity }
-  set capacity(value: number) { this._capacity = value; if (value < this._edits.length) this._edits.splice(0, this._edits.length - value) }
-  get autoSave(): boolean { return this._autoSave }
-  set autoSave(value: boolean) { this._autoSave = value }
-  get saver(): Saver | undefined { return this._saver }
-  set saver(value: Saver | undefined) { this._saver = value }
-
-  get edits(): ReadonlyArray<Patch> { return this._edits }
-  get hasChangesToUndo(): boolean { return this._edits.length > 0 && this._position > 0 }
-  get hasChangesToRedo(): boolean { return this._position < this._edits.length }
-  get hasChangesToSave(): boolean { return false }
-  get isSaving(): boolean { return this._isSaving }
+  set capacity(value: number) { this._capacity = value; if (value < this._patches.length) this._patches.splice(0, this._patches.length - value) }
+  get patches(): ReadonlyArray<Patch> { return this._patches }
+  get hasChangesToUndo(): boolean { return this._patches.length > 0 && this._position > 0 }
+  get hasChangesToRedo(): boolean { return this._position < this._patches.length }
+  get hasChangesToSave(): boolean { return this._saved !== this._position }
 
   undo(count: number = 1): void {
     Transaction.run({ hint: 'Journal.undo', standalone: 'isolated' }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
-        const patch = this._edits[i]
+        const patch = this._patches[i]
         JournalImpl.applyPatch(patch, true)
         i--, count--
       }
@@ -70,8 +57,8 @@ export class JournalImpl extends Journal {
   redo(count: number = 1): void {
     Transaction.run({ hint: 'Journal.redo', standalone: 'isolated' }, () => {
       let i: number = this._position
-      while (i < this._edits.length && count > 0) {
-        const patch = this._edits[i]
+      while (i < this._patches.length && count > 0) {
+        const patch = this._patches[i]
         JournalImpl.applyPatch(patch, false)
         i++, count--
       }
@@ -79,24 +66,11 @@ export class JournalImpl extends Journal {
     })
   }
 
-  async save(): Promise<void> {
-    if (this._saver) {
-      const changes = this.getChangesToSave()
-      if (changes) {
-        try
-        {
-          Transaction.standalone(() => this._isSaving = true)
-          await this._saver(changes)
-        }
-        finally {
-          Transaction.standalone(() => this._isSaving = false)
-        }
-        this._saved = this._position
-      }
-    }
+  saved(): void {
+    this._saved = this._position
   }
 
-  private getChangesToSave(): Patch | undefined {
+  getChangesToSave(): Patch | undefined {
     let result: Patch | undefined = undefined
     const length = Math.abs(this._position - this._saved)
     if (length !== 0) {
@@ -104,7 +78,7 @@ export class JournalImpl extends Journal {
       const direction = Math.sign(this._position - this._saved)
       let i = 0
       while (i < length) {
-        const patch = this._edits[this._position + direction * (i + 1)]
+        const patch = this._patches[this._position + direction * (i + 1)]
         patch.objects.forEach((p, o) => {
           let savings = result!.objects.get(o)
           if (!savings)
@@ -121,7 +95,7 @@ export class JournalImpl extends Journal {
 
   register(p: Patch): void {
     Transaction.run({ hint: 'EditJournal.remember', standalone: 'isolated' }, () => {
-      const items = this._edits = this._edits.toMutable()
+      const items = this._patches = this._patches.toMutable()
       if (items.length >= this._capacity)
         items.shift()
       else

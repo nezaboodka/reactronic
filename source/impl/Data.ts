@@ -106,11 +106,3 @@ export interface ObjectPatch {
   current: any
   former: any
 }
-
-// DataRequest
-
-export interface DataRequest {
-  holder: ObjectHolder
-  member: MemberName
-  revision: ObjectRevision
-}
