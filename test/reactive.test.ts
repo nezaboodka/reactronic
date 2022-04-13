@@ -31,6 +31,6 @@ export class ReactiveDemo extends ObservableObject {
 test('reactive', t => {
   Rx.setLoggingMode(true, TestsLoggingLevel)
   const demo = Transaction.run(null, () => new ReactiveDemo())
-  t.is(demo.title, 'Title/2')
+  t.is(demo.title, 'Title/1')
   t.is(demo.content, 'Content/1')
 })

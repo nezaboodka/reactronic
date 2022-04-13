@@ -634,14 +634,14 @@ class Operation extends Observable implements Observer {
       }
     }
     else if (curr instanceof Observable && curr.observers) {
-      // Unsubscribe from own-changed observables
-      curr.observers.forEach(o => {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        o.observables!.delete(curr)
-        if (Log.isOn && Log.opt.read)
-          Log.write(Log.opt.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.rev(r, m)}`)
-      })
-      curr.observers = undefined
+      // // Unsubscribe from own-changed observables
+      // curr.observers.forEach(o => {
+      //   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      //   o.observables!.delete(curr)
+      //   if (Log.isOn && Log.opt.read)
+      //     Log.write(Log.opt.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.rev(r, m)}`)
+      // })
+      // curr.observers = undefined
     }
   }
 
