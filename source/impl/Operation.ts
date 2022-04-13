@@ -14,7 +14,7 @@ import { Snapshot, Dump, ROOT_REV, MAX_TIMESTAMP } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
-import { EditJournalImpl } from './EditJournal'
+import { EditJournalImpl } from './Journal'
 
 const BOOT_ARGS: any[] = []
 const BOOT_CAUSE = '<boot>'

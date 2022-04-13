@@ -12,7 +12,7 @@ import { LoggingOptions, ProfilingOptions } from '../Logging'
 import { Controller } from '../Controller'
 import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta, StandaloneMode } from './Data'
 import { Snapshot, Dump, ROOT_REV } from './Snapshot'
-import { EditJournal } from './EditJournal'
+import { EditJournal } from './Journal'
 import { Monitor } from './Monitor'
 
 // ObservableObject

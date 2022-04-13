@@ -8,7 +8,7 @@
 import { LoggingOptions } from './Logging'
 import { StandaloneMode } from './impl/Data'
 export { LoggingOptions, ProfilingOptions, LoggingLevel } from './Logging'
-import { EditJournal } from './impl/EditJournal'
+import { EditJournal } from './impl/Journal'
 import { Monitor } from './impl/Monitor'
 
 export interface SnapshotOptions {

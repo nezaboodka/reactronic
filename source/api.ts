@@ -17,6 +17,6 @@ export { ObservableObject } from './impl/Hooks'
 export { Snapshot } from './impl/Snapshot'
 export { Transaction } from './impl/Transaction'
 export { Monitor } from './impl/Monitor'
-export { EditJournal } from './impl/EditJournal'
+export { EditJournal } from './impl/Journal'
 export { Rx, nonreactive, sensitive, unobservable,
   transaction, reaction, cached, options } from './Rx'
