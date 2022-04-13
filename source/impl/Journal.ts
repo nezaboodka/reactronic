@@ -135,13 +135,13 @@ export class JournalImpl extends Journal {
     const patch: Patch = { hint, objects: new Map<object, ObjectPatch>() }
     changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
       const p: ObjectPatch = { current: {}, former: {} }
-      const old = r.prev.revision !== ROOT_REV ? r.prev.revision.data : undefined
+      const prev = r.prev.revision !== ROOT_REV ? r.prev.revision.data : undefined
       r.changes.forEach((episode, m) => {
         p.current[m] = unseal(r.data[m])
-        if (old)
-          p.former[m] = unseal(old[m])
+        if (prev)
+          p.former[m] = unseal(prev[m])
       })
-      if (!old) {
+      if (!prev) {
         delete p.current[Meta.Disposed] // object restore
         p.former[Meta.Disposed] = Meta.Disposed // object disposed at episode 0
       }
