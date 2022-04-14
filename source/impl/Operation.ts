@@ -584,7 +584,7 @@ class Operation extends Observable implements Observer {
           Operation.propagateMemberChangeThroughSubscriptions(true, since, r, m, h, reactions)
     })
     reactions.sort(compareReactionsByOrder)
-    snapshot.options.journal?.register(
+    snapshot.options.journal?.edited(
       JournalImpl.buildPatch(snapshot.hint, snapshot.changeset))
   }
 

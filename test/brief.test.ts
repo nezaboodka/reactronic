@@ -172,12 +172,12 @@ test('brief', t => {
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
     // Undo
     t.is(app.model.title, 'Demo')
-    t.is(Demo.journal.patches.length, 1)
+    t.is(Demo.journal.edits.length, 1)
     app.model.testUndo()
-    t.is(Demo.journal.patches.length, 2)
+    t.is(Demo.journal.edits.length, 2)
     t.is(app.model.title, 'Demo - undo/redo')
     Demo.journal.undo()
-    t.is(Demo.journal.patches.length, 2)
+    t.is(Demo.journal.edits.length, 2)
     t.is(app.model.title, 'Demo')
     // Undo
     t.is(daddy.name, 'John Smith')
