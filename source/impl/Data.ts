@@ -50,14 +50,14 @@ export interface ObservableInfo {
 
 export class ObjectRevision {
   readonly snapshot: AbstractSnapshot
-  readonly prev: { revision: ObjectRevision }
+  readonly former: { revision: ObjectRevision }
   readonly data: any
   readonly changes: Set<MemberName>
   readonly conflicts: Map<MemberName, ObjectRevision>
 
-  constructor(snapshot: AbstractSnapshot, prev: ObjectRevision | undefined, data: object) {
+  constructor(snapshot: AbstractSnapshot, former: ObjectRevision | undefined, data: object) {
     this.snapshot = snapshot
-    this.prev = { revision: prev || this } // undefined prev means initialization of ROOT_REV
+    this.former = { revision: former || this } // undefined former means initialization of ROOT_REV
     this.data = data
     this.changes = new Set<MemberName>()
     this.conflicts = new Map<MemberName, ObjectRevision>()
@@ -103,6 +103,6 @@ export interface Patch {
 }
 
 export interface ObjectPatch {
-  changes: any
+  data: any
   former: any
 }

@@ -91,7 +91,7 @@ export class Snapshot implements AbstractSnapshot {
     if (!r) {
       r = h.head
       while (r !== ROOT_REV && r.snapshot.timestamp > this.timestamp)
-        r = r.prev.revision
+        r = r.former.revision
     }
     return r
   }
@@ -146,12 +146,12 @@ export class Snapshot implements AbstractSnapshot {
   private isNewRevisionRequired(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): boolean {
     if (this.sealed && r.snapshot !== ROOT_REV.snapshot)
       throw misuse(`observable property ${Dump.obj(h, m)} can only be modified inside transaction`)
-    // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.prev.revision !== ROOT_REV))
+    // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.revision !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.revision(r, m)}`)
     // if (r === ROOT_REV && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */
     //   throw misuse(`member ${Hints.revision(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     if (m !== Meta.Holder && value !== Meta.Holder) {
-      if (r.snapshot !== this || r.prev.revision !== ROOT_REV) {
+      if (r.snapshot !== this || r.former.revision !== ROOT_REV) {
         if (this.options.token !== undefined && token !== this.options.token)
           throw misuse(`${this.hint} should not have side effects (trying to change ${Dump.rev(r, m)})`)
         // TODO: Detect uninitialized members
@@ -185,7 +185,7 @@ export class Snapshot implements AbstractSnapshot {
     let conflicts: ObjectRevision[] | undefined = undefined
     if (this.changeset.size > 0) {
       this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-        if (r.prev.revision !== h.head) {
+        if (r.former.revision !== h.head) {
           const merged = this.merge(h, r)
           if (r.conflicts.size > 0) {
             if (!conflicts)
@@ -232,7 +232,7 @@ export class Snapshot implements AbstractSnapshot {
         }
       }
       else {
-        const conflict = Snapshot.isConflicting(head.data[m], ours.prev.revision.data[m])
+        const conflict = Snapshot.isConflicting(head.data[m], ours.former.revision.data[m])
         if (conflict)
           ours.conflicts.set(m, head)
         if (Log.isOn && Log.opt.change)
@@ -240,7 +240,7 @@ export class Snapshot implements AbstractSnapshot {
       }
     })
     Utils.copyAllMembers(merged, ours.data) // overwrite with merged copy
-    ours.prev.revision = head // rebase is completed
+    ours.former.revision = head // rebase is completed
     return counter
   }
 
@@ -257,7 +257,7 @@ export class Snapshot implements AbstractSnapshot {
         h.head = r // switch object to a new version
         if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Snapshot.totalObjectRevisionCount++
-          if (r.prev.revision === ROOT_REV)
+          if (r.former.revision === ROOT_REV)
             Snapshot.totalObjectHolderCount++
         }
       }
@@ -268,7 +268,7 @@ export class Snapshot implements AbstractSnapshot {
           const members: string[] = []
           r.changes.forEach((o, m) => members.push(m.toString()))
           const s = members.join(', ')
-          Log.write('║', '√', `${Dump.rev2(h, r.snapshot)} (${s}) is ${r.prev.revision === ROOT_REV ? 'constructed' : `applied on top of ${Dump.rev2(h, r.prev.revision.snapshot)}`}`)
+          Log.write('║', '√', `${Dump.rev2(h, r.snapshot)} (${s}) is ${r.former.revision === ROOT_REV ? 'constructed' : `applied on top of ${Dump.rev2(h, r.former.revision.snapshot)}`}`)
         })
       }
       if (Log.opt.transaction)
@@ -283,7 +283,7 @@ export class Snapshot implements AbstractSnapshot {
     if (!r.changes.has(Meta.Disposed))
       r.changes.forEach((o, m) => Snapshot.sealObservable(r.data[m], m, h.proxy.constructor.name))
     else
-      for (const m in r.prev.revision.data)
+      for (const m in r.former.revision.data)
         r.data[m] = Meta.Disposed
     if (Log.isOn)
       Snapshot.freezeObjectRevision(r)
@@ -332,15 +332,15 @@ export class Snapshot implements AbstractSnapshot {
     if (Log.isOn && Log.opt.gc)
       Log.write('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
     this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      if (Log.isOn && Log.opt.gc && r.prev.revision !== ROOT_REV)
-        Log.write(' ', '  ', `${Dump.rev2(h, r.prev.revision.snapshot)} is ready for GC because overwritten by ${Dump.rev2(h, r.snapshot)}`)
+      if (Log.isOn && Log.opt.gc && r.former.revision !== ROOT_REV)
+        Log.write(' ', '  ', `${Dump.rev2(h, r.former.revision.snapshot)} is ready for GC because overwritten by ${Dump.rev2(h, r.snapshot)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
-        if (r.prev.revision !== ROOT_REV)
+        if (r.former.revision !== ROOT_REV)
           Snapshot.totalObjectRevisionCount--
         if (r.changes.has(Meta.Disposed))
           Snapshot.totalObjectHolderCount--
       }
-      r.prev.revision = ROOT_REV // unlink history
+      r.former.revision = ROOT_REV // unlink history
     })
     this.changeset = EMPTY_MAP // release for GC
     this.reactions = EMPTY_ARRAY // release for GC

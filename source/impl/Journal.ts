@@ -90,16 +90,16 @@ export class JournalImpl extends Journal {
   static buildPatch(hint: string, changeset: Map<ObjectHolder, ObjectRevision>): Patch {
     const patch: Patch = { hint, objects: new Map<object, ObjectPatch>() }
     changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      const op: ObjectPatch = { changes: {}, former: {} }
-      const prev = r.prev.revision !== ROOT_REV ? r.prev.revision.data : undefined
-      r.changes.forEach((episode, m) => {
-        op.changes[m] = unseal(r.data[m])
-        if (prev)
-          op.former[m] = unseal(prev[m])
+      const op: ObjectPatch = { data: {}, former: {} }
+      const former = r.former.revision !== ROOT_REV ? r.former.revision.data : undefined
+      r.changes.forEach(m => {
+        op.data[m] = unseal(r.data[m])
+        if (former)
+          op.former[m] = unseal(former[m])
       })
-      if (!prev) {
-        delete op.changes[Meta.Disposed] // object restore
-        op.former[Meta.Disposed] = Meta.Disposed // object disposed at episode 0
+      if (!former) {
+        delete op.data[Meta.Disposed] // object restore
+        op.former[Meta.Disposed] = Meta.Disposed
       }
       patch.objects.set(h.proxy, op)
     })
@@ -110,14 +110,14 @@ export class JournalImpl extends Journal {
     const ctx = Snapshot.edit()
     patch.objects.forEach((op: ObjectPatch, obj: object) => {
       const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
-      const data = undoing ? op.former : op.changes
+      const data = undoing ? op.former : op.data
       if (data[Meta.Disposed] === undefined) {
         for (const m in data) {
           const value = data[m]
           const r: ObjectRevision = ctx.getEditableRevision(h, m, value)
           if (r.snapshot === ctx) {
             r.data[m] = new Observable(value)
-            const v: any = r.prev.revision.data[m]
+            const v: any = r.former.revision.data[m]
             Snapshot.markEdited(v, value, v !== value, r, m, h)
           }
         }
@@ -132,16 +132,16 @@ export class JournalImpl extends Journal {
     patch.objects.forEach((op: ObjectPatch, obj: object) => {
       let merged = unsaved.objects.get(obj)
       if (!merged)
-        unsaved.objects.set(obj, merged = { changes: {}, former: {} })
-      const fields = undoing ? op.former : op.changes
+        unsaved.objects.set(obj, merged = { data: {}, former: {} })
+      const fields = undoing ? op.former : op.data
       if (fields[Meta.Disposed] === undefined) {
         for (const m in fields) {
           const value = fields[m]
-          merged.changes[m] = value
+          merged.data[m] = value
         }
       }
       else {
-        merged.changes[Meta.Disposed] = Meta.Disposed
+        merged.data[Meta.Disposed] = Meta.Disposed
       }
     })
   }

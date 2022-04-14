@@ -118,10 +118,10 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     const r: ObjectRevision = Snapshot.edit().getEditableRevision(h, m, value)
     if (r !== ROOT_REV) {
       let curr = r.data[m] as Observable
-      if (curr !== undefined || (r.prev.revision.snapshot === ROOT_REV.snapshot && (m in h.unobservable) === false)) {
+      if (curr !== undefined || (r.former.revision.snapshot === ROOT_REV.snapshot && (m in h.unobservable) === false)) {
         if (curr === undefined || curr.value !== value || Hooks.sensitivity) {
           const old = curr?.value
-          if (r.prev.revision.data[m] === curr) {
+          if (r.former.revision.data[m] === curr) {
             curr = r.data[m] = new Observable(value)
             Snapshot.markEdited(old, value, true, r, m, h)
           }

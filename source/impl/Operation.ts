@@ -60,7 +60,7 @@ export class OperationController extends Controller<any> {
       const standalone = weak || opts.standalone || opts.kind === Kind.Reaction ||
         (opts.kind === Kind.Transaction && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cache)) ||
         (opts.kind === Kind.Cache && (oc.revision.snapshot.sealed ||
-          oc.revision.prev.revision !== ROOT_REV))
+          oc.revision.former.revision !== ROOT_REV))
       const token = opts.noSideEffects ? this : undefined
       const oc2 = this.run(oc, standalone, opts, token, args)
       const ctx2 = oc2.operation.snapshot
@@ -159,7 +159,7 @@ export class OperationController extends Controller<any> {
     if (op.snapshot !== r.snapshot) {
       const op2 = new Operation(this, r.snapshot, op)
       r.data[m] = op2.reenterOver(op)
-      ctx.bumpBy(r.prev.revision.snapshot.timestamp)
+      ctx.bumpBy(r.former.revision.snapshot.timestamp)
       Snapshot.markEdited(op, op2, true, r, m, h)
       op = op2
     }
@@ -172,7 +172,7 @@ export class OperationController extends Controller<any> {
     if (op.controller !== this) {
       if (r.snapshot !== ROOT_REV.snapshot) {
         const hint: string = Log.isOn ? `${Dump.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
-        const standalone = r.snapshot.sealed || r.prev.revision !== ROOT_REV
+        const standalone = r.snapshot.sealed || r.former.revision !== ROOT_REV
         op = Transaction.run<Operation>({ hint, standalone, token: this }, (): Operation => {
           const h = this.ownHolder
           let r2: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
@@ -260,21 +260,21 @@ class Operation extends Observable implements Observer {
   obsoleteSince: number
   successor: Operation | undefined
 
-  constructor(controller: OperationController, snapshot: AbstractSnapshot, prev: Operation | OptionsImpl) {
+  constructor(controller: OperationController, snapshot: AbstractSnapshot, former: Operation | OptionsImpl) {
     super(undefined)
     this.margin = Operation.current ? Operation.current.margin + 1 : 1
     this.transaction = Transaction.current
     this.controller = controller
     this.snapshot = snapshot
     this.observables = new Map<Observable, ObservableInfo>()
-    if (prev instanceof Operation) {
-      this.options = prev.options
-      this.args = prev.args
-      // this.value = prev.value
-      this.cause = prev.obsoleteDueTo
+    if (former instanceof Operation) {
+      this.options = former.options
+      this.args = former.args
+      // this.value = former.value
+      this.cause = former.obsoleteDueTo
     }
-    else { // prev: OptionsImpl
-      this.options = prev
+    else { // former: OptionsImpl
+      this.options = former
       this.args = BOOT_ARGS
       this.cause = undefined
       // this.value = undefined
@@ -580,7 +580,7 @@ class Operation extends Observable implements Observer {
       if (!r.changes.has(Meta.Disposed))
         r.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(false, since, r, m, h, reactions))
       else
-        for (const m in r.prev.revision.data)
+        for (const m in r.former.revision.data)
           Operation.propagateMemberChangeThroughSubscriptions(true, since, r, m, h, reactions)
     })
     reactions.sort(compareReactionsByOrder)
@@ -599,26 +599,26 @@ class Operation extends Observable implements Observer {
     const curr = r.data[m]
     if (reactions) {
       // Propagate change to reactions
-      const prev = r.prev.revision.data[m]
-      if (prev !== undefined && prev instanceof Observable) {
+      const former = r.former.revision.data[m]
+      if (former !== undefined && former instanceof Observable) {
         const why = `T${r.snapshot.id}[${r.snapshot.hint}]`
         // const cause: MemberInfo = { holder: h, snapshot: r.snapshot, memberName: m, usageCount: 0 }
-        if (prev instanceof Operation) {
-          if ((prev.obsoleteSince === MAX_TIMESTAMP || prev.obsoleteSince <= 0)) {
-            prev.obsoleteDueTo = why
-            prev.obsoleteSince = timestamp
-            prev.unsubscribeFromAllObservables()
+        if (former instanceof Operation) {
+          if ((former.obsoleteSince === MAX_TIMESTAMP || former.obsoleteSince <= 0)) {
+            former.obsoleteDueTo = why
+            former.obsoleteSince = timestamp
+            former.unsubscribeFromAllObservables()
           }
-          const prevSuccessor = prev.successor
-          if (prevSuccessor !== curr) {
-            if (prevSuccessor && !prevSuccessor.transaction.isFinished)
-              prevSuccessor.transaction.cancel(new Error(`T${prevSuccessor.transaction.id}[${prevSuccessor.transaction.hint}] is canceled by T${r.snapshot.id}[${r.snapshot.hint}] and will not run anymore`), null)
+          const formerSuccessor = former.successor
+          if (formerSuccessor !== curr) {
+            if (formerSuccessor && !formerSuccessor.transaction.isFinished)
+              formerSuccessor.transaction.cancel(new Error(`T${formerSuccessor.transaction.id}[${formerSuccessor.transaction.hint}] is canceled by T${r.snapshot.id}[${r.snapshot.hint}] and will not run anymore`), null)
           }
           else
-            prev.successor = undefined
+            former.successor = undefined
         }
-        prev.observers?.forEach(c =>
-          c.markObsoleteDueTo(prev, m, r.snapshot, h, why, timestamp, reactions))
+        former.observers?.forEach(c =>
+          c.markObsoleteDueTo(former, m, r.snapshot, h, why, timestamp, reactions))
       }
     }
     if (curr instanceof Operation) {
