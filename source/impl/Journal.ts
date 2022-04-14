@@ -20,11 +20,10 @@ export abstract class Journal extends ObservableObject {
   abstract readonly canUndo: boolean
   abstract readonly canRedo: boolean
 
-  abstract undo(count?: number): void
-  abstract redo(count?: number): void
-
   abstract edited(patch: Patch): void
   abstract saved(patch: Patch): void
+  abstract undo(count?: number): void
+  abstract redo(count?: number): void
 
   static create(): Journal { return new JournalImpl() }
 }
