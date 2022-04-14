@@ -173,12 +173,15 @@ test('brief', t => {
     // Undo
     t.is(app.model.title, 'Demo')
     t.is(Demo.journal.edits.length, 1)
+    // console.log(Demo.journal.unsaved.objects.values())
     app.model.testUndo()
-    t.is(Demo.journal.edits.length, 2)
     t.is(app.model.title, 'Demo - undo/redo')
-    Demo.journal.undo()
     t.is(Demo.journal.edits.length, 2)
+    // console.log(Demo.journal.unsaved.objects.values())
+    Demo.journal.undo()
     t.is(app.model.title, 'Demo')
+    t.is(Demo.journal.edits.length, 2)
+    // console.log(Demo.journal.unsaved.objects.values())
     // Undo
     t.is(daddy.name, 'John Smith')
     t.is(daddy.age, 45)

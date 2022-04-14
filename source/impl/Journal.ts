@@ -137,7 +137,7 @@ export class JournalImpl extends Journal {
       const former = undoing ? op.data : op.former
       for (const m in data) {
         const value = data[m]
-        if (value !== former[m]) {
+        if (value !== merged.former[m]) {
           merged.data[m] = value
           if (m in merged.former === false)
             merged.former[m] = former[m]
@@ -145,6 +145,8 @@ export class JournalImpl extends Journal {
         else {
           delete merged.data[m]
           delete merged.former[m]
+          if (Object.keys(merged.data).length === 0)
+            unsaved.objects.delete(obj)
         }
       }
     })
