@@ -49,7 +49,7 @@ export class JournalImpl extends Journal {
       else
         items.splice(this._position)
       items.push(p)
-      this.applyPatchToUnsaved(p, false)
+      this.mergePatchToUnsaved(p, false)
       this._position = items.length
     })
   }
@@ -67,7 +67,7 @@ export class JournalImpl extends Journal {
       while (i >= 0 && count > 0) {
         const patch = this._edits[i]
         JournalImpl.applyPatch(patch, true)
-        this.applyPatchToUnsaved(patch, true)
+        this.mergePatchToUnsaved(patch, true)
         i--, count--
       }
       this._position = i + 1
@@ -80,7 +80,7 @@ export class JournalImpl extends Journal {
       while (i < this._edits.length && count > 0) {
         const patch = this._edits[i]
         JournalImpl.applyPatch(patch, false)
-        this.applyPatchToUnsaved(patch, false)
+        this.mergePatchToUnsaved(patch, false)
         i++, count--
       }
       this._position = i
@@ -106,11 +106,11 @@ export class JournalImpl extends Journal {
     return patch
   }
 
-  static applyPatch(patch: Patch, undo: boolean): void {
+  static applyPatch(patch: Patch, undoing: boolean): void {
     const ctx = Snapshot.edit()
     patch.objects.forEach((p: ObjectPatch, obj: object) => {
       const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
-      const data = undo ? p.former : p.current
+      const data = undoing ? p.former : p.current
       if (data[Meta.Disposed] === undefined) {
         for (const m in data) {
           const value = data[m]
@@ -127,13 +127,13 @@ export class JournalImpl extends Journal {
     })
   }
 
-  applyPatchToUnsaved(patch: Patch, undo: boolean): void {
+  mergePatchToUnsaved(patch: Patch, undoing: boolean): void {
     const unsaved = this._unsaved
     patch.objects.forEach((p: ObjectPatch, obj: object) => {
       let target = unsaved.objects.get(obj)
       if (!target)
         unsaved.objects.set(obj, target = { current: {}, former: {} })
-      const fields = undo ? p.former : p.current
+      const fields = undoing ? p.former : p.current
       if (fields[Meta.Disposed] === undefined) {
         for (const m in fields) {
           const value = fields[m]
