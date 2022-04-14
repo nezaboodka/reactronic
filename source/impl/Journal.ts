@@ -133,15 +133,19 @@ export class JournalImpl extends Journal {
       let merged = unsaved.objects.get(obj)
       if (!merged)
         unsaved.objects.set(obj, merged = { data: {}, former: {} })
-      const fields = undoing ? op.former : op.data
-      if (fields[Meta.Disposed] === undefined) {
-        for (const m in fields) {
-          const value = fields[m]
+      const data = undoing ? op.former : op.data
+      const former = undoing ? op.data : op.former
+      for (const m in data) {
+        const value = data[m]
+        if (value !== former[m]) {
           merged.data[m] = value
+          if (m in merged.former === false)
+            merged.former[m] = former[m]
         }
-      }
-      else {
-        merged.data[Meta.Disposed] = Meta.Disposed
+        else {
+          delete merged.data[m]
+          delete merged.former[m]
+        }
       }
     })
   }
