@@ -48,8 +48,8 @@ export class JournalImpl extends Journal {
         items.shift()
       else
         items.splice(this._position)
-      items.push(p)
       this.mergePatchToUnsaved(p, false)
+      items.push(p)
       this._position = items.length
     })
   }
@@ -90,27 +90,27 @@ export class JournalImpl extends Journal {
   static buildPatch(hint: string, changeset: Map<ObjectHolder, ObjectRevision>): Patch {
     const patch: Patch = { hint, objects: new Map<object, ObjectPatch>() }
     changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      const p: ObjectPatch = { current: {}, former: {} }
+      const op: ObjectPatch = { changes: {}, former: {} }
       const prev = r.prev.revision !== ROOT_REV ? r.prev.revision.data : undefined
       r.changes.forEach((episode, m) => {
-        p.current[m] = unseal(r.data[m])
+        op.changes[m] = unseal(r.data[m])
         if (prev)
-          p.former[m] = unseal(prev[m])
+          op.former[m] = unseal(prev[m])
       })
       if (!prev) {
-        delete p.current[Meta.Disposed] // object restore
-        p.former[Meta.Disposed] = Meta.Disposed // object disposed at episode 0
+        delete op.changes[Meta.Disposed] // object restore
+        op.former[Meta.Disposed] = Meta.Disposed // object disposed at episode 0
       }
-      patch.objects.set(h.proxy, p)
+      patch.objects.set(h.proxy, op)
     })
     return patch
   }
 
   static applyPatch(patch: Patch, undoing: boolean): void {
     const ctx = Snapshot.edit()
-    patch.objects.forEach((p: ObjectPatch, obj: object) => {
+    patch.objects.forEach((op: ObjectPatch, obj: object) => {
       const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
-      const data = undoing ? p.former : p.current
+      const data = undoing ? op.former : op.changes
       if (data[Meta.Disposed] === undefined) {
         for (const m in data) {
           const value = data[m]
@@ -129,19 +129,20 @@ export class JournalImpl extends Journal {
 
   mergePatchToUnsaved(patch: Patch, undoing: boolean): void {
     const unsaved = this._unsaved
-    patch.objects.forEach((p: ObjectPatch, obj: object) => {
-      let target = unsaved.objects.get(obj)
-      if (!target)
-        unsaved.objects.set(obj, target = { current: {}, former: {} })
-      const fields = undoing ? p.former : p.current
+    patch.objects.forEach((op: ObjectPatch, obj: object) => {
+      let merged = unsaved.objects.get(obj)
+      if (!merged)
+        unsaved.objects.set(obj, merged = { changes: {}, former: {} })
+      const fields = undoing ? op.former : op.changes
       if (fields[Meta.Disposed] === undefined) {
         for (const m in fields) {
           const value = fields[m]
-          target.current[m] = value
+          merged.changes[m] = value
         }
       }
-      else
-        target.current[Meta.Disposed] = Meta.Disposed
+      else {
+        merged.changes[Meta.Disposed] = Meta.Disposed
+      }
     })
   }
 }

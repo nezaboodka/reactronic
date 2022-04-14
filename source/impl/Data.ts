@@ -103,6 +103,6 @@ export interface Patch {
 }
 
 export interface ObjectPatch {
-  current: any
+  changes: any
   former: any
 }
