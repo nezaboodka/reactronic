@@ -10,24 +10,24 @@ import { Log, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance } from '../Options'
 import { LoggingOptions, ProfilingOptions } from '../Logging'
 import { Controller } from '../Controller'
-import { ObjectRevision, MemberName, ObjectHolder, Observable, Meta, StandaloneMode } from './Data'
+import { DataRevision, MemberName, DataHolder, Subscription, Meta, StandaloneMode } from './Data'
 import { Snapshot, Dump, ROOT_REV } from './Snapshot'
 import { Journal } from './Journal'
 import { Monitor } from './Monitor'
 
-// ObservableObject
+// SubscribingObject
 
-export abstract class ObservableObject {
+export abstract class SubscribingObject {
   constructor() {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
-    const h = Hooks.createObjectHolderForObservableObject(proto, this, initial, new.target.name)
+    const h = Hooks.createDataHolderForSubscribingObject(proto, this, initial, new.target.name)
     return h.proxy
   }
 
   /* istanbul ignore next */
   [Symbol.toStringTag](): string {
-    const h = Meta.get<ObjectHolder>(this, Meta.Holder)
+    const h = Meta.get<DataHolder>(this, Meta.Holder)
     return Dump.obj(h)
   }
 }
@@ -86,7 +86,7 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 
 // Hooks
 
-export class Hooks implements ProxyHandler<ObjectHolder> {
+export class Hooks implements ProxyHandler<DataHolder> {
   static reactionsAutoStartDisabled: boolean = false
   static repetitiveUsageWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
@@ -94,84 +94,84 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
   static sensitivity: boolean = false
   static readonly proxy: Hooks = new Hooks()
 
-  getPrototypeOf(h: ObjectHolder): object | null {
-    return Reflect.getPrototypeOf(h.unobservable)
+  getPrototypeOf(h: DataHolder): object | null {
+    return Reflect.getPrototypeOf(h.data)
   }
 
-  get(h: ObjectHolder, m: MemberName, receiver: any): any {
+  get(h: DataHolder, m: MemberName, receiver: any): any {
     let result: any
-    const r: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
+    const r: DataRevision = Snapshot.current().getCurrentRevision(h, m)
     result = r.data[m]
-    if (result instanceof Observable && !result.isOperation) {
+    if (result instanceof Subscription && !result.isOperation) {
       Snapshot.markUsed(result, r, m, h, Kind.Plain, false)
-      result = result.value
+      result = result.content
     }
     else if (m === Meta.Holder) {
       // do nothing, just return instance
     }
-    else // result === UNOBSERVABLE
-      result = Reflect.get(h.unobservable, m, receiver)
+    else // result === NONSUBSCRIBING
+      result = Reflect.get(h.data, m, receiver)
     return result
   }
 
-  set(h: ObjectHolder, m: MemberName, value: any, receiver: any): boolean {
-    const r: ObjectRevision = Snapshot.edit().getEditableRevision(h, m, value)
+  set(h: DataHolder, m: MemberName, value: any, receiver: any): boolean {
+    const r: DataRevision = Snapshot.edit().getEditableRevision(h, m, value)
     if (r !== ROOT_REV) {
-      let curr = r.data[m] as Observable
-      if (curr !== undefined || (r.former.revision.snapshot === ROOT_REV.snapshot && (m in h.unobservable) === false)) {
-        if (curr === undefined || curr.value !== value || Hooks.sensitivity) {
-          const old = curr?.value
+      let curr = r.data[m] as Subscription
+      if (curr !== undefined || (r.former.revision.snapshot === ROOT_REV.snapshot && (m in h.data) === false)) {
+        if (curr === undefined || curr.content !== value || Hooks.sensitivity) {
+          const existing = curr?.content
           if (r.former.revision.data[m] === curr) {
-            curr = r.data[m] = new Observable(value)
-            Snapshot.markEdited(old, value, true, r, m, h)
+            curr = r.data[m] = new Subscription(value)
+            Snapshot.markEdited(existing, value, true, r, m, h)
           }
           else {
-            curr.value = value
-            Snapshot.markEdited(old, value, true, r, m, h)
+            curr.content = value
+            Snapshot.markEdited(existing, value, true, r, m, h)
           }
         }
       }
       else
-        Reflect.set(h.unobservable, m, value, receiver)
+        Reflect.set(h.data, m, value, receiver)
     }
     else
-      h.unobservable[m] = value
+      h.data[m] = value
     return true
   }
 
-  has(h: ObjectHolder, m: MemberName): boolean {
-    const r: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
-    return m in r.data || m in h.unobservable
+  has(h: DataHolder, m: MemberName): boolean {
+    const r: DataRevision = Snapshot.current().getCurrentRevision(h, m)
+    return m in r.data || m in h.data
   }
 
-  getOwnPropertyDescriptor(h: ObjectHolder, m: MemberName): PropertyDescriptor | undefined {
-    const r: ObjectRevision = Snapshot.current().getCurrentRevision(h, m)
+  getOwnPropertyDescriptor(h: DataHolder, m: MemberName): PropertyDescriptor | undefined {
+    const r: DataRevision = Snapshot.current().getCurrentRevision(h, m)
     const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
     if (pd)
       pd.configurable = pd.writable = true
     return pd
   }
 
-  ownKeys(h: ObjectHolder): Array<string | symbol> {
+  ownKeys(h: DataHolder): Array<string | symbol> {
     // TODO: Better implementation to avoid filtering
-    const r: ObjectRevision = Snapshot.current().getCurrentRevision(h, Meta.Holder)
+    const r: DataRevision = Snapshot.current().getCurrentRevision(h, Meta.Holder)
     const result = []
     for (const m of Object.getOwnPropertyNames(r.data)) {
       const value = r.data[m]
-      if (!(value instanceof Observable) || !value.isOperation)
+      if (!(value instanceof Subscription) || !value.isOperation)
         result.push(m)
     }
     return result
   }
 
-  static decorateData(observable: boolean, proto: any, m: MemberName): any {
-    if (observable) {
+  static decorateData(subscribing: boolean, proto: any, m: MemberName): any {
+    if (subscribing) {
       const get = function(this: any): any {
-        const h = Hooks.acquireObjectHolder(this)
+        const h = Hooks.acquireDataHolder(this)
         return Hooks.proxy.get(h, m, this)
       }
       const set = function(this: any, value: any): boolean {
-        const h = Hooks.acquireObjectHolder(this)
+        const h = Hooks.acquireDataHolder(this)
         return Hooks.proxy.set(h, m, value, this)
       }
       const enumerable = true
@@ -179,7 +179,7 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Meta.acquire(proto, Meta.Initial)[m] = Meta.Unobservable
+      Meta.acquire(proto, Meta.Initial)[m] = Meta.Nonsubscribing
   }
 
   static decorateOperation(implicit: boolean, decorator: Function,
@@ -193,18 +193,18 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
       pd.value ?? pd.get, pd.value ?? pd.set, true, configurable, options, implicit)
     if (opts.getter === opts.setter) { // regular method
       const bootstrap = function(this: any): any {
-        const h = Hooks.acquireObjectHolder(this)
+        const h = Hooks.acquireDataHolder(this)
         const operation = Hooks.createOperation(h, member, opts)
-        Object.defineProperty(h.unobservable, member, { value: operation, enumerable, configurable })
+        Object.defineProperty(h.data, member, { value: operation, enumerable, configurable })
         return operation
       }
       return Object.defineProperty(proto, member, { get: bootstrap, enumerable, configurable: true })
     }
     else if (opts.setter === UNDEF) { // property with getter only
       const bootstrap = function(this: any): any {
-        const h = Hooks.acquireObjectHolder(this)
+        const h = Hooks.acquireDataHolder(this)
         const operation = Hooks.createOperation(h, member, opts)
-        Object.defineProperty(h.unobservable, member, { get: operation, enumerable, configurable })
+        Object.defineProperty(h.data, member, { get: operation, enumerable, configurable })
         return operation.call(this)
       }
       return Object.defineProperty(proto, member, { get: bootstrap, enumerable, configurable: true })
@@ -219,23 +219,23 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
     }
   }
 
-  static acquireObjectHolder(obj: any): ObjectHolder {
+  static acquireDataHolder(obj: any): DataHolder {
     let h = obj[Meta.Holder]
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
-      const rev = new ObjectRevision(ROOT_REV.snapshot, ROOT_REV, {...initial})
+      const rev = new DataRevision(ROOT_REV.snapshot, ROOT_REV, {...initial})
       Meta.set(rev.data, Meta.Holder, h)
-      h = new ObjectHolder(obj, obj, Hooks.proxy, rev, obj.constructor.name)
+      h = new DataHolder(obj, obj, Hooks.proxy, rev, obj.constructor.name)
       Meta.set(obj, Meta.Holder, h)
     }
     return h
   }
 
-  static createObjectHolderForObservableObject(proto: any, unobservable: any, blank: any, hint: string): ObjectHolder {
+  static createDataHolderForSubscribingObject(proto: any, data: any, blank: any, hint: string): DataHolder {
     const ctx = Snapshot.edit()
-    const h = new ObjectHolder(unobservable, undefined, Hooks.proxy, ROOT_REV, hint)
+    const h = new DataHolder(data, undefined, Hooks.proxy, ROOT_REV, hint)
     ctx.getEditableRevision(h, Meta.Holder, blank)
     if (!Hooks.reactionsAutoStartDisabled)
       for (const m in Meta.getFrom(proto, Meta.Reactions))
@@ -271,14 +271,14 @@ export class Hooks implements ProxyHandler<ObjectHolder> {
 
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
-      const h = Hooks.acquireObjectHolder(obj)
+      const h = Hooks.acquireDataHolder(obj)
       h.hint = hint
     }
     return obj
   }
 
   /* istanbul ignore next */
-  static createOperation = function(h: ObjectHolder, m: MemberName, options: OptionsImpl): F<any> {
+  static createOperation = function(h: DataHolder, m: MemberName, options: OptionsImpl): F<any> {
     throw misuse('createOperation should never be called')
   }
 

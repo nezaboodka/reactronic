@@ -5,11 +5,11 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, transaction, reaction, cached, Journal, Rx, LoggingOptions, Transaction, options } from '../source/api'
+import { SubscribingObject, subscribeless, transaction, reaction, cached, Journal, Rx, LoggingOptions, Transaction, options } from '../source/api'
 
 export const output: string[] = []
 
-export class Demo extends ObservableObject {
+export class Demo extends SubscribingObject {
   static stamp = 0
   static journal = Transaction.run(null, () => Journal.create())
 
@@ -17,7 +17,7 @@ export class Demo extends ObservableObject {
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
   // set computed(value: string) { /* nop */ }
 
-  @unobservable shared: string = 'for testing purposes'
+  @subscribeless shared: string = 'for testing purposes'
   title: string = 'Demo'
   users: Person[] = []
   collection1: Person[] = this.users
@@ -71,10 +71,10 @@ export class Demo extends ObservableObject {
   }
 }
 
-export class DemoView extends ObservableObject {
-  @unobservable raw: string = 'unobservable field'
-  @unobservable shared: string = 'for testing purposes'
-  @unobservable readonly model: Demo
+export class DemoView extends SubscribingObject {
+  @subscribeless raw: string = 'nonsubscribing field'
+  @subscribeless shared: string = 'for testing purposes'
+  @subscribeless readonly model: Demo
   userFilter: string = 'Jo'
 
   constructor(model: Demo) {
@@ -133,8 +133,8 @@ export class DemoView extends ObservableObject {
 // Person
 
 /* istanbul ignore next */
-export class Person extends ObservableObject {
-  @unobservable dummy: string | null = null
+export class Person extends SubscribingObject {
+  @subscribeless dummy: string | null = null
   id: string | null = null
   name: string | null = null
   age: number = 0

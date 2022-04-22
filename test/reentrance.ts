@@ -5,12 +5,12 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, transaction, reaction, cached, options, Transaction, Monitor, Reentrance, Rx, all, pause } from '../source/api'
+import { SubscribingObject, transaction, reaction, cached, options, Transaction, Monitor, Reentrance, Rx, all, pause } from '../source/api'
 
 export const output: string[] = []
 export const busy = Monitor.create('Busy', 0, 0, 1)
 
-export class AsyncDemo extends ObservableObject {
+export class AsyncDemo extends SubscribingObject {
   url: string = 'reactronic'
   log: string[] = ['RTA']
 
@@ -24,7 +24,7 @@ export class AsyncDemo extends ObservableObject {
 }
 
 export class AsyncDemoView {
-  // @state observableField: string = 'observable field'
+  // @state nonsubscribingField: string = 'nonsubscribing field'
 
   constructor(readonly model: AsyncDemo) {
   }

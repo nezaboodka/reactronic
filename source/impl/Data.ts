@@ -18,71 +18,71 @@ export interface AbstractSnapshot {
   readonly sealed: boolean
 }
 
-// Observable & Observer
+// Subscription & Subscriber
 
-export class Observable {
-  value: any
-  observers?: Set<Observer>
+export class Subscription {
+  content: any
+  subscribers?: Set<Subscriber>
   get isOperation(): boolean { return false }
   get originSnapshotId(): number | undefined { return 0 }
-  constructor(value: any) { this.value = value }
+  constructor(content: any) { this.content = content }
 }
 
 export type StandaloneMode = boolean | 'isolated' | 'disposal'
 
-export interface Observer {
+export interface Subscriber {
   readonly order: number
-  readonly observables: Map<Observable, ObservableInfo> | undefined
+  readonly subscriptions: Map<Subscription, SubscriptionInfo> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(observable: Observable, memberName: MemberName, snapshot: AbstractSnapshot, holder: ObjectHolder, outer: string, since: number, reactions: Observer[]): void
+  markObsoleteDueTo(subscription: Subscription, memberName: MemberName, snapshot: AbstractSnapshot, holder: DataHolder, outer: string, since: number, reactions: Array<Subscriber>): void
   runIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 
 export type MemberName = PropertyKey
 
-export interface ObservableInfo {
+export interface SubscriptionInfo {
   readonly memberHint: string
   readonly usageCount: number
 }
 
-// ObjectRevision
+// DataRevision
 
-export class ObjectRevision {
+export class DataRevision {
   readonly snapshot: AbstractSnapshot
-  readonly former: { revision: ObjectRevision }
+  readonly former: { revision: DataRevision }
   readonly data: any
   readonly changes: Set<MemberName>
-  readonly conflicts: Map<MemberName, ObjectRevision>
+  readonly conflicts: Map<MemberName, DataRevision>
 
-  constructor(snapshot: AbstractSnapshot, former: ObjectRevision | undefined, data: object) {
+  constructor(snapshot: AbstractSnapshot, former: DataRevision | undefined, data: object) {
     this.snapshot = snapshot
     this.former = { revision: former || this } // undefined former means initialization of ROOT_REV
     this.data = data
     this.changes = new Set<MemberName>()
-    this.conflicts = new Map<MemberName, ObjectRevision>()
+    this.conflicts = new Map<MemberName, DataRevision>()
     if (Log.isOn)
       Object.freeze(this)
   }
 }
 
-// ObjectHolder
+// DataHolder
 
-export class ObjectHolder {
+export class DataHolder {
   private static generator: number = 19
 
   readonly id: number
-  readonly unobservable: any
+  readonly data: any
   readonly proxy: any
-  head: ObjectRevision
-  editing?: ObjectRevision
+  head: DataRevision
+  editing?: DataRevision
   editors: number
   hint: string
 
-  constructor(unobservable: any, proxy: any, handler: ProxyHandler<ObjectHolder>, head: ObjectRevision, hint: string) {
-    this.id = ++ObjectHolder.generator
-    this.unobservable = unobservable
-    this.proxy = proxy || new Proxy<ObjectHolder>(this, handler)
+  constructor(data: any, proxy: any, handler: ProxyHandler<DataHolder>, head: DataRevision, hint: string) {
+    this.id = ++DataHolder.generator
+    this.data = data
+    this.proxy = proxy || new Proxy<DataHolder>(this, handler)
     this.head = head
     this.editing = undefined
     this.editors = 0
@@ -90,19 +90,19 @@ export class ObjectHolder {
   }
 
   static getHint(obj: object, full: boolean): string | undefined {
-    const h = Meta.get<ObjectHolder | undefined>(obj, Meta.Holder)
+    const h = Meta.get<DataHolder | undefined>(obj, Meta.Holder)
     return h !== undefined ? (full ? `${h.hint}#${h.id}` : h.hint) : /* istanbul ignore next */ undefined
   }
 }
 
-// Patch
+// PatchSet & DataPatch
 
-export interface Patch {
+export interface PatchSet {
   hint: string
-  objects: Map<object, ObjectPatch>
+  objects: Map<object, DataPatch>
 }
 
-export interface ObjectPatch {
+export interface DataPatch {
   data: any
   former: any
 }

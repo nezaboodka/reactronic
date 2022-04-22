@@ -9,7 +9,7 @@ import { F } from './util/Utils'
 import { Log } from './util/Dbg'
 import { Controller } from './Controller'
 import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options'
-import { ObjectHolder } from './impl/Data'
+import { DataHolder } from './impl/Data'
 import { Snapshot } from './impl/Snapshot'
 import { Hooks } from './impl/Hooks'
 import { OperationController } from './impl/Operation'
@@ -31,13 +31,13 @@ export class Rx {
   static get loggingOptions(): LoggingOptions { return Log.opt }
   static setLoggingMode(isOn: boolean, options?: LoggingOptions): void { Log.setMode(isOn, options) }
   static setLoggingHint<T extends object>(obj: T, name: string | undefined): void { Hooks.setHint(obj, name) }
-  static getLoggingHint<T extends object>(obj: T, full: boolean = false): string | undefined { return ObjectHolder.getHint(obj, full) }
+  static getLoggingHint<T extends object>(obj: T, full: boolean = false): string | undefined { return DataHolder.getHint(obj, full) }
   static setProfilingMode(isOn: boolean, options?: Partial<ProfilingOptions>): void { Hooks.setProfilingMode(isOn, options) }
 }
 
 // Operators
 
-export function nonreactive<T>(func: F<T>, ...args: any[]): T {
+export function nonsubscribing<T>(func: F<T>, ...args: any[]): T {
   return OperationController.runWithin<T>(undefined, func, ...args)
 }
 
@@ -47,7 +47,7 @@ export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): 
 
 // Decorators
 
-export function unobservable(proto: object, prop: PropertyKey): any {
+export function subscribeless(proto: object, prop: PropertyKey): any {
   return Hooks.decorateData(false, proto, prop)
 }
 

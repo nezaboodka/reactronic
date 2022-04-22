@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, unobservable, reaction, cached, Rx, LoggingOptions } from 'api' // from 'reactronic'
+import { SubscribingObject, Transaction, subscribeless, reaction, cached, Rx, LoggingOptions } from 'api' // from 'reactronic'
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -22,7 +22,7 @@ export function autorender(render: (cycle: number) => JSX.Element, name?: string
 
 type ReactState<V> = { rx: RxComponent<V>, cycle: number }
 
-class RxComponent<V> extends ObservableObject {
+class RxComponent<V> extends SubscribingObject {
   @cached
   render(emit: (cycle: number) => V, op?: Transaction): V {
     return op ? op.inspect(() => emit(this.cycle)) : emit(this.cycle)
@@ -34,9 +34,9 @@ class RxComponent<V> extends ObservableObject {
       Transaction.off(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
-  @unobservable cycle: number = 0
-  @unobservable refresh: (next: ReactState<V>) => void = nop
-  @unobservable readonly unmount = (): (() => void) => {
+  @subscribeless cycle: number = 0
+  @subscribeless refresh: (next: ReactState<V>) => void = nop
+  @subscribeless readonly unmount = (): (() => void) => {
     return (): void => { Transaction.run(null, Rx.dispose, this) }
   }
 

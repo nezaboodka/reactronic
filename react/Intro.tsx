@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, transaction, cached } from 'api' // from 'reactronic'
+import { SubscribingObject, transaction, cached } from 'api' // from 'reactronic'
 import { Component } from './Component'
 
-class MyModel extends ObservableObject {
+class MyModel extends SubscribingObject {
   url: string = 'https://nezaboodka.com'
   content: string = ''
   timestamp: number = Date.now()

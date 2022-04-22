@@ -12,22 +12,22 @@ import { SealedArray } from '../util/SealedArray'
 import { SealedMap } from '../util/SealedMap'
 import { SealedSet } from '../util/SealedSet'
 import { Kind, SnapshotOptions } from '../Options'
-import { AbstractSnapshot, ObjectRevision, MemberName, ObjectHolder, Observable, Observer, Meta } from './Data'
+import { AbstractSnapshot, DataRevision, MemberName, DataHolder, Subscription, Subscriber, Meta } from './Data'
 
 export const MAX_TIMESTAMP = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_TIMESTAMP = MAX_TIMESTAMP - 1
 
-Object.defineProperty(ObjectHolder.prototype, '#this', {
+Object.defineProperty(DataHolder.prototype, '#this', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
     const data = Snapshot.current().getCurrentRevision(this, '#this').data
     for (const m in data) {
       const v = data[m]
-      if (v instanceof Observable)
-        result[m] = v.value
-      else if (v === Meta.Unobservable)
-        result[m] = this.unobservable[m]
+      if (v instanceof Subscription)
+        result[m] = v.content
+      else if (v === Meta.Nonsubscribing)
+        result[m] = this.data[m]
       else /* istanbul ignore next */
         result[m] = v
     }
@@ -47,8 +47,8 @@ export class Snapshot implements AbstractSnapshot {
   private static oldest: Snapshot | undefined = undefined
   static garbageCollectionSummaryInterval: number = Number.MAX_SAFE_INTEGER
   static lastGarbageCollectionSummaryTimestamp: number = Date.now()
-  static totalObjectHolderCount: number = 0
-  static totalObjectRevisionCount: number = 0
+  static totalHolderCount: number = 0
+  static totalRevisionCount: number = 0
 
   readonly id: number
   readonly options: SnapshotOptions
@@ -56,8 +56,8 @@ export class Snapshot implements AbstractSnapshot {
   get timestamp(): number { return this.stamp }
   private stamp: number
   private bumper: number
-  changeset: Map<ObjectHolder, ObjectRevision>
-  reactions: Observer[]
+  changeset: Map<DataHolder, DataRevision>
+  reactions: Subscriber[]
   sealed: boolean
 
   constructor(options: SnapshotOptions | null) {
@@ -65,7 +65,7 @@ export class Snapshot implements AbstractSnapshot {
     this.options = options ?? DefaultSnapshotOptions
     this.stamp = UNDEFINED_TIMESTAMP
     this.bumper = 100
-    this.changeset = new Map<ObjectHolder, ObjectRevision>()
+    this.changeset = new Map<DataHolder, DataRevision>()
     this.reactions = []
     this.sealed = false
   }
@@ -73,16 +73,16 @@ export class Snapshot implements AbstractSnapshot {
   // To be redefined by transaction implementation
   static current: () => Snapshot = UNDEF
   static edit: () => Snapshot = UNDEF
-  static markUsed: (observable: Observable, r: ObjectRevision, m: MemberName, h: ObjectHolder, kind: Kind, weak: boolean) => void = UNDEF
-  static markEdited: (oldValue: any, newValue: any, edited: boolean, r: ObjectRevision, m: MemberName, h: ObjectHolder) => void = UNDEF
+  static markUsed: (subscription: Subscription, r: DataRevision, m: MemberName, h: DataHolder, kind: Kind, weak: boolean) => void = UNDEF
+  static markEdited: (oldValue: any, newValue: any, edited: boolean, r: DataRevision, m: MemberName, h: DataHolder) => void = UNDEF
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
   static revokeAllSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
-  static enqueueReactionsToRun = (reactions: Array<Observer>): void => { /* nop */ }
+  static enqueueReactionsToRun = (reactions: Array<Subscriber>): void => { /* nop */ }
 
-  seekRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
+  seekRevision(h: DataHolder, m: MemberName): DataRevision {
     // TODO: Take into account timestamp of the member
-    let r: ObjectRevision | undefined = h.editing
+    let r: DataRevision | undefined = h.editing
     if (r && r.snapshot !== this) {
       r = this.changeset.get(h)
       if (r)
@@ -96,21 +96,21 @@ export class Snapshot implements AbstractSnapshot {
     return r
   }
 
-  getCurrentRevision(h: ObjectHolder, m: MemberName): ObjectRevision {
+  getCurrentRevision(h: DataHolder, m: MemberName): DataRevision {
     const r = this.seekRevision(h, m)
     if (r === ROOT_REV)
       throw misuse(`object ${Dump.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     return r
   }
 
-  getEditableRevision(h: ObjectHolder, m: MemberName, value: any, token?: any): ObjectRevision {
-    let r: ObjectRevision = this.seekRevision(h, m)
+  getEditableRevision(h: DataHolder, m: MemberName, value: any, token?: any): DataRevision {
+    let r: DataRevision = this.seekRevision(h, m)
     const existing = r.data[m]
-    if (existing !== Meta.Unobservable) {
+    if (existing !== Meta.Nonsubscribing) {
       if (this.isNewRevisionRequired(h, r, m, existing, value, token)) {
         const data = { ...m === Meta.Holder ? value : r.data }
         Reflect.set(data, Meta.Holder, h)
-        r = new ObjectRevision(this, r, data)
+        r = new DataRevision(this, r, data)
         this.changeset.set(h, r)
         h.editing = r
         h.editors++
@@ -129,13 +129,13 @@ export class Snapshot implements AbstractSnapshot {
 
   static dispose(obj: any): void {
     const ctx = Snapshot.edit()
-    const h = Meta.get<ObjectHolder | undefined>(obj, Meta.Holder)
+    const h = Meta.get<DataHolder | undefined>(obj, Meta.Holder)
     if (h !== undefined)
       Snapshot.doDispose(ctx, h)
   }
 
-  static doDispose(ctx: Snapshot, h: ObjectHolder): ObjectRevision {
-    const r: ObjectRevision = ctx.getEditableRevision(h, Meta.Disposed, Meta.Disposed)
+  static doDispose(ctx: Snapshot, h: DataHolder): DataRevision {
+    const r: DataRevision = ctx.getEditableRevision(h, Meta.Disposed, Meta.Disposed)
     if (r !== ROOT_REV) {
       r.data[Meta.Disposed] = Meta.Disposed
       Snapshot.markEdited(Meta.Disposed, Meta.Disposed, true, r, Meta.Disposed, h)
@@ -143,9 +143,9 @@ export class Snapshot implements AbstractSnapshot {
     return r
   }
 
-  private isNewRevisionRequired(h: ObjectHolder, r: ObjectRevision, m: MemberName, existing: any, value: any, token: any): boolean {
+  private isNewRevisionRequired(h: DataHolder, r: DataRevision, m: MemberName, existing: any, value: any, token: any): boolean {
     if (this.sealed && r.snapshot !== ROOT_REV.snapshot)
-      throw misuse(`observable property ${Dump.obj(h, m)} can only be modified inside transaction`)
+      throw misuse(`subscribing property ${Dump.obj(h, m)} can only be modified inside transaction`)
     // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.revision !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.revision(r, m)}`)
     // if (r === ROOT_REV && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */
@@ -181,10 +181,10 @@ export class Snapshot implements AbstractSnapshot {
       this.bumper = timestamp
   }
 
-  rebase(): ObjectRevision[] | undefined { // return conflicts
-    let conflicts: ObjectRevision[] | undefined = undefined
+  rebase(): DataRevision[] | undefined { // return conflicts
+    let conflicts: DataRevision[] | undefined = undefined
     if (this.changeset.size > 0) {
-      this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
+      this.changeset.forEach((r: DataRevision, h: DataHolder) => {
         if (r.former.revision !== h.head) {
           const merged = this.merge(h, r)
           if (r.conflicts.size > 0) {
@@ -214,7 +214,7 @@ export class Snapshot implements AbstractSnapshot {
     return conflicts
   }
 
-  private merge(h: ObjectHolder, ours: ObjectRevision): number {
+  private merge(h: DataHolder, ours: DataRevision): number {
     let counter: number = 0
     const head = h.head
     const headDisposed: boolean = head.changes.has(Meta.Disposed)
@@ -244,9 +244,9 @@ export class Snapshot implements AbstractSnapshot {
     return counter
   }
 
-  applyOrDiscard(error?: any): Array<Observer> {
+  applyOrDiscard(error?: any): Array<Subscriber> {
     this.sealed = true
-    this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
+    this.changeset.forEach((r: DataRevision, h: DataHolder) => {
       Snapshot.sealObjectRevision(h, r)
       h.editors--
       if (h.editors === 0) // уходя гасите свет - последний уходящий убирает за всеми
@@ -256,15 +256,15 @@ export class Snapshot implements AbstractSnapshot {
         //   console.log(`!!! timestamp downgrade detected ${h.head.snapshot.timestamp} -> ${this.timestamp} !!!`)
         h.head = r // switch object to a new version
         if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
-          Snapshot.totalObjectRevisionCount++
+          Snapshot.totalRevisionCount++
           if (r.former.revision === ROOT_REV)
-            Snapshot.totalObjectHolderCount++
+            Snapshot.totalHolderCount++
         }
       }
     })
     if (Log.isOn) {
       if (Log.opt.change && !error) {
-        this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
+        this.changeset.forEach((r: DataRevision, h: DataHolder) => {
           const members: string[] = []
           r.changes.forEach((o, m) => members.push(m.toString()))
           const s = members.join(', ')
@@ -279,9 +279,9 @@ export class Snapshot implements AbstractSnapshot {
     return this.reactions
   }
 
-  static sealObjectRevision(h: ObjectHolder, r: ObjectRevision): void {
+  static sealObjectRevision(h: DataHolder, r: DataRevision): void {
     if (!r.changes.has(Meta.Disposed))
-      r.changes.forEach((o, m) => Snapshot.sealObservable(r.data[m], m, h.proxy.constructor.name))
+      r.changes.forEach((o, m) => Snapshot.sealSubscription(r.data[m], m, h.proxy.constructor.name))
     else
       for (const m in r.former.revision.data)
         r.data[m] = Meta.Disposed
@@ -289,18 +289,18 @@ export class Snapshot implements AbstractSnapshot {
       Snapshot.freezeObjectRevision(r)
   }
 
-  static sealObservable(observable: Observable | symbol, m: MemberName, typeName: string): void {
-    if (observable instanceof Observable) {
-      const value = observable.value
+  static sealSubscription(subscription: Subscription | symbol, m: MemberName, typeName: string): void {
+    if (subscription instanceof Subscription) {
+      const value = subscription.content
       if (value !== undefined && value !== null) {
         const sealedType = Object.getPrototypeOf(value)[Sealant.SealedType]
         if (sealedType)
-          observable.value = Sealant.seal(value, sealedType, typeName, m)
+          subscription.content = Sealant.seal(value, sealedType, typeName, m)
       }
     }
   }
 
-  static freezeObjectRevision(r: ObjectRevision): ObjectRevision {
+  static freezeObjectRevision(r: DataRevision): DataRevision {
     Object.freeze(r.data)
     Utils.freezeSet(r.changes)
     Utils.freezeMap(r.conflicts)
@@ -321,7 +321,7 @@ export class Snapshot implements AbstractSnapshot {
         Snapshot.oldest = Snapshot.pending[0] // undefined is OK
         const now = Date.now()
         if (now - Snapshot.lastGarbageCollectionSummaryTimestamp > Snapshot.garbageCollectionSummaryInterval) {
-          Log.write('', '[G]', `Total object/revision count: ${Snapshot.totalObjectHolderCount}/${Snapshot.totalObjectRevisionCount}`)
+          Log.write('', '[G]', `Total object/revision count: ${Snapshot.totalHolderCount}/${Snapshot.totalRevisionCount}`)
           Snapshot.lastGarbageCollectionSummaryTimestamp = now
         }
       }
@@ -331,14 +331,14 @@ export class Snapshot implements AbstractSnapshot {
   private unlinkHistory(): void {
     if (Log.isOn && Log.opt.gc)
       Log.write('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
-    this.changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
+    this.changeset.forEach((r: DataRevision, h: DataHolder) => {
       if (Log.isOn && Log.opt.gc && r.former.revision !== ROOT_REV)
         Log.write(' ', '  ', `${Dump.rev2(h, r.former.revision.snapshot)} is ready for GC because overwritten by ${Dump.rev2(h, r.snapshot)}`)
       if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
         if (r.former.revision !== ROOT_REV)
-          Snapshot.totalObjectRevisionCount--
+          Snapshot.totalRevisionCount--
         if (r.changes.has(Meta.Disposed))
-          Snapshot.totalObjectHolderCount--
+          Snapshot.totalHolderCount--
       }
       r.former.revision = ROOT_REV // unlink history
     })
@@ -368,7 +368,7 @@ export class Snapshot implements AbstractSnapshot {
 export class Dump {
   static valueHint = (value: any, m?: MemberName): string => '???'
 
-  static obj(h: ObjectHolder | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, value?: any): string {
+  static obj(h: DataHolder | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, value?: any): string {
     const member = m !== undefined ? `.${m.toString()}` : ''
     return h === undefined
       ? `boot${member}`
@@ -377,32 +377,32 @@ export class Dump {
         : `${h.hint}${member}${value !== undefined ? `[=${Dump.valueHint(value)}]` : ''} #${h.id}t${snapshotId}v${stamp}${originSnapshotId !== undefined && originSnapshotId !== 0 ? `t${originSnapshotId}` : ''}`
   }
 
-  static rev2(h: ObjectHolder, s: AbstractSnapshot, m?: MemberName, o?: Observable): string {
-    return Dump.obj(h, m, s.timestamp, s.id, o?.originSnapshotId, o?.value ?? Meta.Undefined)
+  static rev2(h: DataHolder, s: AbstractSnapshot, m?: MemberName, o?: Subscription): string {
+    return Dump.obj(h, m, s.timestamp, s.id, o?.originSnapshotId, o?.content ?? Meta.Undefined)
   }
 
-  static rev(r: ObjectRevision, m?: MemberName): string {
-    const h = Meta.get<ObjectHolder | undefined>(r.data, Meta.Holder)
-    const value = m !== undefined ? r.data[m] as Observable : undefined
+  static rev(r: DataRevision, m?: MemberName): string {
+    const h = Meta.get<DataHolder | undefined>(r.data, Meta.Holder)
+    const value = m !== undefined ? r.data[m] as Subscription : undefined
     return Dump.obj(h, m, r.snapshot.timestamp, r.snapshot.id, value?.originSnapshotId)
   }
 
-  static conflicts(conflicts: ObjectRevision[]): string {
+  static conflicts(conflicts: DataRevision[]): string {
     return conflicts.map(ours => {
       const items: string[] = []
-      ours.conflicts.forEach((theirs: ObjectRevision, m: MemberName) => {
+      ours.conflicts.forEach((theirs: DataRevision, m: MemberName) => {
         items.push(Dump.conflictingMemberHint(m, ours, theirs))
       })
       return items.join(', ')
     }).join(', ')
   }
 
-  static conflictingMemberHint(m: MemberName, ours: ObjectRevision, theirs: ObjectRevision): string {
+  static conflictingMemberHint(m: MemberName, ours: DataRevision, theirs: DataRevision): string {
     return `${theirs.snapshot.hint} (${Dump.rev(theirs, m)})`
   }
 }
 
-export const ROOT_REV = new ObjectRevision(new Snapshot({ hint: '<root>' }), undefined, {})
+export const ROOT_REV = new DataRevision(new Snapshot({ hint: '<root>' }), undefined, {})
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',

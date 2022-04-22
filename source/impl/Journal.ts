@@ -5,23 +5,23 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject } from './Hooks'
-import { ObjectHolder, ObjectRevision, Meta, Patch, ObjectPatch, Observable } from './Data'
+import { SubscribingObject } from './Hooks'
+import { DataHolder, DataRevision, Meta, PatchSet, DataPatch, Subscription } from './Data'
 import { Snapshot, ROOT_REV } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
 
-export type Saver = (patch: Patch) => Promise<void>
+export type Saver = (patch: PatchSet) => Promise<void>
 
-export abstract class Journal extends ObservableObject {
+export abstract class Journal extends SubscribingObject {
   abstract capacity: number
-  abstract readonly edits: ReadonlyArray<Patch>
-  abstract readonly unsaved: Patch
+  abstract readonly edits: ReadonlyArray<PatchSet>
+  abstract readonly unsaved: PatchSet
   abstract readonly canUndo: boolean
   abstract readonly canRedo: boolean
 
-  abstract edited(patch: Patch): void
-  abstract saved(patch: Patch): void
+  abstract edited(patch: PatchSet): void
+  abstract saved(patch: PatchSet): void
   abstract undo(count?: number): void
   abstract redo(count?: number): void
 
@@ -30,18 +30,18 @@ export abstract class Journal extends ObservableObject {
 
 export class JournalImpl extends Journal {
   private _capacity: number = 5
-  private _edits: Patch[] = []
-  private _unsaved: Patch = { hint: 'unsaved', objects: new Map<object, ObjectPatch>() }
+  private _edits: PatchSet[] = []
+  private _unsaved: PatchSet = { hint: 'unsaved', objects: new Map<object, DataPatch>() }
   private _position: number = 0
 
   get capacity(): number { return this._capacity }
   set capacity(value: number) { this._capacity = value; if (value < this._edits.length) this._edits.splice(0, this._edits.length - value) }
-  get edits(): ReadonlyArray<Patch> { return this._edits }
-  get unsaved(): Patch { return this._unsaved }
+  get edits(): ReadonlyArray<PatchSet> { return this._edits }
+  get unsaved(): PatchSet { return this._unsaved }
   get canUndo(): boolean { return this._edits.length > 0 && this._position > 0 }
   get canRedo(): boolean { return this._position < this._edits.length }
 
-  edited(p: Patch): void {
+  edited(p: PatchSet): void {
     Transaction.run({ hint: 'EditJournal.edited', standalone: 'isolated' }, () => {
       const items = this._edits = this._edits.toMutable()
       if (items.length >= this._capacity)
@@ -54,9 +54,9 @@ export class JournalImpl extends Journal {
     })
   }
 
-  saved(patch: Patch): void {
+  saved(patch: PatchSet): void {
     if (this._unsaved === patch)
-      this._unsaved = { hint: 'unsaved', objects: new Map<object, ObjectPatch>() }
+      this._unsaved = { hint: 'unsaved', objects: new Map<object, DataPatch>() }
     else
       throw new Error('not implemented')
   }
@@ -87,10 +87,10 @@ export class JournalImpl extends Journal {
     })
   }
 
-  static buildPatch(hint: string, changeset: Map<ObjectHolder, ObjectRevision>): Patch {
-    const patch: Patch = { hint, objects: new Map<object, ObjectPatch>() }
-    changeset.forEach((r: ObjectRevision, h: ObjectHolder) => {
-      const op: ObjectPatch = { data: {}, former: {} }
+  static buildPatch(hint: string, changeset: Map<DataHolder, DataRevision>): PatchSet {
+    const patch: PatchSet = { hint, objects: new Map<object, DataPatch>() }
+    changeset.forEach((r: DataRevision, h: DataHolder) => {
+      const op: DataPatch = { data: {}, former: {} }
       const former = r.former.revision !== ROOT_REV ? r.former.revision.data : undefined
       r.changes.forEach(m => {
         op.data[m] = unseal(r.data[m])
@@ -106,19 +106,19 @@ export class JournalImpl extends Journal {
     return patch
   }
 
-  static applyPatch(patch: Patch, undoing: boolean): void {
+  static applyPatch(patch: PatchSet, undoing: boolean): void {
     const ctx = Snapshot.edit()
-    patch.objects.forEach((op: ObjectPatch, obj: object) => {
-      const h = Meta.get<ObjectHolder>(obj, Meta.Holder)
-      const data = undoing ? op.former : op.data
+    patch.objects.forEach((dp: DataPatch, obj: object) => {
+      const h = Meta.get<DataHolder>(obj, Meta.Holder)
+      const data = undoing ? dp.former : dp.data
       if (data[Meta.Disposed] === undefined) {
         for (const m in data) {
           const value = data[m]
-          const r: ObjectRevision = ctx.getEditableRevision(h, m, value)
+          const r: DataRevision = ctx.getEditableRevision(h, m, value)
           if (r.snapshot === ctx) {
-            r.data[m] = new Observable(value)
-            const v: any = r.former.revision.data[m]
-            Snapshot.markEdited(v, value, v !== value, r, m, h)
+            r.data[m] = new Subscription(value)
+            const existing: any = r.former.revision.data[m]
+            Snapshot.markEdited(existing, value, existing !== value, r, m, h)
           }
         }
       }
@@ -127,14 +127,14 @@ export class JournalImpl extends Journal {
     })
   }
 
-  mergePatchToUnsaved(patch: Patch, undoing: boolean): void {
+  mergePatchToUnsaved(patch: PatchSet, undoing: boolean): void {
     const unsaved = this._unsaved
-    patch.objects.forEach((op: ObjectPatch, obj: object) => {
+    patch.objects.forEach((dp: DataPatch, obj: object) => {
       let merged = unsaved.objects.get(obj)
       if (!merged)
         unsaved.objects.set(obj, merged = { data: {}, former: {} })
-      const data = undoing ? op.former : op.data
-      const former = undoing ? op.data : op.former
+      const data = undoing ? dp.former : dp.data
+      const former = undoing ? dp.data : dp.former
       for (const m in data) {
         const value = data[m]
         if (value !== merged.former[m]) {
@@ -153,8 +153,8 @@ export class JournalImpl extends Journal {
   }
 }
 
-function unseal(observable: Observable): any {
-  const result = observable.value
+function unseal(subscription: Subscription): any {
+  const result = subscription.content
   const createCopy = result?.[Sealant.CreateCopy] as () => any
   return createCopy !== undefined ? createCopy.call(result) : result
 }

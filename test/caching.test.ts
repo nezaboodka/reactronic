@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, cached, Transaction, Rx, reaction, unobservable, options } from '../source/api'
+import { SubscribingObject, cached, Transaction, Rx, reaction, subscribeless, options } from '../source/api'
 import { TestsLoggingLevel } from './brief'
 
-export class DemoBase extends ObservableObject {
-  @unobservable raw: string = 'unobservable data'
+export class DemoBase extends SubscribingObject {
+  @subscribeless raw: string = 'nonsubscribing data'
   title: string = 'Demo'
   sideEffect: string = 'no side effect'
   uninitialized?: any

@@ -33,8 +33,8 @@ test('reentrance.error', async t => {
     return a
   })
   try {
-    // t.is(app.observableField, 'observable field')
-    // t.throws(() => app.observableField = 'test', { message: 'observable property AsyncDemoView.observableField #23 can only be modified inside transaction' })
+    // t.is(app.nonsubscribingField, 'nonsubscribing field')
+    // t.throws(() => app.nonsubscribingField = 'test', { message: 'nonsubscribing property AsyncDemoView.nonsubscribingField #23 can only be modified inside transaction' })
     Rx.getController(app.print).configure({ logging: TestsLoggingLevel })
     await app.print() // reaction first run
     t.throws(() => Rx.getController(app.print).configure({ logging: TestsLoggingLevel }))

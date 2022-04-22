@@ -7,9 +7,9 @@
 
 /* istanbul ignore file */
 
-import { ObservableObject } from './impl/Hooks'
+import { SubscribingObject } from './impl/Hooks'
 
-export abstract class Buffer<T> extends ObservableObject {
+export abstract class Buffer<T> extends SubscribingObject {
   abstract readonly capacity: number
   abstract readonly count: number
   abstract put(...items: T[]): void
