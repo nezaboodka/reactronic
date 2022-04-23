@@ -26,7 +26,7 @@ Object.defineProperty(DataHolder.prototype, '#this', {
       const v = data[m]
       if (v instanceof Subscription)
         result[m] = v.content
-      else if (v === Meta.Nonsubscribing)
+      else if (v === Meta.Nonreactive)
         result[m] = this.data[m]
       else /* istanbul ignore next */
         result[m] = v
@@ -106,7 +106,7 @@ export class Snapshot implements AbstractSnapshot {
   getEditableRevision(h: DataHolder, m: MemberName, value: any, token?: any): DataRevision {
     let r: DataRevision = this.seekRevision(h, m)
     const existing = r.data[m]
-    if (existing !== Meta.Nonsubscribing) {
+    if (existing !== Meta.Nonreactive) {
       if (this.isNewRevisionRequired(h, r, m, existing, value, token)) {
         const data = { ...m === Meta.Holder ? value : r.data }
         Reflect.set(data, Meta.Holder, h)
@@ -145,7 +145,7 @@ export class Snapshot implements AbstractSnapshot {
 
   private isNewRevisionRequired(h: DataHolder, r: DataRevision, m: MemberName, existing: any, value: any, token: any): boolean {
     if (this.sealed && r.snapshot !== ROOT_REV.snapshot)
-      throw misuse(`subscribing property ${Dump.obj(h, m)} can only be modified inside transaction`)
+      throw misuse(`reactive property ${Dump.obj(h, m)} can only be modified inside transaction`)
     // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.revision !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.revision(r, m)}`)
     // if (r === ROOT_REV && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */

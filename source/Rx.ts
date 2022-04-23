@@ -37,7 +37,7 @@ export class Rx {
 
 // Operators
 
-export function nonsubscribing<T>(func: F<T>, ...args: any[]): T {
+export function nonreactive<T>(func: F<T>, ...args: any[]): T {
   return OperationController.runWithin<T>(undefined, func, ...args)
 }
 
@@ -47,7 +47,7 @@ export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): 
 
 // Decorators
 
-export function subscribeless(proto: object, prop: PropertyKey): any {
+export function plain(proto: object, prop: PropertyKey): any {
   return Hooks.decorateData(false, proto, prop)
 }
 

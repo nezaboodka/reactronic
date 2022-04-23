@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import { Worker } from '../Worker'
-import { SubscribingObject, Hooks } from './Hooks'
+import { ReactiveObject, Hooks } from './Hooks'
 import { Transaction } from './Transaction'
 
-export abstract class Monitor extends SubscribingObject {
+export abstract class Monitor extends ReactiveObject {
   abstract readonly isActive: boolean
   abstract readonly counter: number
   abstract readonly workers: ReadonlySet<Worker>

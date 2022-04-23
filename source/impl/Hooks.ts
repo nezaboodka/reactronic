@@ -15,13 +15,13 @@ import { Snapshot, Dump, ROOT_REV } from './Snapshot'
 import { Journal } from './Journal'
 import { Monitor } from './Monitor'
 
-// SubscribingObject
+// ReactiveObject
 
-export abstract class SubscribingObject {
+export abstract class ReactiveObject {
   constructor() {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
-    const h = Hooks.createDataHolderForSubscribingObject(proto, this, initial, new.target.name)
+    const h = Hooks.createDataHolderForReactiveObject(proto, this, initial, new.target.name)
     return h.proxy
   }
 
@@ -109,7 +109,7 @@ export class Hooks implements ProxyHandler<DataHolder> {
     else if (m === Meta.Holder) {
       // do nothing, just return instance
     }
-    else // result === NONSUBSCRIBING
+    else // result === NONREACTIVE
       result = Reflect.get(h.data, m, receiver)
     return result
   }
@@ -164,8 +164,8 @@ export class Hooks implements ProxyHandler<DataHolder> {
     return result
   }
 
-  static decorateData(subscribing: boolean, proto: any, m: MemberName): any {
-    if (subscribing) {
+  static decorateData(reactive: boolean, proto: any, m: MemberName): any {
+    if (reactive) {
       const get = function(this: any): any {
         const h = Hooks.acquireDataHolder(this)
         return Hooks.proxy.get(h, m, this)
@@ -179,7 +179,7 @@ export class Hooks implements ProxyHandler<DataHolder> {
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Meta.acquire(proto, Meta.Initial)[m] = Meta.Nonsubscribing
+      Meta.acquire(proto, Meta.Initial)[m] = Meta.Nonreactive
   }
 
   static decorateOperation(implicit: boolean, decorator: Function,
@@ -233,7 +233,7 @@ export class Hooks implements ProxyHandler<DataHolder> {
     return h
   }
 
-  static createDataHolderForSubscribingObject(proto: any, data: any, blank: any, hint: string): DataHolder {
+  static createDataHolderForReactiveObject(proto: any, data: any, blank: any, hint: string): DataHolder {
     const ctx = Snapshot.edit()
     const h = new DataHolder(data, undefined, Hooks.proxy, ROOT_REV, hint)
     ctx.getEditableRevision(h, Meta.Holder, blank)

@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Rx, SubscribingObject } from '../source/api'
+import { Transaction, Rx, ReactiveObject } from '../source/api'
 import { TestsLoggingLevel } from './brief'
 
-class Serializable extends SubscribingObject {
+class Serializable extends ReactiveObject {
   text: string = ''
   array?: Array<Serializable> = undefined
 }

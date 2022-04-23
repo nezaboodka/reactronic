@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { SubscribingObject, Transaction, subscribeless, reaction, cached, Rx } from 'api' // from 'reactronic'
+import { ReactiveObject, Transaction, plain, reaction, cached, Rx } from 'api' // from 'reactronic'
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -20,7 +20,7 @@ export function autorender(render: () => JSX.Element): JSX.Element {
 
 type ReactState = { rx: RxComponent }
 
-class RxComponent extends SubscribingObject {
+class RxComponent extends ReactiveObject {
   @cached
   render(emit: () => JSX.Element): JSX.Element {
     return emit()
@@ -32,8 +32,8 @@ class RxComponent extends SubscribingObject {
       Transaction.off(this.refresh, {rx: this})
   }
 
-  @subscribeless refresh: (next: ReactState) => void = nop
-  @subscribeless readonly unmount = (): (() => void) => {
+  @plain refresh: (next: ReactState) => void = nop
+  @plain readonly unmount = (): (() => void) => {
     return (): void => { Transaction.run(null, Rx.dispose, this) }
   }
 

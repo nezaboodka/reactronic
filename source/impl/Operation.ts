@@ -33,7 +33,7 @@ export class OperationController extends Controller<any> {
 
   configure(options: Partial<MemberOptions>): MemberOptions { return OperationController.configureImpl(this, options) }
   get options(): MemberOptions { return this.peek(undefined).operation.options }
-  get nonsubscribing(): any { return this.peek(undefined).operation.content }
+  get nonreactive(): any { return this.peek(undefined).operation.content }
   get args(): ReadonlyArray<any> { return this.use().operation.args }
   get result(): any { return this.useOrRun(true, undefined).content }
   get error(): boolean { return this.use().operation.error }

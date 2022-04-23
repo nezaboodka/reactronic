@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Kind, nonsubscribing, sensitive, Rx } from '../source/api'
+import { Transaction, Kind, nonreactive, sensitive, Rx } from '../source/api'
 import { Person, Demo, DemoView, output, TestsLoggingLevel } from './brief'
 
 const expected: string[] = [
@@ -87,7 +87,7 @@ test('brief', t => {
       t.is(daddy.name, 'John Smith')
       t.is(daddy.age, 40)
       t.is(Transaction.off(() => daddy.age), 38)
-      t.is(nonsubscribing(() => daddy.age), 40)
+      t.is(nonreactive(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = 'Jo' // set to the same value
     })
@@ -137,7 +137,7 @@ test('brief', t => {
         const emails = daddy.emails = daddy.emails.toMutable()
         emails.push('dad@mail.com')
       }
-    }, undefined, 'subscribing property Person.emails #26 can only be modified inside transaction')
+    }, undefined, 'reactive property Person.emails #26 can only be modified inside transaction')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
     t.throws(() => { Rx.getController(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })

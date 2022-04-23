@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { SubscribingObject, Transaction, Rx, reaction } from '../source/api'
+import { ReactiveObject, Transaction, Rx, reaction } from '../source/api'
 import { TestsLoggingLevel } from './brief'
 
-export class ReactiveDemo extends SubscribingObject {
+export class ReactiveDemo extends ReactiveObject {
   title: string = 'ReactiveDemo'
   content: string = 'Content'
 

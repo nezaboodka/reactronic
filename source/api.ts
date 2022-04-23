@@ -13,10 +13,10 @@ export { MemberOptions, SnapshotOptions, Kind, Reentrance, LoggingOptions, Profi
 export { Worker } from './Worker'
 export { Controller } from './Controller'
 export { Ref, ToggleRef, BoolOnly, GivenTypeOnly } from './Ref'
-export { SubscribingObject } from './impl/Hooks'
+export { ReactiveObject } from './impl/Hooks'
 export { Snapshot } from './impl/Snapshot'
 export { Transaction } from './impl/Transaction'
 export { Monitor } from './impl/Monitor'
 export { Journal } from './impl/Journal'
-export { Rx, nonsubscribing, sensitive, subscribeless,
+export { Rx, nonreactive, sensitive, plain,
   transaction, reaction, cached, options } from './Rx'

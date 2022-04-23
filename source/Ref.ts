@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Transaction } from './impl/Transaction'
-import { nonsubscribing } from './Rx'
+import { nonreactive } from './Rx'
 
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
 export type GivenTypeOnly<T, V> = Pick<T, {[P in keyof T]: T[P] extends V ? P : never}[keyof T]>
@@ -32,8 +32,8 @@ export class Ref<T = any> {
       this.owner[this.name][this.index] = value
   }
 
-  nonsubscribing(): T {
-    return nonsubscribing(() => this.value)
+  nonreactive(): T {
+    return nonreactive(() => this.value)
   }
 
   observe(): T {

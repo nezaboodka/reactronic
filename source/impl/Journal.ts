@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { SubscribingObject } from './Hooks'
+import { ReactiveObject } from './Hooks'
 import { DataHolder, DataRevision, Meta, PatchSet, DataPatch, Subscription } from './Data'
 import { Snapshot, ROOT_REV } from './Snapshot'
 import { Transaction } from './Transaction'
@@ -13,7 +13,7 @@ import { Sealant } from '../util/Sealant'
 
 export type Saver = (patch: PatchSet) => Promise<void>
 
-export abstract class Journal extends SubscribingObject {
+export abstract class Journal extends ReactiveObject {
   abstract capacity: number
   abstract readonly edits: ReadonlyArray<PatchSet>
   abstract readonly unsaved: PatchSet
