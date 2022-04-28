@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ReactiveObject, plain, transaction, reaction, cached, Journal, Rx, LoggingOptions, Transaction, options } from '../source/api'
+import { ReactiveObject, isnonreactive, transaction, reaction, cached, Journal, Rx, LoggingOptions, Transaction, options } from '../source/api'
 
 export const output: string[] = []
 
@@ -17,7 +17,7 @@ export class Demo extends ReactiveObject {
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
   // set computed(value: string) { /* nop */ }
 
-  @plain shared: string = 'for testing purposes'
+  @isnonreactive shared: string = 'for testing purposes'
   title: string = 'Demo'
   users: Person[] = []
   collection1: Person[] = this.users
@@ -72,9 +72,9 @@ export class Demo extends ReactiveObject {
 }
 
 export class DemoView extends ReactiveObject {
-  @plain raw: string = 'plain field'
-  @plain shared: string = 'for testing purposes'
-  @plain readonly model: Demo
+  @isnonreactive raw: string = 'plain field'
+  @isnonreactive shared: string = 'for testing purposes'
+  @isnonreactive readonly model: Demo
   userFilter: string = 'Jo'
 
   constructor(model: Demo) {
@@ -134,7 +134,7 @@ export class DemoView extends ReactiveObject {
 
 /* istanbul ignore next */
 export class Person extends ReactiveObject {
-  @plain dummy: string | null = null
+  @isnonreactive dummy: string | null = null
   id: string | null = null
   name: string | null = null
   age: number = 0

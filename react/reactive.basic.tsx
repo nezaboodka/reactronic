@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ReactiveObject, Transaction, plain, reaction, cached, Rx } from 'api' // from 'reactronic'
+import { ReactiveObject, Transaction, isnonreactive, reaction, cached, Rx } from 'api' // from 'reactronic'
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -32,8 +32,8 @@ class RxComponent extends ReactiveObject {
       Transaction.off(this.refresh, {rx: this})
   }
 
-  @plain refresh: (next: ReactState) => void = nop
-  @plain readonly unmount = (): (() => void) => {
+  @isnonreactive refresh: (next: ReactState) => void = nop
+  @isnonreactive readonly unmount = (): (() => void) => {
     return (): void => { Transaction.run(null, Rx.dispose, this) }
   }
 

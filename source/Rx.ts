@@ -47,7 +47,7 @@ export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): 
 
 // Decorators
 
-export function plain(proto: object, prop: PropertyKey): any {
+export function isnonreactive(proto: object, prop: PropertyKey): any {
   return Hooks.decorateData(false, proto, prop)
 }
 
