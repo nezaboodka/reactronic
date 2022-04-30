@@ -115,7 +115,7 @@ export class Snapshot implements AbstractSnapshot {
         h.editing = r
         h.editors++
         if (Log.isOn && Log.opt.write)
-          Log.write('║', '  ⎘', `${Dump.obj(h)} is cloned`)
+          Log.write('║', '  ⎘', `${Dump.obj(h)} - new revision is created`)
       }
     }
     else
@@ -370,11 +370,17 @@ export class Dump {
 
   static obj(h: DataHolder | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, value?: any): string {
     const member = m !== undefined ? `.${m.toString()}` : ''
-    return h === undefined
-      ? `boot${member}`
-      : stamp === undefined
-        ? `${h.hint}${member}${value !== undefined ? `[=${Dump.valueHint(value)}]` : ''} #${h.id}`
-        : `${h.hint}${member}${value !== undefined ? `[=${Dump.valueHint(value)}]` : ''} #${h.id}t${snapshotId}v${stamp}${originSnapshotId !== undefined && originSnapshotId !== 0 ? `t${originSnapshotId}` : ''}`
+    let result: string
+    if (h !== undefined) {
+      const v = value !== undefined && value !== Meta.Undefined ? `[=${Dump.valueHint(value)}]` : ''
+      if (stamp === undefined)
+        result = `${h.hint}${member}${v} #${h.id}`
+      else
+        result = `${h.hint}${member}${v} #${h.id}t${snapshotId}v${stamp}${originSnapshotId !== undefined && originSnapshotId !== 0 ? `t${originSnapshotId}` : ''}`
+    }
+    else
+      result = `boot${member}`
+    return result
   }
 
   static rev2(h: DataHolder, s: AbstractSnapshot, m?: MemberName, o?: Subscription): string {
