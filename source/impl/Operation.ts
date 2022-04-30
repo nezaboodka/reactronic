@@ -811,13 +811,13 @@ function valueHint(value: any, m?: MemberName): string {
   else if (value === Meta.Disposed)
     result = '<disposed>'
   else if (value === Meta.Undefined)
-    result = '◌'
+    result = 'undefined'
   else if (typeof(value) === 'string')
     result = `"${value.toString().slice(0, 20)}"`
   else if (value !== undefined && value !== null)
-    result = value.toString().slice(0, 20)
+    result = value.toString().slice(0, 40)
   else
-    result = '◌'
+    result = 'undefined'
   return result
 }
 
