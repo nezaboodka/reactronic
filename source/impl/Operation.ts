@@ -18,7 +18,7 @@ import { JournalImpl } from './Journal'
 
 const BOOT_ARGS: any[] = []
 const BOOT_CAUSE = '<boot>'
-const ROOT_HOLDER = new DataHolder(undefined, undefined, Hooks.proxy, ROOT_REV, '<root>')
+const ROOT_HOLDER = new DataHolder(undefined, undefined, Hooks.handler, ROOT_REV, '<root>')
 
 type OperationContext = {
   readonly operation: Operation

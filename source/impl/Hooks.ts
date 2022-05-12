@@ -32,6 +32,12 @@ export abstract class ReactiveObject {
   }
 }
 
+// ReactiveArray
+
+export class ReactiveArray extends ReactiveObject {
+  // WIP
+}
+
 // Options
 
 const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
@@ -92,7 +98,7 @@ export class Hooks implements ProxyHandler<DataHolder> {
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static sensitivity: boolean = false
-  static readonly proxy: Hooks = new Hooks()
+  static readonly handler: Hooks = new Hooks()
 
   getPrototypeOf(h: DataHolder): object | null {
     return Reflect.getPrototypeOf(h.data)
@@ -168,11 +174,11 @@ export class Hooks implements ProxyHandler<DataHolder> {
     if (reactive) {
       const get = function(this: any): any {
         const h = Hooks.acquireDataHolder(this)
-        return Hooks.proxy.get(h, m, this)
+        return Hooks.handler.get(h, m, this)
       }
       const set = function(this: any, value: any): boolean {
         const h = Hooks.acquireDataHolder(this)
-        return Hooks.proxy.set(h, m, value, this)
+        return Hooks.handler.set(h, m, value, this)
       }
       const enumerable = true
       const configurable = false
@@ -227,7 +233,7 @@ export class Hooks implements ProxyHandler<DataHolder> {
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
       const rev = new DataRevision(ROOT_REV.snapshot, ROOT_REV, {...initial})
       Meta.set(rev.data, Meta.Holder, h)
-      h = new DataHolder(obj, obj, Hooks.proxy, rev, obj.constructor.name)
+      h = new DataHolder(obj, obj, Hooks.handler, rev, obj.constructor.name)
       Meta.set(obj, Meta.Holder, h)
     }
     return h
@@ -235,7 +241,7 @@ export class Hooks implements ProxyHandler<DataHolder> {
 
   static createDataHolderForReactiveObject(proto: any, data: any, blank: any, hint: string): DataHolder {
     const ctx = Snapshot.edit()
-    const h = new DataHolder(data, undefined, Hooks.proxy, ROOT_REV, hint)
+    const h = new DataHolder(data, undefined, Hooks.handler, ROOT_REV, hint)
     ctx.getEditableRevision(h, Meta.Holder, blank)
     if (!Hooks.reactionsAutoStartDisabled)
       for (const m in Meta.getFrom(proto, Meta.Reactions))
