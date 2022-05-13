@@ -10,7 +10,7 @@ import { Log } from './util/Dbg'
 import { Controller } from './Controller'
 import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options'
 import { ObjectHandle } from './impl/Data'
-import { Changeset } from './impl/Snapshot'
+import { Changeset } from './impl/Changeset'
 import { Hooks } from './impl/Hooks'
 import { OperationController } from './impl/Operation'
 

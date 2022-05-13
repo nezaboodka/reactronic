@@ -7,7 +7,7 @@
 
 import { ReactiveObject } from './Hooks'
 import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, DataPatch, Subscription } from './Data'
-import { Changeset, EMPTY_SNAPSHOT } from './Snapshot'
+import { Changeset, EMPTY_SNAPSHOT } from './Changeset'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
 

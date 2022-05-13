@@ -10,7 +10,7 @@ import { Log, misuse, error, fatal } from '../util/Dbg'
 import { Worker } from '../Worker'
 import { SnapshotOptions, LoggingOptions } from '../Options'
 import { ObjectSnapshot, Subscriber } from './Data'
-import { Changeset, Dump } from './Snapshot'
+import { Changeset, Dump } from './Changeset'
 
 export abstract class Transaction implements Worker {
   static get current(): Transaction { return TransactionImpl.current }

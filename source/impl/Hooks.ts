@@ -11,7 +11,7 @@ import { MemberOptions, Kind, Reentrance } from '../Options'
 import { LoggingOptions, ProfilingOptions } from '../Logging'
 import { Controller } from '../Controller'
 import { ObjectSnapshot, MemberName, ObjectHandle, Subscription, Meta, StandaloneMode } from './Data'
-import { Changeset, Dump, EMPTY_SNAPSHOT } from './Snapshot'
+import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset'
 import { Journal } from './Journal'
 import { Monitor } from './Monitor'
 
