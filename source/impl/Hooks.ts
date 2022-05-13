@@ -232,8 +232,8 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
         throw misuse('only objects can be reactive')
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
       const os = new ObjectSnapshot(EMPTY_SNAPSHOT.changeset, EMPTY_SNAPSHOT, {...initial})
-      Meta.set(os.data, Meta.Handle, h)
       h = new ObjectHandle(obj, obj, Hooks.handler, os, obj.constructor.name)
+      Meta.set(os.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
     }
     return h
