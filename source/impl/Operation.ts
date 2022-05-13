@@ -576,6 +576,7 @@ class Operation extends Subscription implements Subscriber {
     const since = changeset.timestamp
     const reactions = changeset.reactions
     changeset.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
+      Operation.propagateMemberChangeThroughSubscriptions(false, since, os, Meta.Revision, h, reactions)
       if (!os.disposed)
         os.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(false, since, os, m, h, reactions))
       else
@@ -588,9 +589,12 @@ class Operation extends Subscription implements Subscriber {
   }
 
   private static revokeAllSubscriptions(changeset: Changeset): void {
-    changeset.items.forEach((os: ObjectSnapshot, h: ObjectHandle) =>
+    changeset.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
+      Operation.propagateMemberChangeThroughSubscriptions(
+        true, changeset.timestamp, os, Meta.Revision, h, undefined)
       os.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(
-        true, changeset.timestamp, os, m, h, undefined)))
+        true, changeset.timestamp, os, m, h, undefined))
+    })
   }
 
   private static propagateMemberChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,

@@ -6,15 +6,22 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ReactiveObject, Transaction, Rx, reaction } from '../source/api'
+import { ReactiveObject, Transaction, Rx, reaction, transaction, isnonreactive } from '../source/api'
 import { TestsLoggingLevel } from './brief'
 
 export class ReactiveDemo extends ReactiveObject {
   title: string = 'ReactiveDemo'
   content: string = 'Content'
+  data: string = 'Data'
+  @isnonreactive rev: number = 0
+
+  @transaction
+  setData(value: string): void {
+    this.data =  value
+  }
 
   @reaction
-  actualize1(): void {
+  protected actualize1(): void {
     this.title
     this.title = 'Title/1'
     this.content = 'Content/1'
@@ -22,9 +29,14 @@ export class ReactiveDemo extends ReactiveObject {
   }
 
   @reaction
-  actualize2(): void {
+  protected actualize2(): void {
     this.content
     this.title = 'Title/2'
+  }
+
+  @reaction
+  protected reactOnAnyChange(): void {
+    this.rev = Rx.getRevisionOf(this)
   }
 }
 
@@ -33,4 +45,8 @@ test('reactive', t => {
   const demo = Transaction.run(null, () => new ReactiveDemo())
   t.is(demo.title, 'Title/1')
   t.is(demo.content, 'Content/1')
+  t.is(demo.rev, 6)
+  demo.setData('Hello')
+  t.is(demo.rev, 10)
+  t.is(Rx.getRevisionOf(demo), 10)
 })

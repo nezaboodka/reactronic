@@ -9,12 +9,13 @@ import { F } from './util/Utils'
 import { Log } from './util/Dbg'
 import { Controller } from './Controller'
 import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options'
-import { ObjectHandle } from './impl/Data'
+import { Meta, ObjectHandle } from './impl/Data'
 import { Changeset } from './impl/Changeset'
 import { Hooks } from './impl/Hooks'
 import { OperationController } from './impl/Operation'
 
 export class Rx {
+  static getRevisionOf(obj: any): number { return obj[Meta.Revision] }
   static why(brief: boolean = false): string { return brief ? OperationController.briefWhy() : OperationController.why() }
   static getController<T>(method: F<T>): Controller<T> { return OperationController.of(method) }
   static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Rx.getController(method as any as F<T>).pullLastResult(args) }
