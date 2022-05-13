@@ -370,7 +370,7 @@ export class Dump {
   static valueHint = (value: any, m?: MemberName): string => '???'
 
   static obj(h: ObjectHandle | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, value?: any): string {
-    const member = m !== undefined ? (typeof(m) === 'symbol' ? `[${m.description}]` : `.${m.toString()}`) : ''
+    const member = m !== undefined ? `.${m.toString()}` : ''
     let result: string
     if (h !== undefined) {
       const v = value !== undefined && value !== Meta.Undefined ? `[=${Dump.valueHint(value)}]` : ''
