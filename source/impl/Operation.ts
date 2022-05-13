@@ -341,13 +341,13 @@ class Operation extends Subscription implements Subscriber {
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(subscription: Subscription, memberName: MemberName, changeset: AbstractChangeset, holder: ObjectHandle, outer: string, since: number, reactions: Subscriber[]): void {
+  markObsoleteDueTo(subscription: Subscription, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactions: Subscriber[]): void {
     if (this.subscriptions !== undefined) { // if not yet marked as obsolete
       const skip = !subscription.isOperation &&
         changeset === this.changeset /* &&
         snapshot.changes.has(memberName) */
       if (!skip) {
-        const why = `${Dump.snapshot2(holder, changeset, memberName, subscription)}    <<    ${outer}`
+        const why = `${Dump.snapshot2(h, changeset, m, subscription)}    <<    ${outer}`
         // Mark obsolete (this.subscriptions = undefined)
         this.unsubscribeFromAllSubscriptions()
         this.obsoleteDueTo = why
@@ -358,7 +358,7 @@ class Operation extends Subscription implements Subscriber {
           Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
             isReaction && changeset === EMPTY_SNAPSHOT.changeset
               ? `${this.hint()} is a reaction and will run automatically (order ${this.options.order})`
-              : `${this.hint()} is obsolete due to ${Dump.snapshot2(holder, changeset, memberName)} since v${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ''}`)
+              : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, m)} since v${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ''}`)
 
         // Stop cascade propagation on reaction, or continue otherwise
         if (isReaction)
@@ -372,10 +372,10 @@ class Operation extends Subscription implements Subscriber {
           // do not cancel itself
         }
         else if (!tran.isFinished && this !== subscription) // restart after itself if canceled
-          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.snapshot2(holder, changeset, memberName)} changed by T${changeset.id}[${changeset.hint}]`), null)
+          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.snapshot2(h, changeset, m)} changed by T${changeset.id}[${changeset.hint}]`), null)
       }
       else if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
-        Log.write(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(holder, changeset, memberName)}`)
+        Log.write(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(h, changeset, m)}`)
     }
   }
 
@@ -602,7 +602,6 @@ class Operation extends Subscription implements Subscriber {
       const former = os.former.snapshot.data[m]
       if (former !== undefined && former instanceof Subscription) {
         const why = `T${os.changeset.id}[${os.changeset.hint}]`
-        // const cause: MemberInfo = { holder: h, changeset: os.changeset, memberName: m, usageCount: 0 }
         if (former instanceof Operation) {
           if ((former.obsoleteSince === MAX_REVISION || former.obsoleteSince <= 0)) {
             former.obsoleteDueTo = why

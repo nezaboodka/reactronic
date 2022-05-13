@@ -21,7 +21,7 @@ export abstract class ReactiveObject {
   constructor() {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
-    const h = Hooks.createDataHolderForReactiveObject(proto, this, initial, new.target.name)
+    const h = Hooks.createDataHandleForReactiveObject(proto, this, initial, new.target.name)
     return h.proxy
   }
 
@@ -173,11 +173,11 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
   static decorateData(reactive: boolean, proto: any, m: MemberName): any {
     if (reactive) {
       const get = function(this: any): any {
-        const h = Hooks.acquireDataHolder(this)
+        const h = Hooks.acquireDataHandle(this)
         return Hooks.handler.get(h, m, this)
       }
       const set = function(this: any, value: any): boolean {
-        const h = Hooks.acquireDataHolder(this)
+        const h = Hooks.acquireDataHandle(this)
         return Hooks.handler.set(h, m, value, this)
       }
       const enumerable = true
@@ -199,7 +199,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
       pd.value ?? pd.get, pd.value ?? pd.set, true, configurable, options, implicit)
     if (opts.getter === opts.setter) { // regular method
       const bootstrap = function(this: any): any {
-        const h = Hooks.acquireDataHolder(this)
+        const h = Hooks.acquireDataHandle(this)
         const operation = Hooks.createOperation(h, member, opts)
         Object.defineProperty(h.data, member, { value: operation, enumerable, configurable })
         return operation
@@ -208,7 +208,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
     }
     else if (opts.setter === UNDEF) { // property with getter only
       const bootstrap = function(this: any): any {
-        const h = Hooks.acquireDataHolder(this)
+        const h = Hooks.acquireDataHandle(this)
         const operation = Hooks.createOperation(h, member, opts)
         Object.defineProperty(h.data, member, { get: operation, enumerable, configurable })
         return operation.call(this)
@@ -225,7 +225,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
     }
   }
 
-  static acquireDataHolder(obj: any): ObjectHandle {
+  static acquireDataHandle(obj: any): ObjectHandle {
     let h = obj[Meta.Handle]
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
@@ -239,7 +239,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
     return h
   }
 
-  static createDataHolderForReactiveObject(proto: any, data: any, blank: any, hint: string): ObjectHandle {
+  static createDataHandleForReactiveObject(proto: any, data: any, blank: any, hint: string): ObjectHandle {
     const ctx = Changeset.edit()
     const h = new ObjectHandle(data, undefined, Hooks.handler, EMPTY_SNAPSHOT, hint)
     ctx.getEditableSnapshot(h, Meta.Handle, blank)
@@ -277,7 +277,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
 
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
-      const h = Hooks.acquireDataHolder(obj)
+      const h = Hooks.acquireDataHandle(obj)
       h.hint = hint
     }
     return obj

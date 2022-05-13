@@ -146,9 +146,9 @@ export class Changeset implements AbstractChangeset {
   private isNewSnapshotRequired(h: ObjectHandle, os: ObjectSnapshot, m: MemberName, existing: any, value: any, token: any): boolean {
     if (this.sealed && os.changeset !== EMPTY_SNAPSHOT.changeset)
       throw misuse(`reactive property ${Dump.obj(h, m)} can only be modified inside transaction`)
-    // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.snapshot !== ROOT_REV))
+    // if (m !== Meta.Handle && value !== Meta.Handle && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.snapshot !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.snapshot(r, m)}`)
-    // if (r === ROOT_REV && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */
+    // if (r === ROOT_REV && m !== Meta.Handle && value !== Meta.Handle) /* istanbul ignore next */
     //   throw misuse(`member ${Hints.snapshot(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
     if (m !== Meta.Handle && value !== Meta.Handle) {
       if (os.changeset !== this || os.former.snapshot !== EMPTY_SNAPSHOT) {
