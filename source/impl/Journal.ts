@@ -98,8 +98,8 @@ export class JournalImpl extends Journal {
           op.former[m] = unseal(former[m])
       })
       if (!former) {
-        delete op.data[Meta.Disposed] // object restore
-        op.former[Meta.Disposed] = Meta.Disposed
+        delete op.data[Meta.Revision] // object restore
+        op.former[Meta.Revision] = Meta.Undefined
       }
       patch.objects.set(h.proxy, op)
     })
@@ -111,7 +111,7 @@ export class JournalImpl extends Journal {
     patch.objects.forEach((dp: DataPatch, obj: object) => {
       const h = Meta.get<ObjectHandle>(obj, Meta.Handle)
       const data = undoing ? dp.former : dp.data
-      if (data[Meta.Disposed] === undefined) {
+      if (data[Meta.Revision] !== Meta.Undefined) {
         for (const m in data) {
           const value = data[m]
           const os: ObjectSnapshot = ctx.getEditableSnapshot(h, m, value)

@@ -53,7 +53,7 @@ export class OperationController extends Controller<any> {
     const ctx = oc.changeset
     const op: Operation = oc.operation
     const opts = op.options
-    if (!oc.isUpToDate && oc.snapshot.data[Meta.Disposed] === undefined
+    if (!oc.isUpToDate && !oc.snapshot.disposed
       && (!weak || op.cause === BOOT_CAUSE || !op.successor ||
         op.successor.transaction.isFinished)) {
       const outerOpts = Operation.current?.options
@@ -138,8 +138,7 @@ export class OperationController extends Controller<any> {
     const isValid = op.options.kind !== Kind.Transaction && op.cause !== BOOT_CAUSE &&
       (ctx === op.changeset || ctx.timestamp < op.obsoleteSince) &&
       (!op.options.triggeringArgs || args === undefined ||
-        op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
-      os.data[Meta.Disposed] !== undefined
+        op.args.length === args.length && op.args.every((t, i) => t === args[i])) || os.disposed
     return { operation: op, isUpToDate: isValid, changeset: ctx, snapshot: os }
   }
 
@@ -198,7 +197,7 @@ export class OperationController extends Controller<any> {
         os.data[m] = t
         op = t
         if (Log.isOn && Log.opt.write)
-          Log.write('║', '  ⎘', `${Dump.obj(this.objectHandle, m)} is cloned outside of transaction`)
+          Log.write('║', ' ⎘⎘', `${Dump.obj(this.objectHandle, m)} - new snapshot is created outside of transaction (revision ${os.revision})`)
       }
     }
     return op
@@ -577,7 +576,7 @@ class Operation extends Subscription implements Subscriber {
     const since = changeset.timestamp
     const reactions = changeset.reactions
     changeset.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-      if (!os.changes.has(Meta.Disposed))
+      if (!os.disposed)
         os.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(false, since, os, m, h, reactions))
       else
         for (const m in os.former.snapshot.data)
@@ -807,8 +806,6 @@ function valueHint(value: any, m?: MemberName): string {
     result = `Map(${value.size})`
   else if (value instanceof Operation)
     result = `${Dump.snapshot2(value.controller.objectHandle, value.changeset, m)}`
-  else if (value === Meta.Disposed)
-    result = '<disposed>'
   else if (value === Meta.Undefined)
     result = 'undefined'
   else if (typeof(value) === 'string')

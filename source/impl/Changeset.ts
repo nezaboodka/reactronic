@@ -108,14 +108,16 @@ export class Changeset implements AbstractChangeset {
     const existing = os.data[m]
     if (existing !== Meta.Nonreactive) {
       if (this.isNewSnapshotRequired(h, os, m, existing, value, token)) {
+        const revision = m === Meta.Handle ? 1 : os.revision + 1
         const data = { ...m === Meta.Handle ? value : os.data }
-        Reflect.set(data, Meta.Handle, h)
+        Meta.set(data, Meta.Handle, h)
+        Meta.set(data, Meta.Revision, new Subscription(revision))
         os = new ObjectSnapshot(this, os, data)
         this.items.set(h, os)
         h.editing = os
         h.editors++
         if (Log.isOn && Log.opt.write)
-          Log.write('║', '  ⎘', `${Dump.obj(h)} - new snapshot is created`)
+          Log.write('║', ' ⎘⎘', `${Dump.obj(h)} - new snapshot is created (revision ${revision})`)
       }
     }
     else
@@ -135,11 +137,9 @@ export class Changeset implements AbstractChangeset {
   }
 
   static doDispose(ctx: Changeset, h: ObjectHandle): ObjectSnapshot {
-    const os: ObjectSnapshot = ctx.getEditableSnapshot(h, Meta.Disposed, Meta.Disposed)
-    if (os !== EMPTY_SNAPSHOT) {
-      os.data[Meta.Disposed] = Meta.Disposed
-      Changeset.markEdited(Meta.Disposed, Meta.Disposed, true, os, Meta.Disposed, h)
-    }
+    const os: ObjectSnapshot = ctx.getEditableSnapshot(h, Meta.Revision, Meta.Undefined)
+    if (os !== EMPTY_SNAPSHOT)
+      os.disposed = true
     return os
   }
 
@@ -217,13 +217,14 @@ export class Changeset implements AbstractChangeset {
   private merge(h: ObjectHandle, ours: ObjectSnapshot): number {
     let counter: number = 0
     const head = h.head
-    const headDisposed: boolean = head.changes.has(Meta.Disposed)
+    const headDisposed = head.disposed
+    const oursDisposed = ours.disposed
     const merged = { ...head.data } // clone
     ours.changes.forEach((o, m) => {
       counter++
       merged[m] = ours.data[m]
-      if (headDisposed || m === Meta.Disposed) {
-        if (headDisposed !== (m === Meta.Disposed)) {
+      if (headDisposed || oursDisposed) {
+        if (headDisposed !== oursDisposed) {
           if (headDisposed || this.options.standalone !== 'disposal') {
             if (Log.isOn && Log.opt.change)
               Log.write('║╠', '', `${Dump.snapshot2(h, ours.changeset, m)} <> ${Dump.snapshot2(h, head.changeset, m)}`, 0, ' *** CONFLICT ***')
@@ -280,11 +281,11 @@ export class Changeset implements AbstractChangeset {
   }
 
   static sealObjectSnapshot(h: ObjectHandle, os: ObjectSnapshot): void {
-    if (!os.changes.has(Meta.Disposed))
+    if (!os.disposed)
       os.changes.forEach((o, m) => Changeset.sealSubscription(os.data[m], m, h.proxy.constructor.name))
     else
       for (const m in os.former.snapshot.data)
-        os.data[m] = Meta.Disposed
+        os.data[m] = Meta.Undefined
     if (Log.isOn)
       Changeset.freezeObjectSnapshot(os)
   }
@@ -337,7 +338,7 @@ export class Changeset implements AbstractChangeset {
       if (Changeset.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
         if (os.former.snapshot !== EMPTY_SNAPSHOT)
           Changeset.totalObjectSnapshotCount--
-        if (os.changes.has(Meta.Disposed))
+        if (os.disposed)
           Changeset.totalObjectHandleCount--
       }
       os.former.snapshot = EMPTY_SNAPSHOT // unlink history
@@ -369,7 +370,7 @@ export class Dump {
   static valueHint = (value: any, m?: MemberName): string => '???'
 
   static obj(h: ObjectHandle | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, value?: any): string {
-    const member = m !== undefined ? `.${m.toString()}` : ''
+    const member = m !== undefined ? (typeof(m) === 'symbol' ? `[${m.description}]` : `.${m.toString()}`) : ''
     let result: string
     if (h !== undefined) {
       const v = value !== undefined && value !== Meta.Undefined ? `[=${Dump.valueHint(value)}]` : ''

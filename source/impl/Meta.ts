@@ -8,13 +8,13 @@
 const EMPTY_META = Object.freeze({})
 
 export abstract class Meta {
-  static readonly Handle: unique symbol = Symbol('rxHandle')
-  static readonly Controller: unique symbol = Symbol('rxController')
-  static readonly Disposed: unique symbol = Symbol('rxDisposed')
-  static readonly Initial: unique symbol = Symbol('rxInitial')
-  static readonly Reactions: unique symbol = Symbol('rxReactions')
-  static readonly Nonreactive: unique symbol = Symbol('rxNonreactive')
-  static readonly Undefined: unique symbol = Symbol('rxUndefined')
+  static readonly Handle: unique symbol = Symbol('rx-handle')
+  static readonly Revision: unique symbol = Symbol('rx-revision')
+  static readonly Controller: unique symbol = Symbol('rx-controller')
+  static readonly Initial: unique symbol = Symbol('rx-initial')
+  static readonly Reactions: unique symbol = Symbol('rx-reactions')
+  static readonly Nonreactive: unique symbol = Symbol('rx-nonreactive')
+  static readonly Undefined: unique symbol = Symbol('rx-undefined')
 
   static get<T>(obj: any, sym: symbol): T {
     return obj[sym]

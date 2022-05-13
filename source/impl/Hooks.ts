@@ -235,6 +235,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
       h = new ObjectHandle(obj, obj, Hooks.handler, os, obj.constructor.name)
       Meta.set(os.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
+      Meta.set(os.data, Meta.Revision, new Subscription(1))
     }
     return h
   }

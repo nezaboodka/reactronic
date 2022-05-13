@@ -64,6 +64,17 @@ export class ObjectSnapshot {
     if (Log.isOn)
       Object.freeze(this)
   }
+
+  get revision(): number {
+    return (this.data[Meta.Revision] as Subscription).content
+  }
+
+  get disposed(): boolean { return this.revision < 0 }
+  set disposed(value: boolean) {
+    const rev = this.revision
+    if (rev < 0 !== value)
+      (this.data[Meta.Revision] as Subscription).content = ~rev
+  }
 }
 
 // ObjectHandle
