@@ -9,8 +9,8 @@ import { F } from '../util/Utils'
 import { Log, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
-import { DataRevision, MemberName, DataHolder, Subscription, Subscriber, StandaloneMode, SubscriptionInfo, Meta, AbstractSnapshot } from './Data'
-import { Snapshot, Dump, ROOT_REV, MAX_TIMESTAMP } from './Snapshot'
+import { ObjectSnapshot, MemberName, ObjectHandle, Subscription, Subscriber, StandaloneMode, SubscriptionInfo, Meta, AbstractChangeset } from './Data'
+import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
 import { Hooks, OptionsImpl } from './Hooks'
@@ -18,17 +18,17 @@ import { JournalImpl } from './Journal'
 
 const BOOT_ARGS: any[] = []
 const BOOT_CAUSE = '<boot>'
-const ROOT_HOLDER = new DataHolder(undefined, undefined, Hooks.handler, ROOT_REV, '<root>')
+const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Hooks.handler, EMPTY_SNAPSHOT, '<empty>')
 
 type OperationContext = {
   readonly operation: Operation
   readonly isUpToDate: boolean
-  readonly snapshot: Snapshot
-  readonly revision: DataRevision
+  readonly changeset: Changeset
+  readonly snapshot: ObjectSnapshot
 }
 
 export class OperationController extends Controller<any> {
-  readonly ownHolder: DataHolder
+  readonly objectHandle: ObjectHandle
   readonly memberName: MemberName
 
   configure(options: Partial<MemberOptions>): MemberOptions { return OperationController.configureImpl(this, options) }
@@ -37,42 +37,42 @@ export class OperationController extends Controller<any> {
   get args(): ReadonlyArray<any> { return this.use().operation.args }
   get result(): any { return this.useOrRun(true, undefined).content }
   get error(): boolean { return this.use().operation.error }
-  get stamp(): number { return this.use().revision.snapshot.timestamp }
+  get stamp(): number { return this.use().snapshot.changeset.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
-  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.ownHolder, this.memberName)})` : 'markObsolete()' }, OperationController.markObsolete, this) }
+  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.objectHandle, this.memberName)})` : 'markObsolete()' }, OperationController.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.useOrRun(true, args).content }
 
-  constructor(ownHolder: DataHolder, memberName: MemberName) {
+  constructor(h: ObjectHandle, m: MemberName) {
     super()
-    this.ownHolder = ownHolder
-    this.memberName = memberName
+    this.objectHandle = h
+    this.memberName = m
   }
 
   useOrRun(weak: boolean, args: any[] | undefined): Operation {
     let oc: OperationContext = this.peek(args)
-    const ctx = oc.snapshot
+    const ctx = oc.changeset
     const op: Operation = oc.operation
     const opts = op.options
-    if (!oc.isUpToDate && oc.revision.data[Meta.Disposed] === undefined
+    if (!oc.isUpToDate && oc.snapshot.data[Meta.Disposed] === undefined
       && (!weak || op.cause === BOOT_CAUSE || !op.successor ||
         op.successor.transaction.isFinished)) {
       const outerOpts = Operation.current?.options
       const standalone = weak || opts.standalone || opts.kind === Kind.Reaction ||
         (opts.kind === Kind.Transaction && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cache)) ||
-        (opts.kind === Kind.Cache && (oc.revision.snapshot.sealed ||
-          oc.revision.former.revision !== ROOT_REV))
+        (opts.kind === Kind.Cache && (oc.snapshot.changeset.sealed ||
+          oc.snapshot.former.snapshot !== EMPTY_SNAPSHOT))
       const token = opts.noSideEffects ? this : undefined
       const oc2 = this.run(oc, standalone, opts, token, args)
-      const ctx2 = oc2.operation.snapshot
+      const ctx2 = oc2.operation.changeset
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         oc = oc2
     }
     else if (Log.isOn && Log.opt.operation && (opts.logging === undefined ||
       opts.logging.operation === undefined || opts.logging.operation === true))
       Log.write(Transaction.current.isFinished ? '' : '║', ' (=)',
-        `${Dump.rev2(oc.operation.controller.ownHolder, oc.snapshot, this.memberName)} result is reused from T${oc.operation.transaction.id}[${oc.operation.transaction.hint}]`)
+        `${Dump.snapshot2(oc.operation.controller.objectHandle, oc.changeset, this.memberName)} result is reused from T${oc.operation.transaction.id}[${oc.operation.transaction.hint}]`)
     const t = oc.operation
-    Snapshot.markUsed(t, oc.revision, this.memberName, this.ownHolder, t.options.kind, weak)
+    Changeset.markUsed(t, oc.snapshot, this.memberName, this.objectHandle, t.options.kind, weak)
     return t
   }
 
@@ -132,73 +132,73 @@ export class OperationController extends Controller<any> {
   // Internal
 
   private peek(args: any[] | undefined): OperationContext {
-    const ctx = Snapshot.current()
-    const r: DataRevision = ctx.seekRevision(this.ownHolder, this.memberName)
-    const op: Operation = this.acquireFromRevision(r, args)
+    const ctx = Changeset.current()
+    const os: ObjectSnapshot = ctx.seekSnapshot(this.objectHandle, this.memberName)
+    const op: Operation = this.acquireFromSnapshot(os, args)
     const isValid = op.options.kind !== Kind.Transaction && op.cause !== BOOT_CAUSE &&
-      (ctx === op.snapshot || ctx.timestamp < op.obsoleteSince) &&
+      (ctx === op.changeset || ctx.timestamp < op.obsoleteSince) &&
       (!op.options.triggeringArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) ||
-      r.data[Meta.Disposed] !== undefined
-    return { operation: op, isUpToDate: isValid, snapshot: ctx, revision: r }
+      os.data[Meta.Disposed] !== undefined
+    return { operation: op, isUpToDate: isValid, changeset: ctx, snapshot: os }
   }
 
   private use(): OperationContext {
     const oc = this.peek(undefined)
-    Snapshot.markUsed(oc.operation, oc.revision,
-      this.memberName, this.ownHolder, oc.operation.options.kind, true)
+    Changeset.markUsed(oc.operation, oc.snapshot,
+      this.memberName, this.objectHandle, oc.operation.options.kind, true)
     return oc
   }
 
   private edit(): OperationContext {
-    const h = this.ownHolder
+    const h = this.objectHandle
     const m = this.memberName
-    const ctx = Snapshot.edit()
-    const r: DataRevision = ctx.getEditableRevision(h, m, Meta.Holder, this)
-    let op: Operation = this.acquireFromRevision(r, undefined)
-    if (op.snapshot !== r.snapshot) {
-      const op2 = new Operation(this, r.snapshot, op)
-      r.data[m] = op2.reenterOver(op)
-      ctx.bumpBy(r.former.revision.snapshot.timestamp)
-      Snapshot.markEdited(op, op2, true, r, m, h)
+    const ctx = Changeset.edit()
+    const os: ObjectSnapshot = ctx.getEditableSnapshot(h, m, Meta.Handle, this)
+    let op: Operation = this.acquireFromSnapshot(os, undefined)
+    if (op.changeset !== os.changeset) {
+      const op2 = new Operation(this, os.changeset, op)
+      os.data[m] = op2.reenterOver(op)
+      ctx.bumpBy(os.former.snapshot.changeset.timestamp)
+      Changeset.markEdited(op, op2, true, os, m, h)
       op = op2
     }
-    return { operation: op, isUpToDate: true, snapshot: ctx, revision: r }
+    return { operation: op, isUpToDate: true, changeset: ctx, snapshot: os }
   }
 
-  private acquireFromRevision(r: DataRevision, args: any[] | undefined): Operation {
+  private acquireFromSnapshot(os: ObjectSnapshot, args: any[] | undefined): Operation {
     const m = this.memberName
-    let op: Operation = r.data[m]
+    let op: Operation = os.data[m]
     if (op.controller !== this) {
-      if (r.snapshot !== ROOT_REV.snapshot) {
-        const hint: string = Log.isOn ? `${Dump.obj(this.ownHolder, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
-        const standalone = r.snapshot.sealed || r.former.revision !== ROOT_REV
+      if (os.changeset !== EMPTY_SNAPSHOT.changeset) {
+        const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
+        const standalone = os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT
         op = Transaction.run<Operation>({ hint, standalone, token: this }, (): Operation => {
-          const h = this.ownHolder
-          let r2: DataRevision = Snapshot.current().getCurrentRevision(h, m)
+          const h = this.objectHandle
+          let r2: ObjectSnapshot = Changeset.current().getRelevantSnapshot(h, m)
           let op2 = r2.data[m] as Operation
           if (op2.controller !== this) {
-            r2 = Snapshot.edit().getEditableRevision(h, m, Meta.Holder, this)
-            const t = new Operation(this, r2.snapshot, op2)
+            r2 = Changeset.edit().getEditableSnapshot(h, m, Meta.Handle, this)
+            const t = new Operation(this, r2.changeset, op2)
             if (args)
               t.args = args
             t.cause = BOOT_CAUSE
             r2.data[m] = t
-            Snapshot.markEdited(op2, t, true, r2, m, h)
+            Changeset.markEdited(op2, t, true, r2, m, h)
             op2 = t
           }
           return op2
         })
       }
       else {
-        const t = new Operation(this, r.snapshot, op)
+        const t = new Operation(this, os.changeset, op)
         if (args)
           t.args = args
         t.cause = BOOT_CAUSE
-        r.data[m] = t
+        os.data[m] = t
         op = t
         if (Log.isOn && Log.opt.write)
-          Log.write('║', '  ⎘', `${Dump.obj(this.ownHolder, m)} is cloned outside of transaction`)
+          Log.write('║', '  ⎘', `${Dump.obj(this.objectHandle, m)} is cloned outside of transaction`)
       }
     }
     return op
@@ -206,7 +206,7 @@ export class OperationController extends Controller<any> {
 
   private run(existing: OperationContext, standalone: StandaloneMode, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
     // TODO: Cleaner implementation is needed
-    const hint: string = Log.isOn ? `${Dump.obj(this.ownHolder, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.ownHolder, this.memberName)}`
+    const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.objectHandle, this.memberName)}`
     let oc = existing
     const opts = { hint, standalone, journal: options.journal, logging: options.logging, token }
     const result = Transaction.run(opts, (argsx: any[] | undefined): any => {
@@ -214,7 +214,7 @@ export class OperationController extends Controller<any> {
         oc = this.edit()
         if (Log.isOn && Log.opt.operation)
           Log.write('║', '  𝑓', `${oc.operation.why()}`)
-        oc.operation.run(this.ownHolder.proxy, argsx)
+        oc.operation.run(this.objectHandle.proxy, argsx)
       }
       else { // retry run
         oc = this.peek(argsx) // re-read on retry
@@ -222,7 +222,7 @@ export class OperationController extends Controller<any> {
           oc = this.edit()
           if (Log.isOn && Log.opt.operation)
             Log.write('║', '  𝑓', `${oc.operation.why()}`)
-          oc.operation.run(this.ownHolder.proxy, argsx)
+          oc.operation.run(this.objectHandle.proxy, argsx)
         }
       }
       return oc.operation.result
@@ -233,8 +233,8 @@ export class OperationController extends Controller<any> {
 
   private static markObsolete(self: OperationController): void {
     const oc = self.peek(undefined)
-    const ctx = oc.snapshot
-    oc.operation.markObsoleteDueTo(oc.operation, self.memberName, ROOT_REV.snapshot, ROOT_HOLDER, BOOT_CAUSE, ctx.timestamp, ctx.reactions)
+    const ctx = oc.changeset
+    oc.operation.markObsoleteDueTo(oc.operation, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.reactions)
   }
 }
 
@@ -248,7 +248,7 @@ class Operation extends Subscription implements Subscriber {
   readonly margin: number
   readonly transaction: Transaction
   readonly controller: OperationController
-  readonly snapshot: AbstractSnapshot
+  readonly changeset: AbstractChangeset
   subscriptions: Map<Subscription, SubscriptionInfo> | undefined
   options: OptionsImpl
   cause: string | undefined
@@ -260,12 +260,12 @@ class Operation extends Subscription implements Subscriber {
   obsoleteSince: number
   successor: Operation | undefined
 
-  constructor(controller: OperationController, snapshot: AbstractSnapshot, former: Operation | OptionsImpl) {
+  constructor(controller: OperationController, changeset: AbstractChangeset, former: Operation | OptionsImpl) {
     super(undefined)
     this.margin = Operation.current ? Operation.current.margin + 1 : 1
     this.transaction = Transaction.current
     this.controller = controller
-    this.snapshot = snapshot
+    this.changeset = changeset
     this.subscriptions = new Map<Subscription, SubscriptionInfo>()
     if (former instanceof Operation) {
       this.options = former.options
@@ -288,8 +288,8 @@ class Operation extends Subscription implements Subscriber {
   }
 
   get isOperation(): boolean { return true } // override
-  get originSnapshotId(): number { return this.snapshot.id } // override
-  hint(): string { return `${Dump.rev2(this.controller.ownHolder, this.snapshot, this.controller.memberName)}` } // override
+  get originSnapshotId(): number { return this.changeset.id } // override
+  hint(): string { return `${Dump.snapshot2(this.controller.objectHandle, this.changeset, this.controller.memberName)}` } // override
   get order(): number { return this.options.order }
 
   get ['#this'](): string {
@@ -303,7 +303,7 @@ class Operation extends Subscription implements Subscriber {
     else if (this.controller.options.kind === Kind.Transaction)
       cause = '   <<   operation'
     else
-      cause = `   <<   T${this.snapshot.id}[${this.snapshot.hint}]`
+      cause = `   <<   T${this.changeset.id}[${this.changeset.hint}]`
     return `${this.hint()}${cause}`
   }
 
@@ -334,48 +334,48 @@ class Operation extends Subscription implements Subscriber {
   run(proxy: any, args: any[] | undefined): void {
     if (args)
       this.args = args
-    this.obsoleteSince = MAX_TIMESTAMP
+    this.obsoleteSince = MAX_REVISION
     if (!this.error)
       OperationController.runWithin<void>(this, Operation.run, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(subscription: Subscription, memberName: MemberName, snapshot: AbstractSnapshot, holder: DataHolder, outer: string, since: number, reactions: Subscriber[]): void {
+  markObsoleteDueTo(subscription: Subscription, memberName: MemberName, changeset: AbstractChangeset, holder: ObjectHandle, outer: string, since: number, reactions: Subscriber[]): void {
     if (this.subscriptions !== undefined) { // if not yet marked as obsolete
       const skip = !subscription.isOperation &&
-        snapshot === this.snapshot /* &&
-        revision.changes.has(memberName) */
+        changeset === this.changeset /* &&
+        snapshot.changes.has(memberName) */
       if (!skip) {
-        const why = `${Dump.rev2(holder, snapshot, memberName, subscription)}    <<    ${outer}`
+        const why = `${Dump.snapshot2(holder, changeset, memberName, subscription)}    <<    ${outer}`
         // Mark obsolete (this.subscriptions = undefined)
         this.unsubscribeFromAllSubscriptions()
         this.obsoleteDueTo = why
         this.obsoleteSince = since
 
-        const isReaction = this.options.kind === Kind.Reaction /*&& this.revision.data[Meta.Disposed] === undefined*/
+        const isReaction = this.options.kind === Kind.Reaction /*&& this.snapshot.data[Meta.Disposed] === undefined*/
         if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
-          Log.write(Log.opt.transaction && !Snapshot.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
-            isReaction && snapshot === ROOT_REV.snapshot
+          Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
+            isReaction && changeset === EMPTY_SNAPSHOT.changeset
               ? `${this.hint()} is a reaction and will run automatically (order ${this.options.order})`
-              : `${this.hint()} is obsolete due to ${Dump.rev2(holder, snapshot, memberName)} since v${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ''}`)
+              : `${this.hint()} is obsolete due to ${Dump.snapshot2(holder, changeset, memberName)} since v${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ''}`)
 
         // Stop cascade propagation on reaction, or continue otherwise
         if (isReaction)
           reactions.push(this)
         else
-          this.subscribers?.forEach(s => s.markObsoleteDueTo(this, this.controller.memberName, this.snapshot, this.controller.ownHolder, why, since, reactions))
+          this.subscribers?.forEach(s => s.markObsoleteDueTo(this, this.controller.memberName, this.changeset, this.controller.objectHandle, why, since, reactions))
 
         // Cancel own transaction if it is still in progress
         const tran = this.transaction
-        if (tran.snapshot === snapshot) {
+        if (tran.changeset === changeset) {
           // do not cancel itself
         }
         else if (!tran.isFinished && this !== subscription) // restart after itself if canceled
-          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.rev2(holder, snapshot, memberName)} changed by T${snapshot.id}[${snapshot.hint}]`), null)
+          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.snapshot2(holder, changeset, memberName)} changed by T${changeset.id}[${changeset.hint}]`), null)
       }
       else if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
-        Log.write(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.rev2(holder, snapshot, memberName)}`)
+        Log.write(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(holder, changeset, memberName)}`)
     }
   }
 
@@ -466,7 +466,7 @@ class Operation extends Subscription implements Subscriber {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Log.isOn && Log.opt.operation)
-      Log.write('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.controller.ownHolder, this.controller.memberName)} ]`)
+      Log.write('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.controller.objectHandle, this.controller.memberName)} ]`)
     this.started = Date.now()
   }
 
@@ -545,25 +545,25 @@ class Operation extends Subscription implements Subscriber {
       x.runIfNotUpToDate(true, true)
   }
 
-  private static markUsed(subscription: Subscription, r: DataRevision, m: MemberName, h: DataHolder, kind: Kind, weak: boolean): void {
+  private static markUsed(subscription: Subscription, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transaction) {
       const op: Operation | undefined = Operation.current // alias
       if (op && op.options.kind !== Kind.Transaction &&
-        op.transaction === Transaction.current && m !== Meta.Holder) {
-        const ctx = Snapshot.current()
-        if (ctx !== r.snapshot) // snapshot should not bump itself
-          ctx.bumpBy(r.snapshot.timestamp)
+        op.transaction === Transaction.current && m !== Meta.Handle) {
+        const ctx = Changeset.current()
+        if (ctx !== os.changeset) // snapshot should not bump itself
+          ctx.bumpBy(os.changeset.timestamp)
         const t = weak ? -1 : ctx.timestamp
-        if (!op.subscribeTo(subscription, r, m, h, t))
-          op.markObsoleteDueTo(subscription, m, r.snapshot, h, BOOT_CAUSE, ctx.timestamp, ctx.reactions)
+        if (!op.subscribeTo(subscription, os, m, h, t))
+          op.markObsoleteDueTo(subscription, m, os.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.reactions)
       }
     }
   }
 
-  private static markEdited(oldValue: any, newValue: any, edited: boolean, r: DataRevision, m: MemberName, h: DataHolder): void {
-    edited ? r.changes.add(m) : r.changes.delete(m)
+  private static markEdited(oldValue: any, newValue: any, edited: boolean, os: ObjectSnapshot, m: MemberName, h: ObjectHandle): void {
+    edited ? os.changes.add(m) : os.changes.delete(m)
     if (Log.isOn && Log.opt.write)
-      edited ? Log.write('║', '  ✎', `${Dump.rev2(h, r.snapshot, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`) : Log.write('║', '  ✎', `${Dump.rev2(h, r.snapshot, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`, undefined, ' (same as previous)')
+      edited ? Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`) : Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -573,38 +573,38 @@ class Operation extends Subscription implements Subscriber {
     return result
   }
 
-  private static propagateAllChangesThroughSubscriptions(snapshot: Snapshot): void {
-    const since = snapshot.timestamp
-    const reactions = snapshot.reactions
-    snapshot.changeset.forEach((r: DataRevision, h: DataHolder) => {
-      if (!r.changes.has(Meta.Disposed))
-        r.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(false, since, r, m, h, reactions))
+  private static propagateAllChangesThroughSubscriptions(changeset: Changeset): void {
+    const since = changeset.timestamp
+    const reactions = changeset.reactions
+    changeset.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
+      if (!os.changes.has(Meta.Disposed))
+        os.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(false, since, os, m, h, reactions))
       else
-        for (const m in r.former.revision.data)
-          Operation.propagateMemberChangeThroughSubscriptions(true, since, r, m, h, reactions)
+        for (const m in os.former.snapshot.data)
+          Operation.propagateMemberChangeThroughSubscriptions(true, since, os, m, h, reactions)
     })
     reactions.sort(compareReactionsByOrder)
-    snapshot.options.journal?.edited(
-      JournalImpl.buildPatch(snapshot.hint, snapshot.changeset))
+    changeset.options.journal?.edited(
+      JournalImpl.buildPatch(changeset.hint, changeset.items))
   }
 
-  private static revokeAllSubscriptions(snapshot: Snapshot): void {
-    snapshot.changeset.forEach((r: DataRevision, h: DataHolder) =>
-      r.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(
-        true, snapshot.timestamp, r, m, h, undefined)))
+  private static revokeAllSubscriptions(changeset: Changeset): void {
+    changeset.items.forEach((os: ObjectSnapshot, h: ObjectHandle) =>
+      os.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(
+        true, changeset.timestamp, os, m, h, undefined)))
   }
 
   private static propagateMemberChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,
-    r: DataRevision, m: MemberName, h: DataHolder, reactions?: Subscriber[]): void {
-    const curr = r.data[m]
+    os: ObjectSnapshot, m: MemberName, h: ObjectHandle, reactions?: Subscriber[]): void {
+    const curr = os.data[m]
     if (reactions) {
       // Propagate change to reactions
-      const former = r.former.revision.data[m]
+      const former = os.former.snapshot.data[m]
       if (former !== undefined && former instanceof Subscription) {
-        const why = `T${r.snapshot.id}[${r.snapshot.hint}]`
-        // const cause: MemberInfo = { holder: h, snapshot: r.snapshot, memberName: m, usageCount: 0 }
+        const why = `T${os.changeset.id}[${os.changeset.hint}]`
+        // const cause: MemberInfo = { holder: h, changeset: os.changeset, memberName: m, usageCount: 0 }
         if (former instanceof Operation) {
-          if ((former.obsoleteSince === MAX_TIMESTAMP || former.obsoleteSince <= 0)) {
+          if ((former.obsoleteSince === MAX_REVISION || former.obsoleteSince <= 0)) {
             former.obsoleteDueTo = why
             former.obsoleteSince = timestamp
             former.unsubscribeFromAllSubscriptions()
@@ -612,17 +612,17 @@ class Operation extends Subscription implements Subscriber {
           const formerSuccessor = former.successor
           if (formerSuccessor !== curr) {
             if (formerSuccessor && !formerSuccessor.transaction.isFinished)
-              formerSuccessor.transaction.cancel(new Error(`T${formerSuccessor.transaction.id}[${formerSuccessor.transaction.hint}] is canceled by T${r.snapshot.id}[${r.snapshot.hint}] and will not run anymore`), null)
+              formerSuccessor.transaction.cancel(new Error(`T${formerSuccessor.transaction.id}[${formerSuccessor.transaction.hint}] is canceled by T${os.changeset.id}[${os.changeset.hint}] and will not run anymore`), null)
           }
           else
             former.successor = undefined
         }
         former.subscribers?.forEach(s =>
-          s.markObsoleteDueTo(former, m, r.snapshot, h, why, timestamp, reactions))
+          s.markObsoleteDueTo(former, m, os.changeset, h, why, timestamp, reactions))
       }
     }
     if (curr instanceof Operation) {
-      if (curr.snapshot === r.snapshot && curr.subscriptions !== undefined) {
+      if (curr.changeset === os.changeset && curr.subscriptions !== undefined) {
         if (Hooks.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
           curr.subscriptions.forEach((info, v) => { // performance tracking info
             if (info.usageCount > Hooks.repetitiveUsageWarningThreshold)
@@ -639,7 +639,7 @@ class Operation extends Subscription implements Subscriber {
       //   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       //   o.subscriptions!.delete(curr)
       //   if (Log.isOn && Log.opt.read)
-      //     Log.write(Log.opt.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.rev(r, m)}`)
+      //     Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.snap(r, m)}`)
       // })
       // curr.observers = undefined
     }
@@ -671,13 +671,13 @@ class Operation extends Subscription implements Subscriber {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       value.subscribers!.delete(this)
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write(Log.opt.transaction && !Snapshot.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${info.memberHint}`)
+        Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${info.memberHint}`)
     })
     this.subscriptions = undefined
   }
 
-  private subscribeTo(subscription: Subscription, r: DataRevision, m: MemberName, h: DataHolder, timestamp: number): boolean {
-    const ok = Operation.canSubscribe(subscription, r, m, h, timestamp)
+  private subscribeTo(subscription: Subscription, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
+    const ok = Operation.canSubscribe(subscription, os, m, h, timestamp)
     if (ok) {
       // Performance tracking
       let times: number = 0
@@ -691,30 +691,30 @@ class Operation extends Subscription implements Subscriber {
         if (!subscription.subscribers)
           subscription.subscribers = new Set<Operation>()
         // Two-way linking
-        const info: SubscriptionInfo = { memberHint: Dump.rev2(h, r.snapshot, m), usageCount: times }
+        const info: SubscriptionInfo = { memberHint: Dump.snapshot2(h, os.changeset, m), usageCount: times }
         subscription.subscribers.add(this)
         this.subscriptions!.set(subscription, info)
         if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-          Log.write('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.rev2(h, r.snapshot, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
+          Log.write('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.snapshot2(h, os.changeset, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
       }
       else if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write('║', '  x ', `${this.hint()} is obsolete and is NOT subscribed to ${Dump.rev2(h, r.snapshot, m)}`)
+        Log.write('║', '  x ', `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, os.changeset, m)}`)
     }
     else {
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Dump.rev2(h, r.snapshot, m)}`)
+        Log.write('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, os.changeset, m)}`)
     }
     return ok // || subscription.next === r
   }
 
-  private static canSubscribe(subscription: Subscription, r: DataRevision, m: MemberName, h: DataHolder, timestamp: number): boolean {
-    let result = !r.snapshot.sealed || subscription === h.head.data[m]
+  private static canSubscribe(subscription: Subscription, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
+    let result = !os.changeset.sealed || subscription === h.head.data[m]
     if (result && timestamp !== -1)
       result = !(subscription instanceof Operation && timestamp >= subscription.obsoleteSince)
     return result
   }
 
-  private static createOperation(h: DataHolder, m: MemberName, options: OptionsImpl): F<any> {
+  private static createOperation(h: ObjectHandle, m: MemberName, options: OptionsImpl): F<any> {
     const ctl = new OperationController(h, m)
     const operation: F<any> = (...args: any[]): any => {
       return ctl.useOrRun(false, args).result
@@ -727,9 +727,9 @@ class Operation extends Subscription implements Subscriber {
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
     let op: Operation | undefined = initial[m]
-    const ctl = op ? op.controller : new OperationController(ROOT_HOLDER, m)
+    const ctl = op ? op.controller : new OperationController(EMPTY_HANDLE, m)
     const opts = op ? op.options : OptionsImpl.INITIAL
-    initial[m] = op = new Operation(ctl, ROOT_REV.snapshot, new OptionsImpl(getter, setter, opts, options, implicit))
+    initial[m] = op = new Operation(ctl, EMPTY_SNAPSHOT.changeset, new OptionsImpl(getter, setter, opts, options, implicit))
     // Add to the list if it's a reaction
     if (op.options.kind === Kind.Reaction && op.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactions = Meta.acquire(proto, Meta.Reactions)
@@ -751,12 +751,12 @@ class Operation extends Subscription implements Subscriber {
     Object.freeze(BOOT_ARGS)
     Log.getMergedLoggingOptions = getMergedLoggingOptions
     Dump.valueHint = valueHint
-    Snapshot.markUsed = Operation.markUsed // override
-    Snapshot.markEdited = Operation.markEdited // override
-    Snapshot.isConflicting = Operation.isConflicting // override
-    Snapshot.propagateAllChangesThroughSubscriptions = Operation.propagateAllChangesThroughSubscriptions // override
-    Snapshot.revokeAllSubscriptions = Operation.revokeAllSubscriptions // override
-    Snapshot.enqueueReactionsToRun = Operation.enqueueReactionsToRun
+    Changeset.markUsed = Operation.markUsed // override
+    Changeset.markEdited = Operation.markEdited // override
+    Changeset.isConflicting = Operation.isConflicting // override
+    Changeset.propagateAllChangesThroughSubscriptions = Operation.propagateAllChangesThroughSubscriptions // override
+    Changeset.revokeAllSubscriptions = Operation.revokeAllSubscriptions // override
+    Changeset.enqueueReactionsToRun = Operation.enqueueReactionsToRun
     Hooks.createOperation = Operation.createOperation // override
     Hooks.rememberOperationOptions = Operation.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
@@ -787,14 +787,14 @@ class Operation extends Subscription implements Subscriber {
 
 // function propagationHint(cause: MemberInfo, full: boolean): string[] {
 //   const result: string[] = []
-//   let subscription: Subscription = cause.revision.data[cause.memberName]
+//   let subscription: Subscription = cause.snapshot.data[cause.memberName]
 //   while (subscription instanceof Operation && subscription.obsoleteDueTo) {
-//     full && result.push(Dump.rev(cause.revision, cause.memberName))
+//     full && result.push(Dump.snap(cause.snapshot, cause.memberName))
 //     cause = subscription.obsoleteDueTo
-//     subscription = cause.revision.data[cause.memberName]
+//     subscription = cause.snapshot.data[cause.memberName]
 //   }
-//   result.push(Dump.rev(cause.revision, cause.memberName))
-//   full && result.push(cause.revision.snapshot.hint)
+//   result.push(Dump.snap(cause.snapshot, cause.memberName))
+//   full && result.push(cause.snapshot.snapshot.hint)
 //   return result
 // }
 
@@ -807,7 +807,7 @@ function valueHint(value: any, m?: MemberName): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Operation)
-    result = `${Dump.rev2(value.controller.ownHolder, value.snapshot, m)}`
+    result = `${Dump.snapshot2(value.controller.objectHandle, value.changeset, m)}`
   else if (value === Meta.Disposed)
     result = '<disposed>'
   else if (value === Meta.Undefined)
@@ -823,7 +823,7 @@ function valueHint(value: any, m?: MemberName): string {
 
 function getMergedLoggingOptions(local: Partial<LoggingOptions> | undefined): LoggingOptions {
   const t = Transaction.current
-  let res = Log.merge(t.options.logging, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Snapshot.idGen.toString().replace(/[0-9]/g, '-')}`, Log.global)
+  let res = Log.merge(t.options.logging, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Changeset.idGen.toString().replace(/[0-9]/g, '-')}`, Log.global)
   res = Log.merge({margin1: t.margin}, undefined, undefined, res)
   if (Operation.current)
     res = Log.merge({margin2: Operation.current.margin}, undefined, undefined, res)

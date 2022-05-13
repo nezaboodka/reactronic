@@ -9,8 +9,8 @@ import { UNDEF, F, pause } from '../util/Utils'
 import { Log, misuse, error, fatal } from '../util/Dbg'
 import { Worker } from '../Worker'
 import { SnapshotOptions, LoggingOptions } from '../Options'
-import { DataRevision, Subscriber } from './Data'
-import { Snapshot, Dump } from './Snapshot'
+import { ObjectSnapshot, Subscriber } from './Data'
+import { Changeset, Dump } from './Snapshot'
 
 export abstract class Transaction implements Worker {
   static get current(): Transaction { return TransactionImpl.current }
@@ -20,7 +20,7 @@ export abstract class Transaction implements Worker {
   abstract readonly options: SnapshotOptions
   abstract readonly timestamp: number
   abstract readonly error: Error | undefined
-  abstract readonly snapshot: Snapshot
+  abstract readonly changeset: Changeset
   abstract readonly margin: number
 
   abstract run<T>(func: F<T>, ...args: any[]): T
@@ -51,7 +51,7 @@ class TransactionImpl extends Transaction {
   private static frameOverCounter: number = 0
 
   readonly margin: number
-  readonly snapshot: Snapshot
+  readonly changeset: Changeset
   private pending: number
   private sealed: boolean
   private canceled?: Error
@@ -63,7 +63,7 @@ class TransactionImpl extends Transaction {
   constructor(options: SnapshotOptions | null) {
     super()
     this.margin = TransactionImpl.curr !== undefined ? TransactionImpl.curr.margin + 1 : -1
-    this.snapshot = new Snapshot(options)
+    this.changeset = new Changeset(options)
     this.pending = 0
     this.sealed = false
     this.canceled = undefined
@@ -74,10 +74,10 @@ class TransactionImpl extends Transaction {
   }
 
   static get current(): TransactionImpl { return TransactionImpl.curr }
-  get id(): number { return this.snapshot.id }
-  get hint(): string { return this.snapshot.hint }
-  get options(): SnapshotOptions { return this.snapshot.options }
-  get timestamp(): number { return this.snapshot.timestamp }
+  get id(): number { return this.changeset.id }
+  get hint(): string { return this.changeset.hint }
+  get options(): SnapshotOptions { return this.changeset.options }
+  get timestamp(): number { return this.changeset.timestamp }
   get error(): Error | undefined { return this.canceled }
 
   run<T>(func: F<T>, ...args: any[]): T {
@@ -242,8 +242,8 @@ class TransactionImpl extends Transaction {
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
             standalone: this.options.standalone === 'isolated' ? 'isolated' : true,
-            logging: this.snapshot.options.logging,
-            token: this.snapshot.options.token,
+            logging: this.changeset.options.logging,
+            token: this.changeset.options.token,
           }
           return TransactionImpl.run<T>(options, func, ...args)
         }
@@ -273,7 +273,7 @@ class TransactionImpl extends Transaction {
       }
       TransactionImpl.curr = this
       this.pending++
-      this.snapshot.acquire(outer.snapshot)
+      this.changeset.acquire(outer.changeset)
       result = func(...args)
       if (this.sealed && this.pending === 1) {
         if (!this.canceled)
@@ -292,7 +292,7 @@ class TransactionImpl extends Transaction {
       if (this.sealed && this.pending === 0) {
         const reactions = this.applyOrDiscard() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
-        TransactionImpl.off(Snapshot.enqueueReactionsToRun, reactions)
+        TransactionImpl.off(Changeset.enqueueReactionsToRun, reactions)
       }
       else
         TransactionImpl.curr = outer
@@ -309,18 +309,18 @@ class TransactionImpl extends Transaction {
         if (after && after !== TransactionImpl.none)
           Log.write('║', ' [!]', `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ''}`)
       }
-      Snapshot.revokeAllSubscriptions(t.snapshot)
+      Changeset.revokeAllSubscriptions(t.changeset)
     }
     t.sealed = true
   }
 
   private checkForConflicts(): void {
-    const conflicts = this.snapshot.rebase()
+    const conflicts = this.changeset.rebase()
     if (conflicts)
       this.tryResolveConflicts(conflicts)
   }
 
-  private tryResolveConflicts(conflicts: DataRevision[]): void {
+  private tryResolveConflicts(conflicts: ObjectSnapshot[]): void {
     throw error(`T${this.id}[${this.hint}] conflicts with: ${Dump.conflicts(conflicts)}`, undefined)
   }
 
@@ -330,8 +330,8 @@ class TransactionImpl extends Transaction {
     try {
       if (Log.isOn && Log.opt.change)
         Log.write('╠═', '', '', undefined, 'changes')
-      reactions = this.snapshot.applyOrDiscard(this.canceled)
-      this.snapshot.triggerGarbageCollection()
+      reactions = this.changeset.applyOrDiscard(this.canceled)
+      this.changeset.triggerGarbageCollection()
       if (this.promise) {
         if (this.canceled && !this.after)
           this.reject(this.canceled)
@@ -358,22 +358,22 @@ class TransactionImpl extends Transaction {
     return this.promise
   }
 
-  private static getCurrentSnapshot(): Snapshot {
-    return TransactionImpl.curr.snapshot
+  private static getCurrentChangeset(): Changeset {
+    return TransactionImpl.curr.changeset
   }
 
-  private static editSnapshot(): Snapshot {
+  private static getEditableChangeset(): Changeset {
     if (TransactionImpl.inspection)
       throw misuse('cannot make changes during transaction inspection')
-    return TransactionImpl.curr.snapshot
+    return TransactionImpl.curr.changeset
   }
 
   static _init(): void {
-    Snapshot.current = TransactionImpl.getCurrentSnapshot // override
-    Snapshot.edit = TransactionImpl.editSnapshot // override
+    Changeset.current = TransactionImpl.getCurrentChangeset // override
+    Changeset.edit = TransactionImpl.getEditableChangeset // override
     TransactionImpl.none.sealed = true
-    TransactionImpl.none.snapshot.applyOrDiscard()
-    Snapshot._init()
+    TransactionImpl.none.changeset.applyOrDiscard()
+    Changeset._init()
   }
 }
 

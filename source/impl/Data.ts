@@ -9,9 +9,9 @@ import { Log } from '../util/Dbg'
 import { Meta } from './Meta'
 export { Meta } from './Meta'
 
-// AbstractSnapshot
+// AbstractChangeset
 
-export interface AbstractSnapshot {
+export interface AbstractChangeset {
   readonly id: number
   readonly hint: string
   readonly timestamp: number
@@ -35,7 +35,7 @@ export interface Subscriber {
   readonly subscriptions: Map<Subscription, SubscriptionInfo> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(subscription: Subscription, memberName: MemberName, snapshot: AbstractSnapshot, holder: DataHolder, outer: string, since: number, reactions: Array<Subscriber>): void
+  markObsoleteDueTo(subscription: Subscription, memberName: MemberName, changeset: AbstractChangeset, holder: ObjectHandle, outer: string, since: number, reactions: Array<Subscriber>): void
   runIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 
@@ -46,43 +46,43 @@ export interface SubscriptionInfo {
   readonly usageCount: number
 }
 
-// DataRevision
+// ObjectSnapshot
 
-export class DataRevision {
-  readonly snapshot: AbstractSnapshot
-  readonly former: { revision: DataRevision }
+export class ObjectSnapshot {
+  readonly changeset: AbstractChangeset
+  readonly former: { snapshot: ObjectSnapshot }
   readonly data: any
   readonly changes: Set<MemberName>
-  readonly conflicts: Map<MemberName, DataRevision>
+  readonly conflicts: Map<MemberName, ObjectSnapshot>
 
-  constructor(snapshot: AbstractSnapshot, former: DataRevision | undefined, data: object) {
-    this.snapshot = snapshot
-    this.former = { revision: former || this } // undefined former means initialization of ROOT_REV
+  constructor(changeset: AbstractChangeset, former: ObjectSnapshot | undefined, data: object) {
+    this.changeset = changeset
+    this.former = { snapshot: former || this } // undefined former means initialization of ROOT_REV
     this.data = data
     this.changes = new Set<MemberName>()
-    this.conflicts = new Map<MemberName, DataRevision>()
+    this.conflicts = new Map<MemberName, ObjectSnapshot>()
     if (Log.isOn)
       Object.freeze(this)
   }
 }
 
-// DataHolder
+// ObjectHandle
 
-export class DataHolder {
+export class ObjectHandle {
   private static generator: number = 19
 
   readonly id: number
   readonly data: any
   readonly proxy: any
-  head: DataRevision
-  editing?: DataRevision
+  head: ObjectSnapshot
+  editing?: ObjectSnapshot
   editors: number
   hint: string
 
-  constructor(data: any, proxy: any, handler: ProxyHandler<DataHolder>, head: DataRevision, hint: string) {
-    this.id = ++DataHolder.generator
+  constructor(data: any, proxy: any, handler: ProxyHandler<ObjectHandle>, head: ObjectSnapshot, hint: string) {
+    this.id = ++ObjectHandle.generator
     this.data = data
-    this.proxy = proxy || new Proxy<DataHolder>(this, handler)
+    this.proxy = proxy || new Proxy<ObjectHandle>(this, handler)
     this.head = head
     this.editing = undefined
     this.editors = 0
@@ -90,7 +90,7 @@ export class DataHolder {
   }
 
   static getHint(obj: object, full: boolean): string | undefined {
-    const h = Meta.get<DataHolder | undefined>(obj, Meta.Holder)
+    const h = Meta.get<ObjectHandle | undefined>(obj, Meta.Handle)
     return h !== undefined ? (full ? `${h.hint}#${h.id}` : h.hint) : /* istanbul ignore next */ undefined
   }
 }

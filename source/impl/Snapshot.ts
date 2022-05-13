@@ -12,16 +12,16 @@ import { SealedArray } from '../util/SealedArray'
 import { SealedMap } from '../util/SealedMap'
 import { SealedSet } from '../util/SealedSet'
 import { Kind, SnapshotOptions } from '../Options'
-import { AbstractSnapshot, DataRevision, MemberName, DataHolder, Subscription, Subscriber, Meta } from './Data'
+import { AbstractChangeset, ObjectSnapshot, MemberName, ObjectHandle, Subscription, Subscriber, Meta } from './Data'
 
-export const MAX_TIMESTAMP = Number.MAX_SAFE_INTEGER
-export const UNDEFINED_TIMESTAMP = MAX_TIMESTAMP - 1
+export const MAX_REVISION = Number.MAX_SAFE_INTEGER
+export const UNDEFINED_REVISION = MAX_REVISION - 1
 
-Object.defineProperty(DataHolder.prototype, '#this', {
+Object.defineProperty(ObjectHandle.prototype, '#this', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
-    const data = Snapshot.current().getCurrentRevision(this, '#this').data
+    const data = Changeset.current().getRelevantSnapshot(this, '#this').data
     for (const m in data) {
       const v = data[m]
       if (v instanceof Subscription)
@@ -40,139 +40,139 @@ Object.defineProperty(DataHolder.prototype, '#this', {
 const EMPTY_ARRAY: Array<any> = Object.freeze([]) as any
 const EMPTY_MAP: Map<any, any> = Utils.freezeMap(new Map<any, any>()) as any
 
-export class Snapshot implements AbstractSnapshot {
+export class Changeset implements AbstractChangeset {
   static idGen: number = -1
   private static stampGen: number = 1
-  private static pending: Snapshot[] = []
-  private static oldest: Snapshot | undefined = undefined
+  private static pending: Changeset[] = []
+  private static oldest: Changeset | undefined = undefined
   static garbageCollectionSummaryInterval: number = Number.MAX_SAFE_INTEGER
   static lastGarbageCollectionSummaryTimestamp: number = Date.now()
-  static totalHolderCount: number = 0
-  static totalRevisionCount: number = 0
+  static totalObjectHandleCount: number = 0
+  static totalObjectSnapshotCount: number = 0
 
   readonly id: number
   readonly options: SnapshotOptions
   get hint(): string { return this.options.hint ?? 'noname' }
-  get timestamp(): number { return this.stamp }
-  private stamp: number
+  get timestamp(): number { return this.revision }
+  private revision: number
   private bumper: number
-  changeset: Map<DataHolder, DataRevision>
+  items: Map<ObjectHandle, ObjectSnapshot>
   reactions: Subscriber[]
   sealed: boolean
 
   constructor(options: SnapshotOptions | null) {
-    this.id = ++Snapshot.idGen
+    this.id = ++Changeset.idGen
     this.options = options ?? DefaultSnapshotOptions
-    this.stamp = UNDEFINED_TIMESTAMP
+    this.revision = UNDEFINED_REVISION
     this.bumper = 100
-    this.changeset = new Map<DataHolder, DataRevision>()
+    this.items = new Map<ObjectHandle, ObjectSnapshot>()
     this.reactions = []
     this.sealed = false
   }
 
   // To be redefined by transaction implementation
-  static current: () => Snapshot = UNDEF
-  static edit: () => Snapshot = UNDEF
-  static markUsed: (subscription: Subscription, r: DataRevision, m: MemberName, h: DataHolder, kind: Kind, weak: boolean) => void = UNDEF
-  static markEdited: (oldValue: any, newValue: any, edited: boolean, r: DataRevision, m: MemberName, h: DataHolder) => void = UNDEF
+  static current: () => Changeset = UNDEF
+  static edit: () => Changeset = UNDEF
+  static markUsed: (subscription: Subscription, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean) => void = UNDEF
+  static markEdited: (oldValue: any, newValue: any, edited: boolean, os: ObjectSnapshot, m: MemberName, h: ObjectHandle) => void = UNDEF
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
-  static propagateAllChangesThroughSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
-  static revokeAllSubscriptions = (snapshot: Snapshot): void => { /* nop */ }
+  static propagateAllChangesThroughSubscriptions = (changeset: Changeset): void => { /* nop */ }
+  static revokeAllSubscriptions = (changeset: Changeset): void => { /* nop */ }
   static enqueueReactionsToRun = (reactions: Array<Subscriber>): void => { /* nop */ }
 
-  seekRevision(h: DataHolder, m: MemberName): DataRevision {
+  seekSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
     // TODO: Take into account timestamp of the member
-    let r: DataRevision | undefined = h.editing
-    if (r && r.snapshot !== this) {
-      r = this.changeset.get(h)
-      if (r)
-        h.editing = r // remember last changing revision
+    let os: ObjectSnapshot | undefined = h.editing
+    if (os && os.changeset !== this) {
+      os = this.items.get(h)
+      if (os)
+        h.editing = os // remember last changing snapshot
     }
-    if (!r) {
-      r = h.head
-      while (r !== ROOT_REV && r.snapshot.timestamp > this.timestamp)
-        r = r.former.revision
+    if (!os) {
+      os = h.head
+      while (os !== EMPTY_SNAPSHOT && os.changeset.timestamp > this.timestamp)
+        os = os.former.snapshot
     }
+    return os
+  }
+
+  getRelevantSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
+    const r = this.seekSnapshot(h, m)
+    if (r === EMPTY_SNAPSHOT)
+      throw misuse(`object ${Dump.obj(h)} doesn't exist in snapshot v${this.revision} (${this.hint})`)
     return r
   }
 
-  getCurrentRevision(h: DataHolder, m: MemberName): DataRevision {
-    const r = this.seekRevision(h, m)
-    if (r === ROOT_REV)
-      throw misuse(`object ${Dump.obj(h)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
-    return r
-  }
-
-  getEditableRevision(h: DataHolder, m: MemberName, value: any, token?: any): DataRevision {
-    let r: DataRevision = this.seekRevision(h, m)
-    const existing = r.data[m]
+  getEditableSnapshot(h: ObjectHandle, m: MemberName, value: any, token?: any): ObjectSnapshot {
+    let os: ObjectSnapshot = this.seekSnapshot(h, m)
+    const existing = os.data[m]
     if (existing !== Meta.Nonreactive) {
-      if (this.isNewRevisionRequired(h, r, m, existing, value, token)) {
-        const data = { ...m === Meta.Holder ? value : r.data }
-        Reflect.set(data, Meta.Holder, h)
-        r = new DataRevision(this, r, data)
-        this.changeset.set(h, r)
-        h.editing = r
+      if (this.isNewSnapshotRequired(h, os, m, existing, value, token)) {
+        const data = { ...m === Meta.Handle ? value : os.data }
+        Reflect.set(data, Meta.Handle, h)
+        os = new ObjectSnapshot(this, os, data)
+        this.items.set(h, os)
+        h.editing = os
         h.editors++
         if (Log.isOn && Log.opt.write)
-          Log.write('║', '  ⎘', `${Dump.obj(h)} - new revision is created`)
+          Log.write('║', '  ⎘', `${Dump.obj(h)} - new snapshot is created`)
       }
     }
     else
-      r = ROOT_REV
-    return r
+      os = EMPTY_SNAPSHOT
+    return os
   }
 
   static takeSnapshot<T>(obj: T): T {
-    return (obj as any)[Meta.Holder]['#this']
+    return (obj as any)[Meta.Handle]['#this']
   }
 
   static dispose(obj: any): void {
-    const ctx = Snapshot.edit()
-    const h = Meta.get<DataHolder | undefined>(obj, Meta.Holder)
+    const ctx = Changeset.edit()
+    const h = Meta.get<ObjectHandle | undefined>(obj, Meta.Handle)
     if (h !== undefined)
-      Snapshot.doDispose(ctx, h)
+      Changeset.doDispose(ctx, h)
   }
 
-  static doDispose(ctx: Snapshot, h: DataHolder): DataRevision {
-    const r: DataRevision = ctx.getEditableRevision(h, Meta.Disposed, Meta.Disposed)
-    if (r !== ROOT_REV) {
-      r.data[Meta.Disposed] = Meta.Disposed
-      Snapshot.markEdited(Meta.Disposed, Meta.Disposed, true, r, Meta.Disposed, h)
+  static doDispose(ctx: Changeset, h: ObjectHandle): ObjectSnapshot {
+    const os: ObjectSnapshot = ctx.getEditableSnapshot(h, Meta.Disposed, Meta.Disposed)
+    if (os !== EMPTY_SNAPSHOT) {
+      os.data[Meta.Disposed] = Meta.Disposed
+      Changeset.markEdited(Meta.Disposed, Meta.Disposed, true, os, Meta.Disposed, h)
     }
-    return r
+    return os
   }
 
-  private isNewRevisionRequired(h: DataHolder, r: DataRevision, m: MemberName, existing: any, value: any, token: any): boolean {
-    if (this.sealed && r.snapshot !== ROOT_REV.snapshot)
+  private isNewSnapshotRequired(h: ObjectHandle, os: ObjectSnapshot, m: MemberName, existing: any, value: any, token: any): boolean {
+    if (this.sealed && os.changeset !== EMPTY_SNAPSHOT.changeset)
       throw misuse(`reactive property ${Dump.obj(h, m)} can only be modified inside transaction`)
-    // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.revision !== ROOT_REV))
-    //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.revision(r, m)}`)
+    // if (m !== Sym.Holder && value !== Sym.Holder && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.snapshot !== ROOT_REV))
+    //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.snapshot(r, m)}`)
     // if (r === ROOT_REV && m !== Sym.Holder && value !== Sym.Holder) /* istanbul ignore next */
-    //   throw misuse(`member ${Hints.revision(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
-    if (m !== Meta.Holder && value !== Meta.Holder) {
-      if (r.snapshot !== this || r.former.revision !== ROOT_REV) {
+    //   throw misuse(`member ${Hints.snapshot(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
+    if (m !== Meta.Handle && value !== Meta.Handle) {
+      if (os.changeset !== this || os.former.snapshot !== EMPTY_SNAPSHOT) {
         if (this.options.token !== undefined && token !== this.options.token)
-          throw misuse(`${this.hint} should not have side effects (trying to change ${Dump.rev(r, m)})`)
+          throw misuse(`${this.hint} should not have side effects (trying to change ${Dump.snapshot(os, m)})`)
         // TODO: Detect uninitialized members
         // if (existing === undefined)
-        //   throw misuse(`uninitialized member is detected: ${Hints.revision(r, m)}`)
+        //   throw misuse(`uninitialized member is detected: ${Hints.snapshot(r, m)}`)
       }
-      if (r === ROOT_REV)
-        throw misuse(`member ${Dump.rev(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
+      if (os === EMPTY_SNAPSHOT)
+        throw misuse(`member ${Dump.snapshot(os, m)} doesn't exist in snapshot v${this.revision} (${this.hint})`)
     }
-    return r.snapshot !== this && !this.sealed
+    return os.changeset !== this && !this.sealed
   }
 
-  acquire(outer: Snapshot): void {
-    if (!this.sealed && this.stamp === UNDEFINED_TIMESTAMP) {
-      const ahead = this.options.token === undefined || outer.stamp === UNDEFINED_TIMESTAMP
-      this.stamp = ahead ? Snapshot.stampGen : outer.stamp
-      Snapshot.pending.push(this)
-      if (Snapshot.oldest === undefined)
-        Snapshot.oldest = this
+  acquire(outer: Changeset): void {
+    if (!this.sealed && this.revision === UNDEFINED_REVISION) {
+      const ahead = this.options.token === undefined || outer.revision === UNDEFINED_REVISION
+      this.revision = ahead ? Changeset.stampGen : outer.revision
+      Changeset.pending.push(this)
+      if (Changeset.oldest === undefined)
+        Changeset.oldest = this
       if (Log.isOn && Log.opt.transaction)
-        Log.write('╔══', `v${this.stamp}`, `${this.hint}`)
+        Log.write('╔══', `v${this.revision}`, `${this.hint}`)
     }
   }
 
@@ -181,40 +181,40 @@ export class Snapshot implements AbstractSnapshot {
       this.bumper = timestamp
   }
 
-  rebase(): DataRevision[] | undefined { // return conflicts
-    let conflicts: DataRevision[] | undefined = undefined
-    if (this.changeset.size > 0) {
-      this.changeset.forEach((r: DataRevision, h: DataHolder) => {
-        if (r.former.revision !== h.head) {
-          const merged = this.merge(h, r)
-          if (r.conflicts.size > 0) {
+  rebase(): ObjectSnapshot[] | undefined { // return conflicts
+    let conflicts: ObjectSnapshot[] | undefined = undefined
+    if (this.items.size > 0) {
+      this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
+        if (os.former.snapshot !== h.head) {
+          const merged = this.merge(h, os)
+          if (os.conflicts.size > 0) {
             if (!conflicts)
               conflicts = []
-            conflicts.push(r)
+            conflicts.push(os)
           }
           if (Log.isOn && Log.opt.transaction)
-            Log.write('╠╝', '', `${Dump.rev2(h, r.snapshot)} is merged with ${Dump.rev2(h, h.head.snapshot)} among ${merged} properties with ${r.conflicts.size} conflicts.`)
+            Log.write('╠╝', '', `${Dump.snapshot2(h, os.changeset)} is merged with ${Dump.snapshot2(h, h.head.changeset)} among ${merged} properties with ${os.conflicts.size} conflicts.`)
         }
       })
       if (this.options.token === undefined) {
         if (this.bumper > 100) { // if transaction ever touched existing objects
-          this.bumper = this.stamp // just for debug and is not needed?
-          this.stamp = ++Snapshot.stampGen
+          this.bumper = this.revision // just for debug and is not needed?
+          this.revision = ++Changeset.stampGen
         }
         else
-          this.stamp = this.bumper + 1
+          this.revision = this.bumper + 1
       }
       else {
-        // TODO: Downgrading timestamp of whole revision is not the right way
+        // TODO: Downgrading timestamp of whole snapshot is not the right way
         // to put cached value into the past on timeline. The solution is
         // to introduce cache-specific timestamp.
-        this.stamp = this.bumper // downgrade timestamp of renewed cache
+        this.revision = this.bumper // downgrade timestamp of renewed cache
       }
     }
     return conflicts
   }
 
-  private merge(h: DataHolder, ours: DataRevision): number {
+  private merge(h: ObjectHandle, ours: ObjectSnapshot): number {
     let counter: number = 0
     const head = h.head
     const headDisposed: boolean = head.changes.has(Meta.Disposed)
@@ -226,67 +226,67 @@ export class Snapshot implements AbstractSnapshot {
         if (headDisposed !== (m === Meta.Disposed)) {
           if (headDisposed || this.options.standalone !== 'disposal') {
             if (Log.isOn && Log.opt.change)
-              Log.write('║╠', '', `${Dump.rev2(h, ours.snapshot, m)} <> ${Dump.rev2(h, head.snapshot, m)}`, 0, ' *** CONFLICT ***')
+              Log.write('║╠', '', `${Dump.snapshot2(h, ours.changeset, m)} <> ${Dump.snapshot2(h, head.changeset, m)}`, 0, ' *** CONFLICT ***')
             ours.conflicts.set(m, head)
           }
         }
       }
       else {
-        const conflict = Snapshot.isConflicting(head.data[m], ours.former.revision.data[m])
+        const conflict = Changeset.isConflicting(head.data[m], ours.former.snapshot.data[m])
         if (conflict)
           ours.conflicts.set(m, head)
         if (Log.isOn && Log.opt.change)
-          Log.write('║╠', '', `${Dump.rev2(h, ours.snapshot, m)} ${conflict ? '<>' : '=='} ${Dump.rev2(h, head.snapshot, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
+          Log.write('║╠', '', `${Dump.snapshot2(h, ours.changeset, m)} ${conflict ? '<>' : '=='} ${Dump.snapshot2(h, head.changeset, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
       }
     })
     Utils.copyAllMembers(merged, ours.data) // overwrite with merged copy
-    ours.former.revision = head // rebase is completed
+    ours.former.snapshot = head // rebase is completed
     return counter
   }
 
   applyOrDiscard(error?: any): Array<Subscriber> {
     this.sealed = true
-    this.changeset.forEach((r: DataRevision, h: DataHolder) => {
-      Snapshot.sealObjectRevision(h, r)
+    this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
+      Changeset.sealObjectSnapshot(h, os)
       h.editors--
       if (h.editors === 0) // уходя гасите свет - последний уходящий убирает за всеми
         h.editing = undefined
       if (!error) {
         // if (this.timestamp < h.head.snapshot.timestamp)
         //   console.log(`!!! timestamp downgrade detected ${h.head.snapshot.timestamp} -> ${this.timestamp} !!!`)
-        h.head = r // switch object to a new version
-        if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
-          Snapshot.totalRevisionCount++
-          if (r.former.revision === ROOT_REV)
-            Snapshot.totalHolderCount++
+        h.head = os // switch object to a new version
+        if (Changeset.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
+          Changeset.totalObjectSnapshotCount++
+          if (os.former.snapshot === EMPTY_SNAPSHOT)
+            Changeset.totalObjectHandleCount++
         }
       }
     })
     if (Log.isOn) {
       if (Log.opt.change && !error) {
-        this.changeset.forEach((r: DataRevision, h: DataHolder) => {
+        this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
           const members: string[] = []
-          r.changes.forEach((o, m) => members.push(m.toString()))
+          os.changes.forEach((o, m) => members.push(m.toString()))
           const s = members.join(', ')
-          Log.write('║', '√', `${Dump.rev2(h, r.snapshot)} (${s}) is ${r.former.revision === ROOT_REV ? 'constructed' : `applied on top of ${Dump.rev2(h, r.former.revision.snapshot)}`}`)
+          Log.write('║', '√', `${Dump.snapshot2(h, os.changeset)} (${s}) is ${os.former.snapshot === EMPTY_SNAPSHOT ? 'constructed' : `applied on top of ${Dump.snapshot2(h, os.former.snapshot.changeset)}`}`)
         })
       }
       if (Log.opt.transaction)
-        Log.write(this.stamp < UNDEFINED_TIMESTAMP ? '╚══' : /* istanbul ignore next */ '═══', `v${this.stamp}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.changeset.size})${error ? ` - ${error}` : ''}`)
+        Log.write(this.revision < UNDEFINED_REVISION ? '╚══' : /* istanbul ignore next */ '═══', `v${this.revision}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.items.size})${error ? ` - ${error}` : ''}`)
     }
     if (!error)
-      Snapshot.propagateAllChangesThroughSubscriptions(this)
+      Changeset.propagateAllChangesThroughSubscriptions(this)
     return this.reactions
   }
 
-  static sealObjectRevision(h: DataHolder, r: DataRevision): void {
-    if (!r.changes.has(Meta.Disposed))
-      r.changes.forEach((o, m) => Snapshot.sealSubscription(r.data[m], m, h.proxy.constructor.name))
+  static sealObjectSnapshot(h: ObjectHandle, os: ObjectSnapshot): void {
+    if (!os.changes.has(Meta.Disposed))
+      os.changes.forEach((o, m) => Changeset.sealSubscription(os.data[m], m, h.proxy.constructor.name))
     else
-      for (const m in r.former.revision.data)
-        r.data[m] = Meta.Disposed
+      for (const m in os.former.snapshot.data)
+        os.data[m] = Meta.Disposed
     if (Log.isOn)
-      Snapshot.freezeObjectRevision(r)
+      Changeset.freezeObjectSnapshot(os)
   }
 
   static sealSubscription(subscription: Subscription | symbol, m: MemberName, typeName: string): void {
@@ -300,29 +300,29 @@ export class Snapshot implements AbstractSnapshot {
     }
   }
 
-  static freezeObjectRevision(r: DataRevision): DataRevision {
-    Object.freeze(r.data)
-    Utils.freezeSet(r.changes)
-    Utils.freezeMap(r.conflicts)
-    return r
+  static freezeObjectSnapshot(os: ObjectSnapshot): ObjectSnapshot {
+    Object.freeze(os.data)
+    Utils.freezeSet(os.changes)
+    Utils.freezeMap(os.conflicts)
+    return os
   }
 
   triggerGarbageCollection(): void {
-    if (this.stamp !== 0) {
-      if (this === Snapshot.oldest) {
-        const p = Snapshot.pending
-        p.sort((a, b) => a.stamp - b.stamp)
+    if (this.revision !== 0) {
+      if (this === Changeset.oldest) {
+        const p = Changeset.pending
+        p.sort((a, b) => a.revision - b.revision)
         let i: number = 0
         while (i < p.length && p[i].sealed) {
           p[i].unlinkHistory()
           i++
         }
-        Snapshot.pending = p.slice(i)
-        Snapshot.oldest = Snapshot.pending[0] // undefined is OK
+        Changeset.pending = p.slice(i)
+        Changeset.oldest = Changeset.pending[0] // undefined is OK
         const now = Date.now()
-        if (now - Snapshot.lastGarbageCollectionSummaryTimestamp > Snapshot.garbageCollectionSummaryInterval) {
-          Log.write('', '[G]', `Total object/revision count: ${Snapshot.totalHolderCount}/${Snapshot.totalRevisionCount}`)
-          Snapshot.lastGarbageCollectionSummaryTimestamp = now
+        if (now - Changeset.lastGarbageCollectionSummaryTimestamp > Changeset.garbageCollectionSummaryInterval) {
+          Log.write('', '[G]', `Total object/snapshot count: ${Changeset.totalObjectHandleCount}/${Changeset.totalObjectSnapshotCount}`)
+          Changeset.lastGarbageCollectionSummaryTimestamp = now
         }
       }
     }
@@ -330,33 +330,33 @@ export class Snapshot implements AbstractSnapshot {
 
   private unlinkHistory(): void {
     if (Log.isOn && Log.opt.gc)
-      Log.write('', '[G]', `Dismiss history below v${this.stamp}t${this.id} (${this.hint})`)
-    this.changeset.forEach((r: DataRevision, h: DataHolder) => {
-      if (Log.isOn && Log.opt.gc && r.former.revision !== ROOT_REV)
-        Log.write(' ', '  ', `${Dump.rev2(h, r.former.revision.snapshot)} is ready for GC because overwritten by ${Dump.rev2(h, r.snapshot)}`)
-      if (Snapshot.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
-        if (r.former.revision !== ROOT_REV)
-          Snapshot.totalRevisionCount--
-        if (r.changes.has(Meta.Disposed))
-          Snapshot.totalHolderCount--
+      Log.write('', '[G]', `Dismiss history below v${this.revision}t${this.id} (${this.hint})`)
+    this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
+      if (Log.isOn && Log.opt.gc && os.former.snapshot !== EMPTY_SNAPSHOT)
+        Log.write(' ', '  ', `${Dump.snapshot2(h, os.former.snapshot.changeset)} is ready for GC because overwritten by ${Dump.snapshot2(h, os.changeset)}`)
+      if (Changeset.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
+        if (os.former.snapshot !== EMPTY_SNAPSHOT)
+          Changeset.totalObjectSnapshotCount--
+        if (os.changes.has(Meta.Disposed))
+          Changeset.totalObjectHandleCount--
       }
-      r.former.revision = ROOT_REV // unlink history
+      os.former.snapshot = EMPTY_SNAPSHOT // unlink history
     })
-    this.changeset = EMPTY_MAP // release for GC
+    this.items = EMPTY_MAP // release for GC
     this.reactions = EMPTY_ARRAY // release for GC
     if (Log.isOn)
       Object.freeze(this)
   }
 
   static _init(): void {
-    const boot = ROOT_REV.snapshot as Snapshot // workaround
+    const boot = EMPTY_SNAPSHOT.changeset as Changeset // workaround
     boot.acquire(boot)
     boot.applyOrDiscard()
     boot.triggerGarbageCollection()
-    Snapshot.freezeObjectRevision(ROOT_REV)
-    Snapshot.idGen = 100
-    Snapshot.stampGen = 101
-    Snapshot.oldest = undefined
+    Changeset.freezeObjectSnapshot(EMPTY_SNAPSHOT)
+    Changeset.idGen = 100
+    Changeset.stampGen = 101
+    Changeset.oldest = undefined
     SealedArray.prototype
     SealedMap.prototype
     SealedSet.prototype
@@ -368,7 +368,7 @@ export class Snapshot implements AbstractSnapshot {
 export class Dump {
   static valueHint = (value: any, m?: MemberName): string => '???'
 
-  static obj(h: DataHolder | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, value?: any): string {
+  static obj(h: ObjectHandle | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, value?: any): string {
     const member = m !== undefined ? `.${m.toString()}` : ''
     let result: string
     if (h !== undefined) {
@@ -383,32 +383,32 @@ export class Dump {
     return result
   }
 
-  static rev2(h: DataHolder, s: AbstractSnapshot, m?: MemberName, o?: Subscription): string {
+  static snapshot2(h: ObjectHandle, s: AbstractChangeset, m?: MemberName, o?: Subscription): string {
     return Dump.obj(h, m, s.timestamp, s.id, o?.originSnapshotId, o?.content ?? Meta.Undefined)
   }
 
-  static rev(r: DataRevision, m?: MemberName): string {
-    const h = Meta.get<DataHolder | undefined>(r.data, Meta.Holder)
-    const value = m !== undefined ? r.data[m] as Subscription : undefined
-    return Dump.obj(h, m, r.snapshot.timestamp, r.snapshot.id, value?.originSnapshotId)
+  static snapshot(os: ObjectSnapshot, m?: MemberName): string {
+    const h = Meta.get<ObjectHandle | undefined>(os.data, Meta.Handle)
+    const value = m !== undefined ? os.data[m] as Subscription : undefined
+    return Dump.obj(h, m, os.changeset.timestamp, os.changeset.id, value?.originSnapshotId)
   }
 
-  static conflicts(conflicts: DataRevision[]): string {
+  static conflicts(conflicts: ObjectSnapshot[]): string {
     return conflicts.map(ours => {
       const items: string[] = []
-      ours.conflicts.forEach((theirs: DataRevision, m: MemberName) => {
+      ours.conflicts.forEach((theirs: ObjectSnapshot, m: MemberName) => {
         items.push(Dump.conflictingMemberHint(m, ours, theirs))
       })
       return items.join(', ')
     }).join(', ')
   }
 
-  static conflictingMemberHint(m: MemberName, ours: DataRevision, theirs: DataRevision): string {
-    return `${theirs.snapshot.hint} (${Dump.rev(theirs, m)})`
+  static conflictingMemberHint(m: MemberName, ours: ObjectSnapshot, theirs: ObjectSnapshot): string {
+    return `${theirs.changeset.hint} (${Dump.snapshot(theirs, m)})`
   }
 }
 
-export const ROOT_REV = new DataRevision(new Snapshot({ hint: '<root>' }), undefined, {})
+export const EMPTY_SNAPSHOT = new ObjectSnapshot(new Changeset({ hint: '<empty>' }), undefined, {})
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',

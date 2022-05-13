@@ -6,8 +6,8 @@
 // automatically licensed under the license referred above.
 
 import { ReactiveObject } from './Hooks'
-import { DataHolder, DataRevision, Meta, PatchSet, DataPatch, Subscription } from './Data'
-import { Snapshot, ROOT_REV } from './Snapshot'
+import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, DataPatch, Subscription } from './Data'
+import { Changeset, EMPTY_SNAPSHOT } from './Snapshot'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
 
@@ -87,13 +87,13 @@ export class JournalImpl extends Journal {
     })
   }
 
-  static buildPatch(hint: string, changeset: Map<DataHolder, DataRevision>): PatchSet {
+  static buildPatch(hint: string, items: Map<ObjectHandle, ObjectSnapshot>): PatchSet {
     const patch: PatchSet = { hint, objects: new Map<object, DataPatch>() }
-    changeset.forEach((r: DataRevision, h: DataHolder) => {
+    items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
       const op: DataPatch = { data: {}, former: {} }
-      const former = r.former.revision !== ROOT_REV ? r.former.revision.data : undefined
-      r.changes.forEach(m => {
-        op.data[m] = unseal(r.data[m])
+      const former = os.former.snapshot !== EMPTY_SNAPSHOT ? os.former.snapshot.data : undefined
+      os.changes.forEach(m => {
+        op.data[m] = unseal(os.data[m])
         if (former)
           op.former[m] = unseal(former[m])
       })
@@ -107,23 +107,23 @@ export class JournalImpl extends Journal {
   }
 
   static applyPatch(patch: PatchSet, undoing: boolean): void {
-    const ctx = Snapshot.edit()
+    const ctx = Changeset.edit()
     patch.objects.forEach((dp: DataPatch, obj: object) => {
-      const h = Meta.get<DataHolder>(obj, Meta.Holder)
+      const h = Meta.get<ObjectHandle>(obj, Meta.Handle)
       const data = undoing ? dp.former : dp.data
       if (data[Meta.Disposed] === undefined) {
         for (const m in data) {
           const value = data[m]
-          const r: DataRevision = ctx.getEditableRevision(h, m, value)
-          if (r.snapshot === ctx) {
-            r.data[m] = new Subscription(value)
-            const existing: any = r.former.revision.data[m]
-            Snapshot.markEdited(existing, value, existing !== value, r, m, h)
+          const os: ObjectSnapshot = ctx.getEditableSnapshot(h, m, value)
+          if (os.changeset === ctx) {
+            os.data[m] = new Subscription(value)
+            const existing: any = os.former.snapshot.data[m]
+            Changeset.markEdited(existing, value, existing !== value, os, m, h)
           }
         }
       }
       else
-        Snapshot.doDispose(ctx, h)
+        Changeset.doDispose(ctx, h)
     })
   }
 

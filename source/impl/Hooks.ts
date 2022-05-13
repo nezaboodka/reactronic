@@ -10,8 +10,8 @@ import { Log, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance } from '../Options'
 import { LoggingOptions, ProfilingOptions } from '../Logging'
 import { Controller } from '../Controller'
-import { DataRevision, MemberName, DataHolder, Subscription, Meta, StandaloneMode } from './Data'
-import { Snapshot, Dump, ROOT_REV } from './Snapshot'
+import { ObjectSnapshot, MemberName, ObjectHandle, Subscription, Meta, StandaloneMode } from './Data'
+import { Changeset, Dump, EMPTY_SNAPSHOT } from './Snapshot'
 import { Journal } from './Journal'
 import { Monitor } from './Monitor'
 
@@ -27,7 +27,7 @@ export abstract class ReactiveObject {
 
   /* istanbul ignore next */
   [Symbol.toStringTag](): string {
-    const h = Meta.get<DataHolder>(this, Meta.Holder)
+    const h = Meta.get<ObjectHandle>(this, Meta.Handle)
     return Dump.obj(h)
   }
 }
@@ -92,7 +92,7 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 
 // Hooks
 
-export class Hooks implements ProxyHandler<DataHolder> {
+export class Hooks implements ProxyHandler<ObjectHandle> {
   static reactionsAutoStartDisabled: boolean = false
   static repetitiveUsageWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
@@ -100,19 +100,19 @@ export class Hooks implements ProxyHandler<DataHolder> {
   static sensitivity: boolean = false
   static readonly handler: Hooks = new Hooks()
 
-  getPrototypeOf(h: DataHolder): object | null {
+  getPrototypeOf(h: ObjectHandle): object | null {
     return Reflect.getPrototypeOf(h.data)
   }
 
-  get(h: DataHolder, m: MemberName, receiver: any): any {
+  get(h: ObjectHandle, m: MemberName, receiver: any): any {
     let result: any
-    const r: DataRevision = Snapshot.current().getCurrentRevision(h, m)
-    result = r.data[m]
+    const os: ObjectSnapshot = Changeset.current().getRelevantSnapshot(h, m)
+    result = os.data[m]
     if (result instanceof Subscription && !result.isOperation) {
-      Snapshot.markUsed(result, r, m, h, Kind.Plain, false)
+      Changeset.markUsed(result, os, m, h, Kind.Plain, false)
       result = result.content
     }
-    else if (m === Meta.Holder) {
+    else if (m === Meta.Handle) {
       // do nothing, just return instance
     }
     else // result === NONREACTIVE
@@ -120,20 +120,20 @@ export class Hooks implements ProxyHandler<DataHolder> {
     return result
   }
 
-  set(h: DataHolder, m: MemberName, value: any, receiver: any): boolean {
-    const r: DataRevision = Snapshot.edit().getEditableRevision(h, m, value)
-    if (r !== ROOT_REV) {
-      let curr = r.data[m] as Subscription
-      if (curr !== undefined || (r.former.revision.snapshot === ROOT_REV.snapshot && (m in h.data) === false)) {
+  set(h: ObjectHandle, m: MemberName, value: any, receiver: any): boolean {
+    const os: ObjectSnapshot = Changeset.edit().getEditableSnapshot(h, m, value)
+    if (os !== EMPTY_SNAPSHOT) {
+      let curr = os.data[m] as Subscription
+      if (curr !== undefined || (os.former.snapshot.changeset === EMPTY_SNAPSHOT.changeset && (m in h.data) === false)) {
         if (curr === undefined || curr.content !== value || Hooks.sensitivity) {
           const existing = curr?.content
-          if (r.former.revision.data[m] === curr) {
-            curr = r.data[m] = new Subscription(value)
-            Snapshot.markEdited(existing, value, true, r, m, h)
+          if (os.former.snapshot.data[m] === curr) {
+            curr = os.data[m] = new Subscription(value)
+            Changeset.markEdited(existing, value, true, os, m, h)
           }
           else {
             curr.content = value
-            Snapshot.markEdited(existing, value, true, r, m, h)
+            Changeset.markEdited(existing, value, true, os, m, h)
           }
         }
       }
@@ -145,25 +145,25 @@ export class Hooks implements ProxyHandler<DataHolder> {
     return true
   }
 
-  has(h: DataHolder, m: MemberName): boolean {
-    const r: DataRevision = Snapshot.current().getCurrentRevision(h, m)
-    return m in r.data || m in h.data
+  has(h: ObjectHandle, m: MemberName): boolean {
+    const os: ObjectSnapshot = Changeset.current().getRelevantSnapshot(h, m)
+    return m in os.data || m in h.data
   }
 
-  getOwnPropertyDescriptor(h: DataHolder, m: MemberName): PropertyDescriptor | undefined {
-    const r: DataRevision = Snapshot.current().getCurrentRevision(h, m)
-    const pd = Reflect.getOwnPropertyDescriptor(r.data, m)
+  getOwnPropertyDescriptor(h: ObjectHandle, m: MemberName): PropertyDescriptor | undefined {
+    const os: ObjectSnapshot = Changeset.current().getRelevantSnapshot(h, m)
+    const pd = Reflect.getOwnPropertyDescriptor(os.data, m)
     if (pd)
       pd.configurable = pd.writable = true
     return pd
   }
 
-  ownKeys(h: DataHolder): Array<string | symbol> {
+  ownKeys(h: ObjectHandle): Array<string | symbol> {
     // TODO: Better implementation to avoid filtering
-    const r: DataRevision = Snapshot.current().getCurrentRevision(h, Meta.Holder)
+    const os: ObjectSnapshot = Changeset.current().getRelevantSnapshot(h, Meta.Handle)
     const result = []
-    for (const m of Object.getOwnPropertyNames(r.data)) {
-      const value = r.data[m]
+    for (const m of Object.getOwnPropertyNames(os.data)) {
+      const value = os.data[m]
       if (!(value instanceof Subscription) || !value.isOperation)
         result.push(m)
     }
@@ -225,24 +225,24 @@ export class Hooks implements ProxyHandler<DataHolder> {
     }
   }
 
-  static acquireDataHolder(obj: any): DataHolder {
-    let h = obj[Meta.Holder]
+  static acquireDataHolder(obj: any): ObjectHandle {
+    let h = obj[Meta.Handle]
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse('only objects can be reactive')
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
-      const rev = new DataRevision(ROOT_REV.snapshot, ROOT_REV, {...initial})
-      Meta.set(rev.data, Meta.Holder, h)
-      h = new DataHolder(obj, obj, Hooks.handler, rev, obj.constructor.name)
-      Meta.set(obj, Meta.Holder, h)
+      const os = new ObjectSnapshot(EMPTY_SNAPSHOT.changeset, EMPTY_SNAPSHOT, {...initial})
+      Meta.set(os.data, Meta.Handle, h)
+      h = new ObjectHandle(obj, obj, Hooks.handler, os, obj.constructor.name)
+      Meta.set(obj, Meta.Handle, h)
     }
     return h
   }
 
-  static createDataHolderForReactiveObject(proto: any, data: any, blank: any, hint: string): DataHolder {
-    const ctx = Snapshot.edit()
-    const h = new DataHolder(data, undefined, Hooks.handler, ROOT_REV, hint)
-    ctx.getEditableRevision(h, Meta.Holder, blank)
+  static createDataHolderForReactiveObject(proto: any, data: any, blank: any, hint: string): ObjectHandle {
+    const ctx = Changeset.edit()
+    const h = new ObjectHandle(data, undefined, Hooks.handler, EMPTY_SNAPSHOT, hint)
+    ctx.getEditableSnapshot(h, Meta.Handle, blank)
     if (!Hooks.reactionsAutoStartDisabled)
       for (const m in Meta.getFrom(proto, Meta.Reactions))
         (h.proxy[m][Meta.Controller] as Controller<any>).markObsolete()
@@ -254,13 +254,13 @@ export class Hooks implements ProxyHandler<DataHolder> {
       Hooks.repetitiveUsageWarningThreshold = options && options.repetitiveUsageWarningThreshold !== undefined ? options.repetitiveUsageWarningThreshold : 10
       Hooks.mainThreadBlockingWarningThreshold = options && options.mainThreadBlockingWarningThreshold !== undefined ? options.mainThreadBlockingWarningThreshold : 14
       Hooks.asyncActionDurationWarningThreshold = options && options.asyncActionDurationWarningThreshold !== undefined ? options.asyncActionDurationWarningThreshold : 300
-      Snapshot.garbageCollectionSummaryInterval = options && options.garbageCollectionSummaryInterval !== undefined ? options.garbageCollectionSummaryInterval : 100
+      Changeset.garbageCollectionSummaryInterval = options && options.garbageCollectionSummaryInterval !== undefined ? options.garbageCollectionSummaryInterval : 100
     }
     else {
       Hooks.repetitiveUsageWarningThreshold = Number.MAX_SAFE_INTEGER
       Hooks.mainThreadBlockingWarningThreshold = Number.MAX_SAFE_INTEGER
       Hooks.asyncActionDurationWarningThreshold = Number.MAX_SAFE_INTEGER
-      Snapshot.garbageCollectionSummaryInterval = Number.MAX_SAFE_INTEGER
+      Changeset.garbageCollectionSummaryInterval = Number.MAX_SAFE_INTEGER
     }
   }
 
@@ -284,7 +284,7 @@ export class Hooks implements ProxyHandler<DataHolder> {
   }
 
   /* istanbul ignore next */
-  static createOperation = function(h: DataHolder, m: MemberName, options: OptionsImpl): F<any> {
+  static createOperation = function(h: ObjectHandle, m: MemberName, options: OptionsImpl): F<any> {
     throw misuse('createOperation should never be called')
   }
 
