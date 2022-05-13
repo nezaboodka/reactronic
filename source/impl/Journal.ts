@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { ReactiveObject } from './Hooks'
-import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, DataPatch, Subscription } from './Data'
+import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ObjectPatch, Subscription } from './Data'
 import { Changeset, EMPTY_SNAPSHOT } from './Changeset'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
@@ -31,7 +31,7 @@ export abstract class Journal extends ReactiveObject {
 export class JournalImpl extends Journal {
   private _capacity: number = 5
   private _edits: PatchSet[] = []
-  private _unsaved: PatchSet = { hint: 'unsaved', objects: new Map<object, DataPatch>() }
+  private _unsaved: PatchSet = { hint: 'unsaved', objects: new Map<object, ObjectPatch>() }
   private _position: number = 0
 
   get capacity(): number { return this._capacity }
@@ -56,7 +56,7 @@ export class JournalImpl extends Journal {
 
   saved(patch: PatchSet): void {
     if (this._unsaved === patch)
-      this._unsaved = { hint: 'unsaved', objects: new Map<object, DataPatch>() }
+      this._unsaved = { hint: 'unsaved', objects: new Map<object, ObjectPatch>() }
     else
       throw new Error('not implemented')
   }
@@ -88,9 +88,9 @@ export class JournalImpl extends Journal {
   }
 
   static buildPatch(hint: string, items: Map<ObjectHandle, ObjectSnapshot>): PatchSet {
-    const patch: PatchSet = { hint, objects: new Map<object, DataPatch>() }
+    const patch: PatchSet = { hint, objects: new Map<object, ObjectPatch>() }
     items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-      const op: DataPatch = { data: {}, former: {} }
+      const op: ObjectPatch = { data: {}, former: {} }
       const former = os.former.snapshot !== EMPTY_SNAPSHOT ? os.former.snapshot.data : undefined
       os.changes.forEach(m => {
         op.data[m] = unseal(os.data[m])
@@ -108,9 +108,9 @@ export class JournalImpl extends Journal {
 
   static applyPatch(patch: PatchSet, undoing: boolean): void {
     const ctx = Changeset.edit()
-    patch.objects.forEach((dp: DataPatch, obj: object) => {
+    patch.objects.forEach((op: ObjectPatch, obj: object) => {
       const h = Meta.get<ObjectHandle>(obj, Meta.Handle)
-      const data = undoing ? dp.former : dp.data
+      const data = undoing ? op.former : op.data
       if (data[Meta.Revision] !== Meta.Undefined) {
         for (const m in data) {
           const value = data[m]
@@ -129,12 +129,12 @@ export class JournalImpl extends Journal {
 
   mergePatchToUnsaved(patch: PatchSet, undoing: boolean): void {
     const unsaved = this._unsaved
-    patch.objects.forEach((dp: DataPatch, obj: object) => {
+    patch.objects.forEach((op: ObjectPatch, obj: object) => {
       let merged = unsaved.objects.get(obj)
       if (!merged)
         unsaved.objects.set(obj, merged = { data: {}, former: {} })
-      const data = undoing ? dp.former : dp.data
-      const former = undoing ? dp.data : dp.former
+      const data = undoing ? op.former : op.data
+      const former = undoing ? op.data : op.former
       for (const m in data) {
         const value = data[m]
         if (value !== merged.former[m]) {

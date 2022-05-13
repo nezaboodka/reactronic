@@ -106,14 +106,15 @@ export class ObjectHandle {
   }
 }
 
-// PatchSet & DataPatch
+// PatchSet & ObjectPatch
 
 export interface PatchSet {
   hint: string
-  objects: Map<object, DataPatch>
+  objects: Map<object, ObjectPatch>
 }
 
-export interface DataPatch {
+export interface ObjectPatch {
   data: any
   former: any
+  // kind: 'update' | 'add' | 'remove'
 }
