@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { ReactiveObject } from './Hooks'
-import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ObjectPatch, Subscription } from './Data'
+import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ValuePatch, Subscription, MemberName } from './Data'
 import { Changeset, EMPTY_SNAPSHOT } from './Changeset'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
@@ -31,7 +31,7 @@ export abstract class Journal extends ReactiveObject {
 export class JournalImpl extends Journal {
   private _capacity: number = 5
   private _edits: PatchSet[] = []
-  private _unsaved: PatchSet = { hint: 'unsaved', objects: new Map<object, ObjectPatch>() }
+  private _unsaved: PatchSet = { hint: 'unsaved', items: new Map<object, Map<MemberName, ValuePatch>>() }
   private _position: number = 0
 
   get capacity(): number { return this._capacity }
@@ -56,7 +56,7 @@ export class JournalImpl extends Journal {
 
   saved(patch: PatchSet): void {
     if (this._unsaved === patch)
-      this._unsaved = { hint: 'unsaved', objects: new Map<object, ObjectPatch>() }
+      this._unsaved = { hint: 'unsaved', items: new Map<object, Map<MemberName, ValuePatch>>() }
     else
       throw new Error('not implemented')
   }
@@ -88,39 +88,48 @@ export class JournalImpl extends Journal {
   }
 
   static buildPatch(hint: string, items: Map<ObjectHandle, ObjectSnapshot>): PatchSet {
-    const patch: PatchSet = { hint, objects: new Map<object, ObjectPatch>() }
+    const patch: PatchSet = { hint, items: new Map<object, Map<MemberName, ValuePatch>>() }
     items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-      const op: ObjectPatch = { data: {}, former: {} }
+      const op = new Map<MemberName, ValuePatch>()
       const former = os.former.snapshot !== EMPTY_SNAPSHOT ? os.former.snapshot.data : undefined
       os.changes.forEach(m => {
-        op.data[m] = unseal(os.data[m])
+        const vp: ValuePatch = {
+          memberName: m, patchKind: 'update',
+          freshValue: unseal(os.data[m]), formerValue: undefined,
+        }
         if (former)
-          op.former[m] = unseal(former[m])
+          vp.formerValue = unseal(former[m])
+        op.set(m, vp)
       })
       if (!former) {
-        delete op.data[Meta.Revision] // object restore
-        op.former[Meta.Revision] = Meta.Undefined
+        const vp: ValuePatch = {
+          memberName: Meta.Revision, patchKind: 'remove',
+          freshValue: Meta.Undefined, formerValue: undefined,
+        }
+        op.set(Meta.Revision, vp)
       }
-      patch.objects.set(h.proxy, op)
+      patch.items.set(h.proxy, op)
     })
     return patch
   }
 
   static applyPatch(patch: PatchSet, undoing: boolean): void {
     const ctx = Changeset.edit()
-    patch.objects.forEach((op: ObjectPatch, obj: object) => {
+    patch.items.forEach((op: Map<MemberName, ValuePatch>, obj: object) => {
       const h = Meta.get<ObjectHandle>(obj, Meta.Handle)
-      const data = undoing ? op.former : op.data
-      if (data[Meta.Revision] !== Meta.Undefined) {
-        for (const m in data) {
-          const value = data[m]
+      const rev = op.get(Meta.Revision)
+      const disposed = rev && (undoing ? rev.formerValue : rev.freshValue) === Meta.Undefined
+      // const data = undoing ? op.former : op.data
+      if (!disposed) {
+        op.forEach((vp, m) => {
+          const value = undoing ? vp.formerValue : vp.freshValue
           const os: ObjectSnapshot = ctx.getEditableSnapshot(h, m, value)
           if (os.changeset === ctx) {
             os.data[m] = new Subscription(value)
             const existing: any = os.former.snapshot.data[m]
             Changeset.markEdited(existing, value, existing !== value, os, m, h)
           }
-        }
+        })
       }
       else
         Changeset.doDispose(ctx, h)
@@ -129,26 +138,29 @@ export class JournalImpl extends Journal {
 
   mergePatchToUnsaved(patch: PatchSet, undoing: boolean): void {
     const unsaved = this._unsaved
-    patch.objects.forEach((op: ObjectPatch, obj: object) => {
-      let merged = unsaved.objects.get(obj)
-      if (!merged)
-        unsaved.objects.set(obj, merged = { data: {}, former: {} })
-      const data = undoing ? op.former : op.data
-      const former = undoing ? op.data : op.former
-      for (const m in data) {
-        const value = data[m]
-        if (value !== merged.former[m]) {
-          merged.data[m] = value
-          if (m in merged.former === false)
-            merged.former[m] = former[m]
+    patch.items.forEach((op: Map<MemberName, ValuePatch>, obj: object) => {
+      let result = unsaved.items.get(obj)
+      if (!result)
+        unsaved.items.set(obj, result = new Map<MemberName, ValuePatch>())
+      op.forEach((vp, m) => {
+        let merged = result!.get(m)
+        if (!merged)
+          result!.set(m, merged = {
+            memberName: m, patchKind: 'update',
+            freshValue: undefined, formerValue: undefined,
+          })
+        const value = undoing ? vp.formerValue : vp.freshValue
+        const former = undoing ? vp.freshValue : vp.formerValue
+        if (value !== merged.formerValue) {
+          merged.freshValue = value
+          merged.formerValue = former
         }
         else {
-          delete merged.data[m]
-          delete merged.former[m]
-          if (Object.keys(merged.data).length === 0)
-            unsaved.objects.delete(obj)
+          result!.delete(m)
+          if (result!.size === 0)
+            unsaved.items.delete(obj)
         }
-      }
+      })
     })
   }
 }
