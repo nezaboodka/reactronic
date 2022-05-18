@@ -347,17 +347,17 @@ class Operation extends Subscription implements Subscriber {
         snapshot.changes.has(memberName) */
       if (!skip) {
         const why = `${Dump.snapshot2(h, changeset, m, subscription)}    <<    ${outer}`
-        // Mark obsolete (this.subscriptions = undefined)
-        this.unsubscribeFromAllSubscriptions()
+        const isReaction = this.options.kind === Kind.Reaction /*&& this.snapshot.data[Meta.Disposed] === undefined*/
+
+        // Mark obsolete and unsubscribe from all (this.subscriptions = undefined)
         this.obsoleteDueTo = why
         this.obsoleteSince = since
-
-        const isReaction = this.options.kind === Kind.Reaction /*&& this.snapshot.data[Meta.Disposed] === undefined*/
         if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
           Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
             isReaction && changeset === EMPTY_SNAPSHOT.changeset
               ? `${this.hint()} is a reaction and will run automatically (order ${this.options.order})`
               : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, m)} since v${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ''}`)
+        this.unsubscribeFromAllSubscriptions()
 
         // Stop cascade propagation on reaction, or continue otherwise
         if (isReaction)
