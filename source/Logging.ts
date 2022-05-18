@@ -32,12 +32,12 @@ export interface ProfilingOptions {
 }
 
 export const LoggingLevel: {
-  Off: LoggingOptions,
-  ErrorsOnly: LoggingOptions,
-  Reactions: LoggingOptions,
-  Transactions: LoggingOptions,
-  Operations: LoggingOptions,
-  Debug: LoggingOptions,
+  readonly Off: LoggingOptions,
+  readonly ErrorsOnly: LoggingOptions,
+  readonly Reactions: LoggingOptions,
+  readonly Transactions: LoggingOptions,
+  readonly Operations: LoggingOptions,
+  readonly Debug: LoggingOptions,
 } = {
 
   Off: {
