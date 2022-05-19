@@ -108,6 +108,7 @@ export class Changeset implements AbstractChangeset {
     const existing = os.data[m]
     if (existing !== Meta.Nonreactive) {
       if (this.isNewSnapshotRequired(h, os, m, existing, value, token)) {
+        this.bumpBy(os.changeset.timestamp)
         const revision = m === Meta.Handle ? 1 : os.revision + 1
         const data = { ...m === Meta.Handle ? value : os.data }
         Meta.set(data, Meta.Handle, h)
