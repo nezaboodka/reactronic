@@ -204,8 +204,8 @@ test('brief', t => {
       Rx.dispose(app.model)
       Rx.dispose(app)
     })
-    t.is(app.model.title, undefined)
-    t.is(app.userFilter, undefined)
+    t.is(app.model.title as any, undefined)
+    t.is(app.userFilter as any, undefined)
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
