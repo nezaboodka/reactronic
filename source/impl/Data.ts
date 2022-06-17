@@ -108,10 +108,7 @@ export class ObjectHandle {
 
 // PatchSet & ObjectPatch
 
-export interface PatchSet {
-  hint: string
-  items: Map<object, Map<MemberName, ValuePatch>>
-}
+export type PatchSet = Map<object, Map<MemberName, ValuePatch>>
 
 export interface ValuePatch {
   memberName: MemberName

@@ -31,7 +31,7 @@ export abstract class Journal extends ReactiveObject {
 export class JournalImpl extends Journal {
   private _capacity: number = 5
   private _edits: PatchSet[] = []
-  private _unsaved: PatchSet = { hint: 'unsaved', items: new Map<object, Map<MemberName, ValuePatch>>() }
+  private _unsaved: PatchSet = new Map<object, Map<MemberName, ValuePatch>>()
   private _position: number = 0
 
   get capacity(): number { return this._capacity }
@@ -56,7 +56,7 @@ export class JournalImpl extends Journal {
 
   saved(patch: PatchSet): void {
     if (this._unsaved === patch)
-      this._unsaved = { hint: 'unsaved', items: new Map<object, Map<MemberName, ValuePatch>>() }
+      this._unsaved = new Map<object, Map<MemberName, ValuePatch>>()
     else
       throw new Error('not implemented')
   }
@@ -88,7 +88,7 @@ export class JournalImpl extends Journal {
   }
 
   static buildPatch(hint: string, items: Map<ObjectHandle, ObjectSnapshot>): PatchSet {
-    const patch: PatchSet = { hint, items: new Map<object, Map<MemberName, ValuePatch>>() }
+    const patch: PatchSet = new Map<object, Map<MemberName, ValuePatch>>()
     items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
       const op = new Map<MemberName, ValuePatch>()
       const former = os.former.snapshot !== EMPTY_SNAPSHOT ? os.former.snapshot.data : undefined
@@ -108,14 +108,14 @@ export class JournalImpl extends Journal {
         }
         op.set(Meta.Revision, vp)
       }
-      patch.items.set(h.proxy, op)
+      patch.set(h.proxy, op)
     })
     return patch
   }
 
   static applyPatch(patch: PatchSet, undoing: boolean): void {
     const ctx = Changeset.edit()
-    patch.items.forEach((op: Map<MemberName, ValuePatch>, obj: object) => {
+    patch.forEach((op: Map<MemberName, ValuePatch>, obj: object) => {
       const h = Meta.get<ObjectHandle>(obj, Meta.Handle)
       const rev = op.get(Meta.Revision)
       const disposed = rev && (undoing ? rev.formerValue : rev.freshValue) === Meta.Undefined
@@ -137,11 +137,11 @@ export class JournalImpl extends Journal {
   }
 
   mergePatchToUnsaved(patch: PatchSet, undoing: boolean): void {
-    const unsaved = this._unsaved
-    patch.items.forEach((op: Map<MemberName, ValuePatch>, obj: object) => {
-      let result = unsaved.items.get(obj)
+    const unsaved = this._unsaved = this._unsaved.toMutable()
+    patch.forEach((op: Map<MemberName, ValuePatch>, obj: object) => {
+      let result = unsaved.get(obj)
       if (!result)
-        unsaved.items.set(obj, result = new Map<MemberName, ValuePatch>())
+        unsaved.set(obj, result = new Map<MemberName, ValuePatch>())
       op.forEach((vp, m) => {
         let merged = result!.get(m)
         if (!merged)
@@ -158,7 +158,7 @@ export class JournalImpl extends Journal {
         else {
           result!.delete(m)
           if (result!.size === 0)
-            unsaved.items.delete(obj)
+            unsaved.delete(obj)
         }
       })
     })
