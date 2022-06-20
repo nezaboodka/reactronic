@@ -145,17 +145,19 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
 
   get(h: ObjectHandle, m: MemberName, receiver: any): any {
     let result: any
-    const os: ObjectSnapshot = Changeset.current().getRelevantSnapshot(h, m)
-    result = os.data[m]
-    if (result instanceof Subscription && !result.isOperation) {
-      Changeset.markUsed(result, os, m, h, Kind.Plain, false)
-      result = result.content
+    if (m !== Meta.Handle) {
+      const cs = Changeset.current()
+      const os: ObjectSnapshot = cs.getRelevantSnapshot(h, m)
+      result = os.data[m]
+      if (result instanceof Subscription && !result.isOperation) {
+        Changeset.markUsed(result, os, m, h, Kind.Plain, false)
+        result = result.content
+      }
+      else // result === NONREACTIVE
+        result = Reflect.get(h.data, m, receiver)
     }
-    else if (m === Meta.Handle) {
-      // do nothing, just return instance
-    }
-    else // result === NONREACTIVE
-      result = Reflect.get(h.data, m, receiver)
+    else
+      result = h
     return result
   }
 
