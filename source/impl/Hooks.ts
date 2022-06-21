@@ -69,6 +69,10 @@ export class ReactiveArray<T> extends ReactiveObject {
   reduceRight(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: T[]) => T, initialValue: T): T
   reduceRight<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U { return this.a.reduceRight(callbackfn, initialValue) }
 
+  entries(): IterableIterator<[number, T]> { return this.a.entries() }
+  keys(): IterableIterator<number> { return this.a.keys() }
+  values(): IterableIterator<T> { return this.a.values() }
+
   private get mutable(): Array<T> {
     const createCopy = (this.a as any)[Sealant.CreateCopy]
     if (createCopy)
@@ -86,6 +90,10 @@ export class ReactiveMap<K, V> extends ReactiveObject {
   has(key: K): boolean { return this.m.has(key) }
   set(key: K, value: V): this { this.m.set(key, value); return this }
   get size(): number { return this.m.size }
+
+  entries(): IterableIterator<[K, V]> { return this.m.entries() }
+  keys(): IterableIterator<K> { return this.m.keys() }
+  values(): IterableIterator<V> { return this.m.values() }
 
   private get mutable(): Map<K, V> {
     const createCopy = (this.m as any)[Sealant.CreateCopy]
