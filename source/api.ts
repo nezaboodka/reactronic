@@ -13,7 +13,7 @@ export { MemberOptions, SnapshotOptions, Kind, Reentrance, LoggingOptions, Profi
 export { Worker } from './Worker'
 export { Controller } from './Controller'
 export { Ref, ToggleRef, BoolOnly, GivenTypeOnly } from './Ref'
-export { ReactiveObject } from './impl/Hooks'
+export { ReactiveObject, ReactiveArray, ReactiveMap } from './impl/Hooks'
 export { Changeset } from './impl/Changeset'
 export { Transaction } from './impl/Transaction'
 export { Monitor } from './impl/Monitor'
