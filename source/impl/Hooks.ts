@@ -88,7 +88,7 @@ export class ReactiveMap<K, V> extends ReactiveObject {
   forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void { this.m.forEach(callbackfn, thisArg) }
   get(key: K): V | undefined { return this.m.get(key) }
   has(key: K): boolean { return this.m.has(key) }
-  set(key: K, value: V): this { this.m.set(key, value); return this }
+  set(key: K, value: V): this { this.mutable.set(key, value); return this }
   get size(): number { return this.m.size }
 
   entries(): IterableIterator<[K, V]> { return this.m.entries() }
