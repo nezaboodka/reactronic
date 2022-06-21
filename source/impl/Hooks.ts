@@ -77,6 +77,24 @@ export class ReactiveArray<T> extends ReactiveObject {
   }
 }
 
+export class ReactiveMap<K, V> extends ReactiveObject {
+  private m = new Map<K, V>()
+  clear(): void { this.mutable.clear() }
+  delete(key: K): boolean { return this.mutable.delete(key) }
+  forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void { this.m.forEach(callbackfn, thisArg) }
+  get(key: K): V | undefined { return this.m.get(key) }
+  has(key: K): boolean { return this.m.has(key) }
+  set(key: K, value: V): this { this.m.set(key, value); return this }
+  get size(): number { return this.m.size }
+
+  private get mutable(): Map<K, V> {
+    const createCopy = (this.m as any)[Sealant.CreateCopy]
+    if (createCopy)
+      return this.m = createCopy.call(this.m)
+    return this.m
+  }
+}
+
 // Options
 
 const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
