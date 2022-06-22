@@ -33,6 +33,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "jsx": "react",
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
     "source/**/*.ts",
