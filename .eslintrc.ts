@@ -1,8 +1,18 @@
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
+  env: {
+    'es6': true,
+  },
   parserOptions: {
     'project': './tsconfig.json',
+    ecmaVersion: 'latest',
+    ecmaFeatures: {
+      'tsx': true,
+      'jsx': true,
+      'modules': true,
+      'sourceType': 'modules',
+    },
   },
   plugins: ['@typescript-eslint'],
   extends: ['plugin:@typescript-eslint/recommended'],
@@ -30,7 +40,6 @@ module.exports = {
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/ban-types': 'off',
     '@typescript-eslint/strict-boolean-expressions': ['error', { allowNullableObject: true, allowNullableString: true, allowNullableBoolean: true, allowAny: true }],
-    '@typescript-eslint/explicit-module-boundary-types': 'off',
     'no-useless-rename': 'error',
   },
   'overrides': [

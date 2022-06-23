@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ReactiveObject, transaction, cached } from 'api' // from 'reactronic'
+import { ReactiveObject, transaction, cached } from '../source/api'
 import { Component } from './Component'
 
 class MyModel extends ReactiveObject {

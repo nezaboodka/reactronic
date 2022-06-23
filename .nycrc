@@ -14,7 +14,7 @@
     "test/**/*.ts"
   ],
   "require": [
-    "ts-node/register",
+    "ts-node/esm",
     "source-map-support/register"
   ],
   "extension": [

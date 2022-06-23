@@ -1,4 +1,4 @@
 node_modules
 build
 .eslintrc.js
-ava.config.js
+ava.config.*s

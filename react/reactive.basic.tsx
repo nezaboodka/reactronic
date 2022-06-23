@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ReactiveObject, Transaction, isnonreactive, reaction, cached, Rx } from 'api' // from 'reactronic'
+import { ReactiveObject, Transaction, isnonreactive, reaction, cached, Rx } from '../source/api'
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)

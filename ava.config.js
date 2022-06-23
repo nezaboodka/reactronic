@@ -1,7 +1,11 @@
 export default {
   verbose: true,
-  extensions: ['ts'],
+  extensions: { 'ts': 'module' },
+  nodeArguments: [
+    '--loader=ts-node/esm',
+    '--experimental-specifier-resolution=node',
+    '--no-warnings'
+  ],
   files: ['test/**/*.test.ts'],
-  require: ['ts-node/register', 'tsconfig-paths/register'],
   timeout: '20s',
 }

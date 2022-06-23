@@ -8,11 +8,10 @@
       "name": "Debug",
       "type": "node",
       "request": "launch",
-      "protocol": "inspector",
       "sourceMaps": true,
       "cwd": "${workspaceRoot}",
       "args": ["${relativeFile}"],
-      "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
+      "runtimeArgs": ["--nolazy", "-r", "ts-node/esm"],
       "smartStep": true,
       "skipFiles": [
         "<node_internals>/**/*.js"
@@ -22,14 +21,13 @@
       "name": "Debug Test",
       "type": "node",
       "request": "launch",
-      "protocol": "inspector",
       "sourceMaps": true,
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/ava",
-      "runtimeArgs": ["--timeout", "1h", "${relativeFile}"],
+      "program": "${workspaceFolder}/node_modules/ava/entrypoints/cli.mjs",
+      "args": ["${file}"],
       "outputCapture": "std",
       "internalConsoleOptions": "openOnSessionStart",
       "env": {
-        "AVA_DEBUG": "${relativeFile}"
+        "AVA_DEBUG": "${file}"
       },
       "smartStep": true,
       "skipFiles": [

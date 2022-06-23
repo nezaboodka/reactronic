@@ -31,7 +31,7 @@
       }
     },
     {
-      "label": "Show Coverage  -  nyc & ava",
+      "label": "Show Coverage  -  c8 & ava",
       "type": "shell",
       "command": "npm run cover",
       "isBackground": true,
