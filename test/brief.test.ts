@@ -144,7 +144,7 @@ test('brief', t => {
     t.throws(() => { console.log(Rx.getController(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
     const op2 = Transaction.create({ hint: 'op2' })
     const zombi = op2.run(() => new Person())
-    t.throws(() => console.log(zombi.age), { message: 'T1[none]: object Person #30 is committed in later transaction' })
+    t.throws(() => console.log(zombi.age), { message: 'T1[<none>]: object Person #30 not yet available (head is T0[<empty>])' })
     t.throws(() => op2.run(() => { throw new Error('test') }), { message: 'test' })
     t.throws(() => op2.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
     const op3 = Transaction.create({ hint: 'op3' })

@@ -44,7 +44,7 @@ export abstract class Transaction implements Worker {
 }
 
 class TransactionImpl extends Transaction {
-  private static readonly none: TransactionImpl = new TransactionImpl({ hint: 'none' })
+  private static readonly none: TransactionImpl = new TransactionImpl({ hint: '<none>' })
   private static curr: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false
   private static frameStartTime: number = 0
