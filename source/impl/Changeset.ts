@@ -99,7 +99,7 @@ export class Changeset implements AbstractChangeset {
   getObjectSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
     const r = this.lookupObjectSnapshot(h, m)
     if (r === EMPTY_SNAPSHOT)
-      throw misuse(`T${this.id}[${this.hint}]: object ${Dump.obj(h)} not yet available (head is T${h.head.changeset.id}[${h.head.changeset.hint}]${h.editing ? `, being edited by T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''})`)
+      throw misuse(`T${this.id}[${this.hint}]: object ${Dump.obj(h)} is not yet available (head is T${h.head.changeset.id}[${h.head.changeset.hint}]${h.editing ? `, being edited by T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''})`)
     return r
   }
 
@@ -150,17 +150,19 @@ export class Changeset implements AbstractChangeset {
     // if (m !== Meta.Handle && value !== Meta.Handle && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.snapshot !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.snapshot(r, m)}`)
     // if (r === ROOT_REV && m !== Meta.Handle && value !== Meta.Handle) /* istanbul ignore next */
-    //   throw misuse(`T${this.id}[${this.hint}]: member ${Hints.snapshot(r, m)} not yet available (head is T${h.head.changeset.id}[${h.head.changeset.hint}]${h.editing ? `, being edited by T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''})`)
-    if (m !== Meta.Handle && value !== Meta.Handle) {
-      if (os.changeset !== this || os.former.snapshot !== EMPTY_SNAPSHOT) {
-        if (this.options.token !== undefined && token !== this.options.token)
-          throw misuse(`${this.hint} should not have side effects (trying to change ${Dump.snapshot(os, m)})`)
-        // TODO: Detect uninitialized members
-        // if (existing === undefined)
-        //   throw misuse(`uninitialized member is detected: ${Hints.snapshot(r, m)}`)
+    //   throw misuse(`T${this.id}[${this.hint}]: member ${Hints.snapshot(r, m)} is not yet available (head is T${h.head.changeset.id}[${h.head.changeset.hint}]${h.editing ? `, being edited by T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''})`)
+    if (m !== Meta.Handle) {
+      if (value !== Meta.Handle) {
+        if (os.changeset !== this || os.former.snapshot !== EMPTY_SNAPSHOT) {
+          if (this.options.token !== undefined && token !== this.options.token)
+            throw misuse(`${this.hint} should not have side effects (trying to change ${Dump.snapshot(os, m)})`)
+          // TODO: Detect uninitialized members
+          // if (existing === undefined)
+          //   throw misuse(`uninitialized member is detected: ${Hints.snapshot(r, m)}`)
+        }
       }
       if (os === EMPTY_SNAPSHOT)
-        throw misuse(`T${this.id}[${this.hint}]: member ${Dump.snapshot(os, m)} not yet available (head is T${h.head.changeset.id}[${h.head.changeset.hint}]${h.editing ? `, being edited by T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''})`)
+        throw misuse(`T${this.id}[${this.hint}]: member ${Dump.snapshot(os, m)} is not yet available (head is T${h.head.changeset.id}[${h.head.changeset.hint}]${h.editing ? `, being edited by T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''})`)
     }
     return os.changeset !== this && !this.sealed
   }
