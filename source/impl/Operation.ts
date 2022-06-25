@@ -133,7 +133,7 @@ export class OperationController extends Controller<any> {
 
   private peek(args: any[] | undefined): OperationContext {
     const ctx = Changeset.current()
-    const os: ObjectSnapshot = ctx.seekSnapshot(this.objectHandle, this.memberName)
+    const os: ObjectSnapshot = ctx.lookupObjectSnapshot(this.objectHandle, this.memberName)
     const op: Operation = this.acquireFromSnapshot(os, args)
     const isValid = op.options.kind !== Kind.Transaction && op.cause !== BOOT_CAUSE &&
       (ctx === op.changeset || ctx.timestamp < op.obsoleteSince) &&
@@ -153,7 +153,7 @@ export class OperationController extends Controller<any> {
     const h = this.objectHandle
     const m = this.memberName
     const ctx = Changeset.edit()
-    const os: ObjectSnapshot = ctx.getEditableSnapshot(h, m, Meta.Handle, this)
+    const os: ObjectSnapshot = ctx.getEditableObjectSnapshot(h, m, Meta.Handle, this)
     let op: Operation = this.acquireFromSnapshot(os, undefined)
     if (op.changeset !== os.changeset) {
       const op2 = new Operation(this, os.changeset, op)
@@ -174,10 +174,10 @@ export class OperationController extends Controller<any> {
         const standalone = os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT
         op = Transaction.run<Operation>({ hint, standalone, token: this }, (): Operation => {
           const h = this.objectHandle
-          let r2: ObjectSnapshot = Changeset.current().getRelevantSnapshot(h, m)
+          let r2: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
           let op2 = r2.data[m] as Operation
           if (op2.controller !== this) {
-            r2 = Changeset.edit().getEditableSnapshot(h, m, Meta.Handle, this)
+            r2 = Changeset.edit().getEditableObjectSnapshot(h, m, Meta.Handle, this)
             const t = new Operation(this, r2.changeset, op2)
             if (args)
               t.args = args

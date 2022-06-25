@@ -123,7 +123,7 @@ export class JournalImpl extends Journal {
       if (!disposed) {
         op.forEach((vp, m) => {
           const value = undoing ? vp.formerValue : vp.freshValue
-          const os: ObjectSnapshot = ctx.getEditableSnapshot(h, m, value)
+          const os: ObjectSnapshot = ctx.getEditableObjectSnapshot(h, m, value)
           if (os.changeset === ctx) {
             os.data[m] = new Subscription(value)
             const existing: any = os.former.snapshot.data[m]

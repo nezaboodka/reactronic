@@ -173,7 +173,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
     let result: any
     if (m !== Meta.Handle) {
       const cs = Changeset.current()
-      const os: ObjectSnapshot = cs.getRelevantSnapshot(h, m)
+      const os: ObjectSnapshot = cs.getObjectSnapshot(h, m)
       result = os.data[m]
       if (result instanceof Subscription && !result.isOperation) {
         Changeset.markUsed(result, os, m, h, Kind.Plain, false)
@@ -188,7 +188,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
   }
 
   set(h: ObjectHandle, m: MemberName, value: any, receiver: any): boolean {
-    const os: ObjectSnapshot = Changeset.edit().getEditableSnapshot(h, m, value)
+    const os: ObjectSnapshot = Changeset.edit().getEditableObjectSnapshot(h, m, value)
     if (os !== EMPTY_SNAPSHOT) {
       let curr = os.data[m] as Subscription
       if (curr !== undefined || (os.former.snapshot.changeset === EMPTY_SNAPSHOT.changeset && (m in h.data) === false)) {
@@ -213,12 +213,12 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
   }
 
   has(h: ObjectHandle, m: MemberName): boolean {
-    const os: ObjectSnapshot = Changeset.current().getRelevantSnapshot(h, m)
+    const os: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
     return m in os.data || m in h.data
   }
 
   getOwnPropertyDescriptor(h: ObjectHandle, m: MemberName): PropertyDescriptor | undefined {
-    const os: ObjectSnapshot = Changeset.current().getRelevantSnapshot(h, m)
+    const os: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
     const pd = Reflect.getOwnPropertyDescriptor(os.data, m)
     if (pd)
       pd.configurable = pd.writable = true
@@ -227,7 +227,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
 
   ownKeys(h: ObjectHandle): Array<string | symbol> {
     // TODO: Better implementation to avoid filtering
-    const os: ObjectSnapshot = Changeset.current().getRelevantSnapshot(h, Meta.Handle)
+    const os: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, Meta.Handle)
     const result = []
     for (const m of Object.getOwnPropertyNames(os.data)) {
       const value = os.data[m]
@@ -310,7 +310,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
   static createHandleForReactiveObject(proto: any, data: any, blank: any, hint: string): ObjectHandle {
     const ctx = Changeset.edit()
     const h = new ObjectHandle(data, undefined, Hooks.handler, EMPTY_SNAPSHOT, hint)
-    ctx.getEditableSnapshot(h, Meta.Handle, blank)
+    ctx.getEditableObjectSnapshot(h, Meta.Handle, blank)
     if (!Hooks.reactionsAutoStartDisabled)
       for (const m in Meta.getFrom(proto, Meta.Reactions))
         (h.proxy[m][Meta.Controller] as Controller<any>).markObsolete()

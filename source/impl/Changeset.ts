@@ -21,7 +21,7 @@ Object.defineProperty(ObjectHandle.prototype, '#this', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
-    const data = Changeset.current().getRelevantSnapshot(this, '#this').data
+    const data = Changeset.current().getObjectSnapshot(this, '#this').data
     for (const m in data) {
       const v = data[m]
       if (v instanceof Subscription)
@@ -80,7 +80,7 @@ export class Changeset implements AbstractChangeset {
   static revokeAllSubscriptions = (changeset: Changeset): void => { /* nop */ }
   static enqueueReactionsToRun = (reactions: Array<Subscriber>): void => { /* nop */ }
 
-  seekSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
+  lookupObjectSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
     // TODO: Take into account timestamp of the member
     let os: ObjectSnapshot | undefined = h.editing
     if (os && os.changeset !== this) {
@@ -96,15 +96,15 @@ export class Changeset implements AbstractChangeset {
     return os
   }
 
-  getRelevantSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
-    const r = this.seekSnapshot(h, m)
+  getObjectSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
+    const r = this.lookupObjectSnapshot(h, m)
     if (r === EMPTY_SNAPSHOT)
-      throw misuse(`object ${Dump.obj(h)} doesn't exist in snapshot v${this.revision} (${this.hint})`)
+      throw misuse(`T${this.id}[${this.hint}]: object ${Dump.obj(h)} is committed in later transaction`)
     return r
   }
 
-  getEditableSnapshot(h: ObjectHandle, m: MemberName, value: any, token?: any): ObjectSnapshot {
-    let os: ObjectSnapshot = this.seekSnapshot(h, m)
+  getEditableObjectSnapshot(h: ObjectHandle, m: MemberName, value: any, token?: any): ObjectSnapshot {
+    let os: ObjectSnapshot = this.lookupObjectSnapshot(h, m)
     const existing = os.data[m]
     if (existing !== Meta.Nonreactive) {
       if (this.isNewSnapshotRequired(h, os, m, existing, value, token)) {
@@ -138,7 +138,7 @@ export class Changeset implements AbstractChangeset {
   }
 
   static doDispose(ctx: Changeset, h: ObjectHandle): ObjectSnapshot {
-    const os: ObjectSnapshot = ctx.getEditableSnapshot(h, Meta.Revision, Meta.Undefined)
+    const os: ObjectSnapshot = ctx.getEditableObjectSnapshot(h, Meta.Revision, Meta.Undefined)
     if (os !== EMPTY_SNAPSHOT)
       os.disposed = true
     return os
@@ -150,7 +150,7 @@ export class Changeset implements AbstractChangeset {
     // if (m !== Meta.Handle && value !== Meta.Handle && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.snapshot !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.snapshot(r, m)}`)
     // if (r === ROOT_REV && m !== Meta.Handle && value !== Meta.Handle) /* istanbul ignore next */
-    //   throw misuse(`member ${Hints.snapshot(r, m)} doesn't exist in snapshot v${this.stamp} (${this.hint})`)
+    //   throw misuse(`T${this.id}[${this.hint}]: member ${Hints.snapshot(r, m)} is committed in later transaction`)
     if (m !== Meta.Handle && value !== Meta.Handle) {
       if (os.changeset !== this || os.former.snapshot !== EMPTY_SNAPSHOT) {
         if (this.options.token !== undefined && token !== this.options.token)
@@ -160,7 +160,7 @@ export class Changeset implements AbstractChangeset {
         //   throw misuse(`uninitialized member is detected: ${Hints.snapshot(r, m)}`)
       }
       if (os === EMPTY_SNAPSHOT)
-        throw misuse(`member ${Dump.snapshot(os, m)} doesn't exist in snapshot v${this.revision} (${this.hint})`)
+        throw misuse(`T${this.id}[${this.hint}]: member ${Dump.snapshot(os, m)} is committed in later transaction`)
     }
     return os.changeset !== this && !this.sealed
   }
