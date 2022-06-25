@@ -25,7 +25,7 @@ export class MonitorImpl extends Monitor {
   counter = 0
   workers = new Set<Worker>()
   duration = 0
-  internals = {
+  readonly internals = {
     started: 0,
     activationDelay: -1,
     activationTimeout: undefined,
@@ -73,7 +73,8 @@ export class MonitorImpl extends Monitor {
   }
 
   private static activate(mon: MonitorImpl, delay: number): void {
-    if (mon.internals.started === 0) {
+    const active = mon.counter > 0
+    if (mon.internals.started === 0 && active) {
       mon.duration = 0
       mon.internals.started = performance.now()
       MonitorImpl.tick(mon)
@@ -84,7 +85,7 @@ export class MonitorImpl extends Monitor {
           Transaction.run<void>({ hint: 'Monitor.activate', standalone: 'isolated' },
             MonitorImpl.activate, mon, -1), delay) as any
     }
-    else if (mon.counter > 0)
+    else if (active)
       mon.isActive = true
   }
 
@@ -109,7 +110,7 @@ export class MonitorImpl extends Monitor {
 
   private static tick(mon: MonitorImpl): void {
     if (mon.internals.started !== 0) {
-      Transaction.run(null, () => {
+      Transaction.run(MONITOR_TICK_OPTIONS, () => {
         const resolution = mon.internals.durationResolution
         mon.duration = Math.round(resolution * (performance.now() - mon.internals.started)) / resolution
       })
@@ -119,3 +120,8 @@ export class MonitorImpl extends Monitor {
     }
   }
 }
+
+const MONITOR_TICK_OPTIONS = Object.freeze({
+  hint: 'Monitor.tick',
+  // logging: LoggingLevel.Debug,
+})

@@ -351,6 +351,11 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
     return obj
   }
 
+  static getHint<T>(obj: T): string {
+    const h = Hooks.acquireHandle(obj)
+    return h.hint
+  }
+
   /* istanbul ignore next */
   static createOperation = function(h: ObjectHandle, m: MemberName, options: OptionsImpl): F<any> {
     throw misuse('createOperation should never be called')
