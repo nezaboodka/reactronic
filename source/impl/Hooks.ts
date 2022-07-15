@@ -92,7 +92,14 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static sensitivity: boolean = false
-  static readonly handler: Hooks = new Hooks()
+  static readonly transactional: Hooks = new Hooks(false)
+  static readonly reactive: Hooks = new Hooks(true)
+
+  readonly isReactive: boolean
+
+  constructor(isReactive: boolean) {
+    this.isReactive = isReactive
+  }
 
   getPrototypeOf(h: ObjectHandle): object | null {
     return Reflect.getPrototypeOf(h.data)
@@ -105,7 +112,8 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
       const os: ObjectSnapshot = cs.getObjectSnapshot(h, m)
       result = os.data[m]
       if (result instanceof Subscription && !result.isOperation) {
-        Changeset.markUsed(result, os, m, h, Kind.Plain, false)
+        if (this.isReactive)
+          Changeset.markUsed(result, os, m, h, Kind.Plain, false)
         result = result.content
       }
       else // result === NONREACTIVE
@@ -170,11 +178,11 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
     if (reactive) {
       const get = function(this: any): any {
         const h = Hooks.acquireHandle(this)
-        return Hooks.handler.get(h, m, this)
+        return Hooks.reactive.get(h, m, this)
       }
       const set = function(this: any, value: any): boolean {
         const h = Hooks.acquireHandle(this)
-        return Hooks.handler.set(h, m, value, this)
+        return Hooks.reactive.set(h, m, value, this)
       }
       const enumerable = true
       const configurable = false
@@ -228,7 +236,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
         throw misuse('only objects can be reactive')
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
       const os = new ObjectSnapshot(EMPTY_SNAPSHOT.changeset, EMPTY_SNAPSHOT, {...initial})
-      h = new ObjectHandle(obj, obj, Hooks.handler, os, obj.constructor.name)
+      h = new ObjectHandle(obj, obj, Hooks.reactive, os, obj.constructor.name)
       Meta.set(os.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
       Meta.set(os.data, Meta.Revision, new Subscription(1))
@@ -238,7 +246,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
 
   static createHandleForReactiveObject(proto: any, data: any, blank: any, hint: string): ObjectHandle {
     const ctx = Changeset.edit()
-    const h = new ObjectHandle(data, undefined, Hooks.handler, EMPTY_SNAPSHOT, hint)
+    const h = new ObjectHandle(data, undefined, Hooks.reactive, EMPTY_SNAPSHOT, hint)
     ctx.getEditableObjectSnapshot(h, Meta.Handle, blank)
     if (!Hooks.reactionsAutoStartDisabled)
       for (const m in Meta.getFrom(proto, Meta.Reactions))
