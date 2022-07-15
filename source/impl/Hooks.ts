@@ -15,13 +15,14 @@ import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset'
 import { Journal } from './Journal'
 import { Monitor } from './Monitor'
 
-// ReactiveObject
+// HookedObject, ReactiveObject
 
-export abstract class ReactiveObject {
-  constructor() {
+export abstract class HookedObject {
+  protected constructor(reactive: boolean) {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
-    const h = Hooks.createHandleForReactiveObject(proto, this, initial, new.target.name)
+    const h = Hooks.createHandleForReactronicObject(
+      proto, this, initial, new.target.name, reactive)
     return h.proxy
   }
 
@@ -29,6 +30,12 @@ export abstract class ReactiveObject {
   [Symbol.toStringTag](): string {
     const h = Meta.get<ObjectHandle>(this, Meta.Handle)
     return Dump.obj(h)
+  }
+}
+
+export abstract class ReactiveObject extends HookedObject {
+  constructor() {
+    super(true)
   }
 }
 
@@ -244,9 +251,10 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
     return h
   }
 
-  static createHandleForReactiveObject(proto: any, data: any, blank: any, hint: string): ObjectHandle {
+  static createHandleForReactronicObject(proto: any, data: any, blank: any, hint: string, reactive: boolean): ObjectHandle {
     const ctx = Changeset.edit()
-    const h = new ObjectHandle(data, undefined, Hooks.reactive, EMPTY_SNAPSHOT, hint)
+    const hooks = reactive ? Hooks.reactive : Hooks.transactional
+    const h = new ObjectHandle(data, undefined, hooks, EMPTY_SNAPSHOT, hint)
     ctx.getEditableObjectSnapshot(h, Meta.Handle, blank)
     if (!Hooks.reactionsAutoStartDisabled)
       for (const m in Meta.getFrom(proto, Meta.Reactions))
