@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 export { all, pause } from './util/Utils'
-export { Collection } from './util/Collection'
+export { Collection, Item, CollectionReader } from './util/Collection'
 export { SealedArray } from './util/SealedArray'
 export { SealedMap } from './util/SealedMap'
 export { SealedSet } from './util/SealedSet'
