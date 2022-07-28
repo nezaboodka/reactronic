@@ -13,12 +13,13 @@ import { ReactiveObject } from './Hooks'
 export class ReactiveArray<T> extends ReactiveObject {
   private a = new Array<T>()
 
-  constructor(...items: T[])
+  constructor()
   constructor(arrayLength: number)
   constructor(arrayLength?: number)
-  constructor(args: any) {
+  constructor(...items: T[])
+  constructor(args?: any) {
     super()
-    this.a = new Array<T>(args)
+    this.a = args !== undefined ? new Array<T>(args) : new Array<T>()
   }
 
   get length(): number { return this.a.length }

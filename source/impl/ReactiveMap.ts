@@ -17,7 +17,7 @@ export class ReactiveMap<K, V> extends ReactiveObject {
   constructor(iterable?: Iterable<readonly [K, V]> | null)
   constructor(args?: any) {
     super()
-    this.m = new Map<K, V>(args)
+    this.m = args !== undefined ? new Map<K, V>(args) : new Map<K, V>()
   }
 
   clear(): void { this.mutable.clear() }
