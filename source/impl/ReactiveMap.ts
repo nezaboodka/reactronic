@@ -15,9 +15,9 @@ export class ReactiveMap<K, V> extends ReactiveObject {
 
   constructor()
   constructor(iterable?: Iterable<readonly [K, V]> | null)
-  constructor(iterable?: Iterable<readonly [K, V]> | null) {
+  constructor(args?: any) {
     super()
-    this.m = new Map<K, V>(iterable)
+    this.m = new Map<K, V>(args)
   }
 
   clear(): void { this.mutable.clear() }
