@@ -12,6 +12,15 @@ import { ReactiveObject } from './Hooks'
 
 export class ReactiveArray<T> extends ReactiveObject {
   private a = new Array<T>()
+
+  constructor(...items: T[])
+  constructor(arrayLength: number)
+  constructor(arrayLength?: number)
+  constructor(args: any) {
+    super()
+    this.a = new Array<T>(args)
+  }
+
   get length(): number { return this.a.length }
   set length(n: number) { this.mutable.length = n }
   get(n: number): T { return this.a[n] }
@@ -36,7 +45,9 @@ export class ReactiveArray<T> extends ReactiveObject {
   splice(start: number, deleteCount: number, ...items: T[]): T[] { return this.mutable.splice(start, deleteCount, ...items) }
 
   unshift(...items: T[]): number { return this.mutable.unshift(...items) }
+  includes(searchElement: T, fromIndex?: number): boolean { return this.a.includes(searchElement, fromIndex) }
   indexOf(searchElement: T, fromIndex?: number): number { return this.a.indexOf(searchElement, fromIndex) }
+
   lastIndexOf(searchElement: T, fromIndex?: number): number { return this.a.lastIndexOf(searchElement, fromIndex) }
 
   every(predicate: (value: T, index: number, array: T[]) => unknown, thisArg?: any): boolean
@@ -66,6 +77,7 @@ export class ReactiveArray<T> extends ReactiveObject {
   fill(value: T, start?: number, end?: number): this { this.mutable.fill(value, start, end); return this }
   copyWithin(target: number, start: number, end?: number): this { this.mutable.copyWithin(target, start, end); return this }
 
+  [Symbol.iterator](): IterableIterator<T> { return this.a[Symbol.iterator]() }
   entries(): IterableIterator<[number, T]> { return this.a.entries() }
   keys(): IterableIterator<number> { return this.a.keys() }
   values(): IterableIterator<T> { return this.a.values() }

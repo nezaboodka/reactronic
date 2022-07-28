@@ -11,7 +11,15 @@ import { ReactiveObject } from './Hooks'
 // ReactiveMap
 
 export class ReactiveMap<K, V> extends ReactiveObject {
-  private m = new Map<K, V>()
+  private m: Map<K, V>
+
+  constructor()
+  constructor(iterable?: Iterable<readonly [K, V]> | null)
+  constructor(iterable?: Iterable<readonly [K, V]> | null) {
+    super()
+    this.m = new Map<K, V>(iterable)
+  }
+
   clear(): void { this.mutable.clear() }
   delete(key: K): boolean { return this.mutable.delete(key) }
   forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void { this.m.forEach(callbackfn, thisArg) }
@@ -23,6 +31,8 @@ export class ReactiveMap<K, V> extends ReactiveObject {
   entries(): IterableIterator<[K, V]> { return this.m.entries() }
   keys(): IterableIterator<K> { return this.m.keys() }
   values(): IterableIterator<V> { return this.m.values() }
+
+  [Symbol.toStringTag](): string { return this.m[Symbol.toStringTag] }
 
   private get mutable(): Map<K, V> {
     const createCopy = (this.m as any)[Sealant.CreateCopy]
