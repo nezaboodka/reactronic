@@ -24,8 +24,8 @@ export class ReactiveArray<T> extends ReactiveObject {
 
   get length(): number { return this.a.length }
   set length(n: number) { this.mutable.length = n }
-  get(n: number): T { return this.a[n] }
-  set(n: number, item: T): void { this.mutable[n] = item }
+  getItem(n: number): T { return this.a[n] }
+  setItem(n: number, item: T): void { this.mutable[n] = item }
   toString(): string { return this.a.toString() }
   toLocaleString(): string { return this.a.toLocaleString() }
   pop(): T | undefined { return this.mutable.pop() }
