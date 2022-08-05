@@ -95,7 +95,7 @@ export class Collection<T> implements CollectionReader<T> {
     return result
   }
 
-  claim(key: string): Item<T> | undefined {
+  claim(key: string, resolution?: { isDuplicate: boolean }): Item<T> | undefined {
     const tag = this.tag
     if (tag < 0)
       throw new Error('merge is not in progress')
@@ -103,15 +103,23 @@ export class Collection<T> implements CollectionReader<T> {
     if (key !== (item ? this.getKey(item.self) : undefined))
       item = this.lookup(key) as ItemImpl<T> | undefined
     if (item) {
-      if (item.tag === tag)
+      if (item.tag !== tag) {
+        item.tag = tag
+        if (this.strict && item !== this.strictNextItem)
+          item.status = tag // IsAdded=false, IsMoved=true
+        this.strictNextItem = item.next
+        this.removed.exclude(item)
+        this.current.include(item)
+        if (resolution)
+          resolution.isDuplicate = false
+      }
+      else if (resolution)
+        resolution.isDuplicate = true
+      else
         throw new Error(`duplicate item: ${key}`)
-      item.tag = tag
-      if (this.strict && item !== this.strictNextItem)
-        item.status = tag // IsAdded=false, IsMoved=true
-      this.strictNextItem = item.next
-      this.removed.exclude(item)
-      this.current.include(item)
     }
+    else if (resolution)
+      resolution.isDuplicate = false
     return item
   }
 
