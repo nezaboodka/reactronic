@@ -17,7 +17,7 @@ import { OperationController } from './impl/Operation'
 export class Rx {
   static getRevisionOf(obj: any): number { return obj[Meta.Revision] }
   static why(brief: boolean = false): string { return brief ? OperationController.briefWhy() : OperationController.why() }
-  static getController<T>(method: F<T>): Controller<T> { return OperationController.of(method) }
+  static getController<T>(method: F<T>): Controller<T> { return OperationController.getControllerOf(method) }
   static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Rx.getController(method as any as F<T>).pullLastResult(args) }
   static configureCurrentOperation(options: Partial<MemberOptions>): MemberOptions { return OperationController.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Hooks.setObjectOptions(obj, options) }

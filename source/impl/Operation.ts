@@ -76,7 +76,7 @@ export class OperationController extends Controller<any> {
     return t
   }
 
-  static of(method: F<any>): Controller<any> {
+  static getControllerOf(method: F<any>): Controller<any> {
     const ctl = Meta.get<Controller<any> | undefined>(method, Meta.Controller)
     if (!ctl)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
