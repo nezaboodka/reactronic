@@ -11,7 +11,7 @@ import { Controller } from './Controller'
 import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options'
 import { Meta, ObjectHandle } from './impl/Data'
 import { Changeset } from './impl/Changeset'
-import { Mvcc } from './impl/Hooks'
+import { Mvcc } from './impl/Mvcc'
 import { OperationController } from './impl/Operation'
 
 export class Rx {

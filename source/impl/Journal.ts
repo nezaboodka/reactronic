@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ReactiveObject } from './Hooks'
+import { ReactiveObject } from './Mvcc'
 import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ValuePatch, Subscription, MemberName } from './Data'
 import { Changeset, EMPTY_SNAPSHOT } from './Changeset'
 import { Transaction } from './Transaction'

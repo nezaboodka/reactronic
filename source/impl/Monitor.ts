@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Worker } from '../Worker'
-import { ReactiveObject, Mvcc } from './Hooks'
+import { ReactiveObject, Mvcc } from './Mvcc'
 import { Transaction } from './Transaction'
 
 export abstract class Monitor extends ReactiveObject {

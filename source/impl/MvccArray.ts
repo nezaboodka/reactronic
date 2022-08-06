@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Sealant } from '../util/Sealant'
-import { TransactionalObject } from './Hooks'
+import { TransactionalObject } from './Mvcc'
 
 // HookedArray
 

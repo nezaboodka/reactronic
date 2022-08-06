@@ -13,7 +13,7 @@ import { ObjectSnapshot, MemberName, ObjectHandle, Subscription, Subscriber, Sep
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Changeset'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
-import { Mvcc, OptionsImpl } from './Hooks'
+import { Mvcc, OptionsImpl } from './Mvcc'
 import { JournalImpl } from './Journal'
 
 const BOOT_ARGS: any[] = []

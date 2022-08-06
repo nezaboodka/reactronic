@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Collection, Item, CollectionReader } from '../util/Collection'
-import { ReactiveObject } from './Hooks'
+import { ReactiveObject } from './Mvcc'
 
 // ReactiveCollection
 

@@ -7,7 +7,7 @@
 
 /* istanbul ignore file */
 
-import { ReactiveObject } from './impl/Hooks'
+import { ReactiveObject } from './impl/Mvcc'
 
 export abstract class Buffer<T> extends ReactiveObject {
   abstract readonly capacity: number
