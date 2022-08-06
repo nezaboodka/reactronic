@@ -309,7 +309,7 @@ function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 export interface SnapshotOptions {
   readonly hint?: string
-  readonly standalone?: StandaloneMode
+  readonly separation?: SeparationMode
   readonly journal?: Journal
   readonly logging?: Partial<LoggingOptions>
   readonly token?: any
@@ -317,7 +317,7 @@ export interface SnapshotOptions {
 
 interface MemberOptions {
   readonly kind: Kind
-  readonly standalone: StandaloneMode
+  readonly separation: SeparationMode
   readonly order: number
   readonly noSideEffects: boolean
   readonly triggeringArgs: boolean

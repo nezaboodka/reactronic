@@ -9,7 +9,7 @@ import { F } from '../util/Utils'
 import { Log, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
-import { ObjectSnapshot, MemberName, ObjectHandle, Subscription, Subscriber, StandaloneMode, SubscriptionInfo, Meta, AbstractChangeset } from './Data'
+import { ObjectSnapshot, MemberName, ObjectHandle, Subscription, Subscriber, SeparationMode, SubscriptionInfo, Meta, AbstractChangeset } from './Data'
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Changeset'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -57,12 +57,12 @@ export class OperationController extends Controller<any> {
       && (!weak || op.cause === BOOT_CAUSE || !op.successor ||
         op.successor.transaction.isFinished)) {
       const outerOpts = Operation.current?.options
-      const standalone = weak || opts.standalone || opts.kind === Kind.Reaction ||
+      const separation = weak || opts.separation || opts.kind === Kind.Reaction ||
         (opts.kind === Kind.Transaction && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cache)) ||
         (opts.kind === Kind.Cache && (oc.snapshot.changeset.sealed ||
           oc.snapshot.former.snapshot !== EMPTY_SNAPSHOT))
       const token = opts.noSideEffects ? this : undefined
-      const oc2 = this.run(oc, standalone, opts, token, args)
+      const oc2 = this.run(oc, separation, opts, token, args)
       const ctx2 = oc2.operation.changeset
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         oc = oc2
@@ -171,8 +171,8 @@ export class OperationController extends Controller<any> {
     if (op.controller !== this) {
       if (os.changeset !== EMPTY_SNAPSHOT.changeset) {
         const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
-        const standalone = os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT
-        op = Transaction.run<Operation>({ hint, standalone, token: this }, (): Operation => {
+        const separation = os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT
+        op = Transaction.run<Operation>({ hint, separation, token: this }, (): Operation => {
           const h = this.objectHandle
           let r2: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
           let op2 = r2.data[m] as Operation
@@ -203,11 +203,11 @@ export class OperationController extends Controller<any> {
     return op
   }
 
-  private run(existing: OperationContext, standalone: StandaloneMode, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
+  private run(existing: OperationContext, separation: SeparationMode, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.objectHandle, this.memberName)}`
     let oc = existing
-    const opts = { hint, standalone, journal: options.journal, logging: options.logging, token }
+    const opts = { hint, separation, journal: options.journal, logging: options.logging, token }
     const result = Transaction.run(opts, (argsx: any[] | undefined): any => {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()
@@ -511,7 +511,7 @@ class Operation extends Subscription implements Subscriber {
   private monitorEnter(mon: Monitor): void {
     const options: SnapshotOptions = {
       hint: 'Monitor.enter',
-      standalone: 'isolated',
+      separation: 'isolated',
       logging: Log.isOn && Log.opt.monitor ? undefined : Log.global }
     OperationController.runWithin<void>(undefined, Transaction.run, options,
       MonitorImpl.enter, mon, this.transaction)
@@ -522,7 +522,7 @@ class Operation extends Subscription implements Subscriber {
       const leave = (): void => {
         const options: SnapshotOptions = {
           hint: 'Monitor.leave',
-          standalone: 'isolated',
+          separation: 'isolated',
           logging: Log.isOn && Log.opt.monitor ? undefined : Log.DefaultLevel }
         OperationController.runWithin<void>(undefined, Transaction.run, options,
           MonitorImpl.leave, mon, this.transaction)

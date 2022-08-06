@@ -10,7 +10,7 @@ import { Log, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance } from '../Options'
 import { LoggingOptions, ProfilingOptions } from '../Logging'
 import { Controller } from '../Controller'
-import { ObjectSnapshot, MemberName, ObjectHandle, Subscription, Meta, StandaloneMode } from './Data'
+import { ObjectSnapshot, MemberName, ObjectHandle, Subscription, Meta, SeparationMode } from './Data'
 import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset'
 import { Journal } from './Journal'
 import { Monitor } from './Monitor'
@@ -43,7 +43,7 @@ export abstract class ReactiveObject extends TransactionalObject {
 
 const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   kind: Kind.Plain,
-  standalone: false,
+  separation: false,
   order: 0,
   noSideEffects: false,
   triggeringArgs: false,
@@ -58,7 +58,7 @@ export class OptionsImpl implements MemberOptions {
   readonly getter: Function
   readonly setter: Function
   readonly kind: Kind
-  readonly standalone: StandaloneMode
+  readonly separation: SeparationMode
   readonly order: number
   readonly noSideEffects: boolean
   readonly triggeringArgs: boolean
@@ -73,7 +73,7 @@ export class OptionsImpl implements MemberOptions {
     this.getter = getter !== undefined ? getter : existing.getter
     this.setter = setter !== undefined ? setter : existing.setter
     this.kind = merge(DEFAULT_OPTIONS.kind, existing.kind, patch.kind, implicit)
-    this.standalone = merge(DEFAULT_OPTIONS.standalone, existing.standalone, patch.standalone, implicit)
+    this.separation = merge(DEFAULT_OPTIONS.separation, existing.separation, patch.separation, implicit)
     this.order = merge(DEFAULT_OPTIONS.order, existing.order, patch.order, implicit)
     this.noSideEffects = merge(DEFAULT_OPTIONS.noSideEffects, existing.noSideEffects, patch.noSideEffects, implicit)
     this.triggeringArgs = merge(DEFAULT_OPTIONS.triggeringArgs, existing.triggeringArgs, patch.triggeringArgs, implicit)

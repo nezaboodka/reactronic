@@ -28,7 +28,7 @@ export class Subscription {
   constructor(content: any) { this.content = content }
 }
 
-export type StandaloneMode = boolean | 'isolated' | 'disposal'
+export type SeparationMode = boolean | 'isolated' | 'disposal'
 
 export interface Subscriber {
   readonly order: number

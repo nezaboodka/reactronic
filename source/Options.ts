@@ -6,14 +6,14 @@
 // automatically licensed under the license referred above.
 
 import { LoggingOptions } from './Logging'
-import { StandaloneMode } from './impl/Data'
+import { SeparationMode } from './impl/Data'
 export { LoggingOptions, ProfilingOptions, LoggingLevel } from './Logging'
 import { Journal } from './impl/Journal'
 import { Monitor } from './impl/Monitor'
 
 export interface SnapshotOptions {
   readonly hint?: string
-  readonly standalone?: StandaloneMode
+  readonly separation?: SeparationMode
   readonly journal?: Journal
   readonly logging?: Partial<LoggingOptions>
   readonly token?: any
@@ -21,7 +21,7 @@ export interface SnapshotOptions {
 
 export interface MemberOptions {
   readonly kind: Kind
-  readonly standalone: StandaloneMode
+  readonly separation: SeparationMode
   readonly order: number
   readonly noSideEffects: boolean
   readonly triggeringArgs: boolean

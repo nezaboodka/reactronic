@@ -35,7 +35,7 @@ export abstract class Transaction implements Worker {
 
   static create(options: SnapshotOptions | null): Transaction { return new TransactionImpl(options) }
   static run<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(options, func, ...args) }
-  static standalone<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.standalone(func, ...args) }
+  static separate<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.separate(func, ...args) }
   static off<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.off<T>(func, ...args) }
 
   static isFrameOver(everyN: number = 1, timeLimit: number = 10): boolean { return TransactionImpl.isFrameOver(everyN, timeLimit) }
@@ -177,8 +177,8 @@ class TransactionImpl extends Transaction {
     return result
   }
 
-  static standalone<T>(func: F<T>, ...args: any[]): T {
-    return TransactionImpl.run({ standalone: true }, func, ...args)
+  static separate<T>(func: F<T>, ...args: any[]): T {
+    return TransactionImpl.run({ separation: true }, func, ...args)
   }
 
   static off<T>(func: F<T>, ...args: any[]): T {
@@ -211,7 +211,7 @@ class TransactionImpl extends Transaction {
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
     const curr = TransactionImpl.curr
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (options?.standalone || curr.isFinished || curr.options.standalone === 'isolated')
+    if (options?.separation || curr.isFinished || curr.options.separation === 'isolated')
       return new TransactionImpl(options)
     else
       return TransactionImpl.curr
@@ -241,7 +241,7 @@ class TransactionImpl extends Transaction {
           // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
-            standalone: this.options.standalone === 'isolated' ? 'isolated' : true,
+            separation: this.options.separation === 'isolated' ? 'isolated' : true,
             logging: this.changeset.options.logging,
             token: this.changeset.options.token,
           }
