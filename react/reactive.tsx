@@ -31,7 +31,7 @@ class RxComponent<V> extends ReactiveObject {
   @reaction
   protected ensureUpToDate(): void {
     if (!Rx.getController(this.render).isUpToDate)
-      Transaction.off(this.refresh, {rx: this, cycle: this.cycle + 1})
+      Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
   @raw cycle: number = 0

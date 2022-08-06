@@ -195,7 +195,7 @@ class Component<P> extends React.Component<P> {
   @reaction // called immediately in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
-      Transaction.off(() => this.setState({})) // ask React to re-render
+      Transaction.outside(() => this.setState({})) // ask React to re-render
   } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {

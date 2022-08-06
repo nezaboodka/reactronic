@@ -29,7 +29,7 @@ class RxComponent extends ReactiveObject {
   @reaction
   protected ensureUpToDate(): void {
     if (!Rx.getController(this.render).isUpToDate)
-      Transaction.off(this.refresh, {rx: this})
+      Transaction.outside(this.refresh, {rx: this})
   }
 
   @raw refresh: (next: ReactState) => void = nop

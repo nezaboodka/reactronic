@@ -36,7 +36,7 @@ export abstract class Transaction implements Worker {
   static create(options: SnapshotOptions | null): Transaction { return new TransactionImpl(options) }
   static run<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(options, func, ...args) }
   static separate<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.separate(func, ...args) }
-  static off<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.off<T>(func, ...args) }
+  static outside<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.outside<T>(func, ...args) }
 
   static isFrameOver(everyN: number = 1, timeLimit: number = 10): boolean { return TransactionImpl.isFrameOver(everyN, timeLimit) }
   static requestNextFrame(sleepTime: number = 0): Promise<void> { return TransactionImpl.requestNextFrame(sleepTime) }
@@ -168,7 +168,7 @@ class TransactionImpl extends Transaction {
     let result: any = t.runImpl<T>(options?.logging, func, ...args)
     if (root) {
       if (result instanceof Promise) {
-        result = TransactionImpl.off(() => {
+        result = TransactionImpl.outside(() => {
           return t.wrapToRetry(t.wrapToWaitUntilFinish(result), func, ...args)
         })
       }
@@ -181,7 +181,7 @@ class TransactionImpl extends Transaction {
     return TransactionImpl.run({ separation: true }, func, ...args)
   }
 
-  static off<T>(func: F<T>, ...args: any[]): T {
+  static outside<T>(func: F<T>, ...args: any[]): T {
     const outer = TransactionImpl.curr
     try {
       TransactionImpl.curr = TransactionImpl.none
@@ -292,7 +292,7 @@ class TransactionImpl extends Transaction {
       if (this.sealed && this.pending === 0) {
         const reactions = this.applyOrDiscard() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
-        TransactionImpl.off(Changeset.enqueueReactionsToRun, reactions)
+        TransactionImpl.outside(Changeset.enqueueReactionsToRun, reactions)
       }
       else
         TransactionImpl.curr = outer

@@ -518,7 +518,7 @@ class Operation extends Subscription implements Subscriber {
   }
 
   private monitorLeave(mon: Monitor): void {
-    Transaction.off<void>(() => {
+    Transaction.outside<void>(() => {
       const leave = (): void => {
         const options: SnapshotOptions = {
           hint: 'Monitor.leave',
