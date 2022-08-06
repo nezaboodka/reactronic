@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import { Sealant } from '../util/Sealant'
-import { TransactionalObject } from './Mvcc'
+import { MvccObject } from './Mvcc'
 
 // MvccArray
 
-export class MvccArray<T> extends TransactionalObject {
+export class MvccArray<T> extends MvccObject {
   private all: Array<T>
 
   constructor(reactive: boolean, array: Array<T>) {

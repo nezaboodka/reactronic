@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import { Sealant } from '../util/Sealant'
-import { TransactionalObject } from './Mvcc'
+import { MvccObject } from './Mvcc'
 
 // MvccMap
 
-export class MvccMap<K, V> extends TransactionalObject {
+export class MvccMap<K, V> extends MvccObject {
   private all: Map<K, V>
 
   constructor(reactive: boolean, map: Map<K, V>) {

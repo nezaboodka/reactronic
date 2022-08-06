@@ -15,9 +15,9 @@ import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset'
 import { Journal } from './Journal'
 import { Monitor } from './Monitor'
 
-// TransactionalObject, ReactiveObject
+// MvccObject, TransactionalObject, ReactiveObject
 
-export abstract class TransactionalObject {
+export abstract class MvccObject {
   protected constructor(reactive: boolean) {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
@@ -33,7 +33,13 @@ export abstract class TransactionalObject {
   }
 }
 
-export abstract class ReactiveObject extends TransactionalObject {
+export abstract class TransactionalObject extends MvccObject {
+  constructor() {
+    super(false)
+  }
+}
+
+export abstract class ReactiveObject extends MvccObject {
   constructor() {
     super(true)
   }
