@@ -21,5 +21,4 @@ export { Changeset } from './impl/Changeset'
 export { Transaction } from './impl/Transaction'
 export { Monitor } from './impl/Monitor'
 export { Journal } from './impl/Journal'
-export { Rx, nonreactive, sensitive, isnonreactive,
-  transaction, reaction, cached, options } from './Rx'
+export { Rx, nonreactive, sensitive, raw, transaction, reaction, cached, options } from './Rx'

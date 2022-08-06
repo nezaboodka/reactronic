@@ -291,11 +291,12 @@ NPM: `npm install reactronic`
 
 // Classes
 
+class TransactionalObject { }
 class ReactiveObject { }
 
 // Decorators & Operators
 
-function isnonreactive(proto, prop) // field only
+function raw(proto, prop) // field only
 function transaction(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
