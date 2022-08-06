@@ -303,12 +303,12 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
 
   /* istanbul ignore next */
   static createOperation = function(h: ObjectHandle, m: MemberName, options: OptionsImpl): F<any> {
-    throw misuse('createOperation should never be called')
+    throw misuse('this implementation of createOperation should never be called')
   }
 
   /* istanbul ignore next */
   static rememberOperationOptions = function(proto: any, m: MemberName, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
-    throw misuse('rememberOperationOptions should never be called')
+    throw misuse('this implementation of rememberOperationOptions should never be called')
   }
 }
 
