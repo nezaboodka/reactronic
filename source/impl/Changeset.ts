@@ -17,11 +17,11 @@ import { AbstractChangeset, ObjectSnapshot, MemberName, ObjectHandle, Subscripti
 export const MAX_REVISION = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_REVISION = MAX_REVISION - 1
 
-Object.defineProperty(ObjectHandle.prototype, '#this', {
+Object.defineProperty(ObjectHandle.prototype, '#this#', {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
-    const data = Changeset.current().getObjectSnapshot(this, '#this').data
+    const data = Changeset.current().getObjectSnapshot(this, '#this#').data
     for (const m in data) {
       const v = data[m]
       if (v instanceof Subscription)
@@ -127,7 +127,7 @@ export class Changeset implements AbstractChangeset {
   }
 
   static takeSnapshot<T>(obj: T): T {
-    return (obj as any)[Meta.Handle]['#this']
+    return (obj as any)[Meta.Handle]['#this#']
   }
 
   static dispose(obj: any): void {

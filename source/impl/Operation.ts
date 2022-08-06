@@ -291,7 +291,7 @@ class Operation extends Subscription implements Subscriber {
   hint(): string { return `${Dump.snapshot2(this.controller.objectHandle, this.changeset, this.controller.memberName)}` } // override
   get order(): number { return this.options.order }
 
-  get ['#this'](): string {
+  get ['#this#'](): string {
     return `Operation: ${this.why()}`
   }
 

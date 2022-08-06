@@ -437,8 +437,7 @@ class Reactronic {
   static why(short: boolean = false): string
   static getMethodCache<T>(method: F<T>): Cache<T>
   static configureCurrentOperation(options: Partial<Options>): Options
-  // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void
-  // static assign<T, P extends keyof T>(obj: T, prop: P, value: T[P], sensitivity: Sensitivity)
+  static getRevisionOf(obj: any): number
   static takeSnapshot<T>(obj: T): T
   static dispose(obj: any): void
   static reactionsAutoStartDisabled: boolean
