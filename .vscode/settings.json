@@ -35,6 +35,7 @@
     "keyof",
     "lcovonly",
     "multiline",
+    "Mvcc",
     "nezaboodka",
     "nonsub",
     "nothrow",

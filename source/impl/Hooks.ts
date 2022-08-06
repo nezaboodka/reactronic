@@ -21,7 +21,7 @@ export abstract class TransactionalObject {
   protected constructor(reactive: boolean) {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
-    const h = Hooks.createHandleForTransactionalObject(
+    const h = Mvcc.createHandleForMvccObject(
       proto, this, initial, new.target.name, reactive)
     return h.proxy
   }
@@ -91,16 +91,16 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
   return patch !== undefined && (existing === def || !implicit) ? patch : existing
 }
 
-// Hooks
+// Mvcc
 
-export class Hooks implements ProxyHandler<ObjectHandle> {
+export class Mvcc implements ProxyHandler<ObjectHandle> {
   static reactionsAutoStartDisabled: boolean = false
   static repetitiveUsageWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static sensitivity: boolean = false
-  static readonly transactional: Hooks = new Hooks(false)
-  static readonly reactive: Hooks = new Hooks(true)
+  static readonly transactional: Mvcc = new Mvcc(false)
+  static readonly reactive: Mvcc = new Mvcc(true)
 
   readonly isReactive: boolean
 
@@ -136,7 +136,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
     if (os !== EMPTY_SNAPSHOT) {
       let curr = os.data[m] as Subscription
       if (curr !== undefined || (os.former.snapshot.changeset === EMPTY_SNAPSHOT.changeset && (m in h.data) === false)) {
-        if (curr === undefined || curr.content !== value || Hooks.sensitivity) {
+        if (curr === undefined || curr.content !== value || Mvcc.sensitivity) {
           const existing = curr?.content
           if (os.former.snapshot.data[m] === curr) {
             curr = os.data[m] = new Subscription(value)
@@ -184,12 +184,12 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
   static decorateData(reactive: boolean, proto: any, m: MemberName): any {
     if (reactive) {
       const get = function(this: any): any {
-        const h = Hooks.acquireHandle(this)
-        return Hooks.reactive.get(h, m, this)
+        const h = Mvcc.acquireHandle(this)
+        return Mvcc.reactive.get(h, m, this)
       }
       const set = function(this: any, value: any): boolean {
-        const h = Hooks.acquireHandle(this)
-        return Hooks.reactive.set(h, m, value, this)
+        const h = Mvcc.acquireHandle(this)
+        return Mvcc.reactive.set(h, m, value, this)
       }
       const enumerable = true
       const configurable = false
@@ -206,12 +206,12 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
       pd = EMPTY_PROP_DESCRIPTOR
     const enumerable: boolean = pd.enumerable ?? true
     const configurable: boolean = pd.configurable ?? true
-    const opts = Hooks.rememberOperationOptions(proto, member,
+    const opts = Mvcc.rememberOperationOptions(proto, member,
       pd.value ?? pd.get, pd.value ?? pd.set, true, configurable, options, implicit)
     if (opts.getter === opts.setter) { // regular method
       const bootstrap = function(this: any): any {
-        const h = Hooks.acquireHandle(this)
-        const operation = Hooks.createOperation(h, member, opts)
+        const h = Mvcc.acquireHandle(this)
+        const operation = Mvcc.createOperation(h, member, opts)
         Object.defineProperty(h.data, member, { value: operation, enumerable, configurable })
         return operation
       }
@@ -219,8 +219,8 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
     }
     else if (opts.setter === UNDEF) { // property with getter only
       const bootstrap = function(this: any): any {
-        const h = Hooks.acquireHandle(this)
-        const operation = Hooks.createOperation(h, member, opts)
+        const h = Mvcc.acquireHandle(this)
+        const operation = Mvcc.createOperation(h, member, opts)
         Object.defineProperty(h.data, member, { get: operation, enumerable, configurable })
         return operation.call(this)
       }
@@ -232,7 +232,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
 
   static decorateOperationParametrized(decorator: Function, options: Partial<MemberOptions>): F<any> {
     return function(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
-      return Hooks.decorateOperation(false, decorator, options, proto, prop, pd) /* istanbul ignore next */
+      return Mvcc.decorateOperation(false, decorator, options, proto, prop, pd) /* istanbul ignore next */
     }
   }
 
@@ -243,7 +243,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
         throw misuse('only objects can be reactive')
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
       const os = new ObjectSnapshot(EMPTY_SNAPSHOT.changeset, EMPTY_SNAPSHOT, {...initial})
-      h = new ObjectHandle(obj, obj, Hooks.reactive, os, obj.constructor.name)
+      h = new ObjectHandle(obj, obj, Mvcc.reactive, os, obj.constructor.name)
       Meta.set(os.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
       Meta.set(os.data, Meta.Revision, new Subscription(1))
@@ -251,12 +251,12 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
     return h
   }
 
-  static createHandleForTransactionalObject(proto: any, data: any, blank: any, hint: string, reactive: boolean): ObjectHandle {
+  static createHandleForMvccObject(proto: any, data: any, blank: any, hint: string, reactive: boolean): ObjectHandle {
     const ctx = Changeset.edit()
-    const hooks = reactive ? Hooks.reactive : Hooks.transactional
-    const h = new ObjectHandle(data, undefined, hooks, EMPTY_SNAPSHOT, hint)
+    const mvcc = reactive ? Mvcc.reactive : Mvcc.transactional
+    const h = new ObjectHandle(data, undefined, mvcc, EMPTY_SNAPSHOT, hint)
     ctx.getEditableObjectSnapshot(h, Meta.Handle, blank)
-    if (!Hooks.reactionsAutoStartDisabled)
+    if (!Mvcc.reactionsAutoStartDisabled)
       for (const m in Meta.getFrom(proto, Meta.Reactions))
         (h.proxy[m][Meta.Controller] as Controller<any>).markObsolete()
     return h
@@ -264,40 +264,40 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
 
   static setProfilingMode(isOn: boolean, options?: Partial<ProfilingOptions>): void {
     if (isOn) {
-      Hooks.repetitiveUsageWarningThreshold = options && options.repetitiveUsageWarningThreshold !== undefined ? options.repetitiveUsageWarningThreshold : 10
-      Hooks.mainThreadBlockingWarningThreshold = options && options.mainThreadBlockingWarningThreshold !== undefined ? options.mainThreadBlockingWarningThreshold : 14
-      Hooks.asyncActionDurationWarningThreshold = options && options.asyncActionDurationWarningThreshold !== undefined ? options.asyncActionDurationWarningThreshold : 300
+      Mvcc.repetitiveUsageWarningThreshold = options && options.repetitiveUsageWarningThreshold !== undefined ? options.repetitiveUsageWarningThreshold : 10
+      Mvcc.mainThreadBlockingWarningThreshold = options && options.mainThreadBlockingWarningThreshold !== undefined ? options.mainThreadBlockingWarningThreshold : 14
+      Mvcc.asyncActionDurationWarningThreshold = options && options.asyncActionDurationWarningThreshold !== undefined ? options.asyncActionDurationWarningThreshold : 300
       Changeset.garbageCollectionSummaryInterval = options && options.garbageCollectionSummaryInterval !== undefined ? options.garbageCollectionSummaryInterval : 100
     }
     else {
-      Hooks.repetitiveUsageWarningThreshold = Number.MAX_SAFE_INTEGER
-      Hooks.mainThreadBlockingWarningThreshold = Number.MAX_SAFE_INTEGER
-      Hooks.asyncActionDurationWarningThreshold = Number.MAX_SAFE_INTEGER
+      Mvcc.repetitiveUsageWarningThreshold = Number.MAX_SAFE_INTEGER
+      Mvcc.mainThreadBlockingWarningThreshold = Number.MAX_SAFE_INTEGER
+      Mvcc.asyncActionDurationWarningThreshold = Number.MAX_SAFE_INTEGER
       Changeset.garbageCollectionSummaryInterval = Number.MAX_SAFE_INTEGER
     }
   }
 
   static sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
-    const restore = Hooks.sensitivity
-    Hooks.sensitivity = sensitivity
+    const restore = Mvcc.sensitivity
+    Mvcc.sensitivity = sensitivity
     try {
       return func(...args)
     }
     finally {
-      Hooks.sensitivity = restore
+      Mvcc.sensitivity = restore
     }
   }
 
   static setHint<T>(obj: T, hint: string | undefined): T {
     if (hint) {
-      const h = Hooks.acquireHandle(obj)
+      const h = Mvcc.acquireHandle(obj)
       h.hint = hint
     }
     return obj
   }
 
   static getHint<T>(obj: T): string {
-    const h = Hooks.acquireHandle(obj)
+    const h = Mvcc.acquireHandle(obj)
     return h.hint
   }
 

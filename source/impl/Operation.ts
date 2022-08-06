@@ -13,12 +13,12 @@ import { ObjectSnapshot, MemberName, ObjectHandle, Subscription, Subscriber, Sep
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Changeset'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
-import { Hooks, OptionsImpl } from './Hooks'
+import { Mvcc, OptionsImpl } from './Hooks'
 import { JournalImpl } from './Journal'
 
 const BOOT_ARGS: any[] = []
 const BOOT_CAUSE = '<boot>'
-const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Hooks.reactive, EMPTY_SNAPSHOT, '<empty>')
+const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.reactive, EMPTY_SNAPSHOT, '<empty>')
 
 type OperationContext = {
   readonly operation: Operation
@@ -323,7 +323,7 @@ class Operation extends Subscription implements Subscriber {
       const ms = Date.now() - started
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
-      if (ms > Hooks.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
+      if (ms > Mvcc.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
         Log.write('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
       return result
     }
@@ -500,7 +500,7 @@ class Operation extends Subscription implements Subscriber {
     this.started = -this.started
     if (Log.isOn && Log.opt.operation)
       Log.write('║', `${op}`, `${this.hint()} ${message}`, ms, highlight)
-    if (ms > (main ? Hooks.mainThreadBlockingWarningThreshold : Hooks.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
+    if (ms > (main ? Mvcc.mainThreadBlockingWarningThreshold : Mvcc.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
       Log.write('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
     this.cause = undefined
     if (this.options.monitor)
@@ -625,9 +625,9 @@ class Operation extends Subscription implements Subscriber {
     }
     if (curr instanceof Operation) {
       if (curr.changeset === os.changeset && curr.subscriptions !== undefined) {
-        if (Hooks.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
+        if (Mvcc.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
           curr.subscriptions.forEach((info, v) => { // performance tracking info
-            if (info.usageCount > Hooks.repetitiveUsageWarningThreshold)
+            if (info.usageCount > Mvcc.repetitiveUsageWarningThreshold)
               Log.write('', '[!]', `${curr.hint()} uses ${info.memberHint} ${info.usageCount} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
           })
         }
@@ -683,7 +683,7 @@ class Operation extends Subscription implements Subscriber {
     if (ok) {
       // Performance tracking
       let times: number = 0
-      if (Hooks.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
+      if (Mvcc.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const existing = this.subscriptions!.get(subscription)
         times = existing ? existing.usageCount + 1 : 1
@@ -759,8 +759,8 @@ class Operation extends Subscription implements Subscriber {
     Changeset.propagateAllChangesThroughSubscriptions = Operation.propagateAllChangesThroughSubscriptions // override
     Changeset.revokeAllSubscriptions = Operation.revokeAllSubscriptions // override
     Changeset.enqueueReactionsToRun = Operation.enqueueReactionsToRun
-    Hooks.createOperation = Operation.createOperation // override
-    Hooks.rememberOperationOptions = Operation.rememberOperationOptions // override
+    Mvcc.createOperation = Operation.createOperation // override
+    Mvcc.rememberOperationOptions = Operation.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Worker } from '../Worker'
-import { ReactiveObject, Hooks } from './Hooks'
+import { ReactiveObject, Mvcc } from './Hooks'
 import { Transaction } from './Transaction'
 
 export abstract class Monitor extends ReactiveObject {
@@ -65,7 +65,7 @@ export class MonitorImpl extends Monitor {
 
   private static doCreate(hint: string, activationDelay: number, deactivationDelay: number, durationResolution: number): MonitorImpl {
     const m = new MonitorImpl()
-    Hooks.setHint(m, hint)
+    Mvcc.setHint(m, hint)
     m.internals.activationDelay = activationDelay
     m.internals.deactivationDelay = deactivationDelay
     m.internals.durationResolution = durationResolution
