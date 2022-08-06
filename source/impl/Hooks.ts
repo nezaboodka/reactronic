@@ -15,13 +15,13 @@ import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset'
 import { Journal } from './Journal'
 import { Monitor } from './Monitor'
 
-// HookedObject, ReactiveObject
+// TransactionalObject, ReactiveObject
 
-export abstract class HookedObject {
+export abstract class TransactionalObject {
   protected constructor(reactive: boolean) {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
-    const h = Hooks.createHandleForReactronicObject(
+    const h = Hooks.createHandleForTransactionalObject(
       proto, this, initial, new.target.name, reactive)
     return h.proxy
   }
@@ -33,7 +33,7 @@ export abstract class HookedObject {
   }
 }
 
-export abstract class ReactiveObject extends HookedObject {
+export abstract class ReactiveObject extends TransactionalObject {
   constructor() {
     super(true)
   }
@@ -251,7 +251,7 @@ export class Hooks implements ProxyHandler<ObjectHandle> {
     return h
   }
 
-  static createHandleForReactronicObject(proto: any, data: any, blank: any, hint: string, reactive: boolean): ObjectHandle {
+  static createHandleForTransactionalObject(proto: any, data: any, blank: any, hint: string, reactive: boolean): ObjectHandle {
     const ctx = Changeset.edit()
     const hooks = reactive ? Hooks.reactive : Hooks.transactional
     const h = new ObjectHandle(data, undefined, hooks, EMPTY_SNAPSHOT, hint)
