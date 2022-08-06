@@ -8,9 +8,9 @@
 import { Sealant } from '../util/Sealant'
 import { TransactionalObject } from './Mvcc'
 
-// HookedMap
+// MvccMap
 
-export class HookedMap<K, V> extends TransactionalObject {
+export class MvccMap<K, V> extends TransactionalObject {
   private all: Map<K, V>
 
   constructor(reactive: boolean, map: Map<K, V>) {
@@ -42,7 +42,7 @@ export class HookedMap<K, V> extends TransactionalObject {
 
 // TransactionalMap<K, V>
 
-export class TransactionalMap<K, V> extends HookedMap<K, V> {
+export class TransactionalMap<K, V> extends MvccMap<K, V> {
   constructor()
   constructor(iterable?: Iterable<readonly [K, V]> | null)
   constructor(args?: any) {
@@ -52,7 +52,7 @@ export class TransactionalMap<K, V> extends HookedMap<K, V> {
 
 // ReactiveMap<K, V>
 
-export class ReactiveMap<K, V> extends HookedMap<K, V> {
+export class ReactiveMap<K, V> extends MvccMap<K, V> {
   constructor()
   constructor(iterable?: Iterable<readonly [K, V]> | null)
   constructor(args?: any) {

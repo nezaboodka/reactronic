@@ -8,9 +8,9 @@
 import { Sealant } from '../util/Sealant'
 import { TransactionalObject } from './Mvcc'
 
-// HookedArray
+// MvccArray
 
-export class HookedArray<T> extends TransactionalObject {
+export class MvccArray<T> extends TransactionalObject {
   private all: Array<T>
 
   constructor(reactive: boolean, array: Array<T>) {
@@ -89,7 +89,7 @@ export class HookedArray<T> extends TransactionalObject {
 
 // TransactionalArray
 
-export class TransactionalArray<T> extends HookedArray<T> {
+export class TransactionalArray<T> extends MvccArray<T> {
   constructor()
   constructor(arrayLength: number)
   constructor(arrayLength?: number)
@@ -101,7 +101,7 @@ export class TransactionalArray<T> extends HookedArray<T> {
 
 // ReactiveArray
 
-export class ReactiveArray<T> extends HookedArray<T> {
+export class ReactiveArray<T> extends MvccArray<T> {
   constructor()
   constructor(arrayLength: number)
   constructor(arrayLength?: number)
