@@ -14,7 +14,7 @@ export { MemberOptions, SnapshotOptions, Kind, Reentrance, LoggingOptions, Profi
 export { Worker } from './Worker'
 export { Controller } from './Controller'
 export { Ref, ToggleRef, BoolOnly, GivenTypeOnly } from './Ref'
-export { AtomicObject, ReactiveObject } from './impl/Mvcc'
+export { TransactionalObject, ReactiveObject } from './impl/Mvcc'
 export { TransactionalArray, ReactiveArray } from './impl/MvccArray'
 export { TransactionalMap, ReactiveMap } from './impl/MvccMap'
 export { Changeset } from './impl/Changeset'

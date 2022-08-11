@@ -291,7 +291,7 @@ NPM: `npm install reactronic`
 
 // Classes
 
-class AtomicObject { }
+class TransactionalObject { }
 class ReactiveObject { }
 
 // Decorators & Operators

@@ -15,7 +15,7 @@ import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset'
 import { Journal } from './Journal'
 import { Monitor } from './Monitor'
 
-// MvccObject, AtomicObject, ReactiveObject
+// MvccObject, TransactionalObject, ReactiveObject
 
 export abstract class MvccObject {
   protected constructor(reactive: boolean) {
@@ -33,7 +33,7 @@ export abstract class MvccObject {
   }
 }
 
-export abstract class AtomicObject extends MvccObject {
+export abstract class TransactionalObject extends MvccObject {
   constructor() {
     super(false)
   }
