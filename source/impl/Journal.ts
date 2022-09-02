@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ReactiveObject } from './Mvcc'
+import { ObservableObject } from './Mvcc'
 import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ValuePatch, Subscription, MemberName } from './Data'
 import { Changeset, EMPTY_SNAPSHOT } from './Changeset'
 import { Transaction } from './Transaction'
@@ -13,7 +13,7 @@ import { Sealant } from '../util/Sealant'
 
 export type Saver = (patch: PatchSet) => Promise<void>
 
-export abstract class Journal extends ReactiveObject {
+export abstract class Journal extends ObservableObject {
   abstract capacity: number
   abstract readonly edits: ReadonlyArray<PatchSet>
   abstract readonly unsaved: PatchSet

@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import { Collection, Item, CollectionReader } from '../util/Collection'
-import { ReactiveObject } from './Mvcc'
+import { ObservableObject } from './Mvcc'
 
-// ReactiveCollection
+// ObservableCollection
 
-export abstract class ReactiveCollection<T> extends ReactiveObject implements CollectionReader<T> {
+export abstract class ObservableCollection<T> extends ObservableObject implements CollectionReader<T> {
   protected abstract a: Collection<T>
   get strict(): boolean { return this.a.strict }
   get count(): number { return this.a.count }

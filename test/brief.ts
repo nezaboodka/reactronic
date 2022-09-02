@@ -5,11 +5,11 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ReactiveObject, raw, transaction, reaction, cached, Journal, Rx, LoggingOptions, Transaction, options } from '../source/api'
+import { ObservableObject, raw, transaction, reaction, cached, Journal, Rx, LoggingOptions, Transaction, options } from '../source/api'
 
 export const output: string[] = []
 
-export class Demo extends ReactiveObject {
+export class Demo extends ObservableObject {
   static stamp = 0
   static journal = Transaction.run(null, () => Journal.create())
 
@@ -71,7 +71,7 @@ export class Demo extends ReactiveObject {
   }
 }
 
-export class DemoView extends ReactiveObject {
+export class DemoView extends ObservableObject {
   @raw raw: string = 'plain field'
   @raw shared: string = 'for testing purposes'
   @raw readonly model: Demo
@@ -133,7 +133,7 @@ export class DemoView extends ReactiveObject {
 // Person
 
 /* istanbul ignore next */
-export class Person extends ReactiveObject {
+export class Person extends ObservableObject {
   @raw dummy: string | null = null
   id: string | null = null
   name: string | null = null

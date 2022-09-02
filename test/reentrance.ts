@@ -5,12 +5,12 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ReactiveObject, transaction, reaction, cached, options, Transaction, Monitor, Reentrance, Rx, all, pause } from '../source/api'
+import { ObservableObject, transaction, reaction, cached, options, Transaction, Monitor, Reentrance, Rx, all, pause } from '../source/api'
 
 export const output: string[] = []
 export const busy = Monitor.create('Busy', 0, 0, 1)
 
-export class AsyncDemo extends ReactiveObject {
+export class AsyncDemo extends ObservableObject {
   url: string = 'reactronic'
   log: string[] = ['RTA']
 
@@ -24,7 +24,7 @@ export class AsyncDemo extends ReactiveObject {
 }
 
 export class AsyncDemoView {
-  // @state nonreactiveField: string = 'nonreactive field'
+  // @state rawField: string = 'raw field'
 
   constructor(readonly model: AsyncDemo) {
   }

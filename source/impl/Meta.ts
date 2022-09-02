@@ -13,7 +13,7 @@ export abstract class Meta {
   static readonly Controller: unique symbol = Symbol('rx-controller')
   static readonly Initial: unique symbol = Symbol('rx-initial')
   static readonly Reactions: unique symbol = Symbol('rx-reactions')
-  static readonly Nonreactive: unique symbol = Symbol('rx-nonreactive')
+  static readonly Raw: unique symbol = Symbol('rx-raw')
   static readonly Undefined: unique symbol = Symbol('rx-undefined')
 
   static get<T>(obj: any, sym: symbol): T {

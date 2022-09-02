@@ -18,13 +18,13 @@ isolated data snapshot and then, once atomically applied, are
 **consistently propagated** to corresponding visual components for
 (re)rendering. All that is done in automatic, seamless, and fine-grained
 way, because reactronic **takes full care of tracking dependencies**
-between visual components (subscribers) and state (reactive objects).
+between visual components (observers) and state (observable objects).
 
 Transactional reactivity is based on four fundamental concepts:
 
-  - **Reactive Objects** - a set of objects that store data of an
+  - **Observable Objects** - a set of objects that store data of an
     application (state) and maintain subscription lists;
-  - **Transaction** - a function that makes changes in reactive
+  - **Transaction** - a function that makes changes in observable
     objects in transactional (atomic) way;
   - **Reaction** - a function that is executed automatically in
     response to changes made by a transaction;
@@ -39,10 +39,10 @@ Quick introduction and detailed description is below.
 ## Quick Introduction
 
 Here is an example of transactional reactive code with
-reactive object, transaction and reaction:
+observable object, transaction and reaction:
 
 ``` typescript
-class Demo extends ReactiveObject {
+class Demo extends ObservableObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
@@ -69,7 +69,7 @@ to changes of these fields made by `saveContact` transaction.
 Here is an example of if cached value computed on-demand:
 
 ``` typescript
-class Demo extends ReactiveObject {
+class Demo extends ObservableObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
@@ -94,14 +94,14 @@ invalidated, thus causing execution of depending reaction
 `printContact`. Then `printContact` reaction causes `contact`
 re-computation on the first use.
 
-## Reactive Objects
+## Observable Objects
 
-Reactive objects store data of an application. All such objects
+Observable objects store data of an application. All such objects
 are transparently hooked to track access to their properties,
 both on reads and writes.
 
 ``` typescript
-class MyModel extends ReactiveObject {
+class MyModel extends ObservableObject {
   url: string = "https://github.com/nezaboodka/reactronic"
   content: string = "transactional reactive state management"
   timestamp: Date = Date.now()
@@ -109,18 +109,18 @@ class MyModel extends ReactiveObject {
 ```
 
 In the example above, the class `MyModel` is based on Reactronic's
-`ReactiveObject` class and all its properties `url`, `content`,
+`ObservableObject` class and all its properties `url`, `content`,
 and `timestamp` are hooked.
 
 ## Transaction
 
-Transaction is a function that makes changes in reactive objects
+Transaction is a function that makes changes in observable objects
 in transactional (atomic) way. Such a function is instrumented with hooks
 to provide transparent atomicity (by implicit context switching
 and isolation).
 
 ``` typescript
-class MyModel extends ReactiveObject {
+class MyModel extends ObservableObject {
   // ...
   @transaction
   async load(url: string): Promise<void> {
@@ -163,12 +163,12 @@ of asynchronous operations is fully completed.
 ## Reaction & Cache
 
 Reaction is an code block that is immediately called in response to
-changes made by a transaction in reactive objects. Cache is a
+changes made by a transaction in observable objects. Cache is a
 computed value having an associated function that is called
 on-demand to renew the value if it was marked as obsolete due to changes
 made by a transaction. Reactive and cached functions are
 instrumented with hooks to seamlessly subscribe to those
-reactive objects and other cached functions (dependencies),
+observable objects and other cached functions (dependencies),
 which are used during their execution.
 
 ``` tsx
@@ -222,14 +222,14 @@ function enqueues re-rendering request to React, which calls
 `render` function causing it to renew its cached value.
 
 In general case, all reactions and caches are automatically and
-immediately marked as obsolete when changes are made in those reactive
+immediately marked as obsolete when changes are made in those observable
 objects and cached functions that were used during their execution.
 And once marked, the functions are automatically executed again,
 either immediately (for @reactive functions) or on-demand
 (for @cached functions).
 
 Reactronic takes full care of tracking dependencies between
-all the reactive objects and reactions/caches.
+all the observable objects and reactions/caches.
 With Reactronic, you no longer need to create data change events
 in one set of objects, subscribe to these events in other objects,
 and manually maintain switching from the previous object version
@@ -292,7 +292,7 @@ NPM: `npm install reactronic`
 // Classes
 
 class TransactionalObject { }
-class ReactiveObject { }
+class ObservableObject { }
 
 // Decorators & Operators
 

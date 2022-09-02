@@ -13,8 +13,8 @@ import { MvccObject } from './Mvcc'
 export class MvccMap<K, V> extends MvccObject {
   private all: Map<K, V>
 
-  constructor(reactive: boolean, map: Map<K, V>) {
-    super(reactive)
+  constructor(isObservable: boolean, map: Map<K, V>) {
+    super(isObservable)
     this.all = map
   }
 
@@ -50,9 +50,9 @@ export class TransactionalMap<K, V> extends MvccMap<K, V> {
   }
 }
 
-// ReactiveMap<K, V>
+// ObservableMap<K, V>
 
-export class ReactiveMap<K, V> extends MvccMap<K, V> {
+export class ObservableMap<K, V> extends MvccMap<K, V> {
   constructor()
   constructor(iterable?: Iterable<readonly [K, V]> | null)
   constructor(args?: any) {

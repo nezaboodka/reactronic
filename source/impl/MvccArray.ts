@@ -13,8 +13,8 @@ import { MvccObject } from './Mvcc'
 export class MvccArray<T> extends MvccObject {
   private all: Array<T>
 
-  constructor(reactive: boolean, array: Array<T>) {
-    super(reactive)
+  constructor(isObservable: boolean, array: Array<T>) {
+    super(isObservable)
     this.all = array
   }
 
@@ -99,9 +99,9 @@ export class TransactionalArray<T> extends MvccArray<T> {
   }
 }
 
-// ReactiveArray
+// ObservableArray
 
-export class ReactiveArray<T> extends MvccArray<T> {
+export class ObservableArray<T> extends MvccArray<T> {
   constructor()
   constructor(arrayLength: number)
   constructor(arrayLength?: number)

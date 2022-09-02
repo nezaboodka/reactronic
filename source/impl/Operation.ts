@@ -18,7 +18,7 @@ import { JournalImpl } from './Journal'
 
 const BOOT_ARGS: any[] = []
 const BOOT_CAUSE = '<boot>'
-const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.reactive, EMPTY_SNAPSHOT, '<empty>')
+const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.observable, EMPTY_SNAPSHOT, '<empty>')
 
 type OperationContext = {
   readonly operation: Operation

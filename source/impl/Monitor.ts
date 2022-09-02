@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import { Worker } from '../Worker'
-import { ReactiveObject, Mvcc } from './Mvcc'
+import { ObservableObject, Mvcc } from './Mvcc'
 import { Transaction } from './Transaction'
 
-export abstract class Monitor extends ReactiveObject {
+export abstract class Monitor extends ObservableObject {
   abstract readonly isActive: boolean
   abstract readonly counter: number
   abstract readonly workers: ReadonlySet<Worker>

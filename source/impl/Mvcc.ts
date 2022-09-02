@@ -15,14 +15,14 @@ import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset'
 import { Journal } from './Journal'
 import { Monitor } from './Monitor'
 
-// MvccObject, TransactionalObject, ReactiveObject
+// MvccObject, TransactionalObject, ObservableObject
 
 export abstract class MvccObject {
-  protected constructor(reactive: boolean) {
+  protected constructor(observable: boolean) {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
     const h = Mvcc.createHandleForMvccObject(
-      proto, this, initial, new.target.name, reactive)
+      proto, this, initial, new.target.name, observable)
     return h.proxy
   }
 
@@ -39,7 +39,7 @@ export abstract class TransactionalObject extends MvccObject {
   }
 }
 
-export abstract class ReactiveObject extends MvccObject {
+export abstract class ObservableObject extends MvccObject {
   constructor() {
     super(true)
   }
@@ -106,12 +106,12 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static sensitivity: boolean = false
   static readonly transactional: Mvcc = new Mvcc(false)
-  static readonly reactive: Mvcc = new Mvcc(true)
+  static readonly observable: Mvcc = new Mvcc(true)
 
-  readonly isReactive: boolean
+  readonly isObservable: boolean
 
-  constructor(isReactive: boolean) {
-    this.isReactive = isReactive
+  constructor(isObservable: boolean) {
+    this.isObservable = isObservable
   }
 
   getPrototypeOf(h: ObjectHandle): object | null {
@@ -125,11 +125,11 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       const os: ObjectSnapshot = cs.getObjectSnapshot(h, m)
       result = os.data[m]
       if (result instanceof Subscription && !result.isOperation) {
-        if (this.isReactive)
+        if (this.isObservable)
           Changeset.markUsed(result, os, m, h, Kind.Plain, false)
         result = result.content
       }
-      else // result === NONREACTIVE
+      else // result === RAW
         result = Reflect.get(h.data, m, receiver)
     }
     else
@@ -187,22 +187,22 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     return result
   }
 
-  static decorateData(reactive: boolean, proto: any, m: MemberName): any {
-    if (reactive) {
+  static decorateData(isObservable: boolean, proto: any, m: MemberName): any {
+    if (isObservable) {
       const get = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.reactive.get(h, m, this)
+        return Mvcc.observable.get(h, m, this)
       }
       const set = function(this: any, value: any): boolean {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.reactive.set(h, m, value, this)
+        return Mvcc.observable.set(h, m, value, this)
       }
       const enumerable = true
       const configurable = false
       return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
     }
     else
-      Meta.acquire(proto, Meta.Initial)[m] = Meta.Nonreactive
+      Meta.acquire(proto, Meta.Initial)[m] = Meta.Raw
   }
 
   static decorateOperation(implicit: boolean, decorator: Function,
@@ -246,10 +246,10 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     let h = obj[Meta.Handle]
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
-        throw misuse('only objects can be reactive')
+        throw misuse('only objects can be observable')
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
       const os = new ObjectSnapshot(EMPTY_SNAPSHOT.changeset, EMPTY_SNAPSHOT, {...initial})
-      h = new ObjectHandle(obj, obj, Mvcc.reactive, os, obj.constructor.name)
+      h = new ObjectHandle(obj, obj, Mvcc.observable, os, obj.constructor.name)
       Meta.set(os.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
       Meta.set(os.data, Meta.Revision, new Subscription(1))
@@ -257,9 +257,9 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     return h
   }
 
-  static createHandleForMvccObject(proto: any, data: any, blank: any, hint: string, reactive: boolean): ObjectHandle {
+  static createHandleForMvccObject(proto: any, data: any, blank: any, hint: string, isObservable: boolean): ObjectHandle {
     const ctx = Changeset.edit()
-    const mvcc = reactive ? Mvcc.reactive : Mvcc.transactional
+    const mvcc = isObservable ? Mvcc.observable : Mvcc.transactional
     const h = new ObjectHandle(data, undefined, mvcc, EMPTY_SNAPSHOT, hint)
     ctx.getEditableObjectSnapshot(h, Meta.Handle, blank)
     if (!Mvcc.reactionsAutoStartDisabled)

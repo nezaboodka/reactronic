@@ -7,9 +7,9 @@
 
 /* istanbul ignore file */
 
-import { ReactiveObject } from './impl/Mvcc'
+import { ObservableObject } from './impl/Mvcc'
 
-export abstract class Buffer<T> extends ReactiveObject {
+export abstract class Buffer<T> extends ObservableObject {
   abstract readonly capacity: number
   abstract readonly count: number
   abstract put(...items: T[]): void

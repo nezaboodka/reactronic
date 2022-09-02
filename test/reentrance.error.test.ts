@@ -33,8 +33,8 @@ test('reentrance.error', async t => {
     return a
   })
   try {
-    // t.is(app.nonreactiveField, 'nonreactive field')
-    // t.throws(() => app.nonreactiveField = 'test', { message: 'nonreactive property AsyncDemoView.nonreactiveField #23 can only be modified inside transaction' })
+    // t.is(app.rawField, 'raw field')
+    // t.throws(() => app.rawField = 'test', { message: 'raw property AsyncDemoView.rawField #23 can only be modified inside transaction' })
     Rx.getController(app.print).configure({ logging: TestsLoggingLevel })
     await app.print() // reaction first run
     t.throws(() => Rx.getController(app.print).configure({ logging: TestsLoggingLevel }))

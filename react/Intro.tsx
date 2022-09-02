@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ReactiveObject, transaction, cached } from '../source/api'
+import { ObservableObject, transaction, cached } from '../source/api'
 import { Component } from './Component'
 
-class MyModel extends ReactiveObject {
+class MyModel extends ObservableObject {
   url: string = 'https://nezaboodka.com'
   content: string = ''
   timestamp: number = Date.now()

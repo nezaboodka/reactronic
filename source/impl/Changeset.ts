@@ -26,7 +26,7 @@ Object.defineProperty(ObjectHandle.prototype, '#this#', {
       const v = data[m]
       if (v instanceof Subscription)
         result[m] = v.content
-      else if (v === Meta.Nonreactive)
+      else if (v === Meta.Raw)
         result[m] = this.data[m]
       else /* istanbul ignore next */
         result[m] = v
@@ -106,7 +106,7 @@ export class Changeset implements AbstractChangeset {
   getEditableObjectSnapshot(h: ObjectHandle, m: MemberName, value: any, token?: any): ObjectSnapshot {
     let os: ObjectSnapshot = this.lookupObjectSnapshot(h, m)
     const existing = os.data[m]
-    if (existing !== Meta.Nonreactive) {
+    if (existing !== Meta.Raw) {
       if (this.isNewSnapshotRequired(h, os, m, existing, value, token)) {
         this.bumpBy(os.changeset.timestamp)
         const revision = m === Meta.Handle ? 1 : os.revision + 1
@@ -146,7 +146,7 @@ export class Changeset implements AbstractChangeset {
 
   private isNewSnapshotRequired(h: ObjectHandle, os: ObjectSnapshot, m: MemberName, existing: any, value: any, token: any): boolean {
     if (this.sealed && os.changeset !== EMPTY_SNAPSHOT.changeset)
-      throw misuse(`reactive property ${Dump.obj(h, m)} can only be modified inside transaction`)
+      throw misuse(`observable property ${Dump.obj(h, m)} can only be modified inside transaction`)
     // if (m !== Meta.Handle && value !== Meta.Handle && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.snapshot !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.snapshot(r, m)}`)
     // if (r === ROOT_REV && m !== Meta.Handle && value !== Meta.Handle) /* istanbul ignore next */

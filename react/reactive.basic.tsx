@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ReactiveObject, Transaction, raw, reaction, cached, Rx } from '../source/api'
+import { ObservableObject, Transaction, raw, reaction, cached, Rx } from '../source/api'
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -20,7 +20,7 @@ export function autorender(render: () => JSX.Element): JSX.Element {
 
 type ReactState = { rx: RxComponent }
 
-class RxComponent extends ReactiveObject {
+class RxComponent extends ObservableObject {
   @cached
   render(emit: () => JSX.Element): JSX.Element {
     return emit()

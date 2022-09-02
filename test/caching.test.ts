@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ReactiveObject, cached, Transaction, Rx, reaction, raw, options } from '../source/api'
+import { ObservableObject, cached, Transaction, Rx, reaction, raw, options } from '../source/api'
 import { TestsLoggingLevel } from './brief'
 
-export class DemoBase extends ReactiveObject {
+export class DemoBase extends ObservableObject {
   @raw raw: string = 'plain data'
   title: string = 'Demo'
   sideEffect: string = 'no side effect'
