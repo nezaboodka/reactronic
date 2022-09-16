@@ -18,14 +18,14 @@ export class Ref<T = any> {
     readonly index: number = -1) {
   }
 
-  get value(): T {
+  get variable(): T {
     if (this.index < 0)
       return this.owner[this.name]
     else
       return this.owner[this.name][this.index]
   }
 
-  set value(value: T) {
+  set variable(value: T) {
     if (this.index < 0)
       this.owner[this.name] = value
     else
@@ -33,11 +33,11 @@ export class Ref<T = any> {
   }
 
   nonreactive(): T {
-    return nonreactive(() => this.value)
+    return nonreactive(() => this.variable)
   }
 
   observe(): T {
-    return this.value
+    return this.variable
   }
 
   unobserve(): T {
