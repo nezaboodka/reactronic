@@ -37,7 +37,7 @@ export class Rx {
 
 // Operators
 
-export function nonreactive<T>(func: F<T>, ...args: any[]): T {
+export function unobservable<T>(func: F<T>, ...args: any[]): T {
   return OperationController.runWithin<T>(undefined, func, ...args)
 }
 
