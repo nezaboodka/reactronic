@@ -57,7 +57,7 @@ export class OperationController extends Controller<any> {
       && (!weak || op.cause === BOOT_CAUSE || !op.successor ||
         op.successor.transaction.isFinished)) {
       const outerOpts = Operation.current?.options
-      const separation = weak || opts.separation || opts.kind === Kind.Reaction ||
+      const separation = weak || opts.separation !== false || opts.kind === Kind.Reaction ||
         (opts.kind === Kind.Transaction && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cache)) ||
         (opts.kind === Kind.Cache && (oc.snapshot.changeset.sealed ||
           oc.snapshot.former.snapshot !== EMPTY_SNAPSHOT))
