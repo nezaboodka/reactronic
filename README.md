@@ -161,9 +161,9 @@ of asynchronous operations is fully completed.
 
 ## Reactive & Cached Functions
 
-Reactive function is automatically called in response to
-changes made by a transaction in observable objects. Cached
-function is called on-demand to renew the value if it was
+Reactive function is automatically and immediately called in
+response to changes made by a transaction in observable objects.
+Cached function is called on-demand to renew the value if it was
 marked as obsolete due to changes made by a transaction.
 Reactive and cached functions are instrumented with hooks
 to seamlessly subscribe to those observable objects and
