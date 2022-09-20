@@ -65,7 +65,7 @@ In the example above, `printContact` function depends on `name`
 and `email` fields. It is executed automatically in response
 to changes of these fields made by `saveContact` function.
 
-Here is an example of cached value computed on-demand:
+Here is an example of cached value (re-)computed on-demand:
 
 ``` typescript
 class Demo extends ObservableObject {
