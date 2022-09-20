@@ -9,7 +9,7 @@
 
 # **Reactronic** - Transactional Reactive State Management
 
-Reactronic is a JavaScript library that provides
+Reactronic is an experimental JavaScript library that provides
 [transactional reactive](https://blog.nezaboodka.com/post/2019/593-modern-database-should-natively-support-transactionally-reactive-programming)
 state management in a Web application.
 
