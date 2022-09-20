@@ -111,7 +111,7 @@ In the example above, the class `MyModel` is based on Reactronic's
 `ObservableObject` class and all its properties `url`, `content`,
 and `timestamp` are hooked.
 
-## Transactional Function
+## Transactional Functions
 
 Transactional function makes changes in observable objects
 in transactional (atomic) way. Such a function is instrumented
@@ -159,7 +159,7 @@ all of them. An asynchronous call may spawn other asynchronous
 calls, which prolong transaction execution until the whole chain
 of asynchronous operations is fully completed.
 
-## Reactive & Cached Function
+## Reactive & Cached Functions
 
 Reactive function is automatically called in response to
 changes made by a transaction in observable objects. Cached
