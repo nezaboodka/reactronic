@@ -90,8 +90,8 @@ source fields `name` and `email` upon first use. Once computed,
 the result is cached and is reused until source fields `name`
 and `email` are changed. Once source fields changed, `contact`
 value becomes obsolete, thus causing execution of depending
-reactive function `printContact`. Then `printContact` function
-is executed and causes `contact` re-computation again.
+reactive function `printContact`. When `printContact` function
+runs it causes `contact` to re-computate.
 
 ## Observable Objects
 
