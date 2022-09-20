@@ -24,12 +24,12 @@ Transactional reactivity is based on four fundamental concepts:
 
   - **Observable Objects** - a set of objects that store data of an
     application (state);
-  - **Transactional Function** - a function that makes changes in observable
+  - **Transactional Function** - makes changes in observable
     objects in atomic way ("all or nothing");
-  - **Reactive Function** - a function that is executed automatically in
+  - **Reactive Function** - is executed automatically in
     response to changes made by a transaction;
-  - **Cached Function** - a function which result is remembered and
-    recomputed on-demand if it becomes obsolete.
+  - **Cached Function** - its result is remembered and, if the becomes
+  obsolete, recomputed on-demand.
 
 Demo application built with Reactronic: https://nevod.io/#/playground.
 Source code of the demo: https://gitlab.com/nezaboodka/nevod.web.public/-/blob/master/README.md.
