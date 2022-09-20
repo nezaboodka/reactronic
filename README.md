@@ -86,12 +86,12 @@ class Demo extends ObservableObject {
 ```
 
 In the example above, the value of `contact` is computed from
-source fields `name` and `email`. Once computed, the result is
-cached and is reused until source fields `name` and `email` are
-changed. Once source fields changed, `contact` value becomes
-invalidated, thus causing execution of depending reactive
-function `printContact`. Then `printContact` function causes
-`contact` re-computation on the first use.
+source fields `name` and `email` upon first use. Once computed,
+the result is cached and is reused until source fields `name`
+and `email` are changed. Once source fields changed, `contact`
+value becomes obsolete, thus causing execution of depending
+reactive function `printContact`. Then `printContact` function
+is executed and causes `contact` re-computation again.
 
 ## Observable Objects
 
