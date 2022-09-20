@@ -38,9 +38,7 @@ Quick introduction and detailed description is below.
 
 ## Quick Introduction
 
-Here is an example of transactional reactive code with
-observable object, transactional function, and reactive
-function:
+Here is an example of transactional reactive code:
 
 ``` typescript
 class Demo extends ObservableObject {
