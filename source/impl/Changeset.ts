@@ -57,7 +57,7 @@ export class Changeset implements AbstractChangeset {
   private revision: number
   private bumper: number
   items: Map<ObjectHandle, ObjectSnapshot>
-  reactions: Subscriber[]
+  reactive: Subscriber[]
   sealed: boolean
 
   constructor(options: SnapshotOptions | null) {
@@ -66,7 +66,7 @@ export class Changeset implements AbstractChangeset {
     this.revision = UNDEFINED_REVISION
     this.bumper = 100
     this.items = new Map<ObjectHandle, ObjectSnapshot>()
-    this.reactions = []
+    this.reactive = []
     this.sealed = false
   }
 
@@ -78,7 +78,7 @@ export class Changeset implements AbstractChangeset {
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (changeset: Changeset): void => { /* nop */ }
   static revokeAllSubscriptions = (changeset: Changeset): void => { /* nop */ }
-  static enqueueReactionsToRun = (reactions: Array<Subscriber>): void => { /* nop */ }
+  static enqueueReactiveFunctionsToRun = (reactive: Array<Subscriber>): void => { /* nop */ }
 
   lookupObjectSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
     // TODO: Take into account timestamp of the member
@@ -280,7 +280,7 @@ export class Changeset implements AbstractChangeset {
     }
     if (!error)
       Changeset.propagateAllChangesThroughSubscriptions(this)
-    return this.reactions
+    return this.reactive
   }
 
   static sealObjectSnapshot(h: ObjectHandle, os: ObjectSnapshot): void {
@@ -347,7 +347,7 @@ export class Changeset implements AbstractChangeset {
       os.former.snapshot = EMPTY_SNAPSHOT // unlink history
     })
     this.items = EMPTY_MAP // release for GC
-    this.reactions = EMPTY_ARRAY // release for GC
+    this.reactive = EMPTY_ARRAY // release for GC
     if (Log.isOn)
       Object.freeze(this)
   }

@@ -290,9 +290,9 @@ class TransactionImpl extends Transaction {
     finally {
       this.pending--
       if (this.sealed && this.pending === 0) {
-        const reactions = this.applyOrDiscard() // it's critical to have no exceptions inside this call
+        const reactive = this.applyOrDiscard() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
-        TransactionImpl.outside(Changeset.enqueueReactionsToRun, reactions)
+        TransactionImpl.outside(Changeset.enqueueReactiveFunctionsToRun, reactive)
       }
       else
         TransactionImpl.curr = outer
@@ -326,11 +326,11 @@ class TransactionImpl extends Transaction {
 
   private applyOrDiscard(): Array<Subscriber> {
     // It's critical to have no exceptions in this block
-    let reactions: Array<Subscriber>
+    let reactive: Array<Subscriber>
     try {
       if (Log.isOn && Log.opt.change)
         Log.write('╠═', '', '', undefined, 'changes')
-      reactions = this.changeset.applyOrDiscard(this.canceled)
+      reactive = this.changeset.applyOrDiscard(this.canceled)
       this.changeset.triggerGarbageCollection()
       if (this.promise) {
         if (this.canceled && !this.after)
@@ -345,7 +345,7 @@ class TransactionImpl extends Transaction {
       fatal(e)
       throw e
     }
-    return reactions
+    return reactive
   }
 
   private acquirePromise(): Promise<void> {

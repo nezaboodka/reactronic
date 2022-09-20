@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Kind, unobservable, sensitive, Rx } from '../source/api'
+import { Transaction, Kind, nonreactive, sensitive, Rx } from '../source/api'
 import { Person, Demo, DemoView, output, TestsLoggingLevel } from './brief'
 
 const expected: string[] = [
@@ -29,8 +29,8 @@ const expected: string[] = [
 ]
 
 test('brief', t => {
-  Rx.reactionsAutoStartDisabled = !Rx.reactionsAutoStartDisabled
-  Rx.reactionsAutoStartDisabled = false
+  Rx.reactivityAutoStartDisabled = !Rx.reactivityAutoStartDisabled
+  Rx.reactivityAutoStartDisabled = false
   Rx.setProfilingMode(false)
   Rx.setProfilingMode(true, {})
   Rx.setProfilingMode(true, {
@@ -87,7 +87,7 @@ test('brief', t => {
       t.is(daddy.name, 'John Smith')
       t.is(daddy.age, 40)
       t.is(Transaction.outside(() => daddy.age), 38)
-      t.is(unobservable(() => daddy.age), 40)
+      t.is(nonreactive(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = 'Jo' // set to the same value
     })
@@ -122,7 +122,7 @@ test('brief', t => {
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(daddy.attributes.size, 0)
-    tran1.apply() // changes are applied, reactions are executed
+    tran1.apply() // changes are applied, reactive functions are executed
     t.is(render.isUpToDate, true)
     t.not(render.stamp, stamp)
     t.is(daddy.name, 'John Smith')
@@ -161,7 +161,7 @@ test('brief', t => {
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
     t.is(app.raw, 'DemoView.render #23t129v111   <<   DemoView.userFilter[=""] #23t127v111    <<    T127[noname]')
-    t.is(render.options.kind, Kind.Cache)
+    t.is(render.options.kind, Kind.Cached)
     t.is(render.error, undefined)
     t.is(Rx.getLoggingHint(app), 'DemoView')
     Rx.setLoggingHint(app, 'App')

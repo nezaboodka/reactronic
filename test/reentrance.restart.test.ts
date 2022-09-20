@@ -37,7 +37,7 @@ test('reentrance.restart', async t => {
     return a
   })
   try {
-    await app.print() // reaction first run
+    await app.print() // initial reactive run
     const responses = requests.map(x => app.model.load(x.url, x.delay))
     t.is(busy.counter, 1)
     t.is(busy.workers.size, 1)

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, raw, reaction, cached, Rx, LoggingOptions } from '../source/api'
+import { ObservableObject, Transaction, raw, reactive, cached, Rx, LoggingOptions } from '../source/api'
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -28,7 +28,7 @@ class RxComponent<V> extends ObservableObject {
     return op ? op.inspect(() => emit(this.cycle)) : emit(this.cycle)
   }
 
-  @reaction
+  @reactive
   protected ensureUpToDate(): void {
     if (!Rx.getController(this.render).isUpToDate)
       Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
@@ -68,7 +68,7 @@ function getComponentName(): string {
   const stack = error.stack || ''
   Error.stackTraceLimit = restore
   const lines = stack.split('\n')
-  const i = lines.findIndex(x => x.indexOf(reaction.name) >= 0) || 6
+  const i = lines.findIndex(x => x.indexOf(reactive.name) >= 0) || 6
   let result: string = lines[i + 1] || ''
   result = (result.match(/^\s*at\s*(\S+)/) || [])[1]
   return result !== undefined ? `<${result}>` : '<Rx>'

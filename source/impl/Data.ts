@@ -35,7 +35,7 @@ export interface Subscriber {
   readonly subscriptions: Map<Subscription, SubscriptionInfo> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(subscription: Subscription, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactions: Array<Subscriber>): void
+  markObsoleteDueTo(subscription: Subscription, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Array<Subscriber>): void
   runIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 

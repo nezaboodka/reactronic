@@ -34,9 +34,9 @@ export interface MemberOptions {
 
 export enum Kind {
   Plain = 0,
-  Transaction = 1,
-  Reaction = 2,
-  Cache = 3,
+  Transactional = 1,
+  Reactive = 2,
+  Cached = 3,
 }
 
 export enum Reentrance {

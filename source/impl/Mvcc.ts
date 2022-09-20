@@ -53,7 +53,7 @@ const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   order: 0,
   noSideEffects: false,
   triggeringArgs: false,
-  throttling: Number.MAX_SAFE_INTEGER, // disabled reaction, @reaction sets it to -1 to enable
+  throttling: Number.MAX_SAFE_INTEGER, // disabled, @reactive sets it to -1 to enable
   reentrance: Reentrance.PreventWithError,
   journal: undefined,
   monitor: null,
@@ -100,7 +100,7 @@ function merge<T>(def: T | undefined, existing: T, patch: T | undefined, implici
 // Mvcc
 
 export class Mvcc implements ProxyHandler<ObjectHandle> {
-  static reactionsAutoStartDisabled: boolean = false
+  static reactivityAutoStartDisabled: boolean = false
   static repetitiveUsageWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
@@ -262,8 +262,8 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     const mvcc = isObservable ? Mvcc.observable : Mvcc.transactional
     const h = new ObjectHandle(data, undefined, mvcc, EMPTY_SNAPSHOT, hint)
     ctx.getEditableObjectSnapshot(h, Meta.Handle, blank)
-    if (!Mvcc.reactionsAutoStartDisabled)
-      for (const m in Meta.getFrom(proto, Meta.Reactions))
+    if (!Mvcc.reactivityAutoStartDisabled)
+      for (const m in Meta.getFrom(proto, Meta.Reactive))
         (h.proxy[m][Meta.Controller] as Controller<any>).markObsolete()
     return h
   }

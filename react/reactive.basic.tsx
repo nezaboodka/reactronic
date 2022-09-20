@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, raw, reaction, cached, Rx } from '../source/api'
+import { ObservableObject, Transaction, raw, reactive, cached, Rx } from '../source/api'
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -26,7 +26,7 @@ class RxComponent extends ObservableObject {
     return emit()
   }
 
-  @reaction
+  @reactive
   protected ensureUpToDate(): void {
     if (!Rx.getController(this.render).isUpToDate)
       Transaction.outside(this.refresh, {rx: this})

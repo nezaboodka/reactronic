@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { reaction, cached, Transaction, Rx } from '../source/api'
+import { reactive, cached, Transaction, Rx } from '../source/api'
 
 export class Component<P> extends React.Component<P> {
   @cached
@@ -14,7 +14,7 @@ export class Component<P> extends React.Component<P> {
     throw new Error('render method is undefined')
   }
 
-  @reaction // called immediately in response to changes
+  @reactive // called immediately in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
       Transaction.outside(() => this.setState({})) // ask React to re-render

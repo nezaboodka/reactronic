@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, transaction, cached } from '../source/api'
+import { ObservableObject, transactional, cached } from '../source/api'
 import { Component } from './Component'
 
 class MyModel extends ObservableObject {
@@ -14,7 +14,7 @@ class MyModel extends ObservableObject {
   content: string = ''
   timestamp: number = Date.now()
 
-  @transaction
+  @transactional
   async goto(url: string): Promise<void> {
     this.url = url
     this.content = await (await fetch(url)).text()

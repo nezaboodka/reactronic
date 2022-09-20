@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, Transaction, Rx, reaction, transaction, raw } from '../source/api'
+import { ObservableObject, Transaction, Rx, reactive, transactional, raw } from '../source/api'
 import { TestsLoggingLevel } from './brief'
 
 export class ReactiveDemo extends ObservableObject {
@@ -15,12 +15,12 @@ export class ReactiveDemo extends ObservableObject {
   data: string = 'Data'
   @raw rev: number = 0
 
-  @transaction
+  @transactional
   setData(value: string): void {
     this.data =  value
   }
 
-  @reaction
+  @reactive
   protected actualize1(): void {
     this.title
     this.title = 'Title/1'
@@ -28,13 +28,13 @@ export class ReactiveDemo extends ObservableObject {
     this.title
   }
 
-  @reaction
+  @reactive
   protected actualize2(): void {
     this.content
     this.title = 'Title/2'
   }
 
-  @reaction
+  @reactive
   protected reactOnAnyChange(): void {
     this.rev = Rx.getRevisionOf(this)
   }

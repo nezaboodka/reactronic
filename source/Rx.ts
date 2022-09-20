@@ -24,8 +24,8 @@ export class Rx {
   static takeSnapshot<T>(obj: T): T { return Changeset.takeSnapshot(obj) }
   static dispose(obj: any): void { Changeset.dispose(obj) }
   // Configuration
-  static get reactionsAutoStartDisabled(): boolean { return Mvcc.reactionsAutoStartDisabled }
-  static set reactionsAutoStartDisabled(value: boolean) { Mvcc.reactionsAutoStartDisabled = value }
+  static get reactivityAutoStartDisabled(): boolean { return Mvcc.reactivityAutoStartDisabled }
+  static set reactivityAutoStartDisabled(value: boolean) { Mvcc.reactivityAutoStartDisabled = value }
   // Logging
   static get isLogging(): boolean { return Log.isOn }
   static get loggingOptions(): LoggingOptions { return Log.opt }
@@ -37,7 +37,7 @@ export class Rx {
 
 // Operators
 
-export function unobservable<T>(func: F<T>, ...args: any[]): T {
+export function nonreactive<T>(func: F<T>, ...args: any[]): T {
   return OperationController.runWithin<T>(undefined, func, ...args)
 }
 
@@ -51,18 +51,18 @@ export function raw(proto: object, prop: PropertyKey): any {
   return Mvcc.decorateData(false, proto, prop)
 }
 
-export function transaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opts = { kind: Kind.Transaction }
-  return Mvcc.decorateOperation(true, transaction, opts, proto, prop, pd)
+export function transactional(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+  const opts = { kind: Kind.Transactional }
+  return Mvcc.decorateOperation(true, transactional, opts, proto, prop, pd)
 }
 
-export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opts = { kind: Kind.Reaction, throttling: -1 } // immediate reaction
-  return Mvcc.decorateOperation(true, reaction, opts, proto, prop, pd)
+export function reactive(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+  const opts = { kind: Kind.Reactive, throttling: -1 } // immediate reactive call
+  return Mvcc.decorateOperation(true, reactive, opts, proto, prop, pd)
 }
 
 export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opts = { kind: Kind.Cache, noSideEffects: true }
+  const opts = { kind: Kind.Cached, noSideEffects: true }
   return Mvcc.decorateOperation(true, cached, opts, proto, prop, pd)
 }
 

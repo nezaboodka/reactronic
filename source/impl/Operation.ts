@@ -57,9 +57,9 @@ export class OperationController extends Controller<any> {
       && (!weak || op.cause === BOOT_CAUSE || !op.successor ||
         op.successor.transaction.isFinished)) {
       const outerOpts = Operation.current?.options
-      const separation = weak || opts.separation !== false || opts.kind === Kind.Reaction ||
-        (opts.kind === Kind.Transaction && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cache)) ||
-        (opts.kind === Kind.Cache && (oc.snapshot.changeset.sealed ||
+      const separation = weak || opts.separation !== false || opts.kind === Kind.Reactive ||
+        (opts.kind === Kind.Transactional && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cached)) ||
+        (opts.kind === Kind.Cached && (oc.snapshot.changeset.sealed ||
           oc.snapshot.former.snapshot !== EMPTY_SNAPSHOT))
       const token = opts.noSideEffects ? this : undefined
       const oc2 = this.run(oc, separation, opts, token, args)
@@ -135,7 +135,7 @@ export class OperationController extends Controller<any> {
     const ctx = Changeset.current()
     const os: ObjectSnapshot = ctx.lookupObjectSnapshot(this.objectHandle, this.memberName)
     const op: Operation = this.acquireFromSnapshot(os, args)
-    const isValid = op.options.kind !== Kind.Transaction && op.cause !== BOOT_CAUSE &&
+    const isValid = op.options.kind !== Kind.Transactional && op.cause !== BOOT_CAUSE &&
       (ctx === op.changeset || ctx.timestamp < op.obsoleteSince) &&
       (!op.options.triggeringArgs || args === undefined ||
         op.args.length === args.length && op.args.every((t, i) => t === args[i])) || os.disposed
@@ -217,7 +217,7 @@ export class OperationController extends Controller<any> {
       }
       else { // retry run
         oc = this.peek(argsx) // re-read on retry
-        if (oc.operation.options.kind === Kind.Transaction || !oc.isUpToDate) {
+        if (oc.operation.options.kind === Kind.Transactional || !oc.isUpToDate) {
           oc = this.edit()
           if (Log.isOn && Log.opt.operation)
             Log.write('║', '  𝑓', `${oc.operation.why()}`)
@@ -233,7 +233,7 @@ export class OperationController extends Controller<any> {
   private static markObsolete(self: OperationController): void {
     const oc = self.peek(undefined)
     const ctx = oc.changeset
-    oc.operation.markObsoleteDueTo(oc.operation, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.reactions)
+    oc.operation.markObsoleteDueTo(oc.operation, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.reactive)
   }
 }
 
@@ -241,8 +241,8 @@ export class OperationController extends Controller<any> {
 
 class Operation extends Subscription implements Subscriber {
   static current?: Operation = undefined
-  static queuedReactions: Array<Subscriber> = []
-  static deferredReactions: Array<Operation> = []
+  static queuedReactiveFunctions: Array<Subscriber> = []
+  static deferredReactiveFunctions: Array<Operation> = []
 
   readonly margin: number
   readonly transaction: Transaction
@@ -299,7 +299,7 @@ class Operation extends Subscription implements Subscriber {
     let cause: string
     if (this.cause)
       cause = `   <<   ${this.cause}`
-    else if (this.controller.options.kind === Kind.Transaction)
+    else if (this.controller.options.kind === Kind.Transactional)
       cause = '   <<   operation'
     else
       cause = `   <<   T${this.changeset.id}[${this.changeset.hint}]`
@@ -340,30 +340,30 @@ class Operation extends Subscription implements Subscriber {
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(subscription: Subscription, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactions: Subscriber[]): void {
+  markObsoleteDueTo(subscription: Subscription, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Subscriber[]): void {
     if (this.subscriptions !== undefined) { // if not yet marked as obsolete
       const skip = !subscription.isOperation &&
         changeset === this.changeset /* &&
         snapshot.changes.has(memberName) */
       if (!skip) {
         const why = `${Dump.snapshot2(h, changeset, m, subscription)}    <<    ${outer}`
-        const isReaction = this.options.kind === Kind.Reaction /*&& this.snapshot.data[Meta.Disposed] === undefined*/
+        const isReactive = this.options.kind === Kind.Reactive /*&& this.snapshot.data[Meta.Disposed] === undefined*/
 
         // Mark obsolete and unsubscribe from all (this.subscriptions = undefined)
         this.obsoleteDueTo = why
         this.obsoleteSince = since
         if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
-          Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', isReaction ? '█' : '▒',
-            isReaction && changeset === EMPTY_SNAPSHOT.changeset
-              ? `${this.hint()} is a reaction and will run automatically (order ${this.options.order})`
-              : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, m)} since v${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ''}`)
+          Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', isReactive ? '█' : '▒',
+            isReactive && changeset === EMPTY_SNAPSHOT.changeset
+              ? `${this.hint()} is a reactive and will run automatically (order ${this.options.order})`
+              : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, m)} since v${since}${isReactive ? ` and will run automatically (order ${this.options.order})` : ''}`)
         this.unsubscribeFromAllSubscriptions()
 
-        // Stop cascade propagation on reaction, or continue otherwise
-        if (isReaction)
-          reactions.push(this)
+        // Stop cascade propagation on reactive function, or continue otherwise
+        if (isReactive)
+          reactive.push(this)
         else
-          this.subscribers?.forEach(s => s.markObsoleteDueTo(this, this.controller.memberName, this.changeset, this.controller.objectHandle, why, since, reactions))
+          this.subscribers?.forEach(s => s.markObsoleteDueTo(this, this.controller.memberName, this.changeset, this.controller.objectHandle, why, since, reactive))
 
         // Cancel own transaction if it is still in progress
         const tran = this.transaction
@@ -380,23 +380,23 @@ class Operation extends Subscription implements Subscriber {
 
   runIfNotUpToDate(now: boolean, nothrow: boolean): void {
     const t = this.options.throttling
-    const interval = Date.now() + this.started // "started" is stored as negative value after reaction completion
-    const hold = t ? t - interval : 0 // "started" is stored as negative value after reaction completion
+    const interval = Date.now() + this.started // "started" is stored as negative value after reactive function completion
+    const hold = t ? t - interval : 0 // "started" is stored as negative value after reactive function completion
     if (now || hold < 0) {
       if (this.isNotUpToDate()) {
         try {
           const op: Operation = this.controller.useOrRun(false, undefined)
           if (op.result instanceof Promise)
             op.result.catch(error => {
-              if (op.options.kind === Kind.Reaction)
-                misuse(`reaction ${op.hint()} failed and will not run anymore: ${error}`, error)
+              if (op.options.kind === Kind.Reactive)
+                misuse(`reactive function ${op.hint()} failed and will not run anymore: ${error}`, error)
             })
         }
         catch (e) {
           if (!nothrow)
             throw e
-          else if (this.options.kind === Kind.Reaction)
-            misuse(`reaction ${this.hint()} failed and will not run anymore: ${e}`, e)
+          else if (this.options.kind === Kind.Reactive)
+            misuse(`reactive ${this.hint()} failed and will not run anymore: ${e}`, e)
         }
       }
     }
@@ -404,12 +404,12 @@ class Operation extends Subscription implements Subscriber {
       if (hold > 0)
         setTimeout(() => this.runIfNotUpToDate(true, true), hold)
       else
-        this.addToDeferredReactions()
+        this.addToDeferredReactiveFunctions()
     }
   }
 
   isNotUpToDate(): boolean {
-    return !this.error && (this.options.kind === Kind.Transaction ||
+    return !this.error && (this.options.kind === Kind.Transactional ||
       !this.successor || this.successor.transaction.isCanceled)
   }
 
@@ -531,30 +531,30 @@ class Operation extends Subscription implements Subscriber {
     })
   }
 
-  private addToDeferredReactions(): void {
-    Operation.deferredReactions.push(this)
-    if (Operation.deferredReactions.length === 1)
-      setTimeout(Operation.processDeferredReactions, 0)
+  private addToDeferredReactiveFunctions(): void {
+    Operation.deferredReactiveFunctions.push(this)
+    if (Operation.deferredReactiveFunctions.length === 1)
+      setTimeout(Operation.processDeferredReactiveFunctions, 0)
   }
 
-  private static processDeferredReactions(): void {
-    const reactions = Operation.deferredReactions
-    Operation.deferredReactions = [] // reset
-    for (const x of reactions)
+  private static processDeferredReactiveFunctions(): void {
+    const deferred = Operation.deferredReactiveFunctions
+    Operation.deferredReactiveFunctions = [] // reset
+    for (const x of deferred)
       x.runIfNotUpToDate(true, true)
   }
 
   private static markUsed(subscription: Subscription, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean): void {
-    if (kind !== Kind.Transaction) {
+    if (kind !== Kind.Transactional) {
       const op: Operation | undefined = Operation.current // alias
-      if (op && op.options.kind !== Kind.Transaction &&
+      if (op && op.options.kind !== Kind.Transactional &&
         op.transaction === Transaction.current && m !== Meta.Handle) {
         const ctx = Changeset.current()
         if (ctx !== os.changeset) // snapshot should not bump itself
           ctx.bumpBy(os.changeset.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!op.subscribeTo(subscription, os, m, h, t))
-          op.markObsoleteDueTo(subscription, m, os.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.reactions)
+          op.markObsoleteDueTo(subscription, m, os.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.reactive)
       }
     }
   }
@@ -574,16 +574,16 @@ class Operation extends Subscription implements Subscriber {
 
   private static propagateAllChangesThroughSubscriptions(changeset: Changeset): void {
     const since = changeset.timestamp
-    const reactions = changeset.reactions
+    const reactive = changeset.reactive
     changeset.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-      Operation.propagateMemberChangeThroughSubscriptions(false, since, os, Meta.Revision, h, reactions)
+      Operation.propagateMemberChangeThroughSubscriptions(false, since, os, Meta.Revision, h, reactive)
       if (!os.disposed)
-        os.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(false, since, os, m, h, reactions))
+        os.changes.forEach((o, m) => Operation.propagateMemberChangeThroughSubscriptions(false, since, os, m, h, reactive))
       else
         for (const m in os.former.snapshot.data)
-          Operation.propagateMemberChangeThroughSubscriptions(true, since, os, m, h, reactions)
+          Operation.propagateMemberChangeThroughSubscriptions(true, since, os, m, h, reactive)
     })
-    reactions.sort(compareReactionsByOrder)
+    reactive.sort(compareReactiveFunctionsByOrder)
     changeset.options.journal?.edited(
       JournalImpl.buildPatch(changeset.hint, changeset.items))
   }
@@ -598,10 +598,10 @@ class Operation extends Subscription implements Subscriber {
   }
 
   private static propagateMemberChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,
-    os: ObjectSnapshot, m: MemberName, h: ObjectHandle, reactions?: Subscriber[]): void {
+    os: ObjectSnapshot, m: MemberName, h: ObjectHandle, reactive?: Subscriber[]): void {
     const curr = os.data[m]
-    if (reactions) {
-      // Propagate change to reactions
+    if (reactive) {
+      // Propagate change to reactive functions
       const former = os.former.snapshot.data[m]
       if (former !== undefined && former instanceof Subscription) {
         const why = `T${os.changeset.id}[${os.changeset.hint}]`
@@ -620,7 +620,7 @@ class Operation extends Subscription implements Subscriber {
             former.successor = undefined
         }
         former.subscribers?.forEach(s =>
-          s.markObsoleteDueTo(former, m, os.changeset, h, why, timestamp, reactions))
+          s.markObsoleteDueTo(former, m, os.changeset, h, why, timestamp, reactive))
       }
     }
     if (curr instanceof Operation) {
@@ -647,24 +647,24 @@ class Operation extends Subscription implements Subscriber {
     }
   }
 
-  private static enqueueReactionsToRun(reactions: Array<Subscriber>): void {
-    const queue = Operation.queuedReactions
-    const isReactionLoopRequired = queue.length === 0
-    for (const r of reactions)
+  private static enqueueReactiveFunctionsToRun(reactive: Array<Subscriber>): void {
+    const queue = Operation.queuedReactiveFunctions
+    const isReactiveLoopRequired = queue.length === 0
+    for (const r of reactive)
       queue.push(r)
-    if (isReactionLoopRequired)
-      OperationController.runWithin<void>(undefined, Operation.runQueuedReactionsLoop)
+    if (isReactiveLoopRequired)
+      OperationController.runWithin<void>(undefined, Operation.runQueuedReactiveLoop)
   }
 
-  private static runQueuedReactionsLoop(): void {
-    const queue = Operation.queuedReactions
+  private static runQueuedReactiveLoop(): void {
+    const queue = Operation.queuedReactiveFunctions
     let i = 0
     while (i < queue.length) {
-      const reaction = queue[i]
-      reaction.runIfNotUpToDate(false, true)
+      const reactive = queue[i]
+      reactive.runIfNotUpToDate(false, true)
       i++
     }
-    Operation.queuedReactions = [] // reset loop
+    Operation.queuedReactiveFunctions = [] // reset loop
   }
 
   private unsubscribeFromAllSubscriptions(): void {
@@ -732,14 +732,14 @@ class Operation extends Subscription implements Subscriber {
     const ctl = op ? op.controller : new OperationController(EMPTY_HANDLE, m)
     const opts = op ? op.options : OptionsImpl.INITIAL
     initial[m] = op = new Operation(ctl, EMPTY_SNAPSHOT.changeset, new OptionsImpl(getter, setter, opts, options, implicit))
-    // Add to the list if it's a reaction
-    if (op.options.kind === Kind.Reaction && op.options.throttling < Number.MAX_SAFE_INTEGER) {
-      const reactions = Meta.acquire(proto, Meta.Reactions)
-      reactions[m] = op
+    // Add to the list if it's a reactive function
+    if (op.options.kind === Kind.Reactive && op.options.throttling < Number.MAX_SAFE_INTEGER) {
+      const reactive = Meta.acquire(proto, Meta.Reactive)
+      reactive[m] = op
     }
-    else if (op.options.kind === Kind.Reaction && op.options.throttling >= Number.MAX_SAFE_INTEGER) {
-      const reactions = Meta.getFrom(proto, Meta.Reactions)
-      delete reactions[m]
+    else if (op.options.kind === Kind.Reactive && op.options.throttling >= Number.MAX_SAFE_INTEGER) {
+      const reactive = Meta.getFrom(proto, Meta.Reactive)
+      delete reactive[m]
     }
     return op.options
   }
@@ -758,7 +758,7 @@ class Operation extends Subscription implements Subscriber {
     Changeset.isConflicting = Operation.isConflicting // override
     Changeset.propagateAllChangesThroughSubscriptions = Operation.propagateAllChangesThroughSubscriptions // override
     Changeset.revokeAllSubscriptions = Operation.revokeAllSubscriptions // override
-    Changeset.enqueueReactionsToRun = Operation.enqueueReactionsToRun
+    Changeset.enqueueReactiveFunctionsToRun = Operation.enqueueReactiveFunctionsToRun
     Mvcc.createOperation = Operation.createOperation // override
     Mvcc.rememberOperationOptions = Operation.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
@@ -855,7 +855,7 @@ function reactronicHookedThen(this: any,
   return ORIGINAL_PROMISE_THEN.call(this, resolve, reject)
 }
 
-function compareReactionsByOrder(a: Subscriber, b: Subscriber): number {
+function compareReactiveFunctionsByOrder(a: Subscriber, b: Subscriber): number {
   return a.order - b.order
 }
 

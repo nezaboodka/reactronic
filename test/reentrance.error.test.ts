@@ -36,7 +36,7 @@ test('reentrance.error', async t => {
     // t.is(app.rawField, 'raw field')
     // t.throws(() => app.rawField = 'test', { message: 'raw property AsyncDemoView.rawField #23 can only be modified inside transaction' })
     Rx.getController(app.print).configure({ logging: TestsLoggingLevel })
-    await app.print() // reaction first run
+    await app.print() // initial reactive run
     t.throws(() => Rx.getController(app.print).configure({ logging: TestsLoggingLevel }))
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
