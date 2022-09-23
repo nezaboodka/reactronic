@@ -11,32 +11,32 @@ import { MvccObject } from './Mvcc'
 // MvccMap
 
 export class MvccMap<K, V> extends MvccObject {
-  private all: Map<K, V>
+  private impl: Map<K, V>
 
   constructor(isObservable: boolean, map: Map<K, V>) {
     super(isObservable)
-    this.all = map
+    this.impl = map
   }
 
   clear(): void { this.mutable.clear() }
   delete(key: K): boolean { return this.mutable.delete(key) }
-  forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void { this.all.forEach(callbackfn, thisArg) }
-  get(key: K): V | undefined { return this.all.get(key) }
-  has(key: K): boolean { return this.all.has(key) }
+  forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void { this.impl.forEach(callbackfn, thisArg) }
+  get(key: K): V | undefined { return this.impl.get(key) }
+  has(key: K): boolean { return this.impl.has(key) }
   set(key: K, value: V): this { this.mutable.set(key, value); return this }
-  get size(): number { return this.all.size }
+  get size(): number { return this.impl.size }
 
-  entries(): IterableIterator<[K, V]> { return this.all.entries() }
-  keys(): IterableIterator<K> { return this.all.keys() }
-  values(): IterableIterator<V> { return this.all.values() }
+  entries(): IterableIterator<[K, V]> { return this.impl.entries() }
+  keys(): IterableIterator<K> { return this.impl.keys() }
+  values(): IterableIterator<V> { return this.impl.values() }
 
-  [Symbol.toStringTag](): string { return this.all[Symbol.toStringTag] }
+  [Symbol.toStringTag](): string { return this.impl[Symbol.toStringTag] }
 
   private get mutable(): Map<K, V> {
-    const createCopy = (this.all as any)[Sealant.CreateCopy]
+    const createCopy = (this.impl as any)[Sealant.CreateCopy]
     if (createCopy)
-      return this.all = createCopy.call(this.all)
-    return this.all
+      return this.impl = createCopy.call(this.impl)
+    return this.impl
   }
 }
 
