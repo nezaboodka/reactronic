@@ -46,7 +46,7 @@ export class TransactionalMap<K, V> extends MvccMap<K, V> {
   constructor()
   constructor(iterable?: Iterable<readonly [K, V]> | null)
   constructor(args?: any) {
-    super(true, args !== undefined ? new Map<K, V>(args) : new Map<K, V>())
+    super(false, args !== undefined ? new Map<K, V>(args) : new Map<K, V>())
   }
 }
 
