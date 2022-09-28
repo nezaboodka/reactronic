@@ -2,6 +2,7 @@
   "name": "reactronic",
   "version": "0.22.400",
   "description": "Reactronic - Transactional Reactive State Management",
+  "icon": "reactronic.png",
   "type": "module",
   "main": "build/dist/source/api.js",
   "types": "build/dist/source/api.d.ts",
