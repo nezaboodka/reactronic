@@ -16,9 +16,14 @@ for (const x of example1)
 
 const example2 = ['Added1', 'Bye', 'End', 'Added2', 'Hello', 'Added3']
 list.beginMerge()
-for (const x of example2)
-  if (!list.claim(x)) // try to link with an existing item
+for (const x of example2) {
+  const existing = list.claim(x) // try to link with an existing item
+  if (existing) {
+    // merge x into existing (when item is an object)
+  }
+  else
     list.add(x, true) // otherwise add item as a new one
+}
 list.endMerge(true)
 
 // list.items: Added1, Bye, End, Added2, Hello, Added3
