@@ -1,6 +1,6 @@
 {
   "name": "reactronic",
-  "version": "0.22.400",
+  "version": "0.22.410",
   "description": "Reactronic - Transactional Reactive State Management",
   "icon": "reactronic.png",
   "type": "module",
