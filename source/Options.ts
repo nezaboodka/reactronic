@@ -7,7 +7,8 @@
 
 import { LoggingOptions } from './Logging'
 import { SeparationMode } from './impl/Data'
-export { LoggingOptions, ProfilingOptions, LoggingLevel } from './Logging'
+export { LoggingLevel } from './Logging'
+export type { LoggingOptions, ProfilingOptions } from './Logging'
 import { Journal } from './impl/Journal'
 import { Monitor } from './impl/Monitor'
 
