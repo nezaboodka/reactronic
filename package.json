@@ -2,6 +2,8 @@
   "name": "reactronic",
   "version": "0.22.410",
   "description": "Reactronic - Transactional Reactive State Management",
+  "publisher": "Nezaboodka Software",
+  "license": "Apache-2.0",
   "icon": "reactronic.png",
   "type": "module",
   "main": "build/dist/source/api.js",
@@ -24,8 +26,6 @@
     "transactional",
     "asynchronous"
   ],
-  "author": "Yury Chetyrko <ychetyrko@gmail.com> (https://github.com/ychetyrko)",
-  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/nezaboodka/reactronic/issues"
   },
