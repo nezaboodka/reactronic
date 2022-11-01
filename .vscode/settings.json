@@ -3,12 +3,14 @@
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
   "files.exclude": {
-    "node_modules/": true,
-    "build/": true,
+    "**/node_modules/": true,
+    "**/build/": true,
+    "**/Build/": true,
   },
   "files.watcherExclude": {
-    "node_modules/": true,
-    "build/": true,
+    "**/node_modules/": true,
+    "**/build/": true,
+    "**/Build/": true,
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "cSpell.ignorePaths": [
