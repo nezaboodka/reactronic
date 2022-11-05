@@ -26,6 +26,7 @@ export abstract class ObservableCollection<T> extends ObservableObject implement
   beginMerge(): void { this.impl.beginMerge() }
   endMerge(error?: unknown): void { this.impl.endMerge(error) }
   resetAddedAndRemovedLists(): void { this.impl.resetAddedAndRemovedLists() }
+  lastClaimedItem(): Item<T> | undefined { return this.impl.lastClaimedItem() }
 
   items(): Generator<Item<T>> { return this.impl.items() }
   addedItems(reset?: boolean): Generator<Item<T>> { return this.impl.addedItems(reset) }
