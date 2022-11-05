@@ -56,6 +56,8 @@ class Collection<T> {
   move(item: Item<T>, after: Item<T>): void
   beginMerge(): void
   endMerge(clearAddedAndRemovedItems: boolean): void
+  resetAddedAndRemovedLists(): void
+  lastClaimedItem(): Item<T> | undefined
 
   items(): Generator<Item<T>>
   addedItems(keep?: boolean): Generator<Item<T>>

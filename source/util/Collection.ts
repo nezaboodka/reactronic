@@ -23,6 +23,7 @@ export interface CollectionReader<T> {
   beginMerge(): void
   endMerge(error?: unknown): void
   resetAddedAndRemovedLists(): void
+  lastClaimedItem(): Item<T> | undefined
 
   items(): Generator<Item<T>>
   addedItems(reset?: boolean): Generator<Item<T>>
@@ -199,6 +200,10 @@ export class Collection<T> implements CollectionReader<T> {
   resetAddedAndRemovedLists(): void {
     this.removed.reset()
     this.added.reset()
+  }
+
+  lastClaimedItem(): Item<T> | undefined {
+    return this.current.last
   }
 
   *items(): Generator<Item<T>> {
