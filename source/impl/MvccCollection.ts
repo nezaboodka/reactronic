@@ -20,7 +20,7 @@ export abstract class ObservableCollection<T> extends ObservableObject implement
 
   lookup(key: string): Item<T> | undefined { return this.impl.lookup(key) }
   claim(key: string): Item<T> | undefined { return this.impl.claim(key) }
-  add(self: T): Item<T> { return this.impl.add(self) }
+  add(instance: T): Item<T> { return this.impl.add(instance) }
   remove(item: Item<T>): void { return this.impl.remove(item) }
   move(item: Item<T>, after: Item<T>): void { this.impl.move(item, after) }
   beginMerge(): void { this.impl.beginMerge() }

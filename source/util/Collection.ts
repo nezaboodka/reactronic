@@ -17,7 +17,7 @@ export interface CollectionReader<T> {
 
   lookup(key: string): Item<T> | undefined
   claim(key: string): Item<T> | undefined
-  add(self: T): Item<T>
+  add(instance: T): Item<T>
   remove(item: Item<T>): void
   move(item: Item<T>, after: Item<T>): void
   beginMerge(): void
@@ -35,7 +35,7 @@ export interface CollectionReader<T> {
 }
 
 export interface Item<T> {
-  readonly self: T
+  readonly instance: T
   // readonly next?: Item<T>
   readonly prev?: Item<T> // TODO: hide
   aux?: Item<T> // TODO: hide
@@ -85,7 +85,7 @@ export class Collection<T> implements CollectionReader<T> {
     if (key !== undefined && key !== this.lastNotFoundKey) {
       result = this.map.get(key)
       if (result) {
-        if (this.getKey(result.self) !== key) {
+        if (this.getKey(result.instance) !== key) {
           this.lastNotFoundKey = key
           result = undefined
         }
@@ -101,7 +101,7 @@ export class Collection<T> implements CollectionReader<T> {
     if (tag < 0)
       throw new Error('merge is not in progress')
     let item = this.strictNextItem
-    if (key !== (item ? this.getKey(item.self) : undefined))
+    if (key !== (item ? this.getKey(item.instance) : undefined))
       item = this.lookup(key) as ItemImpl<T> | undefined
     if (item) {
       if (item.tag !== tag) {
@@ -124,8 +124,8 @@ export class Collection<T> implements CollectionReader<T> {
     return item
   }
 
-  add(self: T): Item<T> {
-    const key = this.getKey(self)
+  add(instance: T): Item<T> {
+    const key = this.getKey(instance)
     if (this.lookup(key) !== undefined)
       throw new Error(`key is already in use: ${key}`)
     let tag = this.tag
@@ -133,7 +133,7 @@ export class Collection<T> implements CollectionReader<T> {
       tag = ~this.tag + 1
       this.tag = ~tag // one item merge cycle
     }
-    const item = new ItemImpl<T>(self, tag)
+    const item = new ItemImpl<T>(instance, tag)
     this.map.set(key, item)
     this.lastNotFoundKey = undefined
     this.strictNextItem = undefined
@@ -175,12 +175,12 @@ export class Collection<T> implements CollectionReader<T> {
         if (currentCount > this.removed.count) { // it should be faster to delete vanished items
           const map = this.map
           for (const x of this.removed.items())
-            map.delete(getKey(x.self))
+            map.delete(getKey(x.instance))
         }
         else { // it should be faster to recreate map using current items
           const map = this.map = new Map<string | undefined, ItemImpl<T>>()
           for (const x of this.current.items())
-            map.set(getKey(x.self), x)
+            map.set(getKey(x.instance), x)
         }
       }
       else // just create new empty map
@@ -190,7 +190,7 @@ export class Collection<T> implements CollectionReader<T> {
       this.current.grab(this.removed, true)
       const getKey = this.getKey
       for (const x of this.added.itemsViaAux()) {
-        this.map.delete(getKey(x.self))
+        this.map.delete(getKey(x.instance))
         this.current.exclude(x)
       }
       this.added.reset()
@@ -271,21 +271,21 @@ export class Collection<T> implements CollectionReader<T> {
       t.status = t.tag
   }
 
-  static createItem<T>(self: T): Item<T> {
-    return new ItemImpl(self, 0)
+  static createItem<T>(instance: T): Item<T> {
+    return new ItemImpl(instance, 0)
   }
 }
 
 class ItemImpl<T> implements Item<T> {
-  readonly self: T
+  readonly instance: T
   tag: number
   status: number
   next?: ItemImpl<T>
   prev?: ItemImpl<T>
   aux?: ItemImpl<T>
 
-  constructor(self: T, tag: number) {
-    this.self = self
+  constructor(instance: T, tag: number) {
+    this.instance = instance
     this.tag = tag
     this.status = ~tag // isAdded=true
     this.next = undefined

@@ -81,7 +81,7 @@ function compare(list: Generator<Item<string>>, array: Array<string>): boolean {
   let result = true
   let i = 0
   for (const item of list) {
-    if (item.self !== array[i]) {
+    if (item.instance !== array[i]) {
       result = false
       break
     }

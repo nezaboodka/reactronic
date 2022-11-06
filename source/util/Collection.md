@@ -38,7 +38,7 @@ Collection API:
 
 ``` typescript
 interface Item<T> {
-  readonly self: T
+  readonly instance: T
 }
 
 class Collection<T> {
@@ -51,7 +51,7 @@ class Collection<T> {
 
   lookup(key: string): Item<T> | undefined
   claim(key: string): Item<T> | undefined
-  add(self: T, keepInAddedItems?: boolean): Item<T>
+  add(instance: T, keepInAddedItems?: boolean): Item<T>
   remove(item: Item<T>, keepInRemovedItems?: boolean): void
   move(item: Item<T>, after: Item<T>): void
   beginMerge(): void
