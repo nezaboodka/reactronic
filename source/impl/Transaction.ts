@@ -9,7 +9,7 @@ import { UNDEF, F, pause } from '../util/Utils'
 import { Log, misuse, error, fatal } from '../util/Dbg'
 import { Worker } from '../Worker'
 import { SnapshotOptions, LoggingOptions } from '../Options'
-import { ObjectSnapshot, Subscriber } from './Data'
+import { ObjectSnapshot, Observer } from './Data'
 import { Changeset, Dump } from './Changeset'
 
 export abstract class Transaction implements Worker {
@@ -324,9 +324,9 @@ class TransactionImpl extends Transaction {
     throw error(`T${this.id}[${this.hint}] conflicts with: ${Dump.conflicts(conflicts)}`, undefined)
   }
 
-  private applyOrDiscard(): Array<Subscriber> {
+  private applyOrDiscard(): Array<Observer> {
     // It's critical to have no exceptions in this block
-    let reactive: Array<Subscriber>
+    let reactive: Array<Observer>
     try {
       if (Log.isOn && Log.opt.change)
         Log.write('╠═', '', '', undefined, 'changes')

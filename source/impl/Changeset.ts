@@ -12,7 +12,7 @@ import { SealedArray } from '../util/SealedArray'
 import { SealedMap } from '../util/SealedMap'
 import { SealedSet } from '../util/SealedSet'
 import { Kind, SnapshotOptions } from '../Options'
-import { AbstractChangeset, ObjectSnapshot, MemberName, ObjectHandle, Subscription, Subscriber, Meta } from './Data'
+import { AbstractChangeset, ObjectSnapshot, MemberName, ObjectHandle, Observable, Observer, Meta } from './Data'
 
 export const MAX_REVISION = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_REVISION = MAX_REVISION - 1
@@ -24,7 +24,7 @@ Object.defineProperty(ObjectHandle.prototype, '#this#', {
     const data = Changeset.current().getObjectSnapshot(this, '#this#').data
     for (const m in data) {
       const v = data[m]
-      if (v instanceof Subscription)
+      if (v instanceof Observable)
         result[m] = v.content
       else if (v === Meta.Raw)
         result[m] = this.data[m]
@@ -57,7 +57,7 @@ export class Changeset implements AbstractChangeset {
   private revision: number
   private bumper: number
   items: Map<ObjectHandle, ObjectSnapshot>
-  reactive: Subscriber[]
+  reactive: Observer[]
   sealed: boolean
 
   constructor(options: SnapshotOptions | null) {
@@ -73,12 +73,12 @@ export class Changeset implements AbstractChangeset {
   // To be redefined by transaction implementation
   static current: () => Changeset = UNDEF
   static edit: () => Changeset = UNDEF
-  static markUsed: (subscription: Subscription, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean) => void = UNDEF
+  static markUsed: (observable: Observable, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean) => void = UNDEF
   static markEdited: (oldValue: any, newValue: any, edited: boolean, os: ObjectSnapshot, m: MemberName, h: ObjectHandle) => void = UNDEF
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (changeset: Changeset): void => { /* nop */ }
   static revokeAllSubscriptions = (changeset: Changeset): void => { /* nop */ }
-  static enqueueReactiveFunctionsToRun = (reactive: Array<Subscriber>): void => { /* nop */ }
+  static enqueueReactiveFunctionsToRun = (reactive: Array<Observer>): void => { /* nop */ }
 
   lookupObjectSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
     // TODO: Take into account timestamp of the member
@@ -112,7 +112,7 @@ export class Changeset implements AbstractChangeset {
         const revision = m === Meta.Handle ? 1 : os.revision + 1
         const data = { ...m === Meta.Handle ? value : os.data }
         Meta.set(data, Meta.Handle, h)
-        Meta.set(data, Meta.Revision, new Subscription(revision))
+        Meta.set(data, Meta.Revision, new Observable(revision))
         os = new ObjectSnapshot(this, os, data)
         this.items.set(h, os)
         h.editing = os
@@ -248,7 +248,7 @@ export class Changeset implements AbstractChangeset {
     return counter
   }
 
-  applyOrDiscard(error?: any): Array<Subscriber> {
+  applyOrDiscard(error?: any): Array<Observer> {
     this.sealed = true
     this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
       Changeset.sealObjectSnapshot(h, os)
@@ -285,7 +285,7 @@ export class Changeset implements AbstractChangeset {
 
   static sealObjectSnapshot(h: ObjectHandle, os: ObjectSnapshot): void {
     if (!os.disposed)
-      os.changes.forEach((o, m) => Changeset.sealSubscription(os.data[m], m, h.proxy.constructor.name))
+      os.changes.forEach((o, m) => Changeset.sealObservable(os.data[m], m, h.proxy.constructor.name))
     else
       for (const m in os.former.snapshot.data)
         os.data[m] = Meta.Undefined
@@ -293,13 +293,13 @@ export class Changeset implements AbstractChangeset {
       Changeset.freezeObjectSnapshot(os)
   }
 
-  static sealSubscription(subscription: Subscription | symbol, m: MemberName, typeName: string): void {
-    if (subscription instanceof Subscription) {
-      const value = subscription.content
+  static sealObservable(o: Observable | symbol, m: MemberName, typeName: string): void {
+    if (o instanceof Observable) {
+      const value = o.content
       if (value !== undefined && value !== null) {
         const sealedType = Object.getPrototypeOf(value)[Sealant.SealedType]
         if (sealedType)
-          subscription.content = Sealant.seal(value, sealedType, typeName, m)
+          o.content = Sealant.seal(value, sealedType, typeName, m)
       }
     }
   }
@@ -387,13 +387,13 @@ export class Dump {
     return result
   }
 
-  static snapshot2(h: ObjectHandle, s: AbstractChangeset, m?: MemberName, o?: Subscription): string {
+  static snapshot2(h: ObjectHandle, s: AbstractChangeset, m?: MemberName, o?: Observable): string {
     return Dump.obj(h, m, s.timestamp, s.id, o?.originSnapshotId, o?.content ?? Meta.Undefined)
   }
 
   static snapshot(os: ObjectSnapshot, m?: MemberName): string {
     const h = Meta.get<ObjectHandle | undefined>(os.data, Meta.Handle)
-    const value = m !== undefined ? os.data[m] as Subscription : undefined
+    const value = m !== undefined ? os.data[m] as Observable : undefined
     return Dump.obj(h, m, os.changeset.timestamp, os.changeset.id, value?.originSnapshotId)
   }
 

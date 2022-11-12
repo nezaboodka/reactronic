@@ -18,11 +18,11 @@ export interface AbstractChangeset {
   readonly sealed: boolean
 }
 
-// Subscription & Subscriber
+// Observable & Observer
 
-export class Subscription {
+export class Observable {
   content: any
-  subscribers?: Set<Subscriber>
+  observers?: Set<Observer>
   get isOperation(): boolean { return false }
   get originSnapshotId(): number | undefined { return 0 }
   constructor(content: any) { this.content = content }
@@ -30,12 +30,12 @@ export class Subscription {
 
 export type SeparationMode = boolean | 'isolated' | 'disposal'
 
-export interface Subscriber {
+export interface Observer {
   readonly order: number
-  readonly subscriptions: Map<Subscription, SubscriptionInfo> | undefined
+  readonly observables: Map<Observable, SubscriptionInfo> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(subscription: Subscription, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Array<Subscriber>): void
+  markObsoleteDueTo(subscription: Observable, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Array<Observer>): void
   runIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 
@@ -66,14 +66,14 @@ export class ObjectSnapshot {
   }
 
   get revision(): number {
-    return (this.data[Meta.Revision] as Subscription).content
+    return (this.data[Meta.Revision] as Observable).content
   }
 
   get disposed(): boolean { return this.revision < 0 }
   set disposed(value: boolean) {
     const rev = this.revision
     if (rev < 0 !== value)
-      (this.data[Meta.Revision] as Subscription).content = ~rev
+      (this.data[Meta.Revision] as Observable).content = ~rev
   }
 }
 

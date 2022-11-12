@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { ObservableObject } from './Mvcc'
-import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ValuePatch, Subscription, MemberName } from './Data'
+import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ValuePatch, Observable, MemberName } from './Data'
 import { Changeset, EMPTY_SNAPSHOT } from './Changeset'
 import { Transaction } from './Transaction'
 import { Sealant } from '../util/Sealant'
@@ -125,7 +125,7 @@ export class JournalImpl extends Journal {
           const value = undoing ? vp.formerValue : vp.freshValue
           const os: ObjectSnapshot = ctx.getEditableObjectSnapshot(h, m, value)
           if (os.changeset === ctx) {
-            os.data[m] = new Subscription(value)
+            os.data[m] = new Observable(value)
             const existing: any = os.former.snapshot.data[m]
             Changeset.markEdited(existing, value, existing !== value, os, m, h)
           }
@@ -165,8 +165,8 @@ export class JournalImpl extends Journal {
   }
 }
 
-function unseal(subscription: Subscription): any {
-  const result = subscription.content
+function unseal(o: Observable): any {
+  const result = o.content
   const createCopy = result?.[Sealant.CreateCopy] as () => any
   return createCopy !== undefined ? createCopy.call(result) : result
 }
