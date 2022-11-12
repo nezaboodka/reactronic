@@ -187,22 +187,23 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     return result
   }
 
-  static decorateData(isObservable: boolean, proto: any, m: MemberName): any {
+  static decorateData(isObservable: boolean, proto: any, member: MemberName): any {
     if (isObservable) {
+      Meta.acquire(proto, Meta.Initial)[member] = new Subscription(undefined)
       const get = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.observable.get(h, m, this)
+        return Mvcc.observable.get(h, member, this)
       }
       const set = function(this: any, value: any): boolean {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.observable.set(h, m, value, this)
+        return Mvcc.observable.set(h, member, value, this)
       }
       const enumerable = true
       const configurable = false
-      return Object.defineProperty(proto, m, { get, set, enumerable, configurable })
+      return Object.defineProperty(proto, member, { get, set, enumerable, configurable })
     }
     else
-      Meta.acquire(proto, Meta.Initial)[m] = Meta.Raw
+      Meta.acquire(proto, Meta.Initial)[member] = Meta.Raw
   }
 
   static decorateOperation(implicit: boolean, decorator: Function,
