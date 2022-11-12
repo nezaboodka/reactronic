@@ -24,7 +24,8 @@ export class AsyncDemo extends ObservableObject {
 }
 
 export class AsyncDemoView {
-  // @state rawField: string = 'raw field'
+  // rawField: string = 'raw field'
+  // @observable observableField: string = 'observable field'
 
   constructor(readonly model: AsyncDemo) {
   }

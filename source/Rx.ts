@@ -51,6 +51,10 @@ export function raw(proto: object, prop: PropertyKey): any {
   return Mvcc.decorateData(false, proto, prop)
 }
 
+export function observable(proto: object, prop: PropertyKey): any {
+  return Mvcc.decorateData(true, proto, prop)
+}
+
 export function transactional(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = { kind: Kind.Transactional }
   return Mvcc.decorateOperation(true, transactional, opts, proto, prop, pd)

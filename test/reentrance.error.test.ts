@@ -34,7 +34,10 @@ test('reentrance.error', async t => {
   })
   try {
     // t.is(app.rawField, 'raw field')
-    // t.throws(() => app.rawField = 'test', { message: 'raw property AsyncDemoView.rawField #23 can only be modified inside transaction' })
+    // app.rawField = 'raw field updated'
+    // t.is(app.rawField, 'raw field updated')
+    // t.is(app.observableField, 'observable field')
+    // t.throws(() => app.observableField = 'observable field', { message: 'observable property AsyncDemoView.observbleField #23 can only be modified inside transaction' })
     Rx.getController(app.print).configure({ logging: TestsLoggingLevel })
     await app.print() // initial reactive run
     t.throws(() => Rx.getController(app.print).configure({ logging: TestsLoggingLevel }))
