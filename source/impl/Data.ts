@@ -32,16 +32,16 @@ export type SeparationMode = boolean | 'isolated' | 'disposal'
 
 export interface Observer {
   readonly order: number
-  readonly observables: Map<Observable, SubscriptionInfo> | undefined
+  readonly observables: Map<Observable, Subscription> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(subscription: Observable, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Array<Observer>): void
+  markObsoleteDueTo(observable: Observable, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Array<Observer>): void
   runIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 
 export type MemberName = PropertyKey
 
-export interface SubscriptionInfo {
+export interface Subscription {
   readonly memberHint: string
   readonly usageCount: number
 }

@@ -9,7 +9,7 @@ import { F } from '../util/Utils'
 import { Log, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
-import { ObjectSnapshot, MemberName, ObjectHandle, Observable, Observer, SeparationMode, SubscriptionInfo, Meta, AbstractChangeset } from './Data'
+import { ObjectSnapshot, MemberName, ObjectHandle, Observable, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from './Data'
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Changeset'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -248,7 +248,7 @@ class Operation extends Observable implements Observer {
   readonly transaction: Transaction
   readonly controller: OperationController
   readonly changeset: AbstractChangeset
-  observables: Map<Observable, SubscriptionInfo> | undefined
+  observables: Map<Observable, Subscription> | undefined
   options: OptionsImpl
   cause: string | undefined
   args: any[]
@@ -265,7 +265,7 @@ class Operation extends Observable implements Observer {
     this.transaction = Transaction.current
     this.controller = controller
     this.changeset = changeset
-    this.observables = new Map<Observable, SubscriptionInfo>()
+    this.observables = new Map<Observable, Subscription>()
     if (former instanceof Operation) {
       this.options = former.options
       this.args = former.args
@@ -349,7 +349,7 @@ class Operation extends Observable implements Observer {
         const why = `${Dump.snapshot2(h, changeset, m, observable)}    <<    ${outer}`
         const isReactive = this.options.kind === Kind.Reactive /*&& this.snapshot.data[Meta.Disposed] === undefined*/
 
-        // Mark obsolete and unsubscribe from all (this.subscriptions = undefined)
+        // Mark obsolete and unsubscribe from all (this.observables = undefined)
         this.obsoleteDueTo = why
         this.obsoleteSince = since
         if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
@@ -357,7 +357,7 @@ class Operation extends Observable implements Observer {
             isReactive && changeset === EMPTY_SNAPSHOT.changeset
               ? `${this.hint()} is a reactive and will run automatically (order ${this.options.order})`
               : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, m)} since v${since}${isReactive ? ` and will run automatically (order ${this.options.order})` : ''}`)
-        this.unsubscribeFromAllSubscriptions()
+        this.unsubscribeFromAllObservables()
 
         // Stop cascade propagation on reactive function, or continue otherwise
         if (isReactive)
@@ -609,7 +609,7 @@ class Operation extends Observable implements Observer {
           if ((former.obsoleteSince === MAX_REVISION || former.obsoleteSince <= 0)) {
             former.obsoleteDueTo = why
             former.obsoleteSince = timestamp
-            former.unsubscribeFromAllSubscriptions()
+            former.unsubscribeFromAllObservables()
           }
           const formerSuccessor = former.successor
           if (formerSuccessor !== curr) {
@@ -632,14 +632,14 @@ class Operation extends Observable implements Observer {
           })
         }
         if (unsubscribe)
-          curr.unsubscribeFromAllSubscriptions()
+          curr.unsubscribeFromAllObservables()
       }
     }
     else if (curr instanceof Observable && curr.observers) {
       // // Unsubscribe from own-changed subscriptions
       // curr.observers.forEach(o => {
       //   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      //   o.subscriptions!.delete(curr)
+      //   o.observables!.delete(curr)
       //   if (Log.isOn && Log.opt.read)
       //     Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.snap(r, m)}`)
       // })
@@ -667,7 +667,7 @@ class Operation extends Observable implements Observer {
     Operation.queuedReactiveFunctions = [] // reset loop
   }
 
-  private unsubscribeFromAllSubscriptions(): void {
+  private unsubscribeFromAllObservables(): void {
     // It's critical to have no exceptions here
     this.observables?.forEach((info, value) => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -693,11 +693,11 @@ class Operation extends Observable implements Observer {
         if (!observable.observers)
           observable.observers = new Set<Operation>()
         // Two-way linking
-        const info: SubscriptionInfo = { memberHint: Dump.snapshot2(h, os.changeset, m), usageCount: times }
+        const subscription: Subscription = { memberHint: Dump.snapshot2(h, os.changeset, m), usageCount: times }
         observable.observers.add(this)
-        this.observables!.set(observable, info)
+        this.observables!.set(observable, subscription)
         if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-          Log.write('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.snapshot2(h, os.changeset, m)}${info.usageCount > 1 ? ` (${info.usageCount} times)` : ''}`)
+          Log.write('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.snapshot2(h, os.changeset, m)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ''}`)
       }
       else if (Log.isOn && (Log.opt.read || this.options.logging?.read))
         Log.write('║', '  x ', `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, os.changeset, m)}`)
@@ -745,7 +745,7 @@ class Operation extends Observable implements Observer {
   }
 
   // static freeze(c: CachedResult): void {
-  //   Utils.freezeMap(c.subscriptions)
+  //   Utils.freezeMap(c.observables)
   //   Object.freeze(c)
   // }
 
@@ -789,11 +789,11 @@ class Operation extends Observable implements Observer {
 
 // function propagationHint(cause: MemberInfo, full: boolean): string[] {
 //   const result: string[] = []
-//   let subscription: Subscription = cause.snapshot.data[cause.memberName]
-//   while (subscription instanceof Operation && subscription.obsoleteDueTo) {
+//   let observable: Observable = cause.snapshot.data[cause.memberName]
+//   while (observable instanceof Operation && observable.obsoleteDueTo) {
 //     full && result.push(Dump.snap(cause.snapshot, cause.memberName))
-//     cause = subscription.obsoleteDueTo
-//     subscription = cause.snapshot.data[cause.memberName]
+//     cause = observable.obsoleteDueTo
+//     observable = cause.snapshot.data[cause.memberName]
 //   }
 //   result.push(Dump.snap(cause.snapshot, cause.memberName))
 //   full && result.push(cause.snapshot.snapshot.hint)
