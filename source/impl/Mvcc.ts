@@ -167,6 +167,15 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     return m in os.data || m in h.data
   }
 
+  defineProperty?(h: ObjectHandle, m: string | symbol, attributes: PropertyDescriptor): boolean {
+    if (attributes.get && attributes.set) {
+      Object.defineProperty(h.data, m, attributes)
+      return true
+    }
+    else
+      throw new Error('not implemented')
+  }
+
   getOwnPropertyDescriptor(h: ObjectHandle, m: MemberName): PropertyDescriptor | undefined {
     const os: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
     const pd = Reflect.getOwnPropertyDescriptor(os.data, m)
