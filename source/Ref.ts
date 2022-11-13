@@ -11,6 +11,20 @@ import { nonreactive } from './Rx'
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
 export type GivenTypeOnly<T, V> = Pick<T, {[P in keyof T]: T[P] extends V ? P : never}[keyof T]>
 
+export function refs<O extends object = object>(owner: O): { readonly [P in keyof O]-?: Ref<O[P]> } {
+  return new Proxy<O>(owner, RefGettingProxy) as any
+}
+
+export function toggleRefs<O extends object = object>(owner: O): { readonly [P in keyof BoolOnly<O>]: ToggleRef<O[P]> } {
+  return new Proxy<O>(owner, BoolRefGettingProxy) as any
+}
+
+export function customToggleRefs<T, O extends object = any>(owner: O, value1: T, value2: T): { readonly [P in keyof GivenTypeOnly<O, T | any>]: ToggleRef<O[P]> } {
+  const handler: any = new CustomToggleRefGettingProxy<T>(value1, value2)
+  return new Proxy<O>(owner, handler) as any
+}
+
+
 export class Ref<T = any> {
   constructor(
     readonly owner: any,
@@ -42,19 +56,6 @@ export class Ref<T = any> {
 
   unobserve(): T {
     throw new Error('not implemented')
-  }
-
-  static to<O extends object = object>(owner: O): { readonly [P in keyof O]-?: Ref<O[P]> } {
-    return new Proxy<O>(owner, RefGettingProxy) as any
-  }
-
-  static toToggle<O extends object = object>(owner: O): { readonly [P in keyof BoolOnly<O>]: ToggleRef<O[P]> } {
-    return new Proxy<O>(owner, BoolRefGettingProxy) as any
-  }
-
-  static toCustomToggle<T, O extends object = any>(owner: O, value1: T, value2: T): { readonly [P in keyof GivenTypeOnly<O, T | any>]: ToggleRef<O[P]> } {
-    const handler: any = new CustomToggleRefGettingProxy<T>(value1, value2)
-    return new Proxy<O>(owner, handler) as any
   }
 
   static sameRefs(v1: Ref, v2: Ref): boolean {
