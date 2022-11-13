@@ -11,6 +11,12 @@ import { nonreactive } from './Rx'
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
 export type GivenTypeOnly<T, V> = Pick<T, {[P in keyof T]: T[P] extends V ? P : never}[keyof T]>
 
+declare global {
+  interface T extends Object {
+    $$: { readonly [P in keyof T]-?: Ref<T[P]> }
+  }
+}
+
 export function refs<O extends object = object>(owner: O): { readonly [P in keyof O]-?: Ref<O[P]> } {
   return new Proxy<O>(owner, RefGettingProxy) as any
 }
@@ -116,3 +122,10 @@ class CustomToggleRefGettingProxy<T> {
     return new ToggleRef<T>(obj, prop as string, this.value1, this.value2)
   }
 }
+
+Object.defineProperty(Object.prototype, '$$', {
+  configurable: false, enumerable: false,
+  get(): { readonly [P in keyof T]-?: Ref<T[P]> } {
+    return new Proxy<T>(this, RefGettingProxy) as any
+  },
+})
