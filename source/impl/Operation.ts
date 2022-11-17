@@ -554,7 +554,7 @@ class Operation extends Observable implements Observer {
           ctx.bumpBy(os.changeset.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!op.subscribeTo(observable, os, m, h, t))
-          op.markObsoleteDueTo(observable, m, os.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.reactive)
+          op.markObsoleteDueTo(observable, m, h.head.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.reactive)
       }
     }
   }
@@ -710,7 +710,7 @@ class Operation extends Observable implements Observer {
   }
 
   private static canSubscribe(observable: Observable, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
-    let result = !os.changeset.sealed || observable === h.head.data[m]
+    let result = observable === h.head.data[m] || os.former.snapshot == h.head
     if (result && timestamp !== -1)
       result = !(observable instanceof Operation && timestamp >= observable.obsoleteSince)
     return result
