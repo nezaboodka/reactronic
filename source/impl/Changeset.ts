@@ -99,7 +99,7 @@ export class Changeset implements AbstractChangeset {
   getObjectSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
     const r = this.lookupObjectSnapshot(h, m)
     if (r === EMPTY_SNAPSHOT)
-      throw misuse(`cannot use data from a transaction started after the current one T${this.id}[${this.hint}]: ${Dump.obj(h, m)} (head is T${h.head.changeset.id}[${h.head.changeset.hint}]${h.editing ? `, uncommitted T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''})`)
+      throw misuse(`${Dump.obj(h, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''} (last committed T${h.head.changeset.id}[${h.head.changeset.hint}])`)
     return r
   }
 
@@ -150,7 +150,7 @@ export class Changeset implements AbstractChangeset {
     // if (m !== Meta.Handle && value !== Meta.Handle && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.snapshot !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.snapshot(r, m)}`)
     // if (r === ROOT_REV && m !== Meta.Handle && value !== Meta.Handle) /* istanbul ignore next */
-    //   throw misuse(`cannot use data from a transaction started after the current one T${this.id}[${this.hint}]: ${Hints.snapshot(r, m)} (head is T${h.head.changeset.id}[${h.head.changeset.hint}]${h.editing ? `, uncommitted T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''})`)
+    //   throw misuse(`${Hints.snapshot(r, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `, uncommitted T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''} (last committed T${h.head.changeset.id}[${h.head.changeset.hint}])`)
     if (m !== Meta.Handle) {
       if (value !== Meta.Handle) {
         if (os.changeset !== this || os.former.snapshot !== EMPTY_SNAPSHOT) {
@@ -162,7 +162,7 @@ export class Changeset implements AbstractChangeset {
         }
       }
       if (os === EMPTY_SNAPSHOT)
-        throw misuse(`cannot use data from a transaction started after the current one T${this.id}[${this.hint}]: ${Dump.snapshot(os, m)} (head is T${h.head.changeset.id}[${h.head.changeset.hint}]${h.editing ? `, uncommitted T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''})`)
+        throw misuse(`${Dump.snapshot(os, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''} (last committed T${h.head.changeset.id}[${h.head.changeset.hint}])`)
     }
     return os.changeset !== this && !this.sealed
   }
@@ -412,7 +412,7 @@ export class Dump {
   }
 }
 
-export const EMPTY_SNAPSHOT = new ObjectSnapshot(new Changeset({ hint: '<empty>' }), undefined, {})
+export const EMPTY_SNAPSHOT = new ObjectSnapshot(new Changeset({ hint: '<boot>' }), undefined, {})
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: 'noname',
