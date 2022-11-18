@@ -170,7 +170,7 @@ export class OperationController extends Controller<any> {
     let op: Operation = os.data[m]
     if (op.controller !== this) {
       if (os.changeset !== EMPTY_SNAPSHOT.changeset) {
-        const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, m)}/boot` : /* istanbul ignore next */ 'MethodController/init'
+        const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, m)}/init` : /* istanbul ignore next */ 'MethodController/init'
         const separation = os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT
         op = Transaction.run<Operation>({ hint, separation, token: this }, (): Operation => {
           const h = this.objectHandle
@@ -197,7 +197,7 @@ export class OperationController extends Controller<any> {
         os.data[m] = t
         op = t
         if (Log.isOn && Log.opt.write)
-          Log.write('║', ' ⎘⎘', `${Dump.obj(this.objectHandle, m)} - new snapshot is created outside of transaction (revision ${os.revision})`)
+          Log.write('║', ' ⎘⎘', `${Dump.obj(this.objectHandle, m)} is initialized (revision ${os.revision})`)
       }
     }
     return op
