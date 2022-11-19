@@ -355,7 +355,7 @@ class Operation extends Observable implements Observer {
         if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
           Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', isReactive ? '█' : '▒',
             isReactive && changeset === EMPTY_SNAPSHOT.changeset
-              ? `${this.hint()} is a reactive and will run automatically (order ${this.options.order})`
+              ? `${this.hint()} is reactive and will run automatically (order ${this.options.order})`
               : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, m)} since s${since}${isReactive ? ` and will run automatically (order ${this.options.order})` : ''}`)
         this.unsubscribeFromAllObservables()
 
