@@ -370,7 +370,7 @@ export class Changeset implements AbstractChangeset {
 // Dump
 
 export class Dump {
-  static valueHint = (value: any, m?: MemberName): string => '???'
+  static valueHint = (value: any): string => '???'
 
   static obj(h: ObjectHandle | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, value?: any): string {
     const member = m !== undefined ? `.${m.toString()}` : ''

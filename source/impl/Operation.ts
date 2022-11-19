@@ -562,7 +562,7 @@ class Operation extends Observable implements Observer {
   private static markEdited(oldValue: any, newValue: any, edited: boolean, os: ObjectSnapshot, m: MemberName, h: ObjectHandle): void {
     edited ? os.changes.add(m) : os.changes.delete(m)
     if (Log.isOn && Log.opt.write)
-      edited ? Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`) : Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed from ${valueHint(oldValue, m)} to ${valueHint(newValue, m)}`, undefined, ' (same as previous)')
+      edited ? Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed from ${valueHint(oldValue)} to ${valueHint(newValue)}`) : Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed from ${valueHint(oldValue)} to ${valueHint(newValue)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -800,7 +800,7 @@ class Operation extends Observable implements Observer {
 //   return result
 // }
 
-function valueHint(value: any, m?: MemberName): string {
+function valueHint(value: any): string {
   let result: string = ''
   if (Array.isArray(value))
     result = `Array(${value.length})`
@@ -809,7 +809,7 @@ function valueHint(value: any, m?: MemberName): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Operation)
-    result = `${Dump.snapshot2(value.controller.objectHandle, value.changeset, m)}`
+    result = `#${value.controller.objectHandle.id}t${value.changeset.id}v${value.changeset.timestamp}${value.originSnapshotId !== undefined && value.originSnapshotId !== 0 ? `t${value.originSnapshotId}` : ''}`
   else if (value === Meta.Undefined)
     result = 'undefined'
   else if (typeof(value) === 'string')
