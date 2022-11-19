@@ -175,7 +175,7 @@ export class Changeset implements AbstractChangeset {
       if (Changeset.oldest === undefined)
         Changeset.oldest = this
       if (Log.isOn && Log.opt.transaction)
-        Log.write('╔══', `v${this.revision}`, `${this.hint}`)
+        Log.write('╔══', `s${this.revision}`, `${this.hint}`)
     }
   }
 
@@ -272,11 +272,11 @@ export class Changeset implements AbstractChangeset {
           const members: string[] = []
           os.changes.forEach((o, m) => members.push(m.toString()))
           const s = members.join(', ')
-          Log.write('║', '√', `${Dump.snapshot2(h, os.changeset)} (${s}) is ${os.former.snapshot === EMPTY_SNAPSHOT ? 'constructed' : `applied on top of ${Dump.snapshot2(h, os.former.snapshot.changeset)}`}`)
+          Log.write('║', '√', `${Dump.snapshot2(h, os.changeset)} (${s}) is ${os.former.snapshot === EMPTY_SNAPSHOT ? 'constructed' : `applied on top of #${h.id}t${os.former.snapshot.changeset.id}s${os.former.snapshot.changeset.timestamp}`}`)
         })
       }
       if (Log.opt.transaction)
-        Log.write(this.revision < UNDEFINED_REVISION ? '╚══' : /* istanbul ignore next */ '═══', `v${this.revision}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.items.size})${error ? ` - ${error}` : ''}`)
+        Log.write(this.revision < UNDEFINED_REVISION ? '╚══' : /* istanbul ignore next */ '═══', `s${this.revision}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.items.size})${error ? ` - ${error}` : ''}`)
     }
     if (!error)
       Changeset.propagateAllChangesThroughSubscriptions(this)
@@ -334,7 +334,7 @@ export class Changeset implements AbstractChangeset {
 
   private unlinkHistory(): void {
     if (Log.isOn && Log.opt.gc)
-      Log.write('', '[G]', `Dismiss history below v${this.revision}t${this.id} (${this.hint})`)
+      Log.write('', '[G]', `Dismiss history below t${this.id}s${this.revision} (${this.hint})`)
     this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
       if (Log.isOn && Log.opt.gc && os.former.snapshot !== EMPTY_SNAPSHOT)
         Log.write(' ', '  ', `${Dump.snapshot2(h, os.former.snapshot.changeset)} is ready for GC because overwritten by ${Dump.snapshot2(h, os.changeset)}`)
@@ -380,7 +380,7 @@ export class Dump {
       if (stamp === undefined)
         result = `${h.hint}${member}${v} #${h.id}`
       else
-        result = `${h.hint}${member}${v} #${h.id}t${snapshotId}v${stamp}${originSnapshotId !== undefined && originSnapshotId !== 0 ? `t${originSnapshotId}` : ''}`
+        result = `${h.hint}${member}${v} #${h.id}t${snapshotId}s${stamp}${originSnapshotId !== undefined && originSnapshotId !== 0 ? `t${originSnapshotId}` : ''}`
     }
     else
       result = `boot${member}`

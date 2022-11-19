@@ -356,7 +356,7 @@ class Operation extends Observable implements Observer {
           Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', isReactive ? '█' : '▒',
             isReactive && changeset === EMPTY_SNAPSHOT.changeset
               ? `${this.hint()} is a reactive and will run automatically (order ${this.options.order})`
-              : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, m)} since v${since}${isReactive ? ` and will run automatically (order ${this.options.order})` : ''}`)
+              : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, m)} since s${since}${isReactive ? ` and will run automatically (order ${this.options.order})` : ''}`)
         this.unsubscribeFromAllObservables()
 
         // Stop cascade propagation on reactive function, or continue otherwise
@@ -809,7 +809,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Operation)
-    result = `#${value.controller.objectHandle.id}t${value.changeset.id}v${value.changeset.timestamp}${value.originSnapshotId !== undefined && value.originSnapshotId !== 0 ? `t${value.originSnapshotId}` : ''}`
+    result = `#${value.controller.objectHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.originSnapshotId !== undefined && value.originSnapshotId !== 0 ? `t${value.originSnapshotId}` : ''}`
   else if (value === Meta.Undefined)
     result = 'undefined'
   else if (typeof(value) === 'string')
