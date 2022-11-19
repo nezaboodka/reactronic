@@ -160,7 +160,7 @@ test('brief', t => {
     t.throws(() => app.model.testImmutableCollection(), { message: 'use toMutable to create mutable copy of sealed collection' })
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
-    t.is(app.raw, 'DemoView.render #23t129v111   <<   DemoView.userFilter[=""] #23t127v111    <<    T127[noname]')
+    t.is(app.raw, 'DemoView.render #23t129s111   ◀◀   DemoView.userFilter[=""] #23t127s111    ◀◀    T127[noname]')
     t.is(render.options.kind, Kind.Cached)
     t.is(render.error, undefined)
     t.is(Rx.getLoggingHint(app), 'DemoView')

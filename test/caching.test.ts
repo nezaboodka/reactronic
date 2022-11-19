@@ -72,9 +72,9 @@ test('caching', t => {
   })
   t.is(demo.sideEffect, 'no side effect')
   t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
-  t.throws(() => demo.produceSideEffect(), { message: 'Demo.produceSideEffect #22 should not have side effects (trying to change Demo.title #22t107v103)' })
-  // t.throws(() => demo.setUninitialized('someValue'), { message: 'uninitialized member is detected: v103t107#21 Demo.uninitialized' })
-  t.assert(demo.raw.startsWith('Demo.produceSideEffect #22t107v103   <<   T107[Demo.produceSideEffect #22]'))
+  t.throws(() => demo.produceSideEffect(), { message: 'Demo.produceSideEffect #22 should not have side effects (trying to change Demo.title #22t107s103)' })
+  // t.throws(() => demo.setUninitialized('someValue'), { message: 'uninitialized member is detected: t107s103#21 Demo.uninitialized' })
+  t.assert(demo.raw.startsWith('Demo.produceSideEffect #22t107s103   ◀◀   T107[Demo.produceSideEffect #22]'))
   t.is(demo.uninitialized, undefined)
   t.is(demo.cachedMap().size, 0)
   t.is(demo.cachedSet().size, 0)

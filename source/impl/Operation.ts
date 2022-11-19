@@ -298,11 +298,11 @@ class Operation extends Observable implements Observer {
   why(): string {
     let cause: string
     if (this.cause)
-      cause = `   <<   ${this.cause}`
+      cause = `   ◀◀   ${this.cause}`
     else if (this.controller.options.kind === Kind.Transactional)
-      cause = '   <<   operation'
+      cause = '   ◀◀   operation'
     else
-      cause = `   <<   T${this.changeset.id}[${this.changeset.hint}]`
+      cause = `   ◀◀   T${this.changeset.id}[${this.changeset.hint}]`
     return `${this.hint()}${cause}`
   }
 
@@ -346,7 +346,7 @@ class Operation extends Observable implements Observer {
         changeset === this.changeset /* &&
         snapshot.changes.has(memberName) */
       if (!skip) {
-        const why = `${Dump.snapshot2(h, changeset, m, observable)}    <<    ${outer}`
+        const why = `${Dump.snapshot2(h, changeset, m, observable)}    ◀◀    ${outer}`
         const isReactive = this.options.kind === Kind.Reactive /*&& this.snapshot.data[Meta.Disposed] === undefined*/
 
         // Mark obsolete and unsubscribe from all (this.observables = undefined)
@@ -562,7 +562,7 @@ class Operation extends Observable implements Observer {
   private static markEdited(oldValue: any, newValue: any, edited: boolean, os: ObjectSnapshot, m: MemberName, h: ObjectHandle): void {
     edited ? os.changes.add(m) : os.changes.delete(m)
     if (Log.isOn && Log.opt.write)
-      edited ? Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed from ${valueHint(oldValue)} to ${valueHint(newValue)}`) : Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed from ${valueHint(oldValue)} to ${valueHint(newValue)}`, undefined, ' (same as previous)')
+      edited ? Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`) : Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
