@@ -704,7 +704,7 @@ class Operation extends Observable implements Observer {
     }
     else {
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write('║', '  x ', `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, os.changeset, m)}`)
+        Log.write('║', '  x', `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, os.changeset, m)}`)
     }
     return ok // || subscription.next === r
   }
