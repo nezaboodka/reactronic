@@ -272,7 +272,7 @@ export class Changeset implements AbstractChangeset {
           const members: string[] = []
           os.changes.forEach((o, m) => members.push(m.toString()))
           const s = members.join(', ')
-          Log.write('║', '√', `${Dump.snapshot2(h, os.changeset)} (${s}) is ${os.former.snapshot === EMPTY_SNAPSHOT ? 'constructed' : `applied on top of #${h.id}t${os.former.snapshot.changeset.id}s${os.former.snapshot.changeset.timestamp}`}`)
+          Log.write('║', '√', `${Dump.snapshot2(h, os.changeset)} (${s}) is ${os.former.snapshot === EMPTY_SNAPSHOT ? 'constructed' : `applied over #${h.id}t${os.former.snapshot.changeset.id}s${os.former.snapshot.changeset.timestamp}`}`)
         })
       }
       if (Log.opt.transaction)

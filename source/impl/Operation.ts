@@ -813,7 +813,7 @@ function valueHint(value: any): string {
   else if (value === Meta.Undefined)
     result = 'undefined'
   else if (typeof(value) === 'string')
-    result = `"${value.toString().slice(0, 20)}"`
+    result = `"${value.toString().slice(0, 20)}${value.length > 20 ? '...' : ''}"`
   else if (value !== undefined && value !== null)
     result = value.toString().slice(0, 40)
   else
