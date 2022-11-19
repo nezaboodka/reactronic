@@ -93,7 +93,7 @@ export class OperationController extends Controller<any> {
       throw misuse('reactronic decorator is only applicable to methods')
     op.options = new OptionsImpl(op.options.getter, op.options.setter, op.options, options, false)
     if (Log.isOn && Log.opt.write)
-      Log.write('║', '  ✎', `${op.hint()}.options are changed`)
+      Log.write('║', '  =', `${op.hint()}.options are changed`)
     return op.options
   }
 
@@ -212,7 +212,7 @@ export class OperationController extends Controller<any> {
       if (!oc.operation.transaction.isCanceled) { // first run
         oc = this.edit()
         if (Log.isOn && Log.opt.operation)
-          Log.write('║', '  𝑓', `${oc.operation.why()}`)
+          Log.write('║', '  o', `${oc.operation.why()}`)
         oc.operation.run(this.objectHandle.proxy, argsx)
       }
       else { // retry run
@@ -220,7 +220,7 @@ export class OperationController extends Controller<any> {
         if (oc.operation.options.kind === Kind.Transactional || !oc.isUpToDate) {
           oc = this.edit()
           if (Log.isOn && Log.opt.operation)
-            Log.write('║', '  𝑓', `${oc.operation.why()}`)
+            Log.write('║', '  o', `${oc.operation.why()}`)
           oc.operation.run(this.objectHandle.proxy, argsx)
         }
       }
@@ -562,7 +562,7 @@ class Operation extends Observable implements Observer {
   private static markEdited(oldValue: any, newValue: any, edited: boolean, os: ObjectSnapshot, m: MemberName, h: ObjectHandle): void {
     edited ? os.changes.add(m) : os.changes.delete(m)
     if (Log.isOn && Log.opt.write)
-      edited ? Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`) : Log.write('║', '  ✎', `${Dump.snapshot2(h, os.changeset, m)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`, undefined, ' (same as previous)')
+      edited ? Log.write('║', '  =', `${Dump.snapshot2(h, os.changeset, m)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`) : Log.write('║', '  =', `${Dump.snapshot2(h, os.changeset, m)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`, undefined, ' (same as previous)')
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -697,10 +697,10 @@ class Operation extends Observable implements Observer {
         observable.observers.add(this)
         this.observables!.set(observable, subscription)
         if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-          Log.write('║', '  ∞ ', `${this.hint()} is subscribed to ${Dump.snapshot2(h, os.changeset, m)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ''}`)
+          Log.write('║', '  ∞', `${this.hint()} is subscribed to ${Dump.snapshot2(h, os.changeset, m)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ''}`)
       }
       else if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write('║', '  x ', `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, os.changeset, m)}`)
+        Log.write('║', '  x', `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, os.changeset, m)}`)
     }
     else {
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
