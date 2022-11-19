@@ -118,7 +118,7 @@ export class Changeset implements AbstractChangeset {
         h.editing = os
         h.editors++
         if (Log.isOn && Log.opt.write)
-          Log.write('║', ' ⎘⎘', `${Dump.obj(h)} - new snapshot is created (revision ${revision})`)
+          Log.write('║', ' ++', `${Dump.obj(h)} - new snapshot is created (revision ${revision})`)
       }
     }
     else

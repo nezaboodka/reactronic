@@ -197,7 +197,7 @@ export class OperationController extends Controller<any> {
         os.data[m] = t
         op = t
         if (Log.isOn && Log.opt.write)
-          Log.write('║', ' ⎘⎘', `${Dump.obj(this.objectHandle, m)} is initialized (revision ${os.revision})`)
+          Log.write('║', ' ++', `${Dump.obj(this.objectHandle, m)} is initialized (revision ${os.revision})`)
       }
     }
     return op
