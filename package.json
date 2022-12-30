@@ -1,6 +1,6 @@
 {
   "name": "reactronic",
-  "version": "0.22.511",
+  "version": "0.23.100",
   "description": "Reactronic - Transactional Reactive State Management",
   "publisher": "Nezaboodka Software",
   "license": "Apache-2.0",
@@ -31,16 +31,16 @@
   },
   "homepage": "https://github.com/nezaboodka/reactronic/blob/master/README.md#readme",
   "devDependencies": {
-    "@types/node": "18.11.9",
-    "@types/react": "18.0.25",
-    "@typescript-eslint/eslint-plugin": "5.42.1",
-    "@typescript-eslint/parser": "5.42.1",
+    "@types/node": "18.11.18",
+    "@types/react": "18.0.26",
+    "@typescript-eslint/eslint-plugin": "5.47.1",
+    "@typescript-eslint/parser": "5.47.1",
     "ava": "4.3.3",
     "c8": "7.12.0",
-    "eslint": "8.27.0",
+    "eslint": "8.30.0",
     "react": "18.2.0",
     "ts-node": "10.9.1",
-    "typescript": "4.8.4"
+    "typescript": "4.9.4"
   },
   "scripts": {
     "build": "eslint source/**/*.ts test/**/*.ts react/**/*.tsx && tsc",
