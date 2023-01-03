@@ -710,7 +710,9 @@ class Operation extends Observable implements Observer {
   }
 
   private static canSubscribe(observable: Observable, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
-    let result = observable === h.head.data[m] || os.former.snapshot == h.head
+    const observableHead = h.head.data[m]
+    let result = observable === observableHead || (
+      !os.changeset.sealed && os.former.snapshot.data[m] === observableHead)
     if (result && timestamp !== -1)
       result = !(observable instanceof Operation && timestamp >= observable.obsoleteSince)
     return result
