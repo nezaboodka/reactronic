@@ -12,7 +12,7 @@ import { ObservableObject } from './Mvcc'
 
 export abstract class ObservableCollection<T> extends ObservableObject implements CollectionReader<T> {
   protected abstract impl: Collection<T>
-  get strict(): boolean { return this.impl.strict }
+  get isStrict(): boolean { return this.impl.isStrict }
   get count(): number { return this.impl.count }
   get addedCount(): number { return this.impl.addedCount }
   get removedCount(): number { return this.impl.removedCount }
