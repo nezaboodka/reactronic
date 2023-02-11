@@ -9,7 +9,7 @@ export type GetItemKey<T = unknown> = (item: T) => string | undefined
 
 export interface CollectionReader<T> {
   // readonly getKey: GetKey<T>
-  readonly strict: boolean
+  readonly isStrict: boolean
   readonly count: number
   readonly addedCount: number
   readonly removedCount: number
@@ -42,8 +42,8 @@ export interface Item<T> {
 }
 
 export class Collection<T> implements CollectionReader<T> {
-  readonly strict: boolean
   readonly getKey: GetItemKey<T>
+  private strict: boolean
   private map: Map<string | undefined, ItemImpl<T>>
   private tag: number
   private current: ItemChain<T>
@@ -52,9 +52,9 @@ export class Collection<T> implements CollectionReader<T> {
   private lastNotFoundKey: string | undefined
   private strictNextItem?: ItemImpl<T>
 
-  constructor(strict: boolean, getKey: GetItemKey<T>) {
-    this.strict = strict
+  constructor(getKey: GetItemKey<T>, strict: boolean = false) {
     this.getKey = getKey
+    this.strict = strict
     this.map = new Map<string | undefined, ItemImpl<T>>()
     this.tag = ~0
     this.current = new ItemChain<T>()
@@ -62,6 +62,13 @@ export class Collection<T> implements CollectionReader<T> {
     this.removed = new ItemChain<T>()
     this.lastNotFoundKey = undefined
     this.strictNextItem = undefined
+  }
+
+  get isStrict(): boolean { return this.strict }
+  set isStrict(value: boolean) {
+    if (this.isMergeInProgress && this.current.count > 0)
+      throw new Error('cannot change strict mode in the middle of merge')
+    this.strict = value
   }
 
   get count(): number {

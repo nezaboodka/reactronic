@@ -14,7 +14,7 @@ test('collection', t => {
   const etalon2a = ['Hello', 'Bye', 'End', 'Added1', 'Added2', 'Added3']
 
   // Basic
-  const list = new Collection<string>(true, s => s)
+  const list = new Collection<string>(s => s, true)
   for (const x of etalon1)
     list.add(x)
 

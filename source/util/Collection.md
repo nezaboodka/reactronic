@@ -6,7 +6,7 @@ It efficiently detects differences/changes: which items
 are added, moved, and removed.
 
 ``` typescript
-const list = new Collection<string>(true, s => s)
+const list = new Collection<string>(s => s, true)
 
 const example1 = ['Hello', 'Welcome', 'Bye', 'End']
 for (const x of example1)
