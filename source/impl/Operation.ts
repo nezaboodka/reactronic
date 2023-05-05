@@ -9,7 +9,7 @@ import { F } from '../util/Utils'
 import { Log, misuse } from '../util/Dbg'
 import { MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options'
 import { Controller } from '../Controller'
-import { ObjectSnapshot, MemberName, ObjectHandle, Observable, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from './Data'
+import { ObjectSnapshot, MemberName, ObjectHandle, ObservableValue, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from './Data'
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Changeset'
 import { Transaction } from './Transaction'
 import { Monitor, MonitorImpl } from './Monitor'
@@ -239,7 +239,7 @@ export class OperationController extends Controller<any> {
 
 // Operation
 
-class Operation extends Observable implements Observer {
+class Operation extends ObservableValue implements Observer {
   static current?: Operation = undefined
   static queuedReactiveFunctions: Array<Observer> = []
   static deferredReactiveFunctions: Array<Operation> = []
@@ -248,7 +248,7 @@ class Operation extends Observable implements Observer {
   readonly transaction: Transaction
   readonly controller: OperationController
   readonly changeset: AbstractChangeset
-  observables: Map<Observable, Subscription> | undefined
+  observables: Map<ObservableValue, Subscription> | undefined
   options: OptionsImpl
   cause: string | undefined
   args: any[]
@@ -265,7 +265,7 @@ class Operation extends Observable implements Observer {
     this.transaction = Transaction.current
     this.controller = controller
     this.changeset = changeset
-    this.observables = new Map<Observable, Subscription>()
+    this.observables = new Map<ObservableValue, Subscription>()
     if (former instanceof Operation) {
       this.options = former.options
       this.args = former.args
@@ -340,7 +340,7 @@ class Operation extends Observable implements Observer {
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(observable: Observable, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Observer[]): void {
+  markObsoleteDueTo(observable: ObservableValue, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Observer[]): void {
     if (this.observables !== undefined) { // if not yet marked as obsolete
       const skip = !observable.isOperation &&
         changeset === this.changeset /* &&
@@ -544,7 +544,7 @@ class Operation extends Observable implements Observer {
       x.runIfNotUpToDate(true, true)
   }
 
-  private static markUsed(observable: Observable, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean): void {
+  private static markUsed(observable: ObservableValue, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transactional) {
       const op: Operation | undefined = Operation.current // alias
       if (op && op.options.kind !== Kind.Transactional &&
@@ -603,7 +603,7 @@ class Operation extends Observable implements Observer {
     if (reactive) {
       // Propagate change to reactive functions
       const former = os.former.snapshot.data[m]
-      if (former !== undefined && former instanceof Observable) {
+      if (former !== undefined && former instanceof ObservableValue) {
         const why = `T${os.changeset.id}[${os.changeset.hint}]`
         if (former instanceof Operation) {
           if ((former.obsoleteSince === MAX_REVISION || former.obsoleteSince <= 0)) {
@@ -635,7 +635,7 @@ class Operation extends Observable implements Observer {
           curr.unsubscribeFromAllObservables()
       }
     }
-    else if (curr instanceof Observable && curr.observers) {
+    else if (curr instanceof ObservableValue && curr.observers) {
       // // Unsubscribe from own-changed subscriptions
       // curr.observers.forEach(o => {
       //   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -678,7 +678,7 @@ class Operation extends Observable implements Observer {
     this.observables = undefined
   }
 
-  private subscribeTo(observable: Observable, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
+  private subscribeTo(observable: ObservableValue, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
     const ok = Operation.canSubscribe(observable, os, m, h, timestamp)
     if (ok) {
       // Performance tracking
@@ -709,7 +709,7 @@ class Operation extends Observable implements Observer {
     return ok // || subscription.next === r
   }
 
-  private static canSubscribe(observable: Observable, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
+  private static canSubscribe(observable: ObservableValue, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
     const observableHead = h.head.data[m]
     let result = observable === observableHead || (
       !os.changeset.sealed && os.former.snapshot.data[m] === observableHead)
