@@ -679,7 +679,7 @@ class Operation extends ObservableValue implements Observer {
   }
 
   private subscribeTo(observable: ObservableValue, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
-    const ok = Operation.canSubscribe(observable, os, m, h, timestamp)
+    const ok = Operation.canSubscribeTo(observable, os, m, h, timestamp)
     if (ok) {
       // Performance tracking
       let times: number = 0
@@ -709,7 +709,7 @@ class Operation extends ObservableValue implements Observer {
     return ok // || subscription.next === r
   }
 
-  private static canSubscribe(observable: ObservableValue, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
+  private static canSubscribeTo(observable: ObservableValue, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
     const observableHead = h.head.data[m]
     let result = observable === observableHead || (
       !os.changeset.sealed && os.former.snapshot.data[m] === observableHead)
