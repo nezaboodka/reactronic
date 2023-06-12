@@ -2,7 +2,6 @@
   "compilerOptions": {
     // General
     "pretty": true,
-    "watch": false,
     "listFiles": true,
     "inlineSources": false,
     "removeComments": false, // keep comments to make tests coverage working
