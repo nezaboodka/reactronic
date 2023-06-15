@@ -1,0 +1,19 @@
+используется артель
+
+внешние
+{
+  // declare global {
+  //     interface Map<K, V> {
+  //         toMutable(): Map<K, V>
+  //         [Sealant.SealedType]: object
+  //     }
+  // }
+
+  тип SealedMap<K, V> = объект на основе Map<K, V>, Sealed<Map<K, V>>
+  {
+    операция clear(): Ничего
+    операция delete_(key: K): Булево
+    операция set_(key: K, value: V): this
+    // [Sealant.CreateCopy](): Map<K, V>
+  }
+}

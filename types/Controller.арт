@@ -1,0 +1,17 @@
+используется артель
+
+внешние
+{
+  тип Controller<T> = объект
+  {
+    постоянное options: MemberOptions
+    постоянное args: ReadonlyArray<Нечто>
+    постоянное result_: T
+    постоянное error_: Нечто
+    постоянное stamp: Число
+    постоянное isUpToDate: Булево
+    операция configure(options: Partial<MemberOptions>): MemberOptions
+    операция markObsolete(): Ничего
+    операция pullLastResult(args: Массив<Нечто>? = пусто): T?
+  }
+}

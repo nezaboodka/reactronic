@@ -1,0 +1,14 @@
+используется артель
+
+внешние
+{
+  тип Worker = интерфейс
+  {
+    постоянное id: Число
+    постоянное hint: Текст
+    постоянное isCanceled: Булево
+    постоянное isFinished: Булево
+    операция cancel(err: Error, restartAfter: Worker? = пусто): this
+    операция whenFinished(): Promise<Ничего>
+  }
+}

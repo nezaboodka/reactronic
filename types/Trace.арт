@@ -1,0 +1,48 @@
+используется артель
+
+внешние
+{
+  тип TraceOptions = интерфейс
+  {
+    постоянное silent: Булево
+    постоянное transaction_: Булево
+    постоянное operation_: Булево
+    постоянное step: Булево
+    постоянное monitor: Булево
+    постоянное read: Булево
+    постоянное write: Булево
+    постоянное change: Булево
+    постоянное obsolete: Булево
+    постоянное error_: Булево
+    постоянное warning: Булево
+    постоянное gc: Булево
+    постоянное color: Число
+    постоянное prefix: Текст
+    постоянное margin1: Число
+    постоянное margin2: Число
+  }
+
+  тип ProfilingOptions = интерфейс
+  {
+    repetitiveUsageWarningThreshold: Число
+    mainThreadBlockingWarningThreshold: Число
+    asyncActionDurationWarningThreshold: Число
+    garbageCollectionSummaryInterval: Число
+  }
+
+  тип TraceLevel = объект
+  {
+    Error: TraceOptions
+    Minimal: TraceOptions
+    Info: TraceOptions
+    Debug: TraceOptions
+    Suppress: TraceOptions
+  }
+
+  // declare global {
+  //     interface Window {
+  //         rWhy: Текст
+  //         rBriefWhy: Текст
+  //     }
+  // }
+}

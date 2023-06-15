@@ -1,0 +1,19 @@
+используется артель
+
+внешние
+{
+  // declare global {
+  //     interface Set<T> {
+  //         toMutable(): Set<T>
+  //         [Sealant.SealedType]: object
+  //     }
+  // }
+
+  тип SealedSet<T> = объект на основе Set<T>, Sealed<Set<T>>
+  {
+    операция add(value: T): this
+    операция clear(): Ничего
+    операция delete_(value: T): Булево
+    // [Sealant.CreateCopy](): Set<T>
+  }
+}

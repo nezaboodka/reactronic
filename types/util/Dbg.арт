@@ -1,0 +1,21 @@
+используется артель
+
+внешние
+{
+  операция error_(message: Текст, dump: Error?): Error
+  операция misuse(message: Текст, dump: Нечто? = пусто): Error
+  операция fatal(error_: Error): Error
+
+  тип Log = объект
+  {
+    общее DefaultLevel: LoggingOptions
+    общее isOn: Булево
+    общее global: LoggingOptions
+    общее защищённое opt: LoggingOptions
+    общее getMergedLoggingOptions: операция(local: Partial<LoggingOptions>?): LoggingOptions
+    общая операция setMode(isOn: Булево, options: LoggingOptions? = пусто): Ничего
+    общая операция write(bar: Текст, tran: Текст, message: Текст, ms: Число? = пусто, highlight: Текст? = пусто, dump: Нечто? = пусто): Ничего
+    общая операция writeAs(options: Partial<LoggingOptions>?, bar: Текст, tran: Текст, message: Текст, ms: Число? = пусто, highlight: Текст? = пусто, dump: Нечто? = пусто): Ничего
+    общая операция merge(t: Partial<LoggingOptions>?, color: Число?, prefix: Текст?, existing: LoggingOptions): LoggingOptions
+  }
+}
