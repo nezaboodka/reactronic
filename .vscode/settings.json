@@ -4,8 +4,6 @@
   "editor.insertSpaces": true,
   "files.exclude": {
     "**/node_modules/": true,
-    "**/build/": true,
-    "**/Build/": true,
   },
   "files.watcherExclude": {
     "**/node_modules/": true,

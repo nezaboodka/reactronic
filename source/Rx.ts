@@ -5,14 +5,14 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { F } from './util/Utils'
-import { Log } from './util/Dbg'
-import { Controller } from './Controller'
-import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options'
-import { Meta, ObjectHandle } from './impl/Data'
-import { Changeset } from './impl/Changeset'
-import { Mvcc } from './impl/Mvcc'
-import { OperationController } from './impl/Operation'
+import { F } from './util/Utils.js'
+import { Log } from './util/Dbg.js'
+import { Controller } from './Controller.js'
+import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options.js'
+import { Meta, ObjectHandle } from './impl/Data.js'
+import { Changeset } from './impl/Changeset.js'
+import { Mvcc } from './impl/Mvcc.js'
+import { OperationController } from './impl/Operation.js'
 
 export class Rx {
   static why(brief: boolean = false): string { return brief ? OperationController.briefWhy() : OperationController.why() }

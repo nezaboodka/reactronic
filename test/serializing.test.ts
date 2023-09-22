@@ -6,8 +6,8 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Rx, ObservableObject } from '../source/api'
-import { TestsLoggingLevel } from './brief'
+import { Transaction, Rx, ObservableObject } from '../source/api.js'
+import { TestsLoggingLevel } from './brief.js'
 
 class Serializable extends ObservableObject {
   text: string = ''

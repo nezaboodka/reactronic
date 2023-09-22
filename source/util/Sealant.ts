@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Log, misuse } from './Dbg'
+import { Log, misuse } from './Dbg.js'
 
 export interface Sealable<T> {
   toMutable(): T

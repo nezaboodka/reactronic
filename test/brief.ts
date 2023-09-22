@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, raw, transactional, reactive, cached, Journal, Rx, LoggingOptions, Transaction, options } from '../source/api'
+import { ObservableObject, raw, transactional, reactive, cached, Journal, Rx, LoggingOptions, Transaction, options } from '../source/api.js'
 
 export const output: string[] = []
 

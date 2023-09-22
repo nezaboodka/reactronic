@@ -5,12 +5,12 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { LoggingOptions } from './Logging'
-import { SeparationMode } from './impl/Data'
-export { LoggingLevel } from './Logging'
-export type { LoggingOptions, ProfilingOptions } from './Logging'
-import { Journal } from './impl/Journal'
-import { Monitor } from './impl/Monitor'
+import { LoggingOptions } from './Logging.js'
+import { SeparationMode } from './impl/Data.js'
+export { LoggingLevel } from './Logging.js'
+export type { LoggingOptions, ProfilingOptions } from './Logging.js'
+import { Journal } from './impl/Journal.js'
+import { Monitor } from './impl/Monitor.js'
 
 export interface SnapshotOptions {
   readonly hint?: string

@@ -5,14 +5,14 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Utils, UNDEF } from '../util/Utils'
-import { Log, misuse } from '../util/Dbg'
-import { Sealant } from '../util/Sealant'
-import { SealedArray } from '../util/SealedArray'
-import { SealedMap } from '../util/SealedMap'
-import { SealedSet } from '../util/SealedSet'
-import { Kind, SnapshotOptions } from '../Options'
-import { AbstractChangeset, ObjectSnapshot, MemberName, ObjectHandle, ObservableValue, Observer, Meta } from './Data'
+import { Utils, UNDEF } from '../util/Utils.js'
+import { Log, misuse } from '../util/Dbg.js'
+import { Sealant } from '../util/Sealant.js'
+import { SealedArray } from '../util/SealedArray.js'
+import { SealedMap } from '../util/SealedMap.js'
+import { SealedSet } from '../util/SealedSet.js'
+import { Kind, SnapshotOptions } from '../Options.js'
+import { AbstractChangeset, ObjectSnapshot, MemberName, ObjectHandle, ObservableValue, Observer, Meta } from './Data.js'
 
 export const MAX_REVISION = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_REVISION = MAX_REVISION - 1

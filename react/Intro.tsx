@@ -6,8 +6,8 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, transactional, cached } from '../source/api'
-import { Component } from './Component'
+import { ObservableObject, transactional, cached } from '../source/api.js'
+import { Component } from './Component.js'
 
 class MyModel extends ObservableObject {
   url: string = 'https://nezaboodka.com'

@@ -5,11 +5,11 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject } from './Mvcc'
-import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ValuePatch, ObservableValue, MemberName } from './Data'
-import { Changeset, EMPTY_SNAPSHOT } from './Changeset'
-import { Transaction } from './Transaction'
-import { Sealant } from '../util/Sealant'
+import { ObservableObject } from './Mvcc.js'
+import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ValuePatch, ObservableValue, MemberName } from './Data.js'
+import { Changeset, EMPTY_SNAPSHOT } from './Changeset.js'
+import { Transaction } from './Transaction.js'
+import { Sealant } from '../util/Sealant.js'
 
 export type Saver = (patch: PatchSet) => Promise<void>
 

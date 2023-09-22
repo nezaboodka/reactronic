@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { LoggingOptions } from '../Logging'
+import { LoggingOptions } from '../Logging.js'
 
 export function error(message: string, dump: Error | undefined): Error {
   if (Log.isOn && Log.opt.error)

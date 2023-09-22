@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { MemberOptions } from './Options'
+import { MemberOptions } from './Options.js'
 
 export abstract class Controller<T> {
   abstract readonly options: MemberOptions

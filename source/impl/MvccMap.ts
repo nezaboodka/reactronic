@@ -5,8 +5,8 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Sealant } from '../util/Sealant'
-import { MvccObject } from './Mvcc'
+import { Sealant } from '../util/Sealant.js'
+import { MvccObject } from './Mvcc.js'
 
 // MvccMap
 

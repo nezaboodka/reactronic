@@ -5,15 +5,15 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { UNDEF, F } from '../util/Utils'
-import { Log, misuse } from '../util/Dbg'
-import { MemberOptions, Kind, Reentrance } from '../Options'
-import { LoggingOptions, ProfilingOptions } from '../Logging'
-import { Controller } from '../Controller'
-import { ObjectSnapshot, MemberName, ObjectHandle, ObservableValue, Meta, SeparationMode } from './Data'
-import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset'
-import { Journal } from './Journal'
-import { Monitor } from './Monitor'
+import { UNDEF, F } from '../util/Utils.js'
+import { Log, misuse } from '../util/Dbg.js'
+import { MemberOptions, Kind, Reentrance } from '../Options.js'
+import { LoggingOptions, ProfilingOptions } from '../Logging.js'
+import { Controller } from '../Controller.js'
+import { ObjectSnapshot, MemberName, ObjectHandle, ObservableValue, Meta, SeparationMode } from './Data.js'
+import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset.js'
+import { Journal } from './Journal.js'
+import { Monitor } from './Monitor.js'
 
 // MvccObject, TransactionalObject, ObservableObject
 

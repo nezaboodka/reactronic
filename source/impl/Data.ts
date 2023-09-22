@@ -5,9 +5,9 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Log } from '../util/Dbg'
-import { Meta } from './Meta'
-export { Meta } from './Meta'
+import { Log } from '../util/Dbg.js'
+import { Meta } from './Meta.js'
+export { Meta } from './Meta.js'
 
 // AbstractChangeset
 

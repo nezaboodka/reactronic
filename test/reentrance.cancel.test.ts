@@ -6,9 +6,9 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Reentrance, Rx, all, pause } from '../source/api'
-import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance'
-import { TestsLoggingLevel } from './brief'
+import { Transaction, Reentrance, Rx, all, pause } from '../source/api.js'
+import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance.js'
+import { TestsLoggingLevel } from './brief.js'
 
 const requests: Array<{ url: string, delay: number }> = [
   { url: 'google.com', delay: 300 },

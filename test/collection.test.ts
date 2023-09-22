@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Collection, Item } from '../source/util/Collection'
+import { Collection, Item } from '../source/util/Collection.js'
 
 test('collection', t => {
   const etalon1 = ['Hello', 'Welcome', 'Bye', 'End']

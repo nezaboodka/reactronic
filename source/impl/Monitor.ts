@@ -5,9 +5,9 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Worker } from '../Worker'
-import { ObservableObject, Mvcc } from './Mvcc'
-import { Transaction } from './Transaction'
+import { Worker } from '../Worker.js'
+import { ObservableObject, Mvcc } from './Mvcc.js'
+import { Transaction } from './Transaction.js'
 
 export abstract class Monitor extends ObservableObject {
   abstract readonly isActive: boolean

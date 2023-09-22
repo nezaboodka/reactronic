@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Sealant, Sealed } from './Sealant'
+import { Sealant, Sealed } from './Sealant.js'
 
 declare global {
   interface Array<T> {

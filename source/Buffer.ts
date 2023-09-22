@@ -7,7 +7,7 @@
 
 /* istanbul ignore file */
 
-import { ObservableObject } from './impl/Mvcc'
+import { ObservableObject } from './impl/Mvcc.js'
 
 export abstract class Buffer<T> extends ObservableObject {
   abstract readonly capacity: number

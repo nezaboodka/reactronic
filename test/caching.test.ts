@@ -6,8 +6,8 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, cached, Transaction, Rx, reactive, raw, options } from '../source/api'
-import { TestsLoggingLevel } from './brief'
+import { ObservableObject, cached, Transaction, Rx, reactive, raw, options } from '../source/api.js'
+import { TestsLoggingLevel } from './brief.js'
 
 export class DemoBase extends ObservableObject {
   @raw raw: string = 'plain data'

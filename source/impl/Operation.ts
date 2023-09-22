@@ -5,16 +5,16 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { F } from '../util/Utils'
-import { Log, misuse } from '../util/Dbg'
-import { MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options'
-import { Controller } from '../Controller'
-import { ObjectSnapshot, MemberName, ObjectHandle, ObservableValue, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from './Data'
-import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Changeset'
-import { Transaction } from './Transaction'
-import { Monitor, MonitorImpl } from './Monitor'
-import { Mvcc, OptionsImpl } from './Mvcc'
-import { JournalImpl } from './Journal'
+import { F } from '../util/Utils.js'
+import { Log, misuse } from '../util/Dbg.js'
+import { MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options.js'
+import { Controller } from '../Controller.js'
+import { ObjectSnapshot, MemberName, ObjectHandle, ObservableValue, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from './Data.js'
+import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Changeset.js'
+import { Transaction } from './Transaction.js'
+import { Monitor, MonitorImpl } from './Monitor.js'
+import { Mvcc, OptionsImpl } from './Mvcc.js'
+import { JournalImpl } from './Journal.js'
 
 const BOOT_ARGS: any[] = []
 const BOOT_CAUSE = '<boot>'

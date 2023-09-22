@@ -6,8 +6,8 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Kind, nonreactive, sensitive, Rx } from '../source/api'
-import { Person, Demo, DemoView, output, TestsLoggingLevel } from './brief'
+import { Transaction, Kind, nonreactive, sensitive, Rx } from '../source/api.js'
+import { Person, Demo, DemoView, output, TestsLoggingLevel } from './brief.js'
 
 const expected: string[] = [
   'Filter: Jo',

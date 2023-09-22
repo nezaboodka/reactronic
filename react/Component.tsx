@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { reactive, cached, Transaction, Rx } from '../source/api'
+import { reactive, cached, Transaction, Rx } from '../source/api.js'
 
 export class Component<P> extends React.Component<P> {
   @cached

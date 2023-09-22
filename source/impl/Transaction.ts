@@ -5,12 +5,12 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { UNDEF, F, pause } from '../util/Utils'
-import { Log, misuse, error, fatal } from '../util/Dbg'
-import { Worker } from '../Worker'
-import { SnapshotOptions, LoggingOptions } from '../Options'
-import { ObjectSnapshot, Observer } from './Data'
-import { Changeset, Dump } from './Changeset'
+import { UNDEF, F, pause } from '../util/Utils.js'
+import { Log, misuse, error, fatal } from '../util/Dbg.js'
+import { Worker } from '../Worker.js'
+import { SnapshotOptions, LoggingOptions } from '../Options.js'
+import { ObjectSnapshot, Observer } from './Data.js'
+import { Changeset, Dump } from './Changeset.js'
 
 export abstract class Transaction implements Worker {
   static get current(): Transaction { return TransactionImpl.current }

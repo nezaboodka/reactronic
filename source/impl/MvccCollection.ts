@@ -5,8 +5,8 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Collection, Item, CollectionReader } from '../util/Collection'
-import { ObservableObject } from './Mvcc'
+import { Collection, Item, CollectionReader } from '../util/Collection.js'
+import { ObservableObject } from './Mvcc.js'
 
 // ObservableCollection
 
