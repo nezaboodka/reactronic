@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { MergeList, Item } from '../source/util/MergeList.js'
+import { MergeList, MergeItem } from '../source/util/MergeList.js'
 
 test('merge-list', t => {
   const etalon1 = ['Hello', 'Welcome', 'Bye', 'End']
@@ -77,7 +77,7 @@ test('merge-list', t => {
   t.true(compare(list.items(), etalon1))
 })
 
-function compare(list: Generator<Item<string>>, array: Array<string>): boolean {
+function compare(list: Generator<MergeItem<string>>, array: Array<string>): boolean {
   let result = true
   let i = 0
   for (const item of list) {

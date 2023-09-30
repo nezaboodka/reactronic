@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { MergeList, Item, MergeListReader } from '../util/MergeList.js'
+import { MergeList, MergeItem, MergeListReader } from '../util/MergeList.js'
 import { ObservableObject } from './Mvcc.js'
 
 // ObservableMergeList
@@ -18,21 +18,21 @@ export abstract class ObservableMergeList<T> extends ObservableObject implements
   get removedCount(): number { return this.impl.removedCount }
   get isMergeInProgress(): boolean { return this.impl.isMergeInProgress }
 
-  lookup(key: string): Item<T> | undefined { return this.impl.lookup(key) }
-  claim(key: string): Item<T> | undefined { return this.impl.claim(key) }
-  add(instance: T): Item<T> { return this.impl.add(instance) }
-  remove(item: Item<T>): void { return this.impl.remove(item) }
-  move(item: Item<T>, after: Item<T>): void { this.impl.move(item, after) }
+  lookup(key: string): MergeItem<T> | undefined { return this.impl.lookup(key) }
+  claim(key: string): MergeItem<T> | undefined { return this.impl.claim(key) }
+  add(instance: T): MergeItem<T> { return this.impl.add(instance) }
+  remove(item: MergeItem<T>): void { return this.impl.remove(item) }
+  move(item: MergeItem<T>, after: MergeItem<T>): void { this.impl.move(item, after) }
   beginMerge(): void { this.impl.beginMerge() }
   endMerge(error?: unknown): void { this.impl.endMerge(error) }
   resetAddedAndRemovedLists(): void { this.impl.resetAddedAndRemovedLists() }
-  lastClaimedItem(): Item<T> | undefined { return this.impl.lastClaimedItem() }
+  lastClaimedItem(): MergeItem<T> | undefined { return this.impl.lastClaimedItem() }
 
-  items(): Generator<Item<T>> { return this.impl.items() }
-  addedItems(reset?: boolean): Generator<Item<T>> { return this.impl.addedItems(reset) }
-  removedItems(reset?: boolean): Generator<Item<T>> { return this.impl.removedItems(reset) }
-  isAdded(item: Item<T>): boolean { return this.impl.isAdded(item) }
-  isMoved(item: Item<T>): boolean { return this.impl.isMoved(item) }
-  isRemoved(item: Item<T>): boolean { return this.impl.isRemoved(item) }
-  isCurrent(item: Item<T>): boolean { return this.impl.isCurrent(item) }
+  items(): Generator<MergeItem<T>> { return this.impl.items() }
+  addedItems(reset?: boolean): Generator<MergeItem<T>> { return this.impl.addedItems(reset) }
+  removedItems(reset?: boolean): Generator<MergeItem<T>> { return this.impl.removedItems(reset) }
+  isAdded(item: MergeItem<T>): boolean { return this.impl.isAdded(item) }
+  isMoved(item: MergeItem<T>): boolean { return this.impl.isMoved(item) }
+  isRemoved(item: MergeItem<T>): boolean { return this.impl.isRemoved(item) }
+  isCurrent(item: MergeItem<T>): boolean { return this.impl.isCurrent(item) }
 }
