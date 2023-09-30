@@ -7,15 +7,15 @@
 
 import { MemberOptions } from './Options.js'
 
-export abstract class Controller<T> {
-  abstract readonly options: MemberOptions
-  abstract readonly args: ReadonlyArray<any>
-  abstract readonly result: T
-  abstract readonly error: any
-  abstract readonly stamp: number
-  abstract readonly isUpToDate: boolean
+export interface Controller<T> {
+  readonly options: MemberOptions
+  readonly args: ReadonlyArray<any>
+  readonly result: T
+  readonly error: any
+  readonly stamp: number
+  readonly isUpToDate: boolean
 
-  abstract configure(options: Partial<MemberOptions>): MemberOptions
-  abstract markObsolete(): void
-  abstract pullLastResult(args?: any[]): T | undefined
+  configure(options: Partial<MemberOptions>): MemberOptions
+  markObsolete(): void
+  pullLastResult(args?: any[]): T | undefined
 }

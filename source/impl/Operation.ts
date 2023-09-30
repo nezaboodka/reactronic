@@ -27,7 +27,7 @@ type OperationContext = {
   readonly snapshot: ObjectSnapshot
 }
 
-export class OperationController extends Controller<any> {
+export class OperationController implements Controller<any> {
   readonly objectHandle: ObjectHandle
   readonly memberName: MemberName
 
@@ -43,7 +43,6 @@ export class OperationController extends Controller<any> {
   pullLastResult(args?: any[]): any { return this.useOrRun(true, args).content }
 
   constructor(h: ObjectHandle, m: MemberName) {
-    super()
     this.objectHandle = h
     this.memberName = m
   }
