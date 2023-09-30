@@ -208,13 +208,13 @@ export class Reaction implements AbstractReaction<any> {
     let oc = existing
     const opts = { hint, separation, journal: options.journal, logging: options.logging, token }
     const result = Transaction.run(opts, (argsx: any[] | undefined): any => {
-      if (!oc.launch.transaction.isCanceled) { // first run
+      if (!oc.launch.transaction.isCanceled) { // standard launch
         oc = this.edit()
         if (Log.isOn && Log.opt.operation)
           Log.write('║', '  o', `${oc.launch.why()}`)
         oc.launch.run(this.objectHandle.proxy, argsx)
       }
-      else { // retry run
+      else { // retry launch
         oc = this.peek(argsx) // re-read on retry
         if (oc.launch.options.kind === Kind.Transactional || !oc.isUpToDate) {
           oc = this.edit()
