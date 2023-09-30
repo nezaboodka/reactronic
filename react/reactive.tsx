@@ -30,7 +30,7 @@ class RxComponent<V> extends ObservableObject {
 
   @reactive
   protected ensureUpToDate(): void {
-    if (!Rx.getController(this.render).isUpToDate)
+    if (!Rx.getReaction(this.render).isUpToDate)
       Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
@@ -45,8 +45,8 @@ class RxComponent<V> extends ObservableObject {
     if (hint)
       Rx.setLoggingHint(rx, hint)
     if (logging) {
-      Rx.getController(rx.render).configure({ logging })
-      Rx.getController(rx.ensureUpToDate).configure({ logging })
+      Rx.getReaction(rx.render).configure({ logging })
+      Rx.getReaction(rx.ensureUpToDate).configure({ logging })
     }
     return rx
   }

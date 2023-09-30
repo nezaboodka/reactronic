@@ -29,7 +29,7 @@ test('reentrance.cancelandwait', async t => {
   Rx.setLoggingMode(true, TestsLoggingLevel)
   const app = Transaction.run(null, () => {
     const a = new AsyncDemoView(new AsyncDemo())
-    Rx.getController(a.model.load).configure({reentrance: Reentrance.CancelAndWaitPrevious})
+    Rx.getReaction(a.model.load).configure({reentrance: Reentrance.CancelAndWaitPrevious})
     return a
   })
   try {

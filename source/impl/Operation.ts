@@ -8,7 +8,7 @@
 import { F } from '../util/Utils.js'
 import { Log, misuse } from '../util/Dbg.js'
 import { MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options.js'
-import { Controller } from '../Controller.js'
+import { AbstractReaction } from '../Controller.js'
 import { ObjectSnapshot, MemberName, ObjectHandle, ObservableValue, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from './Data.js'
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Changeset.js'
 import { Transaction } from './Transaction.js'
@@ -20,18 +20,18 @@ const BOOT_ARGS: any[] = []
 const BOOT_CAUSE = '<boot>'
 const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.observable, EMPTY_SNAPSHOT, '<boot>')
 
-type OperationContext = {
+type ReuseOrRelaunchContext = {
   readonly launch: Launch
   readonly isUpToDate: boolean
   readonly changeset: Changeset
   readonly snapshot: ObjectSnapshot
 }
 
-export class OperationController implements Controller<any> {
+export class Reaction implements AbstractReaction<any> {
   readonly objectHandle: ObjectHandle
   readonly memberName: MemberName
 
-  configure(options: Partial<MemberOptions>): MemberOptions { return OperationController.configureImpl(this, options) }
+  configure(options: Partial<MemberOptions>): MemberOptions { return Reaction.configureImpl(this, options) }
   get options(): MemberOptions { return this.peek(undefined).launch.options }
   get unobservable(): any { return this.peek(undefined).launch.content }
   get args(): ReadonlyArray<any> { return this.use().launch.args }
@@ -39,7 +39,7 @@ export class OperationController implements Controller<any> {
   get error(): boolean { return this.use().launch.error }
   get stamp(): number { return this.use().snapshot.changeset.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
-  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.objectHandle, this.memberName)})` : 'markObsolete()' }, OperationController.markObsolete, this) }
+  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.objectHandle, this.memberName)})` : 'markObsolete()' }, Reaction.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.reuseOrRelaunch(true, args).content }
 
   constructor(h: ObjectHandle, m: MemberName) {
@@ -48,7 +48,7 @@ export class OperationController implements Controller<any> {
   }
 
   reuseOrRelaunch(weak: boolean, args: any[] | undefined): Launch {
-    let oc: OperationContext = this.peek(args)
+    let oc: ReuseOrRelaunchContext = this.peek(args)
     const ctx = oc.changeset
     const launch: Launch = oc.launch
     const opts = launch.options
@@ -69,20 +69,20 @@ export class OperationController implements Controller<any> {
     else if (Log.isOn && Log.opt.operation && (opts.logging === undefined ||
       opts.logging.operation === undefined || opts.logging.operation === true))
       Log.write(Transaction.current.isFinished ? '' : '║', ' (=)',
-        `${Dump.snapshot2(oc.launch.controller.objectHandle, oc.changeset, this.memberName)} result is reused from T${oc.launch.transaction.id}[${oc.launch.transaction.hint}]`)
+        `${Dump.snapshot2(oc.launch.reaction.objectHandle, oc.changeset, this.memberName)} result is reused from T${oc.launch.transaction.id}[${oc.launch.transaction.hint}]`)
     const t = oc.launch
     Changeset.markUsed(t, oc.snapshot, this.memberName, this.objectHandle, t.options.kind, weak)
     return t
   }
 
-  static getControllerOf(method: F<any>): Controller<any> {
-    const ctl = Meta.get<Controller<any> | undefined>(method, Meta.Controller)
+  static getControllerOf(method: F<any>): AbstractReaction<any> {
+    const ctl = Meta.get<AbstractReaction<any> | undefined>(method, Meta.Controller)
     if (!ctl)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return ctl
   }
 
-  static configureImpl(self: OperationController | undefined, options: Partial<MemberOptions>): MemberOptions {
+  static configureImpl(self: Reaction | undefined, options: Partial<MemberOptions>): MemberOptions {
     let launch: Launch | undefined
     if (self)
       launch = self.edit().launch
@@ -96,7 +96,7 @@ export class OperationController implements Controller<any> {
     return launch.options
   }
 
-  static launchWithin<T>(launch: Launch | undefined, func: F<T>, ...args: any[]): T {
+  static runWithinGivenLaunch<T>(launch: Launch | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined
     const outer = Launch.current
     try {
@@ -130,7 +130,7 @@ export class OperationController implements Controller<any> {
 
   // Internal
 
-  private peek(args: any[] | undefined): OperationContext {
+  private peek(args: any[] | undefined): ReuseOrRelaunchContext {
     const ctx = Changeset.current()
     const os: ObjectSnapshot = ctx.lookupObjectSnapshot(this.objectHandle, this.memberName)
     const launch: Launch = this.acquireFromSnapshot(os, args)
@@ -141,14 +141,14 @@ export class OperationController implements Controller<any> {
     return { launch, isUpToDate: isValid, changeset: ctx, snapshot: os }
   }
 
-  private use(): OperationContext {
+  private use(): ReuseOrRelaunchContext {
     const oc = this.peek(undefined)
     Changeset.markUsed(oc.launch, oc.snapshot,
       this.memberName, this.objectHandle, oc.launch.options.kind, true)
     return oc
   }
 
-  private edit(): OperationContext {
+  private edit(): ReuseOrRelaunchContext {
     const h = this.objectHandle
     const m = this.memberName
     const ctx = Changeset.edit()
@@ -167,7 +167,7 @@ export class OperationController implements Controller<any> {
   private acquireFromSnapshot(os: ObjectSnapshot, args: any[] | undefined): Launch {
     const m = this.memberName
     let launch: Launch = os.data[m]
-    if (launch.controller !== this) {
+    if (launch.reaction !== this) {
       if (os.changeset !== EMPTY_SNAPSHOT.changeset) {
         const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, m)}/init` : /* istanbul ignore next */ 'MethodController/init'
         const separation = os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT
@@ -175,7 +175,7 @@ export class OperationController implements Controller<any> {
           const h = this.objectHandle
           let r: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
           let relaunch = r.data[m] as Launch
-          if (relaunch.controller !== this) {
+          if (relaunch.reaction !== this) {
             r = Changeset.edit().getEditableObjectSnapshot(h, m, Meta.Handle, this)
             const t = new Launch(this, r.changeset, relaunch)
             if (args)
@@ -202,7 +202,7 @@ export class OperationController implements Controller<any> {
     return launch
   }
 
-  private run(existing: OperationContext, separation: SeparationMode, options: MemberOptions, token: any, args: any[] | undefined): OperationContext {
+  private run(existing: ReuseOrRelaunchContext, separation: SeparationMode, options: MemberOptions, token: any, args: any[] | undefined): ReuseOrRelaunchContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.objectHandle, this.memberName)}`
     let oc = existing
@@ -229,7 +229,7 @@ export class OperationController implements Controller<any> {
     return oc
   }
 
-  private static markObsolete(self: OperationController): void {
+  private static markObsolete(self: Reaction): void {
     const oc = self.peek(undefined)
     const ctx = oc.changeset
     oc.launch.markObsoleteDueTo(oc.launch, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.reactive)
@@ -245,7 +245,7 @@ class Launch extends ObservableValue implements Observer {
 
   readonly margin: number
   readonly transaction: Transaction
-  readonly controller: OperationController
+  readonly reaction: Reaction
   readonly changeset: AbstractChangeset
   observables: Map<ObservableValue, Subscription> | undefined
   options: OptionsImpl
@@ -258,11 +258,11 @@ class Launch extends ObservableValue implements Observer {
   obsoleteSince: number
   successor: Launch | undefined
 
-  constructor(controller: OperationController, changeset: AbstractChangeset, former: Launch | OptionsImpl) {
+  constructor(reaction: Reaction, changeset: AbstractChangeset, former: Launch | OptionsImpl) {
     super(undefined)
     this.margin = Launch.current ? Launch.current.margin + 1 : 1
     this.transaction = Transaction.current
-    this.controller = controller
+    this.reaction = reaction
     this.changeset = changeset
     this.observables = new Map<ObservableValue, Subscription>()
     if (former instanceof Launch) {
@@ -287,7 +287,7 @@ class Launch extends ObservableValue implements Observer {
 
   get isOperation(): boolean { return true } // override
   get originSnapshotId(): number { return this.changeset.id } // override
-  hint(): string { return `${Dump.snapshot2(this.controller.objectHandle, this.changeset, this.controller.memberName)}` } // override
+  hint(): string { return `${Dump.snapshot2(this.reaction.objectHandle, this.changeset, this.reaction.memberName)}` } // override
   get order(): number { return this.options.order }
 
   get ['#this#'](): string {
@@ -298,7 +298,7 @@ class Launch extends ObservableValue implements Observer {
     let cause: string
     if (this.cause)
       cause = `   ◀◀   ${this.cause}`
-    else if (this.controller.options.kind === Kind.Transactional)
+    else if (this.reaction.options.kind === Kind.Transactional)
       cause = '   ◀◀   operation'
     else
       cause = `   ◀◀   T${this.changeset.id}[${this.changeset.hint}]`
@@ -318,7 +318,7 @@ class Launch extends ObservableValue implements Observer {
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, '║', '‾\\', `${this.hint()} - step in  `, 0, '        │')
       const started = Date.now()
-      const result = OperationController.launchWithin<T>(this, func, ...args)
+      const result = Reaction.runWithinGivenLaunch<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
@@ -334,7 +334,7 @@ class Launch extends ObservableValue implements Observer {
       this.args = args
     this.obsoleteSince = MAX_REVISION
     if (!this.error)
-      OperationController.launchWithin<void>(this, Launch.run, this, proxy)
+      Reaction.runWithinGivenLaunch<void>(this, Launch.run, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
@@ -362,7 +362,7 @@ class Launch extends ObservableValue implements Observer {
         if (isReactive)
           reactive.push(this)
         else
-          this.observers?.forEach(s => s.markObsoleteDueTo(this, this.controller.memberName, this.changeset, this.controller.objectHandle, why, since, reactive))
+          this.observers?.forEach(s => s.markObsoleteDueTo(this, this.reaction.memberName, this.changeset, this.reaction.objectHandle, why, since, reactive))
 
         // Cancel own transaction if it is still in progress
         const tran = this.transaction
@@ -384,7 +384,7 @@ class Launch extends ObservableValue implements Observer {
     if (now || hold < 0) {
       if (this.isNotUpToDate()) {
         try {
-          const launch: Launch = this.controller.reuseOrRelaunch(false, undefined)
+          const launch: Launch = this.reaction.reuseOrRelaunch(false, undefined)
           if (launch.result instanceof Promise)
             launch.result.catch(error => {
               if (launch.options.kind === Kind.Reactive)
@@ -464,7 +464,7 @@ class Launch extends ObservableValue implements Observer {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Log.isOn && Log.opt.operation)
-      Log.write('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.controller.objectHandle, this.controller.memberName)} ]`)
+      Log.write('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.reaction.objectHandle, this.reaction.memberName)} ]`)
     this.started = Date.now()
   }
 
@@ -512,7 +512,7 @@ class Launch extends ObservableValue implements Observer {
       hint: 'Monitor.enter',
       separation: 'isolated',
       logging: Log.isOn && Log.opt.monitor ? undefined : Log.global }
-    OperationController.launchWithin<void>(undefined, Transaction.run, options,
+    Reaction.runWithinGivenLaunch<void>(undefined, Transaction.run, options,
       MonitorImpl.enter, mon, this.transaction)
   }
 
@@ -523,7 +523,7 @@ class Launch extends ObservableValue implements Observer {
           hint: 'Monitor.leave',
           separation: 'isolated',
           logging: Log.isOn && Log.opt.monitor ? undefined : Log.DefaultLevel }
-        OperationController.launchWithin<void>(undefined, Transaction.run, options,
+        Reaction.runWithinGivenLaunch<void>(undefined, Transaction.run, options,
           MonitorImpl.leave, mon, this.transaction)
       }
       this.transaction.whenFinished().then(leave, leave)
@@ -652,7 +652,7 @@ class Launch extends ObservableValue implements Observer {
     for (const r of reactive)
       queue.push(r)
     if (isReactiveLoopRequired)
-      OperationController.launchWithin<void>(undefined, Launch.runQueuedReactiveLoop)
+      Reaction.runWithinGivenLaunch<void>(undefined, Launch.runQueuedReactiveLoop)
   }
 
   private static runQueuedReactiveLoop(): void {
@@ -718,11 +718,11 @@ class Launch extends ObservableValue implements Observer {
   }
 
   private static createOperation(h: ObjectHandle, m: MemberName, options: OptionsImpl): F<any> {
-    const ctl = new OperationController(h, m)
+    const rx = new Reaction(h, m)
     const operation: F<any> = (...args: any[]): any => {
-      return ctl.reuseOrRelaunch(false, args).result
+      return rx.reuseOrRelaunch(false, args).result
     }
-    Meta.set(operation, Meta.Controller, ctl)
+    Meta.set(operation, Meta.Controller, rx)
     return operation
   }
 
@@ -730,9 +730,9 @@ class Launch extends ObservableValue implements Observer {
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
     let launch: Launch | undefined = initial[m]
-    const ctl = launch ? launch.controller : new OperationController(EMPTY_HANDLE, m)
+    const rx = launch ? launch.reaction : new Reaction(EMPTY_HANDLE, m)
     const opts = launch ? launch.options : OptionsImpl.INITIAL
-    initial[m] = launch = new Launch(ctl, EMPTY_SNAPSHOT.changeset, new OptionsImpl(getter, setter, opts, options, implicit))
+    initial[m] = launch = new Launch(rx, EMPTY_SNAPSHOT.changeset, new OptionsImpl(getter, setter, opts, options, implicit))
     // Add to the list if it's a reactive function
     if (launch.options.kind === Kind.Reactive && launch.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.acquire(proto, Meta.Reactive)
@@ -765,10 +765,10 @@ class Launch extends ObservableValue implements Observer {
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {
-        get: OperationController.why, configurable: false, enumerable: false,
+        get: Reaction.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(globalThis, 'rBriefWhy', {
-        get: OperationController.briefWhy, configurable: false, enumerable: false,
+        get: Reaction.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -776,10 +776,10 @@ class Launch extends ObservableValue implements Observer {
     }
     try {
       Object.defineProperty(global, 'rWhy', {
-        get: OperationController.why, configurable: false, enumerable: false,
+        get: Reaction.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(global, 'rBriefWhy', {
-        get: OperationController.briefWhy, configurable: false, enumerable: false,
+        get: Reaction.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -810,7 +810,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Launch)
-    result = `#${value.controller.objectHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.originSnapshotId !== undefined && value.originSnapshotId !== 0 ? `t${value.originSnapshotId}` : ''}`
+    result = `#${value.reaction.objectHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.originSnapshotId !== undefined && value.originSnapshotId !== 0 ? `t${value.originSnapshotId}` : ''}`
   else if (value === Meta.Undefined)
     result = 'undefined'
   else if (typeof(value) === 'string')
