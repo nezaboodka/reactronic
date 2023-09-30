@@ -8,7 +8,7 @@
 import { F } from '../util/Utils.js'
 import { Log, misuse } from '../util/Dbg.js'
 import { MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options.js'
-import { AbstractReaction } from '../Controller.js'
+import { AbstractReaction } from '../Reaction.js'
 import { ObjectSnapshot, MemberName, ObjectHandle, ObservableValue, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from './Data.js'
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Changeset.js'
 import { Transaction } from './Transaction.js'

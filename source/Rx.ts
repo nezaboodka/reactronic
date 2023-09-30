@@ -7,12 +7,12 @@
 
 import { F } from './util/Utils.js'
 import { Log } from './util/Dbg.js'
-import { AbstractReaction } from './Controller.js'
+import { AbstractReaction } from './Reaction.js'
 import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options.js'
 import { Meta, ObjectHandle } from './impl/Data.js'
 import { Changeset } from './impl/Changeset.js'
 import { Mvcc } from './impl/Mvcc.js'
-import { Reaction } from './impl/Operation.js'
+import { Reaction } from './impl/Reaction.js'
 
 export class Rx {
   static why(brief: boolean = false): string { return brief ? Reaction.briefWhy() : Reaction.why() }
