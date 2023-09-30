@@ -1,12 +1,12 @@
 
-# **Collection**
+# **MergeList**
 
-Collection provides fast merge algorithm for lists.
+MergeList provides fast merge algorithm for lists.
 It efficiently detects differences/changes: which items
 are added, moved, and removed.
 
 ``` typescript
-const list = new Collection<string>(s => s, true)
+const list = new MergeList<string>(s => s, true)
 
 const example1 = ['Hello', 'Welcome', 'Bye', 'End']
 for (const x of example1)
@@ -34,14 +34,14 @@ list.endMerge(true)
 // list.isRemoved: Welcome
 ```
 
-Collection API:
+MergeList API:
 
 ``` typescript
 interface Item<T> {
   readonly instance: T
 }
 
-class Collection<T> {
+class MergeList<T> {
   readonly getKey: GetKey<T>
   readonly strict: boolean
   readonly count: number

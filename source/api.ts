@@ -6,8 +6,8 @@
 // automatically licensed under the license referred above.
 
 export { all, pause } from './util/Utils.js'
-export { Collection } from './util/Collection.js'
-export type { Item, CollectionReader } from './util/Collection.js'
+export { MergeList } from './util/MergeList.js'
+export type { Item, MergeListReader } from './util/MergeList.js'
 export { SealedArray } from './util/SealedArray.js'
 export { SealedMap } from './util/SealedMap.js'
 export { SealedSet } from './util/SealedSet.js'

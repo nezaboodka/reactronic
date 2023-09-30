@@ -7,7 +7,7 @@
 
 export type GetItemKey<T = unknown> = (item: T) => string | undefined
 
-export interface CollectionReader<T> {
+export interface MergeListReader<T> {
   // readonly getKey: GetKey<T>
   readonly isStrict: boolean
   readonly count: number
@@ -41,7 +41,7 @@ export interface Item<T> {
   aux?: Item<T> // TODO: hide
 }
 
-export class Collection<T> implements CollectionReader<T> {
+export class MergeList<T> implements MergeListReader<T> {
   readonly getKey: GetItemKey<T>
   private strict: boolean
   private map: Map<string | undefined, ItemImpl<T>>

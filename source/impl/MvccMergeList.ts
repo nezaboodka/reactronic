@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Collection, Item, CollectionReader } from '../util/Collection.js'
+import { MergeList, Item, MergeListReader } from '../util/MergeList.js'
 import { ObservableObject } from './Mvcc.js'
 
-// ObservableCollection
+// ObservableMergeList
 
-export abstract class ObservableCollection<T> extends ObservableObject implements CollectionReader<T> {
-  protected abstract impl: Collection<T>
+export abstract class ObservableMergeList<T> extends ObservableObject implements MergeListReader<T> {
+  protected abstract impl: MergeList<T>
   get isStrict(): boolean { return this.impl.isStrict }
   get count(): number { return this.impl.count }
   get addedCount(): number { return this.impl.addedCount }

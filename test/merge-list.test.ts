@@ -6,15 +6,15 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Collection, Item } from '../source/util/Collection.js'
+import { MergeList, Item } from '../source/util/MergeList.js'
 
-test('collection', t => {
+test('merge-list', t => {
   const etalon1 = ['Hello', 'Welcome', 'Bye', 'End']
   const etalon2 = ['Added1', 'Bye', 'End', 'Added2', 'Hello', 'Added3']
   const etalon2a = ['Hello', 'Bye', 'End', 'Added1', 'Added2', 'Added3']
 
   // Basic
-  const list = new Collection<string>(s => s, true)
+  const list = new MergeList<string>(s => s, true)
   for (const x of etalon1)
     list.add(x)
 
