@@ -7,7 +7,7 @@
 
 import { MemberOptions } from './Options.js'
 
-export interface Controller<T> {
+export interface AbstractReaction<T> {
   readonly options: MemberOptions
   readonly args: ReadonlyArray<any>
   readonly result: T

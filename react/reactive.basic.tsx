@@ -28,7 +28,7 @@ class RxComponent extends ObservableObject {
 
   @reactive
   protected ensureUpToDate(): void {
-    if (!Rx.getController(this.render).isUpToDate)
+    if (!Rx.getReaction(this.render).isUpToDate)
       Transaction.outside(this.refresh, {rx: this})
   }
 

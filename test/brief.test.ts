@@ -45,9 +45,9 @@ test('brief', t => {
   const app = Transaction.run(null, () => new DemoView(new Demo()))
   try {
     t.is(Rx.why(), '<boot>')
-    t.is(Rx.getController(app.print).options.order, 123)
+    t.is(Rx.getReaction(app.print).options.order, 123)
     t.notThrows(() => DemoView.test())
-    const render = Rx.getController(app.render)
+    const render = Rx.getReaction(app.render)
     t.is(render.isUpToDate, true)
     t.is(render.args.length, 1)
     t.is(render.result.length, 1)
@@ -140,8 +140,8 @@ test('brief', t => {
     }, undefined, 'observable property Person.emails #26 can only be modified inside transaction')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
-    t.throws(() => { Rx.getController(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
-    t.throws(() => { console.log(Rx.getController(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { Rx.getReaction(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { console.log(Rx.getReaction(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
     const op2 = Transaction.create({ hint: 'op2' })
     const zombi = op2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: 'Person.age #30 is not yet available for T1[<none>] because of uncommitted T125[op2] (last committed T0[<boot>])' })

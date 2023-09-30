@@ -7,18 +7,18 @@
 
 import { F } from './util/Utils.js'
 import { Log } from './util/Dbg.js'
-import { Controller } from './Controller.js'
+import { AbstractReaction } from './Controller.js'
 import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options.js'
 import { Meta, ObjectHandle } from './impl/Data.js'
 import { Changeset } from './impl/Changeset.js'
 import { Mvcc } from './impl/Mvcc.js'
-import { OperationController } from './impl/Operation.js'
+import { Reaction } from './impl/Operation.js'
 
 export class Rx {
-  static why(brief: boolean = false): string { return brief ? OperationController.briefWhy() : OperationController.why() }
-  static getController<T>(method: F<T>): Controller<T> { return OperationController.getControllerOf(method) }
-  static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Rx.getController(method as any as F<T>).pullLastResult(args) }
-  static configureCurrentOperation(options: Partial<MemberOptions>): MemberOptions { return OperationController.configureImpl(undefined, options) }
+  static why(brief: boolean = false): string { return brief ? Reaction.briefWhy() : Reaction.why() }
+  static getReaction<T>(method: F<T>): AbstractReaction<T> { return Reaction.getControllerOf(method) }
+  static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Rx.getReaction(method as any as F<T>).pullLastResult(args) }
+  static configureCurrentOperation(options: Partial<MemberOptions>): MemberOptions { return Reaction.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Mvcc.setObjectOptions(obj, options) }
   static getRevisionOf(obj: any): number { return obj[Meta.Revision] }
   static takeSnapshot<T>(obj: T): T { return Changeset.takeSnapshot(obj) }
@@ -38,7 +38,7 @@ export class Rx {
 // Operators
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return OperationController.launchWithin<T>(undefined, func, ...args)
+  return Reaction.runWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
 export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {

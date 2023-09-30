@@ -9,7 +9,7 @@ import { UNDEF, F } from '../util/Utils.js'
 import { Log, misuse } from '../util/Dbg.js'
 import { MemberOptions, Kind, Reentrance } from '../Options.js'
 import { LoggingOptions, ProfilingOptions } from '../Logging.js'
-import { Controller } from '../Controller.js'
+import { AbstractReaction } from '../Controller.js'
 import { ObjectSnapshot, MemberName, ObjectHandle, ObservableValue, Meta, SeparationMode } from './Data.js'
 import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset.js'
 import { Journal } from './Journal.js'
@@ -272,7 +272,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     ctx.getEditableObjectSnapshot(h, Meta.Handle, blank)
     if (!Mvcc.reactivityAutoStartDisabled)
       for (const m in Meta.getFrom(proto, Meta.Reactive))
-        (h.proxy[m][Meta.Controller] as Controller<any>).markObsolete()
+        (h.proxy[m][Meta.Controller] as AbstractReaction<any>).markObsolete()
     return h
   }
 

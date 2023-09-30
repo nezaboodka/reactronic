@@ -32,7 +32,7 @@ test('reentrance.sidebyside', async t => {
   Rx.setLoggingMode(true, TestsLoggingLevel)
   const app = Transaction.run(null, () => {
     const a = new AsyncDemoView(new AsyncDemo())
-    Rx.getController(a.model.load).configure({reentrance: Reentrance.RunSideBySide})
+    Rx.getReaction(a.model.load).configure({reentrance: Reentrance.RunSideBySide})
     return a
   })
   try {
