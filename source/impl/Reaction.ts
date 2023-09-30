@@ -232,7 +232,7 @@ export class Reaction implements AbstractReaction<any> {
   private static markObsolete(self: Reaction): void {
     const oc = self.peek(undefined)
     const ctx = oc.changeset
-    oc.launch.markObsoleteDueTo(oc.launch, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.obsoleting)
+    oc.launch.markObsoleteDueTo(oc.launch, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
   }
 }
 
@@ -339,7 +339,7 @@ class Launch extends ObservableValue implements Observer {
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(observable: ObservableValue, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Observer[]): void {
+  markObsoleteDueTo(observable: ObservableValue, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, obsolete: Observer[]): void {
     if (this.observables !== undefined) { // if not yet marked as obsolete
       const skip = !observable.isOperation &&
         changeset === this.changeset /* &&
@@ -360,9 +360,9 @@ class Launch extends ObservableValue implements Observer {
 
         // Stop cascade propagation on reactive function, or continue otherwise
         if (isReactive)
-          reactive.push(this)
+          obsolete.push(this)
         else
-          this.observers?.forEach(s => s.markObsoleteDueTo(this, this.reaction.memberName, this.changeset, this.reaction.objectHandle, why, since, reactive))
+          this.observers?.forEach(s => s.markObsoleteDueTo(this, this.reaction.memberName, this.changeset, this.reaction.objectHandle, why, since, obsolete))
 
         // Cancel own transaction if it is still in progress
         const tran = this.transaction
@@ -553,7 +553,7 @@ class Launch extends ObservableValue implements Observer {
           ctx.bumpBy(os.changeset.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!launch.subscribeTo(observable, os, m, h, t))
-          launch.markObsoleteDueTo(observable, m, h.head.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsoleting)
+          launch.markObsoleteDueTo(observable, m, h.head.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
       }
     }
   }
@@ -573,16 +573,16 @@ class Launch extends ObservableValue implements Observer {
 
   private static propagateAllChangesThroughSubscriptions(changeset: Changeset): void {
     const since = changeset.timestamp
-    const obsoleting = changeset.obsoleting
+    const obsolete = changeset.obsolete
     changeset.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-      Launch.propagateMemberChangeThroughSubscriptions(false, since, os, Meta.Revision, h, obsoleting)
+      Launch.propagateMemberChangeThroughSubscriptions(false, since, os, Meta.Revision, h, obsolete)
       if (!os.disposed)
-        os.changes.forEach((o, m) => Launch.propagateMemberChangeThroughSubscriptions(false, since, os, m, h, obsoleting))
+        os.changes.forEach((o, m) => Launch.propagateMemberChangeThroughSubscriptions(false, since, os, m, h, obsolete))
       else
         for (const m in os.former.snapshot.data)
-          Launch.propagateMemberChangeThroughSubscriptions(true, since, os, m, h, obsoleting)
+          Launch.propagateMemberChangeThroughSubscriptions(true, since, os, m, h, obsolete)
     })
-    obsoleting.sort(compareObserversByOrder)
+    obsolete.sort(compareObserversByOrder)
     changeset.options.journal?.edited(
       JournalImpl.buildPatch(changeset.hint, changeset.items))
   }
@@ -597,9 +597,9 @@ class Launch extends ObservableValue implements Observer {
   }
 
   private static propagateMemberChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,
-    os: ObjectSnapshot, m: MemberName, h: ObjectHandle, obsoleting?: Observer[]): void {
+    os: ObjectSnapshot, m: MemberName, h: ObjectHandle, obsolete?: Observer[]): void {
     const curr = os.data[m]
-    if (obsoleting) {
+    if (obsolete !== undefined) {
       // Propagate change to reactive functions
       const former = os.former.snapshot.data[m]
       if (former !== undefined && former instanceof ObservableValue) {
@@ -619,7 +619,7 @@ class Launch extends ObservableValue implements Observer {
             former.successor = undefined
         }
         former.observers?.forEach(s =>
-          s.markObsoleteDueTo(former, m, os.changeset, h, why, timestamp, obsoleting))
+          s.markObsoleteDueTo(former, m, os.changeset, h, why, timestamp, obsolete))
       }
     }
     if (curr instanceof Launch) {
