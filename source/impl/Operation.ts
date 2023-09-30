@@ -377,7 +377,7 @@ class Launch extends ObservableValue implements Observer {
     }
   }
 
-  runIfNotUpToDate(now: boolean, nothrow: boolean): void {
+  relaunchIfNotUpToDate(now: boolean, nothrow: boolean): void {
     const t = this.options.throttling
     const interval = Date.now() + this.started // "started" is stored as negative value after reactive function completion
     const hold = t ? t - interval : 0 // "started" is stored as negative value after reactive function completion
@@ -401,7 +401,7 @@ class Launch extends ObservableValue implements Observer {
     }
     else if (t < Number.MAX_SAFE_INTEGER) {
       if (hold > 0)
-        setTimeout(() => this.runIfNotUpToDate(true, true), hold)
+        setTimeout(() => this.relaunchIfNotUpToDate(true, true), hold)
       else
         this.addToDeferredReactiveFunctions()
     }
@@ -540,7 +540,7 @@ class Launch extends ObservableValue implements Observer {
     const deferred = Launch.deferredReactiveFunctions
     Launch.deferredReactiveFunctions = [] // reset
     for (const x of deferred)
-      x.runIfNotUpToDate(true, true)
+      x.relaunchIfNotUpToDate(true, true)
   }
 
   private static markUsed(observable: ObservableValue, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean): void {
@@ -660,7 +660,7 @@ class Launch extends ObservableValue implements Observer {
     let i = 0
     while (i < queue.length) {
       const reactive = queue[i]
-      reactive.runIfNotUpToDate(false, true)
+      reactive.relaunchIfNotUpToDate(false, true)
       i++
     }
     Launch.queuedReactiveFunctions = [] // reset loop

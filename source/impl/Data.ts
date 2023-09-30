@@ -36,7 +36,7 @@ export interface Observer {
   readonly obsoleteSince: number
   hint(nop?: boolean): string
   markObsoleteDueTo(observable: ObservableValue, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Array<Observer>): void
-  runIfNotUpToDate(now: boolean, nothrow: boolean): void
+  relaunchIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 
 export type MemberName = PropertyKey
