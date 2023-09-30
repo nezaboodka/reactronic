@@ -57,7 +57,7 @@ export class Changeset implements AbstractChangeset {
   private revision: number
   private bumper: number
   items: Map<ObjectHandle, ObjectSnapshot>
-  reactive: Observer[]
+  obsoleting: Observer[]
   sealed: boolean
 
   constructor(options: SnapshotOptions | null) {
@@ -66,7 +66,7 @@ export class Changeset implements AbstractChangeset {
     this.revision = UNDEFINED_REVISION
     this.bumper = 100
     this.items = new Map<ObjectHandle, ObjectSnapshot>()
-    this.reactive = []
+    this.obsoleting = []
     this.sealed = false
   }
 
@@ -280,7 +280,7 @@ export class Changeset implements AbstractChangeset {
     }
     if (!error)
       Changeset.propagateAllChangesThroughSubscriptions(this)
-    return this.reactive
+    return this.obsoleting
   }
 
   static sealObjectSnapshot(h: ObjectHandle, os: ObjectSnapshot): void {
@@ -347,7 +347,7 @@ export class Changeset implements AbstractChangeset {
       os.former.snapshot = EMPTY_SNAPSHOT // unlink history
     })
     this.items = EMPTY_MAP // release for GC
-    this.reactive = EMPTY_ARRAY // release for GC
+    this.obsoleting = EMPTY_ARRAY // release for GC
     if (Log.isOn)
       Object.freeze(this)
   }

@@ -232,7 +232,7 @@ export class Reaction implements AbstractReaction<any> {
   private static markObsolete(self: Reaction): void {
     const oc = self.peek(undefined)
     const ctx = oc.changeset
-    oc.launch.markObsoleteDueTo(oc.launch, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.reactive)
+    oc.launch.markObsoleteDueTo(oc.launch, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.obsoleting)
   }
 }
 
@@ -553,7 +553,7 @@ class Launch extends ObservableValue implements Observer {
           ctx.bumpBy(os.changeset.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!launch.subscribeTo(observable, os, m, h, t))
-          launch.markObsoleteDueTo(observable, m, h.head.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.reactive)
+          launch.markObsoleteDueTo(observable, m, h.head.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsoleting)
       }
     }
   }
@@ -573,16 +573,16 @@ class Launch extends ObservableValue implements Observer {
 
   private static propagateAllChangesThroughSubscriptions(changeset: Changeset): void {
     const since = changeset.timestamp
-    const reactive = changeset.reactive
+    const obsoleting = changeset.obsoleting
     changeset.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-      Launch.propagateMemberChangeThroughSubscriptions(false, since, os, Meta.Revision, h, reactive)
+      Launch.propagateMemberChangeThroughSubscriptions(false, since, os, Meta.Revision, h, obsoleting)
       if (!os.disposed)
-        os.changes.forEach((o, m) => Launch.propagateMemberChangeThroughSubscriptions(false, since, os, m, h, reactive))
+        os.changes.forEach((o, m) => Launch.propagateMemberChangeThroughSubscriptions(false, since, os, m, h, obsoleting))
       else
         for (const m in os.former.snapshot.data)
-          Launch.propagateMemberChangeThroughSubscriptions(true, since, os, m, h, reactive)
+          Launch.propagateMemberChangeThroughSubscriptions(true, since, os, m, h, obsoleting)
     })
-    reactive.sort(compareReactiveFunctionsByOrder)
+    obsoleting.sort(compareObserversByOrder)
     changeset.options.journal?.edited(
       JournalImpl.buildPatch(changeset.hint, changeset.items))
   }
@@ -597,9 +597,9 @@ class Launch extends ObservableValue implements Observer {
   }
 
   private static propagateMemberChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,
-    os: ObjectSnapshot, m: MemberName, h: ObjectHandle, reactive?: Observer[]): void {
+    os: ObjectSnapshot, m: MemberName, h: ObjectHandle, obsoleting?: Observer[]): void {
     const curr = os.data[m]
-    if (reactive) {
+    if (obsoleting) {
       // Propagate change to reactive functions
       const former = os.former.snapshot.data[m]
       if (former !== undefined && former instanceof ObservableValue) {
@@ -619,7 +619,7 @@ class Launch extends ObservableValue implements Observer {
             former.successor = undefined
         }
         former.observers?.forEach(s =>
-          s.markObsoleteDueTo(former, m, os.changeset, h, why, timestamp, reactive))
+          s.markObsoleteDueTo(former, m, os.changeset, h, why, timestamp, obsoleting))
       }
     }
     if (curr instanceof Launch) {
@@ -856,7 +856,7 @@ function reactronicHookedThen(this: any,
   return ORIGINAL_PROMISE_THEN.call(this, resolve, reject)
 }
 
-function compareReactiveFunctionsByOrder(a: Observer, b: Observer): number {
+function compareObserversByOrder(a: Observer, b: Observer): number {
   return a.order - b.order
 }
 
