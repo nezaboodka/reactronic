@@ -155,11 +155,11 @@ export class OperationController implements Controller<any> {
     const os: ObjectSnapshot = ctx.getEditableObjectSnapshot(h, m, Meta.Handle, this)
     let launch: Launch = this.acquireFromSnapshot(os, undefined)
     if (launch.changeset !== os.changeset) {
-      const launch2 = new Launch(this, os.changeset, launch)
-      os.data[m] = launch2.reenterOver(launch)
+      const reLaunch = new Launch(this, os.changeset, launch)
+      os.data[m] = reLaunch.reenterOver(launch)
       ctx.bumpBy(os.former.snapshot.changeset.timestamp)
-      Changeset.markEdited(launch, launch2, true, os, m, h)
-      launch = launch2
+      Changeset.markEdited(launch, reLaunch, true, os, m, h)
+      launch = reLaunch
     }
     return { launch, isUpToDate: true, changeset: ctx, snapshot: os }
   }
@@ -173,28 +173,28 @@ export class OperationController implements Controller<any> {
         const separation = os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT
         launch = Transaction.run<Launch>({ hint, separation, token: this }, (): Launch => {
           const h = this.objectHandle
-          let r2: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
-          let op2 = r2.data[m] as Launch
-          if (op2.controller !== this) {
-            r2 = Changeset.edit().getEditableObjectSnapshot(h, m, Meta.Handle, this)
-            const t = new Launch(this, r2.changeset, op2)
+          let r: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
+          let reLaunch = r.data[m] as Launch
+          if (reLaunch.controller !== this) {
+            r = Changeset.edit().getEditableObjectSnapshot(h, m, Meta.Handle, this)
+            const t = new Launch(this, r.changeset, reLaunch)
             if (args)
               t.args = args
             t.cause = BOOT_CAUSE
-            r2.data[m] = t
-            Changeset.markEdited(op2, t, true, r2, m, h)
-            op2 = t
+            r.data[m] = t
+            Changeset.markEdited(reLaunch, t, true, r, m, h)
+            reLaunch = t
           }
-          return op2
+          return reLaunch
         })
       }
       else {
-        const t = new Launch(this, os.changeset, launch)
+        const initialLaunch = new Launch(this, os.changeset, launch)
         if (args)
-          t.args = args
-        t.cause = BOOT_CAUSE
-        os.data[m] = t
-        launch = t
+          initialLaunch.args = args
+        initialLaunch.cause = BOOT_CAUSE
+        os.data[m] = initialLaunch
+        launch = initialLaunch
         if (Log.isOn && Log.opt.write)
           Log.write('║', ' ++', `${Dump.obj(this.objectHandle, m)} is initialized (revision ${os.revision})`)
       }
