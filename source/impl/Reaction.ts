@@ -48,30 +48,30 @@ export class Reaction implements AbstractReaction<any> {
   }
 
   reuseOrRelaunch(weak: boolean, args: any[] | undefined): Launch {
-    let oc: ReuseOrRelaunchContext = this.peek(args)
-    const ctx = oc.changeset
-    const launch: Launch = oc.launch
+    let ror: ReuseOrRelaunchContext = this.peek(args)
+    const ctx = ror.changeset
+    const launch: Launch = ror.launch
     const opts = launch.options
-    if (!oc.isUpToDate && !oc.snapshot.disposed
+    if (!ror.isUpToDate && !ror.snapshot.disposed
       && (!weak || launch.cause === BOOT_CAUSE || !launch.successor ||
         launch.successor.transaction.isFinished)) {
       const outerOpts = Launch.current?.options
       const separation = weak || opts.separation !== false || opts.kind === Kind.Reactive ||
         (opts.kind === Kind.Transactional && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cached)) ||
-        (opts.kind === Kind.Cached && (oc.snapshot.changeset.sealed ||
-          oc.snapshot.former.snapshot !== EMPTY_SNAPSHOT))
+        (opts.kind === Kind.Cached && (ror.snapshot.changeset.sealed ||
+          ror.snapshot.former.snapshot !== EMPTY_SNAPSHOT))
       const token = opts.noSideEffects ? this : undefined
-      const oc2 = this.relaunch(oc, separation, opts, token, args)
-      const ctx2 = oc2.launch.changeset
+      const ror2 = this.relaunch(ror, separation, opts, token, args)
+      const ctx2 = ror2.launch.changeset
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
-        oc = oc2
+        ror = ror2
     }
     else if (Log.isOn && Log.opt.operation && (opts.logging === undefined ||
       opts.logging.operation === undefined || opts.logging.operation === true))
       Log.write(Transaction.current.isFinished ? '' : '║', ' (=)',
-        `${Dump.snapshot2(oc.launch.reaction.objectHandle, oc.changeset, this.memberName)} result is reused from T${oc.launch.transaction.id}[${oc.launch.transaction.hint}]`)
-    const t = oc.launch
-    Changeset.markUsed(t, oc.snapshot, this.memberName, this.objectHandle, t.options.kind, weak)
+        `${Dump.snapshot2(ror.launch.reaction.objectHandle, ror.changeset, this.memberName)} result is reused from T${ror.launch.transaction.id}[${ror.launch.transaction.hint}]`)
+    const t = ror.launch
+    Changeset.markUsed(t, ror.snapshot, this.memberName, this.objectHandle, t.options.kind, weak)
     return t
   }
 
@@ -142,10 +142,10 @@ export class Reaction implements AbstractReaction<any> {
   }
 
   private use(): ReuseOrRelaunchContext {
-    const oc = this.peek(undefined)
-    Changeset.markUsed(oc.launch, oc.snapshot,
-      this.memberName, this.objectHandle, oc.launch.options.kind, true)
-    return oc
+    const ror = this.peek(undefined)
+    Changeset.markUsed(ror.launch, ror.snapshot,
+      this.memberName, this.objectHandle, ror.launch.options.kind, true)
+    return ror
   }
 
   private edit(): ReuseOrRelaunchContext {
@@ -205,34 +205,34 @@ export class Reaction implements AbstractReaction<any> {
   private relaunch(existing: ReuseOrRelaunchContext, separation: SeparationMode, options: MemberOptions, token: any, args: any[] | undefined): ReuseOrRelaunchContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.objectHandle, this.memberName)}`
-    let oc = existing
+    let ror = existing
     const opts = { hint, separation, journal: options.journal, logging: options.logging, token }
     const result = Transaction.run(opts, (argsx: any[] | undefined): any => {
-      if (!oc.launch.transaction.isCanceled) { // standard launch
-        oc = this.edit()
+      if (!ror.launch.transaction.isCanceled) { // standard launch
+        ror = this.edit()
         if (Log.isOn && Log.opt.operation)
-          Log.write('║', '  o', `${oc.launch.why()}`)
-        oc.launch.proceed(this.objectHandle.proxy, argsx)
+          Log.write('║', '  o', `${ror.launch.why()}`)
+        ror.launch.proceed(this.objectHandle.proxy, argsx)
       }
       else { // retry launch
-        oc = this.peek(argsx) // re-read on retry
-        if (oc.launch.options.kind === Kind.Transactional || !oc.isUpToDate) {
-          oc = this.edit()
+        ror = this.peek(argsx) // re-read on retry
+        if (ror.launch.options.kind === Kind.Transactional || !ror.isUpToDate) {
+          ror = this.edit()
           if (Log.isOn && Log.opt.operation)
-            Log.write('║', '  o', `${oc.launch.why()}`)
-          oc.launch.proceed(this.objectHandle.proxy, argsx)
+            Log.write('║', '  o', `${ror.launch.why()}`)
+          ror.launch.proceed(this.objectHandle.proxy, argsx)
         }
       }
-      return oc.launch.result
+      return ror.launch.result
     }, args)
-    oc.launch.result = result
-    return oc
+    ror.launch.result = result
+    return ror
   }
 
   private static markObsolete(self: Reaction): void {
-    const oc = self.peek(undefined)
-    const ctx = oc.changeset
-    oc.launch.markObsoleteDueTo(oc.launch, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
+    const ror = self.peek(undefined)
+    const ctx = ror.changeset
+    ror.launch.markObsoleteDueTo(ror.launch, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
   }
 }
 
