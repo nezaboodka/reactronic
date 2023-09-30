@@ -35,19 +35,19 @@ export class OperationController implements Controller<any> {
   get options(): MemberOptions { return this.peek(undefined).launch.options }
   get unobservable(): any { return this.peek(undefined).launch.content }
   get args(): ReadonlyArray<any> { return this.use().launch.args }
-  get result(): any { return this.useOrLaunch(true, undefined).content }
+  get result(): any { return this.reuseOrRelaunch(true, undefined).content }
   get error(): boolean { return this.use().launch.error }
   get stamp(): number { return this.use().snapshot.changeset.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
   markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.objectHandle, this.memberName)})` : 'markObsolete()' }, OperationController.markObsolete, this) }
-  pullLastResult(args?: any[]): any { return this.useOrLaunch(true, args).content }
+  pullLastResult(args?: any[]): any { return this.reuseOrRelaunch(true, args).content }
 
   constructor(h: ObjectHandle, m: MemberName) {
     this.objectHandle = h
     this.memberName = m
   }
 
-  useOrLaunch(weak: boolean, args: any[] | undefined): Launch {
+  reuseOrRelaunch(weak: boolean, args: any[] | undefined): Launch {
     let oc: OperationContext = this.peek(args)
     const ctx = oc.changeset
     const launch: Launch = oc.launch
@@ -384,7 +384,7 @@ class Launch extends ObservableValue implements Observer {
     if (now || hold < 0) {
       if (this.isNotUpToDate()) {
         try {
-          const launch: Launch = this.controller.useOrLaunch(false, undefined)
+          const launch: Launch = this.controller.reuseOrRelaunch(false, undefined)
           if (launch.result instanceof Promise)
             launch.result.catch(error => {
               if (launch.options.kind === Kind.Reactive)
@@ -720,7 +720,7 @@ class Launch extends ObservableValue implements Observer {
   private static createOperation(h: ObjectHandle, m: MemberName, options: OptionsImpl): F<any> {
     const ctl = new OperationController(h, m)
     const operation: F<any> = (...args: any[]): any => {
-      return ctl.useOrLaunch(false, args).result
+      return ctl.reuseOrRelaunch(false, args).result
     }
     Meta.set(operation, Meta.Controller, ctl)
     return operation
