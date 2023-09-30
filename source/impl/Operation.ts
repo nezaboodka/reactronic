@@ -155,11 +155,11 @@ export class OperationController implements Controller<any> {
     const os: ObjectSnapshot = ctx.getEditableObjectSnapshot(h, m, Meta.Handle, this)
     let launch: Launch = this.acquireFromSnapshot(os, undefined)
     if (launch.changeset !== os.changeset) {
-      const reLaunch = new Launch(this, os.changeset, launch)
-      os.data[m] = reLaunch.reenterOver(launch)
+      const relaunch = new Launch(this, os.changeset, launch)
+      os.data[m] = relaunch.reenterOver(launch)
       ctx.bumpBy(os.former.snapshot.changeset.timestamp)
-      Changeset.markEdited(launch, reLaunch, true, os, m, h)
-      launch = reLaunch
+      Changeset.markEdited(launch, relaunch, true, os, m, h)
+      launch = relaunch
     }
     return { launch, isUpToDate: true, changeset: ctx, snapshot: os }
   }
@@ -174,18 +174,18 @@ export class OperationController implements Controller<any> {
         launch = Transaction.run<Launch>({ hint, separation, token: this }, (): Launch => {
           const h = this.objectHandle
           let r: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
-          let reLaunch = r.data[m] as Launch
-          if (reLaunch.controller !== this) {
+          let relaunch = r.data[m] as Launch
+          if (relaunch.controller !== this) {
             r = Changeset.edit().getEditableObjectSnapshot(h, m, Meta.Handle, this)
-            const t = new Launch(this, r.changeset, reLaunch)
+            const t = new Launch(this, r.changeset, relaunch)
             if (args)
               t.args = args
             t.cause = BOOT_CAUSE
             r.data[m] = t
-            Changeset.markEdited(reLaunch, t, true, r, m, h)
-            reLaunch = t
+            Changeset.markEdited(relaunch, t, true, r, m, h)
+            relaunch = t
           }
-          return reLaunch
+          return relaunch
         })
       }
       else {
