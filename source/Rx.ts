@@ -38,7 +38,7 @@ export class Rx {
 // Operators
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return Reaction.runWithinGivenLaunch<T>(undefined, func, ...args)
+  return Reaction.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
 export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {

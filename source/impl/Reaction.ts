@@ -61,7 +61,7 @@ export class Reaction implements AbstractReaction<any> {
         (opts.kind === Kind.Cached && (oc.snapshot.changeset.sealed ||
           oc.snapshot.former.snapshot !== EMPTY_SNAPSHOT))
       const token = opts.noSideEffects ? this : undefined
-      const oc2 = this.run(oc, separation, opts, token, args)
+      const oc2 = this.relaunch(oc, separation, opts, token, args)
       const ctx2 = oc2.launch.changeset
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         oc = oc2
@@ -96,7 +96,7 @@ export class Reaction implements AbstractReaction<any> {
     return launch.options
   }
 
-  static runWithinGivenLaunch<T>(launch: Launch | undefined, func: F<T>, ...args: any[]): T {
+  static proceedWithinGivenLaunch<T>(launch: Launch | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined
     const outer = Launch.current
     try {
@@ -202,7 +202,7 @@ export class Reaction implements AbstractReaction<any> {
     return launch
   }
 
-  private run(existing: ReuseOrRelaunchContext, separation: SeparationMode, options: MemberOptions, token: any, args: any[] | undefined): ReuseOrRelaunchContext {
+  private relaunch(existing: ReuseOrRelaunchContext, separation: SeparationMode, options: MemberOptions, token: any, args: any[] | undefined): ReuseOrRelaunchContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.objectHandle, this.memberName)}`
     let oc = existing
@@ -212,7 +212,7 @@ export class Reaction implements AbstractReaction<any> {
         oc = this.edit()
         if (Log.isOn && Log.opt.operation)
           Log.write('║', '  o', `${oc.launch.why()}`)
-        oc.launch.run(this.objectHandle.proxy, argsx)
+        oc.launch.proceed(this.objectHandle.proxy, argsx)
       }
       else { // retry launch
         oc = this.peek(argsx) // re-read on retry
@@ -220,7 +220,7 @@ export class Reaction implements AbstractReaction<any> {
           oc = this.edit()
           if (Log.isOn && Log.opt.operation)
             Log.write('║', '  o', `${oc.launch.why()}`)
-          oc.launch.run(this.objectHandle.proxy, argsx)
+          oc.launch.proceed(this.objectHandle.proxy, argsx)
         }
       }
       return oc.launch.result
@@ -318,7 +318,7 @@ class Launch extends ObservableValue implements Observer {
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, '║', '‾\\', `${this.hint()} - step in  `, 0, '        │')
       const started = Date.now()
-      const result = Reaction.runWithinGivenLaunch<T>(this, func, ...args)
+      const result = Reaction.proceedWithinGivenLaunch<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
@@ -329,12 +329,12 @@ class Launch extends ObservableValue implements Observer {
     return wrappedForOperation
   }
 
-  run(proxy: any, args: any[] | undefined): void {
+  proceed(proxy: any, args: any[] | undefined): void {
     if (args)
       this.args = args
     this.obsoleteSince = MAX_REVISION
     if (!this.error)
-      Reaction.runWithinGivenLaunch<void>(this, Launch.run, this, proxy)
+      Reaction.proceedWithinGivenLaunch<void>(this, Launch.proceed, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
@@ -450,7 +450,7 @@ class Launch extends ObservableValue implements Observer {
 
   // Internal
 
-  private static run(launch: Launch, proxy: any): void {
+  private static proceed(launch: Launch, proxy: any): void {
     launch.enter()
     try {
       launch.result = launch.options.getter.call(proxy, ...launch.args)
@@ -512,7 +512,7 @@ class Launch extends ObservableValue implements Observer {
       hint: 'Monitor.enter',
       separation: 'isolated',
       logging: Log.isOn && Log.opt.monitor ? undefined : Log.global }
-    Reaction.runWithinGivenLaunch<void>(undefined, Transaction.run, options,
+    Reaction.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
       MonitorImpl.enter, mon, this.transaction)
   }
 
@@ -523,7 +523,7 @@ class Launch extends ObservableValue implements Observer {
           hint: 'Monitor.leave',
           separation: 'isolated',
           logging: Log.isOn && Log.opt.monitor ? undefined : Log.DefaultLevel }
-        Reaction.runWithinGivenLaunch<void>(undefined, Transaction.run, options,
+        Reaction.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
           MonitorImpl.leave, mon, this.transaction)
       }
       this.transaction.whenFinished().then(leave, leave)
@@ -652,10 +652,10 @@ class Launch extends ObservableValue implements Observer {
     for (const r of reactive)
       queue.push(r)
     if (isReactiveLoopRequired)
-      Reaction.runWithinGivenLaunch<void>(undefined, Launch.runQueuedReactiveLoop)
+      Reaction.proceedWithinGivenLaunch<void>(undefined, Launch.runQueuedReactiveFunctions)
   }
 
-  private static runQueuedReactiveLoop(): void {
+  private static runQueuedReactiveFunctions(): void {
     const queue = Launch.queuedReactiveFunctions
     let i = 0
     while (i < queue.length) {
