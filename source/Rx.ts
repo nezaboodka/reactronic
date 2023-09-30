@@ -38,7 +38,7 @@ export class Rx {
 // Operators
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return OperationController.runWithin<T>(undefined, func, ...args)
+  return OperationController.launchWithin<T>(undefined, func, ...args)
 }
 
 export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
