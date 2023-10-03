@@ -12,13 +12,13 @@ import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options
 import { Meta, ObjectHandle } from './impl/Data.js'
 import { Changeset } from './impl/Changeset.js'
 import { Mvcc } from './impl/Mvcc.js'
-import { Reaction } from './impl/Reaction.js'
+import { ReactionImpl } from './impl/Reaction.js'
 
 export class Rx {
-  static why(brief: boolean = false): string { return brief ? Reaction.briefWhy() : Reaction.why() }
-  static getReaction<T>(method: F<T>): AbstractReaction<T> { return Reaction.getControllerOf(method) }
+  static why(brief: boolean = false): string { return brief ? ReactionImpl.briefWhy() : ReactionImpl.why() }
+  static getReaction<T>(method: F<T>): AbstractReaction<T> { return ReactionImpl.getControllerOf(method) }
   static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Rx.getReaction(method as any as F<T>).pullLastResult(args) }
-  static configureCurrentOperation(options: Partial<MemberOptions>): MemberOptions { return Reaction.configureImpl(undefined, options) }
+  static configureCurrentOperation(options: Partial<MemberOptions>): MemberOptions { return ReactionImpl.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Mvcc.setObjectOptions(obj, options) }
   static getRevisionOf(obj: any): number { return obj[Meta.Revision] }
   static takeSnapshot<T>(obj: T): T { return Changeset.takeSnapshot(obj) }
@@ -38,7 +38,7 @@ export class Rx {
 // Operators
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return Reaction.proceedWithinGivenLaunch<T>(undefined, func, ...args)
+  return ReactionImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
 export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {

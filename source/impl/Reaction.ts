@@ -27,11 +27,11 @@ type ReuseOrRelaunchContext = {
   readonly snapshot: ObjectSnapshot
 }
 
-export class Reaction implements AbstractReaction<any> {
+export class ReactionImpl implements AbstractReaction<any> {
   readonly objectHandle: ObjectHandle
   readonly memberName: MemberName
 
-  configure(options: Partial<MemberOptions>): MemberOptions { return Reaction.configureImpl(this, options) }
+  configure(options: Partial<MemberOptions>): MemberOptions { return ReactionImpl.configureImpl(this, options) }
   get options(): MemberOptions { return this.peek(undefined).launch.options }
   get unobservable(): any { return this.peek(undefined).launch.content }
   get args(): ReadonlyArray<any> { return this.use().launch.args }
@@ -39,7 +39,7 @@ export class Reaction implements AbstractReaction<any> {
   get error(): boolean { return this.use().launch.error }
   get stamp(): number { return this.use().snapshot.changeset.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
-  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.objectHandle, this.memberName)})` : 'markObsolete()' }, Reaction.markObsolete, this) }
+  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.objectHandle, this.memberName)})` : 'markObsolete()' }, ReactionImpl.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.reuseOrRelaunch(true, args).content }
 
   constructor(h: ObjectHandle, m: MemberName) {
@@ -82,7 +82,7 @@ export class Reaction implements AbstractReaction<any> {
     return ctl
   }
 
-  static configureImpl(self: Reaction | undefined, options: Partial<MemberOptions>): MemberOptions {
+  static configureImpl(self: ReactionImpl | undefined, options: Partial<MemberOptions>): MemberOptions {
     let launch: Launch | undefined
     if (self)
       launch = self.edit().launch
@@ -229,7 +229,7 @@ export class Reaction implements AbstractReaction<any> {
     return ror
   }
 
-  private static markObsolete(self: Reaction): void {
+  private static markObsolete(self: ReactionImpl): void {
     const ror = self.peek(undefined)
     const ctx = ror.changeset
     ror.launch.markObsoleteDueTo(ror.launch, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
@@ -245,7 +245,7 @@ class Launch extends MvccValue implements Observer {
 
   readonly margin: number
   readonly transaction: Transaction
-  readonly reaction: Reaction
+  readonly reaction: ReactionImpl
   readonly changeset: AbstractChangeset
   observables: Map<MvccValue, Subscription> | undefined
   options: OptionsImpl
@@ -258,7 +258,7 @@ class Launch extends MvccValue implements Observer {
   obsoleteSince: number
   successor: Launch | undefined
 
-  constructor(reaction: Reaction, changeset: AbstractChangeset, former: Launch | OptionsImpl) {
+  constructor(reaction: ReactionImpl, changeset: AbstractChangeset, former: Launch | OptionsImpl) {
     super(undefined)
     this.margin = Launch.current ? Launch.current.margin + 1 : 1
     this.transaction = Transaction.current
@@ -318,7 +318,7 @@ class Launch extends MvccValue implements Observer {
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, '║', '‾\\', `${this.hint()} - step in  `, 0, '        │')
       const started = Date.now()
-      const result = Reaction.proceedWithinGivenLaunch<T>(this, func, ...args)
+      const result = ReactionImpl.proceedWithinGivenLaunch<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
@@ -334,7 +334,7 @@ class Launch extends MvccValue implements Observer {
       this.args = args
     this.obsoleteSince = MAX_REVISION
     if (!this.error)
-      Reaction.proceedWithinGivenLaunch<void>(this, Launch.proceed, this, proxy)
+      ReactionImpl.proceedWithinGivenLaunch<void>(this, Launch.proceed, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
@@ -512,7 +512,7 @@ class Launch extends MvccValue implements Observer {
       hint: 'Monitor.enter',
       separation: 'isolated',
       logging: Log.isOn && Log.opt.monitor ? undefined : Log.global }
-    Reaction.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
+    ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
       MonitorImpl.enter, mon, this.transaction)
   }
 
@@ -523,7 +523,7 @@ class Launch extends MvccValue implements Observer {
           hint: 'Monitor.leave',
           separation: 'isolated',
           logging: Log.isOn && Log.opt.monitor ? undefined : Log.DefaultLevel }
-        Reaction.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
+        ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
           MonitorImpl.leave, mon, this.transaction)
       }
       this.transaction.whenFinished().then(leave, leave)
@@ -652,7 +652,7 @@ class Launch extends MvccValue implements Observer {
     for (const r of reactive)
       queue.push(r)
     if (isReactiveLoopRequired)
-      Reaction.proceedWithinGivenLaunch<void>(undefined, Launch.runQueuedReactiveFunctions)
+      ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Launch.runQueuedReactiveFunctions)
   }
 
   private static runQueuedReactiveFunctions(): void {
@@ -718,7 +718,7 @@ class Launch extends MvccValue implements Observer {
   }
 
   private static createOperation(h: ObjectHandle, m: MemberName, options: OptionsImpl): F<any> {
-    const rx = new Reaction(h, m)
+    const rx = new ReactionImpl(h, m)
     const operation: F<any> = (...args: any[]): any => {
       return rx.reuseOrRelaunch(false, args).result
     }
@@ -730,7 +730,7 @@ class Launch extends MvccValue implements Observer {
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
     let launch: Launch | undefined = initial[m]
-    const rx = launch ? launch.reaction : new Reaction(EMPTY_HANDLE, m)
+    const rx = launch ? launch.reaction : new ReactionImpl(EMPTY_HANDLE, m)
     const opts = launch ? launch.options : OptionsImpl.INITIAL
     initial[m] = launch = new Launch(rx, EMPTY_SNAPSHOT.changeset, new OptionsImpl(getter, setter, opts, options, implicit))
     // Add to the list if it's a reactive function
@@ -765,10 +765,10 @@ class Launch extends MvccValue implements Observer {
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, 'rWhy', {
-        get: Reaction.why, configurable: false, enumerable: false,
+        get: ReactionImpl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(globalThis, 'rBriefWhy', {
-        get: Reaction.briefWhy, configurable: false, enumerable: false,
+        get: ReactionImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -776,10 +776,10 @@ class Launch extends MvccValue implements Observer {
     }
     try {
       Object.defineProperty(global, 'rWhy', {
-        get: Reaction.why, configurable: false, enumerable: false,
+        get: ReactionImpl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(global, 'rBriefWhy', {
-        get: Reaction.briefWhy, configurable: false, enumerable: false,
+        get: ReactionImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
