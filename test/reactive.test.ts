@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, Transaction, Rx, reactive, transactional, raw } from '../source/api.js'
+import { ObservableObject, Rx, reactive, transactional, raw, transaction } from '../source/api.js'
 import { TestsLoggingLevel } from './brief.js'
 
 export class ReactiveDemo extends ObservableObject {
@@ -42,7 +42,7 @@ export class ReactiveDemo extends ObservableObject {
 
 test('reactive', t => {
   Rx.setLoggingMode(true, TestsLoggingLevel)
-  const demo = Transaction.run(null, () => new ReactiveDemo())
+  const demo = transaction(() => new ReactiveDemo())
   t.is(demo.title, 'Title/1')
   t.is(demo.content, 'Content/1')
   t.is(demo.rev, 6)

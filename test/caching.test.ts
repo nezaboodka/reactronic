@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, cached, Transaction, Rx, reactive, raw, options } from '../source/api.js'
+import { ObservableObject, cached, Rx, reactive, raw, options, transaction } from '../source/api.js'
 import { TestsLoggingLevel } from './brief.js'
 
 export class DemoBase extends ObservableObject {
@@ -63,7 +63,7 @@ export class Demo extends DemoBase {
 
 test('caching', t => {
   Rx.setLoggingMode(true, TestsLoggingLevel)
-  const demo = Transaction.run(null, () => {
+  const demo = transaction(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), 'Demo')
     // d.title = 'Demo+'

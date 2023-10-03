@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Rx, ObservableObject } from '../source/api.js'
+import { Rx, ObservableObject, transaction } from '../source/api.js'
 import { TestsLoggingLevel } from './brief.js'
 
 class Serializable extends ObservableObject {
@@ -16,7 +16,7 @@ class Serializable extends ObservableObject {
 
 test('serializing', t => {
   Rx.setLoggingMode(true, TestsLoggingLevel)
-  const serializable = Transaction.run(null, () => {
+  const serializable = transaction(() => {
     const s1 = new Serializable()
     s1.text = 's1'
     const s2 = new Serializable()

@@ -12,6 +12,7 @@ import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options
 import { Meta, ObjectHandle } from './impl/Data.js'
 import { Changeset } from './impl/Changeset.js'
 import { Mvcc } from './impl/Mvcc.js'
+import { Transaction } from './impl/Transaction.js'
 import { ReactionImpl } from './impl/Reaction.js'
 
 export class Rx {
@@ -36,6 +37,10 @@ export class Rx {
 }
 
 // Operators
+
+export function transaction<T>(action: F<T>, ...args: any[]): T {
+  return Transaction.run(null, action, ...args)
+}
 
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
   return ReactionImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, raw, reactive, cached, Rx, LoggingOptions } from '../source/api.js'
+import { ObservableObject, Transaction, raw, reactive, cached, Rx, LoggingOptions, transaction } from '../source/api.js'
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -37,7 +37,7 @@ class RxComponent<V> extends ObservableObject {
   @raw cycle: number = 0
   @raw refresh: (next: ReactState<V>) => void = nop
   @raw readonly unmount = (): (() => void) => {
-    return (): void => { Transaction.run(null, Rx.dispose, this) }
+    return (): void => { transaction(Rx.dispose, this) }
   }
 
   static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): RxComponent<V> {

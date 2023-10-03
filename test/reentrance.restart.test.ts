@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Reentrance, Rx, all, pause } from '../source/api.js'
+import { Reentrance, Rx, all, pause, transaction } from '../source/api.js'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance.js'
 import { TestsLoggingLevel } from './brief.js'
 
@@ -31,7 +31,7 @@ const expected: Array<string> = [
 
 test('reentrance.restart', async t => {
   Rx.setLoggingMode(true, TestsLoggingLevel)
-  const app = Transaction.run(null, () => {
+  const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     Rx.getReaction(a.model.load).configure({reentrance: Reentrance.WaitAndRestart})
     return a
@@ -51,7 +51,7 @@ test('reentrance.restart', async t => {
     t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
     await pause(300)
-    Transaction.run(null, () => {
+    transaction(() => {
       Rx.dispose(app)
       Rx.dispose(app.model)
     })

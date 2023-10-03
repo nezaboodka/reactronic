@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Reentrance, Rx, pause } from '../source/api.js'
+import { Reentrance, Rx, pause, transaction } from '../source/api.js'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance.js'
 import { TestsLoggingLevel } from './brief.js'
 
@@ -27,7 +27,7 @@ const expected: Array<string> = [
 
 test('reentrance.error', async t => {
   Rx.setLoggingMode(true, TestsLoggingLevel)
-  const app = Transaction.run(null, () => {
+  const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     Rx.getReaction(a.model.load).configure({reentrance: Reentrance.PreventWithError})
     return a
@@ -39,7 +39,7 @@ test('reentrance.error', async t => {
     t.is(app.observableField, 'observable field')
     t.throws(() => app.observableField = 'observable field', { message: 'observable property AsyncDemoView.observableField #24 can only be modified inside transaction' })
     t.throws(() => Rx.getReaction(app.print).configure({ logging: TestsLoggingLevel }))
-    Transaction.run(null, () => {
+    transaction(() => {
       Rx.getReaction(app.print).configure({ logging: TestsLoggingLevel })
     })
     await app.print() // initial reactive run
@@ -60,7 +60,7 @@ test('reentrance.error', async t => {
     const r = Rx.pullLastResult(app.render)
     t.is(r && r.length, 2)
     await pause(300)
-    Transaction.run(null, () => {
+    transaction(() => {
       Rx.dispose(app)
       Rx.dispose(app.model)
     })

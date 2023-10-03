@@ -5,7 +5,9 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
+import { F } from 'util/Utils.js'
 import { MemberOptions } from './Options.js'
+import { reactive } from 'Rx.js'
 
 export interface AbstractReaction<T> {
   readonly options: MemberOptions
@@ -18,4 +20,15 @@ export interface AbstractReaction<T> {
   configure(options: Partial<MemberOptions>): MemberOptions
   markObsolete(): void
   pullLastResult(args?: any[]): T | undefined
+}
+
+export class Reaction<T>
+{
+  constructor(protected action: F<T>) {
+  }
+
+  @reactive
+  protected launch(): T {
+    return this.action()
+  }
 }
