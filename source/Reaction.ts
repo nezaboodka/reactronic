@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { F } from 'util/Utils.js'
+import { F } from './util/Utils.js'
 import { MemberOptions } from './Options.js'
 import { reactive } from 'Rx.js'
 
