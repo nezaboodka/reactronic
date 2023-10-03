@@ -10,7 +10,7 @@ import { Log, misuse } from '../util/Dbg.js'
 import { MemberOptions, Kind, Reentrance } from '../Options.js'
 import { LoggingOptions, ProfilingOptions } from '../Logging.js'
 import { AbstractReaction } from '../Reaction.js'
-import { ObjectSnapshot, MemberName, ObjectHandle, ObservableValue, Meta, SeparationMode } from './Data.js'
+import { ObjectSnapshot, MemberName, ObjectHandle, MvccValue, Meta, SeparationMode } from './Data.js'
 import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset.js'
 import { Journal } from './Journal.js'
 import { Monitor } from './Monitor.js'
@@ -124,7 +124,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       const cs = Changeset.current()
       const os: ObjectSnapshot = cs.getObjectSnapshot(h, m)
       result = os.data[m]
-      if (result instanceof ObservableValue && !result.isOperation) {
+      if (result instanceof MvccValue && !result.isOperation) {
         if (this.isObservable)
           Changeset.markUsed(result, os, m, h, Kind.Plain, false)
         result = result.content
@@ -140,12 +140,12 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   set(h: ObjectHandle, m: MemberName, value: any, receiver: any): boolean {
     const os: ObjectSnapshot = Changeset.edit().getEditableObjectSnapshot(h, m, value)
     if (os !== EMPTY_SNAPSHOT) {
-      let curr = os.data[m] as ObservableValue
+      let curr = os.data[m] as MvccValue
       if (curr !== undefined || (os.former.snapshot.changeset === EMPTY_SNAPSHOT.changeset && (m in h.data) === false)) {
         if (curr === undefined || curr.content !== value || Mvcc.sensitivity) {
           const existing = curr?.content
           if (os.former.snapshot.data[m] === curr) {
-            curr = os.data[m] = new ObservableValue(value)
+            curr = os.data[m] = new MvccValue(value)
             Changeset.markEdited(existing, value, true, os, m, h)
           }
           else {
@@ -188,7 +188,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     const result = []
     for (const m of Object.getOwnPropertyNames(os.data)) {
       const value = os.data[m]
-      if (!(value instanceof ObservableValue) || !value.isOperation)
+      if (!(value instanceof MvccValue) || !value.isOperation)
         result.push(m)
     }
     return result
@@ -196,7 +196,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
 
   static decorateData(isObservable: boolean, proto: any, member: MemberName): any {
     if (isObservable) {
-      Meta.acquire(proto, Meta.Initial)[member] = new ObservableValue(undefined)
+      Meta.acquire(proto, Meta.Initial)[member] = new MvccValue(undefined)
       const get = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
         return Mvcc.observable.get(h, member, this)
@@ -260,7 +260,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       h = new ObjectHandle(obj, obj, Mvcc.observable, os, obj.constructor.name)
       Meta.set(os.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
-      Meta.set(os.data, Meta.Revision, new ObservableValue(1))
+      Meta.set(os.data, Meta.Revision, new MvccValue(1))
     }
     return h
   }

@@ -18,9 +18,9 @@ export interface AbstractChangeset {
   readonly sealed: boolean
 }
 
-// ObservableValue & Observer
+// MvccValue & Observer
 
-export class ObservableValue {
+export class MvccValue {
   content: any
   observers?: Set<Observer>
   get isOperation(): boolean { return false }
@@ -32,10 +32,10 @@ export type SeparationMode = boolean | 'isolated' | 'disposal'
 
 export interface Observer {
   readonly order: number
-  readonly observables: Map<ObservableValue, Subscription> | undefined
+  readonly observables: Map<MvccValue, Subscription> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(observable: ObservableValue, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Array<Observer>): void
+  markObsoleteDueTo(observable: MvccValue, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Array<Observer>): void
   relaunchIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 
@@ -66,14 +66,14 @@ export class ObjectSnapshot {
   }
 
   get revision(): number {
-    return (this.data[Meta.Revision] as ObservableValue).content
+    return (this.data[Meta.Revision] as MvccValue).content
   }
 
   get disposed(): boolean { return this.revision < 0 }
   set disposed(value: boolean) {
     const rev = this.revision
     if (rev < 0 !== value)
-      (this.data[Meta.Revision] as ObservableValue).content = ~rev
+      (this.data[Meta.Revision] as MvccValue).content = ~rev
   }
 }
 
