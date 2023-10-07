@@ -20,12 +20,12 @@ export interface AbstractChangeset {
 
 // MvccValue & Observer
 
-export class MvccValue {
-  content: any
+export class MvccValue<T = any> {
+  content: T
   observers?: Set<Observer>
   get isOperation(): boolean { return false }
   get originSnapshotId(): number | undefined { return 0 }
-  constructor(content: any) { this.content = content }
+  constructor(content: T) { this.content = content }
 }
 
 export type SeparationMode = boolean | 'isolated' | 'disposal'
