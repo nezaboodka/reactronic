@@ -7,7 +7,7 @@
 
 import { F } from './util/Utils.js'
 import { MemberOptions } from './Options.js'
-import { reactive } from 'Rx.js'
+import { reactive } from './Rx.js'
 
 export interface AbstractReaction<T> {
   readonly options: MemberOptions
