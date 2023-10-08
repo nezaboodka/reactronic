@@ -9,7 +9,7 @@ import { F } from '../util/Utils.js'
 import { Log, misuse } from '../util/Dbg.js'
 import { MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options.js'
 import { AbstractReaction } from '../Reaction.js'
-import { ObjectSnapshot, MemberName, ObjectHandle, MvccValue, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from './Data.js'
+import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from './Data.js'
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Changeset.js'
 import { Transaction } from './Transaction.js'
 import { Monitor, MonitorImpl } from './Monitor.js'
@@ -238,7 +238,7 @@ export class ReactionImpl implements AbstractReaction<any> {
 
 // Operation
 
-class Launch extends MvccValue implements Observer {
+class Launch extends ValueSnapshot implements Observer {
   static current?: Launch = undefined
   static queuedReactiveFunctions: Array<Observer> = []
   static deferredReactiveFunctions: Array<Launch> = []
@@ -247,7 +247,7 @@ class Launch extends MvccValue implements Observer {
   readonly transaction: Transaction
   readonly reaction: ReactionImpl
   readonly changeset: AbstractChangeset
-  observables: Map<MvccValue, Subscription> | undefined
+  observables: Map<ValueSnapshot, Subscription> | undefined
   options: OptionsImpl
   cause: string | undefined
   args: any[]
@@ -264,7 +264,7 @@ class Launch extends MvccValue implements Observer {
     this.transaction = Transaction.current
     this.reaction = reaction
     this.changeset = changeset
-    this.observables = new Map<MvccValue, Subscription>()
+    this.observables = new Map<ValueSnapshot, Subscription>()
     if (former instanceof Launch) {
       this.options = former.options
       this.args = former.args
@@ -339,7 +339,7 @@ class Launch extends MvccValue implements Observer {
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(observable: MvccValue, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, obsolete: Observer[]): void {
+  markObsoleteDueTo(observable: ValueSnapshot, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, obsolete: Observer[]): void {
     if (this.observables !== undefined) { // if not yet marked as obsolete
       const skip = !observable.isOperation &&
         changeset === this.changeset /* &&
@@ -543,7 +543,7 @@ class Launch extends MvccValue implements Observer {
       x.relaunchIfNotUpToDate(true, true)
   }
 
-  private static markUsed(observable: MvccValue, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean): void {
+  private static markUsed(observable: ValueSnapshot, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean): void {
     if (kind !== Kind.Transactional) {
       const launch: Launch | undefined = Launch.current // alias
       if (launch && launch.options.kind !== Kind.Transactional &&
@@ -602,7 +602,7 @@ class Launch extends MvccValue implements Observer {
     if (obsolete !== undefined) {
       // Propagate change to reactive functions
       const former = os.former.snapshot.data[m]
-      if (former !== undefined && former instanceof MvccValue) {
+      if (former !== undefined && former instanceof ValueSnapshot) {
         const why = `T${os.changeset.id}[${os.changeset.hint}]`
         if (former instanceof Launch) {
           if ((former.obsoleteSince === MAX_REVISION || former.obsoleteSince <= 0)) {
@@ -634,7 +634,7 @@ class Launch extends MvccValue implements Observer {
           curr.unsubscribeFromAllObservables()
       }
     }
-    else if (curr instanceof MvccValue && curr.observers) {
+    else if (curr instanceof ValueSnapshot && curr.observers) {
       // // Unsubscribe from own-changed subscriptions
       // curr.observers.forEach(o => {
       //   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -677,7 +677,7 @@ class Launch extends MvccValue implements Observer {
     this.observables = undefined
   }
 
-  private subscribeTo(observable: MvccValue, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
+  private subscribeTo(observable: ValueSnapshot, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
     const ok = Launch.canSubscribeTo(observable, os, m, h, timestamp)
     if (ok) {
       // Performance tracking
@@ -708,7 +708,7 @@ class Launch extends MvccValue implements Observer {
     return ok // || subscription.next === r
   }
 
-  private static canSubscribeTo(observable: MvccValue, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
+  private static canSubscribeTo(observable: ValueSnapshot, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
     const observableHead = h.head.data[m]
     let result = observable === observableHead || (
       !os.changeset.sealed && os.former.snapshot.data[m] === observableHead)

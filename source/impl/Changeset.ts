@@ -12,7 +12,7 @@ import { SealedArray } from '../util/SealedArray.js'
 import { SealedMap } from '../util/SealedMap.js'
 import { SealedSet } from '../util/SealedSet.js'
 import { Kind, SnapshotOptions } from '../Options.js'
-import { AbstractChangeset, ObjectSnapshot, MemberName, ObjectHandle, MvccValue, Observer, Meta } from './Data.js'
+import { AbstractChangeset, ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, Meta } from './Data.js'
 
 export const MAX_REVISION = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_REVISION = MAX_REVISION - 1
@@ -24,7 +24,7 @@ Object.defineProperty(ObjectHandle.prototype, '#this#', {
     const data = Changeset.current().getObjectSnapshot(this, '#this#').data
     for (const m in data) {
       const v = data[m]
-      if (v instanceof MvccValue)
+      if (v instanceof ValueSnapshot)
         result[m] = v.content
       else if (v === Meta.Raw)
         result[m] = this.data[m]
@@ -73,7 +73,7 @@ export class Changeset implements AbstractChangeset {
   // To be redefined by transaction implementation
   static current: () => Changeset = UNDEF
   static edit: () => Changeset = UNDEF
-  static markUsed: (observable: MvccValue, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean) => void = UNDEF
+  static markUsed: (observable: ValueSnapshot, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean) => void = UNDEF
   static markEdited: (oldValue: any, newValue: any, edited: boolean, os: ObjectSnapshot, m: MemberName, h: ObjectHandle) => void = UNDEF
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (changeset: Changeset): void => { /* nop */ }
@@ -112,7 +112,7 @@ export class Changeset implements AbstractChangeset {
         const revision = m === Meta.Handle ? 1 : os.revision + 1
         const data = { ...m === Meta.Handle ? value : os.data }
         Meta.set(data, Meta.Handle, h)
-        Meta.set(data, Meta.Revision, new MvccValue(revision))
+        Meta.set(data, Meta.Revision, new ValueSnapshot(revision))
         os = new ObjectSnapshot(this, os, data)
         this.items.set(h, os)
         h.editing = os
@@ -285,7 +285,7 @@ export class Changeset implements AbstractChangeset {
 
   static sealObjectSnapshot(h: ObjectHandle, os: ObjectSnapshot): void {
     if (!os.disposed)
-      os.changes.forEach((o, m) => Changeset.sealMvccValue(os.data[m], m, h.proxy.constructor.name))
+      os.changes.forEach((o, m) => Changeset.sealValueSnapshot(os.data[m], m, h.proxy.constructor.name))
     else
       for (const m in os.former.snapshot.data)
         os.data[m] = Meta.Undefined
@@ -293,8 +293,8 @@ export class Changeset implements AbstractChangeset {
       Changeset.freezeObjectSnapshot(os)
   }
 
-  static sealMvccValue(o: MvccValue | symbol, m: MemberName, typeName: string): void {
-    if (o instanceof MvccValue) {
+  static sealValueSnapshot(o: ValueSnapshot | symbol, m: MemberName, typeName: string): void {
+    if (o instanceof ValueSnapshot) {
       const value = o.content
       if (value !== undefined && value !== null) {
         const sealedType = Object.getPrototypeOf(value)[Sealant.SealedType]
@@ -387,13 +387,13 @@ export class Dump {
     return result
   }
 
-  static snapshot2(h: ObjectHandle, s: AbstractChangeset, m?: MemberName, o?: MvccValue): string {
+  static snapshot2(h: ObjectHandle, s: AbstractChangeset, m?: MemberName, o?: ValueSnapshot): string {
     return Dump.obj(h, m, s.timestamp, s.id, o?.originSnapshotId, o?.content ?? Meta.Undefined)
   }
 
   static snapshot(os: ObjectSnapshot, m?: MemberName): string {
     const h = Meta.get<ObjectHandle | undefined>(os.data, Meta.Handle)
-    const value = m !== undefined ? os.data[m] as MvccValue : undefined
+    const value = m !== undefined ? os.data[m] as ValueSnapshot : undefined
     return Dump.obj(h, m, os.changeset.timestamp, os.changeset.id, value?.originSnapshotId)
   }
 
