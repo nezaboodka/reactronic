@@ -303,7 +303,7 @@ function reactive(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only
 function options(value: Partial<MemberOptions>): F<any>
 
-function nonreactive<T>(func: F<T>, ...args: any[]): T
+function unobs<T>(func: F<T>, ...args: any[]): T
 function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // SnapshotOptions, MemberOptions, Kind, Reentrance, Monitor, LoggingOptions, ProfilingOptions
@@ -462,7 +462,7 @@ class Reactronic {
 // function cached(proto, prop, pd) // method only
 // function options(value: Partial<MemberOptions>): F<any>
 
-// function nonreactive<T>(func: F<T>, ...args: any[]): T
+// function unobs<T>(func: F<T>, ...args: any[]): T
 // function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // SnapshotOptions, MemberOptions, Kind, Reentrance, Monitor, LoggingOptions, ProfilingOptions
@@ -561,7 +561,7 @@ class Reactronic {
   охраняемый типом код: Целое
   охраняемая типом подсказка: Текст
 
-  
+
   исполнить<Т>(ф: Ф<Т>, арг: Элементы<Нечто>): Т
   wrap<T>(func: F<T>): F<T>
   зафиксировать()

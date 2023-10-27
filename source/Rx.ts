@@ -42,7 +42,7 @@ export function transaction<T>(action: F<T>, ...args: any[]): T {
   return Transaction.run(null, action, ...args)
 }
 
-export function nonreactive<T>(func: F<T>, ...args: any[]): T {
+export function unobs<T>(func: F<T>, ...args: any[]): T {
   return ReactionImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
@@ -56,7 +56,7 @@ export function raw(proto: object, prop: PropertyKey): any {
   return Mvcc.decorateData(false, proto, prop)
 }
 
-export function observable(proto: object, prop: PropertyKey): any {
+export function obs(proto: object, prop: PropertyKey): any {
   return Mvcc.decorateData(true, proto, prop)
 }
 

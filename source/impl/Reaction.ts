@@ -33,7 +33,7 @@ export class ReactionImpl implements AbstractReaction<any> {
 
   configure(options: Partial<MemberOptions>): MemberOptions { return ReactionImpl.configureImpl(this, options) }
   get options(): MemberOptions { return this.peek(undefined).launch.options }
-  get unobservable(): any { return this.peek(undefined).launch.content }
+  get unobs(): any { return this.peek(undefined).launch.content }
   get args(): ReadonlyArray<any> { return this.use().launch.args }
   get result(): any { return this.reuseOrRelaunch(true, undefined).content }
   get error(): boolean { return this.use().launch.error }
