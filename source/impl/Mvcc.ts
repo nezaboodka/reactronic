@@ -7,9 +7,8 @@
 
 import { UNDEF, F } from '../util/Utils.js'
 import { Log, misuse } from '../util/Dbg.js'
-import { MemberOptions, Kind, Reentrance } from '../Options.js'
+import { AbstractReaction, MemberOptions, Kind, Reentrance } from '../Options.js'
 import { LoggingOptions, ProfilingOptions } from '../Logging.js'
-import { AbstractReaction } from '../Reaction.js'
 import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Meta, SeparationMode } from './Data.js'
 import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset.js'
 import { Journal } from './Journal.js'

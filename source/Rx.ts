@@ -7,8 +7,7 @@
 
 import { F } from './util/Utils.js'
 import { Log } from './util/Dbg.js'
-import { AbstractReaction } from './Reaction.js'
-import { Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options.js'
+import {AbstractReaction, Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options.js'
 import { Meta, ObjectHandle } from './impl/Data.js'
 import { Changeset } from './impl/Changeset.js'
 import { Mvcc } from './impl/Mvcc.js'

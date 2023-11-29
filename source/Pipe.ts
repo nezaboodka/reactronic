@@ -9,12 +9,12 @@
 
 import { ObservableObject } from './impl/Mvcc.js'
 
-export abstract class Buffer<T> extends ObservableObject {
+export abstract class Pipe<T> extends ObservableObject {
   abstract readonly capacity: number
   abstract readonly count: number
   abstract put(...items: T[]): void
   abstract take(count: number): T[]
   // To be continued...
 
-  static create<T>(hint?: string, capacity?: number): Buffer<T> { throw new Error('not implemented') }
+  static create<T>(hint?: string, capacity?: number): Pipe<T> { throw new Error('not implemented') }
 }

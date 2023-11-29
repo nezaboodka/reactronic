@@ -6,25 +6,14 @@
 // automatically licensed under the license referred above.
 
 import { F } from './util/Utils.js'
-import { MemberOptions } from './Options.js'
+import { ObservableObject } from './impl/Mvcc.js'
 import { reactive } from './Rx.js'
 
-export interface AbstractReaction<T> {
-  readonly options: MemberOptions
-  readonly args: ReadonlyArray<any>
-  readonly result: T
-  readonly error: any
-  readonly stamp: number
-  readonly isUpToDate: boolean
 
-  configure(options: Partial<MemberOptions>): MemberOptions
-  markObsolete(): void
-  pullLastResult(args?: any[]): T | undefined
-}
-
-export class Reaction<T>
+export class Reaction<T> extends ObservableObject
 {
   constructor(protected action: F<T>) {
+    super()
   }
 
   @reactive

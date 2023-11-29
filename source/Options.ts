@@ -48,3 +48,18 @@ export enum Reentrance {
   OverwritePrevious = -3, // allow previous to complete, but overwrite it with ignoring any conflicts
   RunSideBySide = -4, // multiple simultaneous operations are allowed
 }
+
+// AbstractReaction
+
+export interface AbstractReaction<T> {
+  readonly options: MemberOptions
+  readonly args: ReadonlyArray<any>
+  readonly result: T
+  readonly error: any
+  readonly stamp: number
+  readonly isUpToDate: boolean
+
+  configure(options: Partial<MemberOptions>): MemberOptions
+  markObsolete(): void
+  pullLastResult(args?: any[]): T | undefined
+}
