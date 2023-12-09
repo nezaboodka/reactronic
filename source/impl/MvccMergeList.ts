@@ -19,14 +19,14 @@ export abstract class ObservableMergeList<T> extends ObservableObject implements
   get isMergeInProgress(): boolean { return this.impl.isMergeInProgress }
 
   lookup(key: string): MergeItem<T> | undefined { return this.impl.lookup(key) }
-  claim(key: string): MergeItem<T> | undefined { return this.impl.claim(key) }
+  specify(key: string): MergeItem<T> | undefined { return this.impl.specify(key) }
   add(instance: T): MergeItem<T> { return this.impl.add(instance) }
   remove(item: MergeItem<T>): void { return this.impl.remove(item) }
   move(item: MergeItem<T>, after: MergeItem<T>): void { this.impl.move(item, after) }
   beginMerge(): void { this.impl.beginMerge() }
   endMerge(error?: unknown): void { this.impl.endMerge(error) }
   resetAddedAndRemovedLists(): void { this.impl.resetAddedAndRemovedLists() }
-  lastClaimedItem(): MergeItem<T> | undefined { return this.impl.lastClaimedItem() }
+  lastSpecifiedItem(): MergeItem<T> | undefined { return this.impl.lastSpecifiedItem() }
 
   items(): Generator<MergeItem<T>> { return this.impl.items() }
   addedItems(reset?: boolean): Generator<MergeItem<T>> { return this.impl.addedItems(reset) }

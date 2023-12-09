@@ -16,14 +16,14 @@ export interface MergeListReader<T> {
   readonly isMergeInProgress: boolean
 
   lookup(key: string): MergeItem<T> | undefined
-  claim(key: string): MergeItem<T> | undefined
+  specify(key: string): MergeItem<T> | undefined
   add(instance: T): MergeItem<T>
   remove(item: MergeItem<T>): void
   move(item: MergeItem<T>, after: MergeItem<T>): void
   beginMerge(): void
   endMerge(error?: unknown): void
   resetAddedAndRemovedLists(): void
-  lastClaimedItem(): MergeItem<T> | undefined
+  lastSpecifiedItem(): MergeItem<T> | undefined
 
   items(): Generator<MergeItem<T>>
   addedItems(reset?: boolean): Generator<MergeItem<T>>
@@ -103,7 +103,7 @@ export class MergeList<T> implements MergeListReader<T> {
     return result
   }
 
-  claim(key: string, resolution?: { isDuplicate: boolean }, error?: string): MergeItem<T> | undefined {
+  specify(key: string, resolution?: { isDuplicate: boolean }, error?: string): MergeItem<T> | undefined {
     const tag = this.tag
     if (tag < 0)
       throw new Error(error ?? 'merge is not in progress')
@@ -209,7 +209,7 @@ export class MergeList<T> implements MergeListReader<T> {
     this.added.reset()
   }
 
-  lastClaimedItem(): MergeItem<T> | undefined {
+  lastSpecifiedItem(): MergeItem<T> | undefined {
     return this.current.last
   }
 

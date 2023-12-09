@@ -26,7 +26,7 @@ test('merge-list', t => {
   // Merge etalon2 with etalon1
   list.beginMerge()
   for (const x of etalon2)
-    if (!list.claim(x))
+    if (!list.specify(x))
       list.add(x)
   list.endMerge()
 
@@ -51,7 +51,7 @@ test('merge-list', t => {
   // Merge back, but with error
   list.beginMerge()
   for (const x of etalon1)
-    if (!list.claim(x))
+    if (!list.specify(x))
       list.add(x)
   t.is(list.count, 4)
   t.is(list.removedCount, 3)
@@ -65,7 +65,7 @@ test('merge-list', t => {
   // Merge back again (success)
   list.beginMerge()
   for (const x of etalon1)
-    if (!list.claim(x))
+    if (!list.specify(x))
       list.add(x)
   t.is(list.count, 4)
   t.is(list.removedCount, 3)

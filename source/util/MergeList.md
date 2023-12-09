@@ -17,7 +17,7 @@ for (const x of example1)
 const example2 = ['Added1', 'Bye', 'End', 'Added2', 'Hello', 'Added3']
 list.beginMerge()
 for (const x of example2) {
-  const existing = list.claim(x) // try to link with an existing item
+  const existing = list.specify(x) // try to link with an existing item
   if (existing) {
     // merge x into existing (when item is an object)
   }
@@ -50,14 +50,14 @@ class MergeList<T> {
   readonly isMergeInProgress: boolean
 
   lookup(key: string): MergeItem<T> | undefined
-  claim(key: string): MergeItem<T> | undefined
+  specify(key: string): MergeItem<T> | undefined
   add(instance: T, keepInAddedItems?: boolean): MergeItem<T>
   remove(item: MergeItem<T>, keepInRemovedItems?: boolean): void
   move(item: MergeItem<T>, after: MergeItem<T>): void
   beginMerge(): void
   endMerge(clearAddedAndRemovedItems: boolean): void
   resetAddedAndRemovedLists(): void
-  lastClaimedItem(): MergeItem<T> | undefined
+  lastSpecifiedItem(): MergeItem<T> | undefined
 
   items(): Generator<MergeItem<T>>
   addedItems(keep?: boolean): Generator<MergeItem<T>>
