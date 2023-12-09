@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { MergeList, MergeItem } from '../source/util/MergeList.js'
+import { MergeList, MergedItem } from '../source/util/MergeList.js'
 
 test('merge-list', t => {
   const etalon1 = ['Hello', 'Welcome', 'Bye', 'End']
@@ -16,7 +16,7 @@ test('merge-list', t => {
   // Basic
   const list = new MergeList<string>(s => s, true)
   for (const x of etalon1)
-    list.add(x)
+    list.mergeAsAdded(x)
 
   t.is(list.count, 4)
   t.is(list.addedCount, 4)
@@ -26,8 +26,8 @@ test('merge-list', t => {
   // Merge etalon2 with etalon1
   list.beginMerge()
   for (const x of etalon2)
-    if (!list.specify(x))
-      list.add(x)
+    if (!list.tryMergeAsExisting(x))
+      list.mergeAsAdded(x)
   list.endMerge()
 
   t.is(list.count, 6)
@@ -51,8 +51,8 @@ test('merge-list', t => {
   // Merge back, but with error
   list.beginMerge()
   for (const x of etalon1)
-    if (!list.specify(x))
-      list.add(x)
+    if (!list.tryMergeAsExisting(x))
+      list.mergeAsAdded(x)
   t.is(list.count, 4)
   t.is(list.removedCount, 3)
   t.is(list.addedCount, 1)
@@ -65,8 +65,8 @@ test('merge-list', t => {
   // Merge back again (success)
   list.beginMerge()
   for (const x of etalon1)
-    if (!list.specify(x))
-      list.add(x)
+    if (!list.tryMergeAsExisting(x))
+      list.mergeAsAdded(x)
   t.is(list.count, 4)
   t.is(list.removedCount, 3)
   t.is(list.addedCount, 1)
@@ -77,7 +77,7 @@ test('merge-list', t => {
   t.true(compare(list.items(), etalon1))
 })
 
-function compare(list: Generator<MergeItem<string>>, array: Array<string>): boolean {
+function compare(list: Generator<MergedItem<string>>, array: Array<string>): boolean {
   let result = true
   let i = 0
   for (const item of list) {

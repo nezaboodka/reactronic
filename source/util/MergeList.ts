@@ -15,30 +15,30 @@ export interface MergeListReader<T> {
   readonly removedCount: number
   readonly isMergeInProgress: boolean
 
-  lookup(key: string): MergeItem<T> | undefined
-  specify(key: string): MergeItem<T> | undefined
-  add(instance: T): MergeItem<T>
-  remove(item: MergeItem<T>): void
-  move(item: MergeItem<T>, after: MergeItem<T>): void
+  lookup(key: string): MergedItem<T> | undefined
+  tryMergeAsExisting(key: string): MergedItem<T> | undefined
+  mergeAsAdded(instance: T): MergedItem<T>
+  mergeAsRemoved(item: MergedItem<T>): void
+  move(item: MergedItem<T>, after: MergedItem<T>): void
   beginMerge(): void
   endMerge(error?: unknown): void
   resetAddedAndRemovedLists(): void
-  lastSpecifiedItem(): MergeItem<T> | undefined
+  lastMergedItem(): MergedItem<T> | undefined
 
-  items(): Generator<MergeItem<T>>
-  addedItems(reset?: boolean): Generator<MergeItem<T>>
-  removedItems(reset?: boolean): Generator<MergeItem<T>>
-  isAdded(item: MergeItem<T>): boolean
-  isMoved(item: MergeItem<T>): boolean
-  isRemoved(item: MergeItem<T>): boolean
-  isCurrent(item: MergeItem<T>): boolean
+  items(): Generator<MergedItem<T>>
+  addedItems(reset?: boolean): Generator<MergedItem<T>>
+  removedItems(reset?: boolean): Generator<MergedItem<T>>
+  isAdded(item: MergedItem<T>): boolean
+  isMoved(item: MergedItem<T>): boolean
+  isRemoved(item: MergedItem<T>): boolean
+  isActual(item: MergedItem<T>): boolean
 }
 
-export interface MergeItem<T> {
+export interface MergedItem<T> {
   readonly instance: T
   // readonly next?: MergeItem<T>
-  readonly prev?: MergeItem<T> // TODO: hide
-  aux?: MergeItem<T> // TODO: hide
+  readonly prev?: MergedItem<T> // TODO: hide
+  aux?: MergedItem<T> // TODO: hide
 }
 
 export class MergeList<T> implements MergeListReader<T> {
@@ -87,8 +87,8 @@ export class MergeList<T> implements MergeListReader<T> {
     return this.tag > 0
   }
 
-  lookup(key: string | undefined): MergeItem<T> | undefined {
-    let result: MergeItem<T> | undefined = undefined
+  lookup(key: string | undefined): MergedItem<T> | undefined {
+    let result: MergedItem<T> | undefined = undefined
     if (key !== undefined && key !== this.lastNotFoundKey) {
       result = this.map.get(key)
       if (result) {
@@ -103,7 +103,7 @@ export class MergeList<T> implements MergeListReader<T> {
     return result
   }
 
-  specify(key: string, resolution?: { isDuplicate: boolean }, error?: string): MergeItem<T> | undefined {
+  tryMergeAsExisting(key: string, resolution?: { isDuplicate: boolean }, error?: string): MergedItem<T> | undefined {
     const tag = this.tag
     if (tag < 0)
       throw new Error(error ?? 'merge is not in progress')
@@ -131,7 +131,7 @@ export class MergeList<T> implements MergeListReader<T> {
     return item
   }
 
-  add(instance: T): MergeItem<T> {
+  mergeAsAdded(instance: T): MergedItem<T> {
     const key = this.getKey(instance)
     if (this.lookup(key) !== undefined)
       throw new Error(`key is already in use: ${key}`)
@@ -149,7 +149,7 @@ export class MergeList<T> implements MergeListReader<T> {
     return item
   }
 
-  remove(item: MergeItem<T>): void {
+  mergeAsRemoved(item: MergedItem<T>): void {
     const t = item as MergeItemImpl<T>
     if (!this.isRemoved(t)) {
       this.current.exclude(t)
@@ -158,7 +158,7 @@ export class MergeList<T> implements MergeListReader<T> {
     }
   }
 
-  move(item: MergeItem<T>, after: MergeItem<T>): void {
+  move(item: MergedItem<T>, after: MergedItem<T>): void {
     throw new Error('not implemented')
   }
 
@@ -209,11 +209,11 @@ export class MergeList<T> implements MergeListReader<T> {
     this.added.reset()
   }
 
-  lastSpecifiedItem(): MergeItem<T> | undefined {
+  lastMergedItem(): MergedItem<T> | undefined {
     return this.current.last
   }
 
-  *items(): Generator<MergeItem<T>> {
+  *items(): Generator<MergedItem<T>> {
     let x = this.current.first
     while (x !== undefined) {
       const next = x.next
@@ -222,7 +222,7 @@ export class MergeList<T> implements MergeListReader<T> {
     }
   }
 
-  *addedItems(reset?: boolean): Generator<MergeItem<T>> {
+  *addedItems(reset?: boolean): Generator<MergedItem<T>> {
     let x = this.added.first
     while (x !== undefined) {
       const next = x.aux
@@ -234,7 +234,7 @@ export class MergeList<T> implements MergeListReader<T> {
       this.added.reset()
   }
 
-  *removedItems(reset?: boolean): Generator<MergeItem<T>> {
+  *removedItems(reset?: boolean): Generator<MergedItem<T>> {
     let x = this.removed.first
     while (x !== undefined) {
       const next = x.next
@@ -245,7 +245,7 @@ export class MergeList<T> implements MergeListReader<T> {
       this.removed.reset()
   }
 
-  isAdded(item: MergeItem<T>): boolean {
+  isAdded(item: MergedItem<T>): boolean {
     const t = item as MergeItemImpl<T>
     let tag = this.tag
     if (tag < 0)
@@ -253,7 +253,7 @@ export class MergeList<T> implements MergeListReader<T> {
     return t.status === ~tag && t.tag > 0
   }
 
-  isMoved(item: MergeItem<T>): boolean {
+  isMoved(item: MergedItem<T>): boolean {
     const t = item as MergeItemImpl<T>
     let tag = this.tag
     if (tag < 0)
@@ -261,29 +261,29 @@ export class MergeList<T> implements MergeListReader<T> {
     return t.status === tag && t.tag > 0
   }
 
-  isRemoved(item: MergeItem<T>): boolean {
+  isRemoved(item: MergedItem<T>): boolean {
     const t = item as MergeItemImpl<T>
     const tag = this.tag
     return tag > 0 ? t.tag < tag : t.tag < tag - 1
   }
 
-  isCurrent(item: MergeItem<T>): boolean {
+  isActual(item: MergedItem<T>): boolean {
     const t = item as MergeItemImpl<T>
     return t.tag === this.tag
   }
 
-  markAsMoved(item: MergeItem<T>): void {
+  markAsMoved(item: MergedItem<T>): void {
     const t = item as MergeItemImpl<T>
     if (t.tag > 0) // if not removed, > is intentional
       t.status = t.tag
   }
 
-  static createItem<T>(instance: T): MergeItem<T> {
+  static createItem<T>(instance: T): MergedItem<T> {
     return new MergeItemImpl(instance, 0)
   }
 }
 
-class MergeItemImpl<T> implements MergeItem<T> {
+class MergeItemImpl<T> implements MergedItem<T> {
   readonly instance: T
   tag: number
   status: number

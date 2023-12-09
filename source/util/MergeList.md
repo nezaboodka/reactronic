@@ -10,19 +10,19 @@ const list = new MergeList<string>(s => s, true)
 
 const example1 = ['Hello', 'Welcome', 'Bye', 'End']
 for (const x of example1)
-  list.add(x)
+  list.mergeAsAdded(x)
 
 // list.items: Hello, Welcome, Bye, End
 
 const example2 = ['Added1', 'Bye', 'End', 'Added2', 'Hello', 'Added3']
 list.beginMerge()
 for (const x of example2) {
-  const existing = list.specify(x) // try to link with an existing item
+  const existing = list.tryMergeAsExisting(x)
   if (existing) {
     // merge x into existing (when item is an object)
   }
   else
-    list.add(x, true) // otherwise add item as a new one
+    list.mergeAsAdded(x, true)
 }
 list.endMerge(true)
 
@@ -37,7 +37,7 @@ list.endMerge(true)
 MergeList API:
 
 ``` typescript
-interface MergeItem<T> {
+interface MergedItem<T> {
   readonly instance: T
 }
 
@@ -49,22 +49,22 @@ class MergeList<T> {
   readonly removedCount: number
   readonly isMergeInProgress: boolean
 
-  lookup(key: string): MergeItem<T> | undefined
-  specify(key: string): MergeItem<T> | undefined
-  add(instance: T, keepInAddedItems?: boolean): MergeItem<T>
-  remove(item: MergeItem<T>, keepInRemovedItems?: boolean): void
-  move(item: MergeItem<T>, after: MergeItem<T>): void
+  lookup(key: string): MergedItem<T> | undefined
+  tryMergeAsExisting(key: string): MergedItem<T> | undefined
+  mergeAsAdded(instance: T, keepInAddedItems?: boolean): MergedItem<T>
+  mergeAsRemoved(item: MergedItem<T>, keepInRemovedItems?: boolean): void
+  move(item: MergedItem<T>, after: MergedItem<T>): void
   beginMerge(): void
   endMerge(clearAddedAndRemovedItems: boolean): void
   resetAddedAndRemovedLists(): void
-  lastSpecifiedItem(): MergeItem<T> | undefined
+  lastMergedItem(): MergedItem<T> | undefined
 
-  items(): Generator<MergeItem<T>>
-  addedItems(keep?: boolean): Generator<MergeItem<T>>
-  removedItems(keep?: boolean): Generator<MergeItem<T>>
-  isAdded(item: MergeItem<T>): boolean
-  isMoved(item: MergeItem<T>): boolean
-  isRemoved(item: MergeItem<T>): boolean
-  isCurrent(item: MergeItem<T>): boolean
+  items(): Generator<MergedItem<T>>
+  addedItems(keep?: boolean): Generator<MergedItem<T>>
+  removedItems(keep?: boolean): Generator<MergedItem<T>>
+  isAdded(item: MergedItem<T>): boolean
+  isMoved(item: MergedItem<T>): boolean
+  isRemoved(item: MergedItem<T>): boolean
+  isActual(item: MergedItem<T>): boolean
 }
 ```
