@@ -7,7 +7,7 @@
 
 export { all, pause } from './util/Utils.js'
 export { MergeList } from './util/MergeList.js'
-export type { MergedItem as MergeItem, MergeListReader } from './util/MergeList.js'
+export type { MergedItem, MergeListReader } from './util/MergeList.js'
 export { SealedArray } from './util/SealedArray.js'
 export { SealedMap } from './util/SealedMap.js'
 export { SealedSet } from './util/SealedSet.js'
