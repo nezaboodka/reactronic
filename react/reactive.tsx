@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { ObservableObject, Transaction, raw, reactive, cached, Rx, LoggingOptions, transaction } from '../source/api.js'
+import { ObservableObject, Transaction, raw, reactive, cached, RxSystem, LoggingOptions, transaction } from '../source/api.js'
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -30,30 +30,30 @@ class RxComponent<V> extends ObservableObject {
 
   @reactive
   protected ensureUpToDate(): void {
-    if (!Rx.getReaction(this.render).isUpToDate)
+    if (!RxSystem.getReaction(this.render).isUpToDate)
       Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
   @raw cycle: number = 0
   @raw refresh: (next: ReactState<V>) => void = nop
   @raw readonly unmount = (): (() => void) => {
-    return (): void => { transaction(Rx.dispose, this) }
+    return (): void => { transaction(RxSystem.dispose, this) }
   }
 
   static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): RxComponent<V> {
     const rx = new RxComponent<V>()
     if (hint)
-      Rx.setLoggingHint(rx, hint)
+      RxSystem.setLoggingHint(rx, hint)
     if (logging) {
-      Rx.getReaction(rx.render).configure({ logging })
-      Rx.getReaction(rx.ensureUpToDate).configure({ logging })
+      RxSystem.getReaction(rx.render).configure({ logging })
+      RxSystem.getReaction(rx.ensureUpToDate).configure({ logging })
     }
     return rx
   }
 }
 
 function createReactState<V>(name?: string, logging?: Partial<LoggingOptions>): ReactState<V> {
-  const hint = name || (Rx.isLogging ? getComponentName() : '<rx>')
+  const hint = name || (RxSystem.isLogging ? getComponentName() : '<rx>')
   const rx = Transaction.run<RxComponent<V>>({ hint, logging }, RxComponent.create, hint, logging)
   return {rx, cycle: 0}
 }

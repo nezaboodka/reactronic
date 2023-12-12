@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Reentrance, Rx, all, pause, transaction } from '../source/api.js'
+import { Reentrance, RxSystem, all, pause, transaction } from '../source/api.js'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance.js'
 import { TestsLoggingLevel } from './brief.js'
 
@@ -29,10 +29,10 @@ const expected: Array<string> = [
 ]
 
 test('reentrance.sidebyside', async t => {
-  Rx.setLoggingMode(true, TestsLoggingLevel)
+  RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    Rx.getReaction(a.model.load).configure({reentrance: Reentrance.RunSideBySide})
+    RxSystem.getReaction(a.model.load).configure({reentrance: Reentrance.RunSideBySide})
     return a
   })
   try {
@@ -44,23 +44,23 @@ test('reentrance.sidebyside', async t => {
   }
   catch (error: any) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
-    if (Rx.isLogging && Rx.loggingOptions.enabled) console.log(error.toString())
+    if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) console.log(error.toString())
   }
   finally {
     t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
     await pause(300)
     transaction(() => {
-      Rx.dispose(app)
-      Rx.dispose(app.model)
+      RxSystem.dispose(app)
+      RxSystem.dispose(app.model)
     })
   } /* istanbul ignore next */
-  if (Rx.isLogging && Rx.loggingOptions.enabled)
+  if (RxSystem.isLogging && RxSystem.loggingOptions.enabled)
     for (const x of output)
       console.log(x)
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (Rx.isLogging && Rx.loggingOptions.enabled) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

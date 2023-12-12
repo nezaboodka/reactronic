@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from 'react'
-import { reactive, cached, Transaction, Rx, transaction } from '../source/api.js'
+import { reactive, cached, Transaction, RxSystem, transaction } from '../source/api.js'
 
 export class Component<P> extends React.Component<P> {
   @cached
@@ -21,7 +21,7 @@ export class Component<P> extends React.Component<P> {
   } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
-    return !Rx.getReaction(this.render).isUpToDate
+    return !RxSystem.getReaction(this.render).isUpToDate
   }
 
   componentDidMount(): void {
@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    transaction(Rx.dispose, this)
+    transaction(RxSystem.dispose, this)
   }
 }

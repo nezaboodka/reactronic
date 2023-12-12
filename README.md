@@ -198,7 +198,7 @@ class Component<P> extends React.Component<P> {
   } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
-    return !Rx.getController(this.render).isUpToDate
+    return !RxSystem.getController(this.render).isUpToDate
   }
 
   componentDidMount(): void {
@@ -206,7 +206,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    Transaction.run(null, Rx.dispose, this)
+    Transaction.run(null, RxSystem.dispose, this)
   }
 }
 ```

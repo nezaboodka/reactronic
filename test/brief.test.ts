@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Transaction, Kind, unobs, sensitive, Rx, transaction } from '../source/api.js'
+import { Transaction, Kind, unobs, sensitive, RxSystem, transaction } from '../source/api.js'
 import { Person, Demo, DemoView, output, TestsLoggingLevel } from './brief.js'
 
 const expected: string[] = [
@@ -29,25 +29,25 @@ const expected: string[] = [
 ]
 
 test('brief', t => {
-  Rx.reactivityAutoStartDisabled = !Rx.reactivityAutoStartDisabled
-  Rx.reactivityAutoStartDisabled = false
-  Rx.setProfilingMode(false)
-  Rx.setProfilingMode(true, {})
-  Rx.setProfilingMode(true, {
+  RxSystem.reactivityAutoStartDisabled = !RxSystem.reactivityAutoStartDisabled
+  RxSystem.reactivityAutoStartDisabled = false
+  RxSystem.setProfilingMode(false)
+  RxSystem.setProfilingMode(true, {})
+  RxSystem.setProfilingMode(true, {
     repetitiveUsageWarningThreshold: 3, // default: 10 times
     mainThreadBlockingWarningThreshold: 10, // default: 16.6 ms
     asyncActionDurationWarningThreshold: 100, // default: 150 ms
     garbageCollectionSummaryInterval: 2000, // default: 3000 ms
   })
-  Rx.setLoggingMode(false)
-  Rx.setLoggingMode(true, TestsLoggingLevel)
+  RxSystem.setLoggingMode(false)
+  RxSystem.setLoggingMode(true, TestsLoggingLevel)
   // Simple transactions
   const app = transaction(() => new DemoView(new Demo()))
   try {
-    t.is(Rx.why(), '<boot>')
-    t.is(Rx.getReaction(app.print).options.order, 123)
+    t.is(RxSystem.why(), '<boot>')
+    t.is(RxSystem.getReaction(app.print).options.order, 123)
     t.notThrows(() => DemoView.test())
-    const render = Rx.getReaction(app.render)
+    const render = RxSystem.getReaction(app.render)
     t.is(render.isUpToDate, true)
     t.is(render.args.length, 1)
     t.is(render.result.length, 1)
@@ -63,7 +63,7 @@ test('brief', t => {
     t.is(daddy.name, 'John')
     t.is(daddy.age, 38)
     t.is(render.isUpToDate, true)
-    t.is(Rx.takeSnapshot(daddy).age, 38)
+    t.is(RxSystem.takeSnapshot(daddy).age, 38)
     const stamp = render.stamp
     app.render(0)
     t.is(render.stamp, stamp)
@@ -140,8 +140,8 @@ test('brief', t => {
     }, undefined, 'observable property Person.emails #26 can only be modified inside transaction')
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
     // Check protection and error handling
-    t.throws(() => { Rx.getReaction(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
-    t.throws(() => { console.log(Rx.getReaction(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { RxSystem.getReaction(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
+    t.throws(() => { console.log(RxSystem.getReaction(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
     const op2 = Transaction.create({ hint: 'op2' })
     const zombi = op2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: 'Person.age #30 is not yet available for T1[<none>] because of uncommitted T125[op2] (last committed T0[<boot>])' })
@@ -163,10 +163,10 @@ test('brief', t => {
     t.is(app.raw, 'DemoView.render #23t129s111   ◀◀   DemoView.userFilter[=""] #23t127s111    ◀◀    T127[noname]')
     t.is(render.options.kind, Kind.Cached)
     t.is(render.error, undefined)
-    t.is(Rx.getLoggingHint(app), 'DemoView')
-    Rx.setLoggingHint(app, 'App')
-    t.is(Rx.getLoggingHint(app, false), 'App')
-    t.is(Rx.getLoggingHint(app, true), 'App#23')
+    t.is(RxSystem.getLoggingHint(app), 'DemoView')
+    RxSystem.setLoggingHint(app, 'App')
+    t.is(RxSystem.getLoggingHint(app, false), 'App')
+    t.is(RxSystem.getLoggingHint(app, true), 'App#23')
     t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
     t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
@@ -201,15 +201,15 @@ test('brief', t => {
   }
   finally {
     transaction(() => {
-      Rx.dispose(app.model)
-      Rx.dispose(app)
+      RxSystem.dispose(app.model)
+      RxSystem.dispose(app)
     })
     t.is(app.model.title as any, undefined)
     t.is(app.userFilter as any, undefined)
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (Rx.isLogging && Rx.loggingOptions.enabled) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

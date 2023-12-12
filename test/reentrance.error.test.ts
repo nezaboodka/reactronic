@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { Reentrance, Rx, pause, transaction } from '../source/api.js'
+import { Reentrance, RxSystem, pause, transaction } from '../source/api.js'
 import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance.js'
 import { TestsLoggingLevel } from './brief.js'
 
@@ -26,10 +26,10 @@ const expected: Array<string> = [
 ]
 
 test('reentrance.error', async t => {
-  Rx.setLoggingMode(true, TestsLoggingLevel)
+  RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    Rx.getReaction(a.model.load).configure({reentrance: Reentrance.PreventWithError})
+    RxSystem.getReaction(a.model.load).configure({reentrance: Reentrance.PreventWithError})
     return a
   })
   try {
@@ -38,12 +38,12 @@ test('reentrance.error', async t => {
     t.is(app.rawField, 'raw field updated')
     t.is(app.observableField, 'observable field')
     t.throws(() => app.observableField = 'observable field', { message: 'observable property AsyncDemoView.observableField #24 can only be modified inside transaction' })
-    t.throws(() => Rx.getReaction(app.print).configure({ logging: TestsLoggingLevel }))
+    t.throws(() => RxSystem.getReaction(app.print).configure({ logging: TestsLoggingLevel }))
     transaction(() => {
-      Rx.getReaction(app.print).configure({ logging: TestsLoggingLevel })
+      RxSystem.getReaction(app.print).configure({ logging: TestsLoggingLevel })
     })
     await app.print() // initial reactive run
-    t.throws(() => Rx.getReaction(app.print).configure({ logging: TestsLoggingLevel }))
+    t.throws(() => RxSystem.getReaction(app.print).configure({ logging: TestsLoggingLevel }))
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
     t.is(busy.counter, 1)
@@ -52,25 +52,25 @@ test('reentrance.error', async t => {
   }
   catch (error: any) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
-    if (Rx.isLogging && Rx.loggingOptions.enabled) console.log(error.toString())
+    if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) console.log(error.toString())
   }
   finally {
     t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
-    const r = Rx.pullLastResult(app.render)
+    const r = RxSystem.pullLastResult(app.render)
     t.is(r && r.length, 2)
     await pause(300)
     transaction(() => {
-      Rx.dispose(app)
-      Rx.dispose(app.model)
+      RxSystem.dispose(app)
+      RxSystem.dispose(app.model)
     })
   } /* istanbul ignore next */
-  if (Rx.isLogging && Rx.loggingOptions.enabled)
+  if (RxSystem.isLogging && RxSystem.loggingOptions.enabled)
     for (const x of output)
       console.log(x)
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (Rx.isLogging && Rx.loggingOptions.enabled) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
+    if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
     t.is(output[i], expected[i])
   }
 })

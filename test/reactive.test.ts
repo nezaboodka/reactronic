@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from 'ava'
-import { ObservableObject, Rx, reactive, transactional, raw, transaction } from '../source/api.js'
+import { ObservableObject, RxSystem, reactive, transactional, raw, transaction } from '../source/api.js'
 import { TestsLoggingLevel } from './brief.js'
 
 export class ReactiveDemo extends ObservableObject {
@@ -36,17 +36,17 @@ export class ReactiveDemo extends ObservableObject {
 
   @reactive
   protected reactOnAnyChange(): void {
-    this.rev = Rx.getRevisionOf(this)
+    this.rev = RxSystem.getRevisionOf(this)
   }
 }
 
 test('reactive', t => {
-  Rx.setLoggingMode(true, TestsLoggingLevel)
+  RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const demo = transaction(() => new ReactiveDemo())
   t.is(demo.title, 'Title/1')
   t.is(demo.content, 'Content/1')
   t.is(demo.rev, 6)
   demo.setData('Hello')
   t.is(demo.rev, 10)
-  t.is(Rx.getRevisionOf(demo), 10)
+  t.is(RxSystem.getRevisionOf(demo), 10)
 })

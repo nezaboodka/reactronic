@@ -124,7 +124,7 @@ export class ReactionImpl implements AbstractReaction<any> {
   /* istanbul ignore next */
   static dependencies(): string[] {
     const l = Launch.current
-    return l ? l.dependencies() : ['Rx.dependencies should be called from inside of reactive method']
+    return l ? l.dependencies() : ['RxSystem.dependencies should be called from inside of reactive method']
   }
 
   // Internal
