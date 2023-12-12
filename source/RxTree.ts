@@ -12,7 +12,7 @@ import { emitLetters, getCallerInfo } from './util/RxNodeUtils.js'
 import { MemberOptions, Reentrance } from './Options.js'
 import { ObservableObject } from './impl/Mvcc.js'
 import { Transaction } from './impl/Transaction.js'
-import { Rx, options, raw, reactive, unobs } from './Rx.js'
+import { RxSystem, options, raw, reactive, unobs } from './RxSystem.js'
 
 // RxTree
 
@@ -179,7 +179,7 @@ function generateKey(owner: RxNodeImpl): string {
   const n = owner.numerator++
   const lettered = emitLetters(n)
   let result: string
-  if (Rx.isLogging)
+  if (RxSystem.isLogging)
     result = `·${getCallerInfo(lettered)}`
   else
     result = `·${lettered}`
@@ -323,7 +323,7 @@ class RxNodeImpl<T = any> implements RxNode<T> {
   configureReactronic(options: Partial<MemberOptions>): MemberOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.PinpointUpdate))
       throw new Error('reactronic can be configured only for elements with pinpoint update mode and only inside initialize')
-    return Rx.getReaction(this.update).configure(options)
+    return RxSystem.getReaction(this.update).configure(options)
   }
 
   static get current(): MergedItem<RxNodeImpl> {
@@ -496,9 +496,9 @@ function triggerUpdate(slot: MergedItem<RxNodeImpl>): void {
     if (node.has(Mode.PinpointUpdate)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
         Transaction.outside(() => {
-          if (Rx.isLogging)
-            Rx.setLoggingHint(node.element, node.key)
-          Rx.getReaction(node.update).configure({
+          if (RxSystem.isLogging)
+            RxSystem.setLoggingHint(node.element, node.key)
+          RxSystem.getReaction(node.update).configure({
             order: node.level,
           })
         })
@@ -600,7 +600,7 @@ async function runDisposalLoop(): Promise<void> {
   while (slot !== undefined) {
     if (Transaction.isFrameOver(500, 5))
       await Transaction.requestNextFrame()
-    Rx.dispose(slot.instance)
+    RxSystem.dispose(slot.instance)
     slot = slot.aux
     RxNodeImpl.disposableNodeCount--
   }

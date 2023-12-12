@@ -14,10 +14,10 @@ import { Mvcc } from './impl/Mvcc.js'
 import { Transaction } from './impl/Transaction.js'
 import { ReactionImpl } from './impl/Reaction.js'
 
-export class Rx {
+export class RxSystem {
   static why(brief: boolean = false): string { return brief ? ReactionImpl.briefWhy() : ReactionImpl.why() }
   static getReaction<T>(method: F<T>): AbstractReaction<T> { return ReactionImpl.getControllerOf(method) }
-  static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return Rx.getReaction(method as any as F<T>).pullLastResult(args) }
+  static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return RxSystem.getReaction(method as any as F<T>).pullLastResult(args) }
   static configureCurrentOperation(options: Partial<MemberOptions>): MemberOptions { return ReactionImpl.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Mvcc.setObjectOptions(obj, options) }
   static getRevisionOf(obj: any): number { return obj[Meta.Revision] }
