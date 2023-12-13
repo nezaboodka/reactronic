@@ -61,16 +61,16 @@ export class RxTree {
       else {
         // Create new node
         const node = new RxNodeImpl(key || generateKey(owner), driver, declaration, owner)
-        node.slot = children.mergeAsAdded(node)
+        node.seat = children.mergeAsAdded(node)
         result = node.element
       }
     }
     else {
       // Create new root node
       const node = new RxNodeImpl(key || '', driver, declaration, owner)
-      node.slot = MergeList.createItem(node)
+      node.seat = MergeList.createItem(node)
       result = node.element
-      triggerUpdateForSlot(node.slot)
+      triggerUpdateGivenSeat(node.seat)
     }
     return result
   }
@@ -80,7 +80,7 @@ export class RxTree {
     const declaration = node.declaration
     if (!triggersAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
-      triggerUpdateForSlot(node.slot!)
+      triggerUpdateGivenSeat(node.seat!)
     }
   }
 
@@ -98,7 +98,7 @@ export class RxTree {
 
   static findMatchingPrevSibling<E extends RxElement, R extends RxElement>(
     node: RxNode<E>, match: SimpleDelegate<RxNode<E>, boolean>): RxNode<R> | undefined {
-    let p = node.slot!.prev
+    let p = node.seat!.prev
     while (p && !match(p.instance))
       p = p.prev
     return p?.instance as RxNode<R> | undefined
@@ -247,7 +247,7 @@ class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
   readonly element: E
   host: RxNodeImpl
   readonly children: MergeList<RxNodeImpl>
-  slot: MergedItem<RxNodeImpl<E>> | undefined
+  seat: MergedItem<RxNodeImpl<E>> | undefined
   stamp: number
   outer: RxNodeImpl
   context: RxNodeContextImpl<any> | undefined
@@ -276,7 +276,7 @@ class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
     this.element = driver.allocate(this)
     this.host = this // node is unmounted
     this.children = new MergeList<RxNodeImpl>(getNodeKey, true)
-    this.slot = undefined
+    this.seat = undefined
     this.stamp = Number.MAX_SAFE_INTEGER // empty
     this.context = undefined
     this.numerator = 0
@@ -293,7 +293,7 @@ class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
   get strictOrder(): boolean { return this.children.isStrict }
   set strictOrder(value: boolean) { this.children.isStrict = value }
 
-  get isMoved(): boolean { return this.owner.children.isMoved(this.slot!) }
+  get isMoved(): boolean { return this.owner.children.isMoved(this.seat!) }
 
   has(mode: Mode): boolean {
     return (getModeViaPresetChain(this.declaration) & mode) === mode
@@ -307,7 +307,7 @@ class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
   })
   update(_triggers: unknown): void {
     // triggers parameter is used to enforce update by owner
-    updateNow(this.slot!)
+    updateNow(this.seat!)
   }
 
   configureReactronic(options: Partial<MemberOptions>): MemberOptions {
@@ -325,7 +325,7 @@ class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
   static tryUseNodeVariableValue<T extends Object>(variable: RxNodeVariable<T>): T | undefined {
     let node = RxNodeImpl.current.instance
     while (node.context?.variable !== variable && node.owner !== node)
-      node = node.outer.slot!.instance
+      node = node.outer.seat!.instance
     return node.context?.value as any // TODO: to get rid of any
   }
 
@@ -377,8 +377,8 @@ function runUpdateNestedTreesThenDo(error: unknown, action: (error: unknown) => 
     try {
       children.endMerge(error)
       // Finalize removed elements
-      for (const slot of children.removedItems(true))
-        triggerFinalization(slot, true, true)
+      for (const child of children.removedItems(true))
+        triggerFinalization(child, true, true)
       if (!error) {
         // Lay out and update actual elements
         const sequential = children.isStrict
@@ -396,7 +396,7 @@ function runUpdateNestedTreesThenDo(error: unknown, action: (error: unknown) => 
           const p = el.node.priority ?? Priority.Realtime
           mounting = markToMountIfNecessary(mounting, host, child, children, sequential)
           if (p === Priority.Realtime)
-            triggerUpdateForSlot(child) // update synchronously
+            triggerUpdateGivenSeat(child) // update synchronously
           else if (p === Priority.Normal)
             p1 = push(child, p1) // defer for P1 async update
           else
@@ -419,33 +419,33 @@ function runUpdateNestedTreesThenDo(error: unknown, action: (error: unknown) => 
 }
 
 function markToMountIfNecessary(mounting: boolean, host: RxNodeImpl,
-  slot: MergedItem<RxNodeImpl>, children: MergeList<RxNodeImpl>, sequential: boolean): boolean {
+  seat: MergedItem<RxNodeImpl>, children: MergeList<RxNodeImpl>, sequential: boolean): boolean {
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
-  const node = slot.instance
+  const node = seat.instance
   const el = node.element
   if (el.native && !node.has(Mode.ManualMount)) {
     if (mounting || node.host !== host) {
-      children.markAsMoved(slot)
+      children.markAsMoved(seat)
       mounting = false
     }
   }
-  else if (sequential && children.isMoved(slot))
+  else if (sequential && children.isMoved(seat))
     mounting = true // apply to the first element having native HTML element
   node.host = host
   return mounting
 }
 
 async function startIncrementalUpdate(
-  ownerSlot: MergedItem<RxNodeImpl>,
+  ownerSeat: MergedItem<RxNodeImpl>,
   allChildren: MergeList<RxNodeImpl>,
   priority1?: Array<MergedItem<RxNodeImpl>>,
   priority2?: Array<MergedItem<RxNodeImpl>>): Promise<void> {
-  const stamp = ownerSlot.instance.stamp
+  const stamp = ownerSeat.instance.stamp
   if (priority1)
-    await updateIncrementally(ownerSlot, stamp, allChildren, priority1, Priority.Normal)
+    await updateIncrementally(ownerSeat, stamp, allChildren, priority1, Priority.Normal)
   if (priority2)
-    await updateIncrementally(ownerSlot, stamp, allChildren, priority2, Priority.Background)
+    await updateIncrementally(ownerSeat, stamp, allChildren, priority2, Priority.Background)
 }
 
 async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
@@ -462,7 +462,7 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
       const frameDurationLimit = priority === Priority.Background ? RxTree.shortFrameDuration : Infinity
       let frameDuration = Math.min(frameDurationLimit, Math.max(RxTree.frameDuration / 4, RxTree.shortFrameDuration))
       for (const child of items) {
-        triggerUpdateForSlot(child)
+        triggerUpdateGivenSeat(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
           RxTree.currentUpdatePriority = outerPriority
           await Transaction.requestNextFrame(0)
@@ -480,8 +480,8 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
   }
 }
 
-function triggerUpdateForSlot(slot: MergedItem<RxNodeImpl>): void {
-  const node = slot.instance
+function triggerUpdateGivenSeat(seat: MergedItem<RxNodeImpl>): void {
+  const node = seat.instance
   if (node.stamp >= 0) { // if not finalized
     if (node.has(Mode.PinpointUpdate)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
@@ -496,7 +496,7 @@ function triggerUpdateForSlot(slot: MergedItem<RxNodeImpl>): void {
       unobs(node.update, node.declaration.triggers) // reactive auto-update
     }
     else
-      updateNow(slot)
+      updateNow(seat)
   }
 }
 
@@ -519,12 +519,12 @@ function mountOrRemountIfNecessary(node: RxNodeImpl): void {
     unobs(() => driver.mount(element))
 }
 
-function updateNow(slot: MergedItem<RxNodeImpl>): void {
-  const node = slot.instance
+function updateNow(seat: MergedItem<RxNodeImpl>): void {
+  const node = seat.instance
   const el = node.element
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
-    runInside(slot, () => {
+    runInside(seat, () => {
       mountOrRemountIfNecessary(node)
       if (node.stamp < Number.MAX_SAFE_INTEGER - 1) { // if mounted
         try {
@@ -550,8 +550,8 @@ function updateNow(slot: MergedItem<RxNodeImpl>): void {
   }
 }
 
-function triggerFinalization(slot: MergedItem<RxNodeImpl>, isLeader: boolean, individual: boolean): void {
-  const node = slot.instance
+function triggerFinalization(seat: MergedItem<RxNodeImpl>, isLeader: boolean, individual: boolean): void {
+  const node = seat.instance
   const el = node.element
   if (node.stamp >= 0) {
     const driver = node.driver
@@ -564,14 +564,14 @@ function triggerFinalization(slot: MergedItem<RxNodeImpl>, isLeader: boolean, in
     el.controller = null
     if (node.has(Mode.PinpointUpdate)) {
       // Defer disposal if element is reactive (having pinpoint update mode)
-      slot.aux = undefined
+      seat.aux = undefined
       const last = gLastToDispose
       if (last)
-        gLastToDispose = last.aux = slot
+        gLastToDispose = last.aux = seat
       else
-        gFirstToDispose = gLastToDispose = slot
-      if (gFirstToDispose === slot)
-        Transaction.run({ separation: 'disposal', hint: `runDisposalLoop(initiator=${slot.instance.key})` }, () => {
+        gFirstToDispose = gLastToDispose = seat
+      if (gFirstToDispose === seat)
+        Transaction.run({ separation: 'disposal', hint: `runDisposalLoop(initiator=${seat.instance.key})` }, () => {
           void runDisposalLoop().then(NOP, error => console.log(error))
         })
     }
@@ -584,12 +584,12 @@ function triggerFinalization(slot: MergedItem<RxNodeImpl>, isLeader: boolean, in
 
 async function runDisposalLoop(): Promise<void> {
   await Transaction.requestNextFrame()
-  let slot = gFirstToDispose
-  while (slot !== undefined) {
+  let seat = gFirstToDispose
+  while (seat !== undefined) {
     if (Transaction.isFrameOver(500, 5))
       await Transaction.requestNextFrame()
-    RxSystem.dispose(slot.instance)
-    slot = slot.aux
+    RxSystem.dispose(seat.instance)
+    seat = seat.aux
     RxNodeImpl.disposableNodeCount--
   }
   // console.log(`Element count: ${RxNodeImpl.grandNodeCount} totally (${RxNodeImpl.disposableNodeCount} disposable)`)
@@ -608,10 +608,10 @@ function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T 
   return wrappedToRunInside
 }
 
-function runInside<T>(slot: MergedItem<RxNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
+function runInside<T>(seat: MergedItem<RxNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
   const outer = gCurrent
   try {
-    gCurrent = slot
+    gCurrent = seat
     return func(...args)
   }
   finally {

@@ -42,7 +42,7 @@ export interface RxNode<E extends RxElement = any> {
   element: E
   readonly host: RxNode
   readonly children: MergeListReader<RxNode>
-  readonly slot: MergedItem<RxNode<E>> | undefined
+  readonly seat: MergedItem<RxNode<E>> | undefined
   readonly stamp: number
   readonly outer: RxNode
   readonly context: RxNodeContext | undefined
