@@ -128,10 +128,6 @@ export abstract class BaseDriver<T extends { node: RxNode }> implements RxNodeDr
 
   abstract allocate(node: RxNode<T>): T
 
-  assign(element: T): void {
-    assignViaPresetChain(element, element.node.declaration)
-  }
-
   initialize(element: T): void {
     this.predefine?.(element)
     initializeViaPresetChain(element, element.node.declaration)
@@ -188,15 +184,6 @@ function generateKey(owner: RxNodeImpl): string {
 
 function getModeViaPresetChain(declaration?: RxNodeDecl<any>): Mode {
   return declaration?.mode ?? (declaration?.preset ? getModeViaPresetChain(declaration?.preset) : Mode.Default)
-}
-
-function assignViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
-  const preset = declaration.preset
-  const create = declaration.create
-  if (create)
-    create(element, preset ? () => assignViaPresetChain(element, preset) : NOP)
-  else if (preset)
-    assignViaPresetChain(element, preset)
 }
 
 function initializeViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
@@ -516,7 +503,6 @@ function mountOrRemountIfNecessary(node: RxNodeImpl): void {
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
     node.stamp = Number.MAX_SAFE_INTEGER - 1 // initializing
     unobs(() => {
-      driver.assign(element)
       driver.initialize(element)
       if (!node.has(Mode.ManualMount)) {
         node.stamp = 0 // mounting

@@ -72,7 +72,6 @@ export interface RxNodeDriver<T> {
   readonly predefine?: SimpleDelegate<T>
 
   allocate(node: RxNode<T>): T
-  assign(element: T): void
   initialize(element: T): void
   mount(element: T): void
   update(element: T): void | Promise<void>
