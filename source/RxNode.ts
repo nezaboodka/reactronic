@@ -35,7 +35,7 @@ export abstract class RxNode<T = any> {
   abstract readonly declaration: Readonly<RxNodeDecl<T>>
   abstract readonly level: number
   abstract readonly owner: RxNode
-  abstract readonly element: T
+  abstract element: T
   abstract readonly host: RxNode
   abstract readonly children: MergeListReader<RxNode>
   abstract readonly slot: MergedItem<RxNode<T>> | undefined
