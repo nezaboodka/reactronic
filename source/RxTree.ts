@@ -541,8 +541,6 @@ function updateNow(slot: MergedItem<RxNodeImpl>): void {
         try {
           node.stamp++
           node.numerator = 0
-          if (el.prepareForUpdate)
-            el.prepareForUpdate()
           node.children.beginMerge()
           const driver = node.driver
           result = driver.update(el)
