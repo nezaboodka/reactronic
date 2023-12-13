@@ -29,53 +29,57 @@ export const enum Priority {
 
 // RxNode
 
-export abstract class RxNode<T = any> {
-  abstract readonly key: string
-  abstract readonly driver: RxNodeDriver<T>
-  abstract readonly declaration: Readonly<RxNodeDecl<T>>
-  abstract readonly level: number
-  abstract readonly owner: RxNode
-  abstract element: T
-  abstract readonly host: RxNode
-  abstract readonly children: MergeListReader<RxNode>
-  abstract readonly slot: MergedItem<RxNode<T>> | undefined
-  abstract readonly stamp: number
-  abstract readonly outer: RxNode
-  abstract readonly context: RxNodeContext | undefined
-  abstract readonly isInitialUpdate: boolean
-  abstract priority?: Priority
-  abstract childrenShuffling: boolean
-  abstract strictOrder: boolean
-  abstract has(mode: Mode): boolean
-  abstract configureReactronic(options: Partial<MemberOptions>): MemberOptions
+export interface RxElement {
+  node: RxNode<any>
+}
+
+export interface RxNode<E extends RxElement = any> {
+  readonly key: string
+  readonly driver: RxNodeDriver<E>
+  readonly declaration: Readonly<RxNodeDecl<E>>
+  readonly level: number
+  readonly owner: RxNode
+  element: E
+  readonly host: RxNode
+  readonly children: MergeListReader<RxNode>
+  readonly slot: MergedItem<RxNode<E>> | undefined
+  readonly stamp: number
+  readonly outer: RxNode
+  readonly context: RxNodeContext | undefined
+  readonly isInitialUpdate: boolean
+  priority?: Priority
+  childrenShuffling: boolean
+  strictOrder: boolean
+  has(mode: Mode): boolean
+  configureReactronic(options: Partial<MemberOptions>): MemberOptions
 }
 
 // RxNodeDecl
 
-export interface RxNodeDecl<T = unknown> {
-  preset?: RxNodeDecl<T>
+export interface RxNodeDecl<E extends RxElement> {
+  preset?: RxNodeDecl<E>
   key?: string
   mode?: Mode
   triggers?: unknown
-  specify?: Delegate<T>
-  create?: Delegate<T>
-  initialize?: Delegate<T>
-  update?: Delegate<T>
-  finalize?: Delegate<T>
+  specify?: Delegate<E>
+  create?: Delegate<E>
+  initialize?: Delegate<E>
+  update?: Delegate<E>
+  finalize?: Delegate<E>
 }
 
 // RxNodeDriver
 
-export interface RxNodeDriver<T> {
+export interface RxNodeDriver<E extends RxElement> {
   readonly name: string,
   readonly isPartitionSeparator: boolean,
-  readonly predefine?: SimpleDelegate<T>
+  readonly predefine?: SimpleDelegate<E>
 
-  allocate(node: RxNode<T>): T
-  initialize(element: T): void
-  mount(element: T): void
-  update(element: T): void | Promise<void>
-  finalize(element: T, isLeader: boolean): boolean
+  allocate(node: RxNode<E>): E
+  initialize(element: E): void
+  mount(element: E): void
+  update(element: E): void | Promise<void>
+  finalize(element: E, isLeader: boolean): boolean
 }
 
 // RxNodeContext

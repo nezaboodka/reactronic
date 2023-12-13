@@ -7,7 +7,7 @@
 
 import { LoggingOptions } from './Logging.js'
 import { MergeList, MergedItem } from './util/MergeList.js'
-import { Priority, Mode, RxNodeDecl, RxNodeDriver, SimpleDelegate, RxNode, RxNodeContext } from './RxNode.js'
+import { Priority, Mode, RxNodeDecl, RxNodeDriver, SimpleDelegate, RxNode, RxNodeContext, RxElement } from './RxNode.js'
 import { emitLetters, getCallerInfo } from './util/RxNodeUtils.js'
 import { MemberOptions, Reentrance } from './Options.js'
 import { ObservableObject } from './impl/Mvcc.js'
@@ -22,11 +22,11 @@ export class RxTree {
   static currentUpdatePriority = Priority.Realtime
   static frameDuration = RxTree.longFrameDuration
 
-  static declare<T = undefined>(
-    driver: RxNodeDriver<T>,
-    declaration?: RxNodeDecl<T>,
-    preset?: RxNodeDecl<T>): T {
-    let result: T
+  static declare<E extends RxElement>(
+    driver: RxNodeDriver<E>,
+    declaration?: RxNodeDecl<E>,
+    preset?: RxNodeDecl<E>): E {
+    let result: E
     // Normalize parameters
     if (declaration)
       declaration.preset = preset
@@ -70,17 +70,17 @@ export class RxTree {
       const node = new RxNodeImpl(key || '', driver, declaration, owner)
       node.slot = MergeList.createItem(node)
       result = node.element
-      triggerUpdate(node.slot)
+      triggerUpdateForSlot(node.slot)
     }
     return result
   }
 
-  static triggerUpdate(element: { node: RxNode }, triggers: unknown): void {
-    const el = element as { node: RxNodeImpl }
-    const declaration = el.node.declaration
+  static triggerUpdate(element: RxElement, triggers: unknown): void {
+    const node = element.node as RxNodeImpl
+    const declaration = node.declaration
     if (!triggersAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
-      triggerUpdate(el.node.slot!)
+      triggerUpdateForSlot(node.slot!)
     }
   }
 
@@ -88,24 +88,27 @@ export class RxTree {
     runUpdateNestedTreesThenDo(undefined, action)
   }
 
-  static findMatchingHost<T, R>(node: RxNode<T>, match: SimpleDelegate<RxNode<T>, boolean>): RxNode<R> | undefined {
+  static findMatchingHost<E extends RxElement, R extends RxElement>(
+    node: RxNode<E>, match: SimpleDelegate<RxNode<E>, boolean>): RxNode<R> | undefined {
     let p = node.host
     while (p !== p.host && !match(p))
       p = p.host
     return p
   }
 
-  static findMatchingPrevSibling<T, R>(node: RxNode<T>, match: SimpleDelegate<RxNode<T>, boolean>): RxNode<R> | undefined {
+  static findMatchingPrevSibling<E extends RxElement, R extends RxElement>(
+    node: RxNode<E>, match: SimpleDelegate<RxNode<E>, boolean>): RxNode<R> | undefined {
     let p = node.slot!.prev
     while (p && !match(p.instance))
       p = p.prev
     return p?.instance as RxNode<R> | undefined
   }
 
-  static forEachChildRecursively<T>(node: RxNode<T>, action: SimpleDelegate<RxNode<T>>): void {
+  static forEachChildRecursively<E extends RxElement>(
+    node: RxNode<E>, action: SimpleDelegate<RxNode<E>>): void {
     action(node)
     for (const child of node.children.items())
-      RxTree.forEachChildRecursively<T>(child.instance, action)
+      RxTree.forEachChildRecursively<E>(child.instance, action)
   }
 
   static getDefaultLoggingOptions(): LoggingOptions | undefined {
@@ -119,29 +122,29 @@ export class RxTree {
 
 // BaseDriver
 
-export abstract class BaseDriver<T extends { node: RxNode }> implements RxNodeDriver<T> {
+export abstract class BaseDriver<E extends RxElement> implements RxNodeDriver<E> {
   constructor(
     readonly name: string,
     readonly isPartitionSeparator: boolean,
-    readonly predefine?: SimpleDelegate<T>) {
+    readonly predefine?: SimpleDelegate<E>) {
   }
 
-  abstract allocate(node: RxNode<T>): T
+  abstract allocate(node: RxNode<E>): E
 
-  initialize(element: T): void {
+  initialize(element: E): void {
     this.predefine?.(element)
     initializeViaPresetChain(element, element.node.declaration)
   }
 
-  mount(element: T): void {
+  mount(element: E): void {
     // nothing to do by default
   }
 
-  update(element: T): void | Promise<void> {
+  update(element: E): void | Promise<void> {
     updateViaPresetChain(element, element.node.declaration)
   }
 
-  finalize(element: T, isLeader: boolean): boolean {
+  finalize(element: E, isLeader: boolean): boolean {
     finalizeViaPresetChain(element, element.node.declaration)
     return isLeader // treat children as finalization leaders as well
   }
@@ -230,21 +233,21 @@ class RxNodeContextImpl<T extends Object = Object> extends ObservableObject impl
 
 // RxNodeImpl
 
-class RxNodeImpl<T = any> implements RxNode<T> {
+class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
   // Static properties
   static logging: LoggingOptions | undefined = undefined
   static grandNodeCount: number = 0
   static disposableNodeCount: number = 0
 
   readonly key: string
-  readonly driver: RxNodeDriver<T>
-  declaration: RxNodeDecl<T>
+  readonly driver: RxNodeDriver<E>
+  declaration: RxNodeDecl<E>
   readonly level: number
   readonly owner: RxNodeImpl
-  readonly element: T
+  readonly element: E
   host: RxNodeImpl
   readonly children: MergeList<RxNodeImpl>
-  slot: MergedItem<RxNodeImpl<T>> | undefined
+  slot: MergedItem<RxNodeImpl<E>> | undefined
   stamp: number
   outer: RxNodeImpl
   context: RxNodeContextImpl<any> | undefined
@@ -253,8 +256,8 @@ class RxNodeImpl<T = any> implements RxNode<T> {
   childrenShuffling: boolean
 
   constructor(
-    key: string, driver: RxNodeDriver<T>,
-    declaration: Readonly<RxNodeDecl<T>>,
+    key: string, driver: RxNodeDriver<E>,
+    declaration: Readonly<RxNodeDecl<E>>,
     owner: RxNodeImpl | undefined) {
     this.key = key
     this.driver = driver
@@ -393,7 +396,7 @@ function runUpdateNestedTreesThenDo(error: unknown, action: (error: unknown) => 
           const p = el.node.priority ?? Priority.Realtime
           mounting = markToMountIfNecessary(mounting, host, child, children, sequential)
           if (p === Priority.Realtime)
-            triggerUpdate(child) // update synchronously
+            triggerUpdateForSlot(child) // update synchronously
           else if (p === Priority.Normal)
             p1 = push(child, p1) // defer for P1 async update
           else
@@ -459,7 +462,7 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
       const frameDurationLimit = priority === Priority.Background ? RxTree.shortFrameDuration : Infinity
       let frameDuration = Math.min(frameDurationLimit, Math.max(RxTree.frameDuration / 4, RxTree.shortFrameDuration))
       for (const child of items) {
-        triggerUpdate(child)
+        triggerUpdateForSlot(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
           RxTree.currentUpdatePriority = outerPriority
           await Transaction.requestNextFrame(0)
@@ -477,7 +480,7 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
   }
 }
 
-function triggerUpdate(slot: MergedItem<RxNodeImpl>): void {
+function triggerUpdateForSlot(slot: MergedItem<RxNodeImpl>): void {
   const node = slot.instance
   if (node.stamp >= 0) { // if not finalized
     if (node.has(Mode.PinpointUpdate)) {
