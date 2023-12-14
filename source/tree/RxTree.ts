@@ -389,11 +389,10 @@ function runUpdateNestedTreesThenDo(error: unknown, action: (error: unknown) => 
         for (const child of children.items()) {
           if (Transaction.isCanceled)
             break
-          const node = child.instance
-          const el = node.element
-          const isPart = node.driver.isPartitionSeparator
+          const childNode = child.instance
+          const isPart = childNode.driver.isPartitionSeparator
           const host = isPart ? owner : partition
-          const p = el.node.priority ?? Priority.Realtime
+          const p = childNode.priority ?? Priority.Realtime
           mounting = markToMountIfNecessary(mounting, host, child, children, sequential)
           if (p === Priority.Realtime)
             triggerSeatUpdate(child) // update synchronously
@@ -402,7 +401,7 @@ function runUpdateNestedTreesThenDo(error: unknown, action: (error: unknown) => 
           else
             p2 = push(child, p2) // defer for P2 async update
           if (isPart)
-            partition = node
+            partition = childNode
         }
         // Update incremental children (if any)
         if (!Transaction.isCanceled && (p1 !== undefined || p2 !== undefined))
