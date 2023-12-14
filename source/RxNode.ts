@@ -61,8 +61,6 @@ export interface RxNodeDecl<E extends RxElement> {
   key?: string
   mode?: Mode
   triggers?: unknown
-  specify?: Delegate<E>
-  create?: Delegate<E>
   initialize?: Delegate<E>
   update?: Delegate<E>
   finalize?: Delegate<E>
