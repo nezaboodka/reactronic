@@ -46,7 +46,6 @@ export interface RxNode<E extends RxElement = any> {
   readonly stamp: number
   readonly outer: RxNode
   readonly context: RxNodeContext | undefined
-  readonly isInitialUpdate: boolean
   priority?: Priority
   childrenShuffling: boolean
   strictOrder: boolean

@@ -75,6 +75,14 @@ export class RxTree {
     return result
   }
 
+  static get isFirstUpdate(): boolean {
+    return gCurrent?.instance.stamp === 1
+  }
+
+  static get nodeStamp(): number {
+    return gCurrent?.instance.stamp ?? -1
+  }
+
   static triggerUpdate(element: RxElement, triggers: unknown): void {
     const node = element.node as RxNodeImpl
     const declaration = node.declaration
@@ -287,8 +295,6 @@ class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
     if (this.has(Mode.IndependentUpdate))
       RxNodeImpl.disposableNodeCount++
   }
-
-  get isInitialUpdate(): boolean { return this.stamp === 1 }
 
   get strictOrder(): boolean { return this.children.isStrict }
   set strictOrder(value: boolean) { this.children.isStrict = value }
