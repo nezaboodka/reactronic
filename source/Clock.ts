@@ -1,4 +1,4 @@
-import { ObservableObject } from './impl/Mvcc.js'
+import { ObservableObject } from './core/Mvcc.js'
 import { transactional } from './RxSystem.js'
 
 export class Clock extends ObservableObject {

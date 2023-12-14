@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import { LoggingOptions } from './Logging.js'
-import { SeparationMode } from './impl/Data.js'
+import { SeparationMode } from './core/Data.js'
 export { LoggingLevel } from './Logging.js'
 export type { LoggingOptions, ProfilingOptions } from './Logging.js'
-import { Journal } from './impl/Journal.js'
-import { Monitor } from './impl/Monitor.js'
+import { Journal } from './core/Journal.js'
+import { Monitor } from './core/Monitor.js'
 
 export interface SnapshotOptions {
   readonly hint?: string

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { F } from './util/Utils.js'
-import { ObservableObject } from './impl/Mvcc.js'
+import { ObservableObject } from './core/Mvcc.js'
 import { reactive } from './RxSystem.js'
 
 

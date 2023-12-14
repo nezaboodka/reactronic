@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Transaction } from './impl/Transaction.js'
+import { Transaction } from './core/Transaction.js'
 import { unobs } from './RxSystem.js'
 
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>

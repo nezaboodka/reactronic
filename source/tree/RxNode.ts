@@ -5,8 +5,8 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { MergeListReader, MergedItem } from './util/MergeList.js'
-import { MemberOptions } from './Options.js'
+import { MergeListReader, MergedItem } from '../util/MergeList.js'
+import { MemberOptions } from '../Options.js'
 
 // Delegates
 

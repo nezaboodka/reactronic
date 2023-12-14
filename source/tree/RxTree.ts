@@ -5,14 +5,14 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { LoggingOptions } from './Logging.js'
-import { MergeList, MergedItem } from './util/MergeList.js'
+import { LoggingOptions } from '../Logging.js'
+import { MergeList, MergedItem } from '../util/MergeList.js'
+import { emitLetters, getCallerInfo } from './RxNodeUtils.js'
+import { MemberOptions, Reentrance } from '../Options.js'
+import { ObservableObject } from '../core/Mvcc.js'
+import { Transaction } from '../core/Transaction.js'
+import { RxSystem, options, raw, reactive, unobs } from '../RxSystem.js'
 import { Priority, Mode, RxNodeDecl, RxNodeDriver, SimpleDelegate, RxNode, RxNodeContext, RxElement } from './RxNode.js'
-import { emitLetters, getCallerInfo } from './util/RxNodeUtils.js'
-import { MemberOptions, Reentrance } from './Options.js'
-import { ObservableObject } from './impl/Mvcc.js'
-import { Transaction } from './impl/Transaction.js'
-import { RxSystem, options, raw, reactive, unobs } from './RxSystem.js'
 
 // RxTree
 

@@ -7,7 +7,7 @@
 
 /* istanbul ignore file */
 
-import { ObservableObject } from './impl/Mvcc.js'
+import { ObservableObject } from './core/Mvcc.js'
 
 export abstract class Pipe<T> extends ObservableObject {
   abstract readonly capacity: number
