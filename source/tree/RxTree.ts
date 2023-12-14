@@ -423,8 +423,7 @@ function markToMountIfNecessary(mounting: boolean, host: RxNodeImpl,
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
   const node = seat.instance
-  const el = node.element
-  if (el.native && !node.has(Mode.ManualMount)) {
+  if (node.element.native && !node.has(Mode.ManualMount)) {
     if (mounting || node.host !== host) {
       children.markAsMoved(seat)
       mounting = false
