@@ -393,7 +393,8 @@ function runUpdateNestedTreesThenDo(error: unknown, action: (error: unknown) => 
           const isPart = childNode.driver.isPartitionSeparator
           const host = isPart ? owner : partition
           const p = childNode.priority ?? Priority.Realtime
-          mounting = markToMountIfNecessary(mounting, host, child, children, sequential)
+          mounting = markToMountIfNecessary(
+            mounting, host, child, children, sequential)
           if (p === Priority.Realtime)
             triggerSeatUpdate(child) // update synchronously
           else if (p === Priority.Normal)
