@@ -284,7 +284,7 @@ class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
     this.childrenShuffling = false
     // Monitoring
     RxNodeImpl.grandNodeCount++
-    if (this.has(Mode.PinpointUpdate))
+    if (this.has(Mode.IndependentUpdate))
       RxNodeImpl.disposableNodeCount++
   }
 
@@ -311,8 +311,8 @@ class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
   }
 
   configureReactronic(options: Partial<MemberOptions>): MemberOptions {
-    if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.PinpointUpdate))
-      throw new Error('reactronic can be configured only for elements with pinpoint update mode and only inside initialize')
+    if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.IndependentUpdate))
+      throw new Error('reactronic can be configured only for elements with independent update mode and only inside initialize')
     return RxSystem.getReaction(this.update).configure(options)
   }
 
@@ -483,7 +483,7 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
 function triggerUpdateGivenSeat(seat: MergedItem<RxNodeImpl>): void {
   const node = seat.instance
   if (node.stamp >= 0) { // if not finalized
-    if (node.has(Mode.PinpointUpdate)) {
+    if (node.has(Mode.IndependentUpdate)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
         Transaction.outside(() => {
           if (RxSystem.isLogging)
@@ -562,8 +562,8 @@ function triggerFinalization(seat: MergedItem<RxNodeImpl>, isLeader: boolean, in
     const childrenAreLeaders = unobs(() => driver.finalize(el, isLeader))
     el.native = null
     el.controller = null
-    if (node.has(Mode.PinpointUpdate)) {
-      // Defer disposal if element is reactive (having pinpoint update mode)
+    if (node.has(Mode.IndependentUpdate)) {
+      // Defer disposal if element is reactive (having independent update mode)
       seat.aux = undefined
       const last = gLastToDispose
       if (last)

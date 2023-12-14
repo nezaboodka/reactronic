@@ -17,7 +17,7 @@ export type SimpleDelegate<T = unknown, R = void> = (element: T) => R
 
 export enum Mode {
   Default = 0,
-  PinpointUpdate = 1,
+  IndependentUpdate = 1,
   ManualMount = 2,
 }
 
