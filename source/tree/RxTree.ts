@@ -70,7 +70,7 @@ export class RxTree {
       const node = new RxNodeImpl(key || '', driver, declaration, owner)
       node.seat = MergeList.createItem(node)
       result = node.element
-      triggerUpdateGivenSeat(node.seat)
+      triggerUpdateAtSeat(node.seat)
     }
     return result
   }
@@ -80,7 +80,7 @@ export class RxTree {
     const declaration = node.declaration
     if (!triggersAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
-      triggerUpdateGivenSeat(node.seat!)
+      triggerUpdateAtSeat(node.seat!)
     }
   }
 
@@ -396,7 +396,7 @@ function runUpdateNestedTreesThenDo(error: unknown, action: (error: unknown) => 
           const p = el.node.priority ?? Priority.Realtime
           mounting = markToMountIfNecessary(mounting, host, child, children, sequential)
           if (p === Priority.Realtime)
-            triggerUpdateGivenSeat(child) // update synchronously
+            triggerUpdateAtSeat(child) // update synchronously
           else if (p === Priority.Normal)
             p1 = push(child, p1) // defer for P1 async update
           else
@@ -462,7 +462,7 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
       const frameDurationLimit = priority === Priority.Background ? RxTree.shortFrameDuration : Infinity
       let frameDuration = Math.min(frameDurationLimit, Math.max(RxTree.frameDuration / 4, RxTree.shortFrameDuration))
       for (const child of items) {
-        triggerUpdateGivenSeat(child)
+        triggerUpdateAtSeat(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
           RxTree.currentUpdatePriority = outerPriority
           await Transaction.requestNextFrame(0)
@@ -480,7 +480,7 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
   }
 }
 
-function triggerUpdateGivenSeat(seat: MergedItem<RxNodeImpl>): void {
+function triggerUpdateAtSeat(seat: MergedItem<RxNodeImpl>): void {
   const node = seat.instance
   if (node.stamp >= 0) { // if not finalized
     if (node.has(Mode.IndependentUpdate)) {
