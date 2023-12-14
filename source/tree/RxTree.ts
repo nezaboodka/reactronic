@@ -559,8 +559,6 @@ function triggerFinalization(seat: MergedItem<RxNodeImpl>, isLeader: boolean, in
     node.stamp = ~node.stamp
     // Finalize element itself and remove it from collection
     const childrenAreLeaders = unobs(() => driver.finalize(el, isLeader))
-    el.native = null
-    el.controller = null
     if (node.has(Mode.IndependentUpdate)) {
       // Defer disposal if element is reactive (having independent update mode)
       seat.aux = undefined
