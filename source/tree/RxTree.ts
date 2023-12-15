@@ -12,7 +12,7 @@ import { MemberOptions, Reentrance } from '../Options.js'
 import { ObservableObject } from '../core/Mvcc.js'
 import { Transaction } from '../core/Transaction.js'
 import { RxSystem, options, raw, reactive, unobs } from '../RxSystem.js'
-import { Priority, Mode, RxNodeDecl, RxNodeDriver, SimpleDelegate, RxNode, RxNodeContext, RxElement } from './RxNode.js'
+import { Priority, Mode, RxNodeDecl, RxNodeDriver, SimpleDelegate, RxNode, RxNodeContext } from './RxNode.js'
 
 // RxTree
 
@@ -22,11 +22,11 @@ export class RxTree {
   static currentUpdatePriority = Priority.Realtime
   static frameDuration = RxTree.longFrameDuration
 
-  static declare<E extends RxElement>(
+  static declare<E = void>(
     driver: RxNodeDriver<E>,
     declaration?: RxNodeDecl<E>,
-    preset?: RxNodeDecl<E>): E {
-    let result: E
+    preset?: RxNodeDecl<E>): RxNode<E> {
+    let result: RxNodeImpl<E>
     // Normalize parameters
     if (declaration)
       declaration.preset = preset
@@ -49,28 +49,25 @@ export class RxTree {
         'nested elements can be declared inside update function only')
       if (existing) {
         // Reuse existing node
-        const node = existing.instance
-        result = node.element
-        if (node.driver !== driver && driver !== undefined)
-          throw new Error(`changing element driver is not yet supported: "${node.driver.name}" -> "${driver?.name}"`)
-        const exTriggers = node.declaration.triggers
+        result = existing.instance as RxNodeImpl<E>
+        if (result.driver !== driver && driver !== undefined)
+          throw new Error(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
+        const exTriggers = result.declaration.triggers
         if (triggersAreEqual(declaration.triggers, exTriggers))
           declaration.triggers = exTriggers // preserve triggers instance
-        node.declaration = declaration
+        result.declaration = declaration
       }
       else {
         // Create new node
-        const node = new RxNodeImpl(key || generateKey(owner), driver, declaration, owner)
-        node.seat = children.mergeAsAdded(node)
-        result = node.element
+        result = new RxNodeImpl<E>(key || generateKey(owner), driver, declaration, owner)
+        result.seat = children.mergeAsAdded(result as RxNodeImpl<unknown>) as MergedItem<RxNodeImpl<E>>
       }
     }
     else {
       // Create new root node
-      const node = new RxNodeImpl(key || '', driver, declaration, owner)
-      node.seat = MergeList.createItem(node)
-      result = node.element
-      triggerSeatUpdate(node.seat)
+      result = new RxNodeImpl(key || '', driver, declaration, owner)
+      result.seat = MergeList.createItem(result)
+      triggerUpdateViaSeat(result.seat)
     }
     return result
   }
@@ -83,12 +80,12 @@ export class RxTree {
     return gCurrent?.instance.stamp ?? -1
   }
 
-  static triggerUpdate(element: RxElement, triggers: unknown): void {
-    const node = element.node as RxNodeImpl
-    const declaration = node.declaration
+  static triggerUpdate(node: RxNode<any>, triggers: unknown): void {
+    const impl = node as RxNodeImpl<any>
+    const declaration = impl.declaration
     if (!triggersAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
-      triggerSeatUpdate(node.seat!)
+      triggerUpdateViaSeat(impl.seat!)
     }
   }
 
@@ -96,15 +93,15 @@ export class RxTree {
     runUpdateNestedTreesThenDo(undefined, action)
   }
 
-  static findMatchingHost<E extends RxElement, R extends RxElement>(
+  static findMatchingHost<E = unknown, R = unknown>(
     node: RxNode<E>, match: SimpleDelegate<RxNode<E>, boolean>): RxNode<R> | undefined {
-    let p = node.host
+    let p = node.host as RxNodeImpl<any>
     while (p !== p.host && !match(p))
       p = p.host
     return p
   }
 
-  static findMatchingPrevSibling<E extends RxElement, R extends RxElement>(
+  static findMatchingPrevSibling<E = unknown, R = unknown>(
     node: RxNode<E>, match: SimpleDelegate<RxNode<E>, boolean>): RxNode<R> | undefined {
     let p = node.seat!.prev
     while (p && !match(p.instance))
@@ -112,11 +109,11 @@ export class RxTree {
     return p?.instance as RxNode<R> | undefined
   }
 
-  static forEachChildRecursively<E extends RxElement>(
+  static forEachChildRecursively<E = unknown>(
     node: RxNode<E>, action: SimpleDelegate<RxNode<E>>): void {
     action(node)
     for (const child of node.children.items())
-      RxTree.forEachChildRecursively<E>(child.instance, action)
+      RxTree.forEachChildRecursively<E>(child.instance as RxNode<any>, action)
   }
 
   static getDefaultLoggingOptions(): LoggingOptions | undefined {
@@ -130,7 +127,7 @@ export class RxTree {
 
 // BaseDriver
 
-export abstract class BaseDriver<E extends RxElement> implements RxNodeDriver<E> {
+export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
   constructor(
     readonly name: string,
     readonly isPartitionSeparator: boolean,
@@ -139,21 +136,21 @@ export abstract class BaseDriver<E extends RxElement> implements RxNodeDriver<E>
 
   abstract allocate(node: RxNode<E>): E
 
-  initialize(element: E): void {
-    this.predefine?.(element)
-    initializeViaPresetChain(element, element.node.declaration)
+  initialize(node: RxNode<E>): void {
+    this.predefine?.(node.element)
+    initializeViaPresetChain(node.element, node.declaration)
   }
 
-  mount(element: E): void {
+  mount(node: RxNode<E>): void {
     // nothing to do by default
   }
 
-  update(element: E): void | Promise<void> {
-    updateViaPresetChain(element, element.node.declaration)
+  update(node: RxNode<E>): void | Promise<void> {
+    updateViaPresetChain(node.element, node.declaration)
   }
 
-  finalize(element: E, isLeader: boolean): boolean {
-    finalizeViaPresetChain(element, element.node.declaration)
+  finalize(node: RxNode<E>, isLeader: boolean): boolean {
+    finalizeViaPresetChain(node.element, node.declaration)
     return isLeader // treat children as finalization leaders as well
   }
 }
@@ -241,7 +238,7 @@ class RxNodeContextImpl<T extends Object = Object> extends ObservableObject impl
 
 // RxNodeImpl
 
-class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
+class RxNodeImpl<E = unknown> implements RxNode<E> {
   // Static properties
   static logging: LoggingOptions | undefined = undefined
   static grandNodeCount: number = 0
@@ -267,6 +264,7 @@ class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
     key: string, driver: RxNodeDriver<E>,
     declaration: Readonly<RxNodeDecl<E>>,
     owner: RxNodeImpl | undefined) {
+    const thisAsUnknown = this as RxNodeImpl<unknown>
     this.key = key
     this.driver = driver
     this.declaration = declaration
@@ -278,11 +276,11 @@ class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
     }
     else {
       this.level = 1
-      this.owner = owner = this
-      this.outer = this
+      this.owner = owner = thisAsUnknown
+      this.outer = thisAsUnknown
     }
     this.element = driver.allocate(this)
-    this.host = this // node is unmounted
+    this.host = thisAsUnknown // node is unmounted
     this.children = new MergeList<RxNodeImpl>(getNodeKey, true)
     this.seat = undefined
     this.stamp = Number.MAX_SAFE_INTEGER // empty
@@ -299,7 +297,7 @@ class RxNodeImpl<E extends RxElement = any> implements RxNode<E> {
   get strictOrder(): boolean { return this.children.isStrict }
   set strictOrder(value: boolean) { this.children.isStrict = value }
 
-  get isMoved(): boolean { return this.owner.children.isMoved(this.seat!) }
+  get isMoved(): boolean { return this.owner.children.isMoved(this.seat! as MergedItem<RxNodeImpl>) }
 
   has(mode: Mode): boolean {
     return (getModeViaPresetChain(this.declaration) & mode) === mode
@@ -402,7 +400,7 @@ function runUpdateNestedTreesThenDo(error: unknown, action: (error: unknown) => 
           mounting = markToMountIfNecessary(
             mounting, host, child, children, sequential)
           if (p === Priority.Realtime)
-            triggerSeatUpdate(child) // update synchronously
+            triggerUpdateViaSeat(child) // update synchronously
           else if (p === Priority.Normal)
             p1 = push(child, p1) // defer for P1 async update
           else
@@ -429,7 +427,8 @@ function markToMountIfNecessary(mounting: boolean, host: RxNodeImpl,
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
   const node = seat.instance
-  if (node.element.native && !node.has(Mode.ManualMount)) {
+  // TODO: Get rid of "node.element.native"
+  if ((node.element as any).native && !node.has(Mode.ManualMount)) {
     if (mounting || node.host !== host) {
       children.markAsMoved(seat)
       mounting = false
@@ -467,7 +466,7 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
       const frameDurationLimit = priority === Priority.Background ? RxTree.shortFrameDuration : Infinity
       let frameDuration = Math.min(frameDurationLimit, Math.max(RxTree.frameDuration / 4, RxTree.shortFrameDuration))
       for (const child of items) {
-        triggerSeatUpdate(child)
+        triggerUpdateViaSeat(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
           RxTree.currentUpdatePriority = outerPriority
           await Transaction.requestNextFrame(0)
@@ -485,7 +484,7 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
   }
 }
 
-function triggerSeatUpdate(seat: MergedItem<RxNodeImpl>): void {
+function triggerUpdateViaSeat(seat: MergedItem<RxNodeImpl<any>>): void {
   const node = seat.instance
   if (node.stamp >= 0) { // if not finalized
     if (node.has(Mode.IndependentUpdate)) {
@@ -506,25 +505,24 @@ function triggerSeatUpdate(seat: MergedItem<RxNodeImpl>): void {
 }
 
 function mountOrRemountIfNecessary(node: RxNodeImpl): void {
-  const element = node.element
   const driver = node.driver
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
     node.stamp = Number.MAX_SAFE_INTEGER - 1 // initializing
     unobs(() => {
-      driver.initialize(element)
+      driver.initialize(node)
       if (!node.has(Mode.ManualMount)) {
         node.stamp = 0 // mounting
-        if (element.node.host !== element.node)
-          driver.mount(element)
+        if (node.host !== node)
+          driver.mount(node)
       }
       node.stamp = 0 // TEMPORARY
     })
   }
-  else if (node.isMoved && !node.has(Mode.ManualMount) && element.node.host !== element.node)
-    unobs(() => driver.mount(element))
+  else if (node.isMoved && !node.has(Mode.ManualMount) && node.host !== node)
+    unobs(() => driver.mount(node))
 }
 
-function updateNow(seat: MergedItem<RxNodeImpl>): void {
+function updateNow(seat: MergedItem<RxNodeImpl<any>>): void {
   const node = seat.instance
   const el = node.element
   if (node.stamp >= 0) { // if element is alive
@@ -557,14 +555,13 @@ function updateNow(seat: MergedItem<RxNodeImpl>): void {
 
 function triggerFinalization(seat: MergedItem<RxNodeImpl>, isLeader: boolean, individual: boolean): void {
   const node = seat.instance
-  const el = node.element
   if (node.stamp >= 0) {
     const driver = node.driver
     if (individual && node.key !== node.declaration.key && !driver.isPartitionSeparator)
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
     // Finalize element itself and remove it from collection
-    const childrenAreLeaders = unobs(() => driver.finalize(el, isLeader))
+    const childrenAreLeaders = unobs(() => driver.finalize(node, isLeader))
     if (node.has(Mode.IndependentUpdate)) {
       // Defer disposal if element is reactive (having independent update mode)
       seat.aux = undefined

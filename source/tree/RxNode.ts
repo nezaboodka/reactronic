@@ -29,11 +29,7 @@ export const enum Priority {
 
 // RxNode
 
-export interface RxElement {
-  node: RxNode<any>
-}
-
-export interface RxNode<E extends RxElement = any> {
+export interface RxNode<E = unknown> {
   readonly key: string
   readonly driver: RxNodeDriver<E>
   readonly declaration: Readonly<RxNodeDecl<E>>
@@ -55,7 +51,7 @@ export interface RxNode<E extends RxElement = any> {
 
 // RxNodeDecl
 
-export interface RxNodeDecl<E extends RxElement> {
+export interface RxNodeDecl<E = unknown> {
   preset?: RxNodeDecl<E>
   key?: string
   mode?: Mode
@@ -67,16 +63,16 @@ export interface RxNodeDecl<E extends RxElement> {
 
 // RxNodeDriver
 
-export interface RxNodeDriver<E extends RxElement> {
+export interface RxNodeDriver<E = unknown> {
   readonly name: string,
   readonly isPartitionSeparator: boolean,
   readonly predefine?: SimpleDelegate<E>
 
   allocate(node: RxNode<E>): E
-  initialize(element: E): void
-  mount(element: E): void
-  update(element: E): void | Promise<void>
-  finalize(element: E, isLeader: boolean): boolean
+  initialize(node: RxNode<E>): void
+  mount(node: RxNode<E>): void
+  update(node: RxNode<E>): void | Promise<void>
+  finalize(node: RxNode<E>, isLeader: boolean): boolean
 }
 
 // RxNodeContext
