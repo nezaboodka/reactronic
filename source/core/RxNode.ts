@@ -7,7 +7,7 @@
 
 import { LoggingOptions } from '../Logging.js'
 import { MergeList, MergeListReader, MergedItem } from '../util/MergeList.js'
-import { emitLetters, getCallerInfo } from './RxNodeUtils.js'
+import { emitLetters, getCallerInfo } from '../util/Utils.js'
 import { MemberOptions, Reentrance } from '../Options.js'
 import { ObservableObject } from '../core/Mvcc.js'
 import { Transaction } from '../core/Transaction.js'
