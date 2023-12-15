@@ -125,8 +125,8 @@ export abstract class RxNode<E = unknown> {
     }
   }
 
-  static updateNestedTreesThenDo(action: (error: unknown) => void): void {
-    runUpdateNestedTreesThenDo(undefined, action)
+  static updateNestedNodesThenDo(action: (error: unknown) => void): void {
+    runUpdateNestedNodesThenDo(undefined, action)
   }
 
   static findMatchingHost<E = unknown, R = unknown>(
@@ -441,7 +441,7 @@ function getNodeKey(node: RxNode): string | undefined {
   return node.stamp >= 0 ? node.key : undefined
 }
 
-function runUpdateNestedTreesThenDo(error: unknown, action: (error: unknown) => void): void {
+function runUpdateNestedNodesThenDo(error: unknown, action: (error: unknown) => void): void {
   const curr = RxNodeImpl.current
   const owner = curr.instance
   const children = owner.children
@@ -606,13 +606,13 @@ function updateNow(seat: MergedItem<RxNodeImpl<any>>): void {
           result = driver.update(node)
           if (result instanceof Promise)
             result.then(
-              v => { runUpdateNestedTreesThenDo(undefined, NOP); return v },
-              e => { console.log(e); runUpdateNestedTreesThenDo(e ?? new Error('unknown error'), NOP) })
+              v => { runUpdateNestedNodesThenDo(undefined, NOP); return v },
+              e => { console.log(e); runUpdateNestedNodesThenDo(e ?? new Error('unknown error'), NOP) })
           else
-            runUpdateNestedTreesThenDo(undefined, NOP)
+            runUpdateNestedNodesThenDo(undefined, NOP)
         }
         catch(e: unknown) {
-          runUpdateNestedTreesThenDo(e, NOP)
+          runUpdateNestedNodesThenDo(e, NOP)
           console.log(`Update failed: ${node.key}`)
           console.log(`${e}`)
         }
