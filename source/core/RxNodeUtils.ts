@@ -27,7 +27,7 @@ export function getCallerInfo(prefix: string): string {
   const stack = error.stack || ''
   Error.stackTraceLimit = restore
   const lines = stack.split('\n')
-  let i = lines.findIndex(x => x.indexOf('.declare') >= 0)
+  let i = lines.findIndex(x => x.indexOf('.acquire') >= 0)
   i = i >= 0 ? i + 2 : 5
   let caller = extractFunctionAndLocation(lines[i])
   let location = caller

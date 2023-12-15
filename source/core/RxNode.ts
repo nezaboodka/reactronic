@@ -58,7 +58,7 @@ export abstract class RxNode<E = unknown> {
   static currentUpdatePriority = Priority.Realtime
   static frameDuration = RxNode.longFrameDuration
 
-  static declare<E = void>(
+  static acquire<E = void>(
     driver: RxNodeDriver<E>,
     declaration?: RxNodeDecl<E>,
     preset?: RxNodeDecl<E>): RxNode<E> {
