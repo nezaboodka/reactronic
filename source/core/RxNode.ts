@@ -306,7 +306,7 @@ class RxNodeContextImpl<T extends Object = Object> extends ObservableObject impl
 
 // RxNodeImpl
 
-class RxNodeImpl<E = unknown> implements RxNode<E> {
+class RxNodeImpl<E = unknown> extends RxNode<E> {
   // Static properties
   static logging: LoggingOptions | undefined = undefined
   static grandNodeCount: number = 0
@@ -332,6 +332,7 @@ class RxNodeImpl<E = unknown> implements RxNode<E> {
     key: string, driver: RxNodeDriver<E>,
     declaration: Readonly<RxNodeDecl<E>>,
     owner: RxNodeImpl | undefined) {
+    super()
     const thisAsUnknown = this as RxNodeImpl<unknown>
     this.key = key
     this.driver = driver
