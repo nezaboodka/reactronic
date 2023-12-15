@@ -524,7 +524,6 @@ function mountOrRemountIfNecessary(node: RxNodeImpl): void {
 
 function updateNow(seat: MergedItem<RxNodeImpl<any>>): void {
   const node = seat.instance
-  const el = node.element
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
     runInside(seat, () => {
@@ -535,7 +534,7 @@ function updateNow(seat: MergedItem<RxNodeImpl<any>>): void {
           node.numerator = 0
           node.children.beginMerge()
           const driver = node.driver
-          result = driver.update(el)
+          result = driver.update(node)
           if (result instanceof Promise)
             result.then(
               v => { runUpdateNestedTreesThenDo(undefined, NOP); return v },
