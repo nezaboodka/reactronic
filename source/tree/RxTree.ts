@@ -6,21 +6,57 @@
 // automatically licensed under the license referred above.
 
 import { LoggingOptions } from '../Logging.js'
-import { MergeList, MergedItem } from '../util/MergeList.js'
+import { MergeList, MergeListReader, MergedItem } from '../util/MergeList.js'
 import { emitLetters, getCallerInfo } from './RxNodeUtils.js'
 import { MemberOptions, Reentrance } from '../Options.js'
 import { ObservableObject } from '../core/Mvcc.js'
 import { Transaction } from '../core/Transaction.js'
 import { RxSystem, options, raw, reactive, unobs } from '../RxSystem.js'
-import { Priority, Mode, RxNodeDecl, RxNodeDriver, SimpleDelegate, RxNode, RxNodeContext } from './RxNode.js'
 
-// RxTree
+// Delegates
 
-export class RxTree {
+export type Delegate<T> = (element: T, base: () => void) => void
+export type SimpleDelegate<T = unknown, R = void> = (element: T) => R
+
+// Enums
+
+export enum Mode {
+  Default = 0,
+  IndependentUpdate = 1,
+  ManualMount = 2,
+}
+
+export const enum Priority {
+  Realtime = 0,
+  Normal = 1,
+  Background = 2
+}
+
+// RxNode
+
+export abstract class RxNode<E = unknown> {
+  abstract readonly key: string
+  abstract readonly driver: RxNodeDriver<E>
+  abstract readonly declaration: Readonly<RxNodeDecl<E>>
+  abstract readonly level: number
+  abstract readonly owner: RxNode
+  abstract element: E
+  abstract readonly host: RxNode
+  abstract readonly children: MergeListReader<RxNode>
+  abstract readonly seat: MergedItem<RxNode<E>> | undefined
+  abstract readonly stamp: number
+  abstract readonly outer: RxNode
+  abstract readonly context: RxNodeContext | undefined
+  abstract priority?: Priority
+  abstract childrenShuffling: boolean
+  abstract strictOrder: boolean
+  abstract has(mode: Mode): boolean
+  abstract configureReactronic(options: Partial<MemberOptions>): MemberOptions
+
   static readonly shortFrameDuration = 16 // ms
   static readonly longFrameDuration = 300 // ms
   static currentUpdatePriority = Priority.Realtime
-  static frameDuration = RxTree.longFrameDuration
+  static frameDuration = RxNode.longFrameDuration
 
   static declare<E = void>(
     driver: RxNodeDriver<E>,
@@ -113,7 +149,7 @@ export class RxTree {
     node: RxNode<E>, action: SimpleDelegate<RxNode<E>>): void {
     action(node)
     for (const child of node.children.items())
-      RxTree.forEachChildRecursively<E>(child.instance as RxNode<any>, action)
+      RxNode.forEachChildRecursively<E>(child.instance as RxNode<any>, action)
   }
 
   static getDefaultLoggingOptions(): LoggingOptions | undefined {
@@ -123,6 +159,38 @@ export class RxTree {
   static setDefaultLoggingOptions(logging?: LoggingOptions): void {
     RxNodeImpl.logging = logging
   }
+}
+
+// RxNodeDecl
+
+export interface RxNodeDecl<E = unknown> {
+  preset?: RxNodeDecl<E>
+  key?: string
+  mode?: Mode
+  triggers?: unknown
+  initialize?: Delegate<E>
+  update?: Delegate<E>
+  finalize?: Delegate<E>
+}
+
+// RxNodeDriver
+
+export interface RxNodeDriver<E = unknown> {
+  readonly name: string,
+  readonly isPartitionSeparator: boolean,
+  readonly predefine?: SimpleDelegate<E>
+
+  allocate(node: RxNode<E>): E
+  initialize(node: RxNode<E>): void
+  mount(node: RxNode<E>): void
+  update(node: RxNode<E>): void | Promise<void>
+  finalize(node: RxNode<E>, isLeader: boolean): boolean
+}
+
+// RxNodeContext
+
+export interface RxNodeContext<T extends Object = Object> {
+  value: T
 }
 
 // BaseDriver
@@ -457,29 +525,29 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
   priority: Priority): Promise<void> {
   await Transaction.requestNextFrame()
   const node = owner.instance
-  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, RxTree.shortFrameDuration / 3)) {
-    let outerPriority = RxTree.currentUpdatePriority
-    RxTree.currentUpdatePriority = priority
+  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, RxNode.shortFrameDuration / 3)) {
+    let outerPriority = RxNode.currentUpdatePriority
+    RxNode.currentUpdatePriority = priority
     try {
       if (node.childrenShuffling)
         shuffle(items)
-      const frameDurationLimit = priority === Priority.Background ? RxTree.shortFrameDuration : Infinity
-      let frameDuration = Math.min(frameDurationLimit, Math.max(RxTree.frameDuration / 4, RxTree.shortFrameDuration))
+      const frameDurationLimit = priority === Priority.Background ? RxNode.shortFrameDuration : Infinity
+      let frameDuration = Math.min(frameDurationLimit, Math.max(RxNode.frameDuration / 4, RxNode.shortFrameDuration))
       for (const child of items) {
         triggerUpdateViaSeat(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
-          RxTree.currentUpdatePriority = outerPriority
+          RxNode.currentUpdatePriority = outerPriority
           await Transaction.requestNextFrame(0)
-          outerPriority = RxTree.currentUpdatePriority
-          RxTree.currentUpdatePriority = priority
-          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, RxTree.frameDuration))
+          outerPriority = RxNode.currentUpdatePriority
+          RxNode.currentUpdatePriority = priority
+          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, RxNode.frameDuration))
         }
-        if (Transaction.isCanceled && Transaction.isFrameOver(1, RxTree.shortFrameDuration / 3))
+        if (Transaction.isCanceled && Transaction.isFrameOver(1, RxNode.shortFrameDuration / 3))
           break
       }
     }
     finally {
-      RxTree.currentUpdatePriority = outerPriority
+      RxNode.currentUpdatePriority = outerPriority
     }
   }
 }
