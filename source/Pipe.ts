@@ -7,7 +7,7 @@
 
 /* istanbul ignore file */
 
-import { ObservableObject } from './core/Mvcc.js'
+import { ObservableObject } from "./core/Mvcc.js"
 
 export abstract class Pipe<T> extends ObservableObject {
   abstract readonly capacity: number
@@ -16,5 +16,5 @@ export abstract class Pipe<T> extends ObservableObject {
   abstract take(count: number): T[]
   // To be continued...
 
-  static create<T>(hint?: string, capacity?: number): Pipe<T> { throw new Error('not implemented') }
+  static create<T>(hint?: string, capacity?: number): Pipe<T> { throw new Error("not implemented") }
 }

@@ -5,14 +5,14 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { F } from './util/Utils.js'
-import { Log } from './util/Dbg.js'
-import {AbstractReaction, Kind, MemberOptions, LoggingOptions, ProfilingOptions } from './Options.js'
-import { Meta, ObjectHandle } from './core/Data.js'
-import { Changeset } from './core/Changeset.js'
-import { Mvcc } from './core/Mvcc.js'
-import { Transaction } from './core/Transaction.js'
-import { ReactionImpl } from './core/Reaction.js'
+import { F } from "./util/Utils.js"
+import { Log } from "./util/Dbg.js"
+import {AbstractReaction, Kind, MemberOptions, LoggingOptions, ProfilingOptions } from "./Options.js"
+import { Meta, ObjectHandle } from "./core/Data.js"
+import { Changeset } from "./core/Changeset.js"
+import { Mvcc } from "./core/Mvcc.js"
+import { Transaction } from "./core/Transaction.js"
+import { ReactionImpl } from "./core/Reaction.js"
 
 export class RxSystem {
   static why(brief: boolean = false): string { return brief ? ReactionImpl.briefWhy() : ReactionImpl.why() }

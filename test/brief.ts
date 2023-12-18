@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, raw, transactional, reactive, cached, Journal, RxSystem, LoggingOptions, options, transaction } from '../source/api.js'
+import { ObservableObject, raw, transactional, reactive, cached, Journal, RxSystem, LoggingOptions, options, transaction } from "../source/api.js"
 
 export const output: string[] = []
 
@@ -17,8 +17,8 @@ export class Demo extends ObservableObject {
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
   // set computed(value: string) { /* nop */ }
 
-  @raw shared: string = 'for testing purposes'
-  title: string = 'Demo'
+  @raw shared: string = "for testing purposes"
+  title: string = "Demo"
   users: Person[] = []
   collection1: Person[] = this.users
   collection2: Person[] = this.users
@@ -41,7 +41,7 @@ export class Demo extends ObservableObject {
 
   @transactional @options({ journal: Demo.journal })
   testUndo(): void {
-    this.title = 'Demo - undo/redo'
+    this.title = "Demo - undo/redo"
   }
 
   @reactive @options({ order: 1 })
@@ -53,29 +53,29 @@ export class Demo extends ObservableObject {
   private _loadUsers(): void {
     const users = this.users = this.users.toMutable()
     users.push(new Person({
-      name: 'John', age: 38,
-      emails: ['john@mail.com'],
+      name: "John", age: 38,
+      emails: ["john@mail.com"],
       children: [
-        new Person({ name: 'Billy' }), // William
-        new Person({ name: 'Barry' }), // Barry
-        new Person({ name: 'Steve' }), // Steven
+        new Person({ name: "Billy" }), // William
+        new Person({ name: "Barry" }), // Barry
+        new Person({ name: "Steve" }), // Steven
       ],
     }))
     users.push(new Person({
-      name: 'Kevin', age: 27,
-      emails: ['kevin@mail.com'],
+      name: "Kevin", age: 27,
+      emails: ["kevin@mail.com"],
       children: [
-        new Person({ name: 'Britney' }),
+        new Person({ name: "Britney" }),
       ],
     }))
   }
 }
 
 export class DemoView extends ObservableObject {
-  @raw raw: string = 'plain field'
-  @raw shared: string = 'for testing purposes'
+  @raw raw: string = "plain field"
+  @raw shared: string = "for testing purposes"
   @raw readonly model: Demo
-  userFilter: string = 'Jo'
+  userFilter: string = "Jo"
 
   constructor(model: Demo) {
     super()
@@ -120,7 +120,7 @@ export class DemoView extends ObservableObject {
     const a = this.filteredUsers()
     for (const x of a) {
       const childNames = x.children.map(child => child.name)
-      r.push(`${x.name}'s children: ${childNames.join(', ')}`)
+      r.push(`${x.name}'s children: ${childNames.join(", ")}`)
     }
     return r
   }
@@ -162,7 +162,7 @@ export class Person extends ObservableObject {
         if (i >= 0)
           children.splice(i, 1)
         else
-          throw new Error('invariant is broken, please restart the application')
+          throw new Error("invariant is broken, please restart the application")
       }
       if (value) { // add to children of a new parent
         const children = value._children = value._children.toMutable()
@@ -195,7 +195,7 @@ export const TestsLoggingLevel: LoggingOptions = {
   warning: true,
   gc: true,
   color: 37,
-  prefix: '',
+  prefix: "",
   margin1: 0,
   margin2: 0,
 }

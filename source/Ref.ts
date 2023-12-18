@@ -5,8 +5,8 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Transaction } from './core/Transaction.js'
-import { unobs } from './RxSystem.js'
+import { Transaction } from "./core/Transaction.js"
+import { unobs } from "./RxSystem.js"
 
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
 export type GivenTypeOnly<T, V> = Pick<T, {[P in keyof T]: T[P] extends V ? P : never}[keyof T]>
@@ -61,7 +61,7 @@ export class Ref<T = any> {
   }
 
   unobserve(): T {
-    throw new Error('not implemented')
+    throw new Error("not implemented")
   }
 
   static sameRefs(v1: Ref, v2: Ref): boolean {
@@ -123,7 +123,7 @@ class CustomToggleRefGettingProxy<T> {
   }
 }
 
-Object.defineProperty(Object.prototype, '$$', {
+Object.defineProperty(Object.prototype, "$$", {
   configurable: false, enumerable: false,
   get(): { readonly [P in keyof T]-?: Ref<T[P]> } {
     return new Proxy<T>(this, RefGettingProxy) as any

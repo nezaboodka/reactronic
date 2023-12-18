@@ -5,9 +5,9 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { F } from './util/Utils.js'
-import { ObservableObject } from './core/Mvcc.js'
-import { reactive } from './RxSystem.js'
+import { F } from "./util/Utils.js"
+import { ObservableObject } from "./core/Mvcc.js"
+import { reactive } from "./RxSystem.js"
 
 
 export class Reaction<T> extends ObservableObject

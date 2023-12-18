@@ -43,9 +43,9 @@
     "typescript": "5.2.2"
   },
   "scripts": {
-    "build": "eslint source/**/*.ts test/**/*.test.ts react/**/*.tsx && tsc",
-    "fix": "eslint --fix source/**/*.ts test/**/*.test.ts react/**/*.tsx",
-    "pack": "eslint source/**/*.ts test/**/*.test.ts react/**/*.tsx && tsc --sourceMap false --removeComments true",
+    "build": "eslint source/**.ts test/**.test.ts react/**.tsx && tsc",
+    "fix": "eslint --fix source/**.ts test/**.ts react/**.tsx",
+    "pack": "eslint source/**.ts test/**.test.ts react/**.tsx && tsc --sourceMap false --removeComments true",
     "test": "ava",
     "cover": "c8 ava && open build/coverage/index.html"
   }
