@@ -69,7 +69,7 @@ export abstract class RxNode<E = unknown> {
     else
       declaration = preset ?? {}
     let key = declaration.key
-    const owner = gCurrent?.instance
+    const owner = gOwnSeat?.instance
     if (owner) {
       // Lookup for existing node and check for coalescing separators
       let existing: MergedItem<RxNodeImpl> | undefined = undefined
@@ -108,12 +108,16 @@ export abstract class RxNode<E = unknown> {
     return result
   }
 
-  static get isFirstUpdate(): boolean {
-    return gCurrent?.instance.stamp === 1
+  static get key(): string {
+    return RxNodeImpl.ownSeat.instance.key
   }
 
-  static get nodeStamp(): number {
-    return gCurrent?.instance.stamp ?? -1
+  static get stamp(): number {
+    return RxNodeImpl.ownSeat.instance.stamp
+  }
+
+  static get isFirstUpdate(): boolean {
+    return RxNodeImpl.ownSeat.instance.stamp === 1
   }
 
   static triggerUpdate(node: RxNode<any>, triggers: unknown): void {
@@ -389,14 +393,14 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
     return RxSystem.getReaction(this.update).configure(options)
   }
 
-  static get current(): MergedItem<RxNodeImpl> {
-    if (!gCurrent)
+  static get ownSeat(): MergedItem<RxNodeImpl> {
+    if (!gOwnSeat)
       throw new Error('current element is undefined')
-    return gCurrent
+    return gOwnSeat
   }
 
   static tryUseNodeVariableValue<T extends Object>(variable: RxNodeVariable<T>): T | undefined {
-    let node = RxNodeImpl.current.instance
+    let node = RxNodeImpl.ownSeat.instance
     while (node.context?.variable !== variable && node.owner !== node)
       node = node.outer.seat!.instance
     return node.context?.value as any // TODO: to get rid of any
@@ -410,7 +414,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
   }
 
   static setNodeVariableValue<T extends Object>(variable: RxNodeVariable<T>, value: T | undefined): void {
-    const node = RxNodeImpl.current.instance
+    const node = RxNodeImpl.ownSeat.instance
     const owner = node.owner
     const hostCtx = unobs(() => owner.context?.value)
     if (value && value !== hostCtx) {
@@ -442,8 +446,8 @@ function getNodeKey(node: RxNode): string | undefined {
 }
 
 function runUpdateNestedNodesThenDo(error: unknown, action: (error: unknown) => void): void {
-  const curr = RxNodeImpl.current
-  const owner = curr.instance
+  const ownSeat = RxNodeImpl.ownSeat
+  const owner = ownSeat.instance
   const children = owner.children
   if (children.isMergeInProgress) {
     let promised: Promise<void> | undefined = undefined
@@ -479,7 +483,7 @@ function runUpdateNestedNodesThenDo(error: unknown, action: (error: unknown) => 
         }
         // Update incremental children (if any)
         if (!Transaction.isCanceled && (p1 !== undefined || p2 !== undefined))
-          promised = startIncrementalUpdate(curr, children, p1, p2).then(
+          promised = startIncrementalUpdate(ownSeat, children, p1, p2).then(
             () => action(error),
             e => action(e))
       }
@@ -666,10 +670,10 @@ async function runDisposalLoop(): Promise<void> {
 
 function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T {
   let wrappedToRunInside: (...args: any[]) => T
-  const current = gCurrent
-  if (current)
+  const outer = gOwnSeat
+  if (outer)
     wrappedToRunInside = (...args: any[]): T => {
-      return runInside(current, func, ...args)
+      return runInside(outer, func, ...args)
     }
   else
     wrappedToRunInside = func
@@ -677,13 +681,13 @@ function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T 
 }
 
 function runInside<T>(seat: MergedItem<RxNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
-  const outer = gCurrent
+  const outer = gOwnSeat
   try {
-    gCurrent = seat
+    gOwnSeat = seat
     return func(...args)
   }
   finally {
-    gCurrent = outer
+    gOwnSeat = outer
   }
 }
 
@@ -752,6 +756,6 @@ Promise.prototype.then = reactronicDomHookedThen
 
 const NOP: any = (...args: any[]): void => { /* nop */ }
 
-let gCurrent: MergedItem<RxNodeImpl> | undefined = undefined
+let gOwnSeat: MergedItem<RxNodeImpl> | undefined = undefined
 let gFirstToDispose: MergedItem<RxNodeImpl> | undefined = undefined
 let gLastToDispose: MergedItem<RxNodeImpl> | undefined = undefined
