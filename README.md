@@ -308,7 +308,7 @@ function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // SnapshotOptions, MemberOptions, Kind, Reentrance, Monitor, LoggingOptions, ProfilingOptions
 
-export interface SnapshotOptions {
+export type SnapshotOptions = {
   readonly hint?: string
   readonly separation?: SeparationMode
   readonly journal?: Journal
@@ -316,7 +316,7 @@ export interface SnapshotOptions {
   readonly token?: any
 }
 
-interface MemberOptions {
+type MemberOptions = {
   readonly kind: Kind
   readonly separation: SeparationMode
   readonly order: number
@@ -352,7 +352,7 @@ class Monitor {
   static create(hint: string, activationDelay: number, deactivationDelay: number): Monitor
 }
 
-interface Worker {
+type Worker = {
   readonly id: number
   readonly hint: string
   isCanceled: boolean
@@ -361,7 +361,7 @@ interface Worker {
   whenFinished(): Promise<void>
 }
 
-interface LoggingOptions {
+type LoggingOptions = {
   readonly off: boolean
   readonly transaction: boolean
   readonly operation: boolean
@@ -376,7 +376,7 @@ interface LoggingOptions {
   readonly gc: boolean
 }
 
-interface ProfilingOptions {
+type ProfilingOptions = {
   repetitiveUsageWarningThreshold: number // default: 10 times
   mainThreadBlockingWarningThreshold: number // default: 16.6 ms
   asyncActionDurationWarningThreshold: number // default: 150 ms

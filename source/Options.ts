@@ -12,7 +12,7 @@ export type { LoggingOptions, ProfilingOptions } from './Logging.js'
 import { Journal } from './core/Journal.js'
 import { Monitor } from './core/Monitor.js'
 
-export interface SnapshotOptions {
+export type SnapshotOptions = {
   readonly hint?: string
   readonly separation?: SeparationMode
   readonly journal?: Journal
@@ -20,7 +20,7 @@ export interface SnapshotOptions {
   readonly token?: any
 }
 
-export interface MemberOptions {
+export type MemberOptions = {
   readonly kind: Kind
   readonly separation: SeparationMode
   readonly order: number
@@ -51,7 +51,7 @@ export enum Reentrance {
 
 // AbstractReaction
 
-export interface AbstractReaction<T> {
+export type AbstractReaction<T> = {
   readonly options: MemberOptions
   readonly args: ReadonlyArray<any>
   readonly result: T

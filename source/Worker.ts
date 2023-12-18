@@ -5,11 +5,11 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-export interface Worker {
+export type Worker = {
   readonly id: number
   readonly hint: string
   readonly isCanceled: boolean
   readonly isFinished: boolean
-  cancel(error: Error, restartAfter?: Worker | null): this
+  cancel(error: Error, restartAfter?: Worker | null): void
   whenFinished(): Promise<void>
 }

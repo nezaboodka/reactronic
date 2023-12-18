@@ -7,12 +7,12 @@
 
 import { Log, misuse } from './Dbg.js'
 
-export interface Sealable<T> {
+export type Sealable<T> = {
   toMutable(): T
   [Sealant.SealedType]: object
 }
 
-export interface Sealed<T> {
+export type Sealed<T> = {
   [Sealant.CreateCopy]?: () => T
 }
 

@@ -37,7 +37,7 @@ list.endMerge(true)
 MergeList API:
 
 ``` typescript
-interface MergedItem<T> {
+type MergedItem<T> = {
   readonly instance: T
 }
 

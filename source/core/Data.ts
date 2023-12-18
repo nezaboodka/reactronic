@@ -11,7 +11,7 @@ export { Meta } from './Meta.js'
 
 // AbstractChangeset
 
-export interface AbstractChangeset {
+export type AbstractChangeset = {
   readonly id: number
   readonly hint: string
   readonly timestamp: number
@@ -30,7 +30,7 @@ export class ValueSnapshot<T = any> {
 
 export type SeparationMode = boolean | 'isolated' | 'disposal'
 
-export interface Observer {
+export type Observer = {
   readonly order: number
   readonly observables: Map<ValueSnapshot, Subscription> | undefined
   readonly obsoleteSince: number
@@ -41,7 +41,7 @@ export interface Observer {
 
 export type MemberName = PropertyKey
 
-export interface Subscription {
+export type Subscription = {
   readonly memberHint: string
   readonly usageCount: number
 }
@@ -110,7 +110,7 @@ export class ObjectHandle {
 
 export type PatchSet = Map<object, Map<MemberName, ValuePatch>>
 
-export interface ValuePatch {
+export type ValuePatch = {
   memberName: MemberName
   patchKind: 'update' | 'add' | 'remove'
   freshValue: any

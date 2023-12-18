@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-export interface LoggingOptions {
+export type LoggingOptions = {
   readonly enabled: boolean
   readonly transaction: boolean
   readonly operation: boolean
@@ -24,7 +24,7 @@ export interface LoggingOptions {
   readonly margin2: number
 }
 
-export interface ProfilingOptions {
+export type ProfilingOptions = {
   repetitiveUsageWarningThreshold: number // default: 10 times
   mainThreadBlockingWarningThreshold: number // default: 16.6 ms
   asyncActionDurationWarningThreshold: number // default: 150 ms

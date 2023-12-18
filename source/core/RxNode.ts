@@ -196,7 +196,7 @@ export abstract class RxNode<E = unknown> {
 
 // RxNodeDecl
 
-export interface RxNodeDecl<E = unknown> {
+export type RxNodeDecl<E = unknown> = {
   preset?: RxNodeDecl<E>
   key?: string
   mode?: Mode
@@ -208,7 +208,7 @@ export interface RxNodeDecl<E = unknown> {
 
 // RxNodeDriver
 
-export interface RxNodeDriver<E = unknown> {
+export type RxNodeDriver<E = unknown> = {
   readonly name: string,
   readonly isPartitionSeparator: boolean,
   readonly predefine?: SimpleDelegate<E>
@@ -222,7 +222,7 @@ export interface RxNodeDriver<E = unknown> {
 
 // RxNodeContext
 
-export interface RxNodeContext<T extends Object = Object> {
+export type RxNodeContext<T extends Object = Object> = {
   value: T
 }
 

@@ -7,7 +7,7 @@
 
 export type GetMergeItemKey<T = unknown> = (item: T) => string | undefined
 
-export interface MergeListReader<T> {
+export type MergeListReader<T> = {
   // readonly getKey: GetKey<T>
   readonly isStrict: boolean
   readonly count: number
@@ -34,7 +34,7 @@ export interface MergeListReader<T> {
   isActual(item: MergedItem<T>): boolean
 }
 
-export interface MergedItem<T> {
+export type MergedItem<T> = {
   readonly instance: T
   // readonly next?: MergeItem<T>
   readonly prev?: MergedItem<T> // TODO: hide
