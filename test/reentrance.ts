@@ -8,11 +8,11 @@
 import { ObservableObject, transactional, reactive, cached, options, Transaction, Monitor, Reentrance, RxSystem, obs, all, pause } from '../source/api.js'
 
 export const output: string[] = []
-export const busy = Monitor.create('Busy', 0, 0, 1)
+export const busy = Monitor.create("Busy", 0, 0, 1)
 
 export class AsyncDemo extends ObservableObject {
-  url: string = 'reactronic'
-  log: string[] = ['RTA']
+  url: string = "reactronic"
+  log: string[] = ["RTA"]
 
   @transactional @options({ monitor: busy, reentrance: Reentrance.PreventWithError })
   async load(url: string, delay: number): Promise<void> {
@@ -24,8 +24,8 @@ export class AsyncDemo extends ObservableObject {
 }
 
 export class AsyncDemoView {
-  rawField: string = 'raw field'
-  @obs observableField: string = 'observable field'
+  rawField: string = "raw field"
+  @obs observableField: string = "observable field"
 
   constructor(readonly model: AsyncDemo) {
   }
@@ -44,9 +44,9 @@ export class AsyncDemoView {
   @cached @options({ triggeringArgs: false })
   async render(): Promise<string[]> {
     const result: string[] = []
-    result.push(`${busy.isActive ? '[...] ' : ''}Url: ${this.model.url}`)
+    result.push(`${busy.isActive ? "[...] " : ""}Url: ${this.model.url}`)
     await pause(10)
-    result.push(`${busy.isActive ? '[...] ' : ''}Log: ${this.model.log.join(', ')}`)
+    result.push(`${busy.isActive ? "[...] " : ""}Log: ${this.model.log.join(', ')}`)
     return result
   }
 }
