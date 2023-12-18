@@ -108,6 +108,10 @@ export abstract class RxNode<E = unknown> {
     return result
   }
 
+  static get isFirstUpdate(): boolean {
+    return RxNodeImpl.ownSeat.instance.stamp === 1
+  }
+
   static get key(): string {
     return RxNodeImpl.ownSeat.instance.key
   }
@@ -116,8 +120,24 @@ export abstract class RxNode<E = unknown> {
     return RxNodeImpl.ownSeat.instance.stamp
   }
 
-  static get isFirstUpdate(): boolean {
-    return RxNodeImpl.ownSeat.instance.stamp === 1
+  static get triggers(): unknown {
+    return RxNodeImpl.ownSeat.instance.declaration.triggers
+  }
+
+  static get priority(): Priority {
+    return RxNodeImpl.ownSeat.instance.priority
+  }
+
+  static set priority(value: Priority) {
+    RxNodeImpl.ownSeat.instance.priority = value
+  }
+
+  static get childrenShuffling(): boolean {
+    return RxNodeImpl.ownSeat.instance.childrenShuffling
+  }
+
+  static set childrenShuffling(value: boolean) {
+    RxNodeImpl.ownSeat.instance.childrenShuffling = value
   }
 
   static triggerUpdate(node: RxNode<any>, triggers: unknown): void {
