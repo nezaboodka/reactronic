@@ -5,19 +5,19 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { F } from '../util/Utils.js'
-import { Log, misuse } from '../util/Dbg.js'
-import { AbstractReaction, MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from '../Options.js'
-import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from './Data.js'
-import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from './Changeset.js'
-import { Transaction } from './Transaction.js'
-import { Monitor, MonitorImpl } from './Monitor.js'
-import { Mvcc, OptionsImpl } from './Mvcc.js'
-import { JournalImpl } from './Journal.js'
+import { F } from "../util/Utils.js"
+import { Log, misuse } from "../util/Dbg.js"
+import { AbstractReaction, MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from "../Options.js"
+import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from "./Data.js"
+import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from "./Changeset.js"
+import { Transaction } from "./Transaction.js"
+import { Monitor, MonitorImpl } from "./Monitor.js"
+import { Mvcc, OptionsImpl } from "./Mvcc.js"
+import { JournalImpl } from "./Journal.js"
 
 const BOOT_ARGS: any[] = []
-const BOOT_CAUSE = '<boot>'
-const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.observable, EMPTY_SNAPSHOT, '<boot>')
+const BOOT_CAUSE = "<boot>"
+const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.observable, EMPTY_SNAPSHOT, "<boot>")
 
 type ReuseOrRelaunchContext = {
   readonly launch: Launch
@@ -38,7 +38,7 @@ export class ReactionImpl implements AbstractReaction<any> {
   get error(): boolean { return this.use().launch.error }
   get stamp(): number { return this.use().snapshot.changeset.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
-  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.objectHandle, this.memberName)})` : 'markObsolete()' }, ReactionImpl.markObsolete, this) }
+  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.objectHandle, this.memberName)})` : "markObsolete()" }, ReactionImpl.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.reuseOrRelaunch(true, args).content }
 
   constructor(h: ObjectHandle, m: MemberName) {
@@ -67,7 +67,7 @@ export class ReactionImpl implements AbstractReaction<any> {
     }
     else if (Log.isOn && Log.opt.operation && (opts.logging === undefined ||
       opts.logging.operation === undefined || opts.logging.operation === true))
-      Log.write(Transaction.current.isFinished ? '' : '║', ' (=)',
+      Log.write(Transaction.current.isFinished ? "" : "║", " (=)",
         `${Dump.snapshot2(ror.launch.reaction.objectHandle, ror.changeset, this.memberName)} result is reused from T${ror.launch.transaction.id}[${ror.launch.transaction.hint}]`)
     const t = ror.launch
     Changeset.markUsed(t, ror.snapshot, this.memberName, this.objectHandle, t.options.kind, weak)
@@ -88,10 +88,10 @@ export class ReactionImpl implements AbstractReaction<any> {
     else
       launch = Launch.current
     if (!launch)
-      throw misuse('reactronic decorator is only applicable to methods')
+      throw misuse("reactronic decorator is only applicable to methods")
     launch.options = new OptionsImpl(launch.options.getter, launch.options.setter, launch.options, options, false)
     if (Log.isOn && Log.opt.write)
-      Log.write('║', '  =', `${launch.hint()}.options are changed`)
+      Log.write("║", "  =", `${launch.hint()}.options are changed`)
     return launch.options
   }
 
@@ -124,7 +124,7 @@ export class ReactionImpl implements AbstractReaction<any> {
   /* istanbul ignore next */
   static dependencies(): string[] {
     const l = Launch.current
-    return l ? l.dependencies() : ['RxSystem.dependencies should be called from inside of reactive method']
+    return l ? l.dependencies() : ["RxSystem.dependencies should be called from inside of reactive method"]
   }
 
   // Internal
@@ -168,7 +168,7 @@ export class ReactionImpl implements AbstractReaction<any> {
     let launch: Launch = os.data[m]
     if (launch.reaction !== this) {
       if (os.changeset !== EMPTY_SNAPSHOT.changeset) {
-        const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, m)}/init` : /* istanbul ignore next */ 'MethodController/init'
+        const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, m)}/init` : /* istanbul ignore next */ "MethodController/init"
         const separation = os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT
         launch = Transaction.run<Launch>({ hint, separation, token: this }, (): Launch => {
           const h = this.objectHandle
@@ -195,7 +195,7 @@ export class ReactionImpl implements AbstractReaction<any> {
         os.data[m] = initialLaunch
         launch = initialLaunch
         if (Log.isOn && Log.opt.write)
-          Log.write('║', ' ++', `${Dump.obj(this.objectHandle, m)} is initialized (revision ${os.revision})`)
+          Log.write("║", " ++", `${Dump.obj(this.objectHandle, m)} is initialized (revision ${os.revision})`)
       }
     }
     return launch
@@ -203,14 +203,14 @@ export class ReactionImpl implements AbstractReaction<any> {
 
   private relaunch(existing: ReuseOrRelaunchContext, separation: SeparationMode, options: MemberOptions, token: any, args: any[] | undefined): ReuseOrRelaunchContext {
     // TODO: Cleaner implementation is needed
-    const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, this.memberName)}${args && args.length > 0 && (typeof args[0] === 'number' || typeof args[0] === 'string') ? ` - ${args[0]}` : ''}` : /* istanbul ignore next */ `${Dump.obj(this.objectHandle, this.memberName)}`
+    const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, this.memberName)}${args && args.length > 0 && (typeof args[0] === "number" || typeof args[0] === "string") ? ` - ${args[0]}` : ""}` : /* istanbul ignore next */ `${Dump.obj(this.objectHandle, this.memberName)}`
     let ror = existing
     const opts = { hint, separation, journal: options.journal, logging: options.logging, token }
     const result = Transaction.run(opts, (argsx: any[] | undefined): any => {
       if (!ror.launch.transaction.isCanceled) { // standard launch
         ror = this.edit()
         if (Log.isOn && Log.opt.operation)
-          Log.write('║', '  o', `${ror.launch.why()}`)
+          Log.write("║", "  o", `${ror.launch.why()}`)
         ror.launch.proceed(this.objectHandle.proxy, argsx)
       }
       else { // retry launch
@@ -218,7 +218,7 @@ export class ReactionImpl implements AbstractReaction<any> {
         if (ror.launch.options.kind === Kind.Transactional || !ror.isUpToDate) {
           ror = this.edit()
           if (Log.isOn && Log.opt.operation)
-            Log.write('║', '  o', `${ror.launch.why()}`)
+            Log.write("║", "  o", `${ror.launch.why()}`)
           ror.launch.proceed(this.objectHandle.proxy, argsx)
         }
       }
@@ -289,7 +289,7 @@ class Launch extends ValueSnapshot implements Observer {
   hint(): string { return `${Dump.snapshot2(this.reaction.objectHandle, this.changeset, this.reaction.memberName)}` } // override
   get order(): number { return this.options.order }
 
-  get ['#this#'](): string {
+  get ["#this#"](): string {
     return `Operation: ${this.why()}`
   }
 
@@ -298,7 +298,7 @@ class Launch extends ValueSnapshot implements Observer {
     if (this.cause)
       cause = `   ◀◀   ${this.cause}`
     else if (this.reaction.options.kind === Kind.Transactional)
-      cause = '   ◀◀   operation'
+      cause = "   ◀◀   operation"
     else
       cause = `   ◀◀   T${this.changeset.id}[${this.changeset.hint}]`
     return `${this.hint()}${cause}`
@@ -309,20 +309,20 @@ class Launch extends ValueSnapshot implements Observer {
   }
 
   dependencies(): string[] {
-    throw misuse('not implemented yet')
+    throw misuse("not implemented yet")
   }
 
   wrap<T>(func: F<T>): F<T> {
     const wrappedForOperation: F<T> = (...args: any[]): T => {
       if (Log.isOn && Log.opt.step && this.result)
-        Log.writeAs({margin2: this.margin}, '║', '‾\\', `${this.hint()} - step in  `, 0, '        │')
+        Log.writeAs({margin2: this.margin}, "║", "‾\\", `${this.hint()} - step in  `, 0, "        │")
       const started = Date.now()
       const result = ReactionImpl.proceedWithinGivenLaunch<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Log.isOn && Log.opt.step && this.result)
-        Log.writeAs({margin2: this.margin}, '║', '_/', `${this.hint()} - step out `, 0, this.started > 0 ? '        │' : '')
+        Log.writeAs({margin2: this.margin}, "║", "_/", `${this.hint()} - step out `, 0, this.started > 0 ? "        │" : "")
       if (ms > Mvcc.mainThreadBlockingWarningThreshold) /* istanbul ignore next */
-        Log.write('', '[!]', this.why(), ms, '    *** main thread is too busy ***')
+        Log.write("", "[!]", this.why(), ms, "    *** main thread is too busy ***")
       return result
     }
     return wrappedForOperation
@@ -351,10 +351,10 @@ class Launch extends ValueSnapshot implements Observer {
         this.obsoleteDueTo = why
         this.obsoleteSince = since
         if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
-          Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', isReactive ? '█' : '▒',
+          Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", isReactive ? "█" : "▒",
             isReactive && changeset === EMPTY_SNAPSHOT.changeset
               ? `${this.hint()} is reactive and will run automatically (order ${this.options.order})`
-              : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, m)} since s${since}${isReactive ? ` and will run automatically (order ${this.options.order})` : ''}`)
+              : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, m)} since s${since}${isReactive ? ` and will run automatically (order ${this.options.order})` : ""}`)
         this.unsubscribeFromAllObservables()
 
         // Stop cascade propagation on reactive function, or continue otherwise
@@ -372,7 +372,7 @@ class Launch extends ValueSnapshot implements Observer {
           tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.snapshot2(h, changeset, m)} changed by T${changeset.id}[${changeset.hint}]`), null)
       }
       else if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
-        Log.write(' ', 'x', `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(h, changeset, m)}`)
+        Log.write(" ", "x", `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(h, changeset, m)}`)
     }
   }
 
@@ -416,7 +416,7 @@ class Launch extends ValueSnapshot implements Observer {
     const opponent = head.successor
     if (opponent && !opponent.transaction.isFinished) {
       if (Log.isOn && Log.opt.obsolete)
-        Log.write('║', ' [!]', `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
+        Log.write("║", " [!]", `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
       switch (head.options.reentrance) {
         case Reentrance.PreventWithError:
           if (!opponent.transaction.isCanceled)
@@ -463,7 +463,7 @@ class Launch extends ValueSnapshot implements Observer {
     if (this.options.monitor)
       this.monitorEnter(this.options.monitor)
     if (Log.isOn && Log.opt.operation)
-      Log.write('║', '‾\\', `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.reaction.objectHandle, this.reaction.memberName)} ]`)
+      Log.write("║", "‾\\", `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.reaction.objectHandle, this.reaction.memberName)} ]`)
     this.started = Date.now()
   }
 
@@ -472,24 +472,24 @@ class Launch extends ValueSnapshot implements Observer {
       this.result = this.result.then(
         value => {
           this.content = value
-          this.leave(false, '  ⚐', '- finished  ', ' OK ──┘')
+          this.leave(false, "  ⚐", "- finished  ", " OK ──┘")
           return value
         },
         error => {
           this.error = error
-          this.leave(false, '  ⚐', '- finished  ', 'ERR ──┘')
+          this.leave(false, "  ⚐", "- finished  ", "ERR ──┘")
           throw error
         })
       if (Log.isOn) {
         if (Log.opt.operation)
-          Log.write('║', '_/', `${this.hint()} - leave... `, 0, 'ASYNC ──┐')
+          Log.write("║", "_/", `${this.hint()} - leave... `, 0, "ASYNC ──┐")
         else if (Log.opt.transaction)
-          Log.write('║', '  ', `${this.why()} ...`, 0, 'ASYNC')
+          Log.write("║", "  ", `${this.why()} ...`, 0, "ASYNC")
       }
     }
     else {
       this.content = this.result
-      this.leave(true, '_/', '- leave')
+      this.leave(true, "_/", "- leave")
     }
   }
 
@@ -497,9 +497,9 @@ class Launch extends ValueSnapshot implements Observer {
     const ms: number = Date.now() - this.started
     this.started = -this.started
     if (Log.isOn && Log.opt.operation)
-      Log.write('║', `${op}`, `${this.hint()} ${message}`, ms, highlight)
+      Log.write("║", `${op}`, `${this.hint()} ${message}`, ms, highlight)
     if (ms > (main ? Mvcc.mainThreadBlockingWarningThreshold : Mvcc.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
-      Log.write('', '[!]', this.why(), ms, main ? '    *** main thread is too busy ***' : '    *** async is too long ***')
+      Log.write("", "[!]", this.why(), ms, main ? "    *** main thread is too busy ***" : "    *** async is too long ***")
     this.cause = undefined
     if (this.options.monitor)
       this.monitorLeave(this.options.monitor)
@@ -508,8 +508,8 @@ class Launch extends ValueSnapshot implements Observer {
 
   private monitorEnter(mon: Monitor): void {
     const options: SnapshotOptions = {
-      hint: 'Monitor.enter',
-      separation: 'isolated',
+      hint: "Monitor.enter",
+      separation: "isolated",
       logging: Log.isOn && Log.opt.monitor ? undefined : Log.global }
     ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
       MonitorImpl.enter, mon, this.transaction)
@@ -519,8 +519,8 @@ class Launch extends ValueSnapshot implements Observer {
     Transaction.outside<void>(() => {
       const leave = (): void => {
         const options: SnapshotOptions = {
-          hint: 'Monitor.leave',
-          separation: 'isolated',
+          hint: "Monitor.leave",
+          separation: "isolated",
           logging: Log.isOn && Log.opt.monitor ? undefined : Log.DefaultLevel }
         ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
           MonitorImpl.leave, mon, this.transaction)
@@ -560,7 +560,7 @@ class Launch extends ValueSnapshot implements Observer {
   private static markEdited(oldValue: any, newValue: any, edited: boolean, os: ObjectSnapshot, m: MemberName, h: ObjectHandle): void {
     edited ? os.changes.add(m) : os.changes.delete(m)
     if (Log.isOn && Log.opt.write)
-      edited ? Log.write('║', '  =', `${Dump.snapshot2(h, os.changeset, m)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`) : Log.write('║', '  =', `${Dump.snapshot2(h, os.changeset, m)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`, undefined, ' (same as previous)')
+      edited ? Log.write("║", "  =", `${Dump.snapshot2(h, os.changeset, m)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`) : Log.write("║", "  =", `${Dump.snapshot2(h, os.changeset, m)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`, undefined, " (same as previous)")
   }
 
   private static isConflicting(oldValue: any, newValue: any): boolean {
@@ -626,7 +626,7 @@ class Launch extends ValueSnapshot implements Observer {
         if (Mvcc.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
           curr.observables.forEach((info, v) => { // performance tracking info
             if (info.usageCount > Mvcc.repetitiveUsageWarningThreshold)
-              Log.write('', '[!]', `${curr.hint()} uses ${info.memberHint} ${info.usageCount} times (consider remembering it in a local variable)`, 0, ' *** WARNING ***')
+              Log.write("", "[!]", `${curr.hint()} uses ${info.memberHint} ${info.usageCount} times (consider remembering it in a local variable)`, 0, " *** WARNING ***")
           })
         }
         if (unsubscribe)
@@ -671,7 +671,7 @@ class Launch extends ValueSnapshot implements Observer {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       value.observers!.delete(this)
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', '-', `${this.hint()} is unsubscribed from ${info.memberHint}`)
+        Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", "-", `${this.hint()} is unsubscribed from ${info.memberHint}`)
     })
     this.observables = undefined
   }
@@ -695,14 +695,14 @@ class Launch extends ValueSnapshot implements Observer {
         observable.observers.add(this)
         this.observables!.set(observable, subscription)
         if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-          Log.write('║', '  ∞', `${this.hint()} is subscribed to ${Dump.snapshot2(h, os.changeset, m)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ''}`)
+          Log.write("║", "  ∞", `${this.hint()} is subscribed to ${Dump.snapshot2(h, os.changeset, m)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ""}`)
       }
       else if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write('║', '  x', `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, os.changeset, m)}`)
+        Log.write("║", "  x", `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, os.changeset, m)}`)
     }
     else {
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write('║', '  x', `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, os.changeset, m)}`)
+        Log.write("║", "  x", `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, os.changeset, m)}`)
     }
     return ok // || subscription.next === r
   }
@@ -763,10 +763,10 @@ class Launch extends ValueSnapshot implements Observer {
     Mvcc.rememberOperationOptions = Launch.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
     try {
-      Object.defineProperty(globalThis, 'rWhy', {
+      Object.defineProperty(globalThis, "rWhy", {
         get: ReactionImpl.why, configurable: false, enumerable: false,
       })
-      Object.defineProperty(globalThis, 'rBriefWhy', {
+      Object.defineProperty(globalThis, "rBriefWhy", {
         get: ReactionImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
@@ -774,10 +774,10 @@ class Launch extends ValueSnapshot implements Observer {
       // ignore
     }
     try {
-      Object.defineProperty(global, 'rWhy', {
+      Object.defineProperty(global, "rWhy", {
         get: ReactionImpl.why, configurable: false, enumerable: false,
       })
-      Object.defineProperty(global, 'rBriefWhy', {
+      Object.defineProperty(global, "rBriefWhy", {
         get: ReactionImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
@@ -801,7 +801,7 @@ class Launch extends ValueSnapshot implements Observer {
 // }
 
 function valueHint(value: any): string {
-  let result: string = ''
+  let result: string = ""
   if (Array.isArray(value))
     result = `Array(${value.length})`
   else if (value instanceof Set)
@@ -809,21 +809,21 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Launch)
-    result = `#${value.reaction.objectHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.originSnapshotId !== undefined && value.originSnapshotId !== 0 ? `t${value.originSnapshotId}` : ''}`
+    result = `#${value.reaction.objectHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.originSnapshotId !== undefined && value.originSnapshotId !== 0 ? `t${value.originSnapshotId}` : ""}`
   else if (value === Meta.Undefined)
-    result = 'undefined'
-  else if (typeof(value) === 'string')
-    result = `"${value.toString().slice(0, 20)}${value.length > 20 ? '...' : ''}"`
+    result = "undefined"
+  else if (typeof(value) === "string")
+    result = `"${value.toString().slice(0, 20)}${value.length > 20 ? "..." : ""}"`
   else if (value !== undefined && value !== null)
     result = value.toString().slice(0, 40)
   else
-    result = 'undefined'
+    result = "undefined"
   return result
 }
 
 function getMergedLoggingOptions(local: Partial<LoggingOptions> | undefined): LoggingOptions {
   const t = Transaction.current
-  let res = Log.merge(t.options.logging, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Changeset.idGen.toString().replace(/[0-9]/g, '-')}`, Log.global)
+  let res = Log.merge(t.options.logging, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Changeset.idGen.toString().replace(/[0-9]/g, "-")}`, Log.global)
   res = Log.merge({margin1: t.margin}, undefined, undefined, res)
   if (Launch.current)
     res = Log.merge({margin2: Launch.current.margin}, undefined, undefined, res)

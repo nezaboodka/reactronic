@@ -5,8 +5,8 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import * as React from 'react'
-import { ObservableObject, Transaction, raw, reactive, cached, RxSystem, LoggingOptions, transaction } from '../source/api.js'
+import * as React from "react"
+import { ObservableObject, Transaction, raw, reactive, cached, RxSystem, LoggingOptions, transaction } from "../source/api.js"
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -53,7 +53,7 @@ class RxComponent<V> extends ObservableObject {
 }
 
 function createReactState<V>(name?: string, logging?: Partial<LoggingOptions>): ReactState<V> {
-  const hint = name || (RxSystem.isLogging ? getComponentName() : '<rx>')
+  const hint = name || (RxSystem.isLogging ? getComponentName() : "<rx>")
   const rx = Transaction.run<RxComponent<V>>({ hint, logging }, RxComponent.create, hint, logging)
   return {rx, cycle: 0}
 }
@@ -65,11 +65,11 @@ function nop(...args: any[]): void {
 function getComponentName(): string {
   const restore = Error.stackTraceLimit = 20
   const error = new Error()
-  const stack = error.stack || ''
+  const stack = error.stack || ""
   Error.stackTraceLimit = restore
-  const lines = stack.split('\n')
+  const lines = stack.split("\n")
   const i = lines.findIndex(x => x.indexOf(reactive.name) >= 0) || 6
-  let result: string = lines[i + 1] || ''
+  let result: string = lines[i + 1] || ""
   result = (result.match(/^\s*at\s*(\S+)/) || [])[1]
-  return result !== undefined ? `<${result}>` : '<Rx>'
+  return result !== undefined ? `<${result}>` : "<Rx>"
 }

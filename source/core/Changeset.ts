@@ -5,23 +5,23 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Utils, UNDEF } from '../util/Utils.js'
-import { Log, misuse } from '../util/Dbg.js'
-import { Sealant } from '../util/Sealant.js'
-import { SealedArray } from '../util/SealedArray.js'
-import { SealedMap } from '../util/SealedMap.js'
-import { SealedSet } from '../util/SealedSet.js'
-import { Kind, SnapshotOptions } from '../Options.js'
-import { AbstractChangeset, ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, Meta } from './Data.js'
+import { Utils, UNDEF } from "../util/Utils.js"
+import { Log, misuse } from "../util/Dbg.js"
+import { Sealant } from "../util/Sealant.js"
+import { SealedArray } from "../util/SealedArray.js"
+import { SealedMap } from "../util/SealedMap.js"
+import { SealedSet } from "../util/SealedSet.js"
+import { Kind, SnapshotOptions } from "../Options.js"
+import { AbstractChangeset, ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, Meta } from "./Data.js"
 
 export const MAX_REVISION = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_REVISION = MAX_REVISION - 1
 
-Object.defineProperty(ObjectHandle.prototype, '#this#', {
+Object.defineProperty(ObjectHandle.prototype, "#this#", {
   configurable: false, enumerable: false,
   get(): any {
     const result: any = {}
-    const data = Changeset.current().getObjectSnapshot(this, '#this#').data
+    const data = Changeset.current().getObjectSnapshot(this, "#this#").data
     for (const m in data) {
       const v = data[m]
       if (v instanceof ValueSnapshot)
@@ -52,7 +52,7 @@ export class Changeset implements AbstractChangeset {
 
   readonly id: number
   readonly options: SnapshotOptions
-  get hint(): string { return this.options.hint ?? 'noname' }
+  get hint(): string { return this.options.hint ?? "noname" }
   get timestamp(): number { return this.revision }
   private revision: number
   private bumper: number
@@ -99,7 +99,7 @@ export class Changeset implements AbstractChangeset {
   getObjectSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
     const r = this.lookupObjectSnapshot(h, m)
     if (r === EMPTY_SNAPSHOT)
-      throw misuse(`${Dump.obj(h, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''} (last committed T${h.head.changeset.id}[${h.head.changeset.hint}])`)
+      throw misuse(`${Dump.obj(h, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} (last committed T${h.head.changeset.id}[${h.head.changeset.hint}])`)
     return r
   }
 
@@ -118,7 +118,7 @@ export class Changeset implements AbstractChangeset {
         h.editing = os
         h.editors++
         if (Log.isOn && Log.opt.write)
-          Log.write('║', ' ++', `${Dump.obj(h)} - new snapshot is created (revision ${revision})`)
+          Log.write("║", " ++", `${Dump.obj(h)} - new snapshot is created (revision ${revision})`)
       }
     }
     else
@@ -127,7 +127,7 @@ export class Changeset implements AbstractChangeset {
   }
 
   static takeSnapshot<T>(obj: T): T {
-    return (obj as any)[Meta.Handle]['#this#']
+    return (obj as any)[Meta.Handle]["#this#"]
   }
 
   static dispose(obj: any): void {
@@ -162,7 +162,7 @@ export class Changeset implements AbstractChangeset {
         }
       }
       if (os === EMPTY_SNAPSHOT)
-        throw misuse(`${Dump.snapshot(os, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''} (last committed T${h.head.changeset.id}[${h.head.changeset.hint}])`)
+        throw misuse(`${Dump.snapshot(os, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} (last committed T${h.head.changeset.id}[${h.head.changeset.hint}])`)
     }
     return os.changeset !== this && !this.sealed
   }
@@ -175,7 +175,7 @@ export class Changeset implements AbstractChangeset {
       if (Changeset.oldest === undefined)
         Changeset.oldest = this
       if (Log.isOn && Log.opt.transaction)
-        Log.write('╔══', `s${this.revision}`, `${this.hint}`)
+        Log.write("╔══", `s${this.revision}`, `${this.hint}`)
     }
   }
 
@@ -196,7 +196,7 @@ export class Changeset implements AbstractChangeset {
             conflicts.push(os)
           }
           if (Log.isOn && Log.opt.transaction)
-            Log.write('╠╝', '', `${Dump.snapshot2(h, os.changeset)} is merged with ${Dump.snapshot2(h, h.head.changeset)} among ${merged} properties with ${os.conflicts.size} conflicts.`)
+            Log.write("╠╝", "", `${Dump.snapshot2(h, os.changeset)} is merged with ${Dump.snapshot2(h, h.head.changeset)} among ${merged} properties with ${os.conflicts.size} conflicts.`)
         }
       })
       if (this.options.token === undefined) {
@@ -228,9 +228,9 @@ export class Changeset implements AbstractChangeset {
       merged[m] = ours.data[m]
       if (headDisposed || oursDisposed) {
         if (headDisposed !== oursDisposed) {
-          if (headDisposed || this.options.separation !== 'disposal') {
+          if (headDisposed || this.options.separation !== "disposal") {
             if (Log.isOn && Log.opt.change)
-              Log.write('║╠', '', `${Dump.snapshot2(h, ours.changeset, m)} <> ${Dump.snapshot2(h, head.changeset, m)}`, 0, ' *** CONFLICT ***')
+              Log.write("║╠", "", `${Dump.snapshot2(h, ours.changeset, m)} <> ${Dump.snapshot2(h, head.changeset, m)}`, 0, " *** CONFLICT ***")
             ours.conflicts.set(m, head)
           }
         }
@@ -240,7 +240,7 @@ export class Changeset implements AbstractChangeset {
         if (conflict)
           ours.conflicts.set(m, head)
         if (Log.isOn && Log.opt.change)
-          Log.write('║╠', '', `${Dump.snapshot2(h, ours.changeset, m)} ${conflict ? '<>' : '=='} ${Dump.snapshot2(h, head.changeset, m)}`, 0, conflict ? ' *** CONFLICT ***' : undefined)
+          Log.write("║╠", "", `${Dump.snapshot2(h, ours.changeset, m)} ${conflict ? "<>" : "=="} ${Dump.snapshot2(h, head.changeset, m)}`, 0, conflict ? " *** CONFLICT ***" : undefined)
       }
     })
     Utils.copyAllMembers(merged, ours.data) // overwrite with merged copy
@@ -271,12 +271,12 @@ export class Changeset implements AbstractChangeset {
         this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
           const members: string[] = []
           os.changes.forEach((o, m) => members.push(m.toString()))
-          const s = members.join(', ')
-          Log.write('║', '√', `${Dump.snapshot2(h, os.changeset)} (${s}) is ${os.former.snapshot === EMPTY_SNAPSHOT ? 'constructed' : `applied over #${h.id}t${os.former.snapshot.changeset.id}s${os.former.snapshot.changeset.timestamp}`}`)
+          const s = members.join(", ")
+          Log.write("║", "√", `${Dump.snapshot2(h, os.changeset)} (${s}) is ${os.former.snapshot === EMPTY_SNAPSHOT ? "constructed" : `applied over #${h.id}t${os.former.snapshot.changeset.id}s${os.former.snapshot.changeset.timestamp}`}`)
         })
       }
       if (Log.opt.transaction)
-        Log.write(this.revision < UNDEFINED_REVISION ? '╚══' : /* istanbul ignore next */ '═══', `s${this.revision}`, `${this.hint} - ${error ? 'CANCEL' : 'APPLY'}(${this.items.size})${error ? ` - ${error}` : ''}`)
+        Log.write(this.revision < UNDEFINED_REVISION ? "╚══" : /* istanbul ignore next */ "═══", `s${this.revision}`, `${this.hint} - ${error ? "CANCEL" : "APPLY"}(${this.items.size})${error ? ` - ${error}` : ""}`)
     }
     if (!error)
       Changeset.propagateAllChangesThroughSubscriptions(this)
@@ -325,7 +325,7 @@ export class Changeset implements AbstractChangeset {
         Changeset.oldest = Changeset.pending[0] // undefined is OK
         const now = Date.now()
         if (now - Changeset.lastGarbageCollectionSummaryTimestamp > Changeset.garbageCollectionSummaryInterval) {
-          Log.write('', '[G]', `Total object/snapshot count: ${Changeset.totalObjectHandleCount}/${Changeset.totalObjectSnapshotCount}`)
+          Log.write("", "[G]", `Total object/snapshot count: ${Changeset.totalObjectHandleCount}/${Changeset.totalObjectSnapshotCount}`)
           Changeset.lastGarbageCollectionSummaryTimestamp = now
         }
       }
@@ -334,10 +334,10 @@ export class Changeset implements AbstractChangeset {
 
   private unlinkHistory(): void {
     if (Log.isOn && Log.opt.gc)
-      Log.write('', '[G]', `Dismiss history below t${this.id}s${this.revision} (${this.hint})`)
+      Log.write("", "[G]", `Dismiss history below t${this.id}s${this.revision} (${this.hint})`)
     this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
       if (Log.isOn && Log.opt.gc && os.former.snapshot !== EMPTY_SNAPSHOT)
-        Log.write(' ', '  ', `${Dump.snapshot2(h, os.former.snapshot.changeset)} is ready for GC because overwritten by ${Dump.snapshot2(h, os.changeset)}`)
+        Log.write(" ", "  ", `${Dump.snapshot2(h, os.former.snapshot.changeset)} is ready for GC because overwritten by ${Dump.snapshot2(h, os.changeset)}`)
       if (Changeset.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
         if (os.former.snapshot !== EMPTY_SNAPSHOT)
           Changeset.totalObjectSnapshotCount--
@@ -370,17 +370,17 @@ export class Changeset implements AbstractChangeset {
 // Dump
 
 export class Dump {
-  static valueHint = (value: any): string => '???'
+  static valueHint = (value: any): string => "???"
 
   static obj(h: ObjectHandle | undefined, m?: MemberName | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, value?: any): string {
-    const member = m !== undefined ? `.${m.toString()}` : ''
+    const member = m !== undefined ? `.${m.toString()}` : ""
     let result: string
     if (h !== undefined) {
-      const v = value !== undefined && value !== Meta.Undefined ? `[=${Dump.valueHint(value)}]` : ''
+      const v = value !== undefined && value !== Meta.Undefined ? `[=${Dump.valueHint(value)}]` : ""
       if (stamp === undefined)
         result = `${h.hint}${member}${v} #${h.id}`
       else
-        result = `${h.hint}${member}${v} #${h.id}t${snapshotId}s${stamp}${originSnapshotId !== undefined && originSnapshotId !== 0 ? `t${originSnapshotId}` : ''}`
+        result = `${h.hint}${member}${v} #${h.id}t${snapshotId}s${stamp}${originSnapshotId !== undefined && originSnapshotId !== 0 ? `t${originSnapshotId}` : ""}`
     }
     else
       result = `boot${member}`
@@ -403,8 +403,8 @@ export class Dump {
       ours.conflicts.forEach((theirs: ObjectSnapshot, m: MemberName) => {
         items.push(Dump.conflictingMemberHint(m, ours, theirs))
       })
-      return items.join(', ')
-    }).join(', ')
+      return items.join(", ")
+    }).join(", ")
   }
 
   static conflictingMemberHint(m: MemberName, ours: ObjectSnapshot, theirs: ObjectSnapshot): string {
@@ -412,10 +412,10 @@ export class Dump {
   }
 }
 
-export const EMPTY_SNAPSHOT = new ObjectSnapshot(new Changeset({ hint: '<boot>' }), undefined, {})
+export const EMPTY_SNAPSHOT = new ObjectSnapshot(new Changeset({ hint: "<boot>" }), undefined, {})
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
-  hint: 'noname',
+  hint: "noname",
   separation: false,
   journal: undefined,
   logging: undefined,

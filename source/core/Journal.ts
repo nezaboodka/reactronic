@@ -5,11 +5,11 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject } from './Mvcc.js'
-import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ValuePatch, ValueSnapshot, MemberName } from './Data.js'
-import { Changeset, EMPTY_SNAPSHOT } from './Changeset.js'
-import { Transaction } from './Transaction.js'
-import { Sealant } from '../util/Sealant.js'
+import { ObservableObject } from "./Mvcc.js"
+import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ValuePatch, ValueSnapshot, MemberName } from "./Data.js"
+import { Changeset, EMPTY_SNAPSHOT } from "./Changeset.js"
+import { Transaction } from "./Transaction.js"
+import { Sealant } from "../util/Sealant.js"
 
 export type Saver = (patch: PatchSet) => Promise<void>
 
@@ -42,7 +42,7 @@ export class JournalImpl extends Journal {
   get canRedo(): boolean { return this._position < this._edits.length }
 
   edited(p: PatchSet): void {
-    Transaction.run({ hint: 'EditJournal.edited', separation: 'isolated' }, () => {
+    Transaction.run({ hint: "EditJournal.edited", separation: "isolated" }, () => {
       const items = this._edits = this._edits.toMutable()
       if (items.length >= this._capacity)
         items.shift()
@@ -58,11 +58,11 @@ export class JournalImpl extends Journal {
     if (this._unsaved === patch)
       this._unsaved = new Map<object, Map<MemberName, ValuePatch>>()
     else
-      throw new Error('not implemented')
+      throw new Error("not implemented")
   }
 
   undo(count: number = 1): void {
-    Transaction.run({ hint: 'Journal.undo', separation: 'isolated' }, () => {
+    Transaction.run({ hint: "Journal.undo", separation: "isolated" }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._edits[i]
@@ -75,7 +75,7 @@ export class JournalImpl extends Journal {
   }
 
   redo(count: number = 1): void {
-    Transaction.run({ hint: 'Journal.redo', separation: 'isolated' }, () => {
+    Transaction.run({ hint: "Journal.redo", separation: "isolated" }, () => {
       let i: number = this._position
       while (i < this._edits.length && count > 0) {
         const patch = this._edits[i]
@@ -94,7 +94,7 @@ export class JournalImpl extends Journal {
       const former = os.former.snapshot !== EMPTY_SNAPSHOT ? os.former.snapshot.data : undefined
       os.changes.forEach(m => {
         const vp: ValuePatch = {
-          memberName: m, patchKind: 'update',
+          memberName: m, patchKind: "update",
           freshValue: unseal(os.data[m]), formerValue: undefined,
         }
         if (former)
@@ -103,7 +103,7 @@ export class JournalImpl extends Journal {
       })
       if (!former) {
         const vp: ValuePatch = {
-          memberName: Meta.Revision, patchKind: 'remove',
+          memberName: Meta.Revision, patchKind: "remove",
           freshValue: Meta.Undefined, formerValue: undefined,
         }
         op.set(Meta.Revision, vp)
@@ -146,7 +146,7 @@ export class JournalImpl extends Journal {
         let merged = result!.get(m)
         if (!merged)
           result!.set(m, merged = {
-            memberName: m, patchKind: 'update',
+            memberName: m, patchKind: "update",
             freshValue: undefined, formerValue: undefined,
           })
         const value = undoing ? vp.formerValue : vp.freshValue

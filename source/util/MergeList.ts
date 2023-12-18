@@ -67,7 +67,7 @@ export class MergeList<T> implements MergeListReader<T> {
   get isStrict(): boolean { return this.strict }
   set isStrict(value: boolean) {
     if (this.isMergeInProgress && this.current.count > 0)
-      throw new Error('cannot change strict mode in the middle of merge')
+      throw new Error("cannot change strict mode in the middle of merge")
     this.strict = value
   }
 
@@ -106,7 +106,7 @@ export class MergeList<T> implements MergeListReader<T> {
   tryMergeAsExisting(key: string, resolution?: { isDuplicate: boolean }, error?: string): MergedItem<T> | undefined {
     const tag = this.tag
     if (tag < 0)
-      throw new Error(error ?? 'merge is not in progress')
+      throw new Error(error ?? "merge is not in progress")
     let item = this.strictNextItem
     if (key !== (item ? this.getKey(item.instance) : undefined))
       item = this.lookup(key) as MergeItemImpl<T> | undefined
@@ -159,12 +159,12 @@ export class MergeList<T> implements MergeListReader<T> {
   }
 
   move(item: MergedItem<T>, after: MergedItem<T>): void {
-    throw new Error('not implemented')
+    throw new Error("not implemented")
   }
 
   beginMerge(): void {
     if (this.isMergeInProgress)
-      throw new Error('merge is in progress already')
+      throw new Error("merge is in progress already")
     this.tag = ~this.tag + 1
     this.strictNextItem = this.current.first
     this.removed.grab(this.current, false)
@@ -173,7 +173,7 @@ export class MergeList<T> implements MergeListReader<T> {
 
   endMerge(error?: unknown): void {
     if (!this.isMergeInProgress)
-      throw new Error('merge is ended already')
+      throw new Error("merge is ended already")
     this.tag = ~this.tag
     if (error === undefined) {
       const currentCount = this.current.count

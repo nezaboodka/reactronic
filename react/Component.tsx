@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import * as React from 'react'
-import { reactive, cached, Transaction, RxSystem, transaction } from '../source/api.js'
+import * as React from "react"
+import { reactive, cached, Transaction, RxSystem, transaction } from "../source/api.js"
 
 export class Component<P> extends React.Component<P> {
   @cached
   render(): JSX.Element {
-    throw new Error('render method is undefined')
+    throw new Error("render method is undefined")
   }
 
   @reactive // called immediately in response to changes

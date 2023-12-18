@@ -5,30 +5,30 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from 'ava'
-import { Reentrance, RxSystem, all, pause, transaction } from '../source/api.js'
-import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance.js'
-import { TestsLoggingLevel } from './brief.js'
+import test from "ava"
+import { Reentrance, RxSystem, all, pause, transaction } from "../source/api.js"
+import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
+import { TestsLoggingLevel } from "./brief.js"
 
 const requests: Array<{ url: string, delay: number }> = [
-  { url: 'nezaboodka.com', delay: 100 },
-  { url: 'google.com', delay: 300 },
-  { url: 'microsoft.com', delay: 200 },
+  { url: "nezaboodka.com", delay: 100 },
+  { url: "google.com", delay: 300 },
+  { url: "microsoft.com", delay: 200 },
 ]
 
 const expected: Array<string> = [
-  'Url: reactronic',
-  'Log: RTA',
-  '[...] Url: reactronic',
-  '[...] Log: RTA',
-  '[...] Url: nezaboodka.com',
-  '[...] Log: RTA, nezaboodka.com/100',
-  'Error: T111[AsyncDemo.load #23 - google.com] conflicts with: AsyncDemo.load #23 - nezaboodka.com (AsyncDemo.load #23t108s109t108)',
-  'Url: nezaboodka.com',
-  'Log: RTA, nezaboodka.com/100',
+  "Url: reactronic",
+  "Log: RTA",
+  "[...] Url: reactronic",
+  "[...] Log: RTA",
+  "[...] Url: nezaboodka.com",
+  "[...] Log: RTA, nezaboodka.com/100",
+  "Error: T111[AsyncDemo.load #23 - google.com] conflicts with: AsyncDemo.load #23 - nezaboodka.com (AsyncDemo.load #23t108s109t108)",
+  "Url: nezaboodka.com",
+  "Log: RTA, nezaboodka.com/100",
 ]
 
-test('reentrance.sidebyside', async t => {
+test("reentrance.sidebyside", async t => {
   RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())

@@ -18,7 +18,7 @@ module.exports = {
   extends: ['plugin:@typescript-eslint/recommended'],
   rules: {
     'indent': ['error', 2, { 'SwitchCase': 1 }],
-    'quotes': ['error', 'single'],
+    'quotes': ['error', 'double'],
     'semi': ['error', 'never'],
     'prefer-const': 'error',
     'comma-dangle': ['error', 'always-multiline'],

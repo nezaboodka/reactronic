@@ -5,31 +5,31 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from 'ava'
-import { Reentrance, RxSystem, all, pause, transaction } from '../source/api.js'
-import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance.js'
-import { TestsLoggingLevel } from './brief.js'
+import test from "ava"
+import { Reentrance, RxSystem, all, pause, transaction } from "../source/api.js"
+import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
+import { TestsLoggingLevel } from "./brief.js"
 
 const requests: Array<{ url: string, delay: number }> = [
-  { url: 'google.com', delay: 300 },
-  { url: 'microsoft.com', delay: 200 },
-  { url: 'nezaboodka.com', delay: 500 },
+  { url: "google.com", delay: 300 },
+  { url: "microsoft.com", delay: 200 },
+  { url: "nezaboodka.com", delay: 500 },
 ]
 
 const expected: Array<string> = [
-  'Url: reactronic',
-  'Log: RTA',
-  '[...] Url: reactronic',
-  '[...] Log: RTA',
-  '[...] Url: google.com',
-  '[...] Log: RTA, google.com/300',
-  '[...] Url: microsoft.com',
-  '[...] Log: RTA, google.com/300, microsoft.com/200',
-  'Url: nezaboodka.com',
-  'Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500',
+  "Url: reactronic",
+  "Log: RTA",
+  "[...] Url: reactronic",
+  "[...] Log: RTA",
+  "[...] Url: google.com",
+  "[...] Log: RTA, google.com/300",
+  "[...] Url: microsoft.com",
+  "[...] Log: RTA, google.com/300, microsoft.com/200",
+  "Url: nezaboodka.com",
+  "Log: RTA, google.com/300, microsoft.com/200, nezaboodka.com/500",
 ]
 
-test('reentrance.restart', async t => {
+test("reentrance.restart", async t => {
   RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())
@@ -57,10 +57,10 @@ test('reentrance.restart', async t => {
     })
   } /* istanbul ignore next */
   if (RxSystem.loggingOptions.enabled) {
-    console.log('\nResults:\n')
+    console.log("\nResults:\n")
     for (const x of output)
       console.log(x)
-    console.log('\n')
+    console.log("\n")
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */

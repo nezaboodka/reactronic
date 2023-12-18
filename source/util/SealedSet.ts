@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Sealant, Sealed } from './Sealant.js'
+import { Sealant, Sealed } from "./Sealant.js"
 
 declare global {
   interface Set<T> {
@@ -21,7 +21,7 @@ export abstract class SealedSet<T> extends Set<T> implements Sealed<Set<T>> {
   [Sealant.CreateCopy](): Set<T> { return new Set<T>(this.values()) }
 }
 
-Object.defineProperty(Set.prototype, 'toMutable', {
+Object.defineProperty(Set.prototype, "toMutable", {
   configurable: false, enumerable: false,
   value<T>(this: Set<T>) {
     return Sealant.toMutable(this)

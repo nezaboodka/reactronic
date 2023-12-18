@@ -5,14 +5,14 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from 'ava'
-import { ObservableObject, RxSystem, reactive, transactional, raw, transaction } from '../source/api.js'
-import { TestsLoggingLevel } from './brief.js'
+import test from "ava"
+import { ObservableObject, RxSystem, reactive, transactional, raw, transaction } from "../source/api.js"
+import { TestsLoggingLevel } from "./brief.js"
 
 export class ReactiveDemo extends ObservableObject {
-  title: string = 'ReactiveDemo'
-  content: string = 'Content'
-  data: string = 'Data'
+  title: string = "ReactiveDemo"
+  content: string = "Content"
+  data: string = "Data"
   @raw rev: number = 0
 
   @transactional
@@ -23,15 +23,15 @@ export class ReactiveDemo extends ObservableObject {
   @reactive
   protected actualize1(): void {
     this.title
-    this.title = 'Title/1'
-    this.content = 'Content/1'
+    this.title = "Title/1"
+    this.content = "Content/1"
     this.title
   }
 
   @reactive
   protected actualize2(): void {
     this.content
-    this.title = 'Title/2'
+    this.title = "Title/2"
   }
 
   @reactive
@@ -40,13 +40,13 @@ export class ReactiveDemo extends ObservableObject {
   }
 }
 
-test('reactive', t => {
+test("reactive", t => {
   RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const demo = transaction(() => new ReactiveDemo())
-  t.is(demo.title, 'Title/1')
-  t.is(demo.content, 'Content/1')
+  t.is(demo.title, "Title/1")
+  t.is(demo.content, "Content/1")
   t.is(demo.rev, 6)
-  demo.setData('Hello')
+  demo.setData("Hello")
   t.is(demo.rev, 10)
   t.is(RxSystem.getRevisionOf(demo), 10)
 })

@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { LoggingOptions } from '../Logging.js'
-import { MergeList, MergeListReader, MergedItem } from '../util/MergeList.js'
-import { emitLetters, getCallerInfo } from '../util/Utils.js'
-import { MemberOptions, Reentrance } from '../Options.js'
-import { ObservableObject } from '../core/Mvcc.js'
-import { Transaction } from '../core/Transaction.js'
-import { RxSystem, options, raw, reactive, unobs } from '../RxSystem.js'
+import { LoggingOptions } from "../Logging.js"
+import { MergeList, MergeListReader, MergedItem } from "../util/MergeList.js"
+import { emitLetters, getCallerInfo } from "../util/Utils.js"
+import { MemberOptions, Reentrance } from "../Options.js"
+import { ObservableObject } from "../core/Mvcc.js"
+import { Transaction } from "../core/Transaction.js"
+import { RxSystem, options, raw, reactive, unobs } from "../RxSystem.js"
 
 // Delegates
 
@@ -82,7 +82,7 @@ export abstract class RxNode<E = unknown> {
       }
       // Reuse existing node or declare a new one
       existing ??= children.tryMergeAsExisting(key = key || generateKey(owner), undefined,
-        'nested elements can be declared inside update function only')
+        "nested elements can be declared inside update function only")
       if (existing) {
         // Reuse existing node
         result = existing.instance as RxNodeImpl<E>
@@ -101,7 +101,7 @@ export abstract class RxNode<E = unknown> {
     }
     else {
       // Create new root node
-      result = new RxNodeImpl(key || '', driver, declaration, owner)
+      result = new RxNodeImpl(key || "", driver, declaration, owner)
       result.seat = MergeList.createItem(result)
       triggerUpdateViaSeat(result.seat)
     }
@@ -156,9 +156,9 @@ export abstract class RxNode<E = unknown> {
   static markAsMounted(node: RxNode<any>, yes: boolean): void {
     const n = node as RxNodeImpl<any>
     if (n.stamp < 0)
-      throw new Error('finalized node cannot be mounted or unmounted')
+      throw new Error("finalized node cannot be mounted or unmounted")
     if (n.stamp >= Number.MAX_SAFE_INTEGER)
-      throw new Error('node must be initialized before mounting')
+      throw new Error("node must be initialized before mounting")
     n.stamp = yes ? 0 : Number.MAX_SAFE_INTEGER - 1
   }
 
@@ -418,13 +418,13 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
 
   configureReactronic(options: Partial<MemberOptions>): MemberOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.IndependentUpdate))
-      throw new Error('reactronic can be configured only for elements with independent update mode and only inside initialize')
+      throw new Error("reactronic can be configured only for elements with independent update mode and only inside initialize")
     return RxSystem.getReaction(this.update).configure(options)
   }
 
   static get ownSeat(): MergedItem<RxNodeImpl> {
     if (!gOwnSeat)
-      throw new Error('current element is undefined')
+      throw new Error("current element is undefined")
     return gOwnSeat
   }
 
@@ -438,7 +438,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
   static useNodeVariableValue<T extends Object>(variable: RxNodeVariable<T>): T {
     const result = RxNodeImpl.tryUseNodeVariableValue(variable) ?? variable.defaultValue
     if (!result)
-      throw new Error('unknown node variable')
+      throw new Error("unknown node variable")
     return result
   }
 
@@ -639,7 +639,7 @@ function updateNow(seat: MergedItem<RxNodeImpl<any>>): void {
           if (result instanceof Promise)
             result.then(
               v => { runUpdateNestedNodesThenDo(undefined, NOP); return v },
-              e => { console.log(e); runUpdateNestedNodesThenDo(e ?? new Error('unknown error'), NOP) })
+              e => { console.log(e); runUpdateNestedNodesThenDo(e ?? new Error("unknown error"), NOP) })
           else
             runUpdateNestedNodesThenDo(undefined, NOP)
         }
@@ -671,7 +671,7 @@ function triggerFinalization(seat: MergedItem<RxNodeImpl>, isLeader: boolean, in
       else
         gFirstToDispose = gLastToDispose = seat
       if (gFirstToDispose === seat)
-        Transaction.run({ separation: 'disposal', hint: `runDisposalLoop(initiator=${seat.instance.key})` }, () => {
+        Transaction.run({ separation: "disposal", hint: `runDisposalLoop(initiator=${seat.instance.key})` }, () => {
           void runDisposalLoop().then(NOP, error => console.log(error))
         })
     }

@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Log, misuse } from './Dbg.js'
+import { Log, misuse } from "./Dbg.js"
 
 export type Sealable<T> = {
   toMutable(): T
@@ -17,8 +17,8 @@ export type Sealed<T> = {
 }
 
 export abstract class Sealant {
-  static readonly SealedType: unique symbol = Symbol('rxSealedType')
-  static readonly CreateCopy: unique symbol = Symbol('rxCreateCopy')
+  static readonly SealedType: unique symbol = Symbol("rxSealedType")
+  static readonly CreateCopy: unique symbol = Symbol("rxCreateCopy")
 
   static seal<T extends Sealable<T>>(collection: T, sealedType: object, typeName: string, member: any): T {
     let result: T & Sealed<T> = collection as any
@@ -26,7 +26,7 @@ export abstract class Sealant {
     if (createCopy)
       result = createCopy.call(result) as any
     if (Log.isOn && Log.opt.write)
-      Log.write('║', ' ', `${typeName}.${member.toString()} - collection is sealed`)
+      Log.write("║", " ", `${typeName}.${member.toString()} - collection is sealed`)
     Object.setPrototypeOf(result, sealedType)
     Object.freeze(result)
     return result
@@ -41,6 +41,6 @@ export abstract class Sealant {
   }
 
   static error(collection: Sealed<any>): Error {
-    return misuse('use toMutable to create mutable copy of sealed collection')
+    return misuse("use toMutable to create mutable copy of sealed collection")
   }
 }

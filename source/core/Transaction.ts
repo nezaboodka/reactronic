@@ -5,12 +5,12 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { UNDEF, F, pause } from '../util/Utils.js'
-import { Log, misuse, error, fatal } from '../util/Dbg.js'
-import { Worker } from '../Worker.js'
-import { SnapshotOptions, LoggingOptions } from '../Options.js'
-import { ObjectSnapshot, Observer } from './Data.js'
-import { Changeset, Dump } from './Changeset.js'
+import { UNDEF, F, pause } from "../util/Utils.js"
+import { Log, misuse, error, fatal } from "../util/Dbg.js"
+import { Worker } from "../Worker.js"
+import { SnapshotOptions, LoggingOptions } from "../Options.js"
+import { ObjectSnapshot, Observer } from "./Data.js"
+import { Changeset, Dump } from "./Changeset.js"
 
 export abstract class Transaction implements Worker {
   static get current(): Transaction { return TransactionImpl.current }
@@ -44,7 +44,7 @@ export abstract class Transaction implements Worker {
 }
 
 class TransactionImpl extends Transaction {
-  private static readonly none: TransactionImpl = new TransactionImpl({ hint: '<none>' })
+  private static readonly none: TransactionImpl = new TransactionImpl({ hint: "<none>" })
   private static curr: TransactionImpl = TransactionImpl.none
   private static inspection: boolean = false
   private static frameStartTime: number = 0
@@ -90,7 +90,7 @@ class TransactionImpl extends Transaction {
     try {
       TransactionImpl.inspection = true
       if (Log.isOn && Log.opt.transaction)
-        Log.write(' ', ' ', `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.curr.id}[${TransactionImpl.curr.hint}]`)
+        Log.write(" ", " ", `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.curr.id}[${TransactionImpl.curr.hint}]`)
       return this.runImpl(undefined, func, ...args)
     }
     finally {
@@ -100,7 +100,7 @@ class TransactionImpl extends Transaction {
 
   apply(): void {
     if (this.pending > 0)
-      throw misuse('cannot apply transaction having active operations running')
+      throw misuse("cannot apply transaction having active operations running")
     if (this.canceled)
       throw misuse(`cannot apply transaction that is already canceled: ${this.canceled}`)
     this.seal() // apply immediately, because pending === 0
@@ -211,7 +211,7 @@ class TransactionImpl extends Transaction {
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
     const curr = TransactionImpl.curr
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (options?.separation || curr.isFinished || curr.options.separation === 'isolated')
+    if (options?.separation || curr.isFinished || curr.options.separation === "isolated")
       return new TransactionImpl(options)
     else
       return TransactionImpl.curr
@@ -221,7 +221,7 @@ class TransactionImpl extends Transaction {
     // if (this.error) // prevent from continuing canceled transaction
     //   throw error(this.error.message, this.error)
     if (this.sealed && TransactionImpl.curr !== this)
-      throw misuse('cannot run transaction that is already sealed')
+      throw misuse("cannot run transaction that is already sealed")
   }
 
   private async wrapToRetry<T>(p: Promise<T>, func: F<T>, ...args: any[]): Promise<T | undefined> {
@@ -241,7 +241,7 @@ class TransactionImpl extends Transaction {
           // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
-            separation: this.options.separation === 'isolated' ? 'isolated' : true,
+            separation: this.options.separation === "isolated" ? "isolated" : true,
             logging: this.changeset.options.logging,
             token: this.changeset.options.token,
           }
@@ -305,9 +305,9 @@ class TransactionImpl extends Transaction {
       t.canceled = error
       t.after = after
       if (Log.isOn && Log.opt.transaction) {
-        Log.write('║', ' [!]', `${error.message}`, undefined, ' *** CANCEL ***')
+        Log.write("║", " [!]", `${error.message}`, undefined, " *** CANCEL ***")
         if (after && after !== TransactionImpl.none)
-          Log.write('║', ' [!]', `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ''}`)
+          Log.write("║", " [!]", `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ""}`)
       }
       Changeset.revokeAllSubscriptions(t.changeset)
     }
@@ -329,7 +329,7 @@ class TransactionImpl extends Transaction {
     let reactive: Array<Observer>
     try {
       if (Log.isOn && Log.opt.change)
-        Log.write('╠═', '', '', undefined, 'changes')
+        Log.write("╠═", "", "", undefined, "changes")
       reactive = this.changeset.applyOrDiscard(this.canceled)
       this.changeset.triggerGarbageCollection()
       if (this.promise) {
@@ -364,7 +364,7 @@ class TransactionImpl extends Transaction {
 
   private static getEditableChangeset(): Changeset {
     if (TransactionImpl.inspection)
-      throw misuse('cannot make changes during transaction inspection')
+      throw misuse("cannot make changes during transaction inspection")
     return TransactionImpl.curr.changeset
   }
 

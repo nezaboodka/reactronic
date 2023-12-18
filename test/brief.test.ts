@@ -5,30 +5,30 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from 'ava'
-import { Transaction, Kind, unobs, sensitive, RxSystem, transaction } from '../source/api.js'
-import { Person, Demo, DemoView, output, TestsLoggingLevel } from './brief.js'
+import test from "ava"
+import { Transaction, Kind, unobs, sensitive, RxSystem, transaction } from "../source/api.js"
+import { Person, Demo, DemoView, output, TestsLoggingLevel } from "./brief.js"
 
 const expected: string[] = [
-  'Filter: Jo',
-  'Filter: Jo',
-  'John\'s children: Billy, Barry, Steve',
-  'Filter: Jo',
-  'John\'s children: Billy, Barry, Steve',
-  'Filter: ',
-  'John Smith\'s children: Barry, Steven Smith, William Smith',
-  'Kevin\'s children: Britney',
-  'Filter: ',
-  'John Smith\'s children: Barry, Steven Smith, William Smith',
-  'Kevin\'s children: Britney',
-  'Filter: Jo',
-  'John\'s children: Billy, Barry, Steve',
-  'Filter: ',
-  'John Smith\'s children: Barry, Steven Smith, William Smith',
-  'Kevin\'s children: Britney',
+  "Filter: Jo",
+  "Filter: Jo",
+  "John's children: Billy, Barry, Steve",
+  "Filter: Jo",
+  "John's children: Billy, Barry, Steve",
+  "Filter: ",
+  "John Smith's children: Barry, Steven Smith, William Smith",
+  "Kevin's children: Britney",
+  "Filter: ",
+  "John Smith's children: Barry, Steven Smith, William Smith",
+  "Kevin's children: Britney",
+  "Filter: Jo",
+  "John's children: Billy, Barry, Steve",
+  "Filter: ",
+  "John Smith's children: Barry, Steven Smith, William Smith",
+  "Kevin's children: Britney",
 ]
 
-test('brief', t => {
+test("brief", t => {
   RxSystem.reactivityAutoStartDisabled = !RxSystem.reactivityAutoStartDisabled
   RxSystem.reactivityAutoStartDisabled = false
   RxSystem.setProfilingMode(false)
@@ -44,7 +44,7 @@ test('brief', t => {
   // Simple transactions
   const app = transaction(() => new DemoView(new Demo()))
   try {
-    t.is(RxSystem.why(), '<boot>')
+    t.is(RxSystem.why(), "<boot>")
     t.is(RxSystem.getReaction(app.print).options.order, 123)
     t.notThrows(() => DemoView.test())
     const render = RxSystem.getReaction(app.render)
@@ -55,12 +55,12 @@ test('brief', t => {
     t.is(app.model.users.length - 1, app.model.usersWithoutLast.length)
     t.is(render.result.length, 2)
     const daddy: Person = app.model.users[0]
-    t.is(daddy.hasOwnProperty('name'), true)
-    t.is('name' in daddy, true)
-    t.is('name2' in daddy, false)
-    t.is('dummy' in daddy, true)
-    t.is('dummy2' in daddy, false)
-    t.is(daddy.name, 'John')
+    t.is(daddy.hasOwnProperty("name"), true)
+    t.is("name" in daddy, true)
+    t.is("name2" in daddy, false)
+    t.is("dummy" in daddy, true)
+    t.is("dummy2" in daddy, false)
+    t.is(daddy.name, "John")
     t.is(daddy.age, 38)
     t.is(render.isUpToDate, true)
     t.is(RxSystem.takeSnapshot(daddy).age, 38)
@@ -70,62 +70,62 @@ test('brief', t => {
     render.markObsolete()
     t.not(render.stamp, stamp)
     // Multi-part transactions
-    const tran1 = Transaction.create({ hint: 'tran1', journal: Demo.journal })
+    const tran1 = Transaction.create({ hint: "tran1", journal: Demo.journal })
     tran1.run(() => {
       const computed = app.model.computed
-      t.true(computed.startsWith('Demo.computed @ '))
+      t.true(computed.startsWith("Demo.computed @ "))
       t.is(computed, app.model.computed)
-      t.throws(() => tran1.apply(), { message: 'cannot apply transaction having active operations running' })
+      t.throws(() => tran1.apply(), { message: "cannot apply transaction having active operations running" })
       app.model.shared = app.shared = tran1.hint
-      daddy.id = 'field restored during transaction'
+      daddy.id = "field restored during transaction"
       daddy.id = null // restore
       daddy.age += 2 // causes no execution of DemoApp.render
-      daddy.name = 'John Smith' // causes execution of DemoApp.render upon apply
-      daddy.children[0].name = 'Barry' // Barry
-      daddy.children[1].name = 'William Smith' // Billy
-      daddy.children[2].name = 'Steven Smith' // Steve
-      t.is(daddy.name, 'John Smith')
+      daddy.name = "John Smith" // causes execution of DemoApp.render upon apply
+      daddy.children[0].name = "Barry" // Barry
+      daddy.children[1].name = "William Smith" // Billy
+      daddy.children[2].name = "Steven Smith" // Steve
+      t.is(daddy.name, "John Smith")
       t.is(daddy.age, 40)
       t.is(Transaction.outside(() => daddy.age), 38)
       t.is(unobs(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
-      app.userFilter = 'Jo' // set to the same value
+      app.userFilter = "Jo" // set to the same value
     })
     t.is(app.model.shared, tran1.hint)
-    t.is(daddy.name, 'John')
-    t.is(tran1.inspect(() => daddy.name), 'John Smith')
-    t.throws(() => tran1.inspect(() => { daddy.name = 'Forbidden' }), { message: 'cannot make changes during transaction inspection' })
+    t.is(daddy.name, "John")
+    t.is(tran1.inspect(() => daddy.name), "John Smith")
+    t.throws(() => tran1.inspect(() => { daddy.name = "Forbidden" }), { message: "cannot make changes during transaction inspection" })
     t.is(daddy.age, 38)
     t.is(daddy.children.length, 3)
     t.is(render.isUpToDate, true)
     tran1.run(() => {
       t.is(daddy.age, 40)
       daddy.age += 5
-      app.userFilter = ''
+      app.userFilter = ""
       if (daddy.emails) {
         const emails = daddy.emails = daddy.emails.toMutable()
-        emails[0] = 'daddy@mail.com'
-        emails.push('someone@mail.io')
+        emails[0] = "daddy@mail.com"
+        emails.push("someone@mail.io")
       }
       const attrs = daddy.attributes = daddy.attributes.toMutable()
-      attrs.set('city', 'London')
-      attrs.set('country', 'United Kingdom')
+      attrs.set("city", "London")
+      attrs.set("country", "United Kingdom")
       const x = daddy.children[1]
       x.parent = null
       x.parent = daddy
-      t.is(daddy.name, 'John Smith')
+      t.is(daddy.name, "John Smith")
       t.is(daddy.age, 45)
-      t.is(daddy.children.map(x => `"${x.name}"`).join(', '), '"Barry", "Steven Smith", "William Smith"')
+      t.is(daddy.children.map(x => `"${x.name}"`).join(", "), "\"Barry\", \"Steven Smith\", \"William Smith\"")
       t.is(daddy.children.length, 3)
     })
     t.is(render.isUpToDate, true)
-    t.is(daddy.name, 'John')
+    t.is(daddy.name, "John")
     t.is(daddy.age, 38)
     t.is(daddy.attributes.size, 0)
     tran1.apply() // changes are applied, reactive functions are executed
     t.is(render.isUpToDate, true)
     t.not(render.stamp, stamp)
-    t.is(daddy.name, 'John Smith')
+    t.is(daddy.name, "John Smith")
     t.is(daddy.age, 45)
     t.is(daddy.attributes.size, 2)
     t.is(app.model.users !== app.model.usersWithoutLast, true)
@@ -135,65 +135,65 @@ test('brief', t => {
     t.throws(() => {
       if (daddy.emails) {
         const emails = daddy.emails = daddy.emails.toMutable()
-        emails.push('dad@mail.com')
+        emails.push("dad@mail.com")
       }
-    }, undefined, 'observable property Person.emails #26 can only be modified inside transaction')
-    t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: 'cannot run transaction that is already sealed' })
+    }, undefined, "observable property Person.emails #26 can only be modified inside transaction")
+    t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: "cannot run transaction that is already sealed" })
     // Check protection and error handling
-    t.throws(() => { RxSystem.getReaction(daddy.setParent).configure({ monitor: null }) }, { message: 'given method is not decorated as reactronic one: setParent' })
-    t.throws(() => { console.log(RxSystem.getReaction(daddy.setParent).options.monitor) }, { message: 'given method is not decorated as reactronic one: setParent' })
-    const op2 = Transaction.create({ hint: 'op2' })
+    t.throws(() => { RxSystem.getReaction(daddy.setParent).configure({ monitor: null }) }, { message: "given method is not decorated as reactronic one: setParent" })
+    t.throws(() => { console.log(RxSystem.getReaction(daddy.setParent).options.monitor) }, { message: "given method is not decorated as reactronic one: setParent" })
+    const op2 = Transaction.create({ hint: "op2" })
     const zombi = op2.run(() => new Person())
-    t.throws(() => console.log(zombi.age), { message: 'Person.age #30 is not yet available for T1[<none>] because of uncommitted T125[op2] (last committed T0[<boot>])' })
-    t.throws(() => op2.run(() => { throw new Error('test') }), { message: 'test' })
-    t.throws(() => op2.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
-    const op3 = Transaction.create({ hint: 'op3' })
+    t.throws(() => console.log(zombi.age), { message: "Person.age #30 is not yet available for T1[<none>] because of uncommitted T125[op2] (last committed T0[<boot>])" })
+    t.throws(() => op2.run(() => { throw new Error("test") }), { message: "test" })
+    t.throws(() => op2.apply(), { message: "cannot apply transaction that is already canceled: Error: test" })
+    const op3 = Transaction.create({ hint: "op3" })
     t.throws(() => op3.run(() => {
-      op3.cancel(new Error('test'))
+      op3.cancel(new Error("test"))
       op3.run(nop)
-    }), { message: 'test' })
-    t.throws(() => op3.apply(), { message: 'cannot apply transaction that is already canceled: Error: test' })
+    }), { message: "test" })
+    t.throws(() => op3.apply(), { message: "cannot apply transaction that is already canceled: Error: test" })
     transaction(sensitive, true, () => {
       app.userFilter = app.userFilter
     })
     // Other
-    t.throws(() => app.model.testImmutableCollection(), { message: 'use toMutable to create mutable copy of sealed collection' })
+    t.throws(() => app.model.testImmutableCollection(), { message: "use toMutable to create mutable copy of sealed collection" })
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
-    t.is(app.raw, 'DemoView.render #23t129s111   ◀◀   DemoView.userFilter[=""] #23t127s111    ◀◀    T127[noname]')
+    t.is(app.raw, "DemoView.render #23t129s111   ◀◀   DemoView.userFilter[=\"\"] #23t127s111    ◀◀    T127[noname]")
     t.is(render.options.kind, Kind.Cached)
     t.is(render.error, undefined)
-    t.is(RxSystem.getLoggingHint(app), 'DemoView')
-    RxSystem.setLoggingHint(app, 'App')
-    t.is(RxSystem.getLoggingHint(app, false), 'App')
-    t.is(RxSystem.getLoggingHint(app, true), 'App#23')
-    t.deepEqual(Object.getOwnPropertyNames(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
-    t.deepEqual(Object.keys(app.model), ['shared', 'title', 'users', 'collection1', 'collection2', 'usersWithoutLast'])
+    t.is(RxSystem.getLoggingHint(app), "DemoView")
+    RxSystem.setLoggingHint(app, "App")
+    t.is(RxSystem.getLoggingHint(app, false), "App")
+    t.is(RxSystem.getLoggingHint(app, true), "App#23")
+    t.deepEqual(Object.getOwnPropertyNames(app.model), ["shared", "title", "users", "collection1", "collection2", "usersWithoutLast"])
+    t.deepEqual(Object.keys(app.model), ["shared", "title", "users", "collection1", "collection2", "usersWithoutLast"])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
     // Undo
-    t.is(app.model.title, 'Demo')
+    t.is(app.model.title, "Demo")
     t.is(Demo.journal.edits.length, 1)
     // console.log(Demo.journal.unsaved.objects.values())
     app.model.testUndo()
-    t.is(app.model.title, 'Demo - undo/redo')
+    t.is(app.model.title, "Demo - undo/redo")
     t.is(Demo.journal.edits.length, 2)
     // console.log(Demo.journal.unsaved.objects.values())
     Demo.journal.undo()
-    t.is(app.model.title, 'Demo')
+    t.is(app.model.title, "Demo")
     t.is(Demo.journal.edits.length, 2)
     // console.log(Demo.journal.unsaved.objects.values())
     // Undo
-    t.is(daddy.name, 'John Smith')
+    t.is(daddy.name, "John Smith")
     t.is(daddy.age, 45)
-    t.is(app.userFilter, '')
+    t.is(app.userFilter, "")
     Demo.journal.undo()
-    t.is(daddy.name, 'John')
+    t.is(daddy.name, "John")
     t.is(daddy.age, 38)
-    t.is(app.userFilter, 'Jo')
+    t.is(app.userFilter, "Jo")
     Demo.journal.redo()
-    t.is(daddy.name, 'John Smith')
+    t.is(daddy.name, "John Smith")
     t.is(daddy.age, 45)
-    t.is(app.userFilter, '')
+    t.is(app.userFilter, "")
     // Undo - decorator
     // op1undo.revert()
     // t.is(daddy.name, 'John Smith')

@@ -5,9 +5,9 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Log } from '../util/Dbg.js'
-import { Meta } from './Meta.js'
-export { Meta } from './Meta.js'
+import { Log } from "../util/Dbg.js"
+import { Meta } from "./Meta.js"
+export { Meta } from "./Meta.js"
 
 // AbstractChangeset
 
@@ -28,7 +28,7 @@ export class ValueSnapshot<T = any> {
   constructor(content: T) { this.content = content }
 }
 
-export type SeparationMode = boolean | 'isolated' | 'disposal'
+export type SeparationMode = boolean | "isolated" | "disposal"
 
 export type Observer = {
   readonly order: number
@@ -112,7 +112,7 @@ export type PatchSet = Map<object, Map<MemberName, ValuePatch>>
 
 export type ValuePatch = {
   memberName: MemberName
-  patchKind: 'update' | 'add' | 'remove'
+  patchKind: "update" | "add" | "remove"
   freshValue: any
   formerValue: any
 }

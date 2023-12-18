@@ -5,14 +5,14 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { UNDEF, F } from '../util/Utils.js'
-import { Log, misuse } from '../util/Dbg.js'
-import { AbstractReaction, MemberOptions, Kind, Reentrance } from '../Options.js'
-import { LoggingOptions, ProfilingOptions } from '../Logging.js'
-import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Meta, SeparationMode } from './Data.js'
-import { Changeset, Dump, EMPTY_SNAPSHOT } from './Changeset.js'
-import { Journal } from './Journal.js'
-import { Monitor } from './Monitor.js'
+import { UNDEF, F } from "../util/Utils.js"
+import { Log, misuse } from "../util/Dbg.js"
+import { AbstractReaction, MemberOptions, Kind, Reentrance } from "../Options.js"
+import { LoggingOptions, ProfilingOptions } from "../Logging.js"
+import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Meta, SeparationMode } from "./Data.js"
+import { Changeset, Dump, EMPTY_SNAPSHOT } from "./Changeset.js"
+import { Journal } from "./Journal.js"
+import { Monitor } from "./Monitor.js"
 
 // MvccObject, TransactionalObject, ObservableObject
 
@@ -253,7 +253,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     let h = obj[Meta.Handle]
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
-        throw misuse('only objects can be observable')
+        throw misuse("only objects can be observable")
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
       const os = new ObjectSnapshot(EMPTY_SNAPSHOT.changeset, EMPTY_SNAPSHOT, {...initial})
       h = new ObjectHandle(obj, obj, Mvcc.observable, os, obj.constructor.name)
@@ -316,12 +316,12 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
 
   /* istanbul ignore next */
   static createOperation = function(h: ObjectHandle, m: MemberName, options: OptionsImpl): F<any> {
-    throw misuse('this implementation of createOperation should never be called')
+    throw misuse("this implementation of createOperation should never be called")
   }
 
   /* istanbul ignore next */
   static rememberOperationOptions = function(proto: any, m: MemberName, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
-    throw misuse('this implementation of rememberOperationOptions should never be called')
+    throw misuse("this implementation of rememberOperationOptions should never be called")
   }
 }
 

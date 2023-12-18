@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Sealant, Sealed } from './Sealant.js'
+import { Sealant, Sealed } from "./Sealant.js"
 
 declare global {
   interface Array<T> {
@@ -31,7 +31,7 @@ export abstract class SealedArray<T> extends Array<T> implements Sealed<Array<T>
 
 }
 
-Object.defineProperty(Array.prototype, 'toMutable', {
+Object.defineProperty(Array.prototype, "toMutable", {
   configurable: false, enumerable: false,
   value<T>(this: Array<T>) {
     return Sealant.toMutable(this)

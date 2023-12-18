@@ -5,27 +5,27 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from 'ava'
-import { Reentrance, RxSystem, pause, transaction } from '../source/api.js'
-import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance.js'
-import { TestsLoggingLevel } from './brief.js'
+import test from "ava"
+import { Reentrance, RxSystem, pause, transaction } from "../source/api.js"
+import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
+import { TestsLoggingLevel } from "./brief.js"
 
 const requests: Array<{ url: string, delay: number }> = [
-  { url: 'nezaboodka.com', delay: 500 },
-  { url: 'google.com', delay: 300 },
-  { url: 'microsoft.com', delay: 200 },
+  { url: "nezaboodka.com", delay: 500 },
+  { url: "google.com", delay: 300 },
+  { url: "microsoft.com", delay: 200 },
 ]
 
 const expected: Array<string> = [
-  'Url: reactronic',
-  'Log: RTA',
-  '[...] Url: reactronic',
-  '[...] Log: RTA',
-  'Url: nezaboodka.com',
-  'Log: RTA, nezaboodka.com/500',
+  "Url: reactronic",
+  "Log: RTA",
+  "[...] Url: reactronic",
+  "[...] Log: RTA",
+  "Url: nezaboodka.com",
+  "Log: RTA, nezaboodka.com/500",
 ]
 
-test('reentrance.error', async t => {
+test("reentrance.error", async t => {
   RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())
@@ -33,11 +33,11 @@ test('reentrance.error', async t => {
     return a
   })
   try {
-    t.is(app.rawField, 'raw field')
-    app.rawField = 'raw field updated'
-    t.is(app.rawField, 'raw field updated')
-    t.is(app.observableField, 'observable field')
-    t.throws(() => app.observableField = 'observable field', { message: 'observable property AsyncDemoView.observableField #24 can only be modified inside transaction' })
+    t.is(app.rawField, "raw field")
+    app.rawField = "raw field updated"
+    t.is(app.rawField, "raw field updated")
+    t.is(app.observableField, "observable field")
+    t.throws(() => app.observableField = "observable field", { message: "observable property AsyncDemoView.observableField #24 can only be modified inside transaction" })
     t.throws(() => RxSystem.getReaction(app.print).configure({ logging: TestsLoggingLevel }))
     transaction(() => {
       RxSystem.getReaction(app.print).configure({ logging: TestsLoggingLevel })

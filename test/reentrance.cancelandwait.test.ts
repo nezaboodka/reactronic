@@ -5,27 +5,27 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from 'ava'
-import { Reentrance, RxSystem, all, pause, transaction } from '../source/api.js'
-import { AsyncDemo, AsyncDemoView, busy, output } from './reentrance.js'
-import { TestsLoggingLevel } from './brief.js'
+import test from "ava"
+import { Reentrance, RxSystem, all, pause, transaction } from "../source/api.js"
+import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
+import { TestsLoggingLevel } from "./brief.js"
 
 const requests: Array<{ url: string, delay: number }> = [
-  { url: 'google.com', delay: 300 },
-  { url: 'microsoft.com', delay: 200 },
-  { url: 'nezaboodka.com', delay: 500 },
+  { url: "google.com", delay: 300 },
+  { url: "microsoft.com", delay: 200 },
+  { url: "nezaboodka.com", delay: 500 },
 ]
 
 const expected: Array<string> = [
-  'Url: reactronic',
-  'Log: RTA',
-  '[...] Url: reactronic',
-  '[...] Log: RTA',
-  'Url: nezaboodka.com',
-  'Log: RTA, nezaboodka.com/500',
+  "Url: reactronic",
+  "Log: RTA",
+  "[...] Url: reactronic",
+  "[...] Log: RTA",
+  "Url: nezaboodka.com",
+  "Log: RTA, nezaboodka.com/500",
 ]
 
-test('reentrance.cancelandwait', async t => {
+test("reentrance.cancelandwait", async t => {
   RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())
@@ -38,7 +38,7 @@ test('reentrance.cancelandwait', async t => {
     t.is(busy.counter, 1)
     t.is(busy.workers.size, 1)
     busy.workers.forEach(w =>
-      t.assert(w.hint.indexOf('AsyncDemo.load #23 - ') === 0))
+      t.assert(w.hint.indexOf("AsyncDemo.load #23 - ") === 0))
     await all(responses)
   }
   catch (error: any) { /* istanbul ignore next */
@@ -55,10 +55,10 @@ test('reentrance.cancelandwait', async t => {
     })
   } /* istanbul ignore next */
   if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) {
-    console.log('\nResults:\n')
+    console.log("\nResults:\n")
     for (const x of output)
       console.log(x)
-    console.log('\n')
+    console.log("\n")
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */

@@ -5,8 +5,8 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import * as React from 'react'
-import { ObservableObject, Transaction, raw, reactive, cached, RxSystem, transaction } from '../source/api.js'
+import * as React from "react"
+import { ObservableObject, Transaction, raw, reactive, cached, RxSystem, transaction } from "../source/api.js"
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -43,7 +43,7 @@ class RxComponent extends ObservableObject {
 }
 
 function createReactState(): ReactState {
-  const rx = Transaction.run<RxComponent>({ hint: '<rx>' }, RxComponent.create)
+  const rx = Transaction.run<RxComponent>({ hint: "<rx>" }, RxComponent.create)
   return {rx}
 }
 

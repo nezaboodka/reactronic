@@ -5,22 +5,22 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from 'ava'
-import { RxSystem, ObservableObject, transaction } from '../source/api.js'
-import { TestsLoggingLevel } from './brief.js'
+import test from "ava"
+import { RxSystem, ObservableObject, transaction } from "../source/api.js"
+import { TestsLoggingLevel } from "./brief.js"
 
 class Serializable extends ObservableObject {
-  text: string = ''
+  text: string = ""
   array?: Array<Serializable> = undefined
 }
 
-test('serializing', t => {
+test("serializing", t => {
   RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const serializable = transaction(() => {
     const s1 = new Serializable()
-    s1.text = 's1'
+    s1.text = "s1"
     const s2 = new Serializable()
-    s2.text = 's2'
+    s2.text = "s2"
     s2.array = []
     s2.array.push(s1)
     return s2

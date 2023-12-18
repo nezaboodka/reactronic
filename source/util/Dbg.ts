@@ -5,22 +5,22 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { LoggingOptions } from '../Logging.js'
+import { LoggingOptions } from "../Logging.js"
 
 export function error(message: string, dump: Error | undefined): Error {
   if (Log.isOn && Log.opt.error)
-    Log.write('█', ' ███', message, undefined, ' *** ERROR ***', dump)
+    Log.write("█", " ███", message, undefined, " *** ERROR ***", dump)
   return new Error(message)
 }
 
 export function misuse(message: string, dump?: any): Error {
   const error = new Error(message)
-  Log.write(' ', ' ███', message, undefined, ' *** ERROR / MISUSE ***', dump ?? error)
+  Log.write(" ", " ███", message, undefined, " *** ERROR / MISUSE ***", dump ?? error)
   return error
 }
 
 export function fatal(error: Error): Error {
-  Log.write(' ', ' ███', error.message, undefined, ' *** FATAL ***', error)
+  Log.write(" ", " ███", error.message, undefined, " *** FATAL ***", error)
   return error
 }
 
@@ -41,7 +41,7 @@ export class Log {
     obsolete: false,
     gc: false,
     color: 37,
-    prefix: '',
+    prefix: "",
     margin1: 0,
     margin2: 0,
   }
@@ -55,12 +55,12 @@ export class Log {
     Log.global = options || Log.DefaultLevel
     if (isOn) {
       const t = Log.global as any
-      const o = Object.keys(Log.global).filter(x => t[x] === true).join(', ')
-      Log.write('', '', `Reactronic logging is turned on: ${o}`)
-      Log.write('', '', 'Member-level logging can be configured with @options({ logging: ... }) decorator')
+      const o = Object.keys(Log.global).filter(x => t[x] === true).join(", ")
+      Log.write("", "", `Reactronic logging is turned on: ${o}`)
+      Log.write("", "", "Member-level logging can be configured with @options({ logging: ... }) decorator")
     }
     else if (Log.isOn)
-      Log.write('', '', 'Reactronic logging is turned off')
+      Log.write("", "", "Reactronic logging is turned off")
     Log.isOn = isOn
   }
 
@@ -70,13 +70,13 @@ export class Log {
 
   static writeAs(options: Partial<LoggingOptions> | undefined, bar: string, tran: string, message: string, ms: number = 0, highlight: string | undefined = undefined, dump?: any): void {
     const t = Log.getMergedLoggingOptions(options)
-    const margin1: string = '  '.repeat(t.margin1 >= 0 ? t.margin1 : 0)
-    const margin2: string = '  '.repeat(t.margin2)
+    const margin1: string = "  ".repeat(t.margin1 >= 0 ? t.margin1 : 0)
+    const margin2: string = "  ".repeat(t.margin2)
     const enabled = (options && options.enabled !== undefined) ? options.enabled : t.enabled
     if (enabled) { /* istanbul ignore next */
-      console.log('\x1b[37m%s\x1b[0m \x1b[' + t.color + 'm%s %s%s\x1b[0m \x1b[' + t.color + 'm%s%s\x1b[0m \x1b[' + t.color + 'm%s\x1b[0m%s',
-        '', t.prefix, t.transaction ? margin1 : '', t.transaction ? bar : bar.replace(/./g, ' '), margin2, tran, message,
-        (highlight !== undefined ? `${highlight}` : '') + (ms > 2 ? `    [ ${ms}ms ]` : ''))
+      console.log("\x1b[37m%s\x1b[0m \x1b[" + t.color + "m%s %s%s\x1b[0m \x1b[" + t.color + "m%s%s\x1b[0m \x1b[" + t.color + "m%s\x1b[0m%s",
+        "", t.prefix, t.transaction ? margin1 : "", t.transaction ? bar : bar.replace(/./g, " "), margin2, tran, message,
+        (highlight !== undefined ? `${highlight}` : "") + (ms > 2 ? `    [ ${ms}ms ]` : ""))
       if (dump) /* istanbul ignore next */
         console.log(dump)
     }

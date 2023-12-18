@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Sealant, Sealed } from './Sealant.js'
+import { Sealant, Sealed } from "./Sealant.js"
 
 declare global {
   interface Map<K, V> {
@@ -21,7 +21,7 @@ export abstract class SealedMap<K, V> extends Map<K, V> implements Sealed<Map<K,
   [Sealant.CreateCopy](): Map<K, V> { return new Map<K, V>(this.entries()) }
 }
 
-Object.defineProperty(Map.prototype, 'toMutable', {
+Object.defineProperty(Map.prototype, "toMutable", {
   configurable: false, enumerable: false,
   value<K, V>(this: Map<K, V>) {
     return Sealant.toMutable(this)

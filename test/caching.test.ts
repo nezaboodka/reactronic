@@ -5,14 +5,14 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from 'ava'
-import { ObservableObject, cached, RxSystem, reactive, raw, options, transaction } from '../source/api.js'
-import { TestsLoggingLevel } from './brief.js'
+import test from "ava"
+import { ObservableObject, cached, RxSystem, reactive, raw, options, transaction } from "../source/api.js"
+import { TestsLoggingLevel } from "./brief.js"
 
 export class DemoBase extends ObservableObject {
-  @raw raw: string = 'plain data'
-  title: string = 'Demo'
-  sideEffect: string = 'no side effect'
+  @raw raw: string = "plain data"
+  title: string = "Demo"
+  sideEffect: string = "no side effect"
   uninitialized?: any
 
   @reactive
@@ -24,7 +24,7 @@ export class DemoBase extends ObservableObject {
 
   @reactive @options({ noSideEffects: true })
   reactiveWithNoSideEffects(): void {
-    this.sideEffect = 'side effect'
+    this.sideEffect = "side effect"
   }
 
   // @transaction
@@ -40,7 +40,7 @@ export class DemoBase extends ObservableObject {
   @cached @options({ logging: {} })
   produceSideEffect(): void {
     this.raw = RxSystem.why()
-    this.title = 'should fail on this line'
+    this.title = "should fail on this line"
   }
 
   @cached
@@ -61,20 +61,20 @@ export class Demo extends DemoBase {
   }
 }
 
-test('caching', t => {
+test("caching", t => {
   RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const demo = transaction(() => {
     const d = new Demo()
-    t.is(d.cachedTitle(), 'Demo')
+    t.is(d.cachedTitle(), "Demo")
     // d.title = 'Demo+'
     // t.is(d.cachedTitle(), 'Demo') // cache still returns previously cached value
     return d
   })
-  t.is(demo.sideEffect, 'no side effect')
-  t.assert(demo.title.startsWith('demo -')) // check that Demo.normalizeTitle works
-  t.throws(() => demo.produceSideEffect(), { message: 'Demo.produceSideEffect #22 should not have side effects (trying to change Demo.title #22t107s103)' })
+  t.is(demo.sideEffect, "no side effect")
+  t.assert(demo.title.startsWith("demo -")) // check that Demo.normalizeTitle works
+  t.throws(() => demo.produceSideEffect(), { message: "Demo.produceSideEffect #22 should not have side effects (trying to change Demo.title #22t107s103)" })
   // t.throws(() => demo.setUninitialized('someValue'), { message: 'uninitialized member is detected: t107s103#21 Demo.uninitialized' })
-  t.assert(demo.raw.startsWith('Demo.produceSideEffect #22t107s103   ◀◀   T107[Demo.produceSideEffect #22]'))
+  t.assert(demo.raw.startsWith("Demo.produceSideEffect #22t107s103   ◀◀   T107[Demo.produceSideEffect #22]"))
   t.is(demo.uninitialized, undefined)
   t.is(demo.cachedMap().size, 0)
   t.is(demo.cachedSet().size, 0)
