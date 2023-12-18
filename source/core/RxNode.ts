@@ -617,7 +617,6 @@ function mountOrRemountIfNecessary(node: RxNodeImpl): void {
         if (node.host !== node)
           driver.mount(node)
       }
-      node.stamp = 0 // TEMPORARY
     })
   }
   else if (node.isMoved && !node.has(Mode.ManualMount) && node.host !== node)
