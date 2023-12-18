@@ -153,6 +153,15 @@ export abstract class RxNode<E = unknown> {
     runUpdateNestedNodesThenDo(undefined, action)
   }
 
+  static markAsMounted(node: RxNode<any>, yes: boolean): void {
+    const n = node as RxNodeImpl<any>
+    if (n.stamp < 0)
+      throw new Error('finalized node cannot be mounted or unmounted')
+    if (n.stamp >= Number.MAX_SAFE_INTEGER)
+      throw new Error('node must be initialized before mounting')
+    n.stamp = yes ? 0 : Number.MAX_SAFE_INTEGER - 1
+  }
+
   static findMatchingHost<E = unknown, R = unknown>(
     node: RxNode<E>, match: SimpleDelegate<RxNode<E>, boolean>): RxNode<R> | undefined {
     let p = node.host as RxNodeImpl<any>
@@ -600,11 +609,11 @@ function triggerUpdateViaSeat(seat: MergedItem<RxNodeImpl<any>>): void {
 function mountOrRemountIfNecessary(node: RxNodeImpl): void {
   const driver = node.driver
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
-    node.stamp = Number.MAX_SAFE_INTEGER - 1 // initializing
     unobs(() => {
+      node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as initialized
       driver.initialize(node)
       if (!node.has(Mode.ManualMount)) {
-        node.stamp = 0 // mounting
+        node.stamp = 0 // mark as mounted
         if (node.host !== node)
           driver.mount(node)
       }
