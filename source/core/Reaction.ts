@@ -651,10 +651,10 @@ class Launch extends ValueSnapshot implements Observer {
     for (const r of reactive)
       queue.push(r)
     if (isReactiveLoopRequired)
-      ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Launch.runQueuedReactiveFunctions)
+      ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactiveFunctions)
   }
 
-  private static runQueuedReactiveFunctions(): void {
+  private static processQueuedReactiveFunctions(): void {
     const queue = Launch.queuedReactiveFunctions
     let i = 0
     while (i < queue.length) {
