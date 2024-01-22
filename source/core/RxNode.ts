@@ -149,6 +149,11 @@ export abstract class RxNode<E = unknown> {
     }
   }
 
+  static triggerFinalize(node: RxNode<any>): void {
+    const impl = node as RxNodeImpl<any>
+    triggerFinalization(impl.seat!, true, true)
+  }
+
   static updateNestedNodesThenDo(action: (error: unknown) => void): void {
     runUpdateNestedNodesThenDo(undefined, action)
   }
