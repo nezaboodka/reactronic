@@ -60,17 +60,17 @@ export function obs(proto: object, prop: PropertyKey): any {
 }
 
 export function transactional(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opts = { kind: Kind.Transactional }
+  const opts = { kind: Kind.transactional }
   return Mvcc.decorateOperation(true, transactional, opts, proto, prop, pd)
 }
 
 export function reactive(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opts = { kind: Kind.Reactive, throttling: -1 } // immediate reactive call
+  const opts = { kind: Kind.reactive, throttling: -1 } // immediate reactive call
   return Mvcc.decorateOperation(true, reactive, opts, proto, prop, pd)
 }
 
 export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opts = { kind: Kind.Cached, noSideEffects: true }
+  const opts = { kind: Kind.cached, noSideEffects: true }
   return Mvcc.decorateOperation(true, cached, opts, proto, prop, pd)
 }
 

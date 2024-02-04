@@ -14,7 +14,7 @@ export class AsyncDemo extends ObservableObject {
   url: string = "reactronic"
   log: string[] = ["RTA"]
 
-  @transactional @options({ monitor: busy, reentrance: Reentrance.PreventWithError })
+  @transactional @options({ monitor: busy, reentrance: Reentrance.preventWithError })
   async load(url: string, delay: number): Promise<void> {
     this.url = url
     await all([pause(delay)])

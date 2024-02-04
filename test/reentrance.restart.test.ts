@@ -33,7 +33,7 @@ test("reentrance.restart", async t => {
   RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    RxSystem.getReaction(a.model.load).configure({reentrance: Reentrance.WaitAndRestart})
+    RxSystem.getReaction(a.model.load).configure({reentrance: Reentrance.waitAndRestart})
     return a
   })
   try {

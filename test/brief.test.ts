@@ -161,7 +161,7 @@ test("brief", t => {
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
     t.is(app.raw, "DemoView.render #23t129s111   ◀◀   DemoView.userFilter[=\"\"] #23t127s111    ◀◀    T127[noname]")
-    t.is(render.options.kind, Kind.Cached)
+    t.is(render.options.kind, Kind.cached)
     t.is(render.error, undefined)
     t.is(RxSystem.getLoggingHint(app), "DemoView")
     RxSystem.setLoggingHint(app, "App")

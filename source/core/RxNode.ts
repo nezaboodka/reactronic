@@ -21,15 +21,15 @@ export type SimpleDelegate<T = unknown, R = void> = (element: T) => R
 // Enums
 
 export enum Mode {
-  Default = 0,
-  IndependentUpdate = 1,
-  ManualMount = 2,
+  default = 0,
+  independentUpdate = 1,
+  manualMount = 2,
 }
 
 export const enum Priority {
-  Realtime = 0,
-  Normal = 1,
-  Background = 2
+  realtime = 0,
+  normal = 1,
+  background = 2
 }
 
 // RxNode
@@ -55,7 +55,7 @@ export abstract class RxNode<E = unknown> {
 
   static readonly shortFrameDuration = 16 // ms
   static readonly longFrameDuration = 300 // ms
-  static currentUpdatePriority = Priority.Realtime
+  static currentUpdatePriority = Priority.realtime
   static frameDuration = RxNode.longFrameDuration
 
   static acquire<E = void>(
@@ -297,7 +297,7 @@ function generateKey(owner: RxNodeImpl): string {
 }
 
 function getModeViaPresetChain(declaration?: RxNodeDecl<any>): Mode {
-  return declaration?.mode ?? (declaration?.preset ? getModeViaPresetChain(declaration?.preset) : Mode.Default)
+  return declaration?.mode ?? (declaration?.preset ? getModeViaPresetChain(declaration?.preset) : Mode.default)
 }
 
 function initializeViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
@@ -393,11 +393,11 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
     this.stamp = Number.MAX_SAFE_INTEGER // newly created
     this.context = undefined
     this.numerator = 0
-    this.priority = Priority.Realtime
+    this.priority = Priority.realtime
     this.childrenShuffling = false
     // Monitoring
     RxNodeImpl.grandNodeCount++
-    if (this.has(Mode.IndependentUpdate))
+    if (this.has(Mode.independentUpdate))
       RxNodeImpl.disposableNodeCount++
   }
 
@@ -412,7 +412,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
 
   @reactive
   @options({
-    reentrance: Reentrance.CancelPrevious,
+    reentrance: Reentrance.cancelPrevious,
     triggeringArgs: true,
     noSideEffects: false,
   })
@@ -422,7 +422,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
   }
 
   configureReactronic(options: Partial<MemberOptions>): MemberOptions {
-    if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.IndependentUpdate))
+    if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.independentUpdate))
       throw new Error("reactronic can be configured only for elements with independent update mode and only inside initialize")
     return RxSystem.getReaction(this.update).configure(options)
   }
@@ -503,12 +503,12 @@ function runUpdateNestedNodesThenDo(error: unknown, action: (error: unknown) => 
           const childNode = child.instance
           const isPart = childNode.driver.isPartitionSeparator
           const host = isPart ? owner : partition
-          const p = childNode.priority ?? Priority.Realtime
+          const p = childNode.priority ?? Priority.realtime
           mounting = markToMountIfNecessary(
             mounting, host, child, children, sequential)
-          if (p === Priority.Realtime)
+          if (p === Priority.realtime)
             triggerUpdateViaSeat(child) // update synchronously
-          else if (p === Priority.Normal)
+          else if (p === Priority.normal)
             p1 = push(child, p1) // defer for P1 async update
           else
             p2 = push(child, p2) // defer for P2 async update
@@ -535,7 +535,7 @@ function markToMountIfNecessary(mounting: boolean, host: RxNodeImpl,
   // exist among regular elements having native HTML elements
   const node = seat.instance
   // TODO: Get rid of "node.element.native"
-  if ((node.element as any).native && !node.has(Mode.ManualMount)) {
+  if ((node.element as any).native && !node.has(Mode.manualMount)) {
     if (mounting || node.host !== host) {
       children.markAsMoved(seat)
       mounting = false
@@ -554,9 +554,9 @@ async function startIncrementalUpdate(
   priority2?: Array<MergedItem<RxNodeImpl>>): Promise<void> {
   const stamp = ownerSeat.instance.stamp
   if (priority1)
-    await updateIncrementally(ownerSeat, stamp, allChildren, priority1, Priority.Normal)
+    await updateIncrementally(ownerSeat, stamp, allChildren, priority1, Priority.normal)
   if (priority2)
-    await updateIncrementally(ownerSeat, stamp, allChildren, priority2, Priority.Background)
+    await updateIncrementally(ownerSeat, stamp, allChildren, priority2, Priority.background)
 }
 
 async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
@@ -570,7 +570,7 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
     try {
       if (node.childrenShuffling)
         shuffle(items)
-      const frameDurationLimit = priority === Priority.Background ? RxNode.shortFrameDuration : Infinity
+      const frameDurationLimit = priority === Priority.background ? RxNode.shortFrameDuration : Infinity
       let frameDuration = Math.min(frameDurationLimit, Math.max(RxNode.frameDuration / 4, RxNode.shortFrameDuration))
       for (const child of items) {
         triggerUpdateViaSeat(child)
@@ -594,7 +594,7 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
 function triggerUpdateViaSeat(seat: MergedItem<RxNodeImpl<any>>): void {
   const node = seat.instance
   if (node.stamp >= 0) { // if not finalized
-    if (node.has(Mode.IndependentUpdate)) {
+    if (node.has(Mode.independentUpdate)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
         Transaction.outside(() => {
           if (RxSystem.isLogging)
@@ -617,14 +617,14 @@ function mountOrRemountIfNecessary(node: RxNodeImpl): void {
     unobs(() => {
       node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as initialized
       driver.initialize(node)
-      if (!node.has(Mode.ManualMount)) {
+      if (!node.has(Mode.manualMount)) {
         node.stamp = 0 // mark as mounted
         if (node.host !== node)
           driver.mount(node)
       }
     })
   }
-  else if (node.isMoved && !node.has(Mode.ManualMount) && node.host !== node)
+  else if (node.isMoved && !node.has(Mode.manualMount) && node.host !== node)
     unobs(() => driver.mount(node))
 }
 
@@ -667,7 +667,7 @@ function triggerFinalization(seat: MergedItem<RxNodeImpl>, isLeader: boolean, in
     node.stamp = ~node.stamp
     // Finalize element itself and remove it from collection
     const childrenAreLeaders = unobs(() => driver.finalize(node, isLeader))
-    if (node.has(Mode.IndependentUpdate)) {
+    if (node.has(Mode.independentUpdate)) {
       // Defer disposal if element is reactive (having independent update mode)
       seat.aux = undefined
       const last = gLastToDispose

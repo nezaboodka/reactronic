@@ -47,13 +47,13 @@ export abstract class ObservableObject extends MvccObject {
 // Options
 
 const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
-  kind: Kind.Plain,
+  kind: Kind.plain,
   separation: false,
   order: 0,
   noSideEffects: false,
   triggeringArgs: false,
   throttling: Number.MAX_SAFE_INTEGER, // disabled, @reactive sets it to -1 to enable
-  reentrance: Reentrance.PreventWithError,
+  reentrance: Reentrance.preventWithError,
   journal: undefined,
   monitor: null,
   logging: undefined,
@@ -125,7 +125,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       result = os.data[m]
       if (result instanceof ValueSnapshot && !result.isOperation) {
         if (this.isObservable)
-          Changeset.markUsed(result, os, m, h, Kind.Plain, false)
+          Changeset.markUsed(result, os, m, h, Kind.plain, false)
         result = result.content
       }
       else // result === RAW

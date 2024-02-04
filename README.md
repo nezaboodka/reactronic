@@ -330,19 +330,19 @@ type MemberOptions = {
 }
 
 enum Kind {
-  Plain = 0,
-  Transactional = 1,
-  Reactive = 2,
-  Cached = 3
+  plain = 0,
+  transactional = 1,
+  reactive = 2,
+  cached = 3
 }
 
 enum Reentrance {
-  PreventWithError = 1, // fail with error if there is an existing call in progress (default)
-  WaitAndRestart = 0, // wait for existing call to finish and then restart current one
-  CancelPrevious = -1, // cancel previous call in favor of recent one
-  CancelAndWaitPrevious = -2, // cancel previous call in favor of recent one (but wait until canceling is completed)
-  OverwritePrevious = -2, // allow previous to complete, but overwrite it with ignoring any conflicts
-  RunSideBySide = -3 // multiple simultaneous calls are allowed
+  preventWithError = 1, // fail with error if there is an existing call in progress (default)
+  waitAndRestart = 0, // wait for existing call to finish and then restart current one
+  cancelPrevious = -1, // cancel previous call in favor of recent one
+  cancelAndWaitPrevious = -2, // cancel previous call in favor of recent one (but wait until canceling is completed)
+  overwritePrevious = -2, // allow previous to complete, but overwrite it with ignoring any conflicts
+  runSideBySide = -3 // multiple simultaneous calls are allowed
 }
 
 class Monitor {
@@ -442,210 +442,6 @@ class Reactronic {
   static setLoggingHint<T extends object>(obj: T, name: string | undefined): void
   static getLoggingHint<T extends object>(obj: T): string | undefined
   static setProfilingMode(isOn: boolean, options?: Partial<ProfilingOptions>): void
-}
-
-```
-
-## API (Artel)
-
-```артель
-// Classes
-
-тип ТранзакционныйОбъект = объект { }
-тип НаблюдаемыйОбъект = объект ТранзакционныйОбъект { }
-
-// Decorators & Operators
-
-// function raw(proto, prop) // field only
-// function transaction(proto, prop, pd) // method only
-// function reactive(proto, prop, pd) // method only
-// function cached(proto, prop, pd) // method only
-// function options(value: Partial<MemberOptions>): F<any>
-
-// function unobs<T>(func: F<T>, ...args: any[]): T
-// function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
-
-// SnapshotOptions, MemberOptions, Kind, Reentrance, Monitor, LoggingOptions, ProfilingOptions
-
-тип НастройкиТранзакции = объект
-{
-  конст
-  {
-    подсказка: Текст?
-    раздельно?: РежимРазделения
-    журнал: Журнал?
-    журнализация: Выборочно<НастройкиЖурнализации>
-    ключ: Объект?
-  }
-}
-
-тип НастройкиЧленаОбъекта = объект
-{
-  конст
-  {
-    разновидность: Разновидность
-    раздельно?: РежимРазделения
-    порядок: Целое
-    безПобочныхЭффектов: ДаНет
-    триггерныеАргументы: ДаНет
-    дроссель: Целое // миллисекунды, -1 немедленно, Целое.Макс никогда
-    рецидив: Рецидив
-    журнал: Журнал?
-    монитор: Монитор?
-    журнализация: Выборочно<НастройкиЖурнализации>
-  }
-}
-
-тип Разновидность = вариант
-{
-  Plain = 0
-  Транзакционное = 1
-  Реактивное = 2
-  Кэшируемое = 3
-}
-
-тип Рецидив = вариант
-{
-  PreventWithError = 1, // fail with error if there is an existing call in progress (default)
-  WaitAndRestart = 0, // wait for existing call to finish and then restart current one
-  CancelPrevious = -1, // cancel previous call in favor of recent one
-  CancelAndWaitPrevious = -2, // cancel previous call in favor of recent one (but wait until canceling is completed)
-  OverwritePrevious = -2, // allow previous to complete, but overwrite it with ignoring any conflicts
-  RunSideBySide = -3 // multiple simultaneous calls are allowed
-}
-
-тип Монитор = объект
-{
-  конст
-  {
-    активно: ДаНет
-    счетчик: Целое
-    работы: ЧитаемоеМножество<Работа>
-  }
-
-  при создании(подсказка: Текст,
-    задержка-активации: Целое,
-    задержка-деактивации: Целое)
-}
-
-тип Работа = абстрактный объект
-{
-  конст код: Целое
-  конст подсказка: Текст
-  отменено: ДаНет
-  завершено: ДаНет
-  операция отменить(о: Ошибка?, повторПосле: Транзакция?)
-  параллельная операция ожидание-окончания()
-}
-
-тип НастройкиЖурнализации = абстрактный объект
-{
-  конст
-  {
-    выключено: ДаНет
-    транзакция: ДаНет
-    операция: ДаНет
-    шаг: ДаНет
-    монитор: ДаНет
-    чтение: ДаНет
-    запись: ДаНет
-    изменение: ДаНет
-    аннулирование: ДаНет
-    ошибка: ДаНет
-    предупреждение: ДаНет
-    уборка-мусора: ДаНет
-  }
-}
-
-тип НастройкиПрофилирования =
-{
-  порог-предупреждения-при-многократном-использовании: Целое // 10 раз
-  порог-предупреждения-при-блокировке-главного-потока: Целое // 16.6 мс
-  порог-предупреждения-при-длительном-параллельном-выполнении: Целое // 150 мс
-}
-
-// Транзакция
-
-тип Ф<Т> = операция(арг: Элементы<Объект>): Т
-
-тип Транзакция = объект Работа
-{
-  защищено типом
-  {
-    всеобщее
-    текущая: Транзакция
-
-    код: Целое
-
-    подсказка: Текст
-  }
-
-
-  исполнить<Т>(ф: Ф<Т>, арг: Элементы<Объект>): Т
-  wrap<T>(func: F<T>): F<T>
-  зафиксировать()
-  опечатать() // a1.seal().whenFinished().then(fulfill, reject)
-  отменить(о: Ошибка?, повтор-после: Транзакция? = пусто)
-  отменено: ДаНет
-  завершено: ДаНет
-  whenFinished(): Promise<void>
-  join<T>(p: Promise<T>): Promise<T>
-
-  всеобщее
-  {
-    операция создать(настройки: НастройкиСнимка?): Транзакция
-    операция исполнить<Т>(настройки: НастройкиСнимка?, ф: Ф<Т>, арг: Элементы<Т>): Т
-    операция вне-транзакции<Т>(ф: Ф<Т>, арг: Элементы<Объект>): Т
-
-    операция фрейм-окончен(шаг: Целое, лимит-времени: Целое): ДаНет
-    параллельная операция запросить-следующий-фрейм(время-сна: Целое)
-    отменено: ДаНет
-  }
-}
-
-// Контролер
-
-тип Контролер = объект
-{
-  защищено типом
-  {
-    options: Options
-    args: ReadonlyArray<any>
-    value: T
-    error`: any
-    stamp: number
-    isUpToDate: boolean
-  }
-
-  настроить(настройки: Выборочно<Настройки>): Настройки
-  аннулировать(): ДаНет
-  взять-последний-результат<Т>(арг: Элементы<Объект>): Т?
-}
-
-// Реактроник
-
-тип Реактроник = объект
-{
-  всеобщее
-  {
-    защищено журнализация-включена: ДаНет
-    защищено настройки-журнализации: НастройкиЖурнализации
-    reactivityAutoStartDisabled: ДаНет
-
-    операция почему(кратко: ДаНет = нет): Текст
-    операция взять-кэш-операции<Т>(о: Оп<Т>): Кэш<Т>
-    операция configureCurrentOperation(options: Partial<Options>): Options
-    операция взять-ревизию(о: Объект): Целое
-    операция взять-снимок<Т>(о: Т): Т
-    операция dispose`(obj: Объект)
-    операция установить-режим-журнализации(
-      вкл: ДаНет, настройки: НастройкиЖурнализации? = пусто)
-    операция установить-подсказку-журнализации<Т extends Объект>(
-      о: Т, подсказка: Текст?)
-    операция получить-подсказку-журнализации<Т extends Объект>(о: Т): Текст?
-    операция установить-режим-профилирования(
-      вкл: ДаНет, настройки: Выборочно<НастройкиЖурнализации>? = пусто)
-  }
 }
 
 ```

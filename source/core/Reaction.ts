@@ -55,9 +55,9 @@ export class ReactionImpl implements AbstractReaction<any> {
       && (!weak || launch.cause === BOOT_CAUSE || !launch.successor ||
         launch.successor.transaction.isFinished)) {
       const outerOpts = Launch.current?.options
-      const separation = weak || opts.separation !== false || opts.kind === Kind.Reactive ||
-        (opts.kind === Kind.Transactional && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.Cached)) ||
-        (opts.kind === Kind.Cached && (ror.snapshot.changeset.sealed ||
+      const separation = weak || opts.separation !== false || opts.kind === Kind.reactive ||
+        (opts.kind === Kind.transactional && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.cached)) ||
+        (opts.kind === Kind.cached && (ror.snapshot.changeset.sealed ||
           ror.snapshot.former.snapshot !== EMPTY_SNAPSHOT))
       const token = opts.noSideEffects ? this : undefined
       const ror2 = this.relaunch(ror, separation, opts, token, args)
@@ -133,7 +133,7 @@ export class ReactionImpl implements AbstractReaction<any> {
     const ctx = Changeset.current()
     const os: ObjectSnapshot = ctx.lookupObjectSnapshot(this.objectHandle, this.memberName)
     const launch: Launch = this.acquireFromSnapshot(os, args)
-    const isValid = launch.options.kind !== Kind.Transactional && launch.cause !== BOOT_CAUSE &&
+    const isValid = launch.options.kind !== Kind.transactional && launch.cause !== BOOT_CAUSE &&
       (ctx === launch.changeset || ctx.timestamp < launch.obsoleteSince) &&
       (!launch.options.triggeringArgs || args === undefined ||
         launch.args.length === args.length && launch.args.every((t, i) => t === args[i])) || os.disposed
@@ -215,7 +215,7 @@ export class ReactionImpl implements AbstractReaction<any> {
       }
       else { // retry launch
         ror = this.peek(argsx) // re-read on retry
-        if (ror.launch.options.kind === Kind.Transactional || !ror.isUpToDate) {
+        if (ror.launch.options.kind === Kind.transactional || !ror.isUpToDate) {
           ror = this.edit()
           if (Log.isOn && Log.opt.operation)
             Log.write("║", "  o", `${ror.launch.why()}`)
@@ -297,7 +297,7 @@ class Launch extends ValueSnapshot implements Observer {
     let cause: string
     if (this.cause)
       cause = `   ◀◀   ${this.cause}`
-    else if (this.reaction.options.kind === Kind.Transactional)
+    else if (this.reaction.options.kind === Kind.transactional)
       cause = "   ◀◀   operation"
     else
       cause = `   ◀◀   T${this.changeset.id}[${this.changeset.hint}]`
@@ -345,7 +345,7 @@ class Launch extends ValueSnapshot implements Observer {
         snapshot.changes.has(memberName) */
       if (!skip) {
         const why = `${Dump.snapshot2(h, changeset, m, observable)}    ◀◀    ${outer}`
-        const isReactive = this.options.kind === Kind.Reactive /*&& this.snapshot.data[Meta.Disposed] === undefined*/
+        const isReactive = this.options.kind === Kind.reactive /*&& this.snapshot.data[Meta.Disposed] === undefined*/
 
         // Mark obsolete and unsubscribe from all (this.observables = undefined)
         this.obsoleteDueTo = why
@@ -386,14 +386,14 @@ class Launch extends ValueSnapshot implements Observer {
           const launch: Launch = this.reaction.reuseOrRelaunch(false, undefined)
           if (launch.result instanceof Promise)
             launch.result.catch(error => {
-              if (launch.options.kind === Kind.Reactive)
+              if (launch.options.kind === Kind.reactive)
                 misuse(`reactive function ${launch.hint()} failed and will not run anymore: ${error}`, error)
             })
         }
         catch (e) {
           if (!nothrow)
             throw e
-          else if (this.options.kind === Kind.Reactive)
+          else if (this.options.kind === Kind.reactive)
             misuse(`reactive ${this.hint()} failed and will not run anymore: ${e}`, e)
         }
       }
@@ -407,7 +407,7 @@ class Launch extends ValueSnapshot implements Observer {
   }
 
   isNotUpToDate(): boolean {
-    return !this.error && (this.options.kind === Kind.Transactional ||
+    return !this.error && (this.options.kind === Kind.transactional ||
       !this.successor || this.successor.transaction.isCanceled)
   }
 
@@ -418,25 +418,25 @@ class Launch extends ValueSnapshot implements Observer {
       if (Log.isOn && Log.opt.obsolete)
         Log.write("║", " [!]", `${this.hint()} is trying to re-enter over ${opponent.hint()}`)
       switch (head.options.reentrance) {
-        case Reentrance.PreventWithError:
+        case Reentrance.preventWithError:
           if (!opponent.transaction.isCanceled)
             throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${opponent.hint()} (${opponent.why()})`)
           error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/PreventWithError due to canceled T${opponent.transaction.id}[${opponent.transaction.hint}]`)
           this.transaction.cancel(error, opponent.transaction)
           break
-        case Reentrance.WaitAndRestart:
+        case Reentrance.waitAndRestart:
           error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/WaitAndRestart due to active T${opponent.transaction.id}[${opponent.transaction.hint}]`)
           this.transaction.cancel(error, opponent.transaction)
           break
-        case Reentrance.CancelAndWaitPrevious:
+        case Reentrance.cancelAndWaitPrevious:
           error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/CancelAndWaitPrevious due to active T${opponent.transaction.id}[${opponent.transaction.hint}]`)
           this.transaction.cancel(error, opponent.transaction)
           opponent.transaction.cancel(new Error(`T${opponent.transaction.id}[${opponent.transaction.hint}] is canceled due to re-entering T${this.transaction.id}[${this.transaction.hint}]`), null)
           break
-        case Reentrance.CancelPrevious:
+        case Reentrance.cancelPrevious:
           opponent.transaction.cancel(new Error(`T${opponent.transaction.id}[${opponent.transaction.hint}] is canceled due to re-entering T${this.transaction.id}[${this.transaction.hint}]`), null)
           break
-        case Reentrance.RunSideBySide:
+        case Reentrance.runSideBySide:
           break // do nothing
       }
     }
@@ -543,9 +543,9 @@ class Launch extends ValueSnapshot implements Observer {
   }
 
   private static markUsed(observable: ValueSnapshot, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, kind: Kind, weak: boolean): void {
-    if (kind !== Kind.Transactional) {
+    if (kind !== Kind.transactional) {
       const launch: Launch | undefined = Launch.current // alias
-      if (launch && launch.options.kind !== Kind.Transactional &&
+      if (launch && launch.options.kind !== Kind.transactional &&
         launch.transaction === Transaction.current && m !== Meta.Handle) {
         const ctx = Changeset.current()
         if (ctx !== os.changeset) // snapshot should not bump itself
@@ -733,11 +733,11 @@ class Launch extends ValueSnapshot implements Observer {
     const opts = launch ? launch.options : OptionsImpl.INITIAL
     initial[m] = launch = new Launch(rx, EMPTY_SNAPSHOT.changeset, new OptionsImpl(getter, setter, opts, options, implicit))
     // Add to the list if it's a reactive function
-    if (launch.options.kind === Kind.Reactive && launch.options.throttling < Number.MAX_SAFE_INTEGER) {
+    if (launch.options.kind === Kind.reactive && launch.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.acquire(proto, Meta.Reactive)
       reactive[m] = launch
     }
-    else if (launch.options.kind === Kind.Reactive && launch.options.throttling >= Number.MAX_SAFE_INTEGER) {
+    else if (launch.options.kind === Kind.reactive && launch.options.throttling >= Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.getFrom(proto, Meta.Reactive)
       delete reactive[m]
     }

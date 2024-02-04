@@ -34,19 +34,19 @@ export type MemberOptions = {
 }
 
 export enum Kind {
-  Plain = 0,
-  Transactional = 1,
-  Reactive = 2,
-  Cached = 3,
+  plain = 0,
+  transactional = 1,
+  reactive = 2,
+  cached = 3,
 }
 
 export enum Reentrance {
-  PreventWithError = 1, // fail with error if there is an existing call in progress (default)
-  WaitAndRestart = 0, // wait for existing call to finish and then restart reentrant one
-  CancelPrevious = -1, // cancel previous call in favor of recent one
-  CancelAndWaitPrevious = -2, // cancel previous call in favor of recent one (but wait until canceling is completed)
-  OverwritePrevious = -3, // allow previous to complete, but overwrite it with ignoring any conflicts
-  RunSideBySide = -4, // multiple simultaneous operations are allowed
+  preventWithError = 1, // fail with error if there is an existing call in progress (default)
+  waitAndRestart = 0, // wait for existing call to finish and then restart reentrant one
+  cancelPrevious = -1, // cancel previous call in favor of recent one
+  cancelAndWaitPrevious = -2, // cancel previous call in favor of recent one (but wait until canceling is completed)
+  overwritePrevious = -3, // allow previous to complete, but overwrite it with ignoring any conflicts
+  runSideBySide = -4, // multiple simultaneous operations are allowed
 }
 
 // AbstractReaction

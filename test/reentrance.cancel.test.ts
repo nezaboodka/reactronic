@@ -30,7 +30,7 @@ test("reentrance.cancel", async t => {
   const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     RxSystem.getReaction(a.print).configure({ order: 0 })
-    RxSystem.getReaction(a.model.load).configure({reentrance: Reentrance.CancelPrevious})
+    RxSystem.getReaction(a.model.load).configure({reentrance: Reentrance.cancelPrevious})
     return a
   })
   try {
