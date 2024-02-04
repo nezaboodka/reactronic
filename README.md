@@ -253,11 +253,11 @@ of recurring changes:
 **Reentrance** option defines how to handle reentrant calls of transactional
 and reactive functions:
 
-  - `PreventWithError` - fail with error if there is an existing call in progress;
-  - `WaitAndRestart` - wait for previous call to finish and then restart current one;
-  - `CancelPrevious` - cancel previous call in favor of recent one;
-  - `CancelAndWaitPrevious` - cancel previous call in favor of recent one (but wait until canceling is completed)
-  - `RunSideBySide` - multiple simultaneous calls are allowed.
+  - `preventWithError` - fail with error if there is an existing call in progress;
+  - `waitAndRestart` - wait for previous call to finish and then restart current one;
+  - `cancelPrevious` - cancel previous call in favor of recent one;
+  - `cancelAndWaitPrevious` - cancel previous call in favor of recent one (but wait until canceling is completed)
+  - `runSideBySide` - multiple simultaneous calls are allowed.
 
 **Monitor** is an object that maintains status of running functions,
 which it is attached to. A single monitor object can be shared between
