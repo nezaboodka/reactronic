@@ -45,7 +45,7 @@ test("reentrance.error", async t => {
     await app.print() // initial reactive run
     t.throws(() => RxSystem.getReaction(app.print).configure({ logging: TestsLoggingLevel }))
     const first = app.model.load(requests[0].url, requests[0].delay)
-    t.throws(() => { requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
+    t.throws(() => { void requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
     t.is(busy.counter, 1)
     t.is(busy.workers.size, 1)
     await first
