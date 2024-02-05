@@ -15,8 +15,8 @@ import { RxSystem, options, raw, reactive, unobs } from "../RxSystem.js"
 
 // Delegates
 
-export type Delegate<T> = (element: T, base: () => void) => void
-export type SimpleDelegate<T = unknown, R = void> = (element: T) => R
+export type Delegate<T> = (el: T, basis: () => void) => void
+export type SimpleDelegate<T = unknown, R = void> = (el: T) => R
 
 // Enums
 
