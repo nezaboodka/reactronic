@@ -26,7 +26,7 @@ export enum Mode {
   manualMount = 2,
 }
 
-export const enum Priority {
+export enum Priority {
   realtime = 0,
   normal = 1,
   background = 2
