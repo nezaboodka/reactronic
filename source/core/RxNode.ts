@@ -149,9 +149,9 @@ export abstract class RxNode<E = unknown> {
     }
   }
 
-  static triggerFinalize(node: RxNode<any>): void {
+  static triggerDeactivation(node: RxNode<any>): void {
     const impl = node as RxNodeImpl<any>
-    triggerFinalization(impl.seat!, true, true)
+    triggerDeactivation(impl.seat!, true, true)
   }
 
   static updateNestedNodesThenDo(action: (error: unknown) => void): void {
@@ -161,9 +161,9 @@ export abstract class RxNode<E = unknown> {
   static markAsMounted(node: RxNode<any>, yes: boolean): void {
     const n = node as RxNodeImpl<any>
     if (n.stamp < 0)
-      throw new Error("finalized node cannot be mounted or unmounted")
+      throw new Error("deactivated node cannot be mounted or unmounted")
     if (n.stamp >= Number.MAX_SAFE_INTEGER)
-      throw new Error("node must be initialized before mounting")
+      throw new Error("node must be activated before mounting")
     n.stamp = yes ? 0 : Number.MAX_SAFE_INTEGER - 1
   }
 
@@ -202,13 +202,13 @@ export abstract class RxNode<E = unknown> {
 // RxNodeDecl
 
 export type RxNodeDecl<E = unknown> = {
-  preset?: RxNodeDecl<E>
+  content?: Delegate<E>
   key?: string
   mode?: Mode
+  activation?: Delegate<E>
+  deactivation?: Delegate<E>
   triggers?: unknown
-  initialize?: Delegate<E>
-  update?: Delegate<E>
-  finalize?: Delegate<E>
+  preset?: RxNodeDecl<E>
 }
 
 // RxNodeDriver
@@ -219,10 +219,10 @@ export type RxNodeDriver<E = unknown> = {
   readonly predefine?: SimpleDelegate<E>
 
   allocate(node: RxNode<E>): E
-  initialize(node: RxNode<E>): void
+  activate(node: RxNode<E>): void
   mount(node: RxNode<E>): void
   update(node: RxNode<E>): void | Promise<void>
-  finalize(node: RxNode<E>, isLeader: boolean): boolean
+  deactivate(node: RxNode<E>, isLeader: boolean): boolean
 }
 
 // RxNodeContext
@@ -242,9 +242,9 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
 
   abstract allocate(node: RxNode<E>): E
 
-  initialize(node: RxNode<E>): void {
+  activate(node: RxNode<E>): void {
     this.predefine?.(node.element)
-    initializeViaPresetChain(node.element, node.declaration)
+    activateViaPresetChain(node.element, node.declaration)
   }
 
   mount(node: RxNode<E>): void {
@@ -255,9 +255,9 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
     updateViaPresetChain(node.element, node.declaration)
   }
 
-  finalize(node: RxNode<E>, isLeader: boolean): boolean {
-    finalizeViaPresetChain(node.element, node.declaration)
-    return isLeader // treat children as finalization leaders as well
+  deactivate(node: RxNode<E>, isLeader: boolean): boolean {
+    deactivateViaPresetChain(node.element, node.declaration)
+    return isLeader // treat children as deactivation leaders as well
   }
 }
 
@@ -300,31 +300,31 @@ function getModeViaPresetChain(declaration?: RxNodeDecl<any>): Mode {
   return declaration?.mode ?? (declaration?.preset ? getModeViaPresetChain(declaration?.preset) : Mode.default)
 }
 
-function initializeViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
+function activateViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
   const preset = declaration.preset
-  const initialize = declaration.initialize
-  if (initialize)
-    initialize(element, preset ? () => initializeViaPresetChain(element, preset) : NOP)
+  const activation = declaration.activation
+  if (activation)
+    activation(element, preset ? () => activateViaPresetChain(element, preset) : NOP)
   else if (preset)
-    initializeViaPresetChain(element, preset)
+    activateViaPresetChain(element, preset)
 }
 
 function updateViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
   const preset = declaration.preset
-  const update = declaration.update
-  if (update)
-    update(element, preset ? () => updateViaPresetChain(element, preset) : NOP)
+  const content = declaration.content
+  if (content)
+    content(element, preset ? () => updateViaPresetChain(element, preset) : NOP)
   else if (preset)
     updateViaPresetChain(element, preset)
 }
 
-function finalizeViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
+function deactivateViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
   const preset = declaration.preset
-  const finalize = declaration.finalize
-  if (finalize)
-    finalize(element, preset ? () => finalizeViaPresetChain(element, preset) : NOP)
+  const deactivation = declaration.deactivation
+  if (deactivation)
+    deactivation(element, preset ? () => deactivateViaPresetChain(element, preset) : NOP)
   else if (preset)
-    finalizeViaPresetChain(element, preset)
+    deactivateViaPresetChain(element, preset)
 }
 
 // RxNodeContextImpl
@@ -423,7 +423,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
 
   configureReactronic(options: Partial<MemberOptions>): MemberOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.independentUpdate))
-      throw new Error("reactronic can be configured only for elements with independent update mode and only inside initialize")
+      throw new Error("reactronic can be configured only for elements with independent update mode and only during activation")
     return RxSystem.getReaction(this.update).configure(options)
   }
 
@@ -487,9 +487,9 @@ function runUpdateNestedNodesThenDo(error: unknown, action: (error: unknown) => 
     let promised: Promise<void> | undefined = undefined
     try {
       children.endMerge(error)
-      // Finalize removed elements
+      // Deactivate removed elements
       for (const child of children.removedItems(true))
-        triggerFinalization(child, true, true)
+        triggerDeactivation(child, true, true)
       if (!error) {
         // Lay out and update actual elements
         const sequential = children.isStrict
@@ -593,7 +593,7 @@ async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
 
 function triggerUpdateViaSeat(seat: MergedItem<RxNodeImpl<any>>): void {
   const node = seat.instance
-  if (node.stamp >= 0) { // if not finalized
+  if (node.stamp >= 0) { // if not deactivated yet
     if (node.has(Mode.independentUpdate)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
         Transaction.outside(() => {
@@ -615,8 +615,8 @@ function mountOrRemountIfNecessary(node: RxNodeImpl): void {
   const driver = node.driver
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
     unobs(() => {
-      node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as initialized
-      driver.initialize(node)
+      node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as activated
+      driver.activate(node)
       if (!node.has(Mode.manualMount)) {
         node.stamp = 0 // mark as mounted
         if (node.host !== node)
@@ -658,15 +658,15 @@ function updateNow(seat: MergedItem<RxNodeImpl<any>>): void {
   }
 }
 
-function triggerFinalization(seat: MergedItem<RxNodeImpl>, isLeader: boolean, individual: boolean): void {
+function triggerDeactivation(seat: MergedItem<RxNodeImpl>, isLeader: boolean, individual: boolean): void {
   const node = seat.instance
   if (node.stamp >= 0) {
     const driver = node.driver
     if (individual && node.key !== node.declaration.key && !driver.isPartitionSeparator)
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
-    // Finalize element itself and remove it from collection
-    const childrenAreLeaders = unobs(() => driver.finalize(node, isLeader))
+    // Deactivate element itself and remove it from collection
+    const childrenAreLeaders = unobs(() => driver.deactivate(node, isLeader))
     if (node.has(Mode.independentUpdate)) {
       // Defer disposal if element is reactive (having independent update mode)
       seat.aux = undefined
@@ -680,9 +680,9 @@ function triggerFinalization(seat: MergedItem<RxNodeImpl>, isLeader: boolean, in
           void runDisposalLoop().then(NOP, error => console.log(error))
         })
     }
-    // Finalize children
+    // Deactivate children
     for (const child of node.children.items())
-      triggerFinalization(child, childrenAreLeaders, false)
+      triggerDeactivation(child, childrenAreLeaders, false)
     RxNodeImpl.grandNodeCount--
   }
 }
