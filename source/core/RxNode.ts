@@ -202,11 +202,11 @@ export abstract class RxNode<E = unknown> {
 // RxNodeDecl
 
 export type RxNodeDecl<E = unknown> = {
-  autorun?: Delegate<E>
+  onChange?: Delegate<E>
   key?: string
   mode?: Mode
-  activation?: Delegate<E>
-  deactivation?: Delegate<E>
+  onCreate?: Delegate<E>
+  onDestroy?: Delegate<E>
   triggers?: unknown
   preset?: RxNodeDecl<E>
 }
@@ -219,10 +219,10 @@ export type RxNodeDriver<E = unknown> = {
   readonly predefine?: SimpleDelegate<E>
 
   allocate(node: RxNode<E>): E
-  activate(node: RxNode<E>): void
+  create(node: RxNode<E>): void
   mount(node: RxNode<E>): void
   update(node: RxNode<E>): void | Promise<void>
-  deactivate(node: RxNode<E>, isLeader: boolean): boolean
+  destroy(node: RxNode<E>, isLeader: boolean): boolean
 }
 
 // RxNodeContext
@@ -242,9 +242,9 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
 
   abstract allocate(node: RxNode<E>): E
 
-  activate(node: RxNode<E>): void {
+  create(node: RxNode<E>): void {
     this.predefine?.(node.element)
-    activateViaPresetChain(node.element, node.declaration)
+    invokeOnCreateViaPresetChain(node.element, node.declaration)
   }
 
   mount(node: RxNode<E>): void {
@@ -252,11 +252,11 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
   }
 
   update(node: RxNode<E>): void | Promise<void> {
-    updateViaPresetChain(node.element, node.declaration)
+    invokeOnChangeViaPresetChain(node.element, node.declaration)
   }
 
-  deactivate(node: RxNode<E>, isLeader: boolean): boolean {
-    deactivateViaPresetChain(node.element, node.declaration)
+  destroy(node: RxNode<E>, isLeader: boolean): boolean {
+    invokeOnDestroyViaPresetChain(node.element, node.declaration)
     return isLeader // treat children as deactivation leaders as well
   }
 }
@@ -300,31 +300,31 @@ function getModeViaPresetChain(declaration?: RxNodeDecl<any>): Mode {
   return declaration?.mode ?? (declaration?.preset ? getModeViaPresetChain(declaration?.preset) : Mode.default)
 }
 
-function activateViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
+function invokeOnCreateViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
   const preset = declaration.preset
-  const activation = declaration.activation
-  if (activation)
-    activation(element, preset ? () => activateViaPresetChain(element, preset) : NOP)
+  const onCreate = declaration.onCreate
+  if (onCreate)
+    onCreate(element, preset ? () => invokeOnCreateViaPresetChain(element, preset) : NOP)
   else if (preset)
-    activateViaPresetChain(element, preset)
+    invokeOnCreateViaPresetChain(element, preset)
 }
 
-function updateViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
+function invokeOnChangeViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
   const preset = declaration.preset
-  const autorun = declaration.autorun
-  if (autorun)
-    autorun(element, preset ? () => updateViaPresetChain(element, preset) : NOP)
+  const onChange = declaration.onChange
+  if (onChange)
+    onChange(element, preset ? () => invokeOnChangeViaPresetChain(element, preset) : NOP)
   else if (preset)
-    updateViaPresetChain(element, preset)
+    invokeOnChangeViaPresetChain(element, preset)
 }
 
-function deactivateViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
+function invokeOnDestroyViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
   const preset = declaration.preset
-  const deactivation = declaration.deactivation
-  if (deactivation)
-    deactivation(element, preset ? () => deactivateViaPresetChain(element, preset) : NOP)
+  const onDestroy = declaration.onDestroy
+  if (onDestroy)
+    onDestroy(element, preset ? () => invokeOnDestroyViaPresetChain(element, preset) : NOP)
   else if (preset)
-    deactivateViaPresetChain(element, preset)
+    invokeOnDestroyViaPresetChain(element, preset)
 }
 
 // RxNodeContextImpl
@@ -616,7 +616,7 @@ function mountOrRemountIfNecessary(node: RxNodeImpl): void {
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
     unobs(() => {
       node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as activated
-      driver.activate(node)
+      driver.create(node)
       if (!node.has(Mode.manualMount)) {
         node.stamp = 0 // mark as mounted
         if (node.host !== node)
@@ -666,7 +666,7 @@ function triggerDeactivation(seat: MergedItem<RxNodeImpl>, isLeader: boolean, in
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
     // Deactivate element itself and remove it from collection
-    const childrenAreLeaders = unobs(() => driver.deactivate(node, isLeader))
+    const childrenAreLeaders = unobs(() => driver.destroy(node, isLeader))
     if (node.has(Mode.independentUpdate)) {
       // Defer disposal if element is reactive (having independent update mode)
       seat.aux = undefined
