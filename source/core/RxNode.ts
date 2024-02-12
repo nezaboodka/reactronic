@@ -202,7 +202,7 @@ export abstract class RxNode<E = unknown> {
 // RxNodeDecl
 
 export type RxNodeDecl<E = unknown> = {
-  formula?: Delegate<E>
+  autorun?: Delegate<E>
   key?: string
   mode?: Mode
   activation?: Delegate<E>
@@ -311,9 +311,9 @@ function activateViaPresetChain(element: unknown, declaration: RxNodeDecl<any>):
 
 function updateViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
   const preset = declaration.preset
-  const formula = declaration.formula
-  if (formula)
-    formula(element, preset ? () => updateViaPresetChain(element, preset) : NOP)
+  const autorun = declaration.autorun
+  if (autorun)
+    autorun(element, preset ? () => updateViaPresetChain(element, preset) : NOP)
   else if (preset)
     updateViaPresetChain(element, preset)
 }
