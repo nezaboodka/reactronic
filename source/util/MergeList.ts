@@ -36,7 +36,7 @@ export type MergeListReader<T> = {
 
 export type MergedItem<T> = {
   readonly instance: T
-  // readonly next?: MergeItem<T>
+  readonly next?: MergedItem<T> // TODO: hide
   readonly prev?: MergedItem<T> // TODO: hide
   aux?: MergedItem<T> // TODO: hide
 }
