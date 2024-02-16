@@ -76,7 +76,7 @@ export abstract class RxNode<E = unknown> {
       let existing: MergedItem<RxNodeImpl> | undefined = undefined
       const children = owner.children
       // Coalesce multiple separators into single one, if any
-      if (driver.isPartitionSeparator) {
+      if (driver.isPartition) {
         const last = children.lastMergedItem()
         if (last?.instance?.driver === driver)
           existing = last
@@ -216,7 +216,7 @@ export type RxNodeDecl<E = unknown> = {
 
 export type RxNodeDriver<E = unknown> = {
   readonly name: string,
-  readonly isPartitionSeparator: boolean,
+  readonly isPartition: boolean,
   readonly predefine?: SimpleDelegate<E>
 
   allocate(node: RxNode<E>): E
@@ -241,7 +241,7 @@ export type RxNodeContext<T extends Object = Object> = {
 export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
   constructor(
     readonly name: string,
-    readonly isPartitionSeparator: boolean,
+    readonly isPartition: boolean,
     readonly predefine?: SimpleDelegate<E>) {
   }
 
@@ -513,7 +513,7 @@ function runUpdateNestedNodesThenDo(error: unknown, action: (error: unknown) => 
           if (Transaction.isCanceled)
             break
           const childNode = child.instance
-          const isPart = childNode.driver.isPartitionSeparator
+          const isPart = childNode.driver.isPartition
           const host = isPart ? owner : partition
           const p = childNode.priority ?? Priority.realtime
           mounting = markToMountIfNecessary(
@@ -674,7 +674,7 @@ function triggerDeactivation(seat: MergedItem<RxNodeImpl>, isLeader: boolean, in
   const node = seat.instance
   if (node.stamp >= 0) {
     const driver = node.driver
-    if (individual && node.key !== node.declaration.key && !driver.isPartitionSeparator)
+    if (individual && node.key !== node.declaration.key && !driver.isPartition)
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
     // Deactivate element itself and remove it from collection
