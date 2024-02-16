@@ -71,7 +71,7 @@ export abstract class RxNode<E = unknown> {
     let key = declaration.key
     const owner = gOwnSeat?.instance
     if (owner) {
-      owner.driver.child(driver, declaration, preset)
+      owner.driver.child(owner, driver, declaration, preset)
       // Lookup for existing node and check for coalescing separators
       let existing: MergedItem<RxNodeImpl> | undefined = undefined
       const children = owner.children
@@ -224,7 +224,10 @@ export type RxNodeDriver<E = unknown> = {
   destroy(node: RxNode<E>, isLeader: boolean): boolean
   mount(node: RxNode<E>): void
   update(node: RxNode<E>): void | Promise<void>
-  child(driver: RxNodeDriver<any>, declaration?: RxNodeDecl<any>, preset?: RxNodeDecl<any>): void
+  child(ownerNode: RxNode<E>,
+    childDriver: RxNodeDriver<any>,
+    childDeclaration?: RxNodeDecl<any>,
+    childPreset?: RxNodeDecl<any>): void
 }
 
 // RxNodeContext
@@ -262,7 +265,10 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
     invokeOnChangeViaPresetChain(node.element, node.declaration)
   }
 
-  child(driver: RxNodeDriver<any>, declaration?: RxNodeDecl<any>, preset?: RxNodeDecl<any>): void {
+  child(ownerNode: RxNode<E>,
+    childDriver: RxNodeDriver<any>,
+    childDeclaration?: RxNodeDecl<any>,
+    childPreset?: RxNodeDecl<any>): void {
     // nothing to do by default
   }
 }
