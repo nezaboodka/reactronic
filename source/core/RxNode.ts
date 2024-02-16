@@ -220,9 +220,10 @@ export type RxNodeDriver<E = unknown> = {
 
   allocate(node: RxNode<E>): E
   create(node: RxNode<E>): void
+  destroy(node: RxNode<E>, isLeader: boolean): boolean
   mount(node: RxNode<E>): void
   update(node: RxNode<E>): void | Promise<void>
-  destroy(node: RxNode<E>, isLeader: boolean): boolean
+  child(node: RxNode<E>): void
 }
 
 // RxNodeContext
@@ -247,6 +248,11 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
     invokeOnCreateViaPresetChain(node.element, node.declaration)
   }
 
+  destroy(node: RxNode<E>, isLeader: boolean): boolean {
+    invokeOnDestroyViaPresetChain(node.element, node.declaration)
+    return isLeader // treat children as deactivation leaders as well
+  }
+
   mount(node: RxNode<E>): void {
     // nothing to do by default
   }
@@ -255,9 +261,8 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
     invokeOnChangeViaPresetChain(node.element, node.declaration)
   }
 
-  destroy(node: RxNode<E>, isLeader: boolean): boolean {
-    invokeOnDestroyViaPresetChain(node.element, node.declaration)
-    return isLeader // treat children as deactivation leaders as well
+  child(node: RxNode<E>): void {
+    // nothing to do by default
   }
 }
 
