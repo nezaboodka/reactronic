@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-export type GetMergeItemKey<T = unknown> = (item: T) => string | undefined
+export type GetMergedItemKey<T = unknown> = (item: T) => string | undefined
 
 export type MergeListReader<T> = {
   // readonly getKey: GetKey<T>
@@ -43,20 +43,20 @@ export type MergedItem<T> = {
 }
 
 export class MergeList<T> implements MergeListReader<T> {
-  readonly getKey: GetMergeItemKey<T>
+  readonly getKey: GetMergedItemKey<T>
   private strict: boolean
-  private map: Map<string | undefined, MergeItemImpl<T>>
+  private map: Map<string | undefined, MergedItemImpl<T>>
   private tag: number
   private current: MergeItemChain<T>
   private added: MergeItemChain<T>
   private removed: MergeItemChain<T>
   private lastNotFoundKey: string | undefined
-  private strictNextItem?: MergeItemImpl<T>
+  private strictNextItem?: MergedItemImpl<T>
 
-  constructor(getKey: GetMergeItemKey<T>, strict: boolean = false) {
+  constructor(getKey: GetMergedItemKey<T>, strict: boolean = false) {
     this.getKey = getKey
     this.strict = strict
-    this.map = new Map<string | undefined, MergeItemImpl<T>>()
+    this.map = new Map<string | undefined, MergedItemImpl<T>>()
     this.tag = ~0
     this.current = new MergeItemChain<T>()
     this.added = new MergeItemChain<T>()
@@ -110,7 +110,7 @@ export class MergeList<T> implements MergeListReader<T> {
       throw new Error(error ?? "merge is not in progress")
     let item = this.strictNextItem
     if (key !== (item ? this.getKey(item.instance) : undefined))
-      item = this.lookup(key) as MergeItemImpl<T> | undefined
+      item = this.lookup(key) as MergedItemImpl<T> | undefined
     if (item) {
       if (item.tag !== tag) {
         item.tag = tag
@@ -142,7 +142,7 @@ export class MergeList<T> implements MergeListReader<T> {
       tag = ~this.tag + 1
       this.tag = ~tag // one item merge cycle
     }
-    const item = new MergeItemImpl<T>(instance, tag)
+    const item = new MergedItemImpl<T>(instance, tag)
     this.map.set(key, item)
     this.lastNotFoundKey = undefined
     this.strictNextItem = undefined
@@ -153,7 +153,7 @@ export class MergeList<T> implements MergeListReader<T> {
   }
 
   mergeAsRemoved(item: MergedItem<T>): void {
-    const t = item as MergeItemImpl<T>
+    const t = item as MergedItemImpl<T>
     if (!this.isRemoved(t)) {
       this.current.exclude(t)
       this.removed.include(t)
@@ -188,13 +188,13 @@ export class MergeList<T> implements MergeListReader<T> {
             map.delete(getKey(x.instance))
         }
         else { // it should be faster to recreate map using current items
-          const map = this.map = new Map<string | undefined, MergeItemImpl<T>>()
+          const map = this.map = new Map<string | undefined, MergedItemImpl<T>>()
           for (const x of this.current.items())
             map.set(getKey(x.instance), x)
         }
       }
       else // just create new empty map
-        this.map = new Map<string | undefined, MergeItemImpl<T>>()
+        this.map = new Map<string | undefined, MergedItemImpl<T>>()
     }
     else {
       this.current.grab(this.removed, true)
@@ -249,7 +249,7 @@ export class MergeList<T> implements MergeListReader<T> {
   }
 
   isAdded(item: MergedItem<T>): boolean {
-    const t = item as MergeItemImpl<T>
+    const t = item as MergedItemImpl<T>
     let tag = this.tag
     if (tag < 0)
       tag = ~tag
@@ -257,7 +257,7 @@ export class MergeList<T> implements MergeListReader<T> {
   }
 
   isMoved(item: MergedItem<T>): boolean {
-    const t = item as MergeItemImpl<T>
+    const t = item as MergedItemImpl<T>
     let tag = this.tag
     if (tag < 0)
       tag = ~tag
@@ -265,35 +265,35 @@ export class MergeList<T> implements MergeListReader<T> {
   }
 
   isRemoved(item: MergedItem<T>): boolean {
-    const t = item as MergeItemImpl<T>
+    const t = item as MergedItemImpl<T>
     const tag = this.tag
     return tag > 0 ? t.tag < tag : t.tag < tag - 1
   }
 
   isActual(item: MergedItem<T>): boolean {
-    const t = item as MergeItemImpl<T>
+    const t = item as MergedItemImpl<T>
     return t.tag === this.tag
   }
 
   markAsMoved(item: MergedItem<T>): void {
-    const t = item as MergeItemImpl<T>
+    const t = item as MergedItemImpl<T>
     if (t.tag > 0) // if not removed, > is intentional
       t.status = t.tag
   }
 
   static createItem<T>(instance: T): MergedItem<T> {
-    return new MergeItemImpl(instance, 0)
+    return new MergedItemImpl(instance, 0)
   }
 }
 
-class MergeItemImpl<T> implements MergedItem<T> {
+class MergedItemImpl<T> implements MergedItem<T> {
   readonly instance: T
   index: number
   tag: number
   status: number
-  next?: MergeItemImpl<T>
-  prev?: MergeItemImpl<T>
-  aux?: MergeItemImpl<T>
+  next?: MergedItemImpl<T>
+  prev?: MergedItemImpl<T>
+  aux?: MergedItemImpl<T>
 
   constructor(instance: T, tag: number) {
     this.instance = instance
@@ -308,10 +308,10 @@ class MergeItemImpl<T> implements MergedItem<T> {
 
 class MergeItemChain<T> {
   count: number = 0
-  first?: MergeItemImpl<T> = undefined
-  last?: MergeItemImpl<T> = undefined
+  first?: MergedItemImpl<T> = undefined
+  last?: MergedItemImpl<T> = undefined
 
-  public *items(): Generator<MergeItemImpl<T>> {
+  public *items(): Generator<MergedItemImpl<T>> {
     let x = this.first
     while (x !== undefined) {
       const next = x.next
@@ -320,7 +320,7 @@ class MergeItemChain<T> {
     }
   }
 
-  public *itemsViaAux(): Generator<MergeItemImpl<T>> {
+  public *itemsViaAux(): Generator<MergedItemImpl<T>> {
     let x = this.first
     while (x !== undefined) {
       const next = x.aux
@@ -354,7 +354,7 @@ class MergeItemChain<T> {
     from.reset()
   }
 
-  include(item: MergeItemImpl<T>): void {
+  include(item: MergedItemImpl<T>): void {
     const last = this.last
     item.prev = last
     item.next = undefined
@@ -365,7 +365,7 @@ class MergeItemChain<T> {
     this.count++
   }
 
-  exclude(item: MergeItemImpl<T>): void {
+  exclude(item: MergedItemImpl<T>): void {
     if (item.prev !== undefined)
       item.prev.next = item.next
     if (item.next !== undefined)
@@ -375,7 +375,7 @@ class MergeItemChain<T> {
     this.count--
   }
 
-  aux(item: MergeItemImpl<T>): void {
+  aux(item: MergedItemImpl<T>): void {
     item.aux = undefined
     const last = this.last
     if (last)
