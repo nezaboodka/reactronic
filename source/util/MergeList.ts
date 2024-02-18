@@ -216,8 +216,8 @@ export class MergeList<T> implements MergeListReader<T> {
     return this.current.last
   }
 
-  *items(): Generator<MergedItem<T>> {
-    let x = this.current.first
+  *items(onlyAfter?: MergedItem<T>): Generator<MergedItem<T>> {
+    let x = onlyAfter?.next ?? this.current.first
     while (x !== undefined) {
       const next = x.next
       yield x
