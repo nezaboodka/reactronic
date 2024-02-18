@@ -31,6 +31,7 @@ test("merge-list", t => {
   list.endMerge()
 
   t.is(list.count, 6)
+  t.true(list.lastMergedItem()?.index === 5)
   t.is(list.removedCount, 1)
   t.is(list.addedCount, 3)
   t.true(compare(list.items(), etalon2))
@@ -54,6 +55,7 @@ test("merge-list", t => {
     if (!list.tryMergeAsExisting(x))
       list.mergeAsAdded(x)
   t.is(list.count, 4)
+  t.true(list.lastMergedItem()?.index === 3)
   t.is(list.removedCount, 3)
   t.is(list.addedCount, 1)
   list.endMerge("error")
@@ -77,7 +79,7 @@ test("merge-list", t => {
   t.true(compare(list.items(), etalon1))
 })
 
-function compare(list: Generator<MergedItem<string>>, array: Array<string>): boolean {
+function compare(list: Generator<MergedItem<unknown>>, array: Array<unknown>): boolean {
   let result = true
   let i = 0
   for (const item of list) {

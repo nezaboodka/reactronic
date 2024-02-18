@@ -36,6 +36,7 @@ export type MergeListReader<T> = {
 
 export type MergedItem<T> = {
   readonly instance: T
+  readonly index: number
   readonly next?: MergedItem<T> // TODO: hide
   readonly prev?: MergedItem<T> // TODO: hide
   aux?: MergedItem<T> // TODO: hide
@@ -117,6 +118,7 @@ export class MergeList<T> implements MergeListReader<T> {
           item.status = tag // IsAdded=false, IsMoved=true
         this.strictNextItem = item.next
         this.removed.exclude(item)
+        item.index = this.current.count
         this.current.include(item)
         if (resolution)
           resolution.isDuplicate = false
@@ -144,6 +146,7 @@ export class MergeList<T> implements MergeListReader<T> {
     this.map.set(key, item)
     this.lastNotFoundKey = undefined
     this.strictNextItem = undefined
+    item.index = this.current.count
     this.current.include(item)
     this.added.aux(item)
     return item
@@ -285,6 +288,7 @@ export class MergeList<T> implements MergeListReader<T> {
 
 class MergeItemImpl<T> implements MergedItem<T> {
   readonly instance: T
+  index: number
   tag: number
   status: number
   next?: MergeItemImpl<T>
@@ -293,6 +297,7 @@ class MergeItemImpl<T> implements MergedItem<T> {
 
   constructor(instance: T, tag: number) {
     this.instance = instance
+    this.index = -1
     this.tag = tag
     this.status = ~tag // isAdded=true
     this.next = undefined
