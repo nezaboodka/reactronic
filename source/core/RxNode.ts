@@ -71,17 +71,10 @@ export abstract class RxNode<E = unknown> {
     let key = declaration.key
     const owner = gOwnSeat?.instance
     if (owner) {
-      owner.driver.child(owner, driver, declaration, preset)
-      // Lookup for existing node and check for coalescing separators
-      let existing: MergedItem<RxNodeImpl> | undefined = undefined
-      const children = owner.children
-      // Coalesce multiple separators into single one, if any
-      if (driver.isPartition) {
-        const last = children.lastMergedItem()
-        if (last?.instance?.driver === driver)
-          existing = last
-      }
+      let existing: MergedItem<RxNode> | undefined =
+        owner.driver.child(owner, driver, declaration, preset)
       // Reuse existing node or declare a new one
+      const children = owner.children
       existing ??= children.tryMergeAsExisting(key = key || generateKey(owner), undefined,
         "nested elements can be declared inside update function only")
       if (existing) {
@@ -227,7 +220,7 @@ export type RxNodeDriver<E = unknown> = {
   child(ownerNode: RxNode<E>,
     childDriver: RxNodeDriver<any>,
     childDeclaration?: RxNodeDecl<any>,
-    childPreset?: RxNodeDecl<any>): void
+    childPreset?: RxNodeDecl<any>): MergedItem<RxNode> | undefined
 }
 
 // RxNodeContext
@@ -268,8 +261,8 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
   child(ownerNode: RxNode<E>,
     childDriver: RxNodeDriver<any>,
     childDeclaration?: RxNodeDecl<any>,
-    childPreset?: RxNodeDecl<any>): void {
-    // nothing to do by default
+    childPreset?: RxNodeDecl<any>): MergedItem<RxNode> | undefined {
+    return undefined
   }
 }
 
