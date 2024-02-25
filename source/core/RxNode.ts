@@ -508,9 +508,9 @@ function runUpdateNestedNodesThenDo(error: unknown, action: (error: unknown) => 
           const childNode = child.instance
           const isPart = childNode.driver.isPartition
           const host = isPart ? owner : partition
-          const p = childNode.priority ?? Priority.realtime
           mounting = markToMountIfNecessary(
             mounting, host, child, children, sequential)
+          const p = childNode.priority ?? Priority.realtime
           if (p === Priority.realtime)
             triggerUpdateViaSeat(child) // update synchronously
           else if (p === Priority.normal)
