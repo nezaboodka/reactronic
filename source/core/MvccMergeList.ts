@@ -26,6 +26,7 @@ export abstract class ObservableMergeList<T> extends ObservableObject implements
   beginMerge(): void { this.impl.beginMerge() }
   endMerge(error?: unknown): void { this.impl.endMerge(error) }
   resetAddedAndRemovedLists(): void { this.impl.resetAddedAndRemovedLists() }
+  firstMergedItem(): MergedItem<T> | undefined { return this.impl.firstMergedItem() }
   lastMergedItem(): MergedItem<T> | undefined { return this.impl.lastMergedItem() }
 
   items(): Generator<MergedItem<T>> { return this.impl.items() }
