@@ -23,6 +23,7 @@ export type MergeListReader<T> = {
   beginMerge(): void
   endMerge(error?: unknown): void
   resetAddedAndRemovedLists(): void
+  firstMergedItem(): MergedItem<T> | undefined
   lastMergedItem(): MergedItem<T> | undefined
 
   items(onlyAfter?: MergedItem<T>): Generator<MergedItem<T>>
@@ -210,6 +211,10 @@ export class MergeList<T> implements MergeListReader<T> {
   resetAddedAndRemovedLists(): void {
     this.removed.reset()
     this.added.reset()
+  }
+
+  firstMergedItem(): MergedItem<T> | undefined {
+    return this.current.first
   }
 
   lastMergedItem(): MergedItem<T> | undefined {
