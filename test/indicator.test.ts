@@ -10,19 +10,26 @@ import { Indicator, ObservableObject, Reentrance, RxSystem, Transaction, options
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
-  "Setting compilation in 104",
-  "Added file File1",
-  "Created source file File1 in 110",
-  "Setting compilation in 110",
-  "Added file File2",
-  "Created source file File1 in 117",
-  "Created source file File2 in 117",
-  "Setting compilation in 117",
-  "Added file File3",
-  "Created source file File1 in 124",
-  "Created source file File2 in 124",
-  "Created source file File3 in 124",
-  "Setting compilation in 124",
+  "Setting compilation.",
+  "Added file File1.",
+  "Added file File2.",
+  "Waiting for idle first time.",
+  "Created source file File1.",
+  "Created source file File2.",
+  "Not setting compilation because transaction is cancelled.",
+  "Created source file File1.",
+  "Created source file File2.",
+  "Setting compilation.",
+  "Done waiting.",
+  "File1",
+  "File2",
+  "Added file File3.",
+  "Created source file File1.",
+  "Created source file File2.",
+  "Created source file File3.",
+  "Setting compilation.",
+  "Waiting for idle second time.",
+  "Done waiting.",
   "File1",
   "File2",
   "File3",
@@ -48,7 +55,7 @@ class CompilationController extends ObservableObject {
     this.isUpdatingFsTree = true
     try {
       this.fsTree.push(new SourceFile(text))
-      output.push(`Added file ${text}`)
+      output.push(`Added file ${text}.`)
     } finally {
       this.isUpdatingFsTree = false
     }
@@ -58,17 +65,15 @@ class CompilationController extends ObservableObject {
   async reloadCompilation(): Promise<void> {
     if (!this.isUpdatingFsTree) {
       const sourceFiles = new Array<SourceFile>()
-      // const cancellationToken = new CancellationToken()
       for (const sourceFile of this.fsTree) {
-        await pause(400)
-        // cancellationToken.throwIfCancelled()
+        await pause(200)
         sourceFiles.push(sourceFile)
-        output.push(`Created source file ${sourceFile.text} in ${Transaction.current.id}`)
+        output.push(`Created source file ${sourceFile.text}.`)
       }
       if (Transaction.current.isCanceled) {
-        output.push(`Not setting compilation because ${Transaction.current.id} is cancelled.`)
+        output.push(`Not setting compilation because transaction is cancelled.`)
       } else {
-        output.push(`Setting compilation in ${Transaction.current.id}`)
+        output.push(`Setting compilation.`)
         this.compilation = new Compilation(sourceFiles)
       }
     }
@@ -86,19 +91,28 @@ test("indicator", async t => {
   })
   await indicator.whenIdle()
   controller.add("File1")
-  await indicator.whenIdle()
+  await pause(50)
+  // Should cancel previous transaction.
   controller.add("File2")
+  output.push('Waiting for idle first time.')
   await indicator.whenIdle()
-  await pause(100)
+  output.push('Done waiting.')
+  // Should contain File1 and File2.
+  for (const f of controller.compilation!.sourceFiles)
+    output.push(f.text)
   controller.add("File3")
-  await pause(3000)
-  if (controller.compilation)
-    for (const f of controller.compilation.sourceFiles)
-      output.push(f.text)
+  // Allow transaction to finish.
+  await pause(1000)
+  output.push('Waiting for idle second time.')
+  // Should already be full-filled.
+  await indicator.whenIdle()
+  output.push('Done waiting.')
+  // Should contain File1, File2 and File3.
+  for (const f of controller.compilation!.sourceFiles)
+    output.push(f.text)
 
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
     t.is(output[i], expected[i])
   }
 })
