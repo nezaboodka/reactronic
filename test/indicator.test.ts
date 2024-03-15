@@ -46,36 +46,31 @@ class SourceFile {
 }
 
 class CompilationController extends ObservableObject {
-  isUpdatingFsTree = false
+  fsTreeVersion = 0
   @raw fsTree = new Array<SourceFile>()
   @raw compilation: Compilation | null = null
 
   @transactional
   add(text: string): void {
-    this.isUpdatingFsTree = true
-    try {
-      this.fsTree.push(new SourceFile(text))
-      output.push(`Added file ${text}.`)
-    } finally {
-      this.isUpdatingFsTree = false
-    }
+    this.fsTree.push(new SourceFile(text))
+    output.push(`Added file ${text}.`)
+    this.fsTreeVersion++
   }
 
   @reactive @options({ reentrance: Reentrance.cancelAndWaitPrevious })
   async reloadCompilation(): Promise<void> {
-    if (!this.isUpdatingFsTree) {
-      const sourceFiles = new Array<SourceFile>()
-      for (const sourceFile of this.fsTree) {
-        await pause(200)
-        sourceFiles.push(sourceFile)
-        output.push(`Created source file ${sourceFile.text}.`)
-      }
-      if (Transaction.current.isCanceled) {
-        output.push(`Not setting compilation because transaction is cancelled.`)
-      } else {
-        output.push(`Setting compilation.`)
-        this.compilation = new Compilation(sourceFiles)
-      }
+    this.fsTreeVersion // subscribe
+    const sourceFiles = new Array<SourceFile>()
+    for (const sourceFile of this.fsTree) {
+      await pause(200)
+      sourceFiles.push(sourceFile)
+      output.push(`Created source file ${sourceFile.text}.`)
+    }
+    if (Transaction.current.isCanceled) {
+      output.push(`Not setting compilation because transaction is cancelled.`)
+    } else {
+      output.push(`Setting compilation.`)
+      this.compilation = new Compilation(sourceFiles)
     }
   }
 }
