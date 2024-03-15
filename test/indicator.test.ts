@@ -67,9 +67,9 @@ class CompilationController extends ObservableObject {
       output.push(`Created source file ${sourceFile.text}.`)
     }
     if (Transaction.current.isCanceled) {
-      output.push(`Not setting compilation because transaction is cancelled.`)
+      output.push("Not setting compilation because transaction is cancelled.")
     } else {
-      output.push(`Setting compilation.`)
+      output.push("Setting compilation.")
       this.compilation = new Compilation(sourceFiles)
     }
   }
@@ -89,19 +89,19 @@ test("indicator", async t => {
   await pause(50)
   // Should cancel previous transaction.
   controller.add("File2")
-  output.push('Waiting for idle first time.')
+  output.push("Waiting for idle first time.")
   await indicator.whenIdle()
-  output.push('Done waiting.')
+  output.push("Done waiting.")
   // Should contain File1 and File2.
   for (const f of controller.compilation!.sourceFiles)
     output.push(f.text)
   controller.add("File3")
   // Allow transaction to finish.
   await pause(1000)
-  output.push('Waiting for idle second time.')
+  output.push("Waiting for idle second time.")
   // Should already be full-filled.
   await indicator.whenIdle()
-  output.push('Done waiting.')
+  output.push("Done waiting.")
   // Should contain File1, File2 and File3.
   for (const f of controller.compilation!.sourceFiles)
     output.push(f.text)
