@@ -5,16 +5,16 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, transactional, reactive, cached, options, Transaction, Monitor, Reentrance, RxSystem, obs, all, pause } from "../source/api.js"
+import { ObservableObject, transactional, reactive, cached, options, Transaction, Indicator, Reentrance, RxSystem, obs, all, pause } from "../source/api.js"
 
 export const output: string[] = []
-export const busy = Monitor.create("Busy", 0, 0, 1)
+export const busy = Indicator.create("Busy", 0, 0, 1)
 
 export class AsyncDemo extends ObservableObject {
   url: string = "reactronic"
   log: string[] = ["RTA"]
 
-  @transactional @options({ monitor: busy, reentrance: Reentrance.preventWithError })
+  @transactional @options({ indicator: busy, reentrance: Reentrance.preventWithError })
   async load(url: string, delay: number): Promise<void> {
     this.url = url
     await all([pause(delay)])
@@ -44,9 +44,9 @@ export class AsyncDemoView {
   @cached @options({ triggeringArgs: false })
   async render(): Promise<string[]> {
     const result: string[] = []
-    result.push(`${busy.isActive ? "[...] " : ""}Url: ${this.model.url}`)
+    result.push(`${busy.isBusy ? "[...] " : ""}Url: ${this.model.url}`)
     await pause(10)
-    result.push(`${busy.isActive ? "[...] " : ""}Log: ${this.model.log.join(", ")}`)
+    result.push(`${busy.isBusy ? "[...] " : ""}Log: ${this.model.log.join(", ")}`)
     return result
   }
 }

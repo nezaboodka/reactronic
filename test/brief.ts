@@ -186,7 +186,7 @@ export const TestsLoggingLevel: LoggingOptions = {
   transaction: true,
   operation: true,
   step: true,
-  monitor: true,
+  indicator: true,
   read: true,
   write: true,
   change: true,

@@ -10,7 +10,7 @@ export type LoggingOptions = {
   readonly transaction: boolean
   readonly operation: boolean
   readonly step: boolean
-  readonly monitor: boolean
+  readonly indicator: boolean
   readonly read: boolean
   readonly write: boolean
   readonly change: boolean
@@ -45,7 +45,7 @@ export const LoggingLevel: {
     transaction: false,
     operation: false,
     step: false,
-    monitor: false,
+    indicator: false,
     read: false,
     write: false,
     change: false,
@@ -64,7 +64,7 @@ export const LoggingLevel: {
     transaction: false,
     operation: false,
     step: false,
-    monitor: false,
+    indicator: false,
     read: false,
     write: false,
     change: false,
@@ -83,7 +83,7 @@ export const LoggingLevel: {
     transaction: false,
     operation: false,
     step: false,
-    monitor: false,
+    indicator: false,
     read: false,
     write: false,
     change: false,
@@ -102,7 +102,7 @@ export const LoggingLevel: {
     transaction: true,
     operation: false,
     step: false,
-    monitor: false,
+    indicator: false,
     read: false,
     write: false,
     change: false,
@@ -121,7 +121,7 @@ export const LoggingLevel: {
     transaction: true,
     operation: true,
     step: false,
-    monitor: true,
+    indicator: true,
     read: false,
     write: false,
     change: true,
@@ -140,7 +140,7 @@ export const LoggingLevel: {
     transaction: true,
     operation: true,
     step: true,
-    monitor: true,
+    indicator: true,
     read: true,
     write: true,
     change: true,

@@ -12,7 +12,7 @@ import { LoggingOptions, ProfilingOptions } from "../Logging.js"
 import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Meta, SeparationMode } from "./Data.js"
 import { Changeset, Dump, EMPTY_SNAPSHOT } from "./Changeset.js"
 import { Journal } from "./Journal.js"
-import { Monitor } from "./Monitor.js"
+import { Indicator } from "./Monitor.js"
 
 // MvccObject, TransactionalObject, ObservableObject
 
@@ -55,7 +55,7 @@ const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   throttling: Number.MAX_SAFE_INTEGER, // disabled, @reactive sets it to -1 to enable
   reentrance: Reentrance.preventWithError,
   journal: undefined,
-  monitor: null,
+  indicator: null,
   logging: undefined,
 })
 
@@ -70,7 +70,7 @@ export class OptionsImpl implements MemberOptions {
   readonly throttling: number
   readonly reentrance: Reentrance
   readonly journal: Journal | undefined
-  readonly monitor: Monitor | null
+  readonly indicator: Indicator | null
   readonly logging?: Partial<LoggingOptions>
   static readonly INITIAL = Object.freeze(new OptionsImpl(UNDEF, UNDEF, { getter: UNDEF, setter: UNDEF, ...DEFAULT_OPTIONS }, {}, false))
 
@@ -85,7 +85,7 @@ export class OptionsImpl implements MemberOptions {
     this.throttling = merge(DEFAULT_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
     this.reentrance = merge(DEFAULT_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.journal = merge(DEFAULT_OPTIONS.journal, existing.journal, patch.journal, implicit)
-    this.monitor = merge(DEFAULT_OPTIONS.monitor, existing.monitor, patch.monitor, implicit)
+    this.indicator = merge(DEFAULT_OPTIONS.indicator, existing.indicator, patch.indicator, implicit)
     this.logging = merge(DEFAULT_OPTIONS.logging, existing.logging, patch.logging, implicit)
     if (Log.isOn)
       Object.freeze(this)

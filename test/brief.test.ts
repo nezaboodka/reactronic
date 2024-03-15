@@ -140,8 +140,8 @@ test("brief", t => {
     }, undefined, "observable property Person.emails #26 can only be modified inside transaction")
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: "cannot run transaction that is already sealed" })
     // Check protection and error handling
-    t.throws(() => { RxSystem.getReaction(daddy.setParent).configure({ monitor: null }) }, { message: "given method is not decorated as reactronic one: setParent" })
-    t.throws(() => { console.log(RxSystem.getReaction(daddy.setParent).options.monitor) }, { message: "given method is not decorated as reactronic one: setParent" })
+    t.throws(() => { RxSystem.getReaction(daddy.setParent).configure({ indicator: null }) }, { message: "given method is not decorated as reactronic one: setParent" })
+    t.throws(() => { console.log(RxSystem.getReaction(daddy.setParent).options.indicator) }, { message: "given method is not decorated as reactronic one: setParent" })
     const op2 = Transaction.create({ hint: "op2" })
     const zombi = op2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: "Person.age #30 is not yet available for T1[<none>] because of uncommitted T125[op2] (last committed T0[<boot>])" })

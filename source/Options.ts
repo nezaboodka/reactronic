@@ -10,7 +10,7 @@ import { SeparationMode } from "./core/Data.js"
 export { LoggingLevel } from "./Logging.js"
 export type { LoggingOptions, ProfilingOptions } from "./Logging.js"
 import { Journal } from "./core/Journal.js"
-import { Monitor } from "./core/Monitor.js"
+import { Indicator } from "./core/Monitor.js"
 
 export type SnapshotOptions = {
   readonly hint?: string
@@ -29,7 +29,7 @@ export type MemberOptions = {
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
   readonly journal: Journal | undefined
-  readonly monitor: Monitor | null
+  readonly indicator: Indicator | null
   readonly logging?: Partial<LoggingOptions>
 }
 

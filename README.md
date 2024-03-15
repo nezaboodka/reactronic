@@ -259,8 +259,8 @@ and reactive functions:
   - `cancelAndWaitPrevious` - cancel previous call in favor of recent one (but wait until canceling is completed)
   - `runSideBySide` - multiple simultaneous calls are allowed.
 
-**Monitor** is an object that maintains status of running functions,
-which it is attached to. A single monitor object can be shared between
+**Indicator** is an object that maintains status of running functions,
+which it is attached to. A single indicator object can be shared between
 multiple transactional, reactive, and cached functions, thus maintaining
 consolidated status for all of them (busy, workers, etc).
 
@@ -306,7 +306,7 @@ function options(value: Partial<MemberOptions>): F<any>
 function unobs<T>(func: F<T>, ...args: any[]): T
 function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
-// SnapshotOptions, MemberOptions, Kind, Reentrance, Monitor, LoggingOptions, ProfilingOptions
+// SnapshotOptions, MemberOptions, Kind, Reentrance, Indicator, LoggingOptions, ProfilingOptions
 
 export type SnapshotOptions = {
   readonly hint?: string
@@ -325,7 +325,7 @@ type MemberOptions = {
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
   readonly journal: Journal | undefined
-  readonly monitor: Monitor | null
+  readonly indicator: Indicator | null
   readonly logging?: Partial<LoggingOptions>
 }
 
@@ -345,11 +345,14 @@ enum Reentrance {
   runSideBySide = -3 // multiple simultaneous calls are allowed
 }
 
-class Monitor {
-  readonly isActive: boolean
+class Indicator {
+  readonly isBusy: boolean
   readonly counter: number
   readonly workers: ReadonlySet<Worker>
-  static create(hint: string, activationDelay: number, deactivationDelay: number): Monitor
+  readonly busyDuration: number
+  abstract whenBusy(): Promise<void>
+  abstract whenIdle(): Promise<void>
+  static create(hint: string, activationDelay: number, deactivationDelay: number): Indicator
 }
 
 type Worker = {
@@ -366,7 +369,7 @@ type LoggingOptions = {
   readonly transaction: boolean
   readonly operation: boolean
   readonly step: boolean
-  readonly monitor: boolean
+  readonly indicator: boolean
   readonly read: boolean
   readonly write: boolean
   readonly change: boolean

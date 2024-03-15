@@ -11,7 +11,7 @@ import { AbstractReaction, MemberOptions, Kind, Reentrance, LoggingOptions, Snap
 import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from "./Changeset.js"
 import { Transaction } from "./Transaction.js"
-import { Monitor, MonitorImpl } from "./Monitor.js"
+import { Indicator, IndicatorImpl } from "./Monitor.js"
 import { Mvcc, OptionsImpl } from "./Mvcc.js"
 import { JournalImpl } from "./Journal.js"
 
@@ -460,8 +460,8 @@ class Launch extends ValueSnapshot implements Observer {
   }
 
   private enter(): void {
-    if (this.options.monitor)
-      this.monitorEnter(this.options.monitor)
+    if (this.options.indicator)
+      this.indicatorEnter(this.options.indicator)
     if (Log.isOn && Log.opt.operation)
       Log.write("║", "‾\\", `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.reaction.objectHandle, this.reaction.memberName)} ]`)
     this.started = Date.now()
@@ -501,29 +501,29 @@ class Launch extends ValueSnapshot implements Observer {
     if (ms > (main ? Mvcc.mainThreadBlockingWarningThreshold : Mvcc.asyncActionDurationWarningThreshold)) /* istanbul ignore next */
       Log.write("", "[!]", this.why(), ms, main ? "    *** main thread is too busy ***" : "    *** async is too long ***")
     this.cause = undefined
-    if (this.options.monitor)
-      this.monitorLeave(this.options.monitor)
+    if (this.options.indicator)
+      this.indicatorLeave(this.options.indicator)
     // CachedResult.freeze(this)
   }
 
-  private monitorEnter(mon: Monitor): void {
+  private indicatorEnter(mon: Indicator): void {
     const options: SnapshotOptions = {
-      hint: "Monitor.enter",
+      hint: "Indicator.enter",
       separation: "isolated",
-      logging: Log.isOn && Log.opt.monitor ? undefined : Log.global }
+      logging: Log.isOn && Log.opt.indicator ? undefined : Log.global }
     ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
-      MonitorImpl.enter, mon, this.transaction)
+      IndicatorImpl.enter, mon, this.transaction)
   }
 
-  private monitorLeave(mon: Monitor): void {
+  private indicatorLeave(mon: Indicator): void {
     Transaction.outside<void>(() => {
       const leave = (): void => {
         const options: SnapshotOptions = {
-          hint: "Monitor.leave",
+          hint: "Indicator.leave",
           separation: "isolated",
-          logging: Log.isOn && Log.opt.monitor ? undefined : Log.DefaultLevel }
+          logging: Log.isOn && Log.opt.indicator ? undefined : Log.DefaultLevel }
         ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
-          MonitorImpl.leave, mon, this.transaction)
+          IndicatorImpl.leave, mon, this.transaction)
       }
       this.transaction.whenFinished().then(leave, leave)
     })
