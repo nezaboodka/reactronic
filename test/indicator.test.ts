@@ -9,6 +9,27 @@ import test from "ava"
 import { Indicator, ObservableObject, Reentrance, RxSystem, Transaction, options, pause, raw, reactive, transaction, transactional } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
+const expected: Array<string> = [
+  "Setting compilation in 104",
+  "Added file File1",
+  "Created source file File1 in 110",
+  "Setting compilation in 110",
+  "Added file File2",
+  "Created source file File1 in 117",
+  "Created source file File2 in 117",
+  "Setting compilation in 117",
+  "Added file File3",
+  "Created source file File1 in 124",
+  "Created source file File2 in 124",
+  "Created source file File3 in 124",
+  "Setting compilation in 124",
+  "File1",
+  "File2",
+  "File3",
+]
+
+export const output: string[] = []
+
 class Compilation {
   constructor(readonly sourceFiles: readonly SourceFile[]) { }
 }
@@ -27,7 +48,7 @@ class CompilationController extends ObservableObject {
     this.isUpdatingFsTree = true
     try {
       this.fsTree.push(new SourceFile(text))
-      console.log(`Added file ${text}`)
+      output.push(`Added file ${text}`)
     } finally {
       this.isUpdatingFsTree = false
     }
@@ -42,12 +63,12 @@ class CompilationController extends ObservableObject {
         await pause(400)
         // cancellationToken.throwIfCancelled()
         sourceFiles.push(sourceFile)
-        console.log(`Created source file ${sourceFile.text} in ${Transaction.current.id}`)
+        output.push(`Created source file ${sourceFile.text} in ${Transaction.current.id}`)
       }
       if (Transaction.current.isCanceled) {
-        console.log(`Not setting compilation because ${Transaction.current.id} is cancelled.`)
+        output.push(`Not setting compilation because ${Transaction.current.id} is cancelled.`)
       } else {
-        console.log(`Setting compilation in ${Transaction.current.id}`)
+        output.push(`Setting compilation in ${Transaction.current.id}`)
         this.compilation = new Compilation(sourceFiles)
       }
     }
@@ -71,6 +92,13 @@ test("indicator", async t => {
   await pause(100)
   controller.add("File3")
   await pause(3000)
-  console.log(controller.compilation)
-  t.assert(true)
+  if (controller.compilation)
+    for (const f of controller.compilation.sourceFiles)
+      output.push(f.text)
+
+  const n: number = Math.max(output.length, expected.length)
+  for (let i = 0; i < n; i++) { /* istanbul ignore next */
+    if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
+    t.is(output[i], expected[i])
+  }
 })
