@@ -10,7 +10,7 @@ import { SeparationMode } from "./core/Data.js"
 export { LoggingLevel } from "./Logging.js"
 export type { LoggingOptions, ProfilingOptions } from "./Logging.js"
 import { Journal } from "./core/Journal.js"
-import { Indicator } from "./core/Monitor.js"
+import { Indicator } from "./core/Indicator.js"
 
 export type SnapshotOptions = {
   readonly hint?: string

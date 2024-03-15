@@ -12,7 +12,7 @@ import { LoggingOptions, ProfilingOptions } from "../Logging.js"
 import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Meta, SeparationMode } from "./Data.js"
 import { Changeset, Dump, EMPTY_SNAPSHOT } from "./Changeset.js"
 import { Journal } from "./Journal.js"
-import { Indicator } from "./Monitor.js"
+import { Indicator } from "./Indicator.js"
 
 // MvccObject, TransactionalObject, ObservableObject
 

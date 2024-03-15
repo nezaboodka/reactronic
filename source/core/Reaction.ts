@@ -11,7 +11,7 @@ import { AbstractReaction, MemberOptions, Kind, Reentrance, LoggingOptions, Snap
 import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from "./Changeset.js"
 import { Transaction } from "./Transaction.js"
-import { Indicator, IndicatorImpl } from "./Monitor.js"
+import { Indicator, IndicatorImpl } from "./Indicator.js"
 import { Mvcc, OptionsImpl } from "./Mvcc.js"
 import { JournalImpl } from "./Journal.js"
 
