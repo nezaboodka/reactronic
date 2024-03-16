@@ -31,7 +31,7 @@
       }
     },
     {
-      "label": "Show Coverage  -  c8 & ava",
+      "label": "Test Coverage  -  c8 & ava",
       "type": "shell",
       "command": "npm run cover",
       "isBackground": true,
