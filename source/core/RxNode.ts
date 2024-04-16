@@ -71,8 +71,7 @@ export abstract class RxNode<E = unknown> {
     let key = declaration.key
     const owner = gOwnSeat?.instance
     if (owner) {
-      let existing: MergedItem<RxNode> | undefined =
-        owner.driver.child(owner, driver, declaration, preset)
+      let existing = owner.driver.child(owner, driver, declaration, preset)
       // Reuse existing node or declare a new one
       const children = owner.children
       existing ??= children.tryMergeAsExisting(key = key || generateKey(owner), undefined,
