@@ -74,7 +74,8 @@ export abstract class RxNode<E = unknown> {
       let existing = owner.driver.child(owner, driver, declaration, preset)
       // Reuse existing node or declare a new one
       const children = owner.children
-      existing ??= children.tryMergeAsExisting(key = key || generateKey(owner), undefined,
+      existing ??= children.tryMergeAsExisting(
+        key = key || generateKey(owner), undefined,
         "nested elements can be declared inside update function only")
       if (existing) {
         // Reuse existing node

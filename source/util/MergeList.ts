@@ -116,7 +116,7 @@ export class MergeList<T> implements MergeListReader<T> {
       if (item.tag !== tag) {
         item.tag = tag
         if (this.strict && item !== this.strictNextItem)
-          item.status = tag // IsAdded=false, IsMoved=true
+          item.status = tag // isAdded=false, isMoved=true
         this.strictNextItem = item.next
         this.removed.exclude(item)
         item.index = this.current.count
