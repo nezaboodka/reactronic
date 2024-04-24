@@ -196,11 +196,11 @@ export abstract class RxNode<E = unknown> {
 // RxNodeDecl
 
 export type RxNodeDecl<E = unknown> = {
-  onChange?: Delegate<E>
+  script?: Delegate<E>
   key?: string
   mode?: Mode
-  onCreate?: Delegate<E>
-  onDestroy?: Delegate<E>
+  creation?: Delegate<E>
+  destruction?: Delegate<E>
   triggers?: unknown
   preset?: RxNodeDecl<E>
 }
@@ -255,7 +255,7 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
   }
 
   update(node: RxNode<E>): void | Promise<void> {
-    invokeOnChangeViaPresetChain(node.element, node.declaration)
+    invokeScriptViaPresetChain(node.element, node.declaration)
   }
 
   child(ownerNode: RxNode<E>,
@@ -307,27 +307,27 @@ function getModeViaPresetChain(declaration?: RxNodeDecl<any>): Mode {
 
 function invokeOnCreateViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
   const preset = declaration.preset
-  const onCreate = declaration.onCreate
-  if (onCreate)
-    onCreate(element, preset ? () => invokeOnCreateViaPresetChain(element, preset) : NOP)
+  const creation = declaration.creation
+  if (creation)
+    creation(element, preset ? () => invokeOnCreateViaPresetChain(element, preset) : NOP)
   else if (preset)
     invokeOnCreateViaPresetChain(element, preset)
 }
 
-function invokeOnChangeViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
+function invokeScriptViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
   const preset = declaration.preset
-  const onChange = declaration.onChange
-  if (onChange)
-    onChange(element, preset ? () => invokeOnChangeViaPresetChain(element, preset) : NOP)
+  const script = declaration.script
+  if (script)
+    script(element, preset ? () => invokeScriptViaPresetChain(element, preset) : NOP)
   else if (preset)
-    invokeOnChangeViaPresetChain(element, preset)
+    invokeScriptViaPresetChain(element, preset)
 }
 
 function invokeOnDestroyViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
   const preset = declaration.preset
-  const onDestroy = declaration.onDestroy
-  if (onDestroy)
-    onDestroy(element, preset ? () => invokeOnDestroyViaPresetChain(element, preset) : NOP)
+  const destruction = declaration.destruction
+  if (destruction)
+    destruction(element, preset ? () => invokeOnDestroyViaPresetChain(element, preset) : NOP)
   else if (preset)
     invokeOnDestroyViaPresetChain(element, preset)
 }
