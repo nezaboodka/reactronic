@@ -221,6 +221,8 @@ export type RxNodeDriver<E = unknown> = {
     childDriver: RxNodeDriver<any>,
     childDeclaration?: RxNodeDecl<any>,
     childPreset?: RxNodeDecl<any>): MergedItem<RxNode> | undefined
+
+  getHost(node: RxNode<E>): RxNode<E>
 }
 
 // RxNodeContext
@@ -263,6 +265,10 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
     childDeclaration?: RxNodeDecl<any>,
     childPreset?: RxNodeDecl<any>): MergedItem<RxNode> | undefined {
     return undefined
+  }
+
+  getHost(node: RxNode<E>): RxNode<E> {
+    return node
   }
 }
 
