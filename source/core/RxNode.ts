@@ -13,10 +13,11 @@ import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
 import { RxSystem, options, raw, reactive, unobs } from "../RxSystem.js"
 
-// Delegates
+// Scripts
 
-export type Delegate<T> = (el: T, basis: () => void) => void
-export type SimpleDelegate<T = unknown, R = void> = (el: T) => R
+export type Script<T> = (el: T, basis: () => void) => void
+export type ScriptAsync<T> = (el: T, basis: () => Promise<void>) => Promise<void>
+export type Handler<T = unknown, R = void> = (el: T) => R
 
 // Enums
 
@@ -61,17 +62,17 @@ export abstract class RxNode<E = unknown> {
   static declare<E = void>(
     driver: RxNodeDriver<E>,
     declaration?: RxNodeDecl<E>,
-    preset?: RxNodeDecl<E>): RxNode<E> {
+    basis?: RxNodeDecl<E>): RxNode<E> {
     let result: RxNodeImpl<E>
     // Normalize parameters
     if (declaration)
-      declaration.preset = preset
+      declaration.basis = basis
     else
-      declaration = preset ?? {}
+      declaration = basis ?? {}
     let key = declaration.key
     const owner = gOwnSeat?.instance
     if (owner) {
-      let existing = owner.driver.child(owner, driver, declaration, preset)
+      let existing = owner.driver.child(owner, driver, declaration, basis)
       // Reuse existing node or declare a new one
       const children = owner.children
       existing ??= children.tryMergeAsExisting(
@@ -162,7 +163,7 @@ export abstract class RxNode<E = unknown> {
   }
 
   static findMatchingHost<E = unknown, R = unknown>(
-    node: RxNode<E>, match: SimpleDelegate<RxNode<E>, boolean>): RxNode<R> | undefined {
+    node: RxNode<E>, match: Handler<RxNode<E>, boolean>): RxNode<R> | undefined {
     let p = node.host as RxNodeImpl<any>
     while (p !== p.host && !match(p))
       p = p.host
@@ -170,7 +171,7 @@ export abstract class RxNode<E = unknown> {
   }
 
   static findMatchingPrevSibling<E = unknown, R = unknown>(
-    node: RxNode<E>, match: SimpleDelegate<RxNode<E>, boolean>): RxNode<R> | undefined {
+    node: RxNode<E>, match: Handler<RxNode<E>, boolean>): RxNode<R> | undefined {
     let p = node.seat!.prev
     while (p && !match(p.instance))
       p = p.prev
@@ -178,7 +179,7 @@ export abstract class RxNode<E = unknown> {
   }
 
   static forEachChildRecursively<E = unknown>(
-    node: RxNode<E>, action: SimpleDelegate<RxNode<E>>): void {
+    node: RxNode<E>, action: Handler<RxNode<E>>): void {
     action(node)
     for (const child of node.children.items())
       RxNode.forEachChildRecursively<E>(child.instance as RxNode<any>, action)
@@ -196,13 +197,14 @@ export abstract class RxNode<E = unknown> {
 // RxNodeDecl
 
 export type RxNodeDecl<E = unknown> = {
-  script?: Delegate<E>
+  script?: Script<E>
+  scriptAsync?: ScriptAsync<E>
   key?: string
   mode?: Mode
-  creation?: Delegate<E>
-  destruction?: Delegate<E>
+  creation?: Script<E>
+  destruction?: Script<E>
   triggers?: unknown
-  preset?: RxNodeDecl<E>
+  basis?: RxNodeDecl<E>
 }
 
 // RxNodeDriver
@@ -210,7 +212,7 @@ export type RxNodeDecl<E = unknown> = {
 export type RxNodeDriver<E = unknown> = {
   readonly name: string,
   readonly isPartition: boolean,
-  readonly predefine?: SimpleDelegate<E>
+  readonly initialize?: Handler<E>
 
   allocate(node: RxNode<E>): E
   create(node: RxNode<E>): void
@@ -220,10 +222,10 @@ export type RxNodeDriver<E = unknown> = {
   child(ownerNode: RxNode<E>,
     childDriver: RxNodeDriver<any>,
     childDeclaration?: RxNodeDecl<any>,
-    childPreset?: RxNodeDecl<any>): MergedItem<RxNode> | undefined
+    childBasis?: RxNodeDecl<any>): MergedItem<RxNode> | undefined
 
   getHost(node: RxNode<E>): RxNode<E>
-}
+  }
 
 // RxNodeContext
 
@@ -237,18 +239,18 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
   constructor(
     readonly name: string,
     readonly isPartition: boolean,
-    readonly predefine?: SimpleDelegate<E>) {
+    readonly initialize?: Handler<E>) {
   }
 
   abstract allocate(node: RxNode<E>): E
 
   create(node: RxNode<E>): void {
-    this.predefine?.(node.element)
-    invokeOnCreateViaPresetChain(node.element, node.declaration)
+    this.initialize?.(node.element)
+    invokeCreationUsingBasisChain(node.element, node.declaration)
   }
 
   destroy(node: RxNode<E>, isLeader: boolean): boolean {
-    invokeOnDestroyViaPresetChain(node.element, node.declaration)
+    invokeDestructionUsingBasisChain(node.element, node.declaration)
     return isLeader // treat children as deactivation leaders as well
   }
 
@@ -257,13 +259,13 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
   }
 
   update(node: RxNode<E>): void | Promise<void> {
-    invokeScriptViaPresetChain(node.element, node.declaration)
+    invokeScriptUsingBasisChain(node.element, node.declaration)
   }
 
   child(ownerNode: RxNode<E>,
     childDriver: RxNodeDriver<any>,
     childDeclaration?: RxNodeDecl<any>,
-    childPreset?: RxNodeDecl<any>): MergedItem<RxNode> | undefined {
+    childBasis?: RxNodeDecl<any>): MergedItem<RxNode> | undefined {
     return undefined
   }
 
@@ -307,35 +309,35 @@ function generateKey(owner: RxNodeImpl): string {
   return result
 }
 
-function getModeViaPresetChain(declaration?: RxNodeDecl<any>): Mode {
-  return declaration?.mode ?? (declaration?.preset ? getModeViaPresetChain(declaration?.preset) : Mode.default)
+function getModeUsingBasisChain(declaration?: RxNodeDecl<any>): Mode {
+  return declaration?.mode ?? (declaration?.basis ? getModeUsingBasisChain(declaration?.basis) : Mode.default)
 }
 
-function invokeOnCreateViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
-  const preset = declaration.preset
-  const creation = declaration.creation
-  if (creation)
-    creation(element, preset ? () => invokeOnCreateViaPresetChain(element, preset) : NOP)
-  else if (preset)
-    invokeOnCreateViaPresetChain(element, preset)
-}
-
-function invokeScriptViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
-  const preset = declaration.preset
+function invokeScriptUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void {
+  const basis = declaration.basis
   const script = declaration.script
   if (script)
-    script(element, preset ? () => invokeScriptViaPresetChain(element, preset) : NOP)
-  else if (preset)
-    invokeScriptViaPresetChain(element, preset)
+    script(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
+  else if (basis)
+    invokeScriptUsingBasisChain(element, basis)
 }
 
-function invokeOnDestroyViaPresetChain(element: unknown, declaration: RxNodeDecl<any>): void {
-  const preset = declaration.preset
+function invokeCreationUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void {
+  const basis = declaration.basis
+  const creation = declaration.creation
+  if (creation)
+    creation(element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP)
+  else if (basis)
+    invokeCreationUsingBasisChain(element, basis)
+}
+
+function invokeDestructionUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void {
+  const basis = declaration.basis
   const destruction = declaration.destruction
   if (destruction)
-    destruction(element, preset ? () => invokeOnDestroyViaPresetChain(element, preset) : NOP)
-  else if (preset)
-    invokeOnDestroyViaPresetChain(element, preset)
+    destruction(element, basis ? () => invokeDestructionUsingBasisChain(element, basis) : NOP)
+  else if (basis)
+    invokeDestructionUsingBasisChain(element, basis)
 }
 
 // RxNodeContextImpl
@@ -418,7 +420,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
   get isMoved(): boolean { return this.owner.children.isMoved(this.seat! as MergedItem<RxNodeImpl>) }
 
   has(mode: Mode): boolean {
-    return (getModeViaPresetChain(this.declaration) & mode) === mode
+    return (getModeUsingBasisChain(this.declaration) & mode) === mode
   }
 
   @reactive
