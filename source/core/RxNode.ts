@@ -322,6 +322,18 @@ function invokeScriptUsingBasisChain(element: unknown, declaration: RxNodeDecl<a
     invokeScriptUsingBasisChain(element, basis)
 }
 
+async function invokeScriptAsyncUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): Promise<void> {
+  const basis = declaration.basis
+  const script = declaration.script
+  const scriptAsync = declaration.scriptAsync
+  if (scriptAsync)
+    await scriptAsync(element, basis ? () => invokeScriptAsyncUsingBasisChain(element, basis) : NOP)
+  else if (script)
+    script(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
+  else if (basis)
+    await invokeScriptAsyncUsingBasisChain(element, basis)
+}
+
 function invokeCreationUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void {
   const basis = declaration.basis
   const creation = declaration.creation
