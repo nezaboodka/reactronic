@@ -55,7 +55,7 @@ export class ReactionImpl implements AbstractReaction<any> {
       && (!weak || launch.cause === BOOT_CAUSE || !launch.successor ||
         launch.successor.transaction.isFinished)) {
       const outerOpts = Launch.current?.options
-      const separation = weak || opts.separation !== false || opts.kind === Kind.reactive ||
+      const separation = weak || opts.separation !== false || /*opts.kind === Kind.reactive ||*/
         (opts.kind === Kind.transactional && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.cached)) ||
         (opts.kind === Kind.cached && (ror.snapshot.changeset.sealed ||
           ror.snapshot.former.snapshot !== EMPTY_SNAPSHOT))
@@ -168,7 +168,7 @@ export class ReactionImpl implements AbstractReaction<any> {
     let launch: Launch = os.data[m]
     if (launch.reaction !== this) {
       if (os.changeset !== EMPTY_SNAPSHOT.changeset) {
-        const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, m)}/init` : /* istanbul ignore next */ "MethodController/init"
+        const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, m)} (init)` : /* istanbul ignore next */ "MethodController (init)"
         const separation = os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT
         launch = Transaction.run<Launch>({ hint, separation, token: this }, (): Launch => {
           const h = this.objectHandle
@@ -341,7 +341,7 @@ class Launch extends ValueSnapshot implements Observer {
   markObsoleteDueTo(observable: ValueSnapshot, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, obsolete: Observer[]): void {
     if (this.observables !== undefined) { // if not yet marked as obsolete
       const skip = !observable.isOperation &&
-        changeset === this.changeset /* &&
+        changeset === this.changeset /* && // (!) TODO: Check reaction, not transaction
         snapshot.changes.has(memberName) */
       if (!skip) {
         const why = `${Dump.snapshot2(h, changeset, m, observable)}    ◀◀    ${outer}`
@@ -645,25 +645,25 @@ class Launch extends ValueSnapshot implements Observer {
     }
   }
 
-  private static enqueueReactiveFunctionsToRun(reactive: Array<Observer>): void {
-    const queue = Launch.queuedReactiveFunctions
-    const isReactiveLoopRequired = queue.length === 0
-    for (const r of reactive)
-      queue.push(r)
-    if (isReactiveLoopRequired)
-      ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactiveFunctions)
+  private static processWaveOfReactions(hint: string, waveOfReactions: Array<Observer>): void {
+    Transaction.run({ hint, separation: true }, () => {
+      ReactionImpl.proceedWithinGivenLaunch(undefined, () => {
+        for (const r of waveOfReactions)
+          r.relaunchIfNotUpToDate(false, true)
+      })
+    })
   }
 
-  private static processQueuedReactiveFunctions(): void {
-    const queue = Launch.queuedReactiveFunctions
-    let i = 0
-    while (i < queue.length) {
-      const reactive = queue[i]
-      reactive.relaunchIfNotUpToDate(false, true)
-      i++
-    }
-    Launch.queuedReactiveFunctions = [] // reset loop
-  }
+  // private static processQueuedReactiveFunctions(): void {
+  //   const queue = Launch.queuedReactiveFunctions
+  //   let i = 0
+  //   while (i < queue.length) {
+  //     const reactive = queue[i]
+  //     reactive.relaunchIfNotUpToDate(false, true)
+  //     i++
+  //   }
+  //   Launch.queuedReactiveFunctions = [] // reset loop
+  // }
 
   private unsubscribeFromAllObservables(): void {
     // It's critical to have no exceptions here
@@ -758,7 +758,7 @@ class Launch extends ValueSnapshot implements Observer {
     Changeset.isConflicting = Launch.isConflicting // override
     Changeset.propagateAllChangesThroughSubscriptions = Launch.propagateAllChangesThroughSubscriptions // override
     Changeset.revokeAllSubscriptions = Launch.revokeAllSubscriptions // override
-    Changeset.enqueueReactiveFunctionsToRun = Launch.enqueueReactiveFunctionsToRun
+    Changeset.processWaveOfReactions = Launch.processWaveOfReactions
     Mvcc.createOperation = Launch.createOperation // override
     Mvcc.rememberOperationOptions = Launch.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override

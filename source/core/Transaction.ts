@@ -214,7 +214,7 @@ class TransactionImpl extends Transaction {
     if (options?.separation || curr.isFinished || curr.options.separation === "isolated")
       return new TransactionImpl(options)
     else
-      return TransactionImpl.curr
+      return curr
   }
 
   private guard(): void {
@@ -290,9 +290,10 @@ class TransactionImpl extends Transaction {
     finally {
       this.pending--
       if (this.sealed && this.pending === 0) {
-        const reactive = this.applyOrDiscard() // it's critical to have no exceptions inside this call
+        const waveOfReactions = this.applyOrDiscard() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
-        TransactionImpl.outside(Changeset.enqueueReactiveFunctionsToRun, reactive)
+        if (waveOfReactions.length > 0)
+          Changeset.processWaveOfReactions(`RE:${this.hint}`, waveOfReactions)
       }
       else
         TransactionImpl.curr = outer

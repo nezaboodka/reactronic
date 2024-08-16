@@ -23,7 +23,10 @@
       "request": "launch",
       "sourceMaps": true,
       "program": "${workspaceFolder}/node_modules/ava/entrypoints/cli.mjs",
-      "args": ["${file}"],
+      "args": [
+        "--serial",
+        "${file}"
+      ],
       "outputCapture": "std",
       "internalConsoleOptions": "openOnSessionStart",
       "console": "integratedTerminal",

@@ -52,7 +52,7 @@ export class Changeset implements AbstractChangeset {
 
   readonly id: number
   readonly options: SnapshotOptions
-  get hint(): string { return this.options.hint ?? "noname" }
+  get hint(): string { return this.options.hint ?? "NONAME" }
   get timestamp(): number { return this.revision }
   private revision: number
   private bumper: number
@@ -78,7 +78,7 @@ export class Changeset implements AbstractChangeset {
   static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
   static propagateAllChangesThroughSubscriptions = (changeset: Changeset): void => { /* nop */ }
   static revokeAllSubscriptions = (changeset: Changeset): void => { /* nop */ }
-  static enqueueReactiveFunctionsToRun = (reactive: Array<Observer>): void => { /* nop */ }
+  static processWaveOfReactions = (hint: string, waveOfReactions: Array<Observer>): void => { /* nop */ }
 
   lookupObjectSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
     // TODO: Take into account timestamp of the member
@@ -415,7 +415,7 @@ export class Dump {
 export const EMPTY_SNAPSHOT = new ObjectSnapshot(new Changeset({ hint: "<boot>" }), undefined, {})
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
-  hint: "noname",
+  hint: "NONAME",
   separation: false,
   journal: undefined,
   logging: undefined,
