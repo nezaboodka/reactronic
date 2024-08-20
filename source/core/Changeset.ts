@@ -89,7 +89,7 @@ export class Changeset implements AbstractChangeset {
         h.editing = os // remember last changing snapshot
     }
     if (!os) {
-      os = h.head
+      os = h.committed
       while (os !== EMPTY_SNAPSHOT && os.changeset.timestamp > this.timestamp)
         os = os.former.snapshot
     }
@@ -99,7 +99,7 @@ export class Changeset implements AbstractChangeset {
   getObjectSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
     const r = this.lookupObjectSnapshot(h, m)
     if (r === EMPTY_SNAPSHOT)
-      throw misuse(`${Dump.obj(h, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} (last committed T${h.head.changeset.id}[${h.head.changeset.hint}])`)
+      throw misuse(`${Dump.obj(h, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} (last committed T${h.committed.changeset.id}[${h.committed.changeset.hint}])`)
     return r
   }
 
@@ -162,7 +162,7 @@ export class Changeset implements AbstractChangeset {
         }
       }
       if (os === EMPTY_SNAPSHOT)
-        throw misuse(`${Dump.snapshot(os, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} (last committed T${h.head.changeset.id}[${h.head.changeset.hint}])`)
+        throw misuse(`${Dump.snapshot(os, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} (last committed T${h.committed.changeset.id}[${h.committed.changeset.hint}])`)
     }
     return os.changeset !== this && !this.sealed
   }
@@ -188,7 +188,7 @@ export class Changeset implements AbstractChangeset {
     let conflicts: ObjectSnapshot[] | undefined = undefined
     if (this.items.size > 0) {
       this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-        if (os.former.snapshot !== h.head) {
+        if (os.former.snapshot !== h.committed) {
           const merged = this.merge(h, os)
           if (os.conflicts.size > 0) {
             if (!conflicts)
@@ -196,7 +196,7 @@ export class Changeset implements AbstractChangeset {
             conflicts.push(os)
           }
           if (Log.isOn && Log.opt.transaction)
-            Log.write("╠╝", "", `${Dump.snapshot2(h, os.changeset)} is merged with ${Dump.snapshot2(h, h.head.changeset)} among ${merged} properties with ${os.conflicts.size} conflicts.`)
+            Log.write("╠╝", "", `${Dump.snapshot2(h, os.changeset)} is merged with ${Dump.snapshot2(h, h.committed.changeset)} among ${merged} properties with ${os.conflicts.size} conflicts.`)
         }
       })
       if (this.options.token === undefined) {
@@ -219,32 +219,32 @@ export class Changeset implements AbstractChangeset {
 
   private merge(h: ObjectHandle, ours: ObjectSnapshot): number {
     let counter: number = 0
-    const head = h.head
-    const headDisposed = head.disposed
+    const theirs = h.committed
+    const theirsDisposed = theirs.disposed
     const oursDisposed = ours.disposed
-    const merged = { ...head.data } // clone
+    const merged = { ...theirs.data } // clone
     ours.changes.forEach((o, m) => {
       counter++
       merged[m] = ours.data[m]
-      if (headDisposed || oursDisposed) {
-        if (headDisposed !== oursDisposed) {
-          if (headDisposed || this.options.separation !== "disposal") {
+      if (theirsDisposed || oursDisposed) {
+        if (theirsDisposed !== oursDisposed) {
+          if (theirsDisposed || this.options.separation !== "disposal") {
             if (Log.isOn && Log.opt.change)
-              Log.write("║╠", "", `${Dump.snapshot2(h, ours.changeset, m)} <> ${Dump.snapshot2(h, head.changeset, m)}`, 0, " *** CONFLICT ***")
-            ours.conflicts.set(m, head)
+              Log.write("║╠", "", `${Dump.snapshot2(h, ours.changeset, m)} <> ${Dump.snapshot2(h, theirs.changeset, m)}`, 0, " *** CONFLICT ***")
+            ours.conflicts.set(m, theirs)
           }
         }
       }
       else {
-        const conflict = Changeset.isConflicting(head.data[m], ours.former.snapshot.data[m])
+        const conflict = Changeset.isConflicting(theirs.data[m], ours.former.snapshot.data[m])
         if (conflict)
-          ours.conflicts.set(m, head)
+          ours.conflicts.set(m, theirs)
         if (Log.isOn && Log.opt.change)
-          Log.write("║╠", "", `${Dump.snapshot2(h, ours.changeset, m)} ${conflict ? "<>" : "=="} ${Dump.snapshot2(h, head.changeset, m)}`, 0, conflict ? " *** CONFLICT ***" : undefined)
+          Log.write("║╠", "", `${Dump.snapshot2(h, ours.changeset, m)} ${conflict ? "<>" : "=="} ${Dump.snapshot2(h, theirs.changeset, m)}`, 0, conflict ? " *** CONFLICT ***" : undefined)
       }
     })
     Utils.copyAllMembers(merged, ours.data) // overwrite with merged copy
-    ours.former.snapshot = head // rebase is completed
+    ours.former.snapshot = theirs // rebase is completed
     return counter
   }
 
@@ -258,7 +258,7 @@ export class Changeset implements AbstractChangeset {
       if (!error) {
         // if (this.timestamp < h.head.snapshot.timestamp)
         //   console.log(`!!! timestamp downgrade detected ${h.head.snapshot.timestamp} -> ${this.timestamp} !!!`)
-        h.head = os // switch object to a new version
+        h.committed = os // switch object to a new version
         if (Changeset.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Changeset.totalObjectSnapshotCount++
           if (os.former.snapshot === EMPTY_SNAPSHOT)

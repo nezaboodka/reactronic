@@ -552,7 +552,7 @@ class Launch extends ValueSnapshot implements Observer {
           ctx.bumpBy(os.changeset.timestamp)
         const t = weak ? -1 : ctx.timestamp
         if (!launch.subscribeTo(observable, os, m, h, t))
-          launch.markObsoleteDueTo(observable, m, h.head.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
+          launch.markObsoleteDueTo(observable, m, h.committed.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
       }
     }
   }
@@ -708,9 +708,9 @@ class Launch extends ValueSnapshot implements Observer {
   }
 
   private static canSubscribeTo(observable: ValueSnapshot, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
-    const observableHead = h.head.data[m]
-    let result = observable === observableHead || (
-      !os.changeset.sealed && os.former.snapshot.data[m] === observableHead)
+    const observableCommitted = h.committed.data[m]
+    let result = observable === observableCommitted || (
+      !os.changeset.sealed && os.former.snapshot.data[m] === observableCommitted)
     if (result && timestamp !== -1)
       result = !(observable instanceof Launch && timestamp >= observable.obsoleteSince)
     return result
