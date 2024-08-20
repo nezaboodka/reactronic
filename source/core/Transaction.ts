@@ -293,7 +293,7 @@ class TransactionImpl extends Transaction {
         const waveOfReactions = this.applyOrDiscard() // it's critical to have no exceptions inside this call
         TransactionImpl.curr = outer
         if (waveOfReactions.length > 0)
-          Changeset.processWaveOfReactions(`RE:${this.hint}`, waveOfReactions)
+          Changeset.processWaveOfReactions(`WAVE:${this.hint}`, waveOfReactions)
       }
       else
         TransactionImpl.curr = outer

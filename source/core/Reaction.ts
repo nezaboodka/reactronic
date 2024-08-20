@@ -648,8 +648,14 @@ class Launch extends ValueSnapshot implements Observer {
   private static processWaveOfReactions(hint: string, waveOfReactions: Array<Observer>): void {
     Transaction.run({ hint, separation: true }, () => {
       ReactionImpl.proceedWithinGivenLaunch(undefined, () => {
-        for (const r of waveOfReactions)
-          r.relaunchIfNotUpToDate(false, true)
+        for (const r of waveOfReactions) {
+          try {
+            r.relaunchIfNotUpToDate(false, true)
+          }
+          catch {
+            // ignore all errors
+          }
+        }
       })
     })
   }

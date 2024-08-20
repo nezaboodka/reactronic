@@ -105,12 +105,6 @@ export class IndicatorImpl extends Indicator {
     if (mon.internals.started === 0 && active) {
       mon.busyDuration = 0
       mon.internals.started = performance.now()
-      if (mon.internals.whenBusy) {
-        const resolve = mon.internals.resolveWhenBusy!
-        mon.internals.whenBusy = undefined
-        mon.internals.resolveWhenBusy = undefined
-        resolve()
-      }
       IndicatorImpl.tick(mon)
     }
     if (delay >= 0) {
@@ -119,8 +113,15 @@ export class IndicatorImpl extends Indicator {
           Transaction.run<void>({ hint: "Indicator.activate", separation: "isolated" },
             IndicatorImpl.activate, mon, -1), delay) as any
     }
-    else if (active)
+    else if (active) {
       mon.isBusy = true
+      if (mon.internals.whenBusy) {
+        const resolve = mon.internals.resolveWhenBusy!
+        mon.internals.whenBusy = undefined
+        mon.internals.resolveWhenBusy = undefined
+        resolve()
+      }
+    }
   }
 
   private static deactivate(mon: IndicatorImpl, delay: number): void {
@@ -134,17 +135,17 @@ export class IndicatorImpl extends Indicator {
     else if (mon.counter <= 0) {
       mon.isBusy = false
       mon.internals.activationTimeout = undefined
-    }
-    if (mon.counter === 0 && mon.internals.started !== 0) {
-      const resolution = mon.internals.durationResolution
-      mon.busyDuration = Math.round(resolution * (performance.now() - mon.internals.started)) / resolution
-      mon.internals.started = 0
       if (mon.internals.whenIdle) {
         const resolve = mon.internals.resolveWhenIdle!
         mon.internals.whenIdle = undefined
         mon.internals.resolveWhenIdle = undefined
         resolve()
       }
+    }
+    if (mon.counter === 0 && mon.internals.started !== 0) {
+      const resolution = mon.internals.durationResolution
+      mon.busyDuration = Math.round(resolution * (performance.now() - mon.internals.started)) / resolution
+      mon.internals.started = 0
     }
   }
 
