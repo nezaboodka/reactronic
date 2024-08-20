@@ -33,7 +33,7 @@ export abstract class Transaction implements Worker {
   abstract readonly isFinished: boolean
   async whenFinished(): Promise<void> { /* to be overridden */ }
 
-  static create(options: SnapshotOptions | null): Transaction { return new TransactionImpl(options) }
+  static create(options: SnapshotOptions | null, parent?: Transaction): Transaction { return new TransactionImpl(options, parent as TransactionImpl) }
   static run<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(options, func, ...args) }
   static separate<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.separate(func, ...args) }
   static outside<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.outside<T>(func, ...args) }
@@ -51,6 +51,7 @@ class TransactionImpl extends Transaction {
   private static frameOverCounter: number = 0
 
   readonly margin: number
+  readonly parent?: TransactionImpl
   readonly changeset: Changeset
   private pending: number
   private sealed: boolean
@@ -60,10 +61,11 @@ class TransactionImpl extends Transaction {
   private resolve: (value?: void) => void
   private reject: (reason: any) => void
 
-  constructor(options: SnapshotOptions | null) {
+  constructor(options: SnapshotOptions | null, parent?: TransactionImpl) {
     super()
     this.margin = TransactionImpl.curr !== undefined ? TransactionImpl.curr.margin + 1 : -1
-    this.changeset = new Changeset(options)
+    this.parent = parent
+    this.changeset = new Changeset(options, parent?.changeset)
     this.pending = 0
     this.sealed = false
     this.canceled = undefined
@@ -211,7 +213,7 @@ class TransactionImpl extends Transaction {
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
     const curr = TransactionImpl.curr
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (options?.separation || curr.isFinished || curr.options.separation === "isolated")
+    if (options?.separation || curr.isFinished || curr.options.separation === "outer-and-inner")
       return new TransactionImpl(options)
     else
       return TransactionImpl.curr
@@ -241,7 +243,7 @@ class TransactionImpl extends Transaction {
           // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
-            separation: this.options.separation === "isolated" ? "isolated" : true,
+            separation: this.options.separation === "outer-and-inner" ? "outer-and-inner" : true,
             logging: this.changeset.options.logging,
             token: this.changeset.options.token,
           }

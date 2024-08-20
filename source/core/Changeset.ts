@@ -52,6 +52,7 @@ export class Changeset implements AbstractChangeset {
 
   readonly id: number
   readonly options: SnapshotOptions
+  readonly parent?: Changeset
   get hint(): string { return this.options.hint ?? "noname" }
   get timestamp(): number { return this.revision }
   private revision: number
@@ -60,9 +61,10 @@ export class Changeset implements AbstractChangeset {
   obsolete: Observer[]
   sealed: boolean
 
-  constructor(options: SnapshotOptions | null) {
+  constructor(options: SnapshotOptions | null, parent?: Changeset) {
     this.id = ++Changeset.idGen
     this.options = options ?? DefaultSnapshotOptions
+    this.parent = parent
     this.revision = UNDEFINED_REVISION
     this.bumper = 100
     this.items = new Map<ObjectHandle, ObjectSnapshot>()
