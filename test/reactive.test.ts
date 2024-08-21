@@ -6,11 +6,12 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, RxSystem, reactive, transactional, raw, transaction } from "../source/api.js"
+import { ObservableObject, RxSystem, reactive, transactional, raw, transaction, unobs } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 export class ReactiveDemo extends ObservableObject {
   title: string = "ReactiveDemo"
+  titleNested: string = "Abc"
   content: string = "Content"
   data: string = "Data"
   @raw rev: number = 0
@@ -26,6 +27,9 @@ export class ReactiveDemo extends ObservableObject {
     this.title = "Title/1"
     this.content = "Content/1"
     this.title
+    unobs(() => {
+      this.nestedReaction()
+    })
   }
 
   @reactive
@@ -38,6 +42,14 @@ export class ReactiveDemo extends ObservableObject {
   protected reactOnAnyChange(): void {
     this.rev = RxSystem.getRevisionOf(this)
   }
+
+  @reactive
+  protected nestedReaction(): void {
+    this.content
+    this.title = "Title/3 (nested)"
+    this.titleNested = "Def"
+    // this.title
+  }
 }
 
 test("reactive", t => {
@@ -45,8 +57,8 @@ test("reactive", t => {
   const demo = transaction(() => new ReactiveDemo())
   t.is(demo.title, "Title/1")
   t.is(demo.content, "Content/1")
-  t.is(demo.rev, 6)
+  t.is(demo.rev, 11)
   demo.setData("Hello")
-  t.is(demo.rev, 10)
-  t.is(RxSystem.getRevisionOf(demo), 10)
+  t.is(demo.rev, 15)
+  t.is(RxSystem.getRevisionOf(demo), 15)
 })

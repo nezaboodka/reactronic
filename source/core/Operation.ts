@@ -679,7 +679,8 @@ class Launch extends ValueSnapshot implements Observer {
   }
 
   private subscribeTo(observable: ValueSnapshot, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
-    const ok = Launch.canSubscribeTo(observable, os, m, h, timestamp)
+    const parent = this.transaction.changeset.parent
+    const ok = Launch.canSubscribeTo(observable, os, parent, m, h, timestamp)
     if (ok) {
       // Performance tracking
       let times: number = 0
@@ -709,10 +710,11 @@ class Launch extends ValueSnapshot implements Observer {
     return ok // || subscription.next === r
   }
 
-  private static canSubscribeTo(observable: ValueSnapshot, os: ObjectSnapshot, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
-    const observableCommitted = h.committed.data[m]
-    let result = observable === observableCommitted || (
-      !os.changeset.sealed && os.former.snapshot.data[m] === observableCommitted)
+  private static canSubscribeTo(observable: ValueSnapshot, os: ObjectSnapshot, parent: Changeset | undefined, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
+    const parentSnapshot = parent ? parent.lookupObjectSnapshot(h, m) : h.committed
+    const observableParent = parentSnapshot.data[m]
+    let result = observable === observableParent || (
+      !os.changeset.sealed && os.former.snapshot.data[m] === observableParent)
     if (result && timestamp !== -1)
       result = !(observable instanceof Launch && timestamp >= observable.obsoleteSince)
     return result

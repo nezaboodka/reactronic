@@ -26,7 +26,7 @@
       "args": ["${file}"],
       "outputCapture": "std",
       "internalConsoleOptions": "openOnSessionStart",
-      "console": "integratedTerminal",
+      "console": "internalConsole",
       "smartStep": true,
       "skipFiles": [
         "<node_internals>/**/*.js"

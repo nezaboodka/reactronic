@@ -91,9 +91,14 @@ export class Changeset implements AbstractChangeset {
         h.editing = os // remember last changing snapshot
     }
     if (!os) {
-      os = h.committed
-      while (os !== EMPTY_SNAPSHOT && os.changeset.timestamp > this.timestamp)
-        os = os.former.snapshot
+      const p = this.parent
+      if (!p) { // if nested transaction
+        os = h.committed
+        while (os !== EMPTY_SNAPSHOT && os.changeset.timestamp > this.timestamp)
+          os = os.former.snapshot
+      }
+      else
+        os = p.lookupObjectSnapshot(h, m)
     }
     return os
   }
@@ -126,6 +131,20 @@ export class Changeset implements AbstractChangeset {
     else
       os = EMPTY_SNAPSHOT
     return os
+  }
+
+  replaceObjectSnapshot(h: ObjectHandle, incoming: ObjectSnapshot): void {
+    const existing: ObjectSnapshot = this.lookupObjectSnapshot(h, Meta.Handle)
+    if (this.isNewSnapshotRequired(h, existing, Meta.Handle, undefined, undefined, undefined)) {
+      this.bumpBy(existing.changeset.timestamp)
+      this.items.set(h, incoming)
+      h.editing = incoming
+      h.editors++
+    }
+    else
+      this.items.set(h, incoming)
+    if (Log.isOn && Log.opt.write)
+      Log.write("║", " !!", `${Dump.obj(h)} - snapshot is replaced (revision ${incoming.revision})`)
   }
 
   static takeSnapshot<T>(obj: T): T {
@@ -190,15 +209,16 @@ export class Changeset implements AbstractChangeset {
     let conflicts: ObjectSnapshot[] | undefined = undefined
     if (this.items.size > 0) {
       this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-        if (os.former.snapshot !== h.committed) {
-          const merged = this.merge(h, os)
+        const theirs = this.parent ? this.parent.lookupObjectSnapshot(h, Meta.Handle) : h.committed
+        if (os.former.snapshot !== theirs || this.parent) {
+          const merged = this.merge(h, os, theirs, false /*, this.parent !== undefined*/)
           if (os.conflicts.size > 0) {
             if (!conflicts)
               conflicts = []
             conflicts.push(os)
           }
           if (Log.isOn && Log.opt.transaction)
-            Log.write("╠╝", "", `${Dump.snapshot2(h, os.changeset)} is merged with ${Dump.snapshot2(h, h.committed.changeset)} among ${merged} properties with ${os.conflicts.size} conflicts.`)
+            Log.write("╠╝", "", `${Dump.snapshot2(h, os.changeset)} is merged with ${Dump.snapshot2(h, theirs.changeset)} among ${merged} properties with ${os.conflicts.size} conflicts.`)
         }
       })
       if (this.options.token === undefined) {
@@ -219,15 +239,26 @@ export class Changeset implements AbstractChangeset {
     return conflicts
   }
 
-  private merge(h: ObjectHandle, ours: ObjectSnapshot): number {
+  private merge(h: ObjectHandle, ours: ObjectSnapshot, theirs: ObjectSnapshot, subscriptions: boolean): number {
     let counter: number = 0
-    const theirs = h.committed
     const theirsDisposed = theirs.disposed
     const oursDisposed = ours.disposed
     const merged = { ...theirs.data } // clone
     ours.changes.forEach((o, m) => {
       counter++
-      merged[m] = ours.data[m]
+      const ourValueSnapshot = ours.data[m] as ValueSnapshot
+      merged[m] = ourValueSnapshot
+      if (subscriptions && !theirs.changeset.sealed) {
+        const theirValueSnapshot = theirs.data[m] as ValueSnapshot
+        const theirObservers = theirValueSnapshot.observers
+        if (theirObservers) {
+          const ourObservers = ourValueSnapshot.observers
+          if (ourObservers)
+            theirObservers?.forEach(s => ourObservers.add(s))
+          else
+            ourValueSnapshot.observers = theirObservers
+        }
+      }
       if (theirsDisposed || oursDisposed) {
         if (theirsDisposed !== oursDisposed) {
           if (theirsDisposed || this.options.isolation !== Isolation.disjoinForInternalDisposal) {
@@ -253,14 +284,19 @@ export class Changeset implements AbstractChangeset {
   applyOrDiscard(error?: any): Array<Observer> {
     this.sealed = true
     this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-      Changeset.sealObjectSnapshot(h, os)
+      if (!this.parent)
+        Changeset.sealObjectSnapshot(h, os)
       h.editors--
       if (h.editors === 0) // уходя гасите свет - последний уходящий убирает за всеми
         h.editing = undefined
       if (!error) {
         // if (this.timestamp < h.head.snapshot.timestamp)
         //   console.log(`!!! timestamp downgrade detected ${h.head.snapshot.timestamp} -> ${this.timestamp} !!!`)
-        h.committed = os // switch object to a new version
+        // Switch object to a new version in parent/global snapshot
+        if (this.parent)
+          this.parent.replaceObjectSnapshot(h, os)
+        else
+          h.committed = os
         if (Changeset.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Changeset.totalObjectSnapshotCount++
           if (os.former.snapshot === EMPTY_SNAPSHOT)
@@ -280,7 +316,7 @@ export class Changeset implements AbstractChangeset {
       if (Log.opt.transaction)
         Log.write(this.revision < UNDEFINED_REVISION ? "╚══" : /* istanbul ignore next */ "═══", `s${this.revision}`, `${this.hint} - ${error ? "CANCEL" : "APPLY"}(${this.items.size})${error ? ` - ${error}` : ""}`)
     }
-    if (!error)
+    if (!error && !this.parent)
       Changeset.propagateAllChangesThroughSubscriptions(this)
     return this.obsolete
   }
