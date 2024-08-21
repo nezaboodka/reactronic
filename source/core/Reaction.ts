@@ -7,8 +7,8 @@
 
 import { F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
-import { AbstractReaction, MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions } from "../Options.js"
-import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, SeparationMode, Subscription, Meta, AbstractChangeset } from "./Data.js"
+import { AbstractReaction, MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions, Isolation } from "../Options.js"
+import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from "./Changeset.js"
 import { Transaction } from "./Transaction.js"
 import { Indicator, IndicatorImpl } from "./Indicator.js"
@@ -55,12 +55,15 @@ export class ReactionImpl implements AbstractReaction<any> {
       && (!weak || launch.cause === BOOT_CAUSE || !launch.successor ||
         launch.successor.transaction.isFinished)) {
       const outerOpts = Launch.current?.options
-      const separation = weak || opts.separation !== false || opts.kind === Kind.reactive ||
+      let isolation: Isolation = Isolation.joinToExistingTransaction
+      if (weak || opts.isolation !== Isolation.joinToExistingTransaction || opts.kind === Kind.reactive ||
         (opts.kind === Kind.transactional && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.cached)) ||
         (opts.kind === Kind.cached && (ror.snapshot.changeset.sealed ||
-          ror.snapshot.former.snapshot !== EMPTY_SNAPSHOT))
+          ror.snapshot.former.snapshot !== EMPTY_SNAPSHOT))) {
+        isolation = Isolation.fromOuterTransaction
+      }
       const token = opts.noSideEffects ? this : undefined
-      const ror2 = this.relaunch(ror, separation, opts, token, args)
+      const ror2 = this.relaunch(ror, isolation, opts, token, args)
       const ctx2 = ror2.launch.changeset
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         ror = ror2
@@ -169,8 +172,10 @@ export class ReactionImpl implements AbstractReaction<any> {
     if (launch.reaction !== this) {
       if (os.changeset !== EMPTY_SNAPSHOT.changeset) {
         const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, m)}/init` : /* istanbul ignore next */ "MethodController/init"
-        const separation = os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT
-        launch = Transaction.run<Launch>({ hint, separation, token: this }, (): Launch => {
+        let isolation = Isolation.joinToExistingTransaction
+        if (os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT)
+          isolation = Isolation.fromOuterTransaction
+        launch = Transaction.run<Launch>({ hint, isolation, token: this }, (): Launch => {
           const h = this.objectHandle
           let r: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
           let relaunch = r.data[m] as Launch
@@ -201,11 +206,11 @@ export class ReactionImpl implements AbstractReaction<any> {
     return launch
   }
 
-  private relaunch(existing: ReuseOrRelaunchContext, separation: SeparationMode, options: MemberOptions, token: any, args: any[] | undefined): ReuseOrRelaunchContext {
+  private relaunch(existing: ReuseOrRelaunchContext, isolation: Isolation, options: MemberOptions, token: any, args: any[] | undefined): ReuseOrRelaunchContext {
     // TODO: Cleaner implementation is needed
     const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, this.memberName)}${args && args.length > 0 && (typeof args[0] === "number" || typeof args[0] === "string") ? ` - ${args[0]}` : ""}` : /* istanbul ignore next */ `${Dump.obj(this.objectHandle, this.memberName)}`
     let ror = existing
-    const opts = { hint, separation, journal: options.journal, logging: options.logging, token }
+    const opts = { hint, isolation, journal: options.journal, logging: options.logging, token }
     const result = Transaction.run(opts, (argsx: any[] | undefined): any => {
       if (!ror.launch.transaction.isCanceled) { // standard launch
         ror = this.edit()
@@ -509,7 +514,7 @@ class Launch extends ValueSnapshot implements Observer {
   private indicatorEnter(mon: Indicator): void {
     const options: SnapshotOptions = {
       hint: "Indicator.enter",
-      separation: "from-outer-and-inner",
+      isolation: Isolation.fromOuterAndInnerTransactions,
       logging: Log.isOn && Log.opt.indicator ? undefined : Log.global }
     ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
       IndicatorImpl.enter, mon, this.transaction)
@@ -520,7 +525,7 @@ class Launch extends ValueSnapshot implements Observer {
       const leave = (): void => {
         const options: SnapshotOptions = {
           hint: "Indicator.leave",
-          separation: "from-outer-and-inner",
+          isolation: Isolation.fromOuterAndInnerTransactions,
           logging: Log.isOn && Log.opt.indicator ? undefined : Log.DefaultLevel }
         ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
           IndicatorImpl.leave, mon, this.transaction)

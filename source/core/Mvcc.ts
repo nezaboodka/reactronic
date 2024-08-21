@@ -7,9 +7,9 @@
 
 import { UNDEF, F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
-import { AbstractReaction, MemberOptions, Kind, Reentrance } from "../Options.js"
+import { AbstractReaction, MemberOptions, Kind, Reentrance, Isolation } from "../Options.js"
 import { LoggingOptions, ProfilingOptions } from "../Logging.js"
-import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Meta, SeparationMode } from "./Data.js"
+import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Meta } from "./Data.js"
 import { Changeset, Dump, EMPTY_SNAPSHOT } from "./Changeset.js"
 import { Journal } from "./Journal.js"
 import { Indicator } from "./Indicator.js"
@@ -48,7 +48,7 @@ export abstract class ObservableObject extends MvccObject {
 
 const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   kind: Kind.plain,
-  separation: false,
+  isolation: Isolation.joinToExistingTransaction,
   order: 0,
   noSideEffects: false,
   triggeringArgs: false,
@@ -63,7 +63,7 @@ export class OptionsImpl implements MemberOptions {
   readonly getter: Function
   readonly setter: Function
   readonly kind: Kind
-  readonly separation: SeparationMode
+  readonly isolation: Isolation
   readonly order: number
   readonly noSideEffects: boolean
   readonly triggeringArgs: boolean
@@ -78,7 +78,7 @@ export class OptionsImpl implements MemberOptions {
     this.getter = getter !== undefined ? getter : existing.getter
     this.setter = setter !== undefined ? setter : existing.setter
     this.kind = merge(DEFAULT_OPTIONS.kind, existing.kind, patch.kind, implicit)
-    this.separation = merge(DEFAULT_OPTIONS.separation, existing.separation, patch.separation, implicit)
+    this.isolation = merge(DEFAULT_OPTIONS.isolation, existing.isolation, patch.isolation, implicit)
     this.order = merge(DEFAULT_OPTIONS.order, existing.order, patch.order, implicit)
     this.noSideEffects = merge(DEFAULT_OPTIONS.noSideEffects, existing.noSideEffects, patch.noSideEffects, implicit)
     this.triggeringArgs = merge(DEFAULT_OPTIONS.triggeringArgs, existing.triggeringArgs, patch.triggeringArgs, implicit)

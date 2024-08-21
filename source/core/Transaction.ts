@@ -8,7 +8,7 @@
 import { UNDEF, F, pause } from "../util/Utils.js"
 import { Log, misuse, error, fatal } from "../util/Dbg.js"
 import { Worker } from "../Worker.js"
-import { SnapshotOptions, LoggingOptions } from "../Options.js"
+import { SnapshotOptions, LoggingOptions, Isolation } from "../Options.js"
 import { ObjectSnapshot, Observer } from "./Data.js"
 import { Changeset, Dump } from "./Changeset.js"
 
@@ -35,7 +35,7 @@ export abstract class Transaction implements Worker {
 
   static create(options: SnapshotOptions | null, parent?: Transaction): Transaction { return new TransactionImpl(options, parent as TransactionImpl) }
   static run<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T { return TransactionImpl.run<T>(options, func, ...args) }
-  static separate<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.separate(func, ...args) }
+  static isolate<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.isolate(func, ...args) }
   static outside<T>(func: F<T>, ...args: any[]): T { return TransactionImpl.outside<T>(func, ...args) }
 
   static isFrameOver(everyN: number = 1, timeLimit: number = 10): boolean { return TransactionImpl.isFrameOver(everyN, timeLimit) }
@@ -179,8 +179,8 @@ class TransactionImpl extends Transaction {
     return result
   }
 
-  static separate<T>(func: F<T>, ...args: any[]): T {
-    return TransactionImpl.run({ separation: true }, func, ...args)
+  static isolate<T>(func: F<T>, ...args: any[]): T {
+    return TransactionImpl.run({ isolation: Isolation.fromOuterTransaction }, func, ...args)
   }
 
   static outside<T>(func: F<T>, ...args: any[]): T {
@@ -212,11 +212,12 @@ class TransactionImpl extends Transaction {
 
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
     const curr = TransactionImpl.curr
+    const isolation = options?.isolation
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (options?.separation || curr.isFinished || curr.options.separation === "from-outer-and-inner")
+    if ((isolation !== undefined && isolation !== Isolation.joinToExistingTransaction) || curr.isFinished || curr.options.isolation === Isolation.fromOuterAndInnerTransactions)
       return new TransactionImpl(options)
     else
-      return TransactionImpl.curr
+      return curr
   }
 
   private guard(): void {
@@ -243,7 +244,7 @@ class TransactionImpl extends Transaction {
           // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
-            separation: this.options.separation === "from-outer-and-inner" ? "from-outer-and-inner" : true,
+            isolation: this.options.isolation === Isolation.joinToExistingTransaction ? Isolation.fromOuterTransaction : this.options.isolation,
             logging: this.changeset.options.logging,
             token: this.changeset.options.token,
           }

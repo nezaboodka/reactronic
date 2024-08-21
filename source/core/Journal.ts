@@ -5,6 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
+import { Isolation } from "../Options.js"
 import { ObservableObject } from "./Mvcc.js"
 import { ObjectHandle, ObjectSnapshot, Meta, PatchSet, ValuePatch, ValueSnapshot, MemberName } from "./Data.js"
 import { Changeset, EMPTY_SNAPSHOT } from "./Changeset.js"
@@ -42,7 +43,7 @@ export class JournalImpl extends Journal {
   get canRedo(): boolean { return this._position < this._edits.length }
 
   edited(p: PatchSet): void {
-    Transaction.run({ hint: "EditJournal.edited", separation: "from-outer-and-inner" }, () => {
+    Transaction.run({ hint: "EditJournal.edited", isolation: Isolation.fromOuterAndInnerTransactions }, () => {
       const items = this._edits = this._edits.toMutable()
       if (items.length >= this._capacity)
         items.shift()
@@ -62,7 +63,7 @@ export class JournalImpl extends Journal {
   }
 
   undo(count: number = 1): void {
-    Transaction.run({ hint: "Journal.undo", separation: "from-outer-and-inner" }, () => {
+    Transaction.run({ hint: "Journal.undo", isolation: Isolation.fromOuterAndInnerTransactions }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._edits[i]
@@ -75,7 +76,7 @@ export class JournalImpl extends Journal {
   }
 
   redo(count: number = 1): void {
-    Transaction.run({ hint: "Journal.redo", separation: "from-outer-and-inner" }, () => {
+    Transaction.run({ hint: "Journal.redo", isolation: Isolation.fromOuterAndInnerTransactions }, () => {
       let i: number = this._position
       while (i < this._edits.length && count > 0) {
         const patch = this._edits[i]

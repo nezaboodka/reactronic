@@ -310,7 +310,7 @@ function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 export type SnapshotOptions = {
   readonly hint?: string
-  readonly separation?: SeparationMode
+  readonly isolation?: Isolation
   readonly journal?: Journal
   readonly logging?: Partial<LoggingOptions>
   readonly token?: any
@@ -318,7 +318,7 @@ export type SnapshotOptions = {
 
 type MemberOptions = {
   readonly kind: Kind
-  readonly separation: SeparationMode
+  readonly isolation: Isolation
   readonly order: number
   readonly noSideEffects: boolean
   readonly triggeringArgs: boolean

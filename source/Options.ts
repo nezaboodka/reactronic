@@ -6,7 +6,6 @@
 // automatically licensed under the license referred above.
 
 import { LoggingOptions } from "./Logging.js"
-import { SeparationMode } from "./core/Data.js"
 export { LoggingLevel } from "./Logging.js"
 export type { LoggingOptions, ProfilingOptions } from "./Logging.js"
 import { Journal } from "./core/Journal.js"
@@ -14,7 +13,7 @@ import { Indicator } from "./core/Indicator.js"
 
 export type SnapshotOptions = {
   readonly hint?: string
-  readonly separation?: SeparationMode
+  readonly isolation?: Isolation
   readonly journal?: Journal
   readonly logging?: Partial<LoggingOptions>
   readonly token?: any
@@ -22,7 +21,7 @@ export type SnapshotOptions = {
 
 export type MemberOptions = {
   readonly kind: Kind
-  readonly separation: SeparationMode
+  readonly isolation: Isolation
   readonly order: number
   readonly noSideEffects: boolean
   readonly triggeringArgs: boolean
@@ -52,9 +51,9 @@ export enum Reentrance {
 export enum Isolation {
   joinToExistingTransaction = 0,
   joinAsNestedTransaction,
-  isolateFromOuterTransaction,
-  isolateFromOuterAndInnerTransactions,
-  isolateForDisposal, // INTERNAL
+  fromOuterTransaction,
+  fromOuterAndInnerTransactions,
+  internalDisposal,
 }
 
 // AbstractReaction

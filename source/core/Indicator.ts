@@ -5,6 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
+import { Isolation } from "../Options.js"
 import { Worker } from "../Worker.js"
 import { ObservableObject, Mvcc } from "./Mvcc.js"
 import { Transaction } from "./Transaction.js"
@@ -116,7 +117,7 @@ export class IndicatorImpl extends Indicator {
     if (delay >= 0) {
       if (mon.internals.activationTimeout === undefined) // only once
         mon.internals.activationTimeout = setTimeout(() =>
-          Transaction.run<void>({ hint: "Indicator.activate", separation: "from-outer-and-inner" },
+          Transaction.run<void>({ hint: "Indicator.activate", isolation: Isolation.fromOuterAndInnerTransactions },
             IndicatorImpl.activate, mon, -1), delay) as any
     }
     else if (active)
@@ -128,7 +129,7 @@ export class IndicatorImpl extends Indicator {
       // Discard existing timer and start new one
       clearTimeout(mon.internals.deactivationTimeout)
       mon.internals.deactivationTimeout = setTimeout(() =>
-        Transaction.run<void>({ hint: "Indicator.deactivate", separation: "from-outer-and-inner" },
+        Transaction.run<void>({ hint: "Indicator.deactivate", isolation: Isolation.fromOuterAndInnerTransactions },
           IndicatorImpl.deactivate, mon, -1), delay) as any
     }
     else if (mon.counter <= 0) {
