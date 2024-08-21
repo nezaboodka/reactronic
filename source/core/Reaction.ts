@@ -509,7 +509,7 @@ class Launch extends ValueSnapshot implements Observer {
   private indicatorEnter(mon: Indicator): void {
     const options: SnapshotOptions = {
       hint: "Indicator.enter",
-      separation: "outer-and-inner",
+      separation: "from-outer-and-inner",
       logging: Log.isOn && Log.opt.indicator ? undefined : Log.global }
     ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
       IndicatorImpl.enter, mon, this.transaction)
@@ -520,7 +520,7 @@ class Launch extends ValueSnapshot implements Observer {
       const leave = (): void => {
         const options: SnapshotOptions = {
           hint: "Indicator.leave",
-          separation: "outer-and-inner",
+          separation: "from-outer-and-inner",
           logging: Log.isOn && Log.opt.indicator ? undefined : Log.DefaultLevel }
         ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
           IndicatorImpl.leave, mon, this.transaction)

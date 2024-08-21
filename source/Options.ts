@@ -49,6 +49,14 @@ export enum Reentrance {
   runSideBySide = -4, // multiple simultaneous operations are allowed
 }
 
+export enum Isolation {
+  joinToExistingTransaction = 0,
+  joinAsNestedTransaction,
+  isolateFromOuterTransaction,
+  isolateFromOuterAndInnerTransactions,
+  isolateForDisposal, // INTERNAL
+}
+
 // AbstractReaction
 
 export type AbstractReaction<T> = {

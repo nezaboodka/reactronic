@@ -42,7 +42,7 @@ export class JournalImpl extends Journal {
   get canRedo(): boolean { return this._position < this._edits.length }
 
   edited(p: PatchSet): void {
-    Transaction.run({ hint: "EditJournal.edited", separation: "outer-and-inner" }, () => {
+    Transaction.run({ hint: "EditJournal.edited", separation: "from-outer-and-inner" }, () => {
       const items = this._edits = this._edits.toMutable()
       if (items.length >= this._capacity)
         items.shift()
@@ -62,7 +62,7 @@ export class JournalImpl extends Journal {
   }
 
   undo(count: number = 1): void {
-    Transaction.run({ hint: "Journal.undo", separation: "outer-and-inner" }, () => {
+    Transaction.run({ hint: "Journal.undo", separation: "from-outer-and-inner" }, () => {
       let i: number = this._position - 1
       while (i >= 0 && count > 0) {
         const patch = this._edits[i]
@@ -75,7 +75,7 @@ export class JournalImpl extends Journal {
   }
 
   redo(count: number = 1): void {
-    Transaction.run({ hint: "Journal.redo", separation: "outer-and-inner" }, () => {
+    Transaction.run({ hint: "Journal.redo", separation: "from-outer-and-inner" }, () => {
       let i: number = this._position
       while (i < this._edits.length && count > 0) {
         const patch = this._edits[i]

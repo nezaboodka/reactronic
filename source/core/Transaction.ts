@@ -213,7 +213,7 @@ class TransactionImpl extends Transaction {
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
     const curr = TransactionImpl.curr
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (options?.separation || curr.isFinished || curr.options.separation === "outer-and-inner")
+    if (options?.separation || curr.isFinished || curr.options.separation === "from-outer-and-inner")
       return new TransactionImpl(options)
     else
       return TransactionImpl.curr
@@ -243,7 +243,7 @@ class TransactionImpl extends Transaction {
           // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
-            separation: this.options.separation === "outer-and-inner" ? "outer-and-inner" : true,
+            separation: this.options.separation === "from-outer-and-inner" ? "from-outer-and-inner" : true,
             logging: this.changeset.options.logging,
             token: this.changeset.options.token,
           }

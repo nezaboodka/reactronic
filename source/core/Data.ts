@@ -28,7 +28,7 @@ export class ValueSnapshot<T = any> {
   constructor(content: T) { this.content = content }
 }
 
-export type SeparationMode = boolean | "outer-and-inner" | "disposal"
+export type SeparationMode = boolean | "from-outer-and-inner" | "disposal"
 
 export type Observer = {
   readonly order: number
