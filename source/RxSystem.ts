@@ -7,7 +7,7 @@
 
 import { F } from "./util/Utils.js"
 import { Log } from "./util/Dbg.js"
-import { Operation, Kind, MemberOptions, LoggingOptions, ProfilingOptions } from "./Options.js"
+import { Operation, Kind, MemberOptions, LoggingOptions, ProfilingOptions, Isolation } from "./Options.js"
 import { Meta, ObjectHandle } from "./core/Data.js"
 import { Changeset } from "./core/Changeset.js"
 import { Mvcc } from "./core/Mvcc.js"
@@ -62,7 +62,7 @@ export function obs(proto: object, prop: PropertyKey): any {
 export function transactional(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
     kind: Kind.transactional,
-    // isolation: Isolation.joinToCurrentTransaction,
+    isolation: Isolation.joinToCurrentTransaction,
   }
   return Mvcc.decorateOperation(true, transactional, opts, proto, prop, pd)
 }
@@ -70,7 +70,7 @@ export function transactional(proto: object, prop: PropertyKey, pd: PropertyDesc
 export function reactive(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
     kind: Kind.reactive,
-    // isolation: Isolation.joinAsNestedTransaction,
+    isolation: Isolation.joinAsNestedTransaction,
     throttling: -1, // immediate reactive call
   }
   return Mvcc.decorateOperation(true, reactive, opts, proto, prop, pd)
@@ -79,7 +79,7 @@ export function reactive(proto: object, prop: PropertyKey, pd: PropertyDescripto
 export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
     kind: Kind.cached,
-    // isolation: Isolation.joinAsNestedTransaction,
+    isolation: Isolation.joinToCurrentTransaction,
     noSideEffects: true,
   }
   return Mvcc.decorateOperation(true, cached, opts, proto, prop, pd)

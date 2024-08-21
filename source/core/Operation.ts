@@ -54,19 +54,11 @@ export class OperationImpl implements Operation<any> {
     if (!ror.isUpToDate && !ror.snapshot.disposed
       && (!weak || launch.cause === BOOT_CAUSE || !launch.successor ||
         launch.successor.transaction.isFinished)) {
-      const outerOpts = Launch.current?.options
-      // opts.isolation !== undefined => isolation
       // transaction => joinToCurrent
       // reaction => joinAsNested
-      // cached => joinAsNested
+      // cached => joinToCurrent
       // weak => disjoinFromOuterTransaction
-      let isolation: Isolation = Isolation.joinToCurrentTransaction
-      if (weak || opts.isolation !== Isolation.joinToCurrentTransaction || opts.kind === Kind.reactive ||
-        (opts.kind === Kind.transactional && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.cached)) ||
-        (opts.kind === Kind.cached && (ror.snapshot.changeset.sealed ||
-          ror.snapshot.former.snapshot !== EMPTY_SNAPSHOT))) {
-        isolation = Isolation.disjoinFromOuterTransaction
-      }
+      const isolation: Isolation = !weak ? opts.isolation : Isolation.disjoinFromOuterTransaction
       const token = opts.noSideEffects ? this : undefined
       const ror2 = this.relaunch(ror, isolation, opts, token, args)
       const ctx2 = ror2.launch.changeset
@@ -177,9 +169,9 @@ export class OperationImpl implements Operation<any> {
     if (launch.operation !== this) {
       if (os.changeset !== EMPTY_SNAPSHOT.changeset) {
         const hint: string = Log.isOn ? `${Dump.obj(this.ownerHandle, m)}/init` : /* istanbul ignore next */ "MethodController/init"
-        let isolation = Isolation.joinToCurrentTransaction
-        if (os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT)
-          isolation = Isolation.disjoinFromOuterTransaction
+        const isolation = Isolation.joinToCurrentTransaction
+        // if (os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT)
+        //   isolation = Isolation.disjoinFromOuterTransaction
         launch = Transaction.run<Launch>({ hint, isolation, token: this }, (): Launch => {
           const h = this.ownerHandle
           let r: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
