@@ -211,17 +211,17 @@ class TransactionImpl extends Transaction {
   // Internal
 
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
-    const curr = TransactionImpl.curr
+    const outer = TransactionImpl.curr
     const isolation = options?.isolation ?? Isolation.joinToCurrentTransaction
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (curr.isFinished || curr.options.isolation === Isolation.disjoinFromOuterAndInnerTransactions)
+    if (outer.isFinished || outer.options.isolation === Isolation.disjoinFromOuterAndInnerTransactions)
       return new TransactionImpl(options)
     else if (isolation === Isolation.joinAsNestedTransaction)
-      return new TransactionImpl(options, curr)
+      return new TransactionImpl(options, outer)
     else if (isolation !== Isolation.joinToCurrentTransaction)
       return new TransactionImpl(options)
     else // isolation === Isolation.joinToExistingTransaction
-      return curr
+      return outer
   }
 
   private guard(): void {

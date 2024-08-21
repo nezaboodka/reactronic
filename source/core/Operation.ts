@@ -55,6 +55,7 @@ export class OperationImpl implements Operation<any> {
       && (!weak || launch.cause === BOOT_CAUSE || !launch.successor ||
         launch.successor.transaction.isFinished)) {
       const outerOpts = Launch.current?.options
+      // opts.isolation !== undefined => isolation
       // transaction => joinToCurrent
       // reaction => joinAsNested
       // cached => joinAsNested
