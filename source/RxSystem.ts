@@ -12,7 +12,7 @@ import { Meta, ObjectHandle } from "./core/Data.js"
 import { Changeset } from "./core/Changeset.js"
 import { Mvcc } from "./core/Mvcc.js"
 import { Transaction } from "./core/Transaction.js"
-import { OperationImpl } from "./core/Reaction.js"
+import { OperationImpl } from "./core/Operation.js"
 
 export class RxSystem {
   static why(brief: boolean = false): string { return brief ? OperationImpl.briefWhy() : OperationImpl.why() }
