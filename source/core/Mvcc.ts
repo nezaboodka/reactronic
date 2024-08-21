@@ -48,7 +48,7 @@ export abstract class ObservableObject extends MvccObject {
 
 const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   kind: Kind.plain,
-  isolation: Isolation.joinToExistingTransaction,
+  isolation: Isolation.joinToCurrentTransaction,
   order: 0,
   noSideEffects: false,
   triggeringArgs: false,

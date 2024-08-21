@@ -55,12 +55,16 @@ export class OperationImpl implements Operation<any> {
       && (!weak || launch.cause === BOOT_CAUSE || !launch.successor ||
         launch.successor.transaction.isFinished)) {
       const outerOpts = Launch.current?.options
-      let isolation: Isolation = Isolation.joinToExistingTransaction
-      if (weak || opts.isolation !== Isolation.joinToExistingTransaction || opts.kind === Kind.reactive ||
+      // transaction => joinToCurrent
+      // reaction => joinAsNested
+      // cached => joinAsNested
+      // weak => disjoinFromOuterTransaction
+      let isolation: Isolation = Isolation.joinToCurrentTransaction
+      if (weak || opts.isolation !== Isolation.joinToCurrentTransaction || opts.kind === Kind.reactive ||
         (opts.kind === Kind.transactional && outerOpts && (outerOpts.noSideEffects || outerOpts.kind === Kind.cached)) ||
         (opts.kind === Kind.cached && (ror.snapshot.changeset.sealed ||
           ror.snapshot.former.snapshot !== EMPTY_SNAPSHOT))) {
-        isolation = Isolation.fromOuterTransaction
+        isolation = Isolation.disjoinFromOuterTransaction
       }
       const token = opts.noSideEffects ? this : undefined
       const ror2 = this.relaunch(ror, isolation, opts, token, args)
@@ -172,9 +176,9 @@ export class OperationImpl implements Operation<any> {
     if (launch.operation !== this) {
       if (os.changeset !== EMPTY_SNAPSHOT.changeset) {
         const hint: string = Log.isOn ? `${Dump.obj(this.ownerHandle, m)}/init` : /* istanbul ignore next */ "MethodController/init"
-        let isolation = Isolation.joinToExistingTransaction
+        let isolation = Isolation.joinToCurrentTransaction
         if (os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT)
-          isolation = Isolation.fromOuterTransaction
+          isolation = Isolation.disjoinFromOuterTransaction
         launch = Transaction.run<Launch>({ hint, isolation, token: this }, (): Launch => {
           const h = this.ownerHandle
           let r: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
@@ -514,7 +518,7 @@ class Launch extends ValueSnapshot implements Observer {
   private indicatorEnter(mon: Indicator): void {
     const options: SnapshotOptions = {
       hint: "Indicator.enter",
-      isolation: Isolation.fromOuterAndInnerTransactions,
+      isolation: Isolation.disjoinFromOuterAndInnerTransactions,
       logging: Log.isOn && Log.opt.indicator ? undefined : Log.global }
     OperationImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
       IndicatorImpl.enter, mon, this.transaction)
@@ -525,7 +529,7 @@ class Launch extends ValueSnapshot implements Observer {
       const leave = (): void => {
         const options: SnapshotOptions = {
           hint: "Indicator.leave",
-          isolation: Isolation.fromOuterAndInnerTransactions,
+          isolation: Isolation.disjoinFromOuterAndInnerTransactions,
           logging: Log.isOn && Log.opt.indicator ? undefined : Log.DefaultLevel }
         OperationImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
           IndicatorImpl.leave, mon, this.transaction)

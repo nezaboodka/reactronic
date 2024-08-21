@@ -180,7 +180,7 @@ class TransactionImpl extends Transaction {
   }
 
   static isolate<T>(func: F<T>, ...args: any[]): T {
-    return TransactionImpl.run({ isolation: Isolation.fromOuterTransaction }, func, ...args)
+    return TransactionImpl.run({ isolation: Isolation.disjoinFromOuterTransaction }, func, ...args)
   }
 
   static outside<T>(func: F<T>, ...args: any[]): T {
@@ -212,13 +212,13 @@ class TransactionImpl extends Transaction {
 
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
     const curr = TransactionImpl.curr
-    const isolation = options?.isolation ?? Isolation.joinToExistingTransaction
+    const isolation = options?.isolation ?? Isolation.joinToCurrentTransaction
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (curr.isFinished || curr.options.isolation === Isolation.fromOuterAndInnerTransactions)
+    if (curr.isFinished || curr.options.isolation === Isolation.disjoinFromOuterAndInnerTransactions)
       return new TransactionImpl(options)
     else if (isolation === Isolation.joinAsNestedTransaction)
       return new TransactionImpl(options, curr)
-    else if (isolation !== Isolation.joinToExistingTransaction)
+    else if (isolation !== Isolation.joinToCurrentTransaction)
       return new TransactionImpl(options)
     else // isolation === Isolation.joinToExistingTransaction
       return curr
@@ -248,7 +248,7 @@ class TransactionImpl extends Transaction {
           // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
           const options: SnapshotOptions = {
             hint: `${this.hint} - restart after T${this.after.id}`,
-            isolation: this.options.isolation === Isolation.joinToExistingTransaction ? Isolation.fromOuterTransaction : this.options.isolation,
+            isolation: this.options.isolation === Isolation.joinToCurrentTransaction ? Isolation.disjoinFromOuterTransaction : this.options.isolation,
             logging: this.changeset.options.logging,
             token: this.changeset.options.token,
           }

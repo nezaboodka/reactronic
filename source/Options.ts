@@ -49,11 +49,11 @@ export enum Reentrance {
 }
 
 export enum Isolation {
-  joinToExistingTransaction = 0,
-  joinAsNestedTransaction,
-  fromOuterTransaction,
-  fromOuterAndInnerTransactions,
-  internalDisposal,
+  joinToCurrentTransaction = 0,
+  joinAsNestedTransaction = 1,
+  disjoinFromOuterTransaction = 2,
+  disjoinFromOuterAndInnerTransactions = 3,
+  disjoinForInternalDisposal = 4,
 }
 
 // Operation

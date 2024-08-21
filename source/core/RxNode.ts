@@ -481,7 +481,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
         node.outer = owner
       else
         node.outer = owner.outer
-      Transaction.run({ isolation: Isolation.fromOuterTransaction }, () => {
+      Transaction.run({ isolation: Isolation.disjoinFromOuterTransaction }, () => {
         const ctx = node.context
         if (ctx) {
           ctx.variable = variable
@@ -701,7 +701,7 @@ function triggerDeactivation(seat: MergedItem<RxNodeImpl>, isLeader: boolean, in
       else
         gFirstToDispose = gLastToDispose = seat
       if (gFirstToDispose === seat)
-        Transaction.run({ isolation: Isolation.internalDisposal, hint: `runDisposalLoop(initiator=${seat.instance.key})` }, () => {
+        Transaction.run({ isolation: Isolation.disjoinForInternalDisposal, hint: `runDisposalLoop(initiator=${seat.instance.key})` }, () => {
           void runDisposalLoop().then(NOP, error => console.log(error))
         })
     }

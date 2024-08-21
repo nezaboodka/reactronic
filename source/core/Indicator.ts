@@ -117,7 +117,7 @@ export class IndicatorImpl extends Indicator {
     if (delay >= 0) {
       if (mon.internals.activationTimeout === undefined) // only once
         mon.internals.activationTimeout = setTimeout(() =>
-          Transaction.run<void>({ hint: "Indicator.activate", isolation: Isolation.fromOuterAndInnerTransactions },
+          Transaction.run<void>({ hint: "Indicator.activate", isolation: Isolation.disjoinFromOuterAndInnerTransactions },
             IndicatorImpl.activate, mon, -1), delay) as any
     }
     else if (active)
@@ -129,7 +129,7 @@ export class IndicatorImpl extends Indicator {
       // Discard existing timer and start new one
       clearTimeout(mon.internals.deactivationTimeout)
       mon.internals.deactivationTimeout = setTimeout(() =>
-        Transaction.run<void>({ hint: "Indicator.deactivate", isolation: Isolation.fromOuterAndInnerTransactions },
+        Transaction.run<void>({ hint: "Indicator.deactivate", isolation: Isolation.disjoinFromOuterAndInnerTransactions },
           IndicatorImpl.deactivate, mon, -1), delay) as any
     }
     else if (mon.counter <= 0) {

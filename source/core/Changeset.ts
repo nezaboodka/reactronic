@@ -230,7 +230,7 @@ export class Changeset implements AbstractChangeset {
       merged[m] = ours.data[m]
       if (theirsDisposed || oursDisposed) {
         if (theirsDisposed !== oursDisposed) {
-          if (theirsDisposed || this.options.isolation !== Isolation.internalDisposal) {
+          if (theirsDisposed || this.options.isolation !== Isolation.disjoinForInternalDisposal) {
             if (Log.isOn && Log.opt.change)
               Log.write("║╠", "", `${Dump.snapshot2(h, ours.changeset, m)} <> ${Dump.snapshot2(h, theirs.changeset, m)}`, 0, " *** CONFLICT ***")
             ours.conflicts.set(m, theirs)
@@ -418,7 +418,7 @@ export const EMPTY_SNAPSHOT = new ObjectSnapshot(new Changeset({ hint: "<boot>" 
 
 export const DefaultSnapshotOptions: SnapshotOptions = Object.freeze({
   hint: "noname",
-  isolation: Isolation.joinToExistingTransaction,
+  isolation: Isolation.joinToCurrentTransaction,
   journal: undefined,
   logging: undefined,
   token: undefined,
