@@ -212,11 +212,15 @@ class TransactionImpl extends Transaction {
 
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
     const curr = TransactionImpl.curr
-    const isolation = options?.isolation
+    const isolation = options?.isolation ?? Isolation.joinToExistingTransaction
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if ((isolation !== undefined && isolation !== Isolation.joinToExistingTransaction) || curr.isFinished || curr.options.isolation === Isolation.fromOuterAndInnerTransactions)
+    if (curr.isFinished || curr.options.isolation === Isolation.fromOuterAndInnerTransactions)
       return new TransactionImpl(options)
-    else
+    else if (isolation === Isolation.joinAsNestedTransaction)
+      return new TransactionImpl(options, curr)
+    else if (isolation !== Isolation.joinToExistingTransaction)
+      return new TransactionImpl(options)
+    else // isolation === Isolation.joinToExistingTransaction
       return curr
   }
 
