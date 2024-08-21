@@ -29,7 +29,7 @@ test("reentrance.error", async t => {
   RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    RxSystem.getReaction(a.model.load).configure({reentrance: Reentrance.preventWithError})
+    RxSystem.getOperation(a.model.load).configure({reentrance: Reentrance.preventWithError})
     return a
   })
   try {
@@ -38,12 +38,12 @@ test("reentrance.error", async t => {
     t.is(app.rawField, "raw field updated")
     t.is(app.observableField, "observable field")
     t.throws(() => app.observableField = "observable field", { message: "observable property AsyncDemoView.observableField #24 can only be modified inside transaction" })
-    t.throws(() => RxSystem.getReaction(app.print).configure({ logging: TestsLoggingLevel }))
+    t.throws(() => RxSystem.getOperation(app.print).configure({ logging: TestsLoggingLevel }))
     transaction(() => {
-      RxSystem.getReaction(app.print).configure({ logging: TestsLoggingLevel })
+      RxSystem.getOperation(app.print).configure({ logging: TestsLoggingLevel })
     })
     await app.print() // initial reactive run
-    t.throws(() => RxSystem.getReaction(app.print).configure({ logging: TestsLoggingLevel }))
+    t.throws(() => RxSystem.getOperation(app.print).configure({ logging: TestsLoggingLevel }))
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { void requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
     t.is(busy.counter, 1)

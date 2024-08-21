@@ -56,9 +56,9 @@ export enum Isolation {
   internalDisposal,
 }
 
-// AbstractReaction
+// Operation
 
-export type AbstractReaction<T> = {
+export type Operation<T> = {
   readonly options: MemberOptions
   readonly args: ReadonlyArray<any>
   readonly result: T

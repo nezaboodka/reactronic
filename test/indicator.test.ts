@@ -81,7 +81,7 @@ test("indicator", async t => {
   const indicator = Indicator.create("indicator", 0, 0, 1000)
   const controller = transaction(() => {
     const result = new CompilationController()
-    RxSystem.getReaction(result.reloadCompilation).configure({ indicator })
+    RxSystem.getOperation(result.reloadCompilation).configure({ indicator })
     return result
   })
   await indicator.whenIdle()

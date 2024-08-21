@@ -21,7 +21,7 @@ export class Component<P> extends React.Component<P> {
   } // ensureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
-    return !RxSystem.getReaction(this.render).isUpToDate
+    return !RxSystem.getOperation(this.render).isUpToDate
   }
 
   componentDidMount(): void {

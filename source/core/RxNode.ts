@@ -449,7 +449,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
   configureReactronic(options: Partial<MemberOptions>): MemberOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.independentUpdate))
       throw new Error("reactronic can be configured only for elements with independent update mode and only during activation")
-    return RxSystem.getReaction(this.update).configure(options)
+    return RxSystem.getOperation(this.update).configure(options)
   }
 
   static get ownSeat(): MergedItem<RxNodeImpl> {
@@ -624,7 +624,7 @@ function triggerUpdateViaSeat(seat: MergedItem<RxNodeImpl<any>>): void {
         Transaction.outside(() => {
           if (RxSystem.isLogging)
             RxSystem.setLoggingHint(node.element, node.key)
-          RxSystem.getReaction(node.update).configure({
+          RxSystem.getOperation(node.update).configure({
             order: node.level,
           })
         })

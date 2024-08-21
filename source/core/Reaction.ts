@@ -7,7 +7,7 @@
 
 import { F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
-import { AbstractReaction, MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions, Isolation } from "../Options.js"
+import { Operation, MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions, Isolation } from "../Options.js"
 import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from "./Changeset.js"
 import { Transaction } from "./Transaction.js"
@@ -26,11 +26,11 @@ type ReuseOrRelaunchContext = {
   readonly snapshot: ObjectSnapshot
 }
 
-export class ReactionImpl implements AbstractReaction<any> {
-  readonly objectHandle: ObjectHandle
+export class OperationImpl implements Operation<any> {
+  readonly ownerHandle: ObjectHandle
   readonly memberName: MemberName
 
-  configure(options: Partial<MemberOptions>): MemberOptions { return ReactionImpl.configureImpl(this, options) }
+  configure(options: Partial<MemberOptions>): MemberOptions { return OperationImpl.configureImpl(this, options) }
   get options(): MemberOptions { return this.peek(undefined).launch.options }
   get unobs(): any { return this.peek(undefined).launch.content }
   get args(): ReadonlyArray<any> { return this.use().launch.args }
@@ -38,11 +38,11 @@ export class ReactionImpl implements AbstractReaction<any> {
   get error(): boolean { return this.use().launch.error }
   get stamp(): number { return this.use().snapshot.changeset.timestamp }
   get isUpToDate(): boolean { return this.use().isUpToDate }
-  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.objectHandle, this.memberName)})` : "markObsolete()" }, ReactionImpl.markObsolete, this) }
+  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.ownerHandle, this.memberName)})` : "markObsolete()" }, OperationImpl.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.reuseOrRelaunch(true, args).content }
 
   constructor(h: ObjectHandle, m: MemberName) {
-    this.objectHandle = h
+    this.ownerHandle = h
     this.memberName = m
   }
 
@@ -71,20 +71,20 @@ export class ReactionImpl implements AbstractReaction<any> {
     else if (Log.isOn && Log.opt.operation && (opts.logging === undefined ||
       opts.logging.operation === undefined || opts.logging.operation === true))
       Log.write(Transaction.current.isFinished ? "" : "║", " (=)",
-        `${Dump.snapshot2(ror.launch.reaction.objectHandle, ror.changeset, this.memberName)} result is reused from T${ror.launch.transaction.id}[${ror.launch.transaction.hint}]`)
+        `${Dump.snapshot2(ror.launch.operation.ownerHandle, ror.changeset, this.memberName)} result is reused from T${ror.launch.transaction.id}[${ror.launch.transaction.hint}]`)
     const t = ror.launch
-    Changeset.markUsed(t, ror.snapshot, this.memberName, this.objectHandle, t.options.kind, weak)
+    Changeset.markUsed(t, ror.snapshot, this.memberName, this.ownerHandle, t.options.kind, weak)
     return t
   }
 
-  static getControllerOf(method: F<any>): AbstractReaction<any> {
-    const ctl = Meta.get<AbstractReaction<any> | undefined>(method, Meta.Controller)
+  static getControllerOf(method: F<any>): Operation<any> {
+    const ctl = Meta.get<Operation<any> | undefined>(method, Meta.Controller)
     if (!ctl)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return ctl
   }
 
-  static configureImpl(self: ReactionImpl | undefined, options: Partial<MemberOptions>): MemberOptions {
+  static configureImpl(self: OperationImpl | undefined, options: Partial<MemberOptions>): MemberOptions {
     let launch: Launch | undefined
     if (self)
       launch = self.edit().launch
@@ -134,7 +134,7 @@ export class ReactionImpl implements AbstractReaction<any> {
 
   private peek(args: any[] | undefined): ReuseOrRelaunchContext {
     const ctx = Changeset.current()
-    const os: ObjectSnapshot = ctx.lookupObjectSnapshot(this.objectHandle, this.memberName)
+    const os: ObjectSnapshot = ctx.lookupObjectSnapshot(this.ownerHandle, this.memberName)
     const launch: Launch = this.acquireFromSnapshot(os, args)
     const isValid = launch.options.kind !== Kind.transactional && launch.cause !== BOOT_CAUSE &&
       (ctx === launch.changeset || ctx.timestamp < launch.obsoleteSince) &&
@@ -146,12 +146,12 @@ export class ReactionImpl implements AbstractReaction<any> {
   private use(): ReuseOrRelaunchContext {
     const ror = this.peek(undefined)
     Changeset.markUsed(ror.launch, ror.snapshot,
-      this.memberName, this.objectHandle, ror.launch.options.kind, true)
+      this.memberName, this.ownerHandle, ror.launch.options.kind, true)
     return ror
   }
 
   private edit(): ReuseOrRelaunchContext {
-    const h = this.objectHandle
+    const h = this.ownerHandle
     const m = this.memberName
     const ctx = Changeset.edit()
     const os: ObjectSnapshot = ctx.getEditableObjectSnapshot(h, m, Meta.Handle, this)
@@ -169,17 +169,17 @@ export class ReactionImpl implements AbstractReaction<any> {
   private acquireFromSnapshot(os: ObjectSnapshot, args: any[] | undefined): Launch {
     const m = this.memberName
     let launch: Launch = os.data[m]
-    if (launch.reaction !== this) {
+    if (launch.operation !== this) {
       if (os.changeset !== EMPTY_SNAPSHOT.changeset) {
-        const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, m)}/init` : /* istanbul ignore next */ "MethodController/init"
+        const hint: string = Log.isOn ? `${Dump.obj(this.ownerHandle, m)}/init` : /* istanbul ignore next */ "MethodController/init"
         let isolation = Isolation.joinToExistingTransaction
         if (os.changeset.sealed || os.former.snapshot !== EMPTY_SNAPSHOT)
           isolation = Isolation.fromOuterTransaction
         launch = Transaction.run<Launch>({ hint, isolation, token: this }, (): Launch => {
-          const h = this.objectHandle
+          const h = this.ownerHandle
           let r: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
           let relaunch = r.data[m] as Launch
-          if (relaunch.reaction !== this) {
+          if (relaunch.operation !== this) {
             r = Changeset.edit().getEditableObjectSnapshot(h, m, Meta.Handle, this)
             const t = new Launch(this, r.changeset, relaunch)
             if (args)
@@ -200,7 +200,7 @@ export class ReactionImpl implements AbstractReaction<any> {
         os.data[m] = initialLaunch
         launch = initialLaunch
         if (Log.isOn && Log.opt.write)
-          Log.write("║", " ++", `${Dump.obj(this.objectHandle, m)} is initialized (revision ${os.revision})`)
+          Log.write("║", " ++", `${Dump.obj(this.ownerHandle, m)} is initialized (revision ${os.revision})`)
       }
     }
     return launch
@@ -208,7 +208,7 @@ export class ReactionImpl implements AbstractReaction<any> {
 
   private relaunch(existing: ReuseOrRelaunchContext, isolation: Isolation, options: MemberOptions, token: any, args: any[] | undefined): ReuseOrRelaunchContext {
     // TODO: Cleaner implementation is needed
-    const hint: string = Log.isOn ? `${Dump.obj(this.objectHandle, this.memberName)}${args && args.length > 0 && (typeof args[0] === "number" || typeof args[0] === "string") ? ` - ${args[0]}` : ""}` : /* istanbul ignore next */ `${Dump.obj(this.objectHandle, this.memberName)}`
+    const hint: string = Log.isOn ? `${Dump.obj(this.ownerHandle, this.memberName)}${args && args.length > 0 && (typeof args[0] === "number" || typeof args[0] === "string") ? ` - ${args[0]}` : ""}` : /* istanbul ignore next */ `${Dump.obj(this.ownerHandle, this.memberName)}`
     let ror = existing
     const opts = { hint, isolation, journal: options.journal, logging: options.logging, token }
     const result = Transaction.run(opts, (argsx: any[] | undefined): any => {
@@ -216,7 +216,7 @@ export class ReactionImpl implements AbstractReaction<any> {
         ror = this.edit()
         if (Log.isOn && Log.opt.operation)
           Log.write("║", "  o", `${ror.launch.why()}`)
-        ror.launch.proceed(this.objectHandle.proxy, argsx)
+        ror.launch.proceed(this.ownerHandle.proxy, argsx)
       }
       else { // retry launch
         ror = this.peek(argsx) // re-read on retry
@@ -224,7 +224,7 @@ export class ReactionImpl implements AbstractReaction<any> {
           ror = this.edit()
           if (Log.isOn && Log.opt.operation)
             Log.write("║", "  o", `${ror.launch.why()}`)
-          ror.launch.proceed(this.objectHandle.proxy, argsx)
+          ror.launch.proceed(this.ownerHandle.proxy, argsx)
         }
       }
       return ror.launch.result
@@ -233,23 +233,23 @@ export class ReactionImpl implements AbstractReaction<any> {
     return ror
   }
 
-  private static markObsolete(self: ReactionImpl): void {
+  private static markObsolete(self: OperationImpl): void {
     const ror = self.peek(undefined)
     const ctx = ror.changeset
     ror.launch.markObsoleteDueTo(ror.launch, self.memberName, EMPTY_SNAPSHOT.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
   }
 }
 
-// Operation
+// Operation Launch
 
 class Launch extends ValueSnapshot implements Observer {
   static current?: Launch = undefined
-  static queuedReactiveFunctions: Array<Observer> = []
-  static deferredReactiveFunctions: Array<Launch> = []
+  static queuedReactiveOperations: Array<Observer> = []
+  static deferredReactiveOperations: Array<Launch> = []
 
   readonly margin: number
   readonly transaction: Transaction
-  readonly reaction: ReactionImpl
+  readonly operation: OperationImpl
   readonly changeset: AbstractChangeset
   observables: Map<ValueSnapshot, Subscription> | undefined
   options: OptionsImpl
@@ -262,11 +262,11 @@ class Launch extends ValueSnapshot implements Observer {
   obsoleteSince: number
   successor: Launch | undefined
 
-  constructor(reaction: ReactionImpl, changeset: AbstractChangeset, former: Launch | OptionsImpl) {
+  constructor(operation: OperationImpl, changeset: AbstractChangeset, former: Launch | OptionsImpl) {
     super(undefined)
     this.margin = Launch.current ? Launch.current.margin + 1 : 1
     this.transaction = Transaction.current
-    this.reaction = reaction
+    this.operation = operation
     this.changeset = changeset
     this.observables = new Map<ValueSnapshot, Subscription>()
     if (former instanceof Launch) {
@@ -291,7 +291,7 @@ class Launch extends ValueSnapshot implements Observer {
 
   get isOperation(): boolean { return true } // override
   get originSnapshotId(): number { return this.changeset.id } // override
-  hint(): string { return `${Dump.snapshot2(this.reaction.objectHandle, this.changeset, this.reaction.memberName)}` } // override
+  hint(): string { return `${Dump.snapshot2(this.operation.ownerHandle, this.changeset, this.operation.memberName)}` } // override
   get order(): number { return this.options.order }
 
   get ["#this#"](): string {
@@ -302,7 +302,7 @@ class Launch extends ValueSnapshot implements Observer {
     let cause: string
     if (this.cause)
       cause = `   ◀◀   ${this.cause}`
-    else if (this.reaction.options.kind === Kind.transactional)
+    else if (this.operation.options.kind === Kind.transactional)
       cause = "   ◀◀   operation"
     else
       cause = `   ◀◀   T${this.changeset.id}[${this.changeset.hint}]`
@@ -322,7 +322,7 @@ class Launch extends ValueSnapshot implements Observer {
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, "║", "‾\\", `${this.hint()} - step in  `, 0, "        │")
       const started = Date.now()
-      const result = ReactionImpl.proceedWithinGivenLaunch<T>(this, func, ...args)
+      const result = OperationImpl.proceedWithinGivenLaunch<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, "║", "_/", `${this.hint()} - step out `, 0, this.started > 0 ? "        │" : "")
@@ -338,7 +338,7 @@ class Launch extends ValueSnapshot implements Observer {
       this.args = args
     this.obsoleteSince = MAX_REVISION
     if (!this.error)
-      ReactionImpl.proceedWithinGivenLaunch<void>(this, Launch.proceed, this, proxy)
+      OperationImpl.proceedWithinGivenLaunch<void>(this, Launch.proceed, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
@@ -366,7 +366,7 @@ class Launch extends ValueSnapshot implements Observer {
         if (isReactive)
           obsolete.push(this)
         else
-          this.observers?.forEach(s => s.markObsoleteDueTo(this, this.reaction.memberName, this.changeset, this.reaction.objectHandle, why, since, obsolete))
+          this.observers?.forEach(s => s.markObsoleteDueTo(this, this.operation.memberName, this.changeset, this.operation.ownerHandle, why, since, obsolete))
 
         // Cancel own transaction if it is still in progress
         const tran = this.transaction
@@ -388,7 +388,7 @@ class Launch extends ValueSnapshot implements Observer {
     if (now || hold < 0) {
       if (this.isNotUpToDate()) {
         try {
-          const launch: Launch = this.reaction.reuseOrRelaunch(false, undefined)
+          const launch: Launch = this.operation.reuseOrRelaunch(false, undefined)
           if (launch.result instanceof Promise)
             launch.result.catch(error => {
               if (launch.options.kind === Kind.reactive)
@@ -468,7 +468,7 @@ class Launch extends ValueSnapshot implements Observer {
     if (this.options.indicator)
       this.indicatorEnter(this.options.indicator)
     if (Log.isOn && Log.opt.operation)
-      Log.write("║", "‾\\", `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.reaction.objectHandle, this.reaction.memberName)} ]`)
+      Log.write("║", "‾\\", `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.operation.ownerHandle, this.operation.memberName)} ]`)
     this.started = Date.now()
   }
 
@@ -516,7 +516,7 @@ class Launch extends ValueSnapshot implements Observer {
       hint: "Indicator.enter",
       isolation: Isolation.fromOuterAndInnerTransactions,
       logging: Log.isOn && Log.opt.indicator ? undefined : Log.global }
-    ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
+    OperationImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
       IndicatorImpl.enter, mon, this.transaction)
   }
 
@@ -527,7 +527,7 @@ class Launch extends ValueSnapshot implements Observer {
           hint: "Indicator.leave",
           isolation: Isolation.fromOuterAndInnerTransactions,
           logging: Log.isOn && Log.opt.indicator ? undefined : Log.DefaultLevel }
-        ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
+        OperationImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
           IndicatorImpl.leave, mon, this.transaction)
       }
       this.transaction.whenFinished().then(leave, leave)
@@ -535,14 +535,14 @@ class Launch extends ValueSnapshot implements Observer {
   }
 
   private addToDeferredReactiveFunctions(): void {
-    Launch.deferredReactiveFunctions.push(this)
-    if (Launch.deferredReactiveFunctions.length === 1)
+    Launch.deferredReactiveOperations.push(this)
+    if (Launch.deferredReactiveOperations.length === 1)
       setTimeout(Launch.processDeferredReactiveFunctions, 0)
   }
 
   private static processDeferredReactiveFunctions(): void {
-    const deferred = Launch.deferredReactiveFunctions
-    Launch.deferredReactiveFunctions = [] // reset
+    const deferred = Launch.deferredReactiveOperations
+    Launch.deferredReactiveOperations = [] // reset
     for (const x of deferred)
       x.relaunchIfNotUpToDate(true, true)
   }
@@ -651,23 +651,23 @@ class Launch extends ValueSnapshot implements Observer {
   }
 
   private static enqueueReactiveFunctionsToRun(reactive: Array<Observer>): void {
-    const queue = Launch.queuedReactiveFunctions
+    const queue = Launch.queuedReactiveOperations
     const isReactiveLoopRequired = queue.length === 0
     for (const r of reactive)
       queue.push(r)
     if (isReactiveLoopRequired)
-      ReactionImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactiveFunctions)
+      OperationImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactiveOperations)
   }
 
-  private static processQueuedReactiveFunctions(): void {
-    const queue = Launch.queuedReactiveFunctions
+  private static processQueuedReactiveOperations(): void {
+    const queue = Launch.queuedReactiveOperations
     let i = 0
     while (i < queue.length) {
       const reactive = queue[i]
       reactive.relaunchIfNotUpToDate(false, true)
       i++
     }
-    Launch.queuedReactiveFunctions = [] // reset loop
+    Launch.queuedReactiveOperations = [] // reset loop
   }
 
   private unsubscribeFromAllObservables(): void {
@@ -722,7 +722,7 @@ class Launch extends ValueSnapshot implements Observer {
   }
 
   private static createOperation(h: ObjectHandle, m: MemberName, options: OptionsImpl): F<any> {
-    const rx = new ReactionImpl(h, m)
+    const rx = new OperationImpl(h, m)
     const operation: F<any> = (...args: any[]): any => {
       return rx.reuseOrRelaunch(false, args).result
     }
@@ -734,7 +734,7 @@ class Launch extends ValueSnapshot implements Observer {
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
     let launch: Launch | undefined = initial[m]
-    const rx = launch ? launch.reaction : new ReactionImpl(EMPTY_HANDLE, m)
+    const rx = launch ? launch.operation : new OperationImpl(EMPTY_HANDLE, m)
     const opts = launch ? launch.options : OptionsImpl.INITIAL
     initial[m] = launch = new Launch(rx, EMPTY_SNAPSHOT.changeset, new OptionsImpl(getter, setter, opts, options, implicit))
     // Add to the list if it's a reactive function
@@ -769,10 +769,10 @@ class Launch extends ValueSnapshot implements Observer {
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, "rWhy", {
-        get: ReactionImpl.why, configurable: false, enumerable: false,
+        get: OperationImpl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(globalThis, "rBriefWhy", {
-        get: ReactionImpl.briefWhy, configurable: false, enumerable: false,
+        get: OperationImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -780,10 +780,10 @@ class Launch extends ValueSnapshot implements Observer {
     }
     try {
       Object.defineProperty(global, "rWhy", {
-        get: ReactionImpl.why, configurable: false, enumerable: false,
+        get: OperationImpl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(global, "rBriefWhy", {
-        get: ReactionImpl.briefWhy, configurable: false, enumerable: false,
+        get: OperationImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -814,7 +814,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Launch)
-    result = `#${value.reaction.objectHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.originSnapshotId !== undefined && value.originSnapshotId !== 0 ? `t${value.originSnapshotId}` : ""}`
+    result = `#${value.operation.ownerHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.originSnapshotId !== undefined && value.originSnapshotId !== 0 ? `t${value.originSnapshotId}` : ""}`
   else if (value === Meta.Undefined)
     result = "undefined"
   else if (typeof(value) === "string")

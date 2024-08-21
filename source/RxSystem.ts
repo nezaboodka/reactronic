@@ -7,18 +7,18 @@
 
 import { F } from "./util/Utils.js"
 import { Log } from "./util/Dbg.js"
-import {AbstractReaction, Kind, MemberOptions, LoggingOptions, ProfilingOptions } from "./Options.js"
+import { Operation, Kind, MemberOptions, LoggingOptions, ProfilingOptions } from "./Options.js"
 import { Meta, ObjectHandle } from "./core/Data.js"
 import { Changeset } from "./core/Changeset.js"
 import { Mvcc } from "./core/Mvcc.js"
 import { Transaction } from "./core/Transaction.js"
-import { ReactionImpl } from "./core/Reaction.js"
+import { OperationImpl } from "./core/Reaction.js"
 
 export class RxSystem {
-  static why(brief: boolean = false): string { return brief ? ReactionImpl.briefWhy() : ReactionImpl.why() }
-  static getReaction<T>(method: F<T>): AbstractReaction<T> { return ReactionImpl.getControllerOf(method) }
-  static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return RxSystem.getReaction(method as any as F<T>).pullLastResult(args) }
-  static configureCurrentOperation(options: Partial<MemberOptions>): MemberOptions { return ReactionImpl.configureImpl(undefined, options) }
+  static why(brief: boolean = false): string { return brief ? OperationImpl.briefWhy() : OperationImpl.why() }
+  static getOperation<T>(method: F<T>): Operation<T> { return OperationImpl.getControllerOf(method) }
+  static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return RxSystem.getOperation(method as any as F<T>).pullLastResult(args) }
+  static configureCurrentOperation(options: Partial<MemberOptions>): MemberOptions { return OperationImpl.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Mvcc.setObjectOptions(obj, options) }
   static getRevisionOf(obj: any): number { return obj[Meta.Revision] }
   static takeSnapshot<T>(obj: T): T { return Changeset.takeSnapshot(obj) }
@@ -42,7 +42,7 @@ export function transaction<T>(action: F<T>, ...args: any[]): T {
 }
 
 export function unobs<T>(func: F<T>, ...args: any[]): T {
-  return ReactionImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
+  return OperationImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
 export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
