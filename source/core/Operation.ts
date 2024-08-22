@@ -131,7 +131,7 @@ export class OperationImpl implements Operation<any> {
 
   private peek(args: any[] | undefined): ReuseOrRelaunchContext {
     const ctx = Changeset.current()
-    const os: ObjectSnapshot = ctx.lookupObjectSnapshot(this.ownerHandle, this.memberName)
+    const os: ObjectSnapshot = ctx.lookupObjectSnapshot(this.ownerHandle, this.memberName, false)
     const launch: Launch = this.acquireFromSnapshot(os, args)
     const isValid = launch.options.kind !== Kind.transactional && launch.cause !== BOOT_CAUSE &&
       (ctx === launch.changeset || ctx.timestamp < launch.obsoleteSince) &&
@@ -711,7 +711,7 @@ class Launch extends ValueSnapshot implements Observer {
   }
 
   private static canSubscribeTo(observable: ValueSnapshot, os: ObjectSnapshot, parent: Changeset | undefined, m: MemberName, h: ObjectHandle, timestamp: number): boolean {
-    const parentSnapshot = parent ? parent.lookupObjectSnapshot(h, m) : h.applied
+    const parentSnapshot = parent ? parent.lookupObjectSnapshot(h, m, false) : h.applied
     const observableParent = parentSnapshot.data[m]
     let result = observable === observableParent || (
       !os.changeset.sealed && os.former.snapshot.data[m] === observableParent)
