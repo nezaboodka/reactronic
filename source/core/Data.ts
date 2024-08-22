@@ -83,16 +83,16 @@ export class ObjectHandle {
   readonly id: number
   readonly data: any
   readonly proxy: any
-  committed: ObjectSnapshot
+  applied: ObjectSnapshot
   editing?: ObjectSnapshot
   editors: number
   hint: string
 
-  constructor(data: any, proxy: any, handler: ProxyHandler<ObjectHandle>, committed: ObjectSnapshot, hint: string) {
+  constructor(data: any, proxy: any, handler: ProxyHandler<ObjectHandle>, applied: ObjectSnapshot, hint: string) {
     this.id = ++ObjectHandle.generator
     this.data = data
     this.proxy = proxy || new Proxy<ObjectHandle>(this, handler)
-    this.committed = committed
+    this.applied = applied
     this.editing = undefined
     this.editors = 0
     this.hint = hint

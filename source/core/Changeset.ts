@@ -93,7 +93,7 @@ export class Changeset implements AbstractChangeset {
     if (!os) {
       const p = this.parent
       if (!p) { // if nested transaction
-        os = h.committed
+        os = h.applied
         while (os !== EMPTY_SNAPSHOT && os.changeset.timestamp > this.timestamp)
           os = os.former.snapshot
       }
@@ -106,7 +106,7 @@ export class Changeset implements AbstractChangeset {
   getObjectSnapshot(h: ObjectHandle, m: MemberName): ObjectSnapshot {
     const r = this.lookupObjectSnapshot(h, m)
     if (r === EMPTY_SNAPSHOT)
-      throw misuse(`${Dump.obj(h, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} (last committed T${h.committed.changeset.id}[${h.committed.changeset.hint}])`)
+      throw misuse(`${Dump.obj(h, m)} is not yet available for T${this.id}[${this.hint}] because ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} is not yet applied (last applied T${h.applied.changeset.id}[${h.applied.changeset.hint}])`)
     return r
   }
 
@@ -171,7 +171,7 @@ export class Changeset implements AbstractChangeset {
     // if (m !== Meta.Handle && value !== Meta.Handle && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.snapshot !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.snapshot(r, m)}`)
     // if (r === ROOT_REV && m !== Meta.Handle && value !== Meta.Handle) /* istanbul ignore next */
-    //   throw misuse(`${Hints.snapshot(r, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `, uncommitted T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''} (last committed T${h.head.changeset.id}[${h.head.changeset.hint}])`)
+    //   throw misuse(`${Hints.snapshot(r, m)} is not yet available for T${this.id}[${this.hint}] because of unfinished ${h.editing ? `, unfinished T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''} (last applied T${h.head.changeset.id}[${h.head.changeset.hint}])`)
     if (m !== Meta.Handle) {
       if (value !== Meta.Handle) {
         if (os.changeset !== this || os.former.snapshot !== EMPTY_SNAPSHOT) {
@@ -183,7 +183,7 @@ export class Changeset implements AbstractChangeset {
         }
       }
       if (os === EMPTY_SNAPSHOT)
-        throw misuse(`${Dump.snapshot(os, m)} is not yet available for T${this.id}[${this.hint}] because of uncommitted ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} (last committed T${h.committed.changeset.id}[${h.committed.changeset.hint}])`)
+        throw misuse(`${Dump.snapshot(os, m)} is not yet available for T${this.id}[${this.hint}] because ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} is not yet applied (last applied T${h.applied.changeset.id}[${h.applied.changeset.hint}])`)
     }
     return os.changeset !== this && !this.sealed
   }
@@ -209,7 +209,7 @@ export class Changeset implements AbstractChangeset {
     let conflicts: ObjectSnapshot[] | undefined = undefined
     if (this.items.size > 0) {
       this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-        const theirs = this.parent ? this.parent.lookupObjectSnapshot(h, Meta.Handle) : h.committed
+        const theirs = this.parent ? this.parent.lookupObjectSnapshot(h, Meta.Handle) : h.applied
         if (os.former.snapshot !== theirs || this.parent) {
           const merged = this.merge(h, os, theirs, false /*, this.parent !== undefined*/)
           if (os.conflicts.size > 0) {
@@ -296,7 +296,7 @@ export class Changeset implements AbstractChangeset {
         if (this.parent)
           this.parent.replaceObjectSnapshot(h, os)
         else
-          h.committed = os
+          h.applied = os
         if (Changeset.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Changeset.totalObjectSnapshotCount++
           if (os.former.snapshot === EMPTY_SNAPSHOT)
