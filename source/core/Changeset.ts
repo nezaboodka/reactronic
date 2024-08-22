@@ -133,7 +133,14 @@ export class Changeset implements AbstractChangeset {
     return os
   }
 
-  replaceObjectSnapshot(h: ObjectHandle, incoming: ObjectSnapshot): void {
+  applyObjectChanges(h: ObjectHandle, os: ObjectSnapshot): void {
+    if (this.parent)
+      this.parent.applyObjectChangesFromNestedChangeset(h, os)
+    else
+      h.applied = os
+  }
+
+  applyObjectChangesFromNestedChangeset(h: ObjectHandle, incoming: ObjectSnapshot): void {
     const existing: ObjectSnapshot = this.lookupObjectSnapshot(h, Meta.Handle)
     if (this.isNewSnapshotRequired(h, existing, Meta.Handle, undefined, undefined, undefined)) {
       this.bumpBy(existing.changeset.timestamp)
@@ -292,11 +299,7 @@ export class Changeset implements AbstractChangeset {
       if (!error) {
         // if (this.timestamp < h.head.snapshot.timestamp)
         //   console.log(`!!! timestamp downgrade detected ${h.head.snapshot.timestamp} -> ${this.timestamp} !!!`)
-        // Switch object to a new version in parent/global snapshot
-        if (this.parent)
-          this.parent.replaceObjectSnapshot(h, os)
-        else
-          h.applied = os
+        this.applyObjectChanges(h, os)
         if (Changeset.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Changeset.totalObjectSnapshotCount++
           if (os.former.snapshot === EMPTY_SNAPSHOT)
