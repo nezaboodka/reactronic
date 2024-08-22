@@ -123,7 +123,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       const cs = Changeset.current()
       const os: ObjectSnapshot = cs.getObjectSnapshot(h, m)
       result = os.data[m]
-      if (result instanceof ValueSnapshot && !result.isOperation) {
+      if (result instanceof ValueSnapshot && !result.isLaunch) {
         if (this.isObservable)
           Changeset.markUsed(result, os, m, h, Kind.plain, false)
         result = result.content
@@ -140,7 +140,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     const cs = Changeset.edit()
     const os: ObjectSnapshot = cs.getEditableObjectSnapshot(h, m, value)
     if (os !== EMPTY_SNAPSHOT)
-      cs.setObjectMemberValue(h, m, os, value, receiver, Mvcc.sensitivity)
+      cs.setObjectDataMemberValue(h, m, os, value, receiver, Mvcc.sensitivity)
     else
       h.data[m] = value
     return true
@@ -172,7 +172,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     const result = []
     for (const m of Object.getOwnPropertyNames(os.data)) {
       const value = os.data[m]
-      if (!(value instanceof ValueSnapshot) || !value.isOperation)
+      if (!(value instanceof ValueSnapshot) || !value.isLaunch)
         result.push(m)
     }
     return result

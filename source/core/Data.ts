@@ -23,7 +23,7 @@ export type AbstractChangeset = {
 export class ValueSnapshot<T = any> {
   content: T
   observers?: Set<Observer>
-  get isOperation(): boolean { return false }
+  get isLaunch(): boolean { return false }
   get originSnapshotId(): number | undefined { return 0 }
   constructor(content: T) { this.content = content }
 }
@@ -64,7 +64,7 @@ export class ObjectSnapshot {
   }
 
   get revision(): number {
-    return (this.data[Meta.Revision] as ValueSnapshot).content
+    return (this.data[Meta.Revision] as ValueSnapshot)?.content ?? 0
   }
 
   get disposed(): boolean { return this.revision < 0 }

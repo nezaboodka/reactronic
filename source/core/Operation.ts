@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import { F } from "../util/Utils.js"
-import { Log, misuse } from "../util/Dbg.js"
+import { fatal, Log, misuse } from "../util/Dbg.js"
 import { Operation, MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions, Isolation } from "../Options.js"
 import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Observer, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_SNAPSHOT, MAX_REVISION } from "./Changeset.js"
-import { Transaction } from "./Transaction.js"
+import { Transaction, TransactionImpl } from "./Transaction.js"
 import { Indicator, IndicatorImpl } from "./Indicator.js"
 import { Mvcc, OptionsImpl } from "./Mvcc.js"
 import { JournalImpl } from "./Journal.js"
@@ -154,7 +154,7 @@ export class OperationImpl implements Operation<any> {
     const os: ObjectSnapshot = ctx.getEditableObjectSnapshot(h, m, Meta.Handle, this)
     let launch: Launch = this.acquireFromSnapshot(os, undefined)
     if (launch.changeset !== os.changeset) {
-      const relaunch = new Launch(this, os.changeset, launch)
+      const relaunch = new Launch(Transaction.current, this, os.changeset, launch, false)
       os.data[m] = relaunch.reenterOver(launch)
       ctx.bumpBy(os.former.snapshot.changeset.timestamp)
       Changeset.markEdited(launch, relaunch, true, os, m, h)
@@ -178,7 +178,7 @@ export class OperationImpl implements Operation<any> {
           let relaunch = r.data[m] as Launch
           if (relaunch.operation !== this) {
             r = Changeset.edit().getEditableObjectSnapshot(h, m, Meta.Handle, this)
-            const t = new Launch(this, r.changeset, relaunch)
+            const t = new Launch(Transaction.current, this, r.changeset, relaunch, false)
             if (args)
               t.args = args
             t.cause = BOOT_CAUSE
@@ -190,7 +190,7 @@ export class OperationImpl implements Operation<any> {
         })
       }
       else {
-        const initialLaunch = new Launch(this, os.changeset, launch)
+        const initialLaunch = new Launch(Transaction.current, this, os.changeset, launch, false)
         if (args)
           initialLaunch.args = args
         initialLaunch.cause = BOOT_CAUSE
@@ -259,40 +259,60 @@ class Launch extends ValueSnapshot implements Observer {
   obsoleteSince: number
   successor: Launch | undefined
 
-  constructor(operation: OperationImpl, changeset: AbstractChangeset, former: Launch | OptionsImpl) {
+  constructor(transaction: Transaction, operation: OperationImpl, changeset: AbstractChangeset, former: Launch | OptionsImpl, clone: boolean) {
     super(undefined)
     this.margin = Launch.current ? Launch.current.margin + 1 : 1
-    this.transaction = Transaction.current
+    this.transaction = transaction
     this.operation = operation
     this.changeset = changeset
-    this.observables = new Map<ValueSnapshot, Subscription>()
     if (former instanceof Launch) {
       this.options = former.options
-      this.args = former.args
-      // this.value = former.value
       this.cause = former.obsoleteDueTo
+      this.args = former.args
+      if (clone) {
+        this.observables = former.observables
+        this.result = former.result
+        this.error = former.error
+        this.started = former.started
+        this.obsoleteSince = former.obsoleteSince
+        this.obsoleteDueTo = former.obsoleteDueTo
+        this.successor = former.successor
+      }
+      else {
+        this.observables = new Map<ValueSnapshot, Subscription>()
+        this.result = undefined
+        this.error = undefined
+        this.started = 0
+        this.obsoleteSince = 0
+        this.obsoleteDueTo = undefined
+        this.successor = undefined
+      }
     }
     else { // former: OptionsImpl
+      this.observables = new Map<ValueSnapshot, Subscription>()
       this.options = former
-      this.args = BOOT_ARGS
       this.cause = undefined
-      // this.value = undefined
+      this.args = BOOT_ARGS
+      this.result = undefined
+      this.error = undefined
+      this.started = 0
+      this.obsoleteSince = 0
+      this.obsoleteDueTo = undefined
+      this.successor = undefined
     }
-    // this.result = undefined
-    // this.error = undefined
-    this.started = 0
-    this.obsoleteSince = 0
-    this.obsoleteDueTo = undefined
-    this.successor = undefined
   }
 
-  get isOperation(): boolean { return true } // override
+  get isLaunch(): boolean { return true } // override
   get originSnapshotId(): number { return this.changeset.id } // override
   hint(): string { return `${Dump.snapshot2(this.operation.ownerHandle, this.changeset, this.operation.memberName)}` } // override
   get order(): number { return this.options.order }
 
   get ["#this#"](): string {
     return `Operation: ${this.why()}`
+  }
+
+  clone(t: Transaction, cs: AbstractChangeset): ValueSnapshot {
+    return new Launch(t, this.operation, cs, this, true)
   }
 
   why(): string {
@@ -342,7 +362,7 @@ class Launch extends ValueSnapshot implements Observer {
 
   markObsoleteDueTo(observable: ValueSnapshot, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, obsolete: Observer[]): void {
     if (this.observables !== undefined) { // if not yet marked as obsolete
-      const skip = !observable.isOperation &&
+      const skip = !observable.isLaunch &&
         changeset === this.changeset /* &&
         snapshot.changes.has(memberName) */
       if (!skip) {
@@ -454,6 +474,8 @@ class Launch extends ValueSnapshot implements Observer {
   private static proceed(launch: Launch, proxy: any): void {
     launch.enter()
     try {
+      if (launch.options.getter === undefined)
+        console.log("(!)")
       launch.result = launch.options.getter.call(proxy, ...launch.args)
     }
     finally {
@@ -656,6 +678,13 @@ class Launch extends ValueSnapshot implements Observer {
       OperationImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactiveOperations)
   }
 
+  private static cloneValueSnapshot(vs: ValueSnapshot, target: Transaction): ValueSnapshot {
+    if (vs instanceof Launch)
+      return new Launch(target, vs.operation, target.changeset, vs, true)
+    else
+      throw fatal(new Error("cloneValueSnapshot is supposed to clone Launch instance only"))
+  }
+
   private static processQueuedReactiveOperations(): void {
     const queue = Launch.queuedReactiveOperations
     let i = 0
@@ -735,7 +764,7 @@ class Launch extends ValueSnapshot implements Observer {
     let launch: Launch | undefined = initial[m]
     const rx = launch ? launch.operation : new OperationImpl(EMPTY_HANDLE, m)
     const opts = launch ? launch.options : OptionsImpl.INITIAL
-    initial[m] = launch = new Launch(rx, EMPTY_SNAPSHOT.changeset, new OptionsImpl(getter, setter, opts, options, implicit))
+    initial[m] = launch = new Launch(Transaction.current, rx, EMPTY_SNAPSHOT.changeset, new OptionsImpl(getter, setter, opts, options, implicit), false)
     // Add to the list if it's a reactive function
     if (launch.options.kind === Kind.reactive && launch.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.acquire(proto, Meta.Reactive)
@@ -763,6 +792,7 @@ class Launch extends ValueSnapshot implements Observer {
     Changeset.propagateAllChangesThroughSubscriptions = Launch.propagateAllChangesThroughSubscriptions // override
     Changeset.revokeAllSubscriptions = Launch.revokeAllSubscriptions // override
     Changeset.enqueueReactiveFunctionsToRun = Launch.enqueueReactiveFunctionsToRun
+    TransactionImpl.cloneValueSnapshot = Launch.cloneValueSnapshot
     Mvcc.createOperation = Launch.createOperation // override
     Mvcc.rememberOperationOptions = Launch.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override

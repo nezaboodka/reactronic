@@ -100,7 +100,7 @@ export class Changeset implements AbstractChangeset {
       else
         os = parent.lookupObjectSnapshot(h, m, editing)
     }
-    else if (!editing && parent && !os.changes.has(m))
+    else if (!editing && parent && !os.changes.has(m) && os.former.snapshot !== EMPTY_SNAPSHOT)
       os = parent.lookupObjectSnapshot(h, m, editing)
     return os
   }
@@ -135,7 +135,7 @@ export class Changeset implements AbstractChangeset {
     return os
   }
 
-  setObjectMemberValue(h: ObjectHandle, m: MemberName, os: ObjectSnapshot, value: any, receiver: any, sensitivity: boolean): void {
+  setObjectDataMemberValue(h: ObjectHandle, m: MemberName, os: ObjectSnapshot, value: any, receiver: any, sensitivity: boolean): void {
     let curr = os.data[m] as ValueSnapshot
     if (curr !== undefined || (os.former.snapshot.changeset === EMPTY_SNAPSHOT.changeset && (m in h.data) === false)) {
       if (curr === undefined || curr.content !== value || sensitivity) {
@@ -152,23 +152,6 @@ export class Changeset implements AbstractChangeset {
     }
     else
       Reflect.set(h.data, m, value, receiver)
-  }
-
-  applyObjectChanges(h: ObjectHandle, os: ObjectSnapshot): void {
-    const parent = this.parent
-    if (parent)
-      this.applyObjectChangesToAnotherChangeset(h, os, parent)
-    else
-      h.applied = os
-  }
-
-  applyObjectChangesToAnotherChangeset(h: ObjectHandle, os: ObjectSnapshot, another: Changeset): void {
-    const target = another.getEditableObjectSnapshot(h, Meta.Undefined, undefined)
-    os.changes.forEach((o, m) => {
-      this.setObjectMemberValue(h, m, target, (os.data[m] as ValueSnapshot).content, undefined, false)
-    })
-    // if (Log.isOn && Log.opt.write)
-    //   Log.write("║", " !!", `${Dump.obj(h)} - snapshot is replaced (revision ${os.revision})`)
   }
 
   static takeSnapshot<T>(obj: T): T {
@@ -206,8 +189,8 @@ export class Changeset implements AbstractChangeset {
           //   throw misuse(`uninitialized member is detected: ${Hints.snapshot(r, m)}`)
         }
       }
-      if (os === EMPTY_SNAPSHOT)
-        throw misuse(`${Dump.snapshot(os, m)} is not yet available for T${this.id}[${this.hint}] because ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} is not yet applied (last applied T${h.applied.changeset.id}[${h.applied.changeset.hint}])`)
+      // if (os === EMPTY_SNAPSHOT)
+      //   throw misuse(`${Dump.snapshot(os, m)} is not yet available for T${this.id}[${this.hint}] because ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} is not yet applied (last applied T${h.applied.changeset.id}[${h.applied.changeset.hint}])`)
     }
     return os.changeset !== this && !this.sealed
   }
@@ -305,50 +288,23 @@ export class Changeset implements AbstractChangeset {
     return counter
   }
 
-  applyOrDiscard(error?: any): Array<Observer> {
+  seal(): void {
     this.sealed = true
-    this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-      if (!this.parent)
-        Changeset.sealObjectSnapshot(h, os)
-      h.editors--
-      if (h.editors === 0) // уходя гасите свет - последний уходящий убирает за всеми
-        h.editing = undefined
-      if (!error) {
-        // if (this.timestamp < h.head.snapshot.timestamp)
-        //   console.log(`!!! timestamp downgrade detected ${h.head.snapshot.timestamp} -> ${this.timestamp} !!!`)
-        this.applyObjectChanges(h, os)
-        if (Changeset.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
-          Changeset.totalObjectSnapshotCount++
-          if (os.former.snapshot === EMPTY_SNAPSHOT)
-            Changeset.totalObjectHandleCount++
-        }
-      }
-    })
-    if (Log.isOn) {
-      if (Log.opt.change && !error && !this.parent) {
-        this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-          const members: string[] = []
-          os.changes.forEach((o, m) => members.push(m.toString()))
-          const s = members.join(", ")
-          Log.write("║", "√", `${Dump.snapshot2(h, os.changeset)} (${s}) is ${os.former.snapshot === EMPTY_SNAPSHOT ? "constructed" : `applied over #${h.id}t${os.former.snapshot.changeset.id}s${os.former.snapshot.changeset.timestamp}`}`)
-        })
-      }
-      if (Log.opt.transaction)
-        Log.write(this.revision < UNDEFINED_REVISION ? "╚══" : /* istanbul ignore next */ "═══", `s${this.revision}`, `${this.hint} - ${error ? "CANCEL" : "APPLY"}(${this.items.size})${error ? ` - ${error}` : ""}`)
-    }
-    if (!error && !this.parent)
-      Changeset.propagateAllChangesThroughSubscriptions(this)
-    return this.obsolete
   }
 
-  static sealObjectSnapshot(h: ObjectHandle, os: ObjectSnapshot): void {
-    if (!os.disposed)
-      os.changes.forEach((o, m) => Changeset.sealValueSnapshot(os.data[m], m, h.proxy.constructor.name))
-    else
-      for (const m in os.former.snapshot.data)
-        os.data[m] = Meta.Undefined
-    if (Log.isOn)
-      Changeset.freezeObjectSnapshot(os)
+  sealObjectSnapshot(h: ObjectHandle, os: ObjectSnapshot): void {
+    if (!this.parent) {
+      if (!os.disposed)
+        os.changes.forEach((o, m) => Changeset.sealValueSnapshot(os.data[m], m, h.proxy.constructor.name))
+      else
+        for (const m in os.former.snapshot.data)
+          os.data[m] = Meta.Undefined
+      if (Log.isOn)
+        Changeset.freezeObjectSnapshot(os)
+    }
+    h.editors--
+    if (h.editors === 0) // уходя гасите свет - последний уходящий убирает за всеми
+      h.editing = undefined
   }
 
   static sealValueSnapshot(o: ValueSnapshot | symbol, m: MemberName, typeName: string): void {
@@ -413,7 +369,7 @@ export class Changeset implements AbstractChangeset {
   static _init(): void {
     const boot = EMPTY_SNAPSHOT.changeset as Changeset // workaround
     boot.acquire(boot)
-    boot.applyOrDiscard()
+    boot.seal()
     boot.triggerGarbageCollection()
     Changeset.freezeObjectSnapshot(EMPTY_SNAPSHOT)
     Changeset.idGen = 100
