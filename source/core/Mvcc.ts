@@ -137,25 +137,10 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   }
 
   set(h: ObjectHandle, m: MemberName, value: any, receiver: any): boolean {
-    const os: ObjectSnapshot = Changeset.edit().getEditableObjectSnapshot(h, m, value)
-    if (os !== EMPTY_SNAPSHOT) {
-      let curr = os.data[m] as ValueSnapshot
-      if (curr !== undefined || (os.former.snapshot.changeset === EMPTY_SNAPSHOT.changeset && (m in h.data) === false)) {
-        if (curr === undefined || curr.content !== value || Mvcc.sensitivity) {
-          const existing = curr?.content
-          if (os.former.snapshot.data[m] === curr) {
-            curr = os.data[m] = new ValueSnapshot(value)
-            Changeset.markEdited(existing, value, true, os, m, h)
-          }
-          else {
-            curr.content = value
-            Changeset.markEdited(existing, value, true, os, m, h)
-          }
-        }
-      }
-      else
-        Reflect.set(h.data, m, value, receiver)
-    }
+    const cs = Changeset.edit()
+    const os: ObjectSnapshot = cs.getEditableObjectSnapshot(h, m, value)
+    if (os !== EMPTY_SNAPSHOT)
+      cs.setObjectMemberValue(h, m, os, value, receiver, Mvcc.sensitivity)
     else
       h.data[m] = value
     return true

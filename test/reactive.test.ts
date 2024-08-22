@@ -46,7 +46,7 @@ export class ReactiveDemo extends ObservableObject {
   @reactive
   protected nestedReaction(): void {
     this.content
-    this.title = "Title/3 (nested)"
+    this.title = "Title/Nested"
     this.titleNested = "Def"
     // this.title
   }
@@ -55,10 +55,10 @@ export class ReactiveDemo extends ObservableObject {
 test("reactive", t => {
   RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const demo = transaction(() => new ReactiveDemo())
-  t.is(demo.title, "Title/1")
+  t.is(demo.title, "Title/Nested")
   t.is(demo.content, "Content/1")
-  t.is(demo.rev, 11)
+  t.is(demo.rev, 6)
   demo.setData("Hello")
-  t.is(demo.rev, 15)
-  t.is(RxSystem.getRevisionOf(demo), 15)
+  t.is(demo.rev, 10)
+  t.is(RxSystem.getRevisionOf(demo), 10)
 })

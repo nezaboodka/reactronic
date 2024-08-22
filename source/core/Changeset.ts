@@ -135,25 +135,40 @@ export class Changeset implements AbstractChangeset {
     return os
   }
 
+  setObjectMemberValue(h: ObjectHandle, m: MemberName, os: ObjectSnapshot, value: any, receiver: any, sensitivity: boolean): void {
+    let curr = os.data[m] as ValueSnapshot
+    if (curr !== undefined || (os.former.snapshot.changeset === EMPTY_SNAPSHOT.changeset && (m in h.data) === false)) {
+      if (curr === undefined || curr.content !== value || sensitivity) {
+        const existing = curr?.content
+        if (os.former.snapshot.data[m] === curr) {
+          curr = os.data[m] = new ValueSnapshot(value)
+          Changeset.markEdited(existing, value, true, os, m, h)
+        }
+        else {
+          curr.content = value
+          Changeset.markEdited(existing, value, true, os, m, h)
+        }
+      }
+    }
+    else
+      Reflect.set(h.data, m, value, receiver)
+  }
+
   applyObjectChanges(h: ObjectHandle, os: ObjectSnapshot): void {
-    if (this.parent)
-      this.parent.applyObjectChangesFromNestedChangeset(h, os)
+    const parent = this.parent
+    if (parent)
+      this.applyObjectChangesToAnotherChangeset(h, os, parent)
     else
       h.applied = os
   }
 
-  applyObjectChangesFromNestedChangeset(h: ObjectHandle, incoming: ObjectSnapshot): void {
-    const existing: ObjectSnapshot = this.lookupObjectSnapshot(h, Meta.Handle, true)
-    if (this.isNewSnapshotRequired(h, existing, Meta.Handle, undefined, undefined, undefined)) {
-      this.bumpBy(existing.changeset.timestamp)
-      this.items.set(h, incoming)
-      h.editing = incoming
-      h.editors++
-    }
-    else
-      this.items.set(h, incoming)
-    if (Log.isOn && Log.opt.write)
-      Log.write("║", " !!", `${Dump.obj(h)} - snapshot is replaced (revision ${incoming.revision})`)
+  applyObjectChangesToAnotherChangeset(h: ObjectHandle, os: ObjectSnapshot, another: Changeset): void {
+    const target = another.getEditableObjectSnapshot(h, Meta.Undefined, undefined)
+    os.changes.forEach((o, m) => {
+      this.setObjectMemberValue(h, m, target, (os.data[m] as ValueSnapshot).content, undefined, false)
+    })
+    // if (Log.isOn && Log.opt.write)
+    //   Log.write("║", " !!", `${Dump.obj(h)} - snapshot is replaced (revision ${os.revision})`)
   }
 
   static takeSnapshot<T>(obj: T): T {
@@ -219,8 +234,8 @@ export class Changeset implements AbstractChangeset {
     if (this.items.size > 0) {
       this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
         const theirs = this.parent ? this.parent.lookupObjectSnapshot(h, Meta.Handle, false) : h.applied
-        if (os.former.snapshot !== theirs || this.parent) {
-          const merged = this.merge(h, os, theirs, false /*, this.parent !== undefined*/)
+        if (os.former.snapshot !== theirs) {
+          const merged = this.merge(h, os, theirs)
           if (os.conflicts.size > 0) {
             if (!conflicts)
               conflicts = []
@@ -248,7 +263,7 @@ export class Changeset implements AbstractChangeset {
     return conflicts
   }
 
-  private merge(h: ObjectHandle, ours: ObjectSnapshot, theirs: ObjectSnapshot, subscriptions: boolean): number {
+  private merge(h: ObjectHandle, ours: ObjectSnapshot, theirs: ObjectSnapshot): number {
     let counter: number = 0
     const theirsDisposed = theirs.disposed
     const oursDisposed = ours.disposed
@@ -257,17 +272,17 @@ export class Changeset implements AbstractChangeset {
       counter++
       const ourValueSnapshot = ours.data[m] as ValueSnapshot
       merged[m] = ourValueSnapshot
-      if (subscriptions && !theirs.changeset.sealed) {
-        const theirValueSnapshot = theirs.data[m] as ValueSnapshot
-        const theirObservers = theirValueSnapshot.observers
-        if (theirObservers) {
-          const ourObservers = ourValueSnapshot.observers
-          if (ourObservers)
-            theirObservers?.forEach(s => ourObservers.add(s))
-          else
-            ourValueSnapshot.observers = theirObservers
-        }
-      }
+      // if (subscriptions && !theirs.changeset.sealed) {
+      //   const theirValueSnapshot = theirs.data[m] as ValueSnapshot
+      //   const theirObservers = theirValueSnapshot.observers
+      //   if (theirObservers) {
+      //     const ourObservers = ourValueSnapshot.observers
+      //     if (ourObservers)
+      //       theirObservers?.forEach(s => ourObservers.add(s))
+      //     else
+      //       ourValueSnapshot.observers = theirObservers
+      //   }
+      // }
       if (theirsDisposed || oursDisposed) {
         if (theirsDisposed !== oursDisposed) {
           if (theirsDisposed || this.options.isolation !== Isolation.disjoinForInternalDisposal) {
@@ -310,7 +325,7 @@ export class Changeset implements AbstractChangeset {
       }
     })
     if (Log.isOn) {
-      if (Log.opt.change && !error) {
+      if (Log.opt.change && !error && !this.parent) {
         this.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
           const members: string[] = []
           os.changes.forEach((o, m) => members.push(m.toString()))
