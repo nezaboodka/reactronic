@@ -55,7 +55,7 @@ export class ReactiveDemo extends ObservableObject {
 test("reactive", t => {
   RxSystem.setLoggingMode(true, TestsLoggingLevel)
   const demo = transaction(() => new ReactiveDemo())
-  t.is(demo.title, "Title/Nested")
+  t.is(demo.title, "Title/1")
   t.is(demo.content, "Content/1")
   t.is(demo.rev, 6)
   demo.setData("Hello")
