@@ -182,7 +182,7 @@ export class Person extends ObservableObject {
 }
 
 export const TestsLoggingLevel: LoggingOptions = {
-  enabled: process.env.AVA_DEBUG !== undefined,
+  enabled: process.env.VSCODE_INSPECTOR_OPTIONS !== undefined,
   transaction: true,
   operation: true,
   step: true,
