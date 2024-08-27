@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { F } from "../util/Utils.js"
-import { fatal, Log, misuse } from "../util/Dbg.js"
+import { Log, misuse } from "../util/Dbg.js"
 import { Operation, MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions, Isolation } from "../Options.js"
 import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Observer, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, MAX_REVISION } from "./Changeset.js"
@@ -265,12 +265,12 @@ class Launch extends FieldVersion implements Observer {
     this.transaction = transaction
     this.operation = operation
     this.changeset = changeset
+    this.observables = new Map<FieldVersion, Subscription>()
     if (former instanceof Launch) {
       this.options = former.options
       this.cause = former.obsoleteDueTo
       this.args = former.args
       if (clone) {
-        this.observables = former.observables
         this.result = former.result
         this.error = former.error
         this.started = former.started
@@ -279,7 +279,6 @@ class Launch extends FieldVersion implements Observer {
         this.successor = former.successor
       }
       else {
-        this.observables = new Map<FieldVersion, Subscription>()
         this.result = undefined
         this.error = undefined
         this.started = 0
@@ -289,7 +288,6 @@ class Launch extends FieldVersion implements Observer {
       }
     }
     else { // former: OptionsImpl
-      this.observables = new Map<FieldVersion, Subscription>()
       this.options = former
       this.cause = undefined
       this.args = BOOT_ARGS
@@ -678,11 +676,14 @@ class Launch extends FieldVersion implements Observer {
       OperationImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactiveOperations)
   }
 
-  private static cloneFieldVersion(fv: FieldVersion, target: Transaction): FieldVersion {
+  private static createFieldVersion(fv: FieldVersion | undefined, target: Transaction): FieldVersion {
+    let result: FieldVersion
     if (fv instanceof Launch)
-      return new Launch(target, fv.operation, target.changeset, fv, true)
+      result = new Launch(target, fv.operation, target.changeset, fv, true)
     else
-      throw fatal(new Error("cloneValueSnapshot is supposed to clone Launch instance only"))
+      result = new FieldVersion(fv?.content)
+    // TODO: Switch subscriptions
+    return result
   }
 
   private static processQueuedReactiveOperations(): void {
@@ -792,7 +793,7 @@ class Launch extends FieldVersion implements Observer {
     Changeset.propagateAllChangesThroughSubscriptions = Launch.propagateAllChangesThroughSubscriptions // override
     Changeset.revokeAllSubscriptions = Launch.revokeAllSubscriptions // override
     Changeset.enqueueReactiveFunctionsToRun = Launch.enqueueReactiveFunctionsToRun
-    TransactionImpl.cloneFieldVersion = Launch.cloneFieldVersion
+    TransactionImpl.createFieldVersion = Launch.createFieldVersion
     Mvcc.createOperation = Launch.createOperation // override
     Mvcc.rememberOperationOptions = Launch.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override

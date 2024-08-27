@@ -9,7 +9,7 @@ import { UNDEF, F, pause } from "../util/Utils.js"
 import { Log, misuse, error, fatal } from "../util/Dbg.js"
 import { Worker } from "../Worker.js"
 import { SnapshotOptions, LoggingOptions, Isolation } from "../Options.js"
-import { Meta, ObjectHandle, ObjectVersion, Observer, FieldVersion } from "./Data.js"
+import { Meta, ObjectHandle, ObjectVersion, Observer, FieldVersion, FieldKey } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, UNDEFINED_REVISION } from "./Changeset.js"
 
 export abstract class Transaction implements Worker {
@@ -392,27 +392,122 @@ export class TransactionImpl extends Transaction {
   applyObjectChanges(h: ObjectHandle, ov: ObjectVersion): void {
     const parent = this.parent
     if (parent)
-      TransactionImpl.applyObjectChangesToAnotherTransaction(h, ov, parent)
+      TransactionImpl.migrateObjectChangesToAnotherTransaction(h, ov, parent)
     else
       h.applied = ov
   }
 
-  static applyObjectChangesToAnotherTransaction(h: ObjectHandle, ovSource: ObjectVersion, target: Transaction): void {
-    const csTarget = target.changeset
-    const ovTarget = csTarget.getEditableObjectVersion(h, Meta.Undefined, undefined)
-    ovSource.changes.forEach((o, fk) => {
-      const fv = ovSource.data[fk] as FieldVersion
-      if (fv.isLaunch) {
-        const clone = TransactionImpl.cloneFieldVersion(fv, target)
-        ovTarget.data[fk] = clone
-        csTarget.bumpBy(ovTarget.former.objectVersion.changeset.timestamp)
-        Changeset.markEdited(undefined, clone, true, ovTarget, fk, h)
+  static migrateObjectChangesToAnotherTransaction(h: ObjectHandle, ov: ObjectVersion, tParent: Transaction): void {
+    const csParent = tParent.changeset
+    const ovParent = csParent.getEditableObjectVersion(h, Meta.Undefined, undefined)
+    if (ov.former.objectVersion.changeset === EMPTY_OBJECT_VERSION.changeset) {
+      for (const fk in ov.data) {
+        TransactionImpl.migrateFieldVersionToAnotherTransaction(h, fk, ov, ovParent, tParent)
       }
-      else
-        csTarget.setFieldContent(h, fk, ovTarget, fv.content, undefined, false)
-    })
+    }
+    else {
+      ov.changes.forEach((o, fk) => {
+        TransactionImpl.migrateFieldVersionToAnotherTransaction(h, fk, ov, ovParent, tParent)
+      })
+    }
     // if (Log.isOn && Log.opt.write)
     //   Log.write("║", " !!", `${Dump.obj(h)} - snapshot is replaced (revision ${ov.revision})`)
+  }
+
+  static migrateFieldVersionToAnotherTransaction(h: ObjectHandle, fk: FieldKey, ov: ObjectVersion, ovParent: ObjectVersion, tParent: Transaction): void {
+    const csParent = tParent.changeset
+    const fv = ov.data[fk] as FieldVersion
+    const fvParent = ovParent.data[fk] as FieldVersion
+    if (fv.isLaunch) {
+      const migrated = TransactionImpl.createFieldVersion(fv, tParent)
+      if (ovParent.former.objectVersion.data[fk] !== fvParent) { // there are changes in parent
+        // Migrate observers from parent
+        let observers = fvParent.observers
+        if (observers) {
+          const migratedObservers = migrated.observers = new Set<Observer>()
+          observers.forEach(o => {
+            const sub = o.observables!.get(fvParent)!
+            o.observables?.delete(fvParent)
+            o.observables?.set(migrated, sub)
+            migratedObservers.add(o)
+          })
+          fvParent.observers = undefined
+        }
+        // Migrate observers from current (child)
+        observers = fv.observers
+        if (observers) {
+          let migratedObservers = migrated.observers
+          if (migratedObservers === undefined)
+            migratedObservers = migrated.observers = new Set<Observer>()
+          observers.forEach(o => {
+            const sub = o.observables!.get(fv)!
+            o.observables?.delete(fv)
+            o.observables?.set(migrated, sub)
+            migratedObservers?.add(o)
+          })
+          fv.observers = undefined
+        }
+        // Migrate observables from current (child)
+        const observables = (fv as unknown as Observer).observables
+        const migratedObservables = (migrated as unknown as Observer).observables
+        if (observables) {
+          observables.forEach((s, o) => {
+            o.observers?.delete(fv as unknown as Observer)
+            o.observers?.add(migrated as unknown as Observer)
+            migratedObservables?.set(o, s)
+          })
+          observables.clear()
+        }
+        ovParent.data[fk] = migrated
+      }
+      else {
+        // Migrate observers from current (child)
+        const observers = fv.observers
+        if (observers) {
+          const migratedObservers = migrated.observers = new Set<Observer>()
+          observers.forEach(o => {
+            const sub = o.observables!.get(fv)!
+            o.observables?.delete(fv)
+            o.observables?.set(migrated, sub)
+            migratedObservers.add(o)
+          })
+          fv.observers = undefined
+        }
+        // Migrate observables from current (child)
+        const observables = (fv as unknown as Observer).observables
+        const migratedObservables = (migrated as unknown as Observer).observables
+        if (observables) {
+          observables.forEach((s, o) => {
+            o.observers?.delete(fv as unknown as Observer)
+            o.observers?.add(migrated as unknown as Observer)
+            migratedObservables?.set(o, s)
+          })
+          observables.clear()
+        }
+        ovParent.data[fk] = migrated
+      }
+      csParent.bumpBy(ovParent.former.objectVersion.changeset.timestamp)
+      Changeset.markEdited(undefined, migrated, true, ovParent, fk, h)
+    }
+    else {
+      const parentContent = fvParent?.content
+      if (ovParent.former.objectVersion.data[fk] !== fvParent) { // there are changes in parent
+        fvParent.content = fv.content
+        // Migrate subscriptions
+        const observers = fv.observers
+        if (observers) {
+          observers.forEach(o => {
+            const sub = o.observables!.get(fv)!
+            o.observables?.delete(fv)
+            o.observables?.set(fvParent, sub)
+            fvParent.observers?.add(o)
+          })
+        }
+      }
+      else
+        ovParent.data[fk] = fv // just use field version instance from child transaction
+      Changeset.markEdited(parentContent, fv.content, true, ovParent, fk, h)
+    }
   }
 
   private acquirePromise(): Promise<void> {
@@ -436,7 +531,7 @@ export class TransactionImpl extends Transaction {
   }
 
   /* istanbul ignore next */
-  static cloneFieldVersion = function(fv: FieldVersion, target: Transaction): FieldVersion {
+  static createFieldVersion = function(fv: FieldVersion, target: Transaction): FieldVersion {
     throw misuse("this implementation of cloneLaunch should never be called")
   }
 

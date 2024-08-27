@@ -135,23 +135,23 @@ export class Changeset implements AbstractChangeset {
     return ov
   }
 
-  setFieldContent(h: ObjectHandle, fk: FieldKey, ov: ObjectVersion, value: any, receiver: any, sensitivity: boolean): void {
-    let curr = ov.data[fk] as FieldVersion
-    if (curr !== undefined || (ov.former.objectVersion.changeset === EMPTY_OBJECT_VERSION.changeset && (fk in h.data) === false)) {
-      if (curr === undefined || curr.content !== value || sensitivity) {
-        const existing = curr?.content
-        if (ov.former.objectVersion.data[fk] === curr) {
-          curr = ov.data[fk] = new FieldVersion(value)
-          Changeset.markEdited(existing, value, true, ov, fk, h)
+  setFieldContent(h: ObjectHandle, fk: FieldKey, ov: ObjectVersion, content: any, receiver: any, sensitivity: boolean): void {
+    let existing = ov.data[fk] as FieldVersion
+    if (existing !== undefined || (ov.former.objectVersion.changeset === EMPTY_OBJECT_VERSION.changeset && (fk in h.data) === false)) {
+      if (existing === undefined || existing.content !== content || sensitivity) {
+        const existingContent = existing?.content
+        if (ov.former.objectVersion.data[fk] === existing) {
+          existing = ov.data[fk] = new FieldVersion(content)
+          Changeset.markEdited(existingContent, content, true, ov, fk, h)
         }
         else {
-          curr.content = value
-          Changeset.markEdited(existing, value, true, ov, fk, h)
+          existing.content = content
+          Changeset.markEdited(existingContent, content, true, ov, fk, h)
         }
       }
     }
     else
-      Reflect.set(h.data, fk, value, receiver)
+      Reflect.set(h.data, fk, content, receiver)
   }
 
   static takeSnapshot<T>(obj: T): T {
