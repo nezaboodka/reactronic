@@ -678,7 +678,7 @@ class Launch extends FieldVersion implements Observer {
       OperationImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactiveOperations)
   }
 
-  private static cloneValueSnapshot(fv: FieldVersion, target: Transaction): FieldVersion {
+  private static cloneFieldVersion(fv: FieldVersion, target: Transaction): FieldVersion {
     if (fv instanceof Launch)
       return new Launch(target, fv.operation, target.changeset, fv, true)
     else
@@ -792,7 +792,7 @@ class Launch extends FieldVersion implements Observer {
     Changeset.propagateAllChangesThroughSubscriptions = Launch.propagateAllChangesThroughSubscriptions // override
     Changeset.revokeAllSubscriptions = Launch.revokeAllSubscriptions // override
     Changeset.enqueueReactiveFunctionsToRun = Launch.enqueueReactiveFunctionsToRun
-    TransactionImpl.cloneFieldVersion = Launch.cloneValueSnapshot
+    TransactionImpl.cloneFieldVersion = Launch.cloneFieldVersion
     Mvcc.createOperation = Launch.createOperation // override
     Mvcc.rememberOperationOptions = Launch.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
