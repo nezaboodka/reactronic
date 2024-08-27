@@ -9,8 +9,8 @@ import { UNDEF, F, pause } from "../util/Utils.js"
 import { Log, misuse, error, fatal } from "../util/Dbg.js"
 import { Worker } from "../Worker.js"
 import { SnapshotOptions, LoggingOptions, Isolation } from "../Options.js"
-import { Meta, ObjectHandle, ObjectSnapshot, Observer, ValueSnapshot } from "./Data.js"
-import { Changeset, Dump, EMPTY_SNAPSHOT, UNDEFINED_REVISION } from "./Changeset.js"
+import { Meta, ObjectHandle, ObjectVersion, Observer, FieldVersion } from "./Data.js"
+import { Changeset, Dump, EMPTY_OBJECT_VERSION, UNDEFINED_REVISION } from "./Changeset.js"
 
 export abstract class Transaction implements Worker {
   static get current(): Transaction { return TransactionImpl.current }
@@ -327,7 +327,7 @@ export class TransactionImpl extends Transaction {
       this.tryResolveConflicts(conflicts)
   }
 
-  private tryResolveConflicts(conflicts: ObjectSnapshot[]): void {
+  private tryResolveConflicts(conflicts: ObjectVersion[]): void {
     throw error(`T${this.id}[${this.hint}] conflicts with: ${Dump.conflicts(conflicts)}`, undefined)
   }
 
@@ -359,26 +359,26 @@ export class TransactionImpl extends Transaction {
   applyOrDiscardChangeset(): Array<Observer> {
     const error = this.canceled
     const changeset = this.changeset
-    changeset.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-      changeset.sealObjectSnapshot(h, os)
+    changeset.items.forEach((ov: ObjectVersion, h: ObjectHandle) => {
+      changeset.sealObjectVersion(h, ov)
       if (!error) {
         // if (this.timestamp < h.head.snapshot.timestamp)
         //   console.log(`!!! timestamp downgrade detected ${h.head.snapshot.timestamp} -> ${this.timestamp} !!!`)
-        this.applyObjectChanges(h, os)
+        this.applyObjectChanges(h, ov)
         if (Changeset.garbageCollectionSummaryInterval < Number.MAX_SAFE_INTEGER) {
           Changeset.totalObjectSnapshotCount++
-          if (os.former.snapshot === EMPTY_SNAPSHOT)
+          if (ov.former.objectVersion === EMPTY_OBJECT_VERSION)
             Changeset.totalObjectHandleCount++
         }
       }
     })
     if (Log.isOn) {
       if (Log.opt.change && !error && !changeset.parent) {
-        changeset.items.forEach((os: ObjectSnapshot, h: ObjectHandle) => {
-          const members: string[] = []
-          os.changes.forEach((o, m) => members.push(m.toString()))
-          const s = members.join(", ")
-          Log.write("║", "√", `${Dump.snapshot2(h, os.changeset)} (${s}) is ${os.former.snapshot === EMPTY_SNAPSHOT ? "constructed" : `applied over #${h.id}t${os.former.snapshot.changeset.id}s${os.former.snapshot.changeset.timestamp}`}`)
+        changeset.items.forEach((ov: ObjectVersion, h: ObjectHandle) => {
+          const fields: string[] = []
+          ov.changes.forEach((o, fk) => fields.push(fk.toString()))
+          const s = fields.join(", ")
+          Log.write("║", "√", `${Dump.snapshot2(h, ov.changeset)} (${s}) is ${ov.former.objectVersion === EMPTY_OBJECT_VERSION ? "constructed" : `applied over #${h.id}t${ov.former.objectVersion.changeset.id}s${ov.former.objectVersion.changeset.timestamp}`}`)
         })
       }
       if (Log.opt.transaction)
@@ -389,30 +389,30 @@ export class TransactionImpl extends Transaction {
     return changeset.obsolete
   }
 
-  applyObjectChanges(h: ObjectHandle, os: ObjectSnapshot): void {
+  applyObjectChanges(h: ObjectHandle, ov: ObjectVersion): void {
     const parent = this.parent
     if (parent)
-      TransactionImpl.applyObjectChangesToAnotherTransaction(h, os, parent)
+      TransactionImpl.applyObjectChangesToAnotherTransaction(h, ov, parent)
     else
-      h.applied = os
+      h.applied = ov
   }
 
-  static applyObjectChangesToAnotherTransaction(h: ObjectHandle, osSource: ObjectSnapshot, target: Transaction): void {
+  static applyObjectChangesToAnotherTransaction(h: ObjectHandle, ovSource: ObjectVersion, target: Transaction): void {
     const csTarget = target.changeset
-    const osTarget = csTarget.getEditableObjectSnapshot(h, Meta.Undefined, undefined)
-    osSource.changes.forEach((o, m) => {
-      const valueSnapshot = osSource.data[m] as ValueSnapshot
-      if (valueSnapshot.isLaunch) {
-        const clone = TransactionImpl.cloneValueSnapshot(valueSnapshot, target)
-        osTarget.data[m] = clone
-        csTarget.bumpBy(osTarget.former.snapshot.changeset.timestamp)
-        Changeset.markEdited(undefined, clone, true, osTarget, m, h)
+    const ovTarget = csTarget.getEditableObjectVersion(h, Meta.Undefined, undefined)
+    ovSource.changes.forEach((o, fk) => {
+      const fv = ovSource.data[fk] as FieldVersion
+      if (fv.isLaunch) {
+        const clone = TransactionImpl.cloneFieldVersion(fv, target)
+        ovTarget.data[fk] = clone
+        csTarget.bumpBy(ovTarget.former.objectVersion.changeset.timestamp)
+        Changeset.markEdited(undefined, clone, true, ovTarget, fk, h)
       }
       else
-        csTarget.setObjectDataMemberValue(h, m, osTarget, valueSnapshot.content, undefined, false)
+        csTarget.setFieldContent(h, fk, ovTarget, fv.content, undefined, false)
     })
     // if (Log.isOn && Log.opt.write)
-    //   Log.write("║", " !!", `${Dump.obj(h)} - snapshot is replaced (revision ${os.revision})`)
+    //   Log.write("║", " !!", `${Dump.obj(h)} - snapshot is replaced (revision ${ov.revision})`)
   }
 
   private acquirePromise(): Promise<void> {
@@ -436,7 +436,7 @@ export class TransactionImpl extends Transaction {
   }
 
   /* istanbul ignore next */
-  static cloneValueSnapshot = function(vs: ValueSnapshot, target: Transaction): ValueSnapshot {
+  static cloneFieldVersion = function(fv: FieldVersion, target: Transaction): FieldVersion {
     throw misuse("this implementation of cloneLaunch should never be called")
   }
 

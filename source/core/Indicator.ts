@@ -93,12 +93,12 @@ export class IndicatorImpl extends Indicator {
   // Internal
 
   private static doCreate(hint: string, activationDelay: number, deactivationDelay: number, durationResolution: number): IndicatorImpl {
-    const m = new IndicatorImpl()
-    Mvcc.setHint(m, hint)
-    m.internals.activationDelay = activationDelay
-    m.internals.deactivationDelay = deactivationDelay
-    m.internals.durationResolution = durationResolution
-    return m
+    const ind = new IndicatorImpl()
+    Mvcc.setHint(ind, hint)
+    ind.internals.activationDelay = activationDelay
+    ind.internals.deactivationDelay = deactivationDelay
+    ind.internals.durationResolution = durationResolution
+    return ind
   }
 
   private static activate(mon: IndicatorImpl, delay: number): void {

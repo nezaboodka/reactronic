@@ -18,9 +18,9 @@ export type AbstractChangeset = {
   readonly sealed: boolean
 }
 
-// ValueSnapshot & Observer
+// FieldVersion & Observer
 
-export class ValueSnapshot<T = any> {
+export class FieldVersion<T = any> {
   content: T
   observers?: Set<Observer>
   get isLaunch(): boolean { return false }
@@ -30,48 +30,48 @@ export class ValueSnapshot<T = any> {
 
 export type Observer = {
   readonly order: number
-  readonly observables: Map<ValueSnapshot, Subscription> | undefined
+  readonly observables: Map<FieldVersion, Subscription> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(observable: ValueSnapshot, m: MemberName, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Array<Observer>): void
+  markObsoleteDueTo(observable: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Array<Observer>): void
   relaunchIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 
-export type MemberName = PropertyKey
+export type FieldKey = PropertyKey
 
 export type Subscription = {
   readonly memberHint: string
   readonly usageCount: number
 }
 
-// ObjectSnapshot
+// ObjectVersion
 
-export class ObjectSnapshot {
+export class ObjectVersion {
   readonly changeset: AbstractChangeset
-  readonly former: { snapshot: ObjectSnapshot }
+  readonly former: { objectVersion: ObjectVersion }
   readonly data: any
-  readonly changes: Set<MemberName>
-  readonly conflicts: Map<MemberName, ObjectSnapshot>
+  readonly changes: Set<FieldKey>
+  readonly conflicts: Map<FieldKey, ObjectVersion>
 
-  constructor(changeset: AbstractChangeset, former: ObjectSnapshot | undefined, data: object) {
+  constructor(changeset: AbstractChangeset, former: ObjectVersion | undefined, data: object) {
     this.changeset = changeset
-    this.former = { snapshot: former || this } // undefined former means initialization of ROOT_REV
+    this.former = { objectVersion: former || this } // undefined former means initialization of ROOT_REV
     this.data = data
-    this.changes = new Set<MemberName>()
-    this.conflicts = new Map<MemberName, ObjectSnapshot>()
+    this.changes = new Set<FieldKey>()
+    this.conflicts = new Map<FieldKey, ObjectVersion>()
     if (Log.isOn)
       Object.freeze(this)
   }
 
   get revision(): number {
-    return (this.data[Meta.Revision] as ValueSnapshot)?.content ?? 0
+    return (this.data[Meta.Revision] as FieldVersion)?.content ?? 0
   }
 
   get disposed(): boolean { return this.revision < 0 }
   set disposed(value: boolean) {
     const rev = this.revision
     if (rev < 0 !== value)
-      (this.data[Meta.Revision] as ValueSnapshot).content = ~rev
+      (this.data[Meta.Revision] as FieldVersion).content = ~rev
   }
 }
 
@@ -83,12 +83,12 @@ export class ObjectHandle {
   readonly id: number
   readonly data: any
   readonly proxy: any
-  applied: ObjectSnapshot
-  editing?: ObjectSnapshot
+  applied: ObjectVersion
+  editing?: ObjectVersion
   editors: number
   hint: string
 
-  constructor(data: any, proxy: any, handler: ProxyHandler<ObjectHandle>, applied: ObjectSnapshot, hint: string) {
+  constructor(data: any, proxy: any, handler: ProxyHandler<ObjectHandle>, applied: ObjectVersion, hint: string) {
     this.id = ++ObjectHandle.generator
     this.data = data
     this.proxy = proxy || new Proxy<ObjectHandle>(this, handler)
@@ -106,11 +106,11 @@ export class ObjectHandle {
 
 // PatchSet & ObjectPatch
 
-export type PatchSet = Map<object, Map<MemberName, ValuePatch>>
+export type PatchSet = Map<object, Map<FieldKey, ValuePatch>>
 
 export type ValuePatch = {
-  memberName: MemberName
+  fieldKey: FieldKey
   patchKind: "update" | "add" | "remove"
-  freshValue: any
-  formerValue: any
+  freshContent: any
+  formerContent: any
 }

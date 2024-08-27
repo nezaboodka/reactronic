@@ -9,8 +9,8 @@ import { UNDEF, F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
 import { Operation, MemberOptions, Kind, Reentrance, Isolation } from "../Options.js"
 import { LoggingOptions, ProfilingOptions } from "../Logging.js"
-import { ObjectSnapshot, MemberName, ObjectHandle, ValueSnapshot, Meta } from "./Data.js"
-import { Changeset, Dump, EMPTY_SNAPSHOT } from "./Changeset.js"
+import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Meta } from "./Data.js"
+import { Changeset, Dump, EMPTY_OBJECT_VERSION } from "./Changeset.js"
 import { Journal } from "./Journal.js"
 import { Indicator } from "./Indicator.js"
 
@@ -117,50 +117,50 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     return Reflect.getPrototypeOf(h.data)
   }
 
-  get(h: ObjectHandle, m: MemberName, receiver: any): any {
+  get(h: ObjectHandle, fk: FieldKey, receiver: any): any {
     let result: any
-    if (m !== Meta.Handle) {
+    if (fk !== Meta.Handle) {
       const cs = Changeset.current()
-      const os: ObjectSnapshot = cs.getObjectSnapshot(h, m)
-      result = os.data[m]
-      if (result instanceof ValueSnapshot && !result.isLaunch) {
+      const ov: ObjectVersion = cs.getObjectVersion(h, fk)
+      result = ov.data[fk]
+      if (result instanceof FieldVersion && !result.isLaunch) {
         if (this.isObservable)
-          Changeset.markUsed(result, os, m, h, Kind.plain, false)
+          Changeset.markUsed(result, ov, fk, h, Kind.plain, false)
         result = result.content
       }
       else // result === RAW
-        result = Reflect.get(h.data, m, receiver)
+        result = Reflect.get(h.data, fk, receiver)
     }
     else
       result = h
     return result
   }
 
-  set(h: ObjectHandle, m: MemberName, value: any, receiver: any): boolean {
+  set(h: ObjectHandle, fk: FieldKey, value: any, receiver: any): boolean {
     const cs = Changeset.edit()
-    const os: ObjectSnapshot = cs.getEditableObjectSnapshot(h, m, value)
-    if (os !== EMPTY_SNAPSHOT)
-      cs.setObjectDataMemberValue(h, m, os, value, receiver, Mvcc.sensitivity)
+    const ov: ObjectVersion = cs.getEditableObjectVersion(h, fk, value)
+    if (ov !== EMPTY_OBJECT_VERSION)
+      cs.setFieldContent(h, fk, ov, value, receiver, Mvcc.sensitivity)
     else
-      h.data[m] = value
+      h.data[fk] = value
     return true
   }
 
-  has(h: ObjectHandle, m: MemberName): boolean {
-    const os: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
-    return m in os.data || m in h.data
+  has(h: ObjectHandle, fk: FieldKey): boolean {
+    const ov: ObjectVersion = Changeset.current().getObjectVersion(h, fk)
+    return fk in ov.data || fk in h.data
   }
 
-  defineProperty?(h: ObjectHandle, m: string | symbol, attributes: PropertyDescriptor): boolean {
+  defineProperty?(h: ObjectHandle, name: string | symbol, attributes: PropertyDescriptor): boolean {
     const result = attributes.get !== undefined && attributes.set !== undefined
     if (result)
-      Object.defineProperty(h.data, m, attributes)
+      Object.defineProperty(h.data, name, attributes)
     return result
   }
 
-  getOwnPropertyDescriptor(h: ObjectHandle, m: MemberName): PropertyDescriptor | undefined {
-    const os: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, m)
-    const pd = Reflect.getOwnPropertyDescriptor(os.data, m)
+  getOwnPropertyDescriptor(h: ObjectHandle, fk: FieldKey): PropertyDescriptor | undefined {
+    const ov: ObjectVersion = Changeset.current().getObjectVersion(h, fk)
+    const pd = Reflect.getOwnPropertyDescriptor(ov.data, fk)
     if (pd)
       pd.configurable = pd.writable = true
     return pd
@@ -168,37 +168,37 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
 
   ownKeys(h: ObjectHandle): Array<string | symbol> {
     // TODO: Better implementation to avoid filtering
-    const os: ObjectSnapshot = Changeset.current().getObjectSnapshot(h, Meta.Handle)
+    const ov: ObjectVersion = Changeset.current().getObjectVersion(h, Meta.Handle)
     const result = []
-    for (const m of Object.getOwnPropertyNames(os.data)) {
-      const value = os.data[m]
-      if (!(value instanceof ValueSnapshot) || !value.isLaunch)
-        result.push(m)
+    for (const fk of Object.getOwnPropertyNames(ov.data)) {
+      const field = ov.data[fk]
+      if (!(field instanceof FieldVersion) || !field.isLaunch)
+        result.push(fk)
     }
     return result
   }
 
-  static decorateData(isObservable: boolean, proto: any, member: MemberName): any {
+  static decorateData(isObservable: boolean, proto: any, fk: FieldKey): any {
     if (isObservable) {
-      Meta.acquire(proto, Meta.Initial)[member] = new ValueSnapshot(undefined)
+      Meta.acquire(proto, Meta.Initial)[fk] = new FieldVersion(undefined)
       const get = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.observable.get(h, member, this)
+        return Mvcc.observable.get(h, fk, this)
       }
       const set = function(this: any, value: any): boolean {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.observable.set(h, member, value, this)
+        return Mvcc.observable.set(h, fk, value, this)
       }
       const enumerable = true
       const configurable = false
-      return Object.defineProperty(proto, member, { get, set, enumerable, configurable })
+      return Object.defineProperty(proto, fk, { get, set, enumerable, configurable })
     }
     else
-      Meta.acquire(proto, Meta.Initial)[member] = Meta.Raw
+      Meta.acquire(proto, Meta.Initial)[fk] = Meta.Raw
   }
 
   static decorateOperation(implicit: boolean, decorator: Function,
-    options: Partial<MemberOptions>, proto: any, member: MemberName,
+    options: Partial<MemberOptions>, proto: any, member: FieldKey,
     pd: PropertyDescriptor | undefined): any {
     if (pd === undefined || pd === proto) // pd !== proto only for the first decorator in a chain
       pd = EMPTY_PROP_DESCRIPTOR
@@ -240,11 +240,11 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
         throw misuse("only objects can be observable")
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
-      const os = new ObjectSnapshot(EMPTY_SNAPSHOT.changeset, EMPTY_SNAPSHOT, {...initial})
-      h = new ObjectHandle(obj, obj, Mvcc.observable, os, obj.constructor.name)
-      Meta.set(os.data, Meta.Handle, h)
+      const ov = new ObjectVersion(EMPTY_OBJECT_VERSION.changeset, EMPTY_OBJECT_VERSION, {...initial})
+      h = new ObjectHandle(obj, obj, Mvcc.observable, ov, obj.constructor.name)
+      Meta.set(ov.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
-      Meta.set(os.data, Meta.Revision, new ValueSnapshot(1))
+      Meta.set(ov.data, Meta.Revision, new FieldVersion(1))
     }
     return h
   }
@@ -252,11 +252,11 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   static createHandleForMvccObject(proto: any, data: any, blank: any, hint: string, isObservable: boolean): ObjectHandle {
     const ctx = Changeset.edit()
     const mvcc = isObservable ? Mvcc.observable : Mvcc.transactional
-    const h = new ObjectHandle(data, undefined, mvcc, EMPTY_SNAPSHOT, hint)
-    ctx.getEditableObjectSnapshot(h, Meta.Handle, blank)
+    const h = new ObjectHandle(data, undefined, mvcc, EMPTY_OBJECT_VERSION, hint)
+    ctx.getEditableObjectVersion(h, Meta.Handle, blank)
     if (!Mvcc.reactivityAutoStartDisabled)
-      for (const m in Meta.getFrom(proto, Meta.Reactive))
-        (h.proxy[m][Meta.Controller] as Operation<any>).markObsolete()
+      for (const fk in Meta.getFrom(proto, Meta.Reactive))
+        (h.proxy[fk][Meta.Controller] as Operation<any>).markObsolete()
     return h
   }
 
@@ -300,12 +300,12 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   }
 
   /* istanbul ignore next */
-  static createOperation = function(h: ObjectHandle, m: MemberName, options: OptionsImpl): F<any> {
+  static createOperation = function(h: ObjectHandle, fk: FieldKey, options: OptionsImpl): F<any> {
     throw misuse("this implementation of createOperation should never be called")
   }
 
   /* istanbul ignore next */
-  static rememberOperationOptions = function(proto: any, m: MemberName, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
+  static rememberOperationOptions = function(proto: any, fk: FieldKey, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
     throw misuse("this implementation of rememberOperationOptions should never be called")
   }
 }
