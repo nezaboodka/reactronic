@@ -481,7 +481,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
         node.outer = owner
       else
         node.outer = owner.outer
-      Transaction.run({ isolation: Isolation.disjoinFromOuterTransaction }, () => {
+      Transaction.run({ isolation: Isolation.joinAsNestedTransaction }, () => {
         const ctx = node.context
         if (ctx) {
           ctx.variable = variable
