@@ -419,7 +419,7 @@ export class TransactionImpl extends Transaction {
     const fv = ov.data[fk] as FieldVersion
     const fvParent = ovParent.data[fk] as FieldVersion
     if (fv.isLaunch) {
-      const migrated = TransactionImpl.createFieldVersion(fv, tParent)
+      const migrated = TransactionImpl.migrateFieldVersion(fv, tParent)
       if (ovParent.former.objectVersion.data[fk] !== fvParent) { // there are changes in parent
         // Migrate observers from parent
         let observers = fvParent.observers
@@ -531,7 +531,7 @@ export class TransactionImpl extends Transaction {
   }
 
   /* istanbul ignore next */
-  static createFieldVersion = function(fv: FieldVersion, target: Transaction): FieldVersion {
+  static migrateFieldVersion = function(fv: FieldVersion, target: Transaction): FieldVersion {
     throw misuse("this implementation of cloneLaunch should never be called")
   }
 

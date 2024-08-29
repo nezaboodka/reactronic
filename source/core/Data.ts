@@ -23,9 +23,9 @@ export type AbstractChangeset = {
 export class FieldVersion<T = any> {
   content: T
   observers?: Set<Observer>
+  lastEditorChangesetId: number
   get isLaunch(): boolean { return false }
-  get originSnapshotId(): number | undefined { return 0 }
-  constructor(content: T) { this.content = content }
+  constructor(content: T, lastEditorChangesetId: number) { this.content = content; this.lastEditorChangesetId = lastEditorChangesetId }
 }
 
 export type Observer = {

@@ -23,7 +23,7 @@ const expected: Array<string> = [
   "[...] Log: RTA",
   "[...] Url: nezaboodka.com",
   "[...] Log: RTA, nezaboodka.com/100",
-  "Error: T109[AsyncDemo.load #23 - google.com] conflicts with: AsyncDemo.load #23 - nezaboodka.com (AsyncDemo.load #23t106s109t106)",
+  "Error: T109[AsyncDemo.load #23 - google.com] conflicts with: AsyncDemo.load #23 - nezaboodka.com (AsyncDemo.load #23t106s109e106)",
   "Url: nezaboodka.com",
   "Log: RTA, nezaboodka.com/100",
 ]

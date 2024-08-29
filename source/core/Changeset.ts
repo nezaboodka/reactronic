@@ -121,7 +121,7 @@ export class Changeset implements AbstractChangeset {
         const revision = fk === Meta.Handle ? 1 : ov.revision + 1
         const data = { ...fk === Meta.Handle ? value : ov.data }
         Meta.set(data, Meta.Handle, h)
-        Meta.set(data, Meta.Revision, new FieldVersion(revision))
+        Meta.set(data, Meta.Revision, new FieldVersion(revision, this.id))
         ov = new ObjectVersion(this, ov, data)
         this.items.set(h, ov)
         h.editing = ov
@@ -141,11 +141,12 @@ export class Changeset implements AbstractChangeset {
       if (existing === undefined || existing.content !== content || sensitivity) {
         const existingContent = existing?.content
         if (ov.former.objectVersion.data[fk] === existing) {
-          existing = ov.data[fk] = new FieldVersion(content)
+          existing = ov.data[fk] = new FieldVersion(content, this.id)
           Changeset.markEdited(existingContent, content, true, ov, fk, h)
         }
         else {
           existing.content = content
+          existing.lastEditorChangesetId = this.id
           Changeset.markEdited(existingContent, content, true, ov, fk, h)
         }
       }
@@ -386,7 +387,7 @@ export class Changeset implements AbstractChangeset {
 export class Dump {
   static valueHint = (value: any): string => "???"
 
-  static obj(h: ObjectHandle | undefined, fk?: FieldKey | undefined, stamp?: number, snapshotId?: number, originSnapshotId?: number, value?: any): string {
+  static obj(h: ObjectHandle | undefined, fk?: FieldKey | undefined, stamp?: number, changesetId?: number, lastEditorChangesetId?: number, value?: any): string {
     const member = fk !== undefined ? `.${fk.toString()}` : ""
     let result: string
     if (h !== undefined) {
@@ -394,7 +395,7 @@ export class Dump {
       if (stamp === undefined)
         result = `${h.hint}${member}${v} #${h.id}`
       else
-        result = `${h.hint}${member}${v} #${h.id}t${snapshotId}s${stamp}${originSnapshotId !== undefined && originSnapshotId !== 0 ? `t${originSnapshotId}` : ""}`
+        result = `${h.hint}${member}${v} #${h.id}t${changesetId}s${stamp}${lastEditorChangesetId !== undefined ? `e${lastEditorChangesetId}` : ""}`
     }
     else
       result = `boot${member}`
@@ -402,13 +403,13 @@ export class Dump {
   }
 
   static snapshot2(h: ObjectHandle, s: AbstractChangeset, fk?: FieldKey, o?: FieldVersion): string {
-    return Dump.obj(h, fk, s.timestamp, s.id, o?.originSnapshotId, o?.content ?? Meta.Undefined)
+    return Dump.obj(h, fk, s.timestamp, s.id, o?.lastEditorChangesetId, o?.content ?? Meta.Undefined)
   }
 
   static snapshot(ov: ObjectVersion, fk?: FieldKey): string {
     const h = Meta.get<ObjectHandle | undefined>(ov.data, Meta.Handle)
     const fv = fk !== undefined ? ov.data[fk] as FieldVersion : undefined
-    return Dump.obj(h, fk, ov.changeset.timestamp, ov.changeset.id, fv?.originSnapshotId)
+    return Dump.obj(h, fk, ov.changeset.timestamp, ov.changeset.id, fv?.lastEditorChangesetId)
   }
 
   static conflicts(conflicts: ObjectVersion[]): string {

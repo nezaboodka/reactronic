@@ -126,7 +126,7 @@ export class JournalImpl extends Journal {
           const content = undoing ? vp.formerContent : vp.freshContent
           const ov: ObjectVersion = ctx.getEditableObjectVersion(h, fk, content)
           if (ov.changeset === ctx) {
-            ov.data[fk] = new FieldVersion(content)
+            ov.data[fk] = new FieldVersion(content, ctx.id)
             const existing: any = ov.former.objectVersion.data[fk]
             Changeset.markEdited(existing, content, existing !== content, ov, fk, h)
           }

@@ -260,7 +260,7 @@ class Launch extends FieldVersion implements Observer {
   successor: Launch | undefined
 
   constructor(transaction: Transaction, operation: OperationImpl, changeset: AbstractChangeset, former: Launch | OptionsImpl, clone: boolean) {
-    super(undefined)
+    super(undefined, 0)
     this.margin = Launch.current ? Launch.current.margin + 1 : 1
     this.transaction = transaction
     this.operation = operation
@@ -271,6 +271,7 @@ class Launch extends FieldVersion implements Observer {
       this.cause = former.obsoleteDueTo
       this.args = former.args
       if (clone) {
+        this.lastEditorChangesetId = former.lastEditorChangesetId
         this.result = former.result
         this.error = former.error
         this.started = former.started
@@ -279,6 +280,7 @@ class Launch extends FieldVersion implements Observer {
         this.successor = former.successor
       }
       else {
+        this.lastEditorChangesetId = changeset.id
         this.result = undefined
         this.error = undefined
         this.started = 0
@@ -288,6 +290,7 @@ class Launch extends FieldVersion implements Observer {
       }
     }
     else { // former: OptionsImpl
+      this.lastEditorChangesetId = changeset.id
       this.options = former
       this.cause = undefined
       this.args = BOOT_ARGS
@@ -301,7 +304,6 @@ class Launch extends FieldVersion implements Observer {
   }
 
   get isLaunch(): boolean { return true } // override
-  get originSnapshotId(): number { return this.changeset.id } // override
   hint(): string { return `${Dump.snapshot2(this.operation.ownerHandle, this.changeset, this.operation.fieldKey)}` } // override
   get order(): number { return this.options.order }
 
@@ -676,12 +678,12 @@ class Launch extends FieldVersion implements Observer {
       OperationImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactiveOperations)
   }
 
-  private static createFieldVersion(fv: FieldVersion | undefined, target: Transaction): FieldVersion {
+  private static migrateFieldVersion(fv: FieldVersion, target: Transaction): FieldVersion {
     let result: FieldVersion
     if (fv instanceof Launch)
       result = new Launch(target, fv.operation, target.changeset, fv, true)
     else
-      result = new FieldVersion(fv?.content)
+      result = new FieldVersion(fv.content, fv.lastEditorChangesetId)
     // TODO: Switch subscriptions
     return result
   }
@@ -793,7 +795,7 @@ class Launch extends FieldVersion implements Observer {
     Changeset.propagateAllChangesThroughSubscriptions = Launch.propagateAllChangesThroughSubscriptions // override
     Changeset.revokeAllSubscriptions = Launch.revokeAllSubscriptions // override
     Changeset.enqueueReactiveFunctionsToRun = Launch.enqueueReactiveFunctionsToRun
-    TransactionImpl.createFieldVersion = Launch.createFieldVersion
+    TransactionImpl.migrateFieldVersion = Launch.migrateFieldVersion
     Mvcc.createOperation = Launch.createOperation // override
     Mvcc.rememberOperationOptions = Launch.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
@@ -844,7 +846,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Launch)
-    result = `#${value.operation.ownerHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.originSnapshotId !== undefined && value.originSnapshotId !== 0 ? `t${value.originSnapshotId}` : ""}`
+    result = `#${value.operation.ownerHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.lastEditorChangesetId !== undefined && value.lastEditorChangesetId !== 0 ? `t${value.lastEditorChangesetId}` : ""}`
   else if (value === Meta.Undefined)
     result = "undefined"
   else if (typeof(value) === "string")

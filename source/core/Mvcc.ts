@@ -180,7 +180,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
 
   static decorateData(isObservable: boolean, proto: any, fk: FieldKey): any {
     if (isObservable) {
-      Meta.acquire(proto, Meta.Initial)[fk] = new FieldVersion(undefined)
+      Meta.acquire(proto, Meta.Initial)[fk] = new FieldVersion(undefined, 0)
       const get = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
         return Mvcc.observable.get(h, fk, this)
@@ -244,7 +244,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       h = new ObjectHandle(obj, obj, Mvcc.observable, ov, obj.constructor.name)
       Meta.set(ov.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
-      Meta.set(ov.data, Meta.Revision, new FieldVersion(1))
+      Meta.set(ov.data, Meta.Revision, new FieldVersion(1, 0))
     }
     return h
   }
