@@ -304,7 +304,7 @@ class Launch extends FieldVersion implements Observer {
   }
 
   get isLaunch(): boolean { return true } // override
-  hint(): string { return `${Dump.snapshot2(this.operation.ownerHandle, this.changeset, this.operation.fieldKey)}` } // override
+  hint(): string { return `${Dump.snapshot2(this.operation.ownerHandle, this.changeset, this.operation.fieldKey, this)}` } // override
   get order(): number { return this.options.order }
 
   get ["#this#"](): string {
@@ -363,7 +363,7 @@ class Launch extends FieldVersion implements Observer {
   markObsoleteDueTo(observable: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, obsolete: Observer[]): void {
     if (this.observables !== undefined) { // if not yet marked as obsolete
       const skip = !observable.isLaunch &&
-        changeset === this.changeset /* &&
+        changeset.id === this.lastEditorChangesetId /* &&
         snapshot.changes.has(memberName) */
       if (!skip) {
         const why = `${Dump.snapshot2(h, changeset, fk, observable)}    ◀◀    ${outer}`
@@ -394,7 +394,7 @@ class Launch extends FieldVersion implements Observer {
           tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.snapshot2(h, changeset, fk)} changed by T${changeset.id}[${changeset.hint}]`), null)
       }
       else if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
-        Log.write(" ", "x", `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(h, changeset, fk)}`)
+        Log.write(" ", "x", `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(h, changeset, fk, observable)}`)
     }
   }
 
@@ -730,14 +730,14 @@ class Launch extends FieldVersion implements Observer {
         observable.observers.add(this)
         this.observables!.set(observable, subscription)
         if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-          Log.write("║", "  ∞", `${this.hint()} is subscribed to ${Dump.snapshot2(h, ov.changeset, fk)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ""}`)
+          Log.write("║", "  ∞", `${this.hint()} is subscribed to ${Dump.snapshot2(h, ov.changeset, fk, observable)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ""}`)
       }
       else if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write("║", "  x", `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, ov.changeset, fk)}`)
+        Log.write("║", "  x", `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, ov.changeset, fk, observable)}`)
     }
     else {
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write("║", "  x", `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, ov.changeset, fk)}`)
+        Log.write("║", "  x", `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, ov.changeset, fk, observable)}`)
     }
     return ok // || subscription.next === r
   }

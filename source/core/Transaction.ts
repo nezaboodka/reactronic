@@ -402,11 +402,17 @@ export class TransactionImpl extends Transaction {
     const ovParent = csParent.getEditableObjectVersion(h, Meta.Undefined, undefined)
     if (ov.former.objectVersion.changeset === EMPTY_OBJECT_VERSION.changeset) {
       for (const fk in ov.data) {
+        if (fk as any === Meta.Revision) {
+          console.log("(!)")
+        }
         TransactionImpl.migrateFieldVersionToAnotherTransaction(h, fk, ov, ovParent, tParent)
       }
     }
     else {
       ov.changes.forEach((o, fk) => {
+        if (fk as any === Meta.Revision) {
+          console.log("(!)")
+        }
         TransactionImpl.migrateFieldVersionToAnotherTransaction(h, fk, ov, ovParent, tParent)
       })
     }
