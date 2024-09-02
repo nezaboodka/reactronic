@@ -64,7 +64,7 @@ export class MvccArray<T> extends MvccObject {
   reduce<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U
   reduce(callbackfn: (previousValue: any, currentValue: T, currentIndex: number, array: T[]) => any, initialValue?: any): any { return initialValue !== undefined ? this.impl.reduce(callbackfn, initialValue) : this.impl.reduce(callbackfn) }
 
-  reduceRight(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: T[]) => T): T;
+  reduceRight(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: T[]) => T): T
   reduceRight(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: T[]) => T, initialValue: T): T
   reduceRight<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U
   reduceRight(callbackfn: (previousValue: any, currentValue: T, currentIndex: number, array: T[]) => any, initialValue?: any): any { return initialValue !== undefined ? this.impl.reduceRight(callbackfn, initialValue) : this.impl.reduceRight(callbackfn) }
@@ -94,8 +94,8 @@ export class TransactionalArray<T> extends MvccArray<T> {
   constructor(arrayLength: number)
   constructor(arrayLength?: number)
   constructor(...items: T[])
-  constructor(args?: any) {
-    super(false, args !== undefined ? new Array<T>(args) : new Array<T>())
+  constructor(...args: any[]) {
+    super(false, new Array<T>(...args))
   }
 }
 
@@ -106,7 +106,7 @@ export class ObservableArray<T> extends MvccArray<T> {
   constructor(arrayLength: number)
   constructor(arrayLength?: number)
   constructor(...items: T[])
-  constructor(args?: any) {
-    super(true, args !== undefined ? new Array<T>(args) : new Array<T>())
+  constructor(...args: any[]) {
+    super(true, new Array<T>(...args))
   }
 }
