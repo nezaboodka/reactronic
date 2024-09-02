@@ -38,7 +38,7 @@ export enum Priority {
 export abstract class RxNode<E = unknown> {
   abstract readonly key: string
   abstract readonly driver: RxNodeDriver<E>
-  abstract readonly declaration: Readonly<RxNodeDecl<E>>
+  abstract readonly declaration: Readonly<RxNodeDecl<E>/* | RxNodeDeclAsync<E>*/>
   abstract readonly level: number
   abstract readonly owner: RxNode
   abstract element: E
@@ -194,17 +194,26 @@ export abstract class RxNode<E = unknown> {
   }
 }
 
-// RxNodeDecl
+// RxNodeDecl & RxNodeDeclAsync
 
 export type RxNodeDecl<E = unknown> = {
   script?: Script<E>
-  scriptAsync?: ScriptAsync<E>
   key?: string
   mode?: Mode
   creation?: Script<E>
   destruction?: Script<E>
   triggers?: unknown
   basis?: RxNodeDecl<E>
+}
+
+export type RxNodeDeclAsync<E = unknown> = {
+  script?: ScriptAsync<E>
+  key?: string
+  mode?: Mode
+  creation?: ScriptAsync<E>
+  destruction?: Script<E>
+  triggers?: unknown
+  basis?: RxNodeDecl<E> | RxNodeDeclAsync<E>
 }
 
 // RxNodeDriver
