@@ -194,7 +194,7 @@ export abstract class RxNode<E = unknown> {
   }
 }
 
-// RxNodeDecl & RxNodeDeclAsync
+// RxNodeDecl
 
 export type RxNodeDecl<E = unknown> = {
   isAsync?: boolean,
