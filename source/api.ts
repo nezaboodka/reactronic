@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-export { all, pause } from "./util/Utils.js"
+export { all, pause, proceed } from "./util/Utils.js"
 export { MergeList } from "./util/MergeList.js"
 export type { MergedItem, MergeListReader } from "./util/MergeList.js"
 export { SealedArray } from "./util/SealedArray.js"

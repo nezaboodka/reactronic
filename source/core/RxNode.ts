@@ -7,7 +7,7 @@
 
 import { LoggingOptions } from "../Logging.js"
 import { MergeList, MergeListReader, MergedItem } from "../util/MergeList.js"
-import { emitLetters, getCallerInfo } from "../util/Utils.js"
+import { emitLetters, getCallerInfo, proceed } from "../util/Utils.js"
 import { Isolation, MemberOptions, Reentrance } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
@@ -15,9 +15,9 @@ import { RxSystem, options, raw, reactive, unobs } from "../RxSystem.js"
 
 // Scripts
 
-export type Script<T> = (el: T, basis: () => void) => void
-export type ScriptAsync<T> = (el: T, basis: () => Promise<void>) => Promise<void>
-export type Handler<T = unknown, R = void> = (el: T) => R
+export type Script<E> = (el: E, basis: () => void) => void
+export type ScriptAsync<E> = (el: E, basis: () => Promise<void>) => Promise<void>
+export type Handler<E = unknown, R = void> = (el: E) => R
 
 // Enums
 
@@ -197,23 +197,14 @@ export abstract class RxNode<E = unknown> {
 // RxNodeDecl & RxNodeDeclAsync
 
 export type RxNodeDecl<E = unknown> = {
-  script?: Script<E>
+  isAsync?: boolean,
+  script?: Script<E> // | ScriptAsync<E>
   key?: string
   mode?: Mode
-  creation?: Script<E>
+  creation?: Script<E> // | ScriptAsync<E>
   destruction?: Script<E>
   triggers?: unknown
   basis?: RxNodeDecl<E>
-}
-
-export type RxNodeDeclAsync<E = unknown> = {
-  script?: ScriptAsync<E>
-  key?: string
-  mode?: Mode
-  creation?: ScriptAsync<E>
-  destruction?: Script<E>
-  triggers?: unknown
-  basis?: RxNodeDecl<E> | RxNodeDeclAsync<E>
 }
 
 // RxNodeDriver
@@ -253,9 +244,9 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
 
   abstract allocate(node: RxNode<E>): E
 
-  create(node: RxNode<E>): void {
+  create(node: RxNode<E>): void | Promise<void> {
     this.initialize?.(node.element)
-    invokeCreationUsingBasisChain(node.element, node.declaration)
+    return invokeCreationUsingBasisChain(node.element, node.declaration)
   }
 
   destroy(node: RxNode<E>, isLeader: boolean): boolean {
@@ -268,7 +259,7 @@ export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
   }
 
   update(node: RxNode<E>): void | Promise<void> {
-    invokeScriptUsingBasisChain(node.element, node.declaration)
+    return invokeScriptUsingBasisChain(node.element, node.declaration)
   }
 
   child(ownerNode: RxNode<E>,
@@ -323,33 +314,43 @@ function getModeUsingBasisChain(declaration?: RxNodeDecl<any>): Mode {
 }
 
 function invokeScriptUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void {
+  let result: void | Promise<void> = undefined
   const basis = declaration.basis
   const script = declaration.script
-  if (script)
-    script(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
+  if (script) {
+    if (declaration.isAsync) {
+      throw new Error("not implemented")
+      // const scriptAsync = script as ScriptAsync<any>
+      // result = scriptAsync(element, basis ? async () => await invokeScriptUsingBasisChain(element, basis) : NOP_ASYNC)
+    }
+    else {
+      const scriptSync = script as Script<any>
+      result = scriptSync(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
+    }
+  }
   else if (basis)
-    invokeScriptUsingBasisChain(element, basis)
+    result = invokeScriptUsingBasisChain(element, basis)
+  return result
 }
 
-// async function invokeScriptAsyncUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): Promise<void> {
-//   const basis = declaration.basis
-//   const script = declaration.script
-//   const scriptAsync = declaration.scriptAsync
-//   if (scriptAsync)
-//     await scriptAsync(element, basis ? () => invokeScriptAsyncUsingBasisChain(element, basis) : NOP)
-//   else if (script)
-//     script(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
-//   else if (basis)
-//     await invokeScriptAsyncUsingBasisChain(element, basis)
-// }
-
 function invokeCreationUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void {
+  let result: void | Promise<void> = undefined
   const basis = declaration.basis
   const creation = declaration.creation
-  if (creation)
-    creation(element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP)
+  if (creation) {
+    if (declaration.isAsync) {
+      throw new Error("not implemented")
+      // const creationAsync = creation as ScriptAsync<any>
+      // result = creationAsync(element, basis ? async () => await invokeScriptUsingBasisChain(element, basis) : NOP_ASYNC)
+    }
+    else {
+      const creationSync = creation as Script<any>
+      result = creationSync(element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP)
+    }
+  }
   else if (basis)
-    invokeCreationUsingBasisChain(element, basis)
+    result = invokeCreationUsingBasisChain(element, basis)
+  return result
 }
 
 function invokeDestructionUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void {
@@ -675,12 +676,9 @@ function updateNow(seat: MergedItem<RxNodeImpl<any>>): void {
           node.children.beginMerge()
           const driver = node.driver
           result = driver.update(node)
-          if (result instanceof Promise)
-            result.then(
-              v => { runUpdateNestedNodesThenDo(undefined, NOP); return v },
-              e => { console.log(e); runUpdateNestedNodesThenDo(e ?? new Error("unknown error"), NOP) })
-          else
-            runUpdateNestedNodesThenDo(undefined, NOP)
+          result = proceed(result,
+            v => { runUpdateNestedNodesThenDo(undefined, NOP); return v },
+            e => { console.log(e); runUpdateNestedNodesThenDo(e ?? new Error("unknown error"), NOP) })
         }
         catch(e: unknown) {
           runUpdateNestedNodesThenDo(e, NOP)
@@ -822,6 +820,7 @@ Promise.prototype.then = reactronicDomHookedThen
 // Globals
 
 const NOP: any = (...args: any[]): void => { /* nop */ }
+// const NOP_ASYNC: any = async (...args: any[]): Promise<void> => { /* nop */ }
 
 let gOwnSeat: MergedItem<RxNodeImpl> | undefined = undefined
 let gFirstToDispose: MergedItem<RxNodeImpl> | undefined = undefined

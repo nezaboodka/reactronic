@@ -72,6 +72,17 @@ export function pause<T>(timeout: number): Promise<T> {
   })
 }
 
+export function proceed<T>(result: T | Promise<T>, success: (v: any) => T, failure: (e: any) => T): T | Promise<T> {
+  let r: T | Promise<T>
+  if (result instanceof Promise)
+    r = result.then(
+      v => success(v),
+      e => failure(e))
+  else
+    r = success(result)
+  return r
+}
+
 export function emitLetters(n: number): string {
   if (n < 0)
     throw new Error(`emitLetters: argument (${n}) should not be negative or zero`)
