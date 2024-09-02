@@ -69,7 +69,10 @@ export class MvccArray<T> extends MvccObject {
   reduceRight<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U
   reduceRight(callbackfn: (previousValue: any, currentValue: T, currentIndex: number, array: T[]) => any, initialValue?: any): any { return initialValue !== undefined ? this.impl.reduceRight(callbackfn, initialValue) : this.impl.reduceRight(callbackfn) }
 
-  find<S extends T>(predicate: (this: void, value: T, index: number, obj: T[]) => value is S, thisArg?: any): S | undefined { return this.impl.find(predicate, thisArg) }
+  find(predicate: (value: T, index: number, obj: T[]) => unknown, thisArg?: any): T | undefined
+  find<S extends T>(predicate: (this: void, value: T, index: number, obj: T[]) => value is S, thisArg?: any): S | undefined
+  find(predicate: (value: T, index: number, obj: T[]) => any, thisArg?: any): T | undefined { return this.impl.find(predicate, thisArg) }
+
   findIndex(predicate: (value: T, index: number, obj: T[]) => unknown, thisArg?: any): number { return this.impl.findIndex(predicate, thisArg) }
   fill(value: T, start?: number, end?: number): this { this.mutable.fill(value, start, end); return this }
   copyWithin(target: number, start: number, end?: number): this { this.mutable.copyWithin(target, start, end); return this }
