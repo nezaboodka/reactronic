@@ -273,6 +273,7 @@ export class TransactionImpl extends Transaction {
   private runImpl<T>(logging: Partial<LoggingOptions> | undefined, func: F<T>, ...args: any[]): T {
     let result: T
     const outer = TransactionImpl.curr
+    const p = this.parent
     try {
       if (outer === TransactionImpl.none) {
         TransactionImpl.frameStartTime = performance.now()
@@ -280,7 +281,9 @@ export class TransactionImpl extends Transaction {
       }
       TransactionImpl.curr = this
       this.pending++
-      this.changeset.acquire(outer.changeset)
+      const acquired = this.changeset.acquire(outer.changeset)
+      if (acquired && p)
+        p.run(() => p.pending++)
       result = func(...args)
       if (this.sealed && this.pending === 1) {
         if (!this.canceled)
@@ -298,6 +301,8 @@ export class TransactionImpl extends Transaction {
       this.pending--
       if (this.sealed && this.pending === 0) {
         const reactive = this.applyOrDiscard() // it's critical to have no exceptions inside this call
+        if (p)
+          p.runImpl(undefined, () => p.pending--)
         TransactionImpl.curr = outer
         TransactionImpl.outside(Changeset.enqueueReactiveFunctionsToRun, reactive)
       }
@@ -537,7 +542,7 @@ export class TransactionImpl extends Transaction {
   }
 
   /* istanbul ignore next */
-  static migrateFieldVersion = function(fv: FieldVersion, target: Transaction): FieldVersion {
+  static migrateFieldVersion = function (fv: FieldVersion, target: Transaction): FieldVersion {
     throw misuse("this implementation of cloneLaunch should never be called")
   }
 

@@ -196,8 +196,9 @@ export class Changeset implements AbstractChangeset {
     return ov.changeset !== this && !this.sealed
   }
 
-  acquire(outer: Changeset): void {
-    if (!this.sealed && this.revision === UNDEFINED_REVISION) {
+  acquire(outer: Changeset): boolean {
+    const result = !this.sealed && this.revision === UNDEFINED_REVISION
+    if (result) {
       const ahead = this.options.token === undefined || outer.revision === UNDEFINED_REVISION
       this.revision = ahead ? Changeset.stampGen : outer.revision
       Changeset.pending.push(this)
@@ -206,6 +207,7 @@ export class Changeset implements AbstractChangeset {
       if (Log.isOn && Log.opt.transaction)
         Log.write("╔══", `s${this.revision}`, `${this.hint}`)
     }
+    return result
   }
 
   bumpBy(timestamp: number): void {

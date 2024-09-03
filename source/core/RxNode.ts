@@ -151,7 +151,7 @@ export abstract class RxNode<E = unknown> {
   }
 
   static updateNestedNodesThenDo(action: (error: unknown) => void): void {
-    runUpdateNestedNodesThenDo(undefined, action)
+    runUpdateNestedNodesThenDo(RxNodeImpl.ownSeat, undefined, action)
   }
 
   static markAsMounted(node: RxNode<any>, yes: boolean): void {
@@ -198,7 +198,6 @@ export abstract class RxNode<E = unknown> {
 // RxNodeDecl
 
 export type RxNodeDecl<E = unknown> = {
-  isAsync?: boolean,
   script?: Script<E>
   scriptAsync?: ScriptAsync<E>
   key?: string
@@ -515,54 +514,55 @@ function getNodeKey(node: RxNode): string | undefined {
   return node.stamp >= 0 ? node.key : undefined
 }
 
-function runUpdateNestedNodesThenDo(error: unknown, action: (error: unknown) => void): void {
-  const ownSeat = RxNodeImpl.ownSeat
-  const owner = ownSeat.instance
-  const children = owner.children
-  if (children.isMergeInProgress) {
-    let promised: Promise<void> | undefined = undefined
-    try {
-      children.endMerge(error)
-      // Deactivate removed elements
-      for (const child of children.removedItems(true))
-        triggerDeactivation(child, true, true)
-      if (!error) {
-        // Lay out and update actual elements
-        const sequential = children.isStrict
-        let p1: Array<MergedItem<RxNodeImpl>> | undefined = undefined
-        let p2: Array<MergedItem<RxNodeImpl>> | undefined = undefined
-        let mounting = false
-        let partition = owner
-        for (const child of children.items()) {
-          if (Transaction.isCanceled)
-            break
-          const childNode = child.instance
-          const isPart = childNode.driver.isPartition
-          const host = isPart ? owner : partition
-          mounting = markToMountIfNecessary(
-            mounting, host, child, children, sequential)
-          const p = childNode.priority ?? Priority.realtime
-          if (p === Priority.realtime)
-            triggerUpdateViaSeat(child) // update synchronously
-          else if (p === Priority.normal)
-            p1 = push(child, p1) // defer for P1 async update
-          else
-            p2 = push(child, p2) // defer for P2 async update
-          if (isPart)
-            partition = childNode
+function runUpdateNestedNodesThenDo(ownSeat: MergedItem<RxNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
+  runInside(ownSeat, () => {
+    const owner = ownSeat.instance
+    const children = owner.children
+    if (children.isMergeInProgress) {
+      let promised: Promise<void> | undefined = undefined
+      try {
+        children.endMerge(error)
+        // Deactivate removed elements
+        for (const child of children.removedItems(true))
+          triggerDeactivation(child, true, true)
+        if (!error) {
+          // Lay out and update actual elements
+          const sequential = children.isStrict
+          let p1: Array<MergedItem<RxNodeImpl>> | undefined = undefined
+          let p2: Array<MergedItem<RxNodeImpl>> | undefined = undefined
+          let mounting = false
+          let partition = owner
+          for (const child of children.items()) {
+            if (Transaction.isCanceled)
+              break
+            const childNode = child.instance
+            const isPart = childNode.driver.isPartition
+            const host = isPart ? owner : partition
+            mounting = markToMountIfNecessary(
+              mounting, host, child, children, sequential)
+            const p = childNode.priority ?? Priority.realtime
+            if (p === Priority.realtime)
+              triggerUpdateViaSeat(child) // update synchronously
+            else if (p === Priority.normal)
+              p1 = push(child, p1) // defer for P1 async update
+            else
+              p2 = push(child, p2) // defer for P2 async update
+            if (isPart)
+              partition = childNode
+          }
+          // Update incremental children (if any)
+          if (!Transaction.isCanceled && (p1 !== undefined || p2 !== undefined))
+            promised = startIncrementalUpdate(ownSeat, children, p1, p2).then(
+              () => action(error),
+              e => action(e))
         }
-        // Update incremental children (if any)
-        if (!Transaction.isCanceled && (p1 !== undefined || p2 !== undefined))
-          promised = startIncrementalUpdate(ownSeat, children, p1, p2).then(
-            () => action(error),
-            e => action(e))
+      }
+      finally {
+        if (!promised)
+          action(error)
       }
     }
-    finally {
-      if (!promised)
-        action(error)
-    }
-  }
+  })
 }
 
 function markToMountIfNecessary(mounting: boolean, host: RxNodeImpl,
@@ -678,11 +678,11 @@ function updateNow(seat: MergedItem<RxNodeImpl<any>>): void {
           const driver = node.driver
           result = driver.update(node)
           result = proceedSyncOrAsync(result,
-            v => { runUpdateNestedNodesThenDo(undefined, NOP); return v },
-            e => { console.log(e); runUpdateNestedNodesThenDo(e ?? new Error("unknown error"), NOP) })
+            v => { runUpdateNestedNodesThenDo(seat, undefined, NOP); return v },
+            e => { console.log(e); runUpdateNestedNodesThenDo(seat, e ?? new Error("unknown error"), NOP) })
         }
         catch (e: unknown) {
-          runUpdateNestedNodesThenDo(e, NOP)
+          runUpdateNestedNodesThenDo(seat, e, NOP)
           console.log(`Update failed: ${node.key}`)
           console.log(`${e}`)
         }
