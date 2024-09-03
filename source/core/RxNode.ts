@@ -5,9 +5,10 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
+import { misuse } from "../util/Dbg.js"
 import { LoggingOptions } from "../Logging.js"
 import { MergeList, MergeListReader, MergedItem } from "../util/MergeList.js"
-import { emitLetters, getCallerInfo, proceed } from "../util/Utils.js"
+import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
 import { Isolation, MemberOptions, Reentrance } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
@@ -198,10 +199,12 @@ export abstract class RxNode<E = unknown> {
 
 export type RxNodeDecl<E = unknown> = {
   isAsync?: boolean,
-  script?: Script<E> // | ScriptAsync<E>
+  script?: Script<E>
+  scriptAsync?: ScriptAsync<E>
   key?: string
   mode?: Mode
-  creation?: Script<E> // | ScriptAsync<E>
+  creation?: Script<E>
+  creationAsync?: ScriptAsync<E>
   destruction?: Script<E>
   triggers?: unknown
   basis?: RxNodeDecl<E>
@@ -225,7 +228,7 @@ export type RxNodeDriver<E = unknown> = {
     childBasis?: RxNodeDecl<any>): MergedItem<RxNode> | undefined
 
   getHost(node: RxNode<E>): RxNode<E>
-  }
+}
 
 // RxNodeContext
 
@@ -313,40 +316,38 @@ function getModeUsingBasisChain(declaration?: RxNodeDecl<any>): Mode {
   return declaration?.mode ?? (declaration?.basis ? getModeUsingBasisChain(declaration?.basis) : Mode.default)
 }
 
-function invokeScriptUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void {
+function invokeScriptUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
   const script = declaration.script
+  const scriptAsync = declaration.scriptAsync
+  if (script && scriptAsync) {
+    throw misuse("'script' and 'scriptAsync' cannot be defined together")
+  }
   if (script) {
-    if (declaration.isAsync) {
-      throw new Error("not implemented")
-      // const scriptAsync = script as ScriptAsync<any>
-      // result = scriptAsync(element, basis ? async () => await invokeScriptUsingBasisChain(element, basis) : NOP_ASYNC)
-    }
-    else {
-      const scriptSync = script as Script<any>
-      result = scriptSync(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
-    }
+    result = script(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
+  }
+  else if (scriptAsync) {
+    result = scriptAsync(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP_ASYNC)
   }
   else if (basis)
     result = invokeScriptUsingBasisChain(element, basis)
   return result
 }
 
-function invokeCreationUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void {
+function invokeCreationUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
   const creation = declaration.creation
+  const creationAsync = declaration.creationAsync
+  if (creation && creationAsync) {
+    throw misuse("'creation' and 'creationAsync' cannot be defined together")
+  }
   if (creation) {
-    if (declaration.isAsync) {
-      throw new Error("not implemented")
-      // const creationAsync = creation as ScriptAsync<any>
-      // result = creationAsync(element, basis ? async () => await invokeScriptUsingBasisChain(element, basis) : NOP_ASYNC)
-    }
-    else {
-      const creationSync = creation as Script<any>
-      result = creationSync(element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP)
-    }
+    result = creation(element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP)
+  }
+  else if (creationAsync) {
+    result = creationAsync(element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP_ASYNC)
   }
   else if (basis)
     result = invokeCreationUsingBasisChain(element, basis)
@@ -676,11 +677,11 @@ function updateNow(seat: MergedItem<RxNodeImpl<any>>): void {
           node.children.beginMerge()
           const driver = node.driver
           result = driver.update(node)
-          result = proceed(result,
+          result = proceedSyncOrAsync(result,
             v => { runUpdateNestedNodesThenDo(undefined, NOP); return v },
             e => { console.log(e); runUpdateNestedNodesThenDo(e ?? new Error("unknown error"), NOP) })
         }
-        catch(e: unknown) {
+        catch (e: unknown) {
           runUpdateNestedNodesThenDo(e, NOP)
           console.log(`Update failed: ${node.key}`)
           console.log(`${e}`)
@@ -820,7 +821,7 @@ Promise.prototype.then = reactronicDomHookedThen
 // Globals
 
 const NOP: any = (...args: any[]): void => { /* nop */ }
-// const NOP_ASYNC: any = async (...args: any[]): Promise<void> => { /* nop */ }
+const NOP_ASYNC: any = async (...args: any[]): Promise<void> => { /* nop */ }
 
 let gOwnSeat: MergedItem<RxNodeImpl> | undefined = undefined
 let gFirstToDispose: MergedItem<RxNodeImpl> | undefined = undefined
