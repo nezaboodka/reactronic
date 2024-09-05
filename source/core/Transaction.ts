@@ -158,8 +158,10 @@ export class TransactionImpl extends Transaction {
     return this.sealed && this.pending === 0
   }
 
-  async whenFinished(): Promise<void> {
-    if (!this.isFinished)
+  async whenFinished(includingParent?: boolean): Promise<void> {
+    if (includingParent && this.parent)
+      await this.parent.whenFinished(includingParent)
+    else if (!this.isFinished)
       await this.acquirePromise()
   }
 
@@ -389,9 +391,18 @@ export class TransactionImpl extends Transaction {
       if (Log.opt.transaction)
         Log.write(changeset.timestamp < UNDEFINED_REVISION ? "╚══" : /* istanbul ignore next */ "═══", `s${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "APPLY"}(${this.changeset.items.size})${error ? ` - ${error}` : ""}`)
     }
-    if (!error && !this.parent)
+    let obsolete = changeset.obsolete
+    if (changeset.parent) {
+      if (changeset.obsolete.length > 0) {
+        // Migrate obsolete reactions
+        for (const o of changeset.obsolete)
+          changeset.parent.obsolete.push(o)
+        obsolete = []
+      }
+    }
+    else if (!error)
       Changeset.propagateAllChangesThroughSubscriptions(changeset)
-    return changeset.obsolete
+    return obsolete
   }
 
   applyObjectChanges(h: ObjectHandle, ov: ObjectVersion): void {
@@ -407,17 +418,11 @@ export class TransactionImpl extends Transaction {
     const ovParent = csParent.getEditableObjectVersion(h, Meta.Undefined, undefined)
     if (ov.former.objectVersion.changeset === EMPTY_OBJECT_VERSION.changeset) {
       for (const fk in ov.data) {
-        if (fk as any === Meta.Revision) {
-          console.log("(!)")
-        }
         TransactionImpl.migrateFieldVersionToAnotherTransaction(h, fk, ov, ovParent, tParent)
       }
     }
     else {
       ov.changes.forEach((o, fk) => {
-        if (fk as any === Meta.Revision) {
-          console.log("(!)")
-        }
         TransactionImpl.migrateFieldVersionToAnotherTransaction(h, fk, ov, ovParent, tParent)
       })
     }
