@@ -54,6 +54,7 @@ const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   triggeringArgs: false,
   throttling: Number.MAX_SAFE_INTEGER, // disabled, @reactive sets it to -1 to enable
   reentrance: Reentrance.preventWithError,
+  allowObsoleteToFinish: false,
   journal: undefined,
   indicator: null,
   logging: undefined,
@@ -69,6 +70,7 @@ export class OptionsImpl implements MemberOptions {
   readonly triggeringArgs: boolean
   readonly throttling: number
   readonly reentrance: Reentrance
+  readonly allowObsoleteToFinish: boolean
   readonly journal: Journal | undefined
   readonly indicator: Indicator | null
   readonly logging?: Partial<LoggingOptions>
@@ -84,6 +86,7 @@ export class OptionsImpl implements MemberOptions {
     this.triggeringArgs = merge(DEFAULT_OPTIONS.triggeringArgs, existing.triggeringArgs, patch.triggeringArgs, implicit)
     this.throttling = merge(DEFAULT_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
     this.reentrance = merge(DEFAULT_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
+    this.allowObsoleteToFinish = merge(DEFAULT_OPTIONS.allowObsoleteToFinish, existing.allowObsoleteToFinish, patch.allowObsoleteToFinish, implicit)
     this.journal = merge(DEFAULT_OPTIONS.journal, existing.journal, patch.journal, implicit)
     this.indicator = merge(DEFAULT_OPTIONS.indicator, existing.indicator, patch.indicator, implicit)
     this.logging = merge(DEFAULT_OPTIONS.logging, existing.logging, patch.logging, implicit)

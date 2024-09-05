@@ -233,7 +233,8 @@ export class OperationImpl implements Operation<any> {
   private static markObsolete(self: OperationImpl): void {
     const ror = self.peek(undefined)
     const ctx = ror.changeset
-    ror.launch.markObsoleteDueTo(ror.launch, self.fieldKey, EMPTY_OBJECT_VERSION.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
+    const obsolete = ror.launch.transaction.isFinished ? ctx.obsolete : ror.launch.transaction.changeset.obsolete
+    ror.launch.markObsoleteDueTo(ror.launch, self.fieldKey, EMPTY_OBJECT_VERSION.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, obsolete)
   }
 }
 
@@ -390,7 +391,7 @@ class Launch extends FieldVersion implements Observer {
         if (tran.changeset === changeset) {
           // do not cancel itself
         }
-        else if (!tran.isFinished && this !== observable) // restart after itself if canceled
+        else if (!tran.isFinished && this !== observable && !this.options.allowObsoleteToFinish) // restart after itself if canceled
           tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.snapshot2(h, changeset, fk)} changed by T${changeset.id}[${changeset.hint}]`), null)
       }
       else if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
@@ -641,8 +642,11 @@ class Launch extends FieldVersion implements Observer {
           else
             former.successor = undefined
         }
-        former.observers?.forEach(s =>
-          s.markObsoleteDueTo(former, fk, ov.changeset, h, why, timestamp, obsolete))
+        former.observers?.forEach(s => {
+          const t = (s as Launch).transaction
+          const o = t.isFinished ? obsolete : t.changeset.obsolete
+          return s.markObsoleteDueTo(former, fk, ov.changeset, h, why, timestamp, o)
+        })
       }
     }
     if (curr instanceof Launch) {

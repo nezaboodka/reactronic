@@ -27,6 +27,7 @@ export type MemberOptions = {
   readonly triggeringArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
+  readonly allowObsoleteToFinish: boolean
   readonly journal: Journal | undefined
   readonly indicator: Indicator | null
   readonly logging?: Partial<LoggingOptions>

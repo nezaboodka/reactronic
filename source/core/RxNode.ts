@@ -448,6 +448,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
   @reactive
   @options({
     reentrance: Reentrance.cancelPrevious,
+    allowObsoleteToFinish: true,
     triggeringArgs: true,
     noSideEffects: false,
   })
