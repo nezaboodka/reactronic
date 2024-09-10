@@ -30,7 +30,7 @@ class RxComponent<V> extends ObservableObject {
 
   @reactive
   protected ensureUpToDate(): void {
-    if (!RxSystem.getOperation(this.render).isUpToDate)
+    if (!RxSystem.getOperation(this.render).isReusable)
       Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 

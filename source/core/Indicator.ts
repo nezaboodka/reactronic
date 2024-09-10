@@ -151,13 +151,13 @@ export class IndicatorImpl extends Indicator {
 
   private static tick(mon: IndicatorImpl): void {
     if (mon.internals.started !== 0) {
-      Transaction.run(INDICATOR_TICK_OPTIONS, () => {
-        const resolution = mon.internals.durationResolution
-        mon.busyDuration = Math.round(resolution * (performance.now() - mon.internals.started)) / resolution
-      })
+      const resolution = mon.internals.durationResolution
+      mon.busyDuration = Math.round(resolution * (performance.now() - mon.internals.started)) / resolution
       const t: any = globalThis ?? global as any
       if (t.requestAnimationFrame)
-        requestAnimationFrame(() => IndicatorImpl.tick(mon))
+        requestAnimationFrame(() => {
+          Transaction.run(INDICATOR_TICK_OPTIONS, () => IndicatorImpl.tick(mon))
+        })
     }
   }
 }

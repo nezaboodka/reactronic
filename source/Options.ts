@@ -65,7 +65,7 @@ export type Operation<T> = {
   readonly result: T
   readonly error: any
   readonly stamp: number
-  readonly isUpToDate: boolean
+  readonly isReusable: boolean
 
   configure(options: Partial<MemberOptions>): MemberOptions
   markObsolete(): void

@@ -77,7 +77,7 @@ export class Changeset implements AbstractChangeset {
   static edit: () => Changeset = UNDEF
   static markUsed: (fv: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean) => void = UNDEF
   static markEdited: (oldValue: any, newValue: any, edited: boolean, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle) => void = UNDEF
-  static isConflicting: (oldValue: any, newValue: any) => boolean = UNDEF
+  static tryResolveConflict: (theirValue: any, ourFormerValue: any, ourValue: any) => { isResolved: boolean, resolvedValue: any }  = UNDEF
   static propagateAllChangesThroughSubscriptions = (changeset: Changeset): void => { /* nop */ }
   static revokeAllSubscriptions = (changeset: Changeset): void => { /* nop */ }
   static enqueueReactiveFunctionsToRun = (reactive: Array<Observer>): void => { /* nop */ }
@@ -219,7 +219,7 @@ export class Changeset implements AbstractChangeset {
     let conflicts: ObjectVersion[] | undefined = undefined
     if (this.items.size > 0) {
       this.items.forEach((ov: ObjectVersion, h: ObjectHandle) => {
-        const theirs = this.parent ? this.parent.lookupObjectVersion(h, Meta.Handle, false) : h.applied
+        const theirs = this.parent ? this.parent.lookupObjectVersion(h, Meta.Handle, true) : h.applied
         if (ov.former.objectVersion !== theirs) {
           const merged = this.merge(h, ov, theirs)
           if (ov.conflicts.size > 0) {
@@ -279,11 +279,15 @@ export class Changeset implements AbstractChangeset {
         }
       }
       else {
-        const conflict = Changeset.isConflicting(theirs.data[fk], ours.former.objectVersion.data[fk])
-        if (conflict)
+        const theirValue = theirs.data[fk]
+        const ourFormerValue = ours.former.objectVersion.data[fk]
+        const { isResolved, resolvedValue } = Changeset.tryResolveConflict(theirValue, ourFormerValue, ourFieldVersion)
+        if (!isResolved)
           ours.conflicts.set(fk, theirs)
+        else if ((resolvedValue as FieldVersion).isLaunch)
+          merged[fk] = resolvedValue
         if (Log.isOn && Log.opt.change)
-          Log.write("║╠", "", `${Dump.snapshot2(h, ours.changeset, fk)} ${conflict ? "<>" : "=="} ${Dump.snapshot2(h, theirs.changeset, fk)}`, 0, conflict ? " *** CONFLICT ***" : undefined)
+          Log.write("║╠", "", `${Dump.snapshot2(h, ours.changeset, fk)} ${!isResolved ? "<>" : "=="} ${Dump.snapshot2(h, theirs.changeset, fk)}`, 0, !isResolved ? " *** CONFLICT ***" : undefined)
       }
     })
     Utils.copyAllMembers(merged, ours.data) // overwrite with merged copy

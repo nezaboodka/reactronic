@@ -22,6 +22,7 @@ export abstract class Transaction implements Worker {
   abstract readonly error: Error | undefined
   abstract readonly changeset: Changeset
   abstract readonly margin: number
+  abstract readonly parent?: Transaction
 
   abstract run<T>(func: F<T>, ...args: any[]): T
   abstract inspect<T>(func: F<T>, ...args: any[]): T

@@ -21,7 +21,7 @@ const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.observable, EMP
 
 type ReuseOrRelaunchContext = {
   readonly launch: Launch
-  readonly isUpToDate: boolean
+  readonly isReusable: boolean
   readonly changeset: Changeset
   readonly objectVersion: ObjectVersion
 }
@@ -37,7 +37,7 @@ export class OperationImpl implements Operation<any> {
   get result(): any { return this.reuseOrRelaunch(true, undefined).content }
   get error(): boolean { return this.use().launch.error }
   get stamp(): number { return this.use().objectVersion.changeset.timestamp }
-  get isUpToDate(): boolean { return this.use().isUpToDate }
+  get isReusable(): boolean { return this.use().isReusable }
   markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.ownerHandle, this.fieldKey)})` : "markObsolete()" }, OperationImpl.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.reuseOrRelaunch(true, args).content }
 
@@ -51,7 +51,7 @@ export class OperationImpl implements Operation<any> {
     const ctx = ror.changeset
     const launch: Launch = ror.launch
     const opts = launch.options
-    if (!ror.isUpToDate && !ror.objectVersion.disposed
+    if (!ror.isReusable && !ror.objectVersion.disposed
       && (!weak || launch.cause === BOOT_CAUSE || !launch.successor ||
         launch.successor.transaction.isFinished)) {
       // transaction => joinToCurrent
@@ -133,11 +133,12 @@ export class OperationImpl implements Operation<any> {
     const ctx = Changeset.current()
     const ov: ObjectVersion = ctx.lookupObjectVersion(this.ownerHandle, this.fieldKey, false)
     const launch: Launch = this.acquireFromObjectVersion(ov, args)
-    const isValid = launch.options.kind !== Kind.transactional && launch.cause !== BOOT_CAUSE &&
-      (ctx === launch.changeset || ctx.timestamp < launch.obsoleteSince) &&
+    const applied = this.ownerHandle.applied.data[this.fieldKey] as Launch
+    const isReusable = launch.options.kind !== Kind.transactional && launch.cause !== BOOT_CAUSE &&
+      (ctx === launch.changeset || ctx.timestamp < launch.obsoleteSince || applied.obsoleteDueTo === undefined) &&
       (!launch.options.triggeringArgs || args === undefined ||
         launch.args.length === args.length && launch.args.every((t, i) => t === args[i])) || ov.disposed
-    return { launch, isUpToDate: isValid, changeset: ctx, objectVersion: ov }
+    return { launch, isReusable, changeset: ctx, objectVersion: ov }
   }
 
   private use(): ReuseOrRelaunchContext {
@@ -160,7 +161,7 @@ export class OperationImpl implements Operation<any> {
       Changeset.markEdited(launch, relaunch, true, ov, fk, h)
       launch = relaunch
     }
-    return { launch, isUpToDate: true, changeset: ctx, objectVersion: ov }
+    return { launch, isReusable: true, changeset: ctx, objectVersion: ov }
   }
 
   private acquireFromObjectVersion(ov: ObjectVersion, args: any[] | undefined): Launch {
@@ -217,7 +218,7 @@ export class OperationImpl implements Operation<any> {
       }
       else { // retry launch
         ror = this.peek(argsx) // re-read on retry
-        if (ror.launch.options.kind === Kind.transactional || !ror.isUpToDate) {
+        if (ror.launch.options.kind === Kind.transactional || !ror.isReusable) {
           ror = this.edit()
           if (Log.isOn && Log.opt.operation)
             Log.write("║", "  o", `${ror.launch.why()}`)
@@ -588,11 +589,20 @@ class Launch extends FieldVersion implements Observer {
       edited ? Log.write("║", "  =", `${Dump.snapshot2(h, ov.changeset, fk)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`) : Log.write("║", "  =", `${Dump.snapshot2(h, ov.changeset, fk)} is changed: ${valueHint(oldValue)} ▸▸ ${valueHint(newValue)}`, undefined, " (same as previous)")
   }
 
-  private static isConflicting(oldValue: any, newValue: any): boolean {
-    let result = oldValue !== newValue
-    if (result)
-      result = oldValue instanceof Launch && oldValue.cause !== BOOT_CAUSE
-    return result
+  private static tryResolveConflict(theirValue: any, ourFormerValue: any, ourValue: any): { isResolved: boolean, resolvedValue: any } {
+    let isResolved = theirValue === ourFormerValue
+    let resolvedValue = ourValue
+    if (!isResolved) {
+      if (ourValue instanceof Launch && ourValue.obsoleteDueTo === undefined) {
+        isResolved = true
+        resolvedValue = ourValue
+      }
+      else if (theirValue instanceof Launch && (theirValue.obsoleteDueTo === undefined || theirValue.cause === BOOT_CAUSE)) {
+        isResolved = true
+        resolvedValue = theirValue
+      }
+    }
+    return { isResolved, resolvedValue }
   }
 
   private static propagateAllChangesThroughSubscriptions(changeset: Changeset): void {
@@ -795,7 +805,7 @@ class Launch extends FieldVersion implements Observer {
     Dump.valueHint = valueHint
     Changeset.markUsed = Launch.markUsed // override
     Changeset.markEdited = Launch.markEdited // override
-    Changeset.isConflicting = Launch.isConflicting // override
+    Changeset.tryResolveConflict = Launch.tryResolveConflict // override
     Changeset.propagateAllChangesThroughSubscriptions = Launch.propagateAllChangesThroughSubscriptions // override
     Changeset.revokeAllSubscriptions = Launch.revokeAllSubscriptions // override
     Changeset.enqueueReactiveFunctionsToRun = Launch.enqueueReactiveFunctionsToRun

@@ -48,7 +48,7 @@ test("brief", t => {
     t.is(RxSystem.getOperation(app.print).options.order, 123)
     t.notThrows(() => DemoView.test())
     const render = RxSystem.getOperation(app.render)
-    t.is(render.isUpToDate, true)
+    t.is(render.isReusable, true)
     t.is(render.args.length, 1)
     t.is(render.result.length, 1)
     app.model.loadUsers()
@@ -62,7 +62,7 @@ test("brief", t => {
     t.is("dummy2" in daddy, false)
     t.is(daddy.name, "John")
     t.is(daddy.age, 38)
-    t.is(render.isUpToDate, true)
+    t.is(render.isReusable, true)
     t.is(RxSystem.takeSnapshot(daddy).age, 38)
     const stamp = render.stamp
     app.render(0)
@@ -97,7 +97,7 @@ test("brief", t => {
     t.throws(() => tran1.inspect(() => { daddy.name = "Forbidden" }), { message: "cannot make changes during transaction inspection" })
     t.is(daddy.age, 38)
     t.is(daddy.children.length, 3)
-    t.is(render.isUpToDate, true)
+    t.is(render.isReusable, true)
     tran1.run(() => {
       t.is(daddy.age, 40)
       daddy.age += 5
@@ -118,12 +118,12 @@ test("brief", t => {
       t.is(daddy.children.map(x => `"${x.name}"`).join(", "), "\"Barry\", \"Steven Smith\", \"William Smith\"")
       t.is(daddy.children.length, 3)
     })
-    t.is(render.isUpToDate, true)
+    t.is(render.isReusable, true)
     t.is(daddy.name, "John")
     t.is(daddy.age, 38)
     t.is(daddy.attributes.size, 0)
     tran1.apply() // changes are applied, reactive functions are executed
-    t.is(render.isUpToDate, true)
+    t.is(render.isReusable, true)
     t.not(render.stamp, stamp)
     t.is(daddy.name, "John Smith")
     t.is(daddy.age, 45)
