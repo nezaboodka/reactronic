@@ -86,6 +86,18 @@ export abstract class RxNode<E = unknown> {
     creationAsync?: ScriptAsync<E>,
     destruction?: Script<E>,
     triggers?: unknown,
+    basis?: RxNodeDecl<E>):  RxNode<E>
+
+  static declare<E = void>(
+    driver: RxNodeDriver<E>,
+    scriptOrDeclaration?: Script<E> | RxNodeDecl<E>,
+    scriptAsync?: ScriptAsync<E>,
+    key?: string,
+    mode?: Mode,
+    creation?: Script<E>,
+    creationAsync?: ScriptAsync<E>,
+    destruction?: Script<E>,
+    triggers?: unknown,
     basis?: RxNodeDecl<E>):  RxNode<E> {
     let result: RxNodeImpl<E>
     let declaration: RxNodeDecl<E>
