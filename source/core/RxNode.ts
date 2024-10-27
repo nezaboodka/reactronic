@@ -62,18 +62,50 @@ export abstract class RxNode<E = unknown> {
 
   static declare<E = void>(
     driver: RxNodeDriver<E>,
-    declaration?: RxNodeDecl<E>): RxNode<E> {
+    script?: Script<E>,
+    scriptAsync?: ScriptAsync<E>,
+    key?: string,
+    mode?: Mode,
+    creation?: Script<E>,
+    creationAsync?: ScriptAsync<E>,
+    destruction?: Script<E>,
+    triggers?: unknown,
+    basis?: RxNodeDecl<E>): RxNode<E>
+
+  static declare<E = void>(
+    driver: RxNodeDriver<E>,
+    declaration?: RxNodeDecl<E>): RxNode<E>
+
+  static declare<E = void>(
+    driver: RxNodeDriver<E>,
+    scriptOrDeclaration?: Script<E> | RxNodeDecl<E>,
+    scriptAsync?: ScriptAsync<E>,
+    key?: string,
+    mode?: Mode,
+    creation?: Script<E>,
+    creationAsync?: ScriptAsync<E>,
+    destruction?: Script<E>,
+    triggers?: unknown,
+    basis?: RxNodeDecl<E>):  RxNode<E> {
     let result: RxNodeImpl<E>
+    let declaration: RxNodeDecl<E>
     // Normalize parameters
-    declaration ??= {}
-    let key = declaration.key
+    if (scriptOrDeclaration instanceof Function) {
+      declaration = {
+        script: scriptOrDeclaration, scriptAsync, key, mode,
+        creation, creationAsync, destruction, triggers, basis,
+      }
+    }
+    else
+      declaration = scriptOrDeclaration ?? {}
+    let effectiveKey = declaration.key
     const owner = gOwnSeat?.instance
     if (owner) {
       let existing = owner.driver.child(owner, driver, declaration, declaration.basis)
       // Reuse existing node or declare a new one
       const children = owner.children
       existing ??= children.tryMergeAsExisting(
-        key = key || generateKey(owner), undefined,
+        effectiveKey = effectiveKey || generateKey(owner), undefined,
         "nested elements can be declared inside update function only")
       if (existing) {
         // Reuse existing node
@@ -87,13 +119,13 @@ export abstract class RxNode<E = unknown> {
       }
       else {
         // Create new node
-        result = new RxNodeImpl<E>(key || generateKey(owner), driver, declaration, owner)
+        result = new RxNodeImpl<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
         result.seat = children.mergeAsAdded(result as RxNodeImpl<unknown>) as MergedItem<RxNodeImpl<E>>
       }
     }
     else {
       // Create new root node
-      result = new RxNodeImpl(key || "", driver, declaration, owner)
+      result = new RxNodeImpl(effectiveKey || "", driver, declaration, owner)
       result.seat = MergeList.createItem(result)
       triggerUpdateViaSeat(result.seat)
     }
