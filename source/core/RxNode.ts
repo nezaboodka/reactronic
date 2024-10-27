@@ -62,18 +62,14 @@ export abstract class RxNode<E = unknown> {
 
   static declare<E = void>(
     driver: RxNodeDriver<E>,
-    declaration?: RxNodeDecl<E>,
-    basis?: RxNodeDecl<E>): RxNode<E> {
+    declaration?: RxNodeDecl<E>): RxNode<E> {
     let result: RxNodeImpl<E>
     // Normalize parameters
-    if (declaration)
-      declaration.basis = basis
-    else
-      declaration = basis ?? {}
+    declaration ??= {}
     let key = declaration.key
     const owner = gOwnSeat?.instance
     if (owner) {
-      let existing = owner.driver.child(owner, driver, declaration, basis)
+      let existing = owner.driver.child(owner, driver, declaration, declaration.basis)
       // Reuse existing node or declare a new one
       const children = owner.children
       existing ??= children.tryMergeAsExisting(
@@ -102,6 +98,16 @@ export abstract class RxNode<E = unknown> {
       triggerUpdateViaSeat(result.seat)
     }
     return result
+  }
+
+  static rebased<E = void>(
+    declaration?: RxNodeDecl<E>,
+    basis?: RxNodeDecl<E>): RxNodeDecl<E> {
+    if (declaration)
+      declaration.basis = basis
+    else
+      declaration = basis ?? {}
+    return declaration
   }
 
   static get isFirstUpdate(): boolean {
