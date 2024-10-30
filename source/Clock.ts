@@ -1,5 +1,5 @@
 import { ObservableObject } from "./core/Mvcc.js"
-import { transactional } from "./RxSystem.js"
+import { transactional } from "./ReactiveSystem.js"
 
 export class Clock extends ObservableObject {
   hour: number = 0

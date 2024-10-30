@@ -7,7 +7,7 @@
 
 import { F } from "./util/Utils.js"
 import { ObservableObject } from "./core/Mvcc.js"
-import { reactive } from "./RxSystem.js"
+import { reactive } from "./ReactiveSystem.js"
 
 
 export class Reaction<T> extends ObservableObject

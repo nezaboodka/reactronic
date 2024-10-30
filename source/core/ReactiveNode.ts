@@ -12,7 +12,7 @@ import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js
 import { Isolation, MemberOptions, Reentrance } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, raw, reactive, unobs } from "../RxSystem.js"
+import { ReactiveSystem, options, raw, reactive, unobs } from "../ReactiveSystem.js"
 
 // Scripts
 
@@ -39,7 +39,7 @@ export enum Priority {
 export abstract class ReactiveNode<E = unknown> {
   abstract readonly key: string
   abstract readonly driver: ReactiveNodeDriver<E>
-  abstract readonly declaration: Readonly<ReactiveNodeDecl<E>/* | RxNodeDeclAsync<E>*/>
+  abstract readonly declaration: Readonly<ReactiveNodeDecl<E>/* | ReactiveNodeDeclAsync<E>*/>
   abstract readonly level: number
   abstract readonly owner: ReactiveNode
   abstract element: E
@@ -104,7 +104,7 @@ export abstract class ReactiveNode<E = unknown> {
     // Normalize parameters
     if (scriptOrDeclaration instanceof Function) {
       declaration = {
-        script: scriptOrDeclaration, scriptAsync: scriptAsync, key, mode,
+        script: scriptOrDeclaration, scriptAsync, key, mode,
         creation, creationAsync, destruction, triggers, basis,
       }
     }
