@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Indicator, ObservableObject, Reentrance, RxSystem, Transaction, options, pause, raw, reactive, transaction, transactional } from "../source/api.js"
+import { Indicator, ObservableObject, Reentrance, ReactiveSystem, Transaction, options, pause, raw, reactive, transaction, transactional } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
@@ -76,12 +76,12 @@ class CompilationController extends ObservableObject {
 }
 
 test("indicator", async t => {
-  RxSystem.setLoggingMode(true, TestsLoggingLevel)
+  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   // RxSystem.setProfilingMode(true)
   const indicator = Indicator.create("indicator", 0, 0, 1000)
   const controller = transaction(() => {
     const result = new CompilationController()
-    RxSystem.getOperation(result.reloadCompilation).configure({ indicator })
+    ReactiveSystem.getOperation(result.reloadCompilation).configure({ indicator })
     return result
   })
   await indicator.whenIdle()

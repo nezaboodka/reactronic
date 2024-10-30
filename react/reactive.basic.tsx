@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, Transaction, raw, reactive, cached, RxSystem, transaction } from "../source/api.js"
+import { ObservableObject, Transaction, raw, reactive, cached, transaction, ReactiveSystem } from "../source/api.js"
 
 export function autorender(render: () => JSX.Element): JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -28,13 +28,13 @@ class RxComponent extends ObservableObject {
 
   @reactive
   protected ensureUpToDate(): void {
-    if (!RxSystem.getOperation(this.render).isReusable)
+    if (!ReactiveSystem.getOperation(this.render).isReusable)
       Transaction.outside(this.refresh, {rx: this})
   }
 
   @raw refresh: (next: ReactState) => void = nop
   @raw readonly unmount = (): (() => void) => {
-    return (): void => { transaction(RxSystem.dispose, this) }
+    return (): void => { transaction(ReactiveSystem.dispose, this) }
   }
 
   static create(): RxComponent {

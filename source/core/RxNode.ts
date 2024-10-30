@@ -12,13 +12,13 @@ import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js
 import { Isolation, MemberOptions, Reentrance } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { RxSystem, options, raw, reactive, unobs } from "../RxSystem.js"
+import { ReactiveSystem, options, raw, reactive, unobs } from "../RxSystem.js"
 
 // Scripts
 
-export type Script<E> = (el: E, basis: () => void) => void
-export type ScriptAsync<E> = (el: E, basis: () => Promise<void>) => Promise<void>
-export type Handler<E = unknown, R = void> = (el: E) => R
+export type Script<E> = (e: E, basis: () => void) => void
+export type ScriptAsync<E> = (e: E, basis: () => Promise<void>) => Promise<void>
+export type Handler<E = unknown, R = void> = (e: E) => R
 
 // Enums
 
@@ -34,21 +34,21 @@ export enum Priority {
   background = 2
 }
 
-// RxNode
+// ReactiveNode
 
-export abstract class RxNode<E = unknown> {
+export abstract class ReactiveNode<E = unknown> {
   abstract readonly key: string
-  abstract readonly driver: RxNodeDriver<E>
-  abstract readonly declaration: Readonly<RxNodeDecl<E>/* | RxNodeDeclAsync<E>*/>
+  abstract readonly driver: ReactiveNodeDriver<E>
+  abstract readonly declaration: Readonly<ReactiveNodeDecl<E>/* | RxNodeDeclAsync<E>*/>
   abstract readonly level: number
-  abstract readonly owner: RxNode
+  abstract readonly owner: ReactiveNode
   abstract element: E
-  abstract readonly host: RxNode
-  abstract readonly children: MergeListReader<RxNode>
-  abstract readonly seat: MergedItem<RxNode<E>> | undefined
+  abstract readonly host: ReactiveNode
+  abstract readonly children: MergeListReader<ReactiveNode>
+  abstract readonly seat: MergedItem<ReactiveNode<E>> | undefined
   abstract readonly stamp: number
-  abstract readonly outer: RxNode
-  abstract readonly context: RxNodeContext | undefined
+  abstract readonly outer: ReactiveNode
+  abstract readonly context: ReactiveNodeContext | undefined
   abstract priority?: Priority
   abstract childrenShuffling: boolean
   abstract strictOrder: boolean
@@ -58,10 +58,10 @@ export abstract class RxNode<E = unknown> {
   static readonly shortFrameDuration = 16 // ms
   static readonly longFrameDuration = 300 // ms
   static currentUpdatePriority = Priority.realtime
-  static frameDuration = RxNode.longFrameDuration
+  static frameDuration = ReactiveNode.longFrameDuration
 
   static declare<E = void>(
-    driver: RxNodeDriver<E>,
+    driver: ReactiveNodeDriver<E>,
     script?: Script<E>,
     scriptAsync?: ScriptAsync<E>,
     key?: string,
@@ -70,15 +70,15 @@ export abstract class RxNode<E = unknown> {
     creationAsync?: ScriptAsync<E>,
     destruction?: Script<E>,
     triggers?: unknown,
-    basis?: RxNodeDecl<E>): RxNode<E>
+    basis?: ReactiveNodeDecl<E>): ReactiveNode<E>
 
   static declare<E = void>(
-    driver: RxNodeDriver<E>,
-    declaration?: RxNodeDecl<E>): RxNode<E>
+    driver: ReactiveNodeDriver<E>,
+    declaration?: ReactiveNodeDecl<E>): ReactiveNode<E>
 
   static declare<E = void>(
-    driver: RxNodeDriver<E>,
-    scriptOrDeclaration?: Script<E> | RxNodeDecl<E>,
+    driver: ReactiveNodeDriver<E>,
+    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
     scriptAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
@@ -86,11 +86,11 @@ export abstract class RxNode<E = unknown> {
     creationAsync?: ScriptAsync<E>,
     destruction?: Script<E>,
     triggers?: unknown,
-    basis?: RxNodeDecl<E>):  RxNode<E>
+    basis?: ReactiveNodeDecl<E>):  ReactiveNode<E>
 
   static declare<E = void>(
-    driver: RxNodeDriver<E>,
-    scriptOrDeclaration?: Script<E> | RxNodeDecl<E>,
+    driver: ReactiveNodeDriver<E>,
+    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
     scriptAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
@@ -98,13 +98,13 @@ export abstract class RxNode<E = unknown> {
     creationAsync?: ScriptAsync<E>,
     destruction?: Script<E>,
     triggers?: unknown,
-    basis?: RxNodeDecl<E>):  RxNode<E> {
-    let result: RxNodeImpl<E>
-    let declaration: RxNodeDecl<E>
+    basis?: ReactiveNodeDecl<E>):  ReactiveNode<E> {
+    let result: ReactiveNodeImpl<E>
+    let declaration: ReactiveNodeDecl<E>
     // Normalize parameters
     if (scriptOrDeclaration instanceof Function) {
       declaration = {
-        script: scriptOrDeclaration, scriptAsync, key, mode,
+        script: scriptOrDeclaration, scriptAsync: scriptAsync, key, mode,
         creation, creationAsync, destruction, triggers, basis,
       }
     }
@@ -121,7 +121,7 @@ export abstract class RxNode<E = unknown> {
         "nested elements can be declared inside update function only")
       if (existing) {
         // Reuse existing node
-        result = existing.instance as RxNodeImpl<E>
+        result = existing.instance as ReactiveNodeImpl<E>
         if (result.driver !== driver && driver !== undefined)
           throw new Error(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
         const exTriggers = result.declaration.triggers
@@ -131,22 +131,22 @@ export abstract class RxNode<E = unknown> {
       }
       else {
         // Create new node
-        result = new RxNodeImpl<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
-        result.seat = children.mergeAsAdded(result as RxNodeImpl<unknown>) as MergedItem<RxNodeImpl<E>>
+        result = new ReactiveNodeImpl<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
+        result.seat = children.mergeAsAdded(result as ReactiveNodeImpl<unknown>) as MergedItem<ReactiveNodeImpl<E>>
       }
     }
     else {
       // Create new root node
-      result = new RxNodeImpl(effectiveKey || "", driver, declaration, owner)
+      result = new ReactiveNodeImpl(effectiveKey || "", driver, declaration, owner)
       result.seat = MergeList.createItem(result)
       triggerUpdateViaSeat(result.seat)
     }
     return result
   }
 
-  static rebased<E = void>(
-    declaration?: RxNodeDecl<E>,
-    basis?: RxNodeDecl<E>): RxNodeDecl<E> {
+  static withBasis<E = void>(
+    declaration?: ReactiveNodeDecl<E>,
+    basis?: ReactiveNodeDecl<E>): ReactiveNodeDecl<E> {
     if (declaration)
       declaration.basis = basis
     else
@@ -155,39 +155,39 @@ export abstract class RxNode<E = unknown> {
   }
 
   static get isFirstUpdate(): boolean {
-    return RxNodeImpl.ownSeat.instance.stamp === 1
+    return ReactiveNodeImpl.ownSeat.instance.stamp === 1
   }
 
   static get key(): string {
-    return RxNodeImpl.ownSeat.instance.key
+    return ReactiveNodeImpl.ownSeat.instance.key
   }
 
   static get stamp(): number {
-    return RxNodeImpl.ownSeat.instance.stamp
+    return ReactiveNodeImpl.ownSeat.instance.stamp
   }
 
   static get triggers(): unknown {
-    return RxNodeImpl.ownSeat.instance.declaration.triggers
+    return ReactiveNodeImpl.ownSeat.instance.declaration.triggers
   }
 
   static get priority(): Priority {
-    return RxNodeImpl.ownSeat.instance.priority
+    return ReactiveNodeImpl.ownSeat.instance.priority
   }
 
   static set priority(value: Priority) {
-    RxNodeImpl.ownSeat.instance.priority = value
+    ReactiveNodeImpl.ownSeat.instance.priority = value
   }
 
   static get childrenShuffling(): boolean {
-    return RxNodeImpl.ownSeat.instance.childrenShuffling
+    return ReactiveNodeImpl.ownSeat.instance.childrenShuffling
   }
 
   static set childrenShuffling(value: boolean) {
-    RxNodeImpl.ownSeat.instance.childrenShuffling = value
+    ReactiveNodeImpl.ownSeat.instance.childrenShuffling = value
   }
 
-  static triggerUpdate(node: RxNode<any>, triggers: unknown): void {
-    const impl = node as RxNodeImpl<any>
+  static triggerUpdate(node: ReactiveNode<any>, triggers: unknown): void {
+    const impl = node as ReactiveNodeImpl<any>
     const declaration = impl.declaration
     if (!triggersAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
@@ -195,17 +195,17 @@ export abstract class RxNode<E = unknown> {
     }
   }
 
-  static triggerDeactivation(node: RxNode<any>): void {
-    const impl = node as RxNodeImpl<any>
+  static triggerDeactivation(node: ReactiveNode<any>): void {
+    const impl = node as ReactiveNodeImpl<any>
     triggerDeactivation(impl.seat!, true, true)
   }
 
   static updateNestedNodesThenDo(action: (error: unknown) => void): void {
-    runUpdateNestedNodesThenDo(RxNodeImpl.ownSeat, undefined, action)
+    runUpdateNestedNodesThenDo(ReactiveNodeImpl.ownSeat, undefined, action)
   }
 
-  static markAsMounted(node: RxNode<any>, yes: boolean): void {
-    const n = node as RxNodeImpl<any>
+  static markAsMounted(node: ReactiveNode<any>, yes: boolean): void {
+    const n = node as ReactiveNodeImpl<any>
     if (n.stamp < 0)
       throw new Error("deactivated node cannot be mounted or unmounted")
     if (n.stamp >= Number.MAX_SAFE_INTEGER)
@@ -214,40 +214,40 @@ export abstract class RxNode<E = unknown> {
   }
 
   static findMatchingHost<E = unknown, R = unknown>(
-    node: RxNode<E>, match: Handler<RxNode<E>, boolean>): RxNode<R> | undefined {
-    let p = node.host as RxNodeImpl<any>
+    node: ReactiveNode<E>, match: Handler<ReactiveNode<E>, boolean>): ReactiveNode<R> | undefined {
+    let p = node.host as ReactiveNodeImpl<any>
     while (p !== p.host && !match(p))
       p = p.host
     return p
   }
 
   static findMatchingPrevSibling<E = unknown, R = unknown>(
-    node: RxNode<E>, match: Handler<RxNode<E>, boolean>): RxNode<R> | undefined {
+    node: ReactiveNode<E>, match: Handler<ReactiveNode<E>, boolean>): ReactiveNode<R> | undefined {
     let p = node.seat!.prev
     while (p && !match(p.instance))
       p = p.prev
-    return p?.instance as RxNode<R> | undefined
+    return p?.instance as ReactiveNode<R> | undefined
   }
 
   static forEachChildRecursively<E = unknown>(
-    node: RxNode<E>, action: Handler<RxNode<E>>): void {
+    node: ReactiveNode<E>, action: Handler<ReactiveNode<E>>): void {
     action(node)
     for (const child of node.children.items())
-      RxNode.forEachChildRecursively<E>(child.instance as RxNode<any>, action)
+      ReactiveNode.forEachChildRecursively<E>(child.instance as ReactiveNode<any>, action)
   }
 
   static getDefaultLoggingOptions(): LoggingOptions | undefined {
-    return RxNodeImpl.logging
+    return ReactiveNodeImpl.logging
   }
 
   static setDefaultLoggingOptions(logging?: LoggingOptions): void {
-    RxNodeImpl.logging = logging
+    ReactiveNodeImpl.logging = logging
   }
 }
 
-// RxNodeDecl
+// ReactiveNodeDecl
 
-export type RxNodeDecl<E = unknown> = {
+export type ReactiveNodeDecl<E = unknown> = {
   script?: Script<E>
   scriptAsync?: ScriptAsync<E>
   key?: string
@@ -256,79 +256,79 @@ export type RxNodeDecl<E = unknown> = {
   creationAsync?: ScriptAsync<E>
   destruction?: Script<E>
   triggers?: unknown
-  basis?: RxNodeDecl<E>
+  basis?: ReactiveNodeDecl<E>
 }
 
-// RxNodeDriver
+// ReactiveNodeDriver
 
-export type RxNodeDriver<E = unknown> = {
+export type ReactiveNodeDriver<E = unknown> = {
   readonly name: string,
   readonly isPartition: boolean,
   readonly initialize?: Handler<E>
 
-  allocate(node: RxNode<E>): E
-  create(node: RxNode<E>): void
-  destroy(node: RxNode<E>, isLeader: boolean): boolean
-  mount(node: RxNode<E>): void
-  update(node: RxNode<E>): void | Promise<void>
-  child(ownerNode: RxNode<E>,
-    childDriver: RxNodeDriver<any>,
-    childDeclaration?: RxNodeDecl<any>,
-    childBasis?: RxNodeDecl<any>): MergedItem<RxNode> | undefined
+  allocate(node: ReactiveNode<E>): E
+  create(node: ReactiveNode<E>): void
+  destroy(node: ReactiveNode<E>, isLeader: boolean): boolean
+  mount(node: ReactiveNode<E>): void
+  update(node: ReactiveNode<E>): void | Promise<void>
+  child(ownerNode: ReactiveNode<E>,
+    childDriver: ReactiveNodeDriver<any>,
+    childDeclaration?: ReactiveNodeDecl<any>,
+    childBasis?: ReactiveNodeDecl<any>): MergedItem<ReactiveNode> | undefined
 
-  getHost(node: RxNode<E>): RxNode<E>
+  getHost(node: ReactiveNode<E>): ReactiveNode<E>
 }
 
-// RxNodeContext
+// ReactiveNodeContext
 
-export type RxNodeContext<T extends Object = Object> = {
+export type ReactiveNodeContext<T extends Object = Object> = {
   value: T
 }
 
 // BaseDriver
 
-export abstract class BaseDriver<E = unknown> implements RxNodeDriver<E> {
+export abstract class BaseDriver<E = unknown> implements ReactiveNodeDriver<E> {
   constructor(
     readonly name: string,
     readonly isPartition: boolean,
     readonly initialize?: Handler<E>) {
   }
 
-  abstract allocate(node: RxNode<E>): E
+  abstract allocate(node: ReactiveNode<E>): E
 
-  create(node: RxNode<E>): void | Promise<void> {
+  create(node: ReactiveNode<E>): void | Promise<void> {
     this.initialize?.(node.element)
     return invokeCreationUsingBasisChain(node.element, node.declaration)
   }
 
-  destroy(node: RxNode<E>, isLeader: boolean): boolean {
+  destroy(node: ReactiveNode<E>, isLeader: boolean): boolean {
     invokeDestructionUsingBasisChain(node.element, node.declaration)
     return isLeader // treat children as deactivation leaders as well
   }
 
-  mount(node: RxNode<E>): void {
+  mount(node: ReactiveNode<E>): void {
     // nothing to do by default
   }
 
-  update(node: RxNode<E>): void | Promise<void> {
+  update(node: ReactiveNode<E>): void | Promise<void> {
     return invokeScriptUsingBasisChain(node.element, node.declaration)
   }
 
-  child(ownerNode: RxNode<E>,
-    childDriver: RxNodeDriver<any>,
-    childDeclaration?: RxNodeDecl<any>,
-    childBasis?: RxNodeDecl<any>): MergedItem<RxNode> | undefined {
+  child(ownerNode: ReactiveNode<E>,
+    childDriver: ReactiveNodeDriver<any>,
+    childDeclaration?: ReactiveNodeDecl<any>,
+    childBasis?: ReactiveNodeDecl<any>): MergedItem<ReactiveNode> | undefined {
     return undefined
   }
 
-  getHost(node: RxNode<E>): RxNode<E> {
+  getHost(node: ReactiveNode<E>): ReactiveNode<E> {
     return node
   }
 }
 
-// RxNodeVariable
+// ReactiveNodeVariable
 
-export class RxNodeVariable<T extends Object = Object> {
+export class ReactiveNodeVariable<T extends Object = Object> {
   readonly defaultValue: T | undefined
 
   constructor(defaultValue?: T) {
@@ -336,36 +336,36 @@ export class RxNodeVariable<T extends Object = Object> {
   }
 
   set value(value: T) {
-    RxNodeImpl.setNodeVariableValue(this, value)
+    ReactiveNodeImpl.setNodeVariableValue(this, value)
   }
 
   get value(): T {
-    return RxNodeImpl.useNodeVariableValue(this)
+    return ReactiveNodeImpl.useNodeVariableValue(this)
   }
 
   get valueOrUndefined(): T | undefined {
-    return RxNodeImpl.tryUseNodeVariableValue(this)
+    return ReactiveNodeImpl.tryUseNodeVariableValue(this)
   }
 }
 
 // Utils
 
-function generateKey(owner: RxNodeImpl): string {
+function generateKey(owner: ReactiveNodeImpl): string {
   const n = owner.numerator++
   const lettered = emitLetters(n)
   let result: string
-  if (RxSystem.isLogging)
+  if (ReactiveSystem.isLogging)
     result = `·${getCallerInfo(lettered)}`
   else
     result = `·${lettered}`
   return result
 }
 
-function getModeUsingBasisChain(declaration?: RxNodeDecl<any>): Mode {
+function getModeUsingBasisChain(declaration?: ReactiveNodeDecl<any>): Mode {
   return declaration?.mode ?? (declaration?.basis ? getModeUsingBasisChain(declaration?.basis) : Mode.default)
 }
 
-function invokeScriptUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void | Promise<void> {
+function invokeScriptUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
   const script = declaration.script
@@ -384,7 +384,7 @@ function invokeScriptUsingBasisChain(element: unknown, declaration: RxNodeDecl<a
   return result
 }
 
-function invokeCreationUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void | Promise<void> {
+function invokeCreationUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
   const creation = declaration.creation
@@ -403,7 +403,7 @@ function invokeCreationUsingBasisChain(element: unknown, declaration: RxNodeDecl
   return result
 }
 
-function invokeDestructionUsingBasisChain(element: unknown, declaration: RxNodeDecl<any>): void {
+function invokeDestructionUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void {
   const basis = declaration.basis
   const destruction = declaration.destruction
   if (destruction)
@@ -412,14 +412,14 @@ function invokeDestructionUsingBasisChain(element: unknown, declaration: RxNodeD
     invokeDestructionUsingBasisChain(element, basis)
 }
 
-// RxNodeContextImpl
+// ReactiveNodeContextImpl
 
-class RxNodeContextImpl<T extends Object = Object> extends ObservableObject implements RxNodeContext<T> {
-  @raw next: RxNodeContextImpl<object> | undefined
-  @raw variable: RxNodeVariable<T>
+class ReactiveNodeContextImpl<T extends Object = Object> extends ObservableObject implements ReactiveNodeContext<T> {
+  @raw next: ReactiveNodeContextImpl<object> | undefined
+  @raw variable: ReactiveNodeVariable<T>
   value: T
 
-  constructor(variable: RxNodeVariable<T>, value: T) {
+  constructor(variable: ReactiveNodeVariable<T>, value: T) {
     super()
     this.next = undefined
     this.variable = variable
@@ -427,36 +427,36 @@ class RxNodeContextImpl<T extends Object = Object> extends ObservableObject impl
   }
 }
 
-// RxNodeImpl
+// ReactiveNodeImpl
 
-class RxNodeImpl<E = unknown> extends RxNode<E> {
+class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
   // Static properties
   static logging: LoggingOptions | undefined = undefined
   static grandNodeCount: number = 0
   static disposableNodeCount: number = 0
 
   readonly key: string
-  readonly driver: RxNodeDriver<E>
-  declaration: RxNodeDecl<E>
+  readonly driver: ReactiveNodeDriver<E>
+  declaration: ReactiveNodeDecl<E>
   readonly level: number
-  readonly owner: RxNodeImpl
+  readonly owner: ReactiveNodeImpl
   readonly element: E
-  host: RxNodeImpl
-  readonly children: MergeList<RxNodeImpl>
-  seat: MergedItem<RxNodeImpl<E>> | undefined
+  host: ReactiveNodeImpl
+  readonly children: MergeList<ReactiveNodeImpl>
+  seat: MergedItem<ReactiveNodeImpl<E>> | undefined
   stamp: number
-  outer: RxNodeImpl
-  context: RxNodeContextImpl<any> | undefined
+  outer: ReactiveNodeImpl
+  context: ReactiveNodeContextImpl<any> | undefined
   numerator: number
   priority: Priority
   childrenShuffling: boolean
 
   constructor(
-    key: string, driver: RxNodeDriver<E>,
-    declaration: Readonly<RxNodeDecl<E>>,
-    owner: RxNodeImpl | undefined) {
+    key: string, driver: ReactiveNodeDriver<E>,
+    declaration: Readonly<ReactiveNodeDecl<E>>,
+    owner: ReactiveNodeImpl | undefined) {
     super()
-    const thisAsUnknown = this as RxNodeImpl<unknown>
+    const thisAsUnknown = this as ReactiveNodeImpl<unknown>
     this.key = key
     this.driver = driver
     this.declaration = declaration
@@ -473,7 +473,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
     }
     this.element = driver.allocate(this)
     this.host = thisAsUnknown // node is unmounted
-    this.children = new MergeList<RxNodeImpl>(getNodeKey, true)
+    this.children = new MergeList<ReactiveNodeImpl>(getNodeKey, true)
     this.seat = undefined
     this.stamp = Number.MAX_SAFE_INTEGER // newly created
     this.context = undefined
@@ -481,15 +481,15 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
     this.priority = Priority.realtime
     this.childrenShuffling = false
     // Monitoring
-    RxNodeImpl.grandNodeCount++
+    ReactiveNodeImpl.grandNodeCount++
     if (this.has(Mode.independentUpdate))
-      RxNodeImpl.disposableNodeCount++
+      ReactiveNodeImpl.disposableNodeCount++
   }
 
   get strictOrder(): boolean { return this.children.isStrict }
   set strictOrder(value: boolean) { this.children.isStrict = value }
 
-  get isMoved(): boolean { return this.owner.children.isMoved(this.seat! as MergedItem<RxNodeImpl>) }
+  get isMoved(): boolean { return this.owner.children.isMoved(this.seat! as MergedItem<ReactiveNodeImpl>) }
 
   has(mode: Mode): boolean {
     return (getModeUsingBasisChain(this.declaration) & mode) === mode
@@ -510,31 +510,31 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
   configureReactronic(options: Partial<MemberOptions>): MemberOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.independentUpdate))
       throw new Error("reactronic can be configured only for elements with independent update mode and only during activation")
-    return RxSystem.getOperation(this.update).configure(options)
+    return ReactiveSystem.getOperation(this.update).configure(options)
   }
 
-  static get ownSeat(): MergedItem<RxNodeImpl> {
+  static get ownSeat(): MergedItem<ReactiveNodeImpl> {
     if (!gOwnSeat)
       throw new Error("current element is undefined")
     return gOwnSeat
   }
 
-  static tryUseNodeVariableValue<T extends Object>(variable: RxNodeVariable<T>): T | undefined {
-    let node = RxNodeImpl.ownSeat.instance
+  static tryUseNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>): T | undefined {
+    let node = ReactiveNodeImpl.ownSeat.instance
     while (node.context?.variable !== variable && node.owner !== node)
       node = node.outer.seat!.instance
     return node.context?.value as any // TODO: to get rid of any
   }
 
-  static useNodeVariableValue<T extends Object>(variable: RxNodeVariable<T>): T {
-    const result = RxNodeImpl.tryUseNodeVariableValue(variable) ?? variable.defaultValue
+  static useNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>): T {
+    const result = ReactiveNodeImpl.tryUseNodeVariableValue(variable) ?? variable.defaultValue
     if (!result)
       throw new Error("unknown node variable")
     return result
   }
 
-  static setNodeVariableValue<T extends Object>(variable: RxNodeVariable<T>, value: T | undefined): void {
-    const node = RxNodeImpl.ownSeat.instance
+  static setNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>, value: T | undefined): void {
+    const node = ReactiveNodeImpl.ownSeat.instance
     const owner = node.owner
     const hostCtx = unobs(() => owner.context?.value)
     if (value && value !== hostCtx) {
@@ -549,7 +549,7 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
           ctx.value = value // update context thus invalidate observers
         }
         else
-          node.context = new RxNodeContextImpl<any>(variable, value)
+          node.context = new ReactiveNodeContextImpl<any>(variable, value)
       })
     }
     else if (hostCtx)
@@ -561,11 +561,11 @@ class RxNodeImpl<E = unknown> extends RxNode<E> {
 
 // Internal
 
-function getNodeKey(node: RxNode): string | undefined {
+function getNodeKey(node: ReactiveNode): string | undefined {
   return node.stamp >= 0 ? node.key : undefined
 }
 
-function runUpdateNestedNodesThenDo(ownSeat: MergedItem<RxNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
+function runUpdateNestedNodesThenDo(ownSeat: MergedItem<ReactiveNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
   runInside(ownSeat, () => {
     const owner = ownSeat.instance
     const children = owner.children
@@ -579,8 +579,8 @@ function runUpdateNestedNodesThenDo(ownSeat: MergedItem<RxNodeImpl<any>>, error:
         if (!error) {
           // Lay out and update actual elements
           const sequential = children.isStrict
-          let p1: Array<MergedItem<RxNodeImpl>> | undefined = undefined
-          let p2: Array<MergedItem<RxNodeImpl>> | undefined = undefined
+          let p1: Array<MergedItem<ReactiveNodeImpl>> | undefined = undefined
+          let p2: Array<MergedItem<ReactiveNodeImpl>> | undefined = undefined
           let mounting = false
           let partition = owner
           for (const child of children.items()) {
@@ -616,8 +616,8 @@ function runUpdateNestedNodesThenDo(ownSeat: MergedItem<RxNodeImpl<any>>, error:
   })
 }
 
-function markToMountIfNecessary(mounting: boolean, host: RxNodeImpl,
-  seat: MergedItem<RxNodeImpl>, children: MergeList<RxNodeImpl>, sequential: boolean): boolean {
+function markToMountIfNecessary(mounting: boolean, host: ReactiveNodeImpl,
+  seat: MergedItem<ReactiveNodeImpl>, children: MergeList<ReactiveNodeImpl>, sequential: boolean): boolean {
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
   const node = seat.instance
@@ -635,10 +635,10 @@ function markToMountIfNecessary(mounting: boolean, host: RxNodeImpl,
 }
 
 async function startIncrementalUpdate(
-  ownerSeat: MergedItem<RxNodeImpl>,
-  allChildren: MergeList<RxNodeImpl>,
-  priority1?: Array<MergedItem<RxNodeImpl>>,
-  priority2?: Array<MergedItem<RxNodeImpl>>): Promise<void> {
+  ownerSeat: MergedItem<ReactiveNodeImpl>,
+  allChildren: MergeList<ReactiveNodeImpl>,
+  priority1?: Array<MergedItem<ReactiveNodeImpl>>,
+  priority2?: Array<MergedItem<ReactiveNodeImpl>>): Promise<void> {
   const stamp = ownerSeat.instance.stamp
   if (priority1)
     await updateIncrementally(ownerSeat, stamp, allChildren, priority1, Priority.normal)
@@ -646,47 +646,47 @@ async function startIncrementalUpdate(
     await updateIncrementally(ownerSeat, stamp, allChildren, priority2, Priority.background)
 }
 
-async function updateIncrementally(owner: MergedItem<RxNodeImpl>, stamp: number,
-  allChildren: MergeList<RxNodeImpl>, items: Array<MergedItem<RxNodeImpl>>,
+async function updateIncrementally(owner: MergedItem<ReactiveNodeImpl>, stamp: number,
+  allChildren: MergeList<ReactiveNodeImpl>, items: Array<MergedItem<ReactiveNodeImpl>>,
   priority: Priority): Promise<void> {
   await Transaction.requestNextFrame()
   const node = owner.instance
-  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, RxNode.shortFrameDuration / 3)) {
-    let outerPriority = RxNode.currentUpdatePriority
-    RxNode.currentUpdatePriority = priority
+  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, ReactiveNode.shortFrameDuration / 3)) {
+    let outerPriority = ReactiveNode.currentUpdatePriority
+    ReactiveNode.currentUpdatePriority = priority
     try {
       if (node.childrenShuffling)
         shuffle(items)
-      const frameDurationLimit = priority === Priority.background ? RxNode.shortFrameDuration : Infinity
-      let frameDuration = Math.min(frameDurationLimit, Math.max(RxNode.frameDuration / 4, RxNode.shortFrameDuration))
+      const frameDurationLimit = priority === Priority.background ? ReactiveNode.shortFrameDuration : Infinity
+      let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveNode.frameDuration / 4, ReactiveNode.shortFrameDuration))
       for (const child of items) {
         triggerUpdateViaSeat(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
-          RxNode.currentUpdatePriority = outerPriority
+          ReactiveNode.currentUpdatePriority = outerPriority
           await Transaction.requestNextFrame(0)
-          outerPriority = RxNode.currentUpdatePriority
-          RxNode.currentUpdatePriority = priority
-          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, RxNode.frameDuration))
+          outerPriority = ReactiveNode.currentUpdatePriority
+          ReactiveNode.currentUpdatePriority = priority
+          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveNode.frameDuration))
         }
-        if (Transaction.isCanceled && Transaction.isFrameOver(1, RxNode.shortFrameDuration / 3))
+        if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveNode.shortFrameDuration / 3))
           break
       }
     }
     finally {
-      RxNode.currentUpdatePriority = outerPriority
+      ReactiveNode.currentUpdatePriority = outerPriority
     }
   }
 }
 
-function triggerUpdateViaSeat(seat: MergedItem<RxNodeImpl<any>>): void {
+function triggerUpdateViaSeat(seat: MergedItem<ReactiveNodeImpl<any>>): void {
   const node = seat.instance
   if (node.stamp >= 0) { // if not deactivated yet
     if (node.has(Mode.independentUpdate)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
         Transaction.outside(() => {
-          if (RxSystem.isLogging)
-            RxSystem.setLoggingHint(node.element, node.key)
-          RxSystem.getOperation(node.update).configure({
+          if (ReactiveSystem.isLogging)
+            ReactiveSystem.setLoggingHint(node.element, node.key)
+          ReactiveSystem.getOperation(node.update).configure({
             order: node.level,
           })
         })
@@ -698,7 +698,7 @@ function triggerUpdateViaSeat(seat: MergedItem<RxNodeImpl<any>>): void {
   }
 }
 
-function mountOrRemountIfNecessary(node: RxNodeImpl): void {
+function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
   const driver = node.driver
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
     unobs(() => {
@@ -715,7 +715,7 @@ function mountOrRemountIfNecessary(node: RxNodeImpl): void {
     unobs(() => driver.mount(node))
 }
 
-function updateNow(seat: MergedItem<RxNodeImpl<any>>): void {
+function updateNow(seat: MergedItem<ReactiveNodeImpl<any>>): void {
   const node = seat.instance
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
@@ -742,7 +742,7 @@ function updateNow(seat: MergedItem<RxNodeImpl<any>>): void {
   }
 }
 
-function triggerDeactivation(seat: MergedItem<RxNodeImpl>, isLeader: boolean, individual: boolean): void {
+function triggerDeactivation(seat: MergedItem<ReactiveNodeImpl>, isLeader: boolean, individual: boolean): void {
   const node = seat.instance
   if (node.stamp >= 0) {
     const driver = node.driver
@@ -767,7 +767,7 @@ function triggerDeactivation(seat: MergedItem<RxNodeImpl>, isLeader: boolean, in
     // Deactivate children
     for (const child of node.children.items())
       triggerDeactivation(child, childrenAreLeaders, false)
-    RxNodeImpl.grandNodeCount--
+    ReactiveNodeImpl.grandNodeCount--
   }
 }
 
@@ -777,11 +777,11 @@ async function runDisposalLoop(): Promise<void> {
   while (seat !== undefined) {
     if (Transaction.isFrameOver(500, 5))
       await Transaction.requestNextFrame()
-    RxSystem.dispose(seat.instance)
+    ReactiveSystem.dispose(seat.instance)
     seat = seat.aux
-    RxNodeImpl.disposableNodeCount--
+    ReactiveNodeImpl.disposableNodeCount--
   }
-  // console.log(`Element count: ${RxNodeImpl.grandNodeCount} totally (${RxNodeImpl.disposableNodeCount} disposable)`)
+  // console.log(`Element count: ${ReactiveNodeImpl.grandNodeCount} totally (${ReactiveNodeImpl.disposableNodeCount} disposable)`)
   gFirstToDispose = gLastToDispose = undefined // reset loop
 }
 
@@ -797,7 +797,7 @@ function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T 
   return wrappedToRunInside
 }
 
-function runInside<T>(seat: MergedItem<RxNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
+function runInside<T>(seat: MergedItem<ReactiveNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
   const outer = gOwnSeat
   try {
     gOwnSeat = seat
@@ -874,6 +874,6 @@ Promise.prototype.then = reactronicDomHookedThen
 const NOP: any = (...args: any[]): void => { /* nop */ }
 const NOP_ASYNC: any = async (...args: any[]): Promise<void> => { /* nop */ }
 
-let gOwnSeat: MergedItem<RxNodeImpl> | undefined = undefined
-let gFirstToDispose: MergedItem<RxNodeImpl> | undefined = undefined
-let gLastToDispose: MergedItem<RxNodeImpl> | undefined = undefined
+let gOwnSeat: MergedItem<ReactiveNodeImpl> | undefined = undefined
+let gFirstToDispose: MergedItem<ReactiveNodeImpl> | undefined = undefined
+let gLastToDispose: MergedItem<ReactiveNodeImpl> | undefined = undefined

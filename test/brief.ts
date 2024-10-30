@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, raw, transactional, reactive, cached, Journal, RxSystem, LoggingOptions, options, transaction } from "../source/api.js"
+import { ObservableObject, raw, transactional, reactive, cached, Journal, ReactiveSystem, LoggingOptions, options, transaction } from "../source/api.js"
 
 export const output: string[] = []
 
@@ -88,9 +88,9 @@ export class DemoView extends ObservableObject {
     const lines = this.render(0)
     lines.forEach(x => {
       output.push(x) /* istanbul ignore next */
-      if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) console.log(x)
+      if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) console.log(x)
     })
-    RxSystem.configureCurrentOperation({ order: 123 })
+    ReactiveSystem.configureCurrentOperation({ order: 123 })
   }
 
   // @transaction @options({ logging: LoggingLevel.Debug })
@@ -114,7 +114,7 @@ export class DemoView extends ObservableObject {
   @cached @options({ triggeringArgs: true })
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
-    this.raw = RxSystem.why(true)
+    this.raw = ReactiveSystem.why(true)
     const r: string[] = []
     r.push(`Filter: ${this.userFilter}`)
     const a = this.filteredUsers()

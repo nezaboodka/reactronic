@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, Transaction, raw, reactive, cached, RxSystem, LoggingOptions, transaction } from "../source/api.js"
+import { ObservableObject, Transaction, raw, reactive, cached, transaction, ReactiveSystem, LoggingOptions } from "../source/api.js"
 
 export function autorender(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): JSX.Element {
   const [state, refresh] = React.useState<ReactState<JSX.Element>>(
@@ -30,30 +30,30 @@ class RxComponent<V> extends ObservableObject {
 
   @reactive
   protected ensureUpToDate(): void {
-    if (!RxSystem.getOperation(this.render).isReusable)
+    if (!ReactiveSystem.getOperation(this.render).isReusable)
       Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
   @raw cycle: number = 0
   @raw refresh: (next: ReactState<V>) => void = nop
   @raw readonly unmount = (): (() => void) => {
-    return (): void => { transaction(RxSystem.dispose, this) }
+    return (): void => { transaction(ReactiveSystem.dispose, this) }
   }
 
   static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): RxComponent<V> {
     const rx = new RxComponent<V>()
     if (hint)
-      RxSystem.setLoggingHint(rx, hint)
+      ReactiveSystem.setLoggingHint(rx, hint)
     if (logging) {
-      RxSystem.getOperation(rx.render).configure({ logging })
-      RxSystem.getOperation(rx.ensureUpToDate).configure({ logging })
+      ReactiveSystem.getOperation(rx.render).configure({ logging })
+      ReactiveSystem.getOperation(rx.ensureUpToDate).configure({ logging })
     }
     return rx
   }
 }
 
 function createReactState<V>(name?: string, logging?: Partial<LoggingOptions>): ReactState<V> {
-  const hint = name || (RxSystem.isLogging ? getComponentName() : "<rx>")
+  const hint = name || (ReactiveSystem.isLogging ? getComponentName() : "<rx>")
   const rx = Transaction.run<RxComponent<V>>({ hint, logging }, RxComponent.create, hint, logging)
   return {rx, cycle: 0}
 }

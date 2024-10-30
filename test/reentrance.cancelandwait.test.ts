@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Reentrance, RxSystem, all, pause, transaction } from "../source/api.js"
+import { Reentrance, ReactiveSystem, all, pause, transaction } from "../source/api.js"
 import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
 import { TestsLoggingLevel } from "./brief.js"
 
@@ -26,10 +26,10 @@ const expected: Array<string> = [
 ]
 
 test("reentrance.cancelandwait", async t => {
-  RxSystem.setLoggingMode(true, TestsLoggingLevel)
+  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = transaction(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    RxSystem.getOperation(a.model.load).configure({reentrance: Reentrance.cancelAndWaitPrevious})
+    ReactiveSystem.getOperation(a.model.load).configure({reentrance: Reentrance.cancelAndWaitPrevious})
     return a
   })
   try {
@@ -43,18 +43,18 @@ test("reentrance.cancelandwait", async t => {
   }
   catch (error: any) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
-    if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) console.log(error.toString())
+    if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) console.log(error.toString())
   }
   finally {
     t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
     await pause(300)
     transaction(() => {
-      RxSystem.dispose(app)
-      RxSystem.dispose(app.model)
+      ReactiveSystem.dispose(app)
+      ReactiveSystem.dispose(app.model)
     })
   } /* istanbul ignore next */
-  if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) {
+  if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) {
     console.log("\nResults:\n")
     for (const x of output)
       console.log(x)
@@ -62,7 +62,7 @@ test("reentrance.cancelandwait", async t => {
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (RxSystem.isLogging && RxSystem.loggingOptions.enabled) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
+    if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
     t.is(output[i], expected[i])
   }
 })

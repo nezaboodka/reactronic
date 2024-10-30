@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, cached, RxSystem, reactive, raw, options, transaction } from "../source/api.js"
+import { ObservableObject, cached, ReactiveSystem, reactive, raw, options, transaction } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 export class DemoBase extends ObservableObject {
@@ -39,7 +39,7 @@ export class DemoBase extends ObservableObject {
 
   @cached @options({ logging: {} })
   produceSideEffect(): void {
-    this.raw = RxSystem.why()
+    this.raw = ReactiveSystem.why()
     this.title = "should fail on this line"
   }
 
@@ -62,7 +62,7 @@ export class Demo extends DemoBase {
 }
 
 test("caching", t => {
-  RxSystem.setLoggingMode(true, TestsLoggingLevel)
+  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   const demo = transaction(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), "Demo")
