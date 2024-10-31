@@ -16,9 +16,9 @@ import { ReactiveSystem, options, raw, reactive, unobs } from "../ReactiveSystem
 
 // Scripts
 
-export type Script<E> = (e: E, basis: () => void) => void
-export type ScriptAsync<E> = (e: E, basis: () => Promise<void>) => Promise<void>
-export type Handler<E = unknown, R = void> = (e: E) => R
+export type Script<E> = (el: E, basis: () => void) => void
+export type ScriptAsync<E> = (el: E, basis: () => Promise<void>) => Promise<void>
+export type Handler<E = unknown, R = void> = (el: E) => R
 
 // Enums
 
