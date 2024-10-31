@@ -15,10 +15,10 @@ const compat = new FlatCompat({
 
 export default [{
     ignores: [
-        "**/node_modules",
-        "**/build",
-        "**/eslint.config.mjs",
-        "**/ava.config.*s",
+      "**/node_modules",
+      "**/build",
+      "**/eslint.config.mjs",
+      "**/ava.config.*s",
     ],
   },
   ...compat.extends("plugin:@typescript-eslint/recommended"), {
