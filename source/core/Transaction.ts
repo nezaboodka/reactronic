@@ -216,7 +216,6 @@ export class TransactionImpl extends Transaction {
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
     const outer = TransactionImpl.curr
     const isolation = options?.isolation ?? Isolation.joinToCurrentTransaction
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (outer.isFinished || outer.options.isolation === Isolation.disjoinFromOuterAndInnerTransactions)
       return new TransactionImpl(options)
     else if (isolation === Isolation.joinAsNestedTransaction)

@@ -59,6 +59,7 @@ export default [{
       "@typescript-eslint/no-this-alias": "off",
       "@typescript-eslint/no-unused-expressions": "off",
       "@typescript-eslint/no-wrapper-object-types": "off",
+      "@typescript-eslint/no-unsafe-function-type": "off",
       "@typescript-eslint/member-delimiter-style": "off",
       "@typescript-eslint/explicit-function-return-type": ["error", {
         allowExpressions: true,

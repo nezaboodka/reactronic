@@ -716,7 +716,6 @@ class Launch extends FieldVersion implements Observer {
   private unsubscribeFromAllObservables(): void {
     // It's critical to have no exceptions here
     this.observables?.forEach((info, value) => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       value.observers!.delete(this)
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
         Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", "-", `${this.hint()} is unsubscribed from ${info.memberHint}`)
@@ -731,7 +730,6 @@ class Launch extends FieldVersion implements Observer {
       // Performance tracking
       let times: number = 0
       if (Mvcc.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const existing = this.observables!.get(observable)
         times = existing ? existing.usageCount + 1 : 1
       }
