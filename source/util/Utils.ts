@@ -127,7 +127,7 @@ export function getCallerInfo(prefix: string): string {
 
 function extractFunctionAndLocation(s: string): { func: string, file: string } {
   // const match = s.match(/(?:\s*at\s+)?(?:\S+\s\(|@)?(?:.*?)([^\/\(\):]+)(?:(:|\d)*\)?)$/)
-  const match = s.match(/(?:\s*at\s+)?(?:(\S+)\s\()?(?:.*?)([^\/\(\):]+)(?:(:|\d)*\)?)$/)
+  const match = s.match(/(?:\s*at\s+)?(?:(\S+)\s\()?(?:.*?)([^\/\(\)]+)(?:(:|\d)*\)?)$/)
   return {
     func: match?.[1] || "",
     file: match?.[2] || "",
