@@ -24,7 +24,7 @@ export type Handler<E = unknown, R = void> = (el: E) => R
 
 export enum Mode {
   default = 0,
-  independentUpdate = 1,
+  autonomous = 1,
   manualMount = 2,
 }
 
@@ -62,8 +62,8 @@ export abstract class ReactiveNode<E = unknown> {
 
   static declare<E = void>(
     driver: ReactiveNodeDriver<E>,
-    script?: Script<E>,
-    scriptAsync?: ScriptAsync<E>,
+    content?: Script<E>,
+    contentAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
     creation?: Script<E>,
@@ -78,8 +78,8 @@ export abstract class ReactiveNode<E = unknown> {
 
   static declare<E = void>(
     driver: ReactiveNodeDriver<E>,
-    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
-    scriptAsync?: ScriptAsync<E>,
+    contentOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
+    contentAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
     creation?: Script<E>,
@@ -90,8 +90,8 @@ export abstract class ReactiveNode<E = unknown> {
 
   static declare<E = void>(
     driver: ReactiveNodeDriver<E>,
-    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
-    scriptAsync?: ScriptAsync<E>,
+    contentOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
+    contentAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
     creation?: Script<E>,
@@ -102,14 +102,14 @@ export abstract class ReactiveNode<E = unknown> {
     let result: ReactiveNodeImpl<E>
     let declaration: ReactiveNodeDecl<E>
     // Normalize parameters
-    if (scriptOrDeclaration instanceof Function) {
+    if (contentOrDeclaration instanceof Function) {
       declaration = {
-        script: scriptOrDeclaration, scriptAsync, key, mode,
+        content: contentOrDeclaration, contentAsync, key, mode,
         creation, creationAsync, destruction, triggers, basis,
       }
     }
     else
-      declaration = scriptOrDeclaration ?? {}
+      declaration = contentOrDeclaration ?? {}
     let effectiveKey = declaration.key
     const owner = gOwnSeat?.instance
     if (owner) {
@@ -118,7 +118,7 @@ export abstract class ReactiveNode<E = unknown> {
       const children = owner.children
       existing ??= children.tryMergeAsExisting(
         effectiveKey = effectiveKey || generateKey(owner), undefined,
-        "nested elements can be declared inside update function only")
+        "nested elements can be declared inside content script only")
       if (existing) {
         // Reuse existing node
         result = existing.instance as ReactiveNodeImpl<E>
@@ -248,8 +248,8 @@ export abstract class ReactiveNode<E = unknown> {
 // ReactiveNodeDecl
 
 export type ReactiveNodeDecl<E = unknown> = {
-  script?: Script<E>
-  scriptAsync?: ScriptAsync<E>
+  content?: Script<E>
+  contentAsync?: ScriptAsync<E>
   key?: string
   mode?: Mode
   creation?: Script<E>
@@ -311,7 +311,7 @@ export abstract class BaseDriver<E = unknown> implements ReactiveNodeDriver<E> {
   }
 
   update(node: ReactiveNode<E>): void | Promise<void> {
-    return invokeScriptUsingBasisChain(node.element, node.declaration)
+    return invokeContentUsingBasisChain(node.element, node.declaration)
   }
 
   child(ownerNode: ReactiveNode<E>,
@@ -365,22 +365,19 @@ function getModeUsingBasisChain(declaration?: ReactiveNodeDecl<any>): Mode {
   return declaration?.mode ?? (declaration?.basis ? getModeUsingBasisChain(declaration?.basis) : Mode.default)
 }
 
-function invokeScriptUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void | Promise<void> {
+function invokeContentUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
-  const script = declaration.script
-  const scriptAsync = declaration.scriptAsync
-  if (script && scriptAsync) {
-    throw misuse("'script' and 'scriptAsync' cannot be defined together")
-  }
-  if (script) {
-    result = script(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
-  }
-  else if (scriptAsync) {
-    result = scriptAsync(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP_ASYNC)
-  }
+  const content = declaration.content
+  const contentAsync = declaration.contentAsync
+  if (content && contentAsync)
+    throw misuse("'content' and 'contentAsync' cannot be defined together")
+  if (content)
+    result = content(element, basis ? () => invokeContentUsingBasisChain(element, basis) : NOP)
+  else if (contentAsync)
+    result = contentAsync(element, basis ? () => invokeContentUsingBasisChain(element, basis) : NOP_ASYNC)
   else if (basis)
-    result = invokeScriptUsingBasisChain(element, basis)
+    result = invokeContentUsingBasisChain(element, basis)
   return result
 }
 
@@ -389,15 +386,12 @@ function invokeCreationUsingBasisChain(element: unknown, declaration: ReactiveNo
   const basis = declaration.basis
   const creation = declaration.creation
   const creationAsync = declaration.creationAsync
-  if (creation && creationAsync) {
+  if (creation && creationAsync)
     throw misuse("'creation' and 'creationAsync' cannot be defined together")
-  }
-  if (creation) {
+  if (creation)
     result = creation(element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP)
-  }
-  else if (creationAsync) {
+  else if (creationAsync)
     result = creationAsync(element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP_ASYNC)
-  }
   else if (basis)
     result = invokeCreationUsingBasisChain(element, basis)
   return result
@@ -482,7 +476,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
     this.childrenShuffling = false
     // Monitoring
     ReactiveNodeImpl.grandNodeCount++
-    if (this.has(Mode.independentUpdate))
+    if (this.has(Mode.autonomous))
       ReactiveNodeImpl.disposableNodeCount++
   }
 
@@ -508,8 +502,8 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
   }
 
   configureReactronic(options: Partial<MemberOptions>): MemberOptions {
-    if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.independentUpdate))
-      throw new Error("reactronic can be configured only for elements with independent update mode and only during activation")
+    if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.autonomous))
+      throw new Error("reactronic can be configured only for elements with autonomous mode and only during activation")
     return ReactiveSystem.getOperation(this.update).configure(options)
   }
 
@@ -681,7 +675,7 @@ async function updateIncrementally(owner: MergedItem<ReactiveNodeImpl>, stamp: n
 function triggerUpdateViaSeat(seat: MergedItem<ReactiveNodeImpl<any>>): void {
   const node = seat.instance
   if (node.stamp >= 0) { // if not deactivated yet
-    if (node.has(Mode.independentUpdate)) {
+    if (node.has(Mode.autonomous)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
         Transaction.outside(() => {
           if (ReactiveSystem.isLogging)
@@ -751,8 +745,8 @@ function triggerDeactivation(seat: MergedItem<ReactiveNodeImpl>, isLeader: boole
     node.stamp = ~node.stamp
     // Deactivate element itself and remove it from collection
     const childrenAreLeaders = unobs(() => driver.destroy(node, isLeader))
-    if (node.has(Mode.independentUpdate)) {
-      // Defer disposal if element is reactive (having independent update mode)
+    if (node.has(Mode.autonomous)) {
+      // Defer disposal if element is reactive (having autonomous mode)
       seat.aux = undefined
       const last = gLastToDispose
       if (last)
