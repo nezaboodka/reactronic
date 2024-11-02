@@ -45,7 +45,7 @@ export abstract class ReactiveNode<E = unknown> {
   abstract element: E
   abstract readonly host: ReactiveNode
   abstract readonly children: MergeListReader<ReactiveNode>
-  abstract readonly seat: MergedItem<ReactiveNode<E>> | undefined
+  abstract readonly slot: MergedItem<ReactiveNode<E>> | undefined
   abstract readonly stamp: number
   abstract readonly outer: ReactiveNode
   abstract readonly context: ReactiveNodeContext | undefined
@@ -111,7 +111,7 @@ export abstract class ReactiveNode<E = unknown> {
     else
       declaration = contentOrDeclaration ?? {}
     let effectiveKey = declaration.key
-    const owner = gOwnSeat?.instance
+    const owner = gOwnSlot?.instance
     if (owner) {
       let existing = owner.driver.child(owner, driver, declaration, declaration.basis)
       // Reuse existing node or declare a new one
@@ -132,14 +132,14 @@ export abstract class ReactiveNode<E = unknown> {
       else {
         // Create new node
         result = new ReactiveNodeImpl<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
-        result.seat = children.mergeAsAdded(result as ReactiveNodeImpl<unknown>) as MergedItem<ReactiveNodeImpl<E>>
+        result.slot = children.mergeAsAdded(result as ReactiveNodeImpl<unknown>) as MergedItem<ReactiveNodeImpl<E>>
       }
     }
     else {
       // Create new root node
       result = new ReactiveNodeImpl(effectiveKey || "", driver, declaration, owner)
-      result.seat = MergeList.createItem(result)
-      triggerUpdateViaSeat(result.seat)
+      result.slot = MergeList.createItem(result)
+      triggerUpdateViaSlot(result.slot)
     }
     return result
   }
@@ -155,35 +155,35 @@ export abstract class ReactiveNode<E = unknown> {
   }
 
   static get isFirstUpdate(): boolean {
-    return ReactiveNodeImpl.ownSeat.instance.stamp === 1
+    return ReactiveNodeImpl.ownSlot.instance.stamp === 1
   }
 
   static get key(): string {
-    return ReactiveNodeImpl.ownSeat.instance.key
+    return ReactiveNodeImpl.ownSlot.instance.key
   }
 
   static get stamp(): number {
-    return ReactiveNodeImpl.ownSeat.instance.stamp
+    return ReactiveNodeImpl.ownSlot.instance.stamp
   }
 
   static get triggers(): unknown {
-    return ReactiveNodeImpl.ownSeat.instance.declaration.triggers
+    return ReactiveNodeImpl.ownSlot.instance.declaration.triggers
   }
 
   static get priority(): Priority {
-    return ReactiveNodeImpl.ownSeat.instance.priority
+    return ReactiveNodeImpl.ownSlot.instance.priority
   }
 
   static set priority(value: Priority) {
-    ReactiveNodeImpl.ownSeat.instance.priority = value
+    ReactiveNodeImpl.ownSlot.instance.priority = value
   }
 
   static get childrenShuffling(): boolean {
-    return ReactiveNodeImpl.ownSeat.instance.childrenShuffling
+    return ReactiveNodeImpl.ownSlot.instance.childrenShuffling
   }
 
   static set childrenShuffling(value: boolean) {
-    ReactiveNodeImpl.ownSeat.instance.childrenShuffling = value
+    ReactiveNodeImpl.ownSlot.instance.childrenShuffling = value
   }
 
   static triggerUpdate(node: ReactiveNode<any>, triggers: unknown): void {
@@ -191,17 +191,17 @@ export abstract class ReactiveNode<E = unknown> {
     const declaration = impl.declaration
     if (!triggersAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
-      triggerUpdateViaSeat(impl.seat!)
+      triggerUpdateViaSlot(impl.slot!)
     }
   }
 
   static triggerDeactivation(node: ReactiveNode<any>): void {
     const impl = node as ReactiveNodeImpl<any>
-    triggerDeactivation(impl.seat!, true, true)
+    triggerDeactivation(impl.slot!, true, true)
   }
 
   static updateNestedNodesThenDo(action: (error: unknown) => void): void {
-    runUpdateNestedNodesThenDo(ReactiveNodeImpl.ownSeat, undefined, action)
+    runUpdateNestedNodesThenDo(ReactiveNodeImpl.ownSlot, undefined, action)
   }
 
   static markAsMounted(node: ReactiveNode<any>, yes: boolean): void {
@@ -223,7 +223,7 @@ export abstract class ReactiveNode<E = unknown> {
 
   static findMatchingPrevSibling<E = unknown, R = unknown>(
     node: ReactiveNode<E>, match: Handler<ReactiveNode<E>, boolean>): ReactiveNode<R> | undefined {
-    let p = node.seat!.prev
+    let p = node.slot!.prev
     while (p && !match(p.instance))
       p = p.prev
     return p?.instance as ReactiveNode<R> | undefined
@@ -437,7 +437,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
   readonly element: E
   host: ReactiveNodeImpl
   readonly children: MergeList<ReactiveNodeImpl>
-  seat: MergedItem<ReactiveNodeImpl<E>> | undefined
+  slot: MergedItem<ReactiveNodeImpl<E>> | undefined
   stamp: number
   outer: ReactiveNodeImpl
   context: ReactiveNodeContextImpl<any> | undefined
@@ -468,7 +468,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
     this.element = driver.allocate(this)
     this.host = thisAsUnknown // node is unmounted
     this.children = new MergeList<ReactiveNodeImpl>(getNodeKey, true)
-    this.seat = undefined
+    this.slot = undefined
     this.stamp = Number.MAX_SAFE_INTEGER // newly created
     this.context = undefined
     this.numerator = 0
@@ -483,7 +483,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
   get strictOrder(): boolean { return this.children.isStrict }
   set strictOrder(value: boolean) { this.children.isStrict = value }
 
-  get isMoved(): boolean { return this.owner.children.isMoved(this.seat! as MergedItem<ReactiveNodeImpl>) }
+  get isMoved(): boolean { return this.owner.children.isMoved(this.slot! as MergedItem<ReactiveNodeImpl>) }
 
   has(mode: Mode): boolean {
     return (getModeUsingBasisChain(this.declaration) & mode) === mode
@@ -498,7 +498,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
   })
   update(_triggers: unknown): void {
     // triggers parameter is used to enforce update by owner
-    updateNow(this.seat!)
+    updateNow(this.slot!)
   }
 
   configureReactronic(options: Partial<MemberOptions>): MemberOptions {
@@ -507,16 +507,16 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
     return ReactiveSystem.getOperation(this.update).configure(options)
   }
 
-  static get ownSeat(): MergedItem<ReactiveNodeImpl> {
-    if (!gOwnSeat)
+  static get ownSlot(): MergedItem<ReactiveNodeImpl> {
+    if (!gOwnSlot)
       throw new Error("current element is undefined")
-    return gOwnSeat
+    return gOwnSlot
   }
 
   static tryUseNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>): T | undefined {
-    let node = ReactiveNodeImpl.ownSeat.instance
+    let node = ReactiveNodeImpl.ownSlot.instance
     while (node.context?.variable !== variable && node.owner !== node)
-      node = node.outer.seat!.instance
+      node = node.outer.slot!.instance
     return node.context?.value as any // TODO: to get rid of any
   }
 
@@ -528,7 +528,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
   }
 
   static setNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>, value: T | undefined): void {
-    const node = ReactiveNodeImpl.ownSeat.instance
+    const node = ReactiveNodeImpl.ownSlot.instance
     const owner = node.owner
     const hostCtx = unobs(() => owner.context?.value)
     if (value && value !== hostCtx) {
@@ -559,9 +559,9 @@ function getNodeKey(node: ReactiveNode): string | undefined {
   return node.stamp >= 0 ? node.key : undefined
 }
 
-function runUpdateNestedNodesThenDo(ownSeat: MergedItem<ReactiveNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
-  runInside(ownSeat, () => {
-    const owner = ownSeat.instance
+function runUpdateNestedNodesThenDo(ownSlot: MergedItem<ReactiveNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
+  runInside(ownSlot, () => {
+    const owner = ownSlot.instance
     const children = owner.children
     if (children.isMergeInProgress) {
       let promised: Promise<void> | undefined = undefined
@@ -587,7 +587,7 @@ function runUpdateNestedNodesThenDo(ownSeat: MergedItem<ReactiveNodeImpl<any>>, 
               mounting, host, child, children, sequential)
             const p = childNode.priority ?? Priority.realtime
             if (p === Priority.realtime)
-              triggerUpdateViaSeat(child) // update synchronously
+              triggerUpdateViaSlot(child) // update synchronously
             else if (p === Priority.normal)
               p1 = push(child, p1) // defer for P1 async update
             else
@@ -597,7 +597,7 @@ function runUpdateNestedNodesThenDo(ownSeat: MergedItem<ReactiveNodeImpl<any>>, 
           }
           // Update incremental children (if any)
           if (!Transaction.isCanceled && (p1 !== undefined || p2 !== undefined))
-            promised = startIncrementalUpdate(ownSeat, children, p1, p2).then(
+            promised = startIncrementalUpdate(ownSlot, children, p1, p2).then(
               () => action(error),
               e => action(e))
         }
@@ -611,33 +611,33 @@ function runUpdateNestedNodesThenDo(ownSeat: MergedItem<ReactiveNodeImpl<any>>, 
 }
 
 function markToMountIfNecessary(mounting: boolean, host: ReactiveNodeImpl,
-  seat: MergedItem<ReactiveNodeImpl>, children: MergeList<ReactiveNodeImpl>, sequential: boolean): boolean {
+  slot: MergedItem<ReactiveNodeImpl>, children: MergeList<ReactiveNodeImpl>, sequential: boolean): boolean {
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
-  const node = seat.instance
+  const node = slot.instance
   // TODO: Get rid of "node.element.native"
   if ((node.element as any).native && !node.has(Mode.manualMount)) {
     if (mounting || node.host !== host) {
-      children.markAsMoved(seat)
+      children.markAsMoved(slot)
       mounting = false
     }
   }
-  else if (sequential && children.isMoved(seat))
+  else if (sequential && children.isMoved(slot))
     mounting = true // apply to the first element having native HTML element
   node.host = host
   return mounting
 }
 
 async function startIncrementalUpdate(
-  ownerSeat: MergedItem<ReactiveNodeImpl>,
+  ownerSlot: MergedItem<ReactiveNodeImpl>,
   allChildren: MergeList<ReactiveNodeImpl>,
   priority1?: Array<MergedItem<ReactiveNodeImpl>>,
   priority2?: Array<MergedItem<ReactiveNodeImpl>>): Promise<void> {
-  const stamp = ownerSeat.instance.stamp
+  const stamp = ownerSlot.instance.stamp
   if (priority1)
-    await updateIncrementally(ownerSeat, stamp, allChildren, priority1, Priority.normal)
+    await updateIncrementally(ownerSlot, stamp, allChildren, priority1, Priority.normal)
   if (priority2)
-    await updateIncrementally(ownerSeat, stamp, allChildren, priority2, Priority.background)
+    await updateIncrementally(ownerSlot, stamp, allChildren, priority2, Priority.background)
 }
 
 async function updateIncrementally(owner: MergedItem<ReactiveNodeImpl>, stamp: number,
@@ -654,7 +654,7 @@ async function updateIncrementally(owner: MergedItem<ReactiveNodeImpl>, stamp: n
       const frameDurationLimit = priority === Priority.background ? ReactiveNode.shortFrameDuration : Infinity
       let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveNode.frameDuration / 4, ReactiveNode.shortFrameDuration))
       for (const child of items) {
-        triggerUpdateViaSeat(child)
+        triggerUpdateViaSlot(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
           ReactiveNode.currentUpdatePriority = outerPriority
           await Transaction.requestNextFrame(0)
@@ -672,8 +672,8 @@ async function updateIncrementally(owner: MergedItem<ReactiveNodeImpl>, stamp: n
   }
 }
 
-function triggerUpdateViaSeat(seat: MergedItem<ReactiveNodeImpl<any>>): void {
-  const node = seat.instance
+function triggerUpdateViaSlot(slot: MergedItem<ReactiveNodeImpl<any>>): void {
+  const node = slot.instance
   if (node.stamp >= 0) { // if not deactivated yet
     if (node.has(Mode.autonomous)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
@@ -688,7 +688,7 @@ function triggerUpdateViaSeat(seat: MergedItem<ReactiveNodeImpl<any>>): void {
       unobs(node.update, node.declaration.triggers) // reactive auto-update
     }
     else
-      updateNow(seat)
+      updateNow(slot)
   }
 }
 
@@ -709,11 +709,11 @@ function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
     unobs(() => driver.mount(node))
 }
 
-function updateNow(seat: MergedItem<ReactiveNodeImpl<any>>): void {
-  const node = seat.instance
+function updateNow(slot: MergedItem<ReactiveNodeImpl<any>>): void {
+  const node = slot.instance
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
-    runInside(seat, () => {
+    runInside(slot, () => {
       mountOrRemountIfNecessary(node)
       if (node.stamp < Number.MAX_SAFE_INTEGER - 1) { // if mounted
         try {
@@ -723,11 +723,11 @@ function updateNow(seat: MergedItem<ReactiveNodeImpl<any>>): void {
           const driver = node.driver
           result = driver.update(node)
           result = proceedSyncOrAsync(result,
-            v => { runUpdateNestedNodesThenDo(seat, undefined, NOP); return v },
-            e => { console.log(e); runUpdateNestedNodesThenDo(seat, e ?? new Error("unknown error"), NOP) })
+            v => { runUpdateNestedNodesThenDo(slot, undefined, NOP); return v },
+            e => { console.log(e); runUpdateNestedNodesThenDo(slot, e ?? new Error("unknown error"), NOP) })
         }
         catch (e: unknown) {
-          runUpdateNestedNodesThenDo(seat, e, NOP)
+          runUpdateNestedNodesThenDo(slot, e, NOP)
           console.log(`Update failed: ${node.key}`)
           console.log(`${e}`)
         }
@@ -736,8 +736,8 @@ function updateNow(seat: MergedItem<ReactiveNodeImpl<any>>): void {
   }
 }
 
-function triggerDeactivation(seat: MergedItem<ReactiveNodeImpl>, isLeader: boolean, individual: boolean): void {
-  const node = seat.instance
+function triggerDeactivation(slot: MergedItem<ReactiveNodeImpl>, isLeader: boolean, individual: boolean): void {
+  const node = slot.instance
   if (node.stamp >= 0) {
     const driver = node.driver
     if (individual && node.key !== node.declaration.key && !driver.isPartition)
@@ -747,14 +747,14 @@ function triggerDeactivation(seat: MergedItem<ReactiveNodeImpl>, isLeader: boole
     const childrenAreLeaders = unobs(() => driver.destroy(node, isLeader))
     if (node.has(Mode.autonomous)) {
       // Defer disposal if element is reactive (having autonomous mode)
-      seat.aux = undefined
+      slot.aux = undefined
       const last = gLastToDispose
       if (last)
-        gLastToDispose = last.aux = seat
+        gLastToDispose = last.aux = slot
       else
-        gFirstToDispose = gLastToDispose = seat
-      if (gFirstToDispose === seat)
-        Transaction.run({ isolation: Isolation.disjoinForInternalDisposal, hint: `runDisposalLoop(initiator=${seat.instance.key})` }, () => {
+        gFirstToDispose = gLastToDispose = slot
+      if (gFirstToDispose === slot)
+        Transaction.run({ isolation: Isolation.disjoinForInternalDisposal, hint: `runDisposalLoop(initiator=${slot.instance.key})` }, () => {
           void runDisposalLoop().then(NOP, error => console.log(error))
         })
     }
@@ -767,12 +767,12 @@ function triggerDeactivation(seat: MergedItem<ReactiveNodeImpl>, isLeader: boole
 
 async function runDisposalLoop(): Promise<void> {
   await Transaction.requestNextFrame()
-  let seat = gFirstToDispose
-  while (seat !== undefined) {
+  let slot = gFirstToDispose
+  while (slot !== undefined) {
     if (Transaction.isFrameOver(500, 5))
       await Transaction.requestNextFrame()
-    ReactiveSystem.dispose(seat.instance)
-    seat = seat.aux
+    ReactiveSystem.dispose(slot.instance)
+    slot = slot.aux
     ReactiveNodeImpl.disposableNodeCount--
   }
   // console.log(`Element count: ${ReactiveNodeImpl.grandNodeCount} totally (${ReactiveNodeImpl.disposableNodeCount} disposable)`)
@@ -781,7 +781,7 @@ async function runDisposalLoop(): Promise<void> {
 
 function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T {
   let wrappedToRunInside: (...args: any[]) => T
-  const outer = gOwnSeat
+  const outer = gOwnSlot
   if (outer)
     wrappedToRunInside = (...args: any[]): T => {
       return runInside(outer, func, ...args)
@@ -791,14 +791,14 @@ function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T 
   return wrappedToRunInside
 }
 
-function runInside<T>(seat: MergedItem<ReactiveNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
-  const outer = gOwnSeat
+function runInside<T>(slot: MergedItem<ReactiveNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
+  const outer = gOwnSlot
   try {
-    gOwnSeat = seat
+    gOwnSlot = slot
     return func(...args)
   }
   finally {
-    gOwnSeat = outer
+    gOwnSlot = outer
   }
 }
 
@@ -868,6 +868,6 @@ Promise.prototype.then = reactronicDomHookedThen
 const NOP: any = (...args: any[]): void => { /* nop */ }
 const NOP_ASYNC: any = async (...args: any[]): Promise<void> => { /* nop */ }
 
-let gOwnSeat: MergedItem<ReactiveNodeImpl> | undefined = undefined
+let gOwnSlot: MergedItem<ReactiveNodeImpl> | undefined = undefined
 let gFirstToDispose: MergedItem<ReactiveNodeImpl> | undefined = undefined
 let gLastToDispose: MergedItem<ReactiveNodeImpl> | undefined = undefined
