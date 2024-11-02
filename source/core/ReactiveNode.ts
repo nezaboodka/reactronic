@@ -266,7 +266,7 @@ export type ReactiveNodeDriver<E = unknown> = {
   readonly isPartition: boolean,
   readonly initialize?: Handler<E>
 
-  allocate(node: ReactiveNode<E>): E
+  create(node: ReactiveNode<E>): E
 
   prepare(node: ReactiveNode<E>): void
 
@@ -299,7 +299,7 @@ export abstract class BaseDriver<E = unknown> implements ReactiveNodeDriver<E> {
     readonly initialize?: Handler<E>) {
   }
 
-  abstract allocate(node: ReactiveNode<E>): E
+  abstract create(node: ReactiveNode<E>): E
 
   prepare(node: ReactiveNode<E>): void | Promise<void> {
     this.initialize?.(node.element)
@@ -470,7 +470,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
       this.owner = owner = thisAsUnknown
       this.outer = thisAsUnknown
     }
-    this.element = driver.allocate(this)
+    this.element = driver.create(this)
     this.host = thisAsUnknown // node is unmounted
     this.children = new MergeList<ReactiveNodeImpl>(getNodeKey, true)
     this.slot = undefined
