@@ -66,9 +66,9 @@ export abstract class ReactiveNode<E = unknown> {
     contentAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
-    creation?: Script<E>,
-    creationAsync?: ScriptAsync<E>,
-    destruction?: Script<E>,
+    preparation?: Script<E>,
+    preparationAsync?: ScriptAsync<E>,
+    finalization?: Script<E>,
     triggers?: unknown,
     basis?: ReactiveNodeDecl<E>): ReactiveNode<E>
 
@@ -82,9 +82,9 @@ export abstract class ReactiveNode<E = unknown> {
     contentAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
-    creation?: Script<E>,
-    creationAsync?: ScriptAsync<E>,
-    destruction?: Script<E>,
+    preparation?: Script<E>,
+    preparationAsync?: ScriptAsync<E>,
+    finalization?: Script<E>,
     triggers?: unknown,
     basis?: ReactiveNodeDecl<E>):  ReactiveNode<E>
 
@@ -94,9 +94,9 @@ export abstract class ReactiveNode<E = unknown> {
     contentAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
-    creation?: Script<E>,
-    creationAsync?: ScriptAsync<E>,
-    destruction?: Script<E>,
+    preparation?: Script<E>,
+    preparationAsync?: ScriptAsync<E>,
+    finalization?: Script<E>,
     triggers?: unknown,
     basis?: ReactiveNodeDecl<E>):  ReactiveNode<E> {
     let result: ReactiveNodeImpl<E>
@@ -105,7 +105,7 @@ export abstract class ReactiveNode<E = unknown> {
     if (contentOrDeclaration instanceof Function) {
       declaration = {
         content: contentOrDeclaration, contentAsync, key, mode,
-        creation, creationAsync, destruction, triggers, basis,
+        preparation, preparationAsync, finalization, triggers, basis,
       }
     }
     else
@@ -195,9 +195,9 @@ export abstract class ReactiveNode<E = unknown> {
     }
   }
 
-  static triggerDeactivation(node: ReactiveNode<any>): void {
+  static triggerFinalization(node: ReactiveNode<any>): void {
     const impl = node as ReactiveNodeImpl<any>
-    triggerDeactivation(impl.slot!, true, true)
+    triggerFinalization(impl.slot!, true, true)
   }
 
   static updateNestedNodesThenDo(action: (error: unknown) => void): void {
@@ -248,15 +248,15 @@ export abstract class ReactiveNode<E = unknown> {
 // ReactiveNodeDecl
 
 export type ReactiveNodeDecl<E = unknown> = {
-  content?: Script<E>
-  contentAsync?: ScriptAsync<E>
-  key?: string
-  mode?: Mode
-  creation?: Script<E>
-  creationAsync?: ScriptAsync<E>
-  destruction?: Script<E>
-  triggers?: unknown
-  basis?: ReactiveNodeDecl<E>
+  content?: Script<E>               // наполнение
+  contentAsync?: ScriptAsync<E>     // наполнение-асин
+  key?: string                      // ключ
+  mode?: Mode                       // режим
+  preparation?: Script<E>           // подготовка
+  preparationAsync?: ScriptAsync<E> // подготовка-асин
+  finalization?: Script<E>          // завершение
+  triggers?: unknown                // триггеры
+  basis?: ReactiveNodeDecl<E>       // базис
 }
 
 // ReactiveNodeDriver
@@ -267,16 +267,21 @@ export type ReactiveNodeDriver<E = unknown> = {
   readonly initialize?: Handler<E>
 
   allocate(node: ReactiveNode<E>): E
-  create(node: ReactiveNode<E>): void
-  destroy(node: ReactiveNode<E>, isLeader: boolean): boolean
+
+  prepare(node: ReactiveNode<E>): void
+
+  finalize(node: ReactiveNode<E>, isLeader: boolean): boolean
+
   mount(node: ReactiveNode<E>): void
+
   update(node: ReactiveNode<E>): void | Promise<void>
+
   child(ownerNode: ReactiveNode<E>,
     childDriver: ReactiveNodeDriver<any>,
     childDeclaration?: ReactiveNodeDecl<any>,
     childBasis?: ReactiveNodeDecl<any>): MergedItem<ReactiveNode> | undefined
 
-  getHost(node: ReactiveNode<E>): ReactiveNode<E>
+  provideHost(node: ReactiveNode<E>): ReactiveNode<E>
 }
 
 // ReactiveNodeContext
@@ -296,13 +301,13 @@ export abstract class BaseDriver<E = unknown> implements ReactiveNodeDriver<E> {
 
   abstract allocate(node: ReactiveNode<E>): E
 
-  create(node: ReactiveNode<E>): void | Promise<void> {
+  prepare(node: ReactiveNode<E>): void | Promise<void> {
     this.initialize?.(node.element)
-    return invokeCreationUsingBasisChain(node.element, node.declaration)
+    return invokePreparationUsingBasisChain(node.element, node.declaration)
   }
 
-  destroy(node: ReactiveNode<E>, isLeader: boolean): boolean {
-    invokeDestructionUsingBasisChain(node.element, node.declaration)
+  finalize(node: ReactiveNode<E>, isLeader: boolean): boolean {
+    invokeFinalizationUsingBasisChain(node.element, node.declaration)
     return isLeader // treat children as deactivation leaders as well
   }
 
@@ -321,7 +326,7 @@ export abstract class BaseDriver<E = unknown> implements ReactiveNodeDriver<E> {
     return undefined
   }
 
-  getHost(node: ReactiveNode<E>): ReactiveNode<E> {
+  provideHost(node: ReactiveNode<E>): ReactiveNode<E> {
     return node
   }
 }
@@ -381,29 +386,29 @@ function invokeContentUsingBasisChain(element: unknown, declaration: ReactiveNod
   return result
 }
 
-function invokeCreationUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void | Promise<void> {
+function invokePreparationUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
-  const creation = declaration.creation
-  const creationAsync = declaration.creationAsync
-  if (creation && creationAsync)
-    throw misuse("'creation' and 'creationAsync' cannot be defined together")
-  if (creation)
-    result = creation(element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP)
-  else if (creationAsync)
-    result = creationAsync(element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP_ASYNC)
+  const preparation = declaration.preparation
+  const preparationAsync = declaration.preparationAsync
+  if (preparation && preparationAsync)
+    throw misuse("'preparation' and 'preparationAsync' cannot be defined together")
+  if (preparation)
+    result = preparation(element, basis ? () => invokePreparationUsingBasisChain(element, basis) : NOP)
+  else if (preparationAsync)
+    result = preparationAsync(element, basis ? () => invokePreparationUsingBasisChain(element, basis) : NOP_ASYNC)
   else if (basis)
-    result = invokeCreationUsingBasisChain(element, basis)
+    result = invokePreparationUsingBasisChain(element, basis)
   return result
 }
 
-function invokeDestructionUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void {
+function invokeFinalizationUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void {
   const basis = declaration.basis
-  const destruction = declaration.destruction
-  if (destruction)
-    destruction(element, basis ? () => invokeDestructionUsingBasisChain(element, basis) : NOP)
+  const finalization = declaration.finalization
+  if (finalization)
+    finalization(element, basis ? () => invokeFinalizationUsingBasisChain(element, basis) : NOP)
   else if (basis)
-    invokeDestructionUsingBasisChain(element, basis)
+    invokeFinalizationUsingBasisChain(element, basis)
 }
 
 // ReactiveNodeContextImpl
@@ -569,7 +574,7 @@ function runUpdateNestedNodesThenDo(ownSlot: MergedItem<ReactiveNodeImpl<any>>, 
         children.endMerge(error)
         // Deactivate removed elements
         for (const child of children.removedItems(true))
-          triggerDeactivation(child, true, true)
+          triggerFinalization(child, true, true)
         if (!error) {
           // Lay out and update actual elements
           const sequential = children.isStrict
@@ -697,7 +702,7 @@ function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
     unobs(() => {
       node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as activated
-      driver.create(node)
+      driver.prepare(node)
       if (!node.has(Mode.manualMount)) {
         node.stamp = 0 // mark as mounted
         if (node.host !== node)
@@ -736,7 +741,7 @@ function updateNow(slot: MergedItem<ReactiveNodeImpl<any>>): void {
   }
 }
 
-function triggerDeactivation(slot: MergedItem<ReactiveNodeImpl>, isLeader: boolean, individual: boolean): void {
+function triggerFinalization(slot: MergedItem<ReactiveNodeImpl>, isLeader: boolean, individual: boolean): void {
   const node = slot.instance
   if (node.stamp >= 0) {
     const driver = node.driver
@@ -744,7 +749,7 @@ function triggerDeactivation(slot: MergedItem<ReactiveNodeImpl>, isLeader: boole
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
     // Deactivate element itself and remove it from collection
-    const childrenAreLeaders = unobs(() => driver.destroy(node, isLeader))
+    const childrenAreLeaders = unobs(() => driver.finalize(node, isLeader))
     if (node.has(Mode.autonomous)) {
       // Defer disposal if element is reactive (having autonomous mode)
       slot.aux = undefined
@@ -760,7 +765,7 @@ function triggerDeactivation(slot: MergedItem<ReactiveNodeImpl>, isLeader: boole
     }
     // Deactivate children
     for (const child of node.children.items())
-      triggerDeactivation(child, childrenAreLeaders, false)
+      triggerFinalization(child, childrenAreLeaders, false)
     ReactiveNodeImpl.grandNodeCount--
   }
 }
