@@ -49,6 +49,10 @@ export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): 
   return Mvcc.sensitive(sensitivity, func, ...args)
 }
 
+export function contextually<T>(p: Promise<T>): Promise<T> {
+  throw new Error("not implemented yet")
+}
+
 // Decorators
 
 export function raw(proto: object, prop: PropertyKey): any {
