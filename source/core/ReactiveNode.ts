@@ -26,6 +26,7 @@ export enum Mode {
   default = 0,
   autonomous = 1,
   manualMount = 2,
+  rootNode = 4,
 }
 
 export enum Priority {
@@ -111,7 +112,7 @@ export abstract class ReactiveNode<E = unknown> {
     else
       declaration = contentOrDeclaration ?? {}
     let effectiveKey = declaration.key
-    const owner = gOwnSeat?.instance
+    const owner = (getModeUsingBasisChain(declaration) & Mode.rootNode) !== Mode.rootNode ? gOwnSeat?.instance : undefined
     if (owner) {
       let existing = owner.driver.child(owner, driver, declaration, declaration.basis)
       // Reuse existing node or declare a new one
