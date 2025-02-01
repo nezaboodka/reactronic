@@ -63,8 +63,8 @@ export abstract class ReactiveNode<E = unknown> {
 
   static declare<E = void>(
     driver: ReactiveNodeDriver<E>,
-    content?: Script<E>,
-    contentAsync?: ScriptAsync<E>,
+    script?: Script<E>,
+    scriptAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
     preparation?: Script<E>,
@@ -79,8 +79,8 @@ export abstract class ReactiveNode<E = unknown> {
 
   static declare<E = void>(
     driver: ReactiveNodeDriver<E>,
-    contentOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
-    contentAsync?: ScriptAsync<E>,
+    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
+    scriptAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
     preparation?: Script<E>,
@@ -91,8 +91,8 @@ export abstract class ReactiveNode<E = unknown> {
 
   static declare<E = void>(
     driver: ReactiveNodeDriver<E>,
-    contentOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
-    contentAsync?: ScriptAsync<E>,
+    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
+    scriptAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
     preparation?: Script<E>,
@@ -103,23 +103,23 @@ export abstract class ReactiveNode<E = unknown> {
     let result: ReactiveNodeImpl<E>
     let declaration: ReactiveNodeDecl<E>
     // Normalize parameters
-    if (contentOrDeclaration instanceof Function) {
+    if (scriptOrDeclaration instanceof Function) {
       declaration = {
-        content: contentOrDeclaration, contentAsync, key, mode,
+        script: scriptOrDeclaration, scriptAsync, key, mode,
         preparation, preparationAsync, finalization, triggers, basis,
       }
     }
     else
-      declaration = contentOrDeclaration ?? {}
+      declaration = scriptOrDeclaration ?? {}
     let effectiveKey = declaration.key
     const owner = (getModeUsingBasisChain(declaration) & Mode.rootNode) !== Mode.rootNode ? gOwnSlot?.instance : undefined
     if (owner) {
-      let existing = owner.driver.child(owner, driver, declaration, declaration.basis)
+      let existing = owner.driver.declareChild(owner, driver, declaration, declaration.basis)
       // Reuse existing node or declare a new one
       const children = owner.children
       existing ??= children.tryMergeAsExisting(
         effectiveKey = effectiveKey || generateKey(owner), undefined,
-        "nested elements can be declared inside content script only")
+        "nested elements can be declared inside 'script' only")
       if (existing) {
         // Reuse existing node
         result = existing.instance as ReactiveNodeImpl<E>
@@ -249,8 +249,8 @@ export abstract class ReactiveNode<E = unknown> {
 // ReactiveNodeDecl
 
 export type ReactiveNodeDecl<E = unknown> = {
-  content?: Script<E>               // наполнение
-  contentAsync?: ScriptAsync<E>     // наполнение-асин
+  script?: Script<E>                // скрипт
+  scriptAsync?: ScriptAsync<E>      // скрипт-асин
   key?: string                      // ключ
   mode?: Mode                       // режим
   preparation?: Script<E>           // подготовка
@@ -269,15 +269,15 @@ export type ReactiveNodeDriver<E = unknown> = {
 
   create(node: ReactiveNode<E>): E
 
-  prepare(node: ReactiveNode<E>): void
+  runPreparation(node: ReactiveNode<E>): void
 
-  finalize(node: ReactiveNode<E>, isLeader: boolean): boolean
+  runFinalization(node: ReactiveNode<E>, isLeader: boolean): boolean
 
-  mount(node: ReactiveNode<E>): void
+  runMount(node: ReactiveNode<E>): void
 
-  update(node: ReactiveNode<E>): void | Promise<void>
+  runScript(node: ReactiveNode<E>): void | Promise<void>
 
-  child(ownerNode: ReactiveNode<E>,
+  declareChild(ownerNode: ReactiveNode<E>,
     childDriver: ReactiveNodeDriver<any>,
     childDeclaration?: ReactiveNodeDecl<any>,
     childBasis?: ReactiveNodeDecl<any>): MergedItem<ReactiveNode> | undefined
@@ -302,25 +302,25 @@ export abstract class BaseDriver<E = unknown> implements ReactiveNodeDriver<E> {
 
   abstract create(node: ReactiveNode<E>): E
 
-  prepare(node: ReactiveNode<E>): void | Promise<void> {
+  runPreparation(node: ReactiveNode<E>): void | Promise<void> {
     this.initialize?.(node.element)
     return invokePreparationUsingBasisChain(node.element, node.declaration)
   }
 
-  finalize(node: ReactiveNode<E>, isLeader: boolean): boolean {
+  runFinalization(node: ReactiveNode<E>, isLeader: boolean): boolean {
     invokeFinalizationUsingBasisChain(node.element, node.declaration)
     return isLeader // treat children as deactivation leaders as well
   }
 
-  mount(node: ReactiveNode<E>): void {
+  runMount(node: ReactiveNode<E>): void {
     // nothing to do by default
   }
 
-  update(node: ReactiveNode<E>): void | Promise<void> {
-    return invokeContentUsingBasisChain(node.element, node.declaration)
+  runScript(node: ReactiveNode<E>): void | Promise<void> {
+    return invokeScriptUsingBasisChain(node.element, node.declaration)
   }
 
-  child(ownerNode: ReactiveNode<E>,
+  declareChild(ownerNode: ReactiveNode<E>,
     childDriver: ReactiveNodeDriver<any>,
     childDeclaration?: ReactiveNodeDecl<any>,
     childBasis?: ReactiveNodeDecl<any>): MergedItem<ReactiveNode> | undefined {
@@ -371,19 +371,19 @@ function getModeUsingBasisChain(declaration?: ReactiveNodeDecl<any>): Mode {
   return declaration?.mode ?? (declaration?.basis ? getModeUsingBasisChain(declaration?.basis) : Mode.default)
 }
 
-function invokeContentUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void | Promise<void> {
+function invokeScriptUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
-  const content = declaration.content
-  const contentAsync = declaration.contentAsync
-  if (content && contentAsync)
-    throw misuse("'content' and 'contentAsync' cannot be defined together")
-  if (content)
-    result = content(element, basis ? () => invokeContentUsingBasisChain(element, basis) : NOP)
-  else if (contentAsync)
-    result = contentAsync(element, basis ? () => invokeContentUsingBasisChain(element, basis) : NOP_ASYNC)
+  const script = declaration.script
+  const scriptAsync = declaration.scriptAsync
+  if (script && scriptAsync)
+    throw misuse("'script' and 'scriptAsync' cannot be defined together")
+  if (script)
+    result = script(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
+  else if (scriptAsync)
+    result = scriptAsync(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP_ASYNC)
   else if (basis)
-    result = invokeContentUsingBasisChain(element, basis)
+    result = invokeScriptUsingBasisChain(element, basis)
   return result
 }
 
@@ -703,16 +703,16 @@ function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
     unobs(() => {
       node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as activated
-      driver.prepare(node)
+      driver.runPreparation(node)
       if (!node.has(Mode.manualMount)) {
         node.stamp = 0 // mark as mounted
         if (node.host !== node)
-          driver.mount(node)
+          driver.runMount(node)
       }
     })
   }
   else if (node.isMoved && !node.has(Mode.manualMount) && node.host !== node)
-    unobs(() => driver.mount(node))
+    unobs(() => driver.runMount(node))
 }
 
 function updateNow(slot: MergedItem<ReactiveNodeImpl<any>>): void {
@@ -727,7 +727,7 @@ function updateNow(slot: MergedItem<ReactiveNodeImpl<any>>): void {
           node.numerator = 0
           node.children.beginMerge()
           const driver = node.driver
-          result = driver.update(node)
+          result = driver.runScript(node)
           result = proceedSyncOrAsync(result,
             v => { runUpdateNestedNodesThenDo(slot, undefined, NOP); return v },
             e => { console.log(e); runUpdateNestedNodesThenDo(slot, e ?? new Error("unknown error"), NOP) })
@@ -750,7 +750,7 @@ function triggerFinalization(slot: MergedItem<ReactiveNodeImpl>, isLeader: boole
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
     // Deactivate element itself and remove it from collection
-    const childrenAreLeaders = unobs(() => driver.finalize(node, isLeader))
+    const childrenAreLeaders = unobs(() => driver.runFinalization(node, isLeader))
     if (node.has(Mode.autonomous)) {
       // Defer disposal if element is reactive (having autonomous mode)
       slot.aux = undefined
