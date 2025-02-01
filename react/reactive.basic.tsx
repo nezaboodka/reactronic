@@ -8,7 +8,7 @@
 import * as React from "react"
 import { ObservableObject, Transaction, raw, reactive, cached, transaction, ReactiveSystem } from "../source/api.js"
 
-export function autorender(render: () => JSX.Element): JSX.Element {
+export function autorender(render: () => React.JSX.Element): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
   const rx = state.rx
   rx.refresh = refresh // just in case React will change refresh on each rendering
@@ -22,7 +22,7 @@ type ReactState = { rx: RxComponent }
 
 class RxComponent extends ObservableObject {
   @cached
-  render(emit: () => JSX.Element): JSX.Element {
+  render(emit: () => React.JSX.Element): React.JSX.Element {
     return emit()
   }
 

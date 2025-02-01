@@ -8,8 +8,8 @@
 import * as React from "react"
 import { ObservableObject, Transaction, raw, reactive, cached, transaction, ReactiveSystem, LoggingOptions } from "../source/api.js"
 
-export function autorender(render: (cycle: number) => JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): JSX.Element {
-  const [state, refresh] = React.useState<ReactState<JSX.Element>>(
+export function autorender(render: (cycle: number) => React.JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): React.JSX.Element {
+  const [state, refresh] = React.useState<ReactState<React.JSX.Element>>(
     (!name && !logging) ? createReactState : () => createReactState(name, logging))
   const rx = state.rx
   rx.cycle = state.cycle

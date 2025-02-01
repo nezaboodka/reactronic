@@ -10,7 +10,7 @@ import { reactive, cached, transaction, Transaction, ReactiveSystem } from "../s
 
 export class Component<P> extends React.Component<P> {
   @cached
-  render(): JSX.Element {
+  render(): React.JSX.Element {
     throw new Error("render method is undefined")
   }
 
