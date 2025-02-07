@@ -8,7 +8,7 @@
 export type GetMergedItemKey<T = unknown> = (item: T) => string | undefined
 
 export type MergeListReader<T> = {
-  // readonly getKey: GetKey<T>
+  // readonly getKey: GetMergedItemKey<T>
   readonly isStrict: boolean
   readonly count: number
   readonly addedCount: number
@@ -16,13 +16,6 @@ export type MergeListReader<T> = {
   readonly isMergeInProgress: boolean
 
   lookup(key: string): MergedItem<T> | undefined
-  tryMergeAsExisting(key: string): MergedItem<T> | undefined
-  mergeAsAdded(instance: T): MergedItem<T>
-  mergeAsRemoved(item: MergedItem<T>): void
-  move(item: MergedItem<T>, after: MergedItem<T>): void
-  beginMerge(): void
-  endMerge(error?: unknown): void
-  resetAddedAndRemovedLists(): void
   firstMergedItem(): MergedItem<T> | undefined
   lastMergedItem(): MergedItem<T> | undefined
 
