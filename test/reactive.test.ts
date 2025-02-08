@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, ReactiveSystem, reaction, action, raw, transaction, unobs } from "../source/api.js"
+import { ObservableObject, ReactiveSystem, reaction, action, unobservable, transaction, nonreactive } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 export class ReactiveDemo extends ObservableObject {
@@ -14,7 +14,7 @@ export class ReactiveDemo extends ObservableObject {
   titleNested: string = "Abc"
   content: string = "Content"
   data: string = "Data"
-  @raw rev: number = 0
+  @unobservable rev: number = 0
 
   @action
   setData(value: string): void {
@@ -27,7 +27,7 @@ export class ReactiveDemo extends ObservableObject {
     this.title = "Title/1"
     this.content = "Content/1"
     this.title
-    unobs(() => {
+    nonreactive(() => {
       this.nestedReaction()
     })
   }

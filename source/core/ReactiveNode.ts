@@ -12,7 +12,7 @@ import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js
 import { Isolation, MemberOptions, Reentrance } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, raw, reaction, unobs } from "../ReactiveSystem.js"
+import { ReactiveSystem, options, unobservable, reaction, nonreactive } from "../ReactiveSystem.js"
 
 // Scripts
 
@@ -415,8 +415,8 @@ function invokeFinalizationUsingBasisChain(element: unknown, declaration: Reacti
 // ReactiveNodeContextImpl
 
 class ReactiveNodeContextImpl<T extends Object = Object> extends ObservableObject implements ReactiveNodeContext<T> {
-  @raw next: ReactiveNodeContextImpl<object> | undefined
-  @raw variable: ReactiveNodeVariable<T>
+  @unobservable next: ReactiveNodeContextImpl<object> | undefined
+  @unobservable variable: ReactiveNodeVariable<T>
   value: T
 
   constructor(variable: ReactiveNodeVariable<T>, value: T) {
@@ -536,7 +536,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
   static setNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>, value: T | undefined): void {
     const node = ReactiveNodeImpl.ownSlot.instance
     const owner = node.owner
-    const hostCtx = unobs(() => owner.context?.value)
+    const hostCtx = nonreactive(() => owner.context?.value)
     if (value && value !== hostCtx) {
       if (hostCtx)
         node.outer = owner
@@ -691,7 +691,7 @@ function triggerUpdateViaSlot(slot: MergedItem<ReactiveNodeImpl<any>>): void {
           })
         })
       }
-      unobs(node.update, node.declaration.triggers) // reactive auto-update
+      nonreactive(node.update, node.declaration.triggers) // reactive auto-update
     }
     else
       updateNow(slot)
@@ -701,7 +701,7 @@ function triggerUpdateViaSlot(slot: MergedItem<ReactiveNodeImpl<any>>): void {
 function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
   const driver = node.driver
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
-    unobs(() => {
+    nonreactive(() => {
       node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as activated
       driver.runPreparation(node)
       if (!node.has(Mode.manualMount)) {
@@ -712,7 +712,7 @@ function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
     })
   }
   else if (node.isMoved && !node.has(Mode.manualMount) && node.host !== node)
-    unobs(() => driver.runMount(node))
+    nonreactive(() => driver.runMount(node))
 }
 
 function updateNow(slot: MergedItem<ReactiveNodeImpl<any>>): void {
@@ -750,7 +750,7 @@ function triggerFinalization(slot: MergedItem<ReactiveNodeImpl>, isLeader: boole
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
     // Deactivate element itself and remove it from collection
-    const childrenAreLeaders = unobs(() => driver.runFinalization(node, isLeader))
+    const childrenAreLeaders = nonreactive(() => driver.runFinalization(node, isLeader))
     if (node.has(Mode.autonomous)) {
       // Defer disposal if element is reactive (having autonomous mode)
       slot.aux = undefined

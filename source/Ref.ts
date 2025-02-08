@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Transaction } from "./core/Transaction.js"
-import { unobs } from "./ReactiveSystem.js"
+import { nonreactive } from "./ReactiveSystem.js"
 
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
 export type GivenTypeOnly<T, V> = Pick<T, {[P in keyof T]: T[P] extends V ? P : never}[keyof T]>
@@ -53,7 +53,7 @@ export class Ref<T = any> {
   }
 
   unobs(): T {
-    return unobs(() => this.variable)
+    return nonreactive(() => this.variable)
   }
 
   observe(): T {

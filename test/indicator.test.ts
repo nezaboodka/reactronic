@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Indicator, ObservableObject, Reentrance, ReactiveSystem, Transaction, options, pause, raw, reaction, transaction, action } from "../source/api.js"
+import { Indicator, ObservableObject, Reentrance, ReactiveSystem, Transaction, options, pause, unobservable, reaction, transaction, action } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
@@ -47,8 +47,8 @@ class SourceFile {
 
 class CompilationController extends ObservableObject {
   fsTreeVersion = 0
-  @raw fsTree = new Array<SourceFile>()
-  @raw compilation: Compilation | null = null
+  @unobservable fsTree = new Array<SourceFile>()
+  @unobservable compilation: Compilation | null = null
 
   @action
   add(text: string): void {

@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, raw, action, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options, transaction } from "../source/api.js"
+import { ObservableObject, unobservable, action, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options, transaction } from "../source/api.js"
 
 export const output: string[] = []
 
@@ -17,7 +17,7 @@ export class Demo extends ObservableObject {
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
   // set computed(value: string) { /* nop */ }
 
-  @raw shared: string = "for testing purposes"
+  @unobservable shared: string = "for testing purposes"
   title: string = "Demo"
   users: Person[] = []
   collection1: Person[] = this.users
@@ -72,9 +72,9 @@ export class Demo extends ObservableObject {
 }
 
 export class DemoView extends ObservableObject {
-  @raw raw: string = "plain field"
-  @raw shared: string = "for testing purposes"
-  @raw readonly model: Demo
+  @unobservable raw: string = "plain field"
+  @unobservable shared: string = "for testing purposes"
+  @unobservable readonly model: Demo
   userFilter: string = "Jo"
 
   constructor(model: Demo) {
@@ -134,7 +134,7 @@ export class DemoView extends ObservableObject {
 
 /* istanbul ignore next */
 export class Person extends ObservableObject {
-  @raw dummy: string | null = null
+  @unobservable dummy: string | null = null
   id: string | null = null
   name: string | null = null
   age: number = 0

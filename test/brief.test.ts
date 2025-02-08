@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Transaction, Kind, unobs, sensitive, ReactiveSystem, transaction } from "../source/api.js"
+import { Transaction, Kind, nonreactive, sensitive, ReactiveSystem, transaction } from "../source/api.js"
 import { Person, Demo, DemoView, output, TestsLoggingLevel } from "./brief.js"
 
 const expected: string[] = [
@@ -87,7 +87,7 @@ test("brief", t => {
       t.is(daddy.name, "John Smith")
       t.is(daddy.age, 40)
       t.is(Transaction.outside(() => daddy.age), 38)
-      t.is(unobs(() => daddy.age), 40)
+      t.is(nonreactive(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = "Jo" // set to the same value
     })

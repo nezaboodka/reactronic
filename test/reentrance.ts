@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, action, reaction, cache, options, Transaction, Indicator, Reentrance, ReactiveSystem, obs, all, pause } from "../source/api.js"
+import { ObservableObject, action, reaction, cache, options, Transaction, Indicator, Reentrance, ReactiveSystem, observable, all, pause } from "../source/api.js"
 
 export const output: string[] = []
 export const busy = Indicator.create("Busy", 0, 0, 1)
@@ -25,7 +25,7 @@ export class AsyncDemo extends ObservableObject {
 
 export class AsyncDemoView {
   rawField: string = "raw field"
-  @obs observableField: string = "observable field"
+  @observable observableField: string = "observable field"
 
   constructor(readonly model: AsyncDemo) {
   }

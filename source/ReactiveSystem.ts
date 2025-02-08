@@ -41,7 +41,7 @@ export function transaction<T>(action: F<T>, ...args: any[]): T {
   return Transaction.run(null, action, ...args)
 }
 
-export function unobs<T>(func: F<T>, ...args: any[]): T {
+export function nonreactive<T>(func: F<T>, ...args: any[]): T {
   return OperationImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
@@ -55,11 +55,11 @@ export function contextually<T>(p: Promise<T>): Promise<T> {
 
 // Decorators
 
-export function raw(proto: object, prop: PropertyKey): any {
+export function unobservable(proto: object, prop: PropertyKey): any {
   return Mvcc.decorateData(false, proto, prop)
 }
 
-export function obs(proto: object, prop: PropertyKey): any {
+export function observable(proto: object, prop: PropertyKey): any {
   return Mvcc.decorateData(true, proto, prop)
 }
 
