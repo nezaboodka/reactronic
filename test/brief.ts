@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, raw, transactional, reactive, cached, Journal, ReactiveSystem, LoggingOptions, options, transaction } from "../source/api.js"
+import { ObservableObject, raw, action, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options, transaction } from "../source/api.js"
 
 export const output: string[] = []
 
@@ -13,7 +13,7 @@ export class Demo extends ObservableObject {
   static stamp = 0
   static journal = transaction(() => Journal.create())
 
-  @cached
+  @cache
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
   // set computed(value: string) { /* nop */ }
 
@@ -24,27 +24,27 @@ export class Demo extends ObservableObject {
   collection2: Person[] = this.users
   usersWithoutLast: Person[] = this.users
 
-  @transactional
+  @action
   loadUsers(): void {
     this._loadUsers()
   }
 
-  @transactional
+  @action
   testCollectionSealing(): void {
     this.collection1 = this.collection2 = []
   }
 
-  @transactional
+  @action
   testImmutableCollection(): void {
     this.collection1.push(...this.users)
   }
 
-  @transactional @options({ journal: Demo.journal })
+  @action @options({ journal: Demo.journal })
   testUndo(): void {
     this.title = "Demo - undo/redo"
   }
 
-  @reactive @options({ order: 1 })
+  @reaction @options({ order: 1 })
   protected backup(): void {
     this.usersWithoutLast = this.users.slice()
     this.usersWithoutLast.pop()
@@ -83,7 +83,7 @@ export class DemoView extends ObservableObject {
     // R.configureObject(this, { sensitivity: Sensitivity.ReactOnFinalDifferenceOnly })
   }
 
-  @reactive
+  @reaction
   print(): void {
     const lines = this.render(0)
     lines.forEach(x => {
@@ -98,7 +98,7 @@ export class DemoView extends ObservableObject {
   //   this.render().forEach(x => output.push(x));
   // }
 
-  @cached
+  @cache
   filteredUsers(): Person[] {
     const m = this.model
     let result: Person[] = m.users.slice()
@@ -111,7 +111,7 @@ export class DemoView extends ObservableObject {
     return result
   }
 
-  @cached @options({ triggeringArgs: true })
+  @cache @options({ triggeringArgs: true })
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
     this.raw = ReactiveSystem.why(true)

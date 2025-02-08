@@ -63,30 +63,30 @@ export function obs(proto: object, prop: PropertyKey): any {
   return Mvcc.decorateData(true, proto, prop)
 }
 
-export function transactional(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+export function action(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
     kind: Kind.transactional,
     isolation: Isolation.joinToCurrentTransaction,
   }
-  return Mvcc.decorateOperation(true, transactional, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, action, opts, proto, prop, pd)
 }
 
-export function reactive(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
     kind: Kind.reactive,
     isolation: Isolation.joinAsNestedTransaction,
     throttling: -1, // immediate reactive call
   }
-  return Mvcc.decorateOperation(true, reactive, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, reaction, opts, proto, prop, pd)
 }
 
-export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+export function cache(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
     kind: Kind.cached,
     isolation: Isolation.joinToCurrentTransaction,
     noSideEffects: true,
   }
-  return Mvcc.decorateOperation(true, cached, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, cache, opts, proto, prop, pd)
 }
 
 export function options(value: Partial<MemberOptions>): F<any> {
