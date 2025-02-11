@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Indicator, ObservableObject, Reentrance, ReactiveSystem, Transaction, options, pause, unobservable, reaction, transaction, action } from "../source/api.js"
+import { Indicator, ObservableObject, Reentrance, ReactiveSystem, Transaction, options, pause, unobservable, reaction, transaction, impact } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
@@ -50,7 +50,7 @@ class CompilationController extends ObservableObject {
   @unobservable fsTree = new Array<SourceFile>()
   @unobservable compilation: Compilation | null = null
 
-  @action
+  @impact
   add(text: string): void {
     this.fsTree.push(new SourceFile(text))
     output.push(`Added file ${text}.`)

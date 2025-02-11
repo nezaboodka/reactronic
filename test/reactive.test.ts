@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, ReactiveSystem, reaction, action, unobservable, transaction, nonreactive } from "../source/api.js"
+import { ObservableObject, ReactiveSystem, reaction, impact, unobservable, transaction, nonreactive } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 export class ReactiveDemo extends ObservableObject {
@@ -16,7 +16,7 @@ export class ReactiveDemo extends ObservableObject {
   data: string = "Data"
   @unobservable rev: number = 0
 
-  @action
+  @impact
   setData(value: string): void {
     this.data =  value
   }

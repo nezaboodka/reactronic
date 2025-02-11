@@ -53,6 +53,23 @@ export function contextually<T>(p: Promise<T>): Promise<T> {
   throw new Error("not implemented yet")
 }
 
+// Operators & Decorators
+
+export function impact<T>(func: F<T>, ...args: any[]): T
+export function impact(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
+export function impact<T>(funcOrProto: F<T> | object, propsOrArgs: PropertyKey | any[], pd: PropertyDescriptor): T {
+  if (funcOrProto instanceof Function) {
+    return Transaction.run(null, funcOrProto, ...(propsOrArgs as any[]))
+  }
+  else {
+    const opts = {
+      kind: Kind.transactional,
+      isolation: Isolation.joinToCurrentTransaction,
+    }
+    return Mvcc.decorateOperation(true, impact, opts, funcOrProto, propsOrArgs as PropertyKey, pd)
+  }
+}
+
 // Decorators
 
 export function unobservable(proto: object, prop: PropertyKey): any {
@@ -61,14 +78,6 @@ export function unobservable(proto: object, prop: PropertyKey): any {
 
 export function observable(proto: object, prop: PropertyKey): any {
   return Mvcc.decorateData(true, proto, prop)
-}
-
-export function action(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
-  const opts = {
-    kind: Kind.transactional,
-    isolation: Isolation.joinToCurrentTransaction,
-  }
-  return Mvcc.decorateOperation(true, action, opts, proto, prop, pd)
 }
 
 export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {

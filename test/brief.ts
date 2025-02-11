@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, action, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options, transaction } from "../source/api.js"
+import { ObservableObject, unobservable, impact, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options, transaction } from "../source/api.js"
 
 export const output: string[] = []
 
@@ -24,22 +24,22 @@ export class Demo extends ObservableObject {
   collection2: Person[] = this.users
   usersWithoutLast: Person[] = this.users
 
-  @action
+  @impact
   loadUsers(): void {
     this._loadUsers()
   }
 
-  @action
+  @impact
   testCollectionSealing(): void {
     this.collection1 = this.collection2 = []
   }
 
-  @action
+  @impact
   testImmutableCollection(): void {
     this.collection1.push(...this.users)
   }
 
-  @action @options({ journal: Demo.journal })
+  @impact @options({ journal: Demo.journal })
   testUndo(): void {
     this.title = "Demo - undo/redo"
   }
