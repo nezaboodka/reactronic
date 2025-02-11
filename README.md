@@ -230,8 +230,8 @@ In general case, all reactions and caches are automatically and
 immediately marked as obsolete when changes are made in those observable
 objects and other cached functions that were used during their execution.
 And once marked, the functions are automatically executed again,
-either immediately (for @reaction functions) or on-demand
-(for @cached functions).
+either immediately (for reaction functions) or on-demand
+(for cache functions).
 
 Reactronic takes full care of tracking dependencies between
 all the observable objects and reaction/caches.
