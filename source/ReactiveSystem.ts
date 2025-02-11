@@ -67,11 +67,17 @@ export function impact<T>(
   p3: undefined | any[] | PropertyDescriptor): T {
   if (p1 instanceof Function) {
     // impact<T>(func: F<T>, ...args: any[]): T
-    return Transaction.run(null, p1, ...(p2 as any[]))
+    if (p2 !== undefined)
+      return Transaction.run(null, p1, ...(p2 as any[]))
+    else
+      return Transaction.run(null, p1)
   }
   else if (p2 instanceof Function) {
     // impact<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
-    return Transaction.run(p1, p2, ...(p3 as any[]))
+    if (p3 !== undefined)
+      return Transaction.run(p1, p2, ...(p3 as any[]))
+    else
+      return Transaction.run(p1, p2)
   }
   else {
     // impact(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any

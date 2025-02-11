@@ -212,7 +212,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    Transaction.run(null, RxSystem.dispose, this)
+    impact(RxSystem.dispose, this)
   }
 }
 ```
