@@ -218,12 +218,12 @@ class Component<P> extends React.Component<P> {
 ```
 
 In the example above, reaction function `refresh` is transparently subscribed
-to the cache function `render`. In turn, the `render` cache function is
-subscribed to the `url` and `content` properties of a corresponding
+to the cache function `render`. In turn, cache function `render` is
+subscribed to the properties `url` and `content` of a corresponding
 `MyModel` object. Once `url` or `content` values are changed, the
-`render` cache becomes obsolete and causes the `refresh` function to become
-obsolete as well and re-executed. While being executed, the `refresh`
-function enqueues re-rendering request to React, which calls
+`render` cache becomes obsolete and causes the reaction function `refresh` to become
+obsolete as well and re-executed. While being executed, the reaction function `refresh`
+enqueues re-rendering request to React, which calls
 `render` function causing it to renew its cached value.
 
 In general case, all reactions and caches are automatically and
