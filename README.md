@@ -24,9 +24,9 @@ Transactional reactivity is based on four fundamental concepts:
 
   - **Observable Objects** - a set of objects that store data of an
     application (state);
-  - **Impact Function** - makes changes in observable
+  - **Impact Function** - it makes changes in observable
     objects in atomic way ("all or nothing");
-  - **Reaction Function** - is executed automatically in
+  - **Reaction Function** - it is executed automatically in
     response to changes made by a transaction;
   - **Cache Function** - its result is remembered and, if the becomes
   obsolete, recomputed on-demand.
