@@ -61,9 +61,10 @@ class Demo extends ObservableObject {
 }
 ```
 
-In the example above, `printContact` function depends on `name`
-and `email` fields. It is executed automatically in response
-to changes of these fields made by `saveContact` function.
+In the example above, `printContact` reaction function depends
+on `name` and `email` fields. It is executed automatically in
+response to changes of these fields made by `saveContact` impact
+function.
 
 Here is an example of a cached value (re-)computed on-demand:
 
