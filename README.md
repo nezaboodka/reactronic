@@ -179,7 +179,7 @@ during their execution.
 ``` tsx
 class MyView extends Component<{model: MyModel}> {
   @cache
-  render(): JSX.Element {
+  render(): React.JSX.Element {
     return (
       <div>
         <h1>{this.props.model.url}</h1>
@@ -193,7 +193,7 @@ class MyView extends Component<{model: MyModel}> {
 ``` tsx
 class Component<P> extends React.Component<P> {
   @cache
-  render(): JSX.Element {
+  render(): React.JSX.Element {
     throw new Error('render method is undefined')
   }
 
