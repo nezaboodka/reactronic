@@ -17,7 +17,7 @@ Transactional reactivity means that state changes are being made in an
 isolated data snapshot and then, once atomically applied, are
 **consistently propagated** to corresponding visual components for
 (re)rendering. All that is done in automatic, seamless, and fine-grained
-way, because reactronic **takes full care of tracking dependencies**
+way. Reactronic **takes full care of tracking dependencies**
 between visual components (observers) and state (observable objects).
 
 Transactional reactivity is based on four fundamental concepts:
