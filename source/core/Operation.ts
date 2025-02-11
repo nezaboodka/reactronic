@@ -134,7 +134,7 @@ export class OperationImpl implements Operation<any> {
     const ov: ObjectVersion = ctx.lookupObjectVersion(this.ownerHandle, this.fieldKey, false)
     const launch: Launch = this.acquireFromObjectVersion(ov, args)
     const applied = this.ownerHandle.applied.data[this.fieldKey] as Launch
-    const isReusable = launch.options.kind !== Kind.transactional && launch.cause !== BOOT_CAUSE &&
+    const isReusable = launch.options.kind !== Kind.impact && launch.cause !== BOOT_CAUSE &&
       (ctx === launch.changeset || ctx.timestamp < launch.obsoleteSince || applied.obsoleteDueTo === undefined) &&
       (!launch.options.triggeringArgs || args === undefined ||
         launch.args.length === args.length && launch.args.every((t, i) => t === args[i])) || ov.disposed
@@ -218,7 +218,7 @@ export class OperationImpl implements Operation<any> {
       }
       else { // retry launch
         ror = this.peek(argsx) // re-read on retry
-        if (ror.launch.options.kind === Kind.transactional || !ror.isReusable) {
+        if (ror.launch.options.kind === Kind.impact || !ror.isReusable) {
           ror = this.edit()
           if (Log.isOn && Log.opt.operation)
             Log.write("║", "  o", `${ror.launch.why()}`)
@@ -321,7 +321,7 @@ class Launch extends FieldVersion implements Observer {
     let cause: string
     if (this.cause)
       cause = `   ◀◀   ${this.cause}`
-    else if (this.operation.options.kind === Kind.transactional)
+    else if (this.operation.options.kind === Kind.impact)
       cause = "   ◀◀   operation"
     else
       cause = `   ◀◀   T${this.changeset.id}[${this.changeset.hint}]`
@@ -369,7 +369,7 @@ class Launch extends FieldVersion implements Observer {
         snapshot.changes.has(memberName) */
       if (!skip) {
         const why = `${Dump.snapshot2(h, changeset, fk, observable)}    ◀◀    ${outer}`
-        const isReactive = this.options.kind === Kind.reactive /*&& this.snapshot.data[Meta.Disposed] === undefined*/
+        const isReactive = this.options.kind === Kind.reaction /*&& this.snapshot.data[Meta.Disposed] === undefined*/
 
         // Mark obsolete and unsubscribe from all (this.observables = undefined)
         this.obsoleteDueTo = why
@@ -410,14 +410,14 @@ class Launch extends FieldVersion implements Observer {
           const launch: Launch = this.operation.reuseOrRelaunch(false, undefined)
           if (launch.result instanceof Promise)
             launch.result.catch(error => {
-              if (launch.options.kind === Kind.reactive)
+              if (launch.options.kind === Kind.reaction)
                 misuse(`reactive function ${launch.hint()} failed and will not run anymore: ${error}`, error)
             })
         }
         catch (e) {
           if (!nothrow)
             throw e
-          else if (this.options.kind === Kind.reactive)
+          else if (this.options.kind === Kind.reaction)
             misuse(`reactive ${this.hint()} failed and will not run anymore: ${e}`, e)
         }
       }
@@ -431,7 +431,7 @@ class Launch extends FieldVersion implements Observer {
   }
 
   isNotUpToDate(): boolean {
-    return !this.error && (this.options.kind === Kind.transactional ||
+    return !this.error && (this.options.kind === Kind.impact ||
       !this.successor || this.successor.transaction.isCanceled)
   }
 
@@ -569,9 +569,9 @@ class Launch extends FieldVersion implements Observer {
   }
 
   private static markUsed(observable: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean): void {
-    if (kind !== Kind.transactional) {
+    if (kind !== Kind.impact) {
       const launch: Launch | undefined = Launch.current // alias
-      if (launch && launch.options.kind !== Kind.transactional &&
+      if (launch && launch.options.kind !== Kind.impact &&
         launch.transaction === Transaction.current && fk !== Meta.Handle) {
         const ctx = Changeset.current()
         if (ctx !== ov.changeset) // snapshot should not bump itself
@@ -781,11 +781,11 @@ class Launch extends FieldVersion implements Observer {
     const opts = launch ? launch.options : OptionsImpl.INITIAL
     initial[fk] = launch = new Launch(Transaction.current, rx, EMPTY_OBJECT_VERSION.changeset, new OptionsImpl(getter, setter, opts, options, implicit), false)
     // Add to the list if it's a reactive function
-    if (launch.options.kind === Kind.reactive && launch.options.throttling < Number.MAX_SAFE_INTEGER) {
+    if (launch.options.kind === Kind.reaction && launch.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.acquire(proto, Meta.Reactive)
       reactive[fk] = launch
     }
-    else if (launch.options.kind === Kind.reactive && launch.options.throttling >= Number.MAX_SAFE_INTEGER) {
+    else if (launch.options.kind === Kind.reaction && launch.options.throttling >= Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.getFrom(proto, Meta.Reactive)
       delete reactive[fk]
     }

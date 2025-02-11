@@ -63,7 +63,7 @@ export function impact<T>(funcOrProto: F<T> | object, propsOrArgs: PropertyKey |
   }
   else {
     const opts = {
-      kind: Kind.transactional,
+      kind: Kind.impact,
       isolation: Isolation.joinToCurrentTransaction,
     }
     return Mvcc.decorateOperation(true, impact, opts, funcOrProto, propsOrArgs as PropertyKey, pd)
@@ -82,7 +82,7 @@ export function observable(proto: object, prop: PropertyKey): any {
 
 export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
-    kind: Kind.reactive,
+    kind: Kind.reaction,
     isolation: Isolation.joinAsNestedTransaction,
     throttling: -1, // immediate reactive call
   }
@@ -91,7 +91,7 @@ export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescripto
 
 export function cache(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
-    kind: Kind.cached,
+    kind: Kind.cache,
     isolation: Isolation.joinToCurrentTransaction,
     noSideEffects: true,
   }
