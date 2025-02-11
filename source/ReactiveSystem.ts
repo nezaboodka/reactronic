@@ -7,7 +7,7 @@
 
 import { F } from "./util/Utils.js"
 import { Log } from "./util/Dbg.js"
-import { Operation, Kind, MemberOptions, LoggingOptions, ProfilingOptions, Isolation } from "./Options.js"
+import { Operation, Kind, MemberOptions, LoggingOptions, ProfilingOptions, Isolation, SnapshotOptions } from "./Options.js"
 import { Meta, ObjectHandle } from "./core/Data.js"
 import { Changeset } from "./core/Changeset.js"
 import { Mvcc } from "./core/Mvcc.js"
@@ -55,18 +55,32 @@ export function contextually<T>(p: Promise<T>): Promise<T> {
 
 // Operators & Decorators
 
+// operators
 export function impact<T>(func: F<T>, ...args: any[]): T
+export function impact<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
+// decorator
 export function impact(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
-export function impact<T>(funcOrProto: F<T> | object, propsOrArgs: PropertyKey | any[], pd: PropertyDescriptor): T {
-  if (funcOrProto instanceof Function) {
-    return Transaction.run(null, funcOrProto, ...(propsOrArgs as any[]))
+// implementation
+export function impact<T>(
+  p1: F<T> | SnapshotOptions | object,
+  p2: any[] | F<T> | PropertyKey,
+  p3: undefined | any[] | PropertyDescriptor): T {
+  if (p1 instanceof Function) {
+    // impact<T>(func: F<T>, ...args: any[]): T
+    return Transaction.run(null, p1, ...(p2 as any[]))
+  }
+  else if (p2 instanceof Function) {
+    // impact<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
+    return Transaction.run(p1, p2, ...(p3 as any[]))
   }
   else {
+    // impact(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
     const opts = {
       kind: Kind.impact,
       isolation: Isolation.joinToCurrentTransaction,
     }
-    return Mvcc.decorateOperation(true, impact, opts, funcOrProto, propsOrArgs as PropertyKey, pd)
+    return Mvcc.decorateOperation(true, impact, opts,
+      p1, p2 as PropertyKey, p3 as PropertyDescriptor)
   }
 }
 
