@@ -61,10 +61,13 @@ class Demo extends ObservableObject {
 }
 ```
 
-In the example above, `printContact` reaction function depends
-on `name` and `email` fields. It is executed automatically in
-response to changes of these fields made by `saveContact` impact
-function.
+In the example above, `Demo` is an observable object,
+meaning that access to its fields are seamlessly tracked
+to determine dependent reactions and caches. Reaction
+function `printContact` reads `name` and `email` fields
+and depends on them. Reaction function is executed
+automatically in response to changes of these fields
+made by `saveContact` impact function.
 
 Here is an example of a cached value (re-)computed on-demand:
 
@@ -91,7 +94,7 @@ source fields `name` and `email` upon first use. Once computed,
 the result is cached and is reused until source fields `name`
 and `email` are changed. Once source fields changed, `contact`
 value becomes obsolete, thus causing execution of depending
-function `printContact`. When `printContact` function
+reaction function `printContact`. When `printContact` function
 runs it reads `contact` and causes its re-computation.
 
 ## Observable Objects
