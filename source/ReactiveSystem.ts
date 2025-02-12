@@ -41,6 +41,27 @@ export function nonreactive<T>(func: F<T>, ...args: any[]): T {
   return OperationImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
+export function nonreactive2<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
+export function nonreactive2<T>(func: F<T>, ...args: any[]): T
+export function nonreactive2<T>(p1: F<T> | SnapshotOptions, p2: any[] | F<T>, p3: undefined | any[]): T {
+  if (p1 instanceof Function) {
+    return OperationImpl.proceedWithinGivenLaunch<T>(undefined, () => {
+      if (p2 !== undefined)
+        return Transaction.run(null, p1, ...(p2 as any[]))
+      else
+        return Transaction.run(null, p1)
+    })
+  }
+  else {
+    return OperationImpl.proceedWithinGivenLaunch<T>(undefined, () => {
+      if (p3 !== undefined)
+        return Transaction.run(p1, p2 as F<T>, ...(p3 as any[]))
+      else
+        return Transaction.run(p1, p2 as F<T>)
+    })
+  }
+}
+
 export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
   return Mvcc.sensitive(sensitivity, func, ...args)
 }
