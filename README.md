@@ -24,7 +24,7 @@ Transactional reactivity is based on four fundamental concepts:
 
   - **Observable Objects** - a set of objects that store data of an
     application (state);
-  - **Apply Function** - it makes changes in observable
+  - **Applying Function** - it makes changes in observable
     objects in atomic way ("all or nothing");
   - **Reaction Function** - it is executed automatically in
     response to changes made by a transaction;
@@ -66,7 +66,7 @@ meaning that access to its fields are seamlessly tracked
 to determine dependent reactions and caches. Reaction
 function `printContact` reads `name` and `email` fields,
 thus depends on them. It is executed automatically in
-response to changes of these fields made by the apply
+response to changes of these fields made by the applying
 function `saveContact`.
 
 Here is an example of a cached value (re-)computed on-demand:
@@ -117,10 +117,10 @@ and `timestamp` are hooked.
 
 ## Apply
 
-Apply function makes changes in observable objects
+Applying function makes changes in observable objects
 in transactional (atomic) way, thus provoking execution
 of dependent reactions and recalculation of dependent
-caches. Apply function is instrumented with hooks to
+caches. Applying function is instrumented with hooks to
 provide transparent atomicity (by implicit context
 switching and isolation).
 
@@ -136,9 +136,9 @@ class MyModel extends ObservableObject {
 }
 ```
 
-In the example above, the apply function `load` makes
+In the example above, the applying function `load` makes
 changes to `url`, `content` and `timestamp` properties. While
-apply transaction is running, the changes are visible only inside the
+applying transaction is running, the changes are visible only inside the
 transaction itself. The new values become atomically visible outside
 of the transaction only upon its completion.
 
@@ -168,9 +168,9 @@ of asynchronous operations is fully completed.
 ## Reaction & Cache
 
 Reaction function is automatically and immediately called in
-response to changes in observable objects made by an apply function.
+response to changes in observable objects made by an applying function.
 Cache function is called on-demand to renew the value if it was
-marked as obsolete due to changes made by an apply function.
+marked as obsolete due to changes made by an applying function.
 Reaction and cache functions are instrumented with hooks
 to seamlessly subscribe to those observable objects and
 other cache functions (dependencies), which are used
@@ -256,7 +256,7 @@ of recurring changes:
   - `0` - execute immediately via event loop (asynchronously with zero timeout);
   - `>= Number.MAX_SAFE_INTEGER` - never execute (suspended reaction).
 
-**Reentrance** option defines how to handle reentrant calls of apply
+**Reentrance** option defines how to handle reentrant calls of applying
 and reaction functions:
 
   - `preventWithError` - fail with error if there is an existing call in progress;
