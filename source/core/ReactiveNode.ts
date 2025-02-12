@@ -12,7 +12,7 @@ import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js
 import { Isolation, MemberOptions, Reentrance } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, unobservable, reaction, nonreactive, impact } from "../ReactiveSystem.js"
+import { ReactiveSystem, options, unobservable, reaction, nonreactive, apply } from "../ReactiveSystem.js"
 
 // Scripts
 
@@ -542,7 +542,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
         node.outer = owner
       else
         node.outer = owner.outer
-      impact({ isolation: Isolation.joinAsNestedTransaction }, () => {
+      apply({ isolation: Isolation.joinAsNestedTransaction }, () => {
         const ctx = node.context
         if (ctx) {
           ctx.variable = variable
@@ -760,7 +760,7 @@ function triggerFinalization(slot: MergedItem<ReactiveNodeImpl>, isLeader: boole
       else
         gFirstToDispose = gLastToDispose = slot
       if (gFirstToDispose === slot)
-        impact({ isolation: Isolation.disjoinForInternalDisposal, hint: `runDisposalLoop(initiator=${slot.instance.key})` }, () => {
+        apply({ isolation: Isolation.disjoinForInternalDisposal, hint: `runDisposalLoop(initiator=${slot.instance.key})` }, () => {
           void runDisposalLoop().then(NOP, error => console.log(error))
         })
     }

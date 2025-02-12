@@ -24,7 +24,7 @@ Transactional reactivity is based on four fundamental concepts:
 
   - **Observable Objects** - a set of objects that store data of an
     application (state);
-  - **Impact Function** - it makes changes in observable
+  - **Apply Function** - it makes changes in observable
     objects in atomic way ("all or nothing");
   - **Reaction Function** - it is executed automatically in
     response to changes made by a transaction;
@@ -45,7 +45,7 @@ class Demo extends ObservableObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
-  @impact
+  @apply
   saveContact(name: string, email: string): void {
     this.name = name
     this.email = email
@@ -66,8 +66,8 @@ meaning that access to its fields are seamlessly tracked
 to determine dependent reactions and caches. Reaction
 function `printContact` reads `name` and `email` fields,
 thus depends on them. It is executed automatically in
-response to changes of these fields made by `saveContact`
-impact function.
+response to changes of these fields made by the apply
+function `saveContact`.
 
 Here is an example of a cached value (re-)computed on-demand:
 
@@ -115,19 +115,19 @@ In the example above, the class `MyModel` is based on Reactronic's
 `ObservableObject` class and all its properties `url`, `content`,
 and `timestamp` are hooked.
 
-## Impact
+## Apply
 
-Impact function makes changes in observable objects
+Apply function makes changes in observable objects
 in transactional (atomic) way, thus provoking execution
 of dependent reactions and recalculation of dependent
-caches. Impact function is instrumented with hooks to
+caches. Apply function is instrumented with hooks to
 provide transparent atomicity (by implicit context
 switching and isolation).
 
 ``` typescript
 class MyModel extends ObservableObject {
   // ...
-  @impact
+  @apply
   async load(url: string): Promise<void> {
     this.url = url
     this.content = await fetch(url)
@@ -136,9 +136,9 @@ class MyModel extends ObservableObject {
 }
 ```
 
-In the example above, the impact function `load` makes
+In the example above, the apply function `load` makes
 changes to `url`, `content` and `timestamp` properties. While
-impact transaction is running, the changes are visible only inside the
+apply transaction is running, the changes are visible only inside the
 transaction itself. The new values become atomically visible outside
 of the transaction only upon its completion.
 
@@ -168,9 +168,9 @@ of asynchronous operations is fully completed.
 ## Reaction & Cache
 
 Reaction function is automatically and immediately called in
-response to changes in observable objects made by an impact function.
+response to changes in observable objects made by an apply function.
 Cache function is called on-demand to renew the value if it was
-marked as obsolete due to changes made by an impact function.
+marked as obsolete due to changes made by an apply function.
 Reaction and cache functions are instrumented with hooks
 to seamlessly subscribe to those observable objects and
 other cache functions (dependencies), which are used
@@ -212,7 +212,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    impact(RxSystem.dispose, this)
+    apply(RxSystem.dispose, this)
   }
 }
 ```
@@ -256,7 +256,7 @@ of recurring changes:
   - `0` - execute immediately via event loop (asynchronously with zero timeout);
   - `>= Number.MAX_SAFE_INTEGER` - never execute (suspended reaction).
 
-**Reentrance** option defines how to handle reentrant calls of impact
+**Reentrance** option defines how to handle reentrant calls of apply
 and reaction functions:
 
   - `preventWithError` - fail with error if there is an existing call in progress;
@@ -305,7 +305,7 @@ class ObservableObject { }
 
 function observable(proto, prop) // field only
 function unobservable(proto, prop) // field only
-function impact(proto, prop, pd) // method only
+function apply(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cache(proto, prop, pd) // method only
 function options(value: Partial<MemberOptions>): F<any>

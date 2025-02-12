@@ -134,7 +134,7 @@ export class OperationImpl implements Operation<any> {
     const ov: ObjectVersion = ctx.lookupObjectVersion(this.ownerHandle, this.fieldKey, false)
     const launch: Launch = this.acquireFromObjectVersion(ov, args)
     const applied = this.ownerHandle.applied.data[this.fieldKey] as Launch
-    const isReusable = launch.options.kind !== Kind.impact && launch.cause !== BOOT_CAUSE &&
+    const isReusable = launch.options.kind !== Kind.apply && launch.cause !== BOOT_CAUSE &&
       (ctx === launch.changeset || ctx.timestamp < launch.obsoleteSince || applied.obsoleteDueTo === undefined) &&
       (!launch.options.triggeringArgs || args === undefined ||
         launch.args.length === args.length && launch.args.every((t, i) => t === args[i])) || ov.disposed
@@ -218,7 +218,7 @@ export class OperationImpl implements Operation<any> {
       }
       else { // retry launch
         ror = this.peek(argsx) // re-read on retry
-        if (ror.launch.options.kind === Kind.impact || !ror.isReusable) {
+        if (ror.launch.options.kind === Kind.apply || !ror.isReusable) {
           ror = this.edit()
           if (Log.isOn && Log.opt.operation)
             Log.write("║", "  o", `${ror.launch.why()}`)
@@ -321,7 +321,7 @@ class Launch extends FieldVersion implements Observer {
     let cause: string
     if (this.cause)
       cause = `   ◀◀   ${this.cause}`
-    else if (this.operation.options.kind === Kind.impact)
+    else if (this.operation.options.kind === Kind.apply)
       cause = "   ◀◀   operation"
     else
       cause = `   ◀◀   T${this.changeset.id}[${this.changeset.hint}]`
@@ -431,7 +431,7 @@ class Launch extends FieldVersion implements Observer {
   }
 
   isNotUpToDate(): boolean {
-    return !this.error && (this.options.kind === Kind.impact ||
+    return !this.error && (this.options.kind === Kind.apply ||
       !this.successor || this.successor.transaction.isCanceled)
   }
 
@@ -569,9 +569,9 @@ class Launch extends FieldVersion implements Observer {
   }
 
   private static markUsed(observable: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean): void {
-    if (kind !== Kind.impact) {
+    if (kind !== Kind.apply) {
       const launch: Launch | undefined = Launch.current // alias
-      if (launch && launch.options.kind !== Kind.impact &&
+      if (launch && launch.options.kind !== Kind.apply &&
         launch.transaction === Transaction.current && fk !== Meta.Handle) {
         const ctx = Changeset.current()
         if (ctx !== ov.changeset) // snapshot should not bump itself

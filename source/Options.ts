@@ -35,7 +35,7 @@ export type MemberOptions = {
 
 export enum Kind {
   plain = 0,
-  impact = 1,
+  apply = 1,
   reaction = 2,
   cache = 3,
 }

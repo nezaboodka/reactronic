@@ -56,36 +56,36 @@ export function contextually<T>(p: Promise<T>): Promise<T> {
 // Operators & Decorators
 
 // operators
-export function impact<T>(func: F<T>, ...args: any[]): T
-export function impact<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
+export function apply<T>(func: F<T>, ...args: any[]): T
+export function apply<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
 // decorator
-export function impact(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
+export function apply(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
 // implementation
-export function impact<T>(
+export function apply<T>(
   p1: F<T> | SnapshotOptions | object,
   p2: any[] | F<T> | PropertyKey,
   p3: undefined | any[] | PropertyDescriptor): T {
   if (p1 instanceof Function) {
-    // impact<T>(func: F<T>, ...args: any[]): T
+    // apply<T>(func: F<T>, ...args: any[]): T
     if (p2 !== undefined)
       return Transaction.run(null, p1, ...(p2 as any[]))
     else
       return Transaction.run(null, p1)
   }
   else if (p2 instanceof Function) {
-    // impact<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
+    // apply<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
     if (p3 !== undefined)
       return Transaction.run(p1, p2, ...(p3 as any[]))
     else
       return Transaction.run(p1, p2)
   }
   else {
-    // impact(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
+    // apply(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
     const opts = {
-      kind: Kind.impact,
+      kind: Kind.apply,
       isolation: Isolation.joinToCurrentTransaction,
     }
-    return Mvcc.decorateOperation(true, impact, opts,
+    return Mvcc.decorateOperation(true, apply, opts,
       p1, p2 as PropertyKey, p3 as PropertyDescriptor)
   }
 }
