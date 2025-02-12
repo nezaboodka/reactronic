@@ -168,10 +168,10 @@ export class TransactionImpl extends Transaction {
 
   static run<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T {
     const t: TransactionImpl = TransactionImpl.acquire(options)
-    const root = t !== TransactionImpl.curr
+    const isRoot = t !== TransactionImpl.curr
     t.guard()
     let result: any = t.runImpl<T>(options?.logging, func, ...args)
-    if (root) {
+    if (isRoot) {
       if (result instanceof Promise) {
         result = TransactionImpl.outside(() => {
           return t.wrapToRetry(t.wrapToWaitUntilFinish(result), func, ...args)
