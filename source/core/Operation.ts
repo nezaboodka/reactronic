@@ -898,8 +898,8 @@ function reactronicHookedThen(this: any,
       resolve = launch.wrap(resolve)
       reject = launch.wrap(reject)
     }
-    resolve = tran.wrap(resolve, false)
-    reject = tran.wrap(reject, true)
+    resolve = tran.wrapAsPending(resolve, false)
+    reject = tran.wrapAsPending(reject, true)
   }
   return ORIGINAL_PROMISE_THEN.call(this, resolve, reject)
 }

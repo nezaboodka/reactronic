@@ -28,7 +28,7 @@ export abstract class Transaction implements Worker {
   abstract inspect<T>(func: F<T>, ...args: any[]): T
   abstract apply(): void
   abstract seal(): this
-  abstract wrap<T>(func: F<T>, secondary: boolean): F<T>
+  abstract wrapAsPending<T>(func: F<T>, secondary: boolean): F<T>
   abstract cancel(error: Error, retryAfterOrIgnore?: Worker | null): this
   abstract readonly isCanceled: boolean
   abstract readonly isFinished: boolean
@@ -47,7 +47,7 @@ export abstract class Transaction implements Worker {
 export class TransactionImpl extends Transaction {
   private static readonly none: TransactionImpl = new TransactionImpl({ hint: "<none>" })
   private static curr: TransactionImpl = TransactionImpl.none
-  private static inspection: boolean = false
+  private static isInspectionMode: boolean = false
   private static frameStartTime: number = 0
   private static frameOverCounter: number = 0
 
@@ -89,15 +89,15 @@ export class TransactionImpl extends Transaction {
   }
 
   inspect<T>(func: F<T>, ...args: any[]): T {
-    const restore = TransactionImpl.inspection
+    const outer = TransactionImpl.isInspectionMode
     try {
-      TransactionImpl.inspection = true
+      TransactionImpl.isInspectionMode = true
       if (Log.isOn && Log.opt.transaction)
         Log.write(" ", " ", `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.curr.id}[${TransactionImpl.curr.hint}]`)
       return this.runImpl(undefined, func, ...args)
     }
     finally {
-      TransactionImpl.inspection = restore
+      TransactionImpl.isInspectionMode = outer
     }
   }
 
@@ -115,29 +115,29 @@ export class TransactionImpl extends Transaction {
     return this
   }
 
-  wrap<T>(func: F<T>, error: boolean): F<T> {
+  wrapAsPending<T>(func: F<T>, secondary: boolean): F<T> {
     this.guard()
     const self = this
-    const inspect = TransactionImpl.inspection
-    if (!inspect)
-      self.run(TransactionImpl.wrapperEnter, self, error)
+    const inspection = TransactionImpl.isInspectionMode
+    if (!inspection)
+      self.run(TransactionImpl.preparePendingFunction, self, secondary)
     else
-      self.inspect(TransactionImpl.wrapperEnter, self, error)
-    const wrappedForTransaction: F<T> = (...args: any[]): T => {
-      if (!inspect)
-        return self.runImpl<T>(undefined, TransactionImpl.wrapperLeave, self, error, func, ...args)
+      self.inspect(TransactionImpl.preparePendingFunction, self, secondary)
+    const wrappedAsPendingForTransaction: F<T> = (...args: any[]): T => {
+      if (!inspection)
+        return self.runImpl<T>(undefined, TransactionImpl.runPendingFunction, self, secondary, func, ...args)
       else
-        return self.inspect<T>(TransactionImpl.wrapperLeave, self, error, func, ...args)
+        return self.inspect<T>(TransactionImpl.runPendingFunction, self, secondary, func, ...args)
     }
-    return wrappedForTransaction
+    return wrappedAsPendingForTransaction
   }
 
-  private static wrapperEnter<T>(t: TransactionImpl, error: boolean): void {
-    if (!error)
+  private static preparePendingFunction<T>(t: TransactionImpl, secondary: boolean): void {
+    if (!secondary)
       t.pending++
   }
 
-  private static wrapperLeave<T>(t: TransactionImpl, error: boolean, func: F<T>, ...args: any[]): T {
+  private static runPendingFunction<T>(t: TransactionImpl, secondary: boolean, func: F<T>, ...args: any[]): T {
     t.pending--
     const result = func(...args)
     // if (t.error && !error)
@@ -295,7 +295,7 @@ export class TransactionImpl extends Transaction {
       }
     }
     catch (e: any) {
-      if (!TransactionImpl.inspection)
+      if (!TransactionImpl.isInspectionMode)
         this.cancel(e)
       throw e
     }
@@ -541,7 +541,7 @@ export class TransactionImpl extends Transaction {
   }
 
   private static getEditableChangeset(): Changeset {
-    if (TransactionImpl.inspection)
+    if (TransactionImpl.isInspectionMode)
       throw misuse("cannot make changes during transaction inspection")
     return TransactionImpl.curr.changeset
   }
