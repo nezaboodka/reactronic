@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { reaction, cache, transaction, Transaction, ReactiveSystem } from "../source/api.js"
+import { apply, reaction, cache, Transaction, ReactiveSystem } from "../source/api.js"
 
 export class Component<P> extends React.Component<P> {
   @cache
@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    transaction(ReactiveSystem.dispose, this)
+    apply(ReactiveSystem.dispose, this)
   }
 }

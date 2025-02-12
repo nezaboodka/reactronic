@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Indicator, ObservableObject, Reentrance, ReactiveSystem, Transaction, options, pause, unobservable, reaction, transaction, apply } from "../source/api.js"
+import { Indicator, ObservableObject, Reentrance, Transaction, apply, reaction, options, pause, unobservable, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
@@ -79,7 +79,7 @@ test("indicator", async t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   // RxSystem.setProfilingMode(true)
   const indicator = Indicator.create("indicator", 0, 0, 1000)
-  const controller = transaction(() => {
+  const controller = apply(() => {
     const result = new CompilationController()
     ReactiveSystem.getOperation(result.reloadCompilation).configure({ indicator })
     return result

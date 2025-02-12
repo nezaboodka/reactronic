@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, Transaction, unobservable, reaction, cache, transaction, ReactiveSystem, apply } from "../source/api.js"
+import { ObservableObject, Transaction, unobservable, apply, reaction, cache, ReactiveSystem } from "../source/api.js"
 
 export function autorender(render: () => React.JSX.Element): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -34,7 +34,7 @@ class RxComponent extends ObservableObject {
 
   @unobservable refresh: (next: ReactState) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
-    return (): void => { transaction(ReactiveSystem.dispose, this) }
+    return (): void => { apply(ReactiveSystem.dispose, this) }
   }
 
   static create(): RxComponent {

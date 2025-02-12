@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Transaction, Kind, nonreactive, sensitive, ReactiveSystem, transaction } from "../source/api.js"
+import { Transaction, Kind, apply, nonreactive, sensitive, ReactiveSystem } from "../source/api.js"
 import { Person, Demo, DemoView, output, TestsLoggingLevel } from "./brief.js"
 
 const expected: string[] = [
@@ -42,7 +42,7 @@ test("brief", t => {
   ReactiveSystem.setLoggingMode(false)
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   // Simple transactions
-  const app = transaction(() => new DemoView(new Demo()))
+  const app = apply(() => new DemoView(new Demo()))
   try {
     t.is(ReactiveSystem.why(), "<boot>")
     t.is(ReactiveSystem.getOperation(app.print).options.order, 123)
@@ -153,7 +153,7 @@ test("brief", t => {
       op3.run(nop)
     }), { message: "test" })
     t.throws(() => op3.apply(), { message: "cannot apply transaction that is already canceled: Error: test" })
-    transaction(sensitive, true, () => {
+    apply(sensitive, true, () => {
       app.userFilter = app.userFilter
     })
     // Other
@@ -200,7 +200,7 @@ test("brief", t => {
     // t.is(daddy.age, 45)
   }
   finally {
-    transaction(() => {
+    apply(() => {
       ReactiveSystem.dispose(app.model)
       ReactiveSystem.dispose(app)
     })

@@ -37,10 +37,6 @@ export class ReactiveSystem {
 
 // Operators
 
-export function transaction<T>(action: F<T>, ...args: any[]): T {
-  return Transaction.run(null, action, ...args)
-}
-
 export function nonreactive<T>(func: F<T>, ...args: any[]): T {
   return OperationImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }

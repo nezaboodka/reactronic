@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, apply, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options, transaction } from "../source/api.js"
+import { ObservableObject, unobservable, apply, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
 
 export const output: string[] = []
 
 export class Demo extends ObservableObject {
   static stamp = 0
-  static journal = transaction(() => Journal.create())
+  static journal = apply(() => Journal.create())
 
   @cache
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
