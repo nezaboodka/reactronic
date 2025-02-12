@@ -153,8 +153,10 @@ test("brief", t => {
       op3.run(nop)
     }), { message: "test" })
     t.throws(() => op3.apply(), { message: "cannot apply transaction that is already canceled: Error: test" })
-    apply(sensitive, true, () => {
-      app.userFilter = app.userFilter
+    apply(() => {
+      sensitive(true, () => {
+        app.userFilter = app.userFilter
+      })
     })
     // Other
     t.throws(() => app.model.testImmutableCollection(), { message: "use toMutable to create mutable copy of sealed collection" })
