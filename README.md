@@ -32,9 +32,9 @@ concepts:
   - **Reactive Process** - a mechanism providing
     automatic and recurrent execution of given function
     in response to changes made by atomic actions;
-  - **Cached Result** -  function result that is
-    remembered and, if the becomes obsolete, causes its
-    function to re-execute on-demand.
+  - **Cached Result** -  result value of a function that
+    is remembered and, if the becomes obsolete, causes
+    its function to re-execute on-demand.
 
 Demo application built with Reactronic: https://nevod.io/#/playground.
 Source code of the demo: https://gitlab.com/nezaboodka/nevod.web.public/-/blob/master/README.md.
