@@ -73,12 +73,12 @@ export function contextually<T>(p: Promise<T>): Promise<T> {
 // Operators & Decorators
 
 // operators
-export function apply<T>(func: F<T>, ...args: any[]): T
-export function apply<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
+export function atomicAction<T>(func: F<T>, ...args: any[]): T
+export function atomicAction<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
 // decorator
-export function apply(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
+export function atomicAction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
 // implementation
-export function apply<T>(
+export function atomicAction<T>(
   p1: F<T> | SnapshotOptions | object,
   p2: any[] | F<T> | PropertyKey,
   p3: undefined | any[] | PropertyDescriptor): T {
@@ -102,7 +102,7 @@ export function apply<T>(
       kind: Kind.apply,
       isolation: Isolation.joinToCurrentTransaction,
     }
-    return Mvcc.decorateOperation(true, apply, opts,
+    return Mvcc.decorateOperation(true, atomicAction, opts,
       p1, p2 as PropertyKey, p3 as PropertyDescriptor)
   }
 }

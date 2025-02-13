@@ -24,11 +24,11 @@ Transactional reactivity is based on four fundamental concepts:
 
   - **Observable Objects** - a set of objects that store data of an
     application (state);
-  - **Applying Function** - it makes changes in observable
+  - **Atomic Action** - a function that makes changes in observable
     objects in atomic way ("all or nothing");
-  - **Reaction Function** - it is executed automatically in
+  - **Reaction** - a function that is executed automatically in
     response to changes made by a transaction;
-  - **Cache Function** - its result is remembered and, if the becomes
+  - **Cache** -  a function which result is remembered and, if the becomes
   obsolete, recomputed on-demand.
 
 Demo application built with Reactronic: https://nevod.io/#/playground.
@@ -45,7 +45,7 @@ class Demo extends ObservableObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
-  @apply
+  @atomicAction
   saveContact(name: string, email: string): void {
     this.name = name
     this.email = email
@@ -64,10 +64,10 @@ class Demo extends ObservableObject {
 In the example above, `Demo` is an observable object,
 meaning that access to its fields are seamlessly tracked
 to determine dependent reactions and caches. Reaction
-function `printContact` reads `name` and `email` fields,
-thus depends on them. It is executed automatically in
-response to changes of these fields made by the applying
-function `saveContact`.
+`printContact` reads `name` and `email` fields, thus
+depends on them. It is executed automatically in
+response to changes of these fields made by the atomic
+action `saveContact`.
 
 Here is an example of a cached value (re-)computed on-demand:
 
@@ -115,19 +115,19 @@ In the example above, the class `MyModel` is based on Reactronic's
 `ObservableObject` class and all its properties `url`, `content`,
 and `timestamp` are hooked.
 
-## Apply
+## Atomic Action
 
-Applying function makes changes in observable objects
+Atomic action makes changes in observable objects
 in transactional (atomic) way, thus provoking execution
 of dependent reactions and recalculation of dependent
-caches. Applying function is instrumented with hooks to
-provide transparent atomicity (by implicit context
-switching and isolation).
+caches. Atomic action function is instrumented with
+hooks to provide transparent atomicity (by implicit
+context switching and isolation).
 
 ``` typescript
 class MyModel extends ObservableObject {
   // ...
-  @apply
+  @atomicAction
   async load(url: string): Promise<void> {
     this.url = url
     this.content = await fetch(url)
@@ -136,11 +136,11 @@ class MyModel extends ObservableObject {
 }
 ```
 
-In the example above, the applying function `load` makes
+In the example above, the atomic action `load` makes
 changes to `url`, `content` and `timestamp` properties. While
-applying transaction is running, the changes are visible only inside the
-transaction itself. The new values become atomically visible outside
-of the transaction only upon its completion.
+atomic action is running, the changes are visible only inside the
+action itself. The new values become atomically visible outside
+of the action only upon its completion.
 
 Atomicity is achieved by making changes in an isolated data
 snapshot that is not visible outside of the running transaction
@@ -168,9 +168,9 @@ of asynchronous operations is fully completed.
 ## Reaction & Cache
 
 Reaction function is automatically and immediately called in
-response to changes in observable objects made by an applying function.
+response to changes in observable objects made by an atomic action.
 Cache function is called on-demand to renew the value if it was
-marked as obsolete due to changes made by an applying function.
+marked as obsolete due to changes made by an atomic action.
 Reaction and cache functions are instrumented with hooks
 to seamlessly subscribe to those observable objects and
 other cache functions (dependencies), which are used
@@ -212,7 +212,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    apply(RxSystem.dispose, this)
+    atomicAction(RxSystem.dispose, this)
   }
 }
 ```
@@ -256,8 +256,8 @@ of recurring changes:
   - `0` - execute immediately via event loop (asynchronously with zero timeout);
   - `>= Number.MAX_SAFE_INTEGER` - never execute (suspended reaction).
 
-**Reentrance** option defines how to handle reentrant calls of applying
-and reaction functions:
+**Reentrance** option defines how to handle reentrant calls of atomic
+actions and reactions:
 
   - `preventWithError` - fail with error if there is an existing call in progress;
   - `waitAndRestart` - wait for previous call to finish and then restart current one;
@@ -305,7 +305,7 @@ class ObservableObject { }
 
 function observable(proto, prop) // field only
 function unobservable(proto, prop) // field only
-function apply(proto, prop, pd) // method only
+function atomicAction(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cache(proto, prop, pd) // method only
 function options(value: Partial<MemberOptions>): F<any>
