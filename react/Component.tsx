@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { atomicAction, reactiveProcess, cachedResult, Transaction, ReactiveSystem } from "../source/api.js"
+import { atomically, reactiveProcess, cachedResult, Transaction, ReactiveSystem } from "../source/api.js"
 
 export class Component<P> extends React.Component<P> {
   @cachedResult
@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    atomicAction(ReactiveSystem.dispose, this)
+    atomically(ReactiveSystem.dispose, this)
   }
 }

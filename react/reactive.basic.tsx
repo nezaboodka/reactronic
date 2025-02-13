@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, Transaction, unobservable, atomicAction, reactiveProcess, cachedResult, ReactiveSystem } from "../source/api.js"
+import { ObservableObject, Transaction, unobservable, atomically, reactiveProcess, cachedResult, ReactiveSystem } from "../source/api.js"
 
 export function autorender(render: () => React.JSX.Element): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -34,7 +34,7 @@ class RxComponent extends ObservableObject {
 
   @unobservable refresh: (next: ReactState) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
-    return (): void => { atomicAction(ReactiveSystem.dispose, this) }
+    return (): void => { atomically(ReactiveSystem.dispose, this) }
   }
 
   static create(): RxComponent {
@@ -43,7 +43,7 @@ class RxComponent extends ObservableObject {
 }
 
 function createReactState(): ReactState {
-  const rx = atomicAction<RxComponent>({ hint: "<rx>" }, RxComponent.create)
+  const rx = atomically<RxComponent>({ hint: "<rx>" }, RxComponent.create)
   return {rx}
 }
 
