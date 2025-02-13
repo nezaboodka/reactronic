@@ -13,23 +13,28 @@ Reactronic is an experimental JavaScript library that provides
 [transactional reactive](https://blog.nezaboodka.com/post/2019/593-modern-database-should-natively-support-transactionally-reactive-programming)
 state management in a Web application.
 
-Transactional reactivity means that state changes are being made in an
-isolated data snapshot and then, once atomically applied, are
-**consistently propagated** to corresponding visual components for
-(re)rendering. All that is done in automatic, seamless, and fine-grained
+Transactional reactivity means that state changes are
+being made in an isolated data snapshot and then, once
+atomically applied, are **consistently propagated** to
+corresponding visual components for (re)rendering. All
+that is done in automatic, seamless, and fine-grained
 way. Reactronic **takes full care of tracking dependencies**
-between visual components (observers) and state (observable objects).
+between visual components (observers) and state
+(observable objects).
 
-Transactional reactivity is based on four fundamental concepts:
+Transactional reactivity is based on four fundamental
+concepts:
 
-  - **Observable Objects** - a set of objects that store data of an
-    application (state);
-  - **Atomic Action** - a function that makes changes in observable
-    objects in atomic way ("all or nothing");
-  - **Reactive Process** - a function that is executed automatically in
-    response to changes made by a transaction;
-  - **Cached Result** -  function result that is remembered and, if the becomes
-  obsolete, causes its function to re-execute on-demand.
+  - **Observable Objects** - a set of objects that store
+    data of an application (state);
+  - **Atomic Action** - a function that makes changes in
+    observable objects in atomic way ("all or nothing");
+  - **Reactive Process** - a mechanism providing
+    automatic and recurrent execution of given function
+    in response to changes made by atomic actions;
+  - **Cached Result** -  function result that is
+    remembered and, if the becomes obsolete, causes its
+    function to re-execute on-demand.
 
 Demo application built with Reactronic: https://nevod.io/#/playground.
 Source code of the demo: https://gitlab.com/nezaboodka/nevod.web.public/-/blob/master/README.md.
@@ -215,7 +220,8 @@ class Component<P> extends React.Component<P> {
   } // EnsureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
-    return !RxSystem.getController(this.render).isUpToDate
+    const r = ReactiveSystem.getController(this.render)
+    return !r.isUpToDate
   }
 
   componentDidMount(): void {
@@ -224,7 +230,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    atomicAction(RxSystem.dispose, this)
+    atomicAction(ReactiveSystem.dispose, this)
   }
 }
 ```
