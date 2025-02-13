@@ -29,9 +29,9 @@ concepts:
     data of an application (state);
   - **Atomic Action** - a function that makes changes in
     observable objects in atomic way ("all or nothing");
-  - **Reactive Process** - the mechanism providing
-    automatic and recurrent (re-)execution of given
-    function in response to changes made by atomic actions;
+  - **Reactive Process** - recurrent and automatic
+    (re-)execution of a function in response to changes
+    made by atomic actions;
   - **Cached Result** -  result value of a function that
     is remembered and, if the becomes obsolete, causes
     its function to re-execute on-demand.
