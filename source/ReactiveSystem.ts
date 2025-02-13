@@ -37,29 +37,30 @@ export class ReactiveSystem {
 
 // Operators
 
-export function nonreactive<T>(func: F<T>, ...args: any[]): T {
-  return OperationImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
+export function atomically<T>(func: F<T>, ...args: any[]): T
+export function atomically<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
+export function atomically<T>(
+  p1: F<T> | SnapshotOptions,
+  p2: any[] | F<T>,
+  p3: undefined | any[]): T {
+  if (p1 instanceof Function) {
+    // atomically<T>(func: F<T>, ...args: any[]): T
+    if (p2 !== undefined)
+      return Transaction.run(null, p1, ...(p2 as any[]))
+    else
+      return Transaction.run(null, p1)
+  }
+  else { // p2 instanceof Function
+    // atomically<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
+    if (p3 !== undefined)
+      return Transaction.run(p1, p2 as F<T>, ...(p3 as any[]))
+    else
+      return Transaction.run(p1, p2 as F<T>)
+  }
 }
 
-export function nonreactive2<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
-export function nonreactive2<T>(func: F<T>, ...args: any[]): T
-export function nonreactive2<T>(p1: F<T> | SnapshotOptions, p2: any[] | F<T>, p3: undefined | any[]): T {
-  if (p1 instanceof Function) {
-    return OperationImpl.proceedWithinGivenLaunch<T>(undefined, () => {
-      if (p2 !== undefined)
-        return Transaction.run(null, p1, ...(p2 as any[]))
-      else
-        return Transaction.run(null, p1)
-    })
-  }
-  else {
-    return OperationImpl.proceedWithinGivenLaunch<T>(undefined, () => {
-      if (p3 !== undefined)
-        return Transaction.run(p1, p2 as F<T>, ...(p3 as any[]))
-      else
-        return Transaction.run(p1, p2 as F<T>)
-    })
-  }
+export function nonreactive<T>(func: F<T>, ...args: any[]): T {
+  return OperationImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
 export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
@@ -70,43 +71,6 @@ export function contextually<T>(p: Promise<T>): Promise<T> {
   throw new Error("not implemented yet")
 }
 
-// Operators & Decorators
-
-// operators
-export function atomicAction<T>(func: F<T>, ...args: any[]): T
-export function atomicAction<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
-// decorator
-export function atomicAction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
-// implementation
-export function atomicAction<T>(
-  p1: F<T> | SnapshotOptions | object,
-  p2: any[] | F<T> | PropertyKey,
-  p3: undefined | any[] | PropertyDescriptor): T {
-  if (p1 instanceof Function) {
-    // apply<T>(func: F<T>, ...args: any[]): T
-    if (p2 !== undefined)
-      return Transaction.run(null, p1, ...(p2 as any[]))
-    else
-      return Transaction.run(null, p1)
-  }
-  else if (p2 instanceof Function) {
-    // apply<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
-    if (p3 !== undefined)
-      return Transaction.run(p1, p2, ...(p3 as any[]))
-    else
-      return Transaction.run(p1, p2)
-  }
-  else {
-    // apply(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
-    const opts = {
-      kind: Kind.atomicAction,
-      isolation: Isolation.joinToCurrentTransaction,
-    }
-    return Mvcc.decorateOperation(true, atomicAction, opts,
-      p1, p2 as PropertyKey, p3 as PropertyDescriptor)
-  }
-}
-
 // Decorators
 
 export function unobservable(proto: object, prop: PropertyKey): any {
@@ -115,6 +79,15 @@ export function unobservable(proto: object, prop: PropertyKey): any {
 
 export function observable(proto: object, prop: PropertyKey): any {
   return Mvcc.decorateData(true, proto, prop)
+}
+
+export function atomicAction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
+{
+  const opts = {
+    kind: Kind.atomicAction,
+    isolation: Isolation.joinToCurrentTransaction,
+  }
+  return Mvcc.decorateOperation(true, atomicAction, opts, proto, prop, pd)
 }
 
 export function reactiveProcess(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {

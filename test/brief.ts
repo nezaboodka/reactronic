@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, atomicAction, reactiveProcess, cachedResult, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
+import { ObservableObject, unobservable, atomically, atomicAction, reactiveProcess, cachedResult, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
 
 export const output: string[] = []
 
 export class Demo extends ObservableObject {
   static stamp = 0
-  static journal = atomicAction(() => Journal.create())
+  static journal = atomically(() => Journal.create())
 
   @cachedResult
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }

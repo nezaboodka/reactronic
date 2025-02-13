@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, atomicAction, reactiveProcess, cachedResult, unobservable, options, ReactiveSystem } from "../source/api.js"
+import { ObservableObject, atomically, reactiveProcess, cachedResult, unobservable, options, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 export class DemoBase extends ObservableObject {
@@ -63,7 +63,7 @@ export class Demo extends DemoBase {
 
 test("caching", t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const demo = atomicAction(() => {
+  const demo = atomically(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), "Demo")
     // d.title = 'Demo+'
