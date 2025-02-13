@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, atomicAction, reaction, cache, unobservable, options, ReactiveSystem } from "../source/api.js"
+import { ObservableObject, atomicAction, reactiveProcess, cachedResult, unobservable, options, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 export class DemoBase extends ObservableObject {
@@ -15,14 +15,14 @@ export class DemoBase extends ObservableObject {
   sideEffect: string = "no side effect"
   uninitialized?: any
 
-  @reaction
+  @reactiveProcess
   normalizeTitle(): void {
     const stamp = new Date().toUTCString()
     const t = this.title.toLowerCase()
     this.title = `${t} - ${stamp}`
   }
 
-  @reaction @options({ noSideEffects: true })
+  @reactiveProcess @options({ noSideEffects: true })
   reactiveWithNoSideEffects(): void {
     this.sideEffect = "side effect"
   }
@@ -32,30 +32,30 @@ export class DemoBase extends ObservableObject {
   //   this.uninitialized = value
   // }
 
-  @cache
+  @cachedResult
   cachedTitle(): string {
     return this.title
   }
 
-  @cache @options({ logging: {} })
+  @cachedResult @options({ logging: {} })
   produceSideEffect(): void {
     this.raw = ReactiveSystem.why()
     this.title = "should fail on this line"
   }
 
-  @cache
+  @cachedResult
   cachedMap(): Map<string, any> {
     return new Map<string, any>()
   }
 
-  @cache
+  @cachedResult
   cachedSet(): Set<string> {
     return new Set<string>()
   }
 }
 
 export class Demo extends DemoBase {
-  @reaction
+  @reactiveProcess
   oneMoreReactiveFunction(): void {
     // do nothing, the reactive function is just to test inheritance chain
   }

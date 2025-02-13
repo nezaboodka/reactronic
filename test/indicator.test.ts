@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Indicator, ObservableObject, Reentrance, Transaction, atomicAction, reaction, options, pause, unobservable, ReactiveSystem } from "../source/api.js"
+import { Indicator, ObservableObject, Reentrance, Transaction, atomicAction, reactiveProcess, options, pause, unobservable, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
@@ -57,7 +57,7 @@ class CompilationController extends ObservableObject {
     this.fsTreeVersion++
   }
 
-  @reaction @options({ reentrance: Reentrance.cancelAndWaitPrevious })
+  @reactiveProcess @options({ reentrance: Reentrance.cancelAndWaitPrevious })
   async reloadCompilation(): Promise<void> {
     this.fsTreeVersion // subscribe
     const sourceFiles = new Array<SourceFile>()

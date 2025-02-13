@@ -7,16 +7,16 @@
 
 import { F } from "./util/Utils.js"
 import { ObservableObject } from "./core/Mvcc.js"
-import { reaction } from "./ReactiveSystem.js"
+import { reactiveProcess } from "./ReactiveSystem.js"
 
 
-export class Reaction<T> extends ObservableObject
+export class ReactiveProcess<T> extends ObservableObject
 {
   constructor(protected action: F<T>) {
     super()
   }
 
-  @reaction
+  @reactiveProcess
   protected launch(): T {
     return this.action()
   }

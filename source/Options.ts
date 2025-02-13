@@ -35,9 +35,9 @@ export type MemberOptions = {
 
 export enum Kind {
   plain = 0,
-  apply = 1,
-  reaction = 2,
-  cache = 3,
+  atomicAction = 1,
+  reactiveProcess = 2,
+  cachedResult = 3,
 }
 
 export enum Reentrance {

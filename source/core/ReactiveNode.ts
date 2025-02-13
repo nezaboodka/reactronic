@@ -12,7 +12,7 @@ import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js
 import { Isolation, MemberOptions, Reentrance } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, unobservable, reaction, nonreactive, atomicAction } from "../ReactiveSystem.js"
+import { ReactiveSystem, options, unobservable, reactiveProcess, nonreactive, atomicAction } from "../ReactiveSystem.js"
 
 // Scripts
 
@@ -495,7 +495,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
     return (getModeUsingBasisChain(this.declaration) & mode) === mode
   }
 
-  @reaction
+  @reactiveProcess
   @options({
     reentrance: Reentrance.cancelAndWaitPrevious,
     allowObsoleteToFinish: true,

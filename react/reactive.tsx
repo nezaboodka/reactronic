@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, Transaction, unobservable, atomicAction, reaction, cache, ReactiveSystem, LoggingOptions } from "../source/api.js"
+import { ObservableObject, Transaction, unobservable, atomicAction, reactiveProcess, cachedResult, ReactiveSystem, LoggingOptions } from "../source/api.js"
 
 export function autorender(render: (cycle: number) => React.JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState<React.JSX.Element>>(
@@ -23,12 +23,12 @@ export function autorender(render: (cycle: number) => React.JSX.Element, name?: 
 type ReactState<V> = { rx: RxComponent<V>, cycle: number }
 
 class RxComponent<V> extends ObservableObject {
-  @cache
+  @cachedResult
   render(emit: (cycle: number) => V, op?: Transaction): V {
     return op ? op.inspect(() => emit(this.cycle)) : emit(this.cycle)
   }
 
-  @reaction
+  @reactiveProcess
   protected ensureUpToDate(): void {
     if (!ReactiveSystem.getOperation(this.render).isReusable)
       Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
@@ -68,7 +68,7 @@ function getComponentName(): string {
   const stack = error.stack || ""
   Error.stackTraceLimit = restore
   const lines = stack.split("\n")
-  const i = lines.findIndex(x => x.indexOf(reaction.name) >= 0) || 6
+  const i = lines.findIndex(x => x.indexOf(reactiveProcess.name) >= 0) || 6
   let result: string = lines[i + 1] || ""
   result = (result.match(/^\s*at\s*(\S+)/) || [])[1]
   return result !== undefined ? `<${result}>` : "<Rx>"

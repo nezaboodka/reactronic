@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, atomicAction, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
+import { ObservableObject, unobservable, atomicAction, reactiveProcess, cachedResult, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
 
 export const output: string[] = []
 
@@ -13,7 +13,7 @@ export class Demo extends ObservableObject {
   static stamp = 0
   static journal = atomicAction(() => Journal.create())
 
-  @cache
+  @cachedResult
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
   // set computed(value: string) { /* nop */ }
 
@@ -44,7 +44,7 @@ export class Demo extends ObservableObject {
     this.title = "Demo - undo/redo"
   }
 
-  @reaction @options({ order: 1 })
+  @reactiveProcess @options({ order: 1 })
   protected backup(): void {
     this.usersWithoutLast = this.users.slice()
     this.usersWithoutLast.pop()
@@ -83,7 +83,7 @@ export class DemoView extends ObservableObject {
     // R.configureObject(this, { sensitivity: Sensitivity.ReactOnFinalDifferenceOnly })
   }
 
-  @reaction
+  @reactiveProcess
   print(): void {
     const lines = this.render(0)
     lines.forEach(x => {
@@ -98,7 +98,7 @@ export class DemoView extends ObservableObject {
   //   this.render().forEach(x => output.push(x));
   // }
 
-  @cache
+  @cachedResult
   filteredUsers(): Person[] {
     const m = this.model
     let result: Person[] = m.users.slice()
@@ -111,7 +111,7 @@ export class DemoView extends ObservableObject {
     return result
   }
 
-  @cache @options({ triggeringArgs: true })
+  @cachedResult @options({ triggeringArgs: true })
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
     this.raw = ReactiveSystem.why(true)

@@ -99,7 +99,7 @@ export function atomicAction<T>(
   else {
     // apply(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
     const opts = {
-      kind: Kind.apply,
+      kind: Kind.atomicAction,
       isolation: Isolation.joinToCurrentTransaction,
     }
     return Mvcc.decorateOperation(true, atomicAction, opts,
@@ -117,22 +117,22 @@ export function observable(proto: object, prop: PropertyKey): any {
   return Mvcc.decorateData(true, proto, prop)
 }
 
-export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+export function reactiveProcess(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
-    kind: Kind.reaction,
+    kind: Kind.reactiveProcess,
     isolation: Isolation.joinAsNestedTransaction,
     throttling: -1, // immediate reactive call
   }
-  return Mvcc.decorateOperation(true, reaction, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, reactiveProcess, opts, proto, prop, pd)
 }
 
-export function cache(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+export function cachedResult(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
-    kind: Kind.cache,
+    kind: Kind.cachedResult,
     isolation: Isolation.joinToCurrentTransaction,
     noSideEffects: true,
   }
-  return Mvcc.decorateOperation(true, cache, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, cachedResult, opts, proto, prop, pd)
 }
 
 export function options(value: Partial<MemberOptions>): F<any> {
