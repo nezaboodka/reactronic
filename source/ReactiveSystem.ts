@@ -37,9 +37,9 @@ export class ReactiveSystem {
 
 // Operators
 
-export function atomically<T>(func: F<T>, ...args: any[]): T
-export function atomically<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
-export function atomically<T>(
+export function atomicRun<T>(func: F<T>, ...args: any[]): T
+export function atomicRun<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
+export function atomicRun<T>(
   p1: F<T> | SnapshotOptions,
   p2: any[] | F<T>,
   p3: undefined | any[]): T {
@@ -59,15 +59,15 @@ export function atomically<T>(
   }
 }
 
-export function nonreactive<T>(func: F<T>, ...args: any[]): T {
+export function nonReactiveRun<T>(func: F<T>, ...args: any[]): T {
   return OperationImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
-export function sensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
+export function sensitiveRun<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
   return Mvcc.sensitive(sensitivity, func, ...args)
 }
 
-export function contextually<T>(p: Promise<T>): Promise<T> {
+export function contextualRun<T>(p: Promise<T>): Promise<T> {
   throw new Error("not implemented yet")
 }
 
@@ -81,31 +81,31 @@ export function observable(proto: object, prop: PropertyKey): any {
   return Mvcc.decorateData(true, proto, prop)
 }
 
-export function atomicAction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
+export function atomic(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
 {
   const opts = {
     kind: Kind.atomicAction,
     isolation: Isolation.joinToCurrentTransaction,
   }
-  return Mvcc.decorateOperation(true, atomicAction, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, atomic, opts, proto, prop, pd)
 }
 
-export function reactiveProcess(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+export function reactive(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
     kind: Kind.reactiveProcess,
     isolation: Isolation.joinAsNestedTransaction,
     throttling: -1, // immediate reactive call
   }
-  return Mvcc.decorateOperation(true, reactiveProcess, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, reactive, opts, proto, prop, pd)
 }
 
-export function cachedResult(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
     kind: Kind.cachedResult,
     isolation: Isolation.joinToCurrentTransaction,
     noSideEffects: true,
   }
-  return Mvcc.decorateOperation(true, cachedResult, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, cached, opts, proto, prop, pd)
 }
 
 export function options(value: Partial<MemberOptions>): F<any> {

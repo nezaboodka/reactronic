@@ -6,15 +6,15 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { atomically, reactiveProcess, cachedResult, Transaction, ReactiveSystem } from "../source/api.js"
+import { atomicRun, reactive, cached, Transaction, ReactiveSystem } from "../source/api.js"
 
 export class Component<P> extends React.Component<P> {
-  @cachedResult
+  @cached
   render(): React.JSX.Element {
     throw new Error("render method is undefined")
   }
 
-  @reactiveProcess // called immediately in response to changes
+  @reactive // called immediately in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
       Transaction.outside(() => this.setState({})) // ask React to re-render
@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    atomically(ReactiveSystem.dispose, this)
+    atomicRun(ReactiveSystem.dispose, this)
   }
 }

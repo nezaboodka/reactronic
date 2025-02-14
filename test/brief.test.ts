@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Transaction, Kind, atomically, nonreactive, sensitive, ReactiveSystem } from "../source/api.js"
+import { Transaction, Kind, atomicRun, nonReactiveRun, sensitiveRun, ReactiveSystem } from "../source/api.js"
 import { Person, Demo, DemoView, output, TestsLoggingLevel } from "./brief.js"
 
 const expected: string[] = [
@@ -42,7 +42,7 @@ test("brief", t => {
   ReactiveSystem.setLoggingMode(false)
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   // Simple transactions
-  const app = atomically(() => new DemoView(new Demo()))
+  const app = atomicRun(() => new DemoView(new Demo()))
   try {
     t.is(ReactiveSystem.why(), "<boot>")
     t.is(ReactiveSystem.getOperation(app.print).options.order, 123)
@@ -87,7 +87,7 @@ test("brief", t => {
       t.is(daddy.name, "John Smith")
       t.is(daddy.age, 40)
       t.is(Transaction.outside(() => daddy.age), 38)
-      t.is(nonreactive(() => daddy.age), 40)
+      t.is(nonReactiveRun(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = "Jo" // set to the same value
     })
@@ -153,8 +153,8 @@ test("brief", t => {
       op3.run(nop)
     }), { message: "test" })
     t.throws(() => op3.apply(), { message: "cannot apply transaction that is already canceled: Error: test" })
-    atomically(() => {
-      sensitive(true, () => {
+    atomicRun(() => {
+      sensitiveRun(true, () => {
         app.userFilter = app.userFilter
       })
     })
@@ -202,7 +202,7 @@ test("brief", t => {
     // t.is(daddy.age, 45)
   }
   finally {
-    atomically(() => {
+    atomicRun(() => {
       ReactiveSystem.dispose(app.model)
       ReactiveSystem.dispose(app)
     })

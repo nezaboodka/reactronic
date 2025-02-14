@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, atomicAction, cachedResult } from "../source/api.js"
+import { ObservableObject, atomic, cached } from "../source/api.js"
 import { Component } from "./Component.js"
 
 class MyModel extends ObservableObject {
@@ -14,7 +14,7 @@ class MyModel extends ObservableObject {
   content: string = ""
   timestamp: number = Date.now()
 
-  @atomicAction
+  @atomic
   async goto(url: string): Promise<void> {
     this.url = url
     this.content = await (await fetch(url)).text()
@@ -23,7 +23,7 @@ class MyModel extends ObservableObject {
 }
 
 class MyView extends Component<{model: MyModel}> {
-  @cachedResult
+  @cached
   render(): React.JSX.Element {
     const m = this.props.model
     return (

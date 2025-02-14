@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, Transaction, unobservable, atomically, reactiveProcess, cachedResult, ReactiveSystem, LoggingOptions } from "../source/api.js"
+import { ObservableObject, Transaction, unobservable, atomicRun, reactive, cached, ReactiveSystem, LoggingOptions } from "../source/api.js"
 
 export function autorender(render: (cycle: number) => React.JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState<React.JSX.Element>>(
@@ -23,12 +23,12 @@ export function autorender(render: (cycle: number) => React.JSX.Element, name?: 
 type ReactState<V> = { rx: RxComponent<V>, cycle: number }
 
 class RxComponent<V> extends ObservableObject {
-  @cachedResult
+  @cached
   render(emit: (cycle: number) => V, op?: Transaction): V {
     return op ? op.inspect(() => emit(this.cycle)) : emit(this.cycle)
   }
 
-  @reactiveProcess
+  @reactive
   protected ensureUpToDate(): void {
     if (!ReactiveSystem.getOperation(this.render).isReusable)
       Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
@@ -37,7 +37,7 @@ class RxComponent<V> extends ObservableObject {
   @unobservable cycle: number = 0
   @unobservable refresh: (next: ReactState<V>) => void = nop
   @unobservable readonly unmount = (): (() => void) => {
-    return (): void => { atomically(ReactiveSystem.dispose, this) }
+    return (): void => { atomicRun(ReactiveSystem.dispose, this) }
   }
 
   static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): RxComponent<V> {
@@ -54,7 +54,7 @@ class RxComponent<V> extends ObservableObject {
 
 function createReactState<V>(name?: string, logging?: Partial<LoggingOptions>): ReactState<V> {
   const hint = name || (ReactiveSystem.isLogging ? getComponentName() : "<rx>")
-  const rx = atomically<RxComponent<V>>({ hint, logging }, RxComponent.create, hint, logging)
+  const rx = atomicRun<RxComponent<V>>({ hint, logging }, RxComponent.create, hint, logging)
   return {rx, cycle: 0}
 }
 
@@ -68,7 +68,7 @@ function getComponentName(): string {
   const stack = error.stack || ""
   Error.stackTraceLimit = restore
   const lines = stack.split("\n")
-  const i = lines.findIndex(x => x.indexOf(reactiveProcess.name) >= 0) || 6
+  const i = lines.findIndex(x => x.indexOf(reactive.name) >= 0) || 6
   let result: string = lines[i + 1] || ""
   result = (result.match(/^\s*at\s*(\S+)/) || [])[1]
   return result !== undefined ? `<${result}>` : "<Rx>"

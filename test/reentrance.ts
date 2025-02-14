@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, atomicAction, reactiveProcess, cachedResult, options, Transaction, Indicator, Reentrance, ReactiveSystem, observable, all, pause } from "../source/api.js"
+import { ObservableObject, atomic, reactive, cached, options, Transaction, Indicator, Reentrance, ReactiveSystem, observable, all, pause } from "../source/api.js"
 
 export const output: string[] = []
 export const busy = Indicator.create("Busy", 0, 0, 1)
@@ -14,7 +14,7 @@ export class AsyncDemo extends ObservableObject {
   url: string = "reactronic"
   log: string[] = ["RTA"]
 
-  @atomicAction @options({ indicator: busy, reentrance: Reentrance.preventWithError })
+  @atomic @options({ indicator: busy, reentrance: Reentrance.preventWithError })
   async load(url: string, delay: number): Promise<void> {
     this.url = url
     await all([pause(delay)])
@@ -30,7 +30,7 @@ export class AsyncDemoView {
   constructor(readonly model: AsyncDemo) {
   }
 
-  @reactiveProcess @options({ throttling: -1 })
+  @reactive @options({ throttling: -1 })
   async print(): Promise<void> {
     const lines: string[] = await this.render()
     if (!Transaction.current.isCanceled) {
@@ -41,7 +41,7 @@ export class AsyncDemoView {
     }
   }
 
-  @cachedResult @options({ triggeringArgs: false })
+  @cached @options({ triggeringArgs: false })
   async render(): Promise<string[]> {
     const result: string[] = []
     result.push(`${busy.isBusy ? "[...] " : ""}Url: ${this.model.url}`)

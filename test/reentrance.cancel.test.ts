@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { atomically, all, pause, Reentrance, ReactiveSystem } from "../source/api.js"
+import { atomicRun, all, pause, Reentrance, ReactiveSystem } from "../source/api.js"
 import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
 import { TestsLoggingLevel } from "./brief.js"
 
@@ -27,7 +27,7 @@ const expected: Array<string> = [
 
 test("reentrance.cancel", async t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const app = atomically(() => {
+  const app = atomicRun(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     ReactiveSystem.getOperation(a.print).configure({ order: 0 })
     ReactiveSystem.getOperation(a.model.load).configure({reentrance: Reentrance.cancelPrevious})
@@ -50,7 +50,7 @@ test("reentrance.cancel", async t => {
     t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
     await pause(300)
-    atomically(() => {
+    atomicRun(() => {
       ReactiveSystem.dispose(app)
       ReactiveSystem.dispose(app.model)
     })

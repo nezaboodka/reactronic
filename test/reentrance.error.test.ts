@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { atomically, pause, Reentrance, ReactiveSystem } from "../source/api.js"
+import { atomicRun, pause, Reentrance, ReactiveSystem } from "../source/api.js"
 import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
 import { TestsLoggingLevel } from "./brief.js"
 
@@ -27,7 +27,7 @@ const expected: Array<string> = [
 
 test("reentrance.error", async t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const app = atomically(() => {
+  const app = atomicRun(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     ReactiveSystem.getOperation(a.model.load).configure({reentrance: Reentrance.preventWithError})
     return a
@@ -39,7 +39,7 @@ test("reentrance.error", async t => {
     t.is(app.observableField, "observable field")
     t.throws(() => app.observableField = "observable field", { message: "observable property AsyncDemoView.observableField #24 can only be modified inside transaction" })
     t.throws(() => ReactiveSystem.getOperation(app.print).configure({ logging: TestsLoggingLevel }))
-    atomically(() => {
+    atomicRun(() => {
       ReactiveSystem.getOperation(app.print).configure({ logging: TestsLoggingLevel })
     })
     await app.print() // initial reactive run
@@ -60,7 +60,7 @@ test("reentrance.error", async t => {
     const r = ReactiveSystem.pullLastResult(app.render)
     t.is(r && r.length, 2)
     await pause(300)
-    atomically(() => {
+    atomicRun(() => {
       ReactiveSystem.dispose(app)
       ReactiveSystem.dispose(app.model)
     })

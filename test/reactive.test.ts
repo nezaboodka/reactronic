@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, atomicAction, reactiveProcess, unobservable, atomically, nonreactive, ReactiveSystem } from "../source/api.js"
+import { ObservableObject, atomic, reactive, unobservable, atomicRun, nonReactiveRun, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 export class ReactiveDemo extends ObservableObject {
@@ -16,34 +16,34 @@ export class ReactiveDemo extends ObservableObject {
   data: string = "Data"
   @unobservable rev: number = 0
 
-  @atomicAction
+  @atomic
   setData(value: string): void {
     this.data =  value
   }
 
-  @reactiveProcess
+  @reactive
   protected actualize1(): void {
     this.title
     this.title = "Title/1"
     this.content = "Content/1"
     this.title
-    nonreactive(() => {
+    nonReactiveRun(() => {
       this.nestedReaction()
     })
   }
 
-  @reactiveProcess
+  @reactive
   protected actualize2(): void {
     this.content
     this.title = "Title/2"
   }
 
-  @reactiveProcess
+  @reactive
   protected reactOnAnyChange(): void {
     this.rev = ReactiveSystem.getRevisionOf(this)
   }
 
-  @reactiveProcess
+  @reactive
   protected nestedReaction(): void {
     this.content
     this.title = "Title/Nested"
@@ -54,7 +54,7 @@ export class ReactiveDemo extends ObservableObject {
 
 test("reactive", t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const demo = atomically(() => new ReactiveDemo())
+  const demo = atomicRun(() => new ReactiveDemo())
   t.is(demo.title, "Title/1")
   t.is(demo.content, "Content/1")
   t.is(demo.rev, 6)

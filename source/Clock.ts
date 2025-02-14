@@ -1,5 +1,5 @@
 import { ObservableObject } from "./core/Mvcc.js"
-import { atomicAction } from "./ReactiveSystem.js"
+import { atomic } from "./ReactiveSystem.js"
 
 export class Clock extends ObservableObject {
   hour: number = 0
@@ -15,12 +15,12 @@ export class Clock extends ObservableObject {
     this.tick()
   }
 
-  @atomicAction
+  @atomic
   pause(value: boolean = true): void {
     this.paused = value
   }
 
-  @atomicAction
+  @atomic
   private tick(): void {
     let calibration = 0
     try {

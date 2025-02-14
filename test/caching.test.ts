@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, atomically, reactiveProcess, cachedResult, unobservable, options, ReactiveSystem } from "../source/api.js"
+import { ObservableObject, atomicRun, reactive, cached, unobservable, options, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 export class DemoBase extends ObservableObject {
@@ -15,14 +15,14 @@ export class DemoBase extends ObservableObject {
   sideEffect: string = "no side effect"
   uninitialized?: any
 
-  @reactiveProcess
+  @reactive
   normalizeTitle(): void {
     const stamp = new Date().toUTCString()
     const t = this.title.toLowerCase()
     this.title = `${t} - ${stamp}`
   }
 
-  @reactiveProcess @options({ noSideEffects: true })
+  @reactive @options({ noSideEffects: true })
   reactiveWithNoSideEffects(): void {
     this.sideEffect = "side effect"
   }
@@ -32,30 +32,30 @@ export class DemoBase extends ObservableObject {
   //   this.uninitialized = value
   // }
 
-  @cachedResult
+  @cached
   cachedTitle(): string {
     return this.title
   }
 
-  @cachedResult @options({ logging: {} })
+  @cached @options({ logging: {} })
   produceSideEffect(): void {
     this.raw = ReactiveSystem.why()
     this.title = "should fail on this line"
   }
 
-  @cachedResult
+  @cached
   cachedMap(): Map<string, any> {
     return new Map<string, any>()
   }
 
-  @cachedResult
+  @cached
   cachedSet(): Set<string> {
     return new Set<string>()
   }
 }
 
 export class Demo extends DemoBase {
-  @reactiveProcess
+  @reactive
   oneMoreReactiveFunction(): void {
     // do nothing, the reactive function is just to test inheritance chain
   }
@@ -63,7 +63,7 @@ export class Demo extends DemoBase {
 
 test("caching", t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const demo = atomically(() => {
+  const demo = atomicRun(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), "Demo")
     // d.title = 'Demo+'
