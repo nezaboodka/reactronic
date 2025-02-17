@@ -1,5 +1,5 @@
 import { ObservableObject } from "./core/Mvcc.js"
-import { atomic } from "./ReactiveSystem.js"
+import { atomic, reactive } from "./ReactiveSystem.js"
 
 export class Clock extends ObservableObject {
   hour: number = 0
@@ -12,7 +12,6 @@ export class Clock extends ObservableObject {
   constructor(interval: number = 1000) {
     super()
     this.interval = interval
-    this.tick()
   }
 
   @atomic
@@ -34,5 +33,10 @@ export class Clock extends ObservableObject {
     finally {
       setTimeout(() => this.tick(), this.interval - calibration)
     }
+  }
+
+  @reactive // one-time boot reaction
+  protected start(): void {
+    this.tick()
   }
 }
