@@ -12,12 +12,12 @@ import { reactive } from "./ReactiveSystem.js"
 
 export class ReactiveLoop<T> extends ObservableObject
 {
-  constructor(protected action: F<T>) {
+  constructor(protected reactiveFunction: F<T>) {
     super()
   }
 
   @reactive
   protected launch(): T {
-    return this.action()
+    return this.reactiveFunction()
   }
 }
