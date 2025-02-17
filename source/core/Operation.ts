@@ -685,10 +685,10 @@ class Launch extends FieldVersion implements Observer {
 
   private static enqueueReactiveFunctionsToRun(reactive: Array<Observer>): void {
     const queue = Launch.queuedReactiveOperations
-    const isReactiveLoopRequired = queue.length === 0
+    const isKickOff = queue.length === 0
     for (const r of reactive)
       queue.push(r)
-    if (isReactiveLoopRequired)
+    if (isKickOff)
       OperationImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactiveOperations)
   }
 
