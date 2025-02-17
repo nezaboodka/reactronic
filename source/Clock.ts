@@ -12,6 +12,7 @@ export class Clock extends ObservableObject {
   constructor(interval: number = 1000) {
     super()
     this.interval = interval
+    this.put(new Date())
   }
 
   @atomic
@@ -24,10 +25,7 @@ export class Clock extends ObservableObject {
     let calibration = 0
     try {
       const now = new Date()
-      this.hour = now.getHours()
-      this.minute = now.getMinutes()
-      this.second = now.getSeconds()
-      this.ms = now.getMilliseconds()
+      this.put(now)
       calibration = now.getTime() % this.interval
     }
     finally {
@@ -36,7 +34,14 @@ export class Clock extends ObservableObject {
   }
 
   @reactive // one-time boot reaction
-  protected start(): void {
+  protected activate(): void {
     this.tick()
+  }
+
+  private put(time: Date): void {
+    this.hour = time.getHours()
+    this.minute = time.getMinutes()
+    this.second = time.getSeconds()
+    this.ms = time.getMilliseconds()
   }
 }
