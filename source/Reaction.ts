@@ -10,7 +10,7 @@ import { ObservableObject } from "./core/Mvcc.js"
 import { reactive } from "./ReactiveSystem.js"
 
 
-export class ReactiveProcess<T> extends ObservableObject
+export class ReactiveLoop<T> extends ObservableObject
 {
   constructor(protected action: F<T>) {
     super()

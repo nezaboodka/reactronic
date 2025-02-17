@@ -27,14 +27,14 @@ concepts:
 
   - **Observable Objects** - a set of objects that store
     data of an application (state);
-  - **Atomic Action** - a function that makes changes in
+  - **Atomic Function** - a function that makes changes in
     observable objects in atomic way ("all or nothing");
-  - **Reactive Process** - recurrent and automatic
-    (re-)execution of a function in response to changes
-    made by atomic actions;
-  - **Cached Result** -  result value of a function that
-    is remembered and, if the becomes obsolete, causes
-    its function to re-execute on-demand.
+  - **Reactive Function** - a function that is
+    (re-)executed in response to changes made by atomic
+    actions;
+  - **Cached Function** -  a function which result is
+    remembered and, if becomes obsolete, causes function
+    to re-execute on-demand.
 
 Demo application built with Reactronic: https://nevod.io/#/playground.
 Source code of the demo: https://gitlab.com/nezaboodka/nevod.web.public/-/blob/master/README.md.
@@ -50,13 +50,13 @@ class Demo extends ObservableObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
-  @atomicAction
+  @atomic
   saveContact(name: string, email: string): void {
     this.name = name
     this.email = email
   }
 
-  @reactiveProcess
+  @reactive
   printContact(): void {
     // depends on `name` and `email` and reacts to their changes
     if (this.email.indexOf('@') >= 0)
@@ -68,11 +68,11 @@ class Demo extends ObservableObject {
 
 In the example above, `Demo` is an observable object,
 meaning that access to its fields are seamlessly tracked
-to determine dependent reactive processes and cached
-results. Reactive process `printContact` reads `name`
-and `email` fields, thus depends on them. It is executed
-automatically in response to changes of these fields
-made by the atomic action `saveContact`.
+to determine dependent reactive and cached functions.
+Reactive function `printContact` reads `name` and `email`
+fields, thus depends on them. It is executed automatically
+in response to changes of these fields made by the atomic
+function `saveContact`.
 
 Here is an example of a cached result that is
 (re-)computed on-demand:
@@ -87,7 +87,7 @@ class Demo extends ObservableObject {
     return this.name + ' <' + this.email + '>'
   }
 
-  @reactiveProcess
+  @reactive
   printContact(): void {
     if (this.contact !== '')
       Console.log(this.contact)
@@ -100,8 +100,8 @@ computed from source fields `name` and `email`. Once
 computed, the result is cached and is reused until
 source fields `name` and `email` are changed. Once
 source fields changed, `contact` result becomes obsolete,
-thus causing execution of depending reactive process
-`printContact`. When function of reactive process
+thus causing execution of depending reactive function
+`printContact`. When function of reactive function
 `printContact` runs it reads `contact` and causes its
 re-computation.
 
@@ -124,19 +124,18 @@ In the example above, the class `MyModel` is based on
 Reactronic's `ObservableObject` class and all its
 properties `url`, `content`, and `timestamp` are hooked.
 
-## Atomic Action
+## Atomic Function
 
-Atomic action makes changes in observable objects
+Atomic function makes changes in observable objects
 in atomic (transactional) way, thus provoking execution
-of dependent reactive processes and recalculation of
-dependent cached results. Atomic action function is
-instrumented with hooks to provide transparent atomicity
+of dependent reactive and cached functions. Atomic
+function is instrumented with hooks to provide transparent atomicity
 (by implicit context switching and isolation).
 
 ``` typescript
 class MyModel extends ObservableObject {
   // ...
-  @atomicAction
+  @atomic
   async load(url: string): Promise<void> {
     this.url = url
     this.content = await fetch(url)
@@ -145,50 +144,50 @@ class MyModel extends ObservableObject {
 }
 ```
 
-In the example above, the atomic action `load` makes
+In the example above, the atomic function `load` makes
 changes to `url`, `content` and `timestamp` properties.
-While atomic action is running, the changes are visible
-only inside the action itself. The new values become
-atomically visible outside of the action only upon its
+While atomic function is running, the changes are visible
+only inside the function itself. The new values become
+atomically visible outside of the function only upon its
 completion.
 
 Atomicity is achieved by making changes in an isolated
 data snapshot that is not visible outside of the running
-action until it is fully finished and applied. Multiple
+function until it is fully finished and applied. Multiple
 objects and their properties can be changed with full
 respect to the all-or-nothing principle. To do so,
 separate data snapshot is automatically maintained for
-each atomic action. That is a logical snapshot that does
+each atomic function. That is a logical snapshot that does
 not create a full copy of all the data.
 
 Compensating rollback operations are not needed in case
-of the atomic action failure, because all the changes
-made by the atomic action in its logical snapshot are
-simply discarded. In case the atomic action is
+of the atomic function failure, because all the changes
+made by the atomic function in its logical snapshot are
+simply discarded. In case the atomic function is
 successfully applied, affected cached results are marked
 as obsolete and corresponding caching functions are
 re-executed in a proper order (but only when all the
 data changes are fully applied).
 
 Asynchronous operations (promises) are supported out of
-the box during atomic action execution. Atomic action
+the box during atomic function execution. Atomic function
 may consist of a set of asynchronous calls prolonging
-the action until completion of all of them. An
+the function until completion of all of them. An
 asynchronous call may spawn other asynchronous calls,
 which prolong atomic atomic execution until the whole
 chain of asynchronous operations is fully completed.
 
-## Reactive Process & Cached Result
+## Reactive & Cached Functions
 
-Reactive process function is automatically and
-immediately called in response to changes in observable
-objects made by atomic actions. Function of cached result
-is called on-demand to renew the result if it was marked
-as obsolete due to changes made by an atomic action.
-Functions of reactive processes and cached results are
-instrumented with hooks to seamlessly subscribe to those
-observable objects and other cached results
-(dependencies), which are used during their execution.
+Reactive function is automatically and immediately called
+in response to changes in observable objects made by
+atomic functions. Cached function is called on-demand to
+renew the result if it was marked as obsolete due to
+changes made by an atomic functions. Reactive and cached
+functions are instrumented with hooks to seamlessly
+subscribe to those observable objects and other cached
+functions (dependencies), which are used during their
+execution.
 
 ``` tsx
 class MyView extends Component<{model: MyModel}> {
@@ -211,7 +210,7 @@ class Component<P> extends React.Component<P> {
     throw new Error('render method is undefined')
   }
 
-  @reactiveProcess // called in response to changes
+  @reactive // called in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate()) {
       // Ask React to re-render
@@ -235,34 +234,32 @@ class Component<P> extends React.Component<P> {
 }
 ```
 
-In the example above, reactive process `refresh` is
-transparently subscribed to the cached result of
-function `render`. In turn, cached result of function
-`render` is subscribed to the properties `url` and
-`content` of a corresponding `MyModel` object. Once
-`url` or `content` values are changed, the `render`
-cached result becomes obsolete and causes the reactive
-process `refresh` to become obsolete and re-executed.
-While being executed, the reactive process function
+In the example above, reactive function `refresh` is
+transparently subscribed to the cached function `render`.
+In turn, cached function `render` is subscribed to the
+properties `url` and `content` of a corresponding `MyModel`
+object. Once `url` or `content` values are changed, the
+cached function `render` becomes obsolete and causes the
+reactive function `refresh` to become obsolete and
+re-executed. While being executed, the reactive function
 `refresh` enqueues re-rendering request to React, which
-calls `render` function causing it to renew its cached
-value.
+calls cached function `render` causing it to renew its
+cached value.
 
-In general case, all reactive processes and cached
-results are automatically and immediately marked as
-obsolete when changes are made in those observable
-objects and other cached results that were used during
-their execution. And once marked, the functions are
+In general case, all reactive and cached functions
+are automatically and immediately marked as obsolete
+when changes are made in those observable objects and
+other cached results that were used during their
+execution. And once marked, the functions are
 automatically executed again, either immediately (for
-reactive processes) or on-demand (for cached results).
+reactive functions) or on-demand (for cached functions).
 
 Reactronic takes full care of tracking dependencies
-between all the observable objects and reactive processes
-or cached results. With Reactronic, you no longer need
-to create data change events in one set of objects,
-subscribe to these events in other objects, and manually
-maintain switching from the previous object version to a
-new one.
+between all the observable objects and reactive/cached
+functions. With Reactronic, you no longer need to create
+data change events in one set of objects, subscribe to
+these events in other objects, and manually maintain
+switching from the previous object version to a new one.
 
 ## Behavior Options
 
@@ -270,20 +267,20 @@ There are multiple options to configure behavior of
 transactional reactivity.
 
 **Order** options defines order of execution for
-reactive processes:
+reactive functions:
 
   - (TBD)
 
-**Throttling** option defines how often reactive process
+**Throttling** option defines how often reactive function
 is executed in case of recurring changes:
 
   - `(ms)` - minimal delay in milliseconds between executions;
-  - `-1` - execute immediately once atomic action is applied (synchronously);
+  - `-1` - execute immediately once atomic function is applied (synchronously);
   - `0` - execute immediately via event loop (asynchronously with zero timeout);
   - `>= Number.MAX_SAFE_INTEGER` - never execute (suspended reaction).
 
 **Reentrance** option defines how to handle reentrant calls of atomic
-actions and reactive processes:
+and reactive functions:
 
   - `preventWithError` - fail with error if there is an existing call in progress;
   - `waitAndRestart` - wait for previous call to finish and then restart current one;
@@ -293,8 +290,8 @@ actions and reactive processes:
 
 **Indicator** is an object that maintains status of running functions,
 which it is attached to. A single indicator object can be shared between
-multiple atomic actions, reactive processes, and cached results, thus
-maintaining consolidated status for all of them (busy, workers, etc).
+multiple atomic, reactive, and cached functions, thus maintaining
+consolidated status for all of them (busy, workers, etc).
 
 ## Notes
 
@@ -331,13 +328,13 @@ class ObservableObject { }
 
 function observable(proto, prop) // field only
 function unobservable(proto, prop) // field only
-function atomicAction(proto, prop, pd) // method only
-function reactiveProcess(proto, prop, pd) // method only
-function cachedResult(proto, prop, pd) // method only
+function atomic(proto, prop, pd) // method only
+function reactive(proto, prop, pd) // method only
+function cached(proto, prop, pd) // method only
 function options(value: Partial<MemberOptions>): F<any>
 
-function nonreactive<T>(func: F<T>, ...args: any[]): T
-function sensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
+function nonReactiveRun<T>(func: F<T>, ...args: any[]): T
+function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // SnapshotOptions, MemberOptions, Kind, Reentrance, Indicator, LoggingOptions, ProfilingOptions
 
@@ -364,9 +361,9 @@ type MemberOptions = {
 
 enum Kind {
   plain = 0,
-  atomicAction = 1,
-  reactiveProcess = 2,
-  cachedResult = 3
+  atomic = 1,
+  reactive = 2,
+  cached = 3
 }
 
 enum Reentrance {

@@ -84,7 +84,7 @@ export function observable(proto: object, prop: PropertyKey): any {
 export function atomic(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
 {
   const opts = {
-    kind: Kind.atomicAction,
+    kind: Kind.atomic,
     isolation: Isolation.joinToCurrentTransaction,
   }
   return Mvcc.decorateOperation(true, atomic, opts, proto, prop, pd)
@@ -92,7 +92,7 @@ export function atomic(proto: object, prop: PropertyKey, pd: PropertyDescriptor)
 
 export function reactive(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
-    kind: Kind.reactiveProcess,
+    kind: Kind.reactive,
     isolation: Isolation.joinAsNestedTransaction,
     throttling: -1, // immediate reactive call
   }
@@ -101,7 +101,7 @@ export function reactive(proto: object, prop: PropertyKey, pd: PropertyDescripto
 
 export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
-    kind: Kind.cachedResult,
+    kind: Kind.cached,
     isolation: Isolation.joinToCurrentTransaction,
     noSideEffects: true,
   }
