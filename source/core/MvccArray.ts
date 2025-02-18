@@ -22,8 +22,8 @@ export class MvccArray<T> extends MvccObject {
   set length(n: number) { this.mutable.length = n }
   getItem(n: number): T { return this.impl[n] }
   setItem(n: number, item: T): void { this.mutable[n] = item }
-  toString(): string { return this.impl.toString() }
-  toLocaleString(): string { return this.impl.toLocaleString() }
+  override toString(): string { return this.impl.toString() }
+  override toLocaleString(): string { return this.impl.toLocaleString() }
   pop(): T | undefined { return this.mutable.pop() }
   push(...items: T[]): number { return this.mutable.push(...items) }
 

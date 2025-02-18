@@ -15,20 +15,19 @@ declare global {
 }
 
 export abstract class SealedArray<T> extends Array<T> implements Sealed<Array<T>> {
-  pop(): T | undefined { throw Sealant.error(this) }
-  push(...items: T[]): number { throw Sealant.error(this) }
-  sort(compareFn?: (a: T, b: T) => number): this { throw Sealant.error(this) }
-  splice(start: number, deleteCount?: number): T[]
-  splice(start: number, deleteCount: number, ...items: T[]): T[] { throw Sealant.error(this) }
-  unshift(...items: T[]): number { throw Sealant.error(this) }
+  override pop(): T | undefined { throw Sealant.error(this) }
+  override push(...items: T[]): number { throw Sealant.error(this) }
+  override sort(compareFn?: (a: T, b: T) => number): this { throw Sealant.error(this) }
+  override splice(start: number, deleteCount?: number): T[]
+  override splice(start: number, deleteCount: number, ...items: T[]): T[] { throw Sealant.error(this) }
+  override unshift(...items: T[]): number { throw Sealant.error(this) }
   [Sealant.CreateCopy](): Array<T> { return this.slice() }
 
-  slice(start?: number, end?: number): T[] {
+  override slice(start?: number, end?: number): T[] {
     const result = super.slice(start, end)
     Object.setPrototypeOf(result, Array.prototype)
     return result
   }
-
 }
 
 Object.defineProperty(Array.prototype, "toMutable", {

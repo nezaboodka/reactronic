@@ -13,7 +13,7 @@ import { Meta, ObjectHandle, ObjectVersion, Observer, FieldVersion, FieldKey } f
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, UNDEFINED_REVISION } from "./Changeset.js"
 
 export abstract class Transaction implements Worker {
-  static get current(): Transaction { return TransactionImpl.current }
+  static get current(): Transaction { return TransactionImpl.curr }
 
   abstract readonly id: number
   abstract readonly hint: string
@@ -41,12 +41,12 @@ export abstract class Transaction implements Worker {
 
   static isFrameOver(everyN: number = 1, timeLimit: number = 10): boolean { return TransactionImpl.isFrameOver(everyN, timeLimit) }
   static requestNextFrame(sleepTime: number = 0): Promise<void> { return TransactionImpl.requestNextFrame(sleepTime) }
-  static get isCanceled(): boolean { return TransactionImpl.current.isCanceled }
+  static get isCanceled(): boolean { return TransactionImpl.curr.isCanceled }
 }
 
 export class TransactionImpl extends Transaction {
   private static readonly none: TransactionImpl = new TransactionImpl({ hint: "<none>" })
-  private static curr: TransactionImpl = TransactionImpl.none
+  private static gCurr: TransactionImpl = TransactionImpl.none
   private static isInspectionMode: boolean = false
   private static frameStartTime: number = 0
   private static frameOverCounter: number = 0
@@ -64,7 +64,7 @@ export class TransactionImpl extends Transaction {
 
   constructor(options: SnapshotOptions | null, parent?: TransactionImpl) {
     super()
-    this.margin = TransactionImpl.curr !== undefined ? TransactionImpl.curr.margin + 1 : -1
+    this.margin = TransactionImpl.gCurr !== undefined ? TransactionImpl.gCurr.margin + 1 : -1
     this.parent = parent
     this.changeset = new Changeset(options, parent?.changeset)
     this.pending = 0
@@ -76,7 +76,7 @@ export class TransactionImpl extends Transaction {
     this.reject = UNDEF
   }
 
-  static get current(): TransactionImpl { return TransactionImpl.curr }
+  static get curr(): TransactionImpl { return TransactionImpl.gCurr }
   get id(): number { return this.changeset.id }
   get hint(): string { return this.changeset.hint }
   get options(): SnapshotOptions { return this.changeset.options }
@@ -93,7 +93,7 @@ export class TransactionImpl extends Transaction {
     try {
       TransactionImpl.isInspectionMode = true
       if (Log.isOn && Log.opt.transaction)
-        Log.write(" ", " ", `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.curr.id}[${TransactionImpl.curr.hint}]`)
+        Log.write(" ", " ", `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.gCurr.id}[${TransactionImpl.gCurr.hint}]`)
       return this.runImpl(undefined, func, ...args)
     }
     finally {
@@ -159,16 +159,16 @@ export class TransactionImpl extends Transaction {
     return this.sealed && this.pending === 0
   }
 
-  async whenFinished(includingParent?: boolean): Promise<void> {
+  override async whenFinished(includingParent?: boolean): Promise<void> {
     if (includingParent && this.parent)
       await this.parent.whenFinished(includingParent)
     else if (!this.isFinished)
       await this.acquirePromise()
   }
 
-  static run<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T {
+  static override run<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T {
     const t: TransactionImpl = TransactionImpl.acquire(options)
-    const isRoot = t !== TransactionImpl.curr
+    const isRoot = t !== TransactionImpl.gCurr
     t.guard()
     let result: any = t.runImpl<T>(options?.logging, func, ...args)
     if (isRoot) {
@@ -182,22 +182,22 @@ export class TransactionImpl extends Transaction {
     return result
   }
 
-  static isolate<T>(func: F<T>, ...args: any[]): T {
+  static override isolate<T>(func: F<T>, ...args: any[]): T {
     return TransactionImpl.run({ isolation: Isolation.disjoinFromOuterTransaction }, func, ...args)
   }
 
-  static outside<T>(func: F<T>, ...args: any[]): T {
-    const outer = TransactionImpl.curr
+  static override outside<T>(func: F<T>, ...args: any[]): T {
+    const outer = TransactionImpl.gCurr
     try {
-      TransactionImpl.curr = TransactionImpl.none
+      TransactionImpl.gCurr = TransactionImpl.none
       return func(...args)
     }
     finally {
-      TransactionImpl.curr = outer
+      TransactionImpl.gCurr = outer
     }
   }
 
-  static isFrameOver(everyN: number = 1, timeLimit: number = 10): boolean {
+  static override isFrameOver(everyN: number = 1, timeLimit: number = 10): boolean {
     TransactionImpl.frameOverCounter++
     let result = TransactionImpl.frameOverCounter % everyN === 0
     if (result) {
@@ -207,14 +207,14 @@ export class TransactionImpl extends Transaction {
     return result
   }
 
-  static requestNextFrame(sleepTime: number = 0): Promise<void> {
+  static override requestNextFrame(sleepTime: number = 0): Promise<void> {
     return pause(sleepTime)
   }
 
   // Internal
 
   private static acquire(options: SnapshotOptions | null): TransactionImpl {
-    const outer = TransactionImpl.curr
+    const outer = TransactionImpl.gCurr
     const isolation = options?.isolation ?? Isolation.joinToCurrentTransaction
     if (outer.isFinished || outer.options.isolation === Isolation.disjoinFromOuterAndInnerTransactions)
       return new TransactionImpl(options)
@@ -229,7 +229,7 @@ export class TransactionImpl extends Transaction {
   private guard(): void {
     // if (this.error) // prevent from continuing canceled transaction
     //   throw error(this.error.message, this.error)
-    if (this.sealed && TransactionImpl.curr !== this)
+    if (this.sealed && TransactionImpl.gCurr !== this)
       throw misuse("cannot run transaction that is already sealed")
   }
 
@@ -274,14 +274,14 @@ export class TransactionImpl extends Transaction {
 
   private runImpl<T>(logging: Partial<LoggingOptions> | undefined, func: F<T>, ...args: any[]): T {
     let result: T
-    const outer = TransactionImpl.curr
+    const outer = TransactionImpl.gCurr
     const p = this.parent
     try {
       if (outer === TransactionImpl.none) {
         TransactionImpl.frameStartTime = performance.now()
         TransactionImpl.frameOverCounter = 0
       }
-      TransactionImpl.curr = this
+      TransactionImpl.gCurr = this
       this.pending++
       const acquired = this.changeset.acquire(outer.changeset)
       if (acquired && p)
@@ -305,11 +305,11 @@ export class TransactionImpl extends Transaction {
         const reactive = this.applyOrDiscard() // it's critical to have no exceptions inside this call
         if (p)
           p.runImpl(undefined, () => p.pending--)
-        TransactionImpl.curr = outer
+        TransactionImpl.gCurr = outer
         TransactionImpl.outside(Changeset.enqueueReactiveFunctionsToRun, reactive)
       }
       else
-        TransactionImpl.curr = outer
+        TransactionImpl.gCurr = outer
     }
     return result
   }
@@ -537,13 +537,13 @@ export class TransactionImpl extends Transaction {
   }
 
   private static getCurrentChangeset(): Changeset {
-    return TransactionImpl.curr.changeset
+    return TransactionImpl.gCurr.changeset
   }
 
   private static getEditableChangeset(): Changeset {
     if (TransactionImpl.isInspectionMode)
       throw misuse("cannot make changes during transaction inspection")
-    return TransactionImpl.curr.changeset
+    return TransactionImpl.gCurr.changeset
   }
 
   /* istanbul ignore next */

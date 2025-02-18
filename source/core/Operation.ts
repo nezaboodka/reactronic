@@ -305,7 +305,7 @@ class Launch extends FieldVersion implements Observer {
     }
   }
 
-  get isLaunch(): boolean { return true } // override
+  override get isLaunch(): boolean { return true } // override
   hint(): string { return `${Dump.snapshot2(this.operation.ownerHandle, this.changeset, this.operation.fieldKey, this)}` } // override
   get order(): number { return this.options.order }
 

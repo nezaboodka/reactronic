@@ -15,9 +15,9 @@ declare global {
 }
 
 export abstract class SealedSet<T> extends Set<T> implements Sealed<Set<T>> {
-  add(value: T): this { throw Sealant.error(this) }
-  clear(): void { throw Sealant.error(this) }
-  delete(value: T): boolean { throw Sealant.error(this) }
+  override add(value: T): this { throw Sealant.error(this) }
+  override clear(): void { throw Sealant.error(this) }
+  override delete(value: T): boolean { throw Sealant.error(this) }
   [Sealant.CreateCopy](): Set<T> { return new Set<T>(this.values()) }
 }
 

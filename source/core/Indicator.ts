@@ -19,7 +19,7 @@ export abstract class Indicator extends ObservableObject {
   abstract whenIdle(): Promise<void>
 
   static create(hint: string, activationDelay: number, deactivationDelay: number, durationResolution: number): Indicator {
-    return IndicatorImpl.create(hint, activationDelay, deactivationDelay, durationResolution)
+    return IndicatorImpl.createImpl(hint, activationDelay, deactivationDelay, durationResolution)
   }
 }
 
@@ -77,7 +77,7 @@ export class IndicatorImpl extends Indicator {
     IndicatorImpl.deactivate(this, this.internals.deactivationDelay)
   }
 
-  static create(hint: string, activationDelay: number, deactivationDelay: number, durationResolution: number): IndicatorImpl {
+  static createImpl(hint: string, activationDelay: number, deactivationDelay: number, durationResolution: number): IndicatorImpl {
     return Transaction.run({ hint: "Indicator.create" },
       IndicatorImpl.doCreate, hint, activationDelay, deactivationDelay, durationResolution)
   }

@@ -30,6 +30,7 @@
     "noImplicitThis": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
+    "noImplicitOverride": true,
     // Other
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
