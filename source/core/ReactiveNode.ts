@@ -112,7 +112,7 @@ export abstract class ReactiveNode<E = unknown> {
     else
       declaration = scriptOrDeclaration ?? {}
     let effectiveKey = declaration.key
-    const owner = (getModeUsingBasisChain(declaration) & Mode.rootNode) !== Mode.rootNode ? gOwnSlot?.instance : undefined
+    const owner = (getModeUsingBasisChain(declaration) & Mode.rootNode) !== Mode.rootNode ? gNodeSlot?.instance : undefined
     if (owner) {
       let existing = owner.driver.declareChild(owner, driver, declaration, declaration.basis)
       // Reuse existing node or declare a new one
@@ -156,35 +156,35 @@ export abstract class ReactiveNode<E = unknown> {
   }
 
   static get isFirstScriptRun(): boolean {
-    return ReactiveNodeImpl.ownSlot.instance.stamp === 1
+    return ReactiveNodeImpl.nodeSlot.instance.stamp === 1
   }
 
   static get key(): string {
-    return ReactiveNodeImpl.ownSlot.instance.key
+    return ReactiveNodeImpl.nodeSlot.instance.key
   }
 
   static get stamp(): number {
-    return ReactiveNodeImpl.ownSlot.instance.stamp
+    return ReactiveNodeImpl.nodeSlot.instance.stamp
   }
 
   static get triggers(): unknown {
-    return ReactiveNodeImpl.ownSlot.instance.declaration.triggers
+    return ReactiveNodeImpl.nodeSlot.instance.declaration.triggers
   }
 
   static get priority(): Priority {
-    return ReactiveNodeImpl.ownSlot.instance.priority
+    return ReactiveNodeImpl.nodeSlot.instance.priority
   }
 
   static set priority(value: Priority) {
-    ReactiveNodeImpl.ownSlot.instance.priority = value
+    ReactiveNodeImpl.nodeSlot.instance.priority = value
   }
 
   static get childrenShuffling(): boolean {
-    return ReactiveNodeImpl.ownSlot.instance.childrenShuffling
+    return ReactiveNodeImpl.nodeSlot.instance.childrenShuffling
   }
 
   static set childrenShuffling(value: boolean) {
-    ReactiveNodeImpl.ownSlot.instance.childrenShuffling = value
+    ReactiveNodeImpl.nodeSlot.instance.childrenShuffling = value
   }
 
   static triggerScriptRun(node: ReactiveNode<any>, triggers: unknown): void {
@@ -202,7 +202,7 @@ export abstract class ReactiveNode<E = unknown> {
   }
 
   static runNestedNodeScriptsThenDo(action: (error: unknown) => void): void {
-    runNestedNodeScriptsThenDoImpl(ReactiveNodeImpl.ownSlot, undefined, action)
+    runNestedNodeScriptsThenDoImpl(ReactiveNodeImpl.nodeSlot, undefined, action)
   }
 
   static markAsMounted(node: ReactiveNode<any>, yes: boolean): void {
@@ -513,14 +513,14 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
     return ReactiveSystem.getOperation(this.script).configure(options)
   }
 
-  static get ownSlot(): MergedItem<ReactiveNodeImpl> {
-    if (!gOwnSlot)
+  static get nodeSlot(): MergedItem<ReactiveNodeImpl> {
+    if (!gNodeSlot)
       throw new Error("current element is undefined")
-    return gOwnSlot
+    return gNodeSlot
   }
 
   static tryUseNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>): T | undefined {
-    let node = ReactiveNodeImpl.ownSlot.instance
+    let node = ReactiveNodeImpl.nodeSlot.instance
     while (node.context?.variable !== variable && node.owner !== node)
       node = node.outer.slot!.instance
     return node.context?.value as any // TODO: to get rid of any
@@ -534,7 +534,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
   }
 
   static setNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>, value: T | undefined): void {
-    const node = ReactiveNodeImpl.ownSlot.instance
+    const node = ReactiveNodeImpl.nodeSlot.instance
     const owner = node.owner
     const hostCtx = nonReactiveRun(() => owner.context?.value)
     if (value && value !== hostCtx) {
@@ -565,9 +565,9 @@ function getNodeKey(node: ReactiveNode): string | undefined {
   return node.stamp >= 0 ? node.key : undefined
 }
 
-function runNestedNodeScriptsThenDoImpl(ownSlot: MergedItem<ReactiveNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
-  runInside(ownSlot, () => {
-    const owner = ownSlot.instance
+function runNestedNodeScriptsThenDoImpl(nodeSlot: MergedItem<ReactiveNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
+  runInsideContextOfNode(nodeSlot, () => {
+    const owner = nodeSlot.instance
     const children = owner.children
     if (children.isMergeInProgress) {
       let promised: Promise<void> | undefined = undefined
@@ -603,7 +603,7 @@ function runNestedNodeScriptsThenDoImpl(ownSlot: MergedItem<ReactiveNodeImpl<any
           }
           // Run scripts for incremental children (if any)
           if (!Transaction.isCanceled && (p1 !== undefined || p2 !== undefined))
-            promised = startIncrementalNestedScriptsRun(ownSlot, children, p1, p2).then(
+            promised = startIncrementalNestedScriptsRun(nodeSlot, children, p1, p2).then(
               () => action(error),
               e => action(e))
         }
@@ -715,11 +715,11 @@ function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
     nonReactiveRun(() => driver.runMount(node))
 }
 
-function runScriptNow(slot: MergedItem<ReactiveNodeImpl<any>>): void {
-  const node = slot.instance
+function runScriptNow(nodeSlot: MergedItem<ReactiveNodeImpl<any>>): void {
+  const node = nodeSlot.instance
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
-    runInside(slot, () => {
+    runInsideContextOfNode(nodeSlot, () => {
       mountOrRemountIfNecessary(node)
       if (node.stamp < Number.MAX_SAFE_INTEGER - 1) { // if mounted
         try {
@@ -729,11 +729,11 @@ function runScriptNow(slot: MergedItem<ReactiveNodeImpl<any>>): void {
           const driver = node.driver
           result = driver.runScript(node)
           result = proceedSyncOrAsync(result,
-            v => { runNestedNodeScriptsThenDoImpl(slot, undefined, NOP); return v },
-            e => { console.log(e); runNestedNodeScriptsThenDoImpl(slot, e ?? new Error("unknown error"), NOP) })
+            v => { runNestedNodeScriptsThenDoImpl(nodeSlot, undefined, NOP); return v },
+            e => { console.log(e); runNestedNodeScriptsThenDoImpl(nodeSlot, e ?? new Error("unknown error"), NOP) })
         }
         catch (e: unknown) {
-          runNestedNodeScriptsThenDoImpl(slot, e, NOP)
+          runNestedNodeScriptsThenDoImpl(nodeSlot, e, NOP)
           console.log(`Reactive node script failed: ${node.key}`)
           console.log(`${e}`)
         }
@@ -742,8 +742,8 @@ function runScriptNow(slot: MergedItem<ReactiveNodeImpl<any>>): void {
   }
 }
 
-function triggerFinalization(slot: MergedItem<ReactiveNodeImpl>, isLeader: boolean, individual: boolean): void {
-  const node = slot.instance
+function triggerFinalization(nodeSlot: MergedItem<ReactiveNodeImpl>, isLeader: boolean, individual: boolean): void {
+  const node = nodeSlot.instance
   if (node.stamp >= 0) {
     const driver = node.driver
     if (individual && node.key !== node.declaration.key && !driver.isPartition)
@@ -753,14 +753,14 @@ function triggerFinalization(slot: MergedItem<ReactiveNodeImpl>, isLeader: boole
     const childrenAreLeaders = nonReactiveRun(() => driver.runFinalization(node, isLeader))
     if (node.has(Mode.autonomous)) {
       // Defer disposal if element is reactive (having autonomous mode)
-      slot.aux = undefined
+      nodeSlot.aux = undefined
       const last = gLastToDispose
       if (last)
-        gLastToDispose = last.aux = slot
+        gLastToDispose = last.aux = nodeSlot
       else
-        gFirstToDispose = gLastToDispose = slot
-      if (gFirstToDispose === slot)
-        atomicRun({ isolation: Isolation.disjoinForInternalDisposal, hint: `runDisposalLoop(initiator=${slot.instance.key})` }, () => {
+        gFirstToDispose = gLastToDispose = nodeSlot
+      if (gFirstToDispose === nodeSlot)
+        atomicRun({ isolation: Isolation.disjoinForInternalDisposal, hint: `runDisposalLoop(initiator=${nodeSlot.instance.key})` }, () => {
           void runDisposalLoop().then(NOP, error => console.log(error))
         })
     }
@@ -787,24 +787,24 @@ async function runDisposalLoop(): Promise<void> {
 
 function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T {
   let wrappedToRunInside: (...args: any[]) => T
-  const outer = gOwnSlot
+  const outer = gNodeSlot
   if (outer)
     wrappedToRunInside = (...args: any[]): T => {
-      return runInside(outer, func, ...args)
+      return runInsideContextOfNode(outer, func, ...args)
     }
   else
     wrappedToRunInside = func
   return wrappedToRunInside
 }
 
-function runInside<T>(slot: MergedItem<ReactiveNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
-  const outer = gOwnSlot
+function runInsideContextOfNode<T>(nodeSlot: MergedItem<ReactiveNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
+  const outer = gNodeSlot
   try {
-    gOwnSlot = slot
+    gNodeSlot = nodeSlot
     return func(...args)
   }
   finally {
-    gOwnSlot = outer
+    gNodeSlot = outer
   }
 }
 
@@ -874,6 +874,6 @@ Promise.prototype.then = reactronicDomHookedThen
 const NOP: any = (...args: any[]): void => { /* nop */ }
 const NOP_ASYNC: any = async (...args: any[]): Promise<void> => { /* nop */ }
 
-let gOwnSlot: MergedItem<ReactiveNodeImpl> | undefined = undefined
+let gNodeSlot: MergedItem<ReactiveNodeImpl> | undefined = undefined
 let gFirstToDispose: MergedItem<ReactiveNodeImpl> | undefined = undefined
 let gLastToDispose: MergedItem<ReactiveNodeImpl> | undefined = undefined
