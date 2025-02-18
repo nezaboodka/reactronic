@@ -617,18 +617,18 @@ function runNestedNodeScriptsThenDoImpl(nodeSlot: MergedItem<ReactiveNodeImpl<an
 }
 
 function markToMountIfNecessary(mounting: boolean, host: ReactiveNodeImpl,
-  slot: MergedItem<ReactiveNodeImpl>, children: MergeList<ReactiveNodeImpl>, sequential: boolean): boolean {
+  nodeSlot: MergedItem<ReactiveNodeImpl>, children: MergeList<ReactiveNodeImpl>, sequential: boolean): boolean {
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
-  const node = slot.instance
+  const node = nodeSlot.instance
   // TODO: Get rid of "node.element.native"
   if ((node.element as any).native && !node.has(Mode.manualMount)) {
     if (mounting || node.host !== host) {
-      children.markAsMoved(slot)
+      children.markAsMoved(nodeSlot)
       mounting = false
     }
   }
-  else if (sequential && children.isMoved(slot))
+  else if (sequential && children.isMoved(nodeSlot))
     mounting = true // apply to the first element having native HTML element
   node.host = host
   return mounting
@@ -678,8 +678,8 @@ async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveNodeImpl>
   }
 }
 
-function triggerScriptRunViaSlot(slot: MergedItem<ReactiveNodeImpl<any>>): void {
-  const node = slot.instance
+function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveNodeImpl<any>>): void {
+  const node = nodeSlot.instance
   if (node.stamp >= 0) { // if not deactivated yet
     if (node.has(Mode.autonomous)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
@@ -694,7 +694,7 @@ function triggerScriptRunViaSlot(slot: MergedItem<ReactiveNodeImpl<any>>): void 
       nonReactiveRun(node.script, node.declaration.triggers) // reactive auto-update
     }
     else
-      runScriptNow(slot)
+      runScriptNow(nodeSlot)
   }
 }
 
