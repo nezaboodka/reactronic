@@ -58,7 +58,7 @@ export abstract class ReactiveNode<E = unknown> {
 
   static readonly shortFrameDuration = 16 // ms
   static readonly longFrameDuration = 300 // ms
-  static currentUpdatePriority = Priority.realtime
+  static currentScriptPriority = Priority.realtime
   static frameDuration = ReactiveNode.longFrameDuration
 
   static declare<E = void>(
@@ -140,7 +140,7 @@ export abstract class ReactiveNode<E = unknown> {
       // Create new root node
       result = new ReactiveNodeImpl(effectiveKey || "", driver, declaration, owner)
       result.slot = MergeList.createItem(result)
-      triggerUpdateViaSlot(result.slot)
+      triggerScriptRunViaSlot(result.slot)
     }
     return result
   }
@@ -155,7 +155,7 @@ export abstract class ReactiveNode<E = unknown> {
     return declaration
   }
 
-  static get isFirstUpdate(): boolean {
+  static get isFirstScriptRun(): boolean {
     return ReactiveNodeImpl.ownSlot.instance.stamp === 1
   }
 
@@ -187,12 +187,12 @@ export abstract class ReactiveNode<E = unknown> {
     ReactiveNodeImpl.ownSlot.instance.childrenShuffling = value
   }
 
-  static triggerUpdate(node: ReactiveNode<any>, triggers: unknown): void {
+  static triggerScriptRun(node: ReactiveNode<any>, triggers: unknown): void {
     const impl = node as ReactiveNodeImpl<any>
     const declaration = impl.declaration
     if (!triggersAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
-      triggerUpdateViaSlot(impl.slot!)
+      triggerScriptRunViaSlot(impl.slot!)
     }
   }
 
@@ -201,8 +201,8 @@ export abstract class ReactiveNode<E = unknown> {
     triggerFinalization(impl.slot!, true, true)
   }
 
-  static updateNestedNodesThenDo(action: (error: unknown) => void): void {
-    runUpdateNestedNodesThenDo(ReactiveNodeImpl.ownSlot, undefined, action)
+  static runNestedNodeScriptsThenDo(action: (error: unknown) => void): void {
+    runNestedNodeScriptsThenDoImpl(ReactiveNodeImpl.ownSlot, undefined, action)
   }
 
   static markAsMounted(node: ReactiveNode<any>, yes: boolean): void {
@@ -502,15 +502,15 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
     triggeringArgs: true,
     noSideEffects: false,
   })
-  update(_triggers: unknown): void {
-    // triggers parameter is used to enforce update by owner
-    updateNow(this.slot!)
+  script(_triggers: unknown): void {
+    // triggers parameter is used to enforce script run by owner
+    runScriptNow(this.slot!)
   }
 
   configureReactronic(options: Partial<MemberOptions>): MemberOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.autonomous))
       throw new Error("reactronic can be configured only for elements with autonomous mode and only during activation")
-    return ReactiveSystem.getOperation(this.update).configure(options)
+    return ReactiveSystem.getOperation(this.script).configure(options)
   }
 
   static get ownSlot(): MergedItem<ReactiveNodeImpl> {
@@ -565,7 +565,7 @@ function getNodeKey(node: ReactiveNode): string | undefined {
   return node.stamp >= 0 ? node.key : undefined
 }
 
-function runUpdateNestedNodesThenDo(ownSlot: MergedItem<ReactiveNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
+function runNestedNodeScriptsThenDoImpl(ownSlot: MergedItem<ReactiveNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
   runInside(ownSlot, () => {
     const owner = ownSlot.instance
     const children = owner.children
@@ -593,17 +593,17 @@ function runUpdateNestedNodesThenDo(ownSlot: MergedItem<ReactiveNodeImpl<any>>, 
               mounting, host, child, children, sequential)
             const p = childNode.priority ?? Priority.realtime
             if (p === Priority.realtime)
-              triggerUpdateViaSlot(child) // update synchronously
+              triggerScriptRunViaSlot(child) // synchronously
             else if (p === Priority.normal)
-              p1 = push(child, p1) // defer for P1 async update
+              p1 = push(child, p1) // defer for P1 async script run
             else
-              p2 = push(child, p2) // defer for P2 async update
+              p2 = push(child, p2) // defer for P2 async script run
             if (isPart)
               partition = childNode
           }
-          // Update incremental children (if any)
+          // Run scripts for incremental children (if any)
           if (!Transaction.isCanceled && (p1 !== undefined || p2 !== undefined))
-            promised = startIncrementalUpdate(ownSlot, children, p1, p2).then(
+            promised = startIncrementalNestedScriptsRun(ownSlot, children, p1, p2).then(
               () => action(error),
               e => action(e))
         }
@@ -634,38 +634,38 @@ function markToMountIfNecessary(mounting: boolean, host: ReactiveNodeImpl,
   return mounting
 }
 
-async function startIncrementalUpdate(
+async function startIncrementalNestedScriptsRun(
   ownerSlot: MergedItem<ReactiveNodeImpl>,
   allChildren: MergeList<ReactiveNodeImpl>,
   priority1?: Array<MergedItem<ReactiveNodeImpl>>,
   priority2?: Array<MergedItem<ReactiveNodeImpl>>): Promise<void> {
   const stamp = ownerSlot.instance.stamp
   if (priority1)
-    await updateIncrementally(ownerSlot, stamp, allChildren, priority1, Priority.normal)
+    await runNestedScriptsIncrementally(ownerSlot, stamp, allChildren, priority1, Priority.normal)
   if (priority2)
-    await updateIncrementally(ownerSlot, stamp, allChildren, priority2, Priority.background)
+    await runNestedScriptsIncrementally(ownerSlot, stamp, allChildren, priority2, Priority.background)
 }
 
-async function updateIncrementally(owner: MergedItem<ReactiveNodeImpl>, stamp: number,
+async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveNodeImpl>, stamp: number,
   allChildren: MergeList<ReactiveNodeImpl>, items: Array<MergedItem<ReactiveNodeImpl>>,
   priority: Priority): Promise<void> {
   await Transaction.requestNextFrame()
   const node = owner.instance
   if (!Transaction.isCanceled || !Transaction.isFrameOver(1, ReactiveNode.shortFrameDuration / 3)) {
-    let outerPriority = ReactiveNode.currentUpdatePriority
-    ReactiveNode.currentUpdatePriority = priority
+    let outerPriority = ReactiveNode.currentScriptPriority
+    ReactiveNode.currentScriptPriority = priority
     try {
       if (node.childrenShuffling)
         shuffle(items)
       const frameDurationLimit = priority === Priority.background ? ReactiveNode.shortFrameDuration : Infinity
       let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveNode.frameDuration / 4, ReactiveNode.shortFrameDuration))
       for (const child of items) {
-        triggerUpdateViaSlot(child)
+        triggerScriptRunViaSlot(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
-          ReactiveNode.currentUpdatePriority = outerPriority
+          ReactiveNode.currentScriptPriority = outerPriority
           await Transaction.requestNextFrame(0)
-          outerPriority = ReactiveNode.currentUpdatePriority
-          ReactiveNode.currentUpdatePriority = priority
+          outerPriority = ReactiveNode.currentScriptPriority
+          ReactiveNode.currentScriptPriority = priority
           frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveNode.frameDuration))
         }
         if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveNode.shortFrameDuration / 3))
@@ -673,12 +673,12 @@ async function updateIncrementally(owner: MergedItem<ReactiveNodeImpl>, stamp: n
       }
     }
     finally {
-      ReactiveNode.currentUpdatePriority = outerPriority
+      ReactiveNode.currentScriptPriority = outerPriority
     }
   }
 }
 
-function triggerUpdateViaSlot(slot: MergedItem<ReactiveNodeImpl<any>>): void {
+function triggerScriptRunViaSlot(slot: MergedItem<ReactiveNodeImpl<any>>): void {
   const node = slot.instance
   if (node.stamp >= 0) { // if not deactivated yet
     if (node.has(Mode.autonomous)) {
@@ -686,15 +686,15 @@ function triggerUpdateViaSlot(slot: MergedItem<ReactiveNodeImpl<any>>): void {
         Transaction.outside(() => {
           if (ReactiveSystem.isLogging)
             ReactiveSystem.setLoggingHint(node.element, node.key)
-          ReactiveSystem.getOperation(node.update).configure({
+          ReactiveSystem.getOperation(node.script).configure({
             order: node.level,
           })
         })
       }
-      nonReactiveRun(node.update, node.declaration.triggers) // reactive auto-update
+      nonReactiveRun(node.script, node.declaration.triggers) // reactive auto-update
     }
     else
-      updateNow(slot)
+      runScriptNow(slot)
   }
 }
 
@@ -715,7 +715,7 @@ function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
     nonReactiveRun(() => driver.runMount(node))
 }
 
-function updateNow(slot: MergedItem<ReactiveNodeImpl<any>>): void {
+function runScriptNow(slot: MergedItem<ReactiveNodeImpl<any>>): void {
   const node = slot.instance
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
@@ -729,12 +729,12 @@ function updateNow(slot: MergedItem<ReactiveNodeImpl<any>>): void {
           const driver = node.driver
           result = driver.runScript(node)
           result = proceedSyncOrAsync(result,
-            v => { runUpdateNestedNodesThenDo(slot, undefined, NOP); return v },
-            e => { console.log(e); runUpdateNestedNodesThenDo(slot, e ?? new Error("unknown error"), NOP) })
+            v => { runNestedNodeScriptsThenDoImpl(slot, undefined, NOP); return v },
+            e => { console.log(e); runNestedNodeScriptsThenDoImpl(slot, e ?? new Error("unknown error"), NOP) })
         }
         catch (e: unknown) {
-          runUpdateNestedNodesThenDo(slot, e, NOP)
-          console.log(`Update failed: ${node.key}`)
+          runNestedNodeScriptsThenDoImpl(slot, e, NOP)
+          console.log(`Reactive node script failed: ${node.key}`)
           console.log(`${e}`)
         }
       }
