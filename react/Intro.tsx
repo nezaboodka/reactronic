@@ -24,7 +24,7 @@ class MyModel extends ObservableObject {
 
 class MyView extends Component<{model: MyModel}> {
   @cached
-  render(): React.JSX.Element {
+  override render(): React.JSX.Element {
     const m = this.props.model
     return (
       <div>

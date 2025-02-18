@@ -10,7 +10,7 @@ import { atomicRun, reactive, cached, Transaction, ReactiveSystem } from "../sou
 
 export class Component<P> extends React.Component<P> {
   @cached
-  render(): React.JSX.Element {
+  override render(): React.JSX.Element {
     throw new Error("render method is undefined")
   }
 
@@ -20,15 +20,15 @@ export class Component<P> extends React.Component<P> {
       Transaction.outside(() => this.setState({})) // ask React to re-render
   } // ensureUpToDate is subscribed to render
 
-  shouldComponentUpdate(): boolean {
+  override shouldComponentUpdate(): boolean {
     return !ReactiveSystem.getOperation(this.render).isReusable
   }
 
-  componentDidMount(): void {
+  override componentDidMount(): void {
     this.ensureUpToDate() // run to subscribe for the first time
   }
 
-  componentWillUnmount(): void {
+  override componentWillUnmount(): void {
     atomicRun(ReactiveSystem.dispose, this)
   }
 }
