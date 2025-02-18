@@ -1,7 +1,7 @@
 import { ObservableObject } from "./core/Mvcc.js"
 import { atomic, reactive } from "./ReactiveSystem.js"
 
-export class Clock extends ObservableObject {
+export class RealTimeClock extends ObservableObject {
   hour: number = 0
   minute: number = 0
   second: number = 0

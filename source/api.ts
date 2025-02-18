@@ -28,4 +28,4 @@ export { ReactiveSystem, observable, unobservable, atomic, reactive, cached, opt
 export { ReactiveLoop } from "./ReactiveLoop.js"
 export { ReactiveNode, Mode, Priority, BaseDriver, ReactiveNodeVariable } from "./core/ReactiveNode.js"
 export type { Script, ScriptAsync, Handler, ReactiveNodeDecl, ReactiveNodeDriver, ReactiveNodeContext } from "./core/ReactiveNode.js"
-export { Clock } from "./Clock.js"
+export { RealTimeClock } from "./RealTimeClock.js"
