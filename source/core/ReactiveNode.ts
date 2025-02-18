@@ -693,8 +693,10 @@ function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveNodeImpl<any>>): v
       }
       nonReactiveRun(node.script, node.declaration.triggers) // reactive auto-update
     }
-    else
+    else if (node.owner !== node)
       runScriptNow(nodeSlot)
+    else // root node
+      atomicRun(() => runScriptNow(nodeSlot))
   }
 }
 
