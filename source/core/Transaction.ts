@@ -512,6 +512,8 @@ export class TransactionImpl extends Transaction {
         // Migrate subscriptions
         const observers = fv.observers
         if (observers) {
+          if (fvParent.observers === undefined)
+            fvParent.observers = new Set()
           observers.forEach(o => {
             const sub = o.observables!.get(fv)!
             o.observables?.delete(fv)
