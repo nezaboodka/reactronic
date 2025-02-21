@@ -442,9 +442,10 @@ export class TransactionImpl extends Transaction {
         if (observers) {
           const migratedObservers = migrated.observers = new Set<Observer>()
           observers.forEach(o => {
-            const sub = o.observables!.get(fvParent)!
-            o.observables?.delete(fvParent)
-            o.observables?.set(migrated, sub)
+            const oo = o.observables!
+            const sub = oo.get(fvParent)!
+            oo.delete(fvParent)
+            oo.set(migrated, sub)
             migratedObservers.add(o)
           })
           fvParent.observers = undefined
@@ -456,10 +457,11 @@ export class TransactionImpl extends Transaction {
           if (migratedObservers === undefined)
             migratedObservers = migrated.observers = new Set<Observer>()
           observers.forEach(o => {
-            const sub = o.observables!.get(fv)!
-            o.observables?.delete(fv)
-            o.observables?.set(migrated, sub)
-            migratedObservers?.add(o)
+            const oo = o.observables!
+            const sub = oo.get(fv)!
+            oo.delete(fv)
+            oo.set(migrated, sub)
+            migratedObservers.add(o)
           })
           fv.observers = undefined
         }
@@ -468,9 +470,10 @@ export class TransactionImpl extends Transaction {
         const migratedObservables = (migrated as unknown as Observer).observables
         if (observables) {
           observables.forEach((s, o) => {
-            o.observers?.delete(fv as unknown as Observer)
-            o.observers?.add(migrated as unknown as Observer)
-            migratedObservables?.set(o, s)
+            const oo = o.observers!
+            oo.delete(fv as unknown as Observer)!
+            oo.add(migrated as unknown as Observer)
+            migratedObservables!.set(o, s)
           })
           observables.clear()
         }
@@ -482,9 +485,10 @@ export class TransactionImpl extends Transaction {
         if (observers) {
           const migratedObservers = migrated.observers = new Set<Observer>()
           observers.forEach(o => {
-            const sub = o.observables!.get(fv)!
-            o.observables?.delete(fv)
-            o.observables?.set(migrated, sub)
+            const oo = o.observables!
+            const sub = oo.get(fv)!
+            oo.delete(fv)
+            oo.set(migrated, sub)
             migratedObservers.add(o)
           })
           fv.observers = undefined
@@ -494,9 +498,10 @@ export class TransactionImpl extends Transaction {
         const migratedObservables = (migrated as unknown as Observer).observables
         if (observables) {
           observables.forEach((s, o) => {
-            o.observers?.delete(fv as unknown as Observer)
-            o.observers?.add(migrated as unknown as Observer)
-            migratedObservables?.set(o, s)
+            const oo = o.observers!
+            oo.delete(fv as unknown as Observer)
+            oo.add(migrated as unknown as Observer)
+            migratedObservables!.set(o, s)
           })
           observables.clear()
         }
@@ -515,10 +520,11 @@ export class TransactionImpl extends Transaction {
           if (fvParent.observers === undefined)
             fvParent.observers = new Set()
           observers.forEach(o => {
-            const sub = o.observables!.get(fv)!
-            o.observables?.delete(fv)
-            o.observables?.set(fvParent, sub)
-            fvParent.observers?.add(o)
+            const oo = o.observables!
+            const sub = oo.get(fv)!
+            oo.delete(fv)
+            oo.set(fvParent, sub)
+            fvParent.observers!.add(o)
           })
         }
       }
