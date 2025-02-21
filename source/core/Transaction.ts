@@ -442,10 +442,10 @@ export class TransactionImpl extends Transaction {
         if (observers) {
           const migratedObservers = migrated.observers = new Set<Observer>()
           observers.forEach(o => {
-            const oo = o.observables!
-            const sub = oo.get(fvParent)!
-            oo.delete(fvParent)
-            oo.set(migrated, sub)
+            const conformingObservables = o.observables!
+            const sub = conformingObservables.get(fvParent)!
+            conformingObservables.delete(fvParent)
+            conformingObservables.set(migrated, sub)
             migratedObservers.add(o)
           })
           fvParent.observers = undefined
@@ -457,10 +457,10 @@ export class TransactionImpl extends Transaction {
           if (migratedObservers === undefined)
             migratedObservers = migrated.observers = new Set<Observer>()
           observers.forEach(o => {
-            const oo = o.observables!
-            const sub = oo.get(fv)!
-            oo.delete(fv)
-            oo.set(migrated, sub)
+            const conformingObservables = o.observables!
+            const sub = conformingObservables.get(fv)!
+            conformingObservables.delete(fv)
+            conformingObservables.set(migrated, sub)
             migratedObservers.add(o)
           })
           fv.observers = undefined
@@ -470,9 +470,9 @@ export class TransactionImpl extends Transaction {
         const migratedObservables = (migrated as unknown as Observer).observables
         if (observables) {
           observables.forEach((s, o) => {
-            const oo = o.observers!
-            oo.delete(fv as unknown as Observer)!
-            oo.add(migrated as unknown as Observer)
+            const conformingObservers = o.observers!
+            conformingObservers.delete(fv as unknown as Observer)!
+            conformingObservers.add(migrated as unknown as Observer)
             migratedObservables!.set(o, s)
           })
           observables.clear()
@@ -485,10 +485,10 @@ export class TransactionImpl extends Transaction {
         if (observers) {
           const migratedObservers = migrated.observers = new Set<Observer>()
           observers.forEach(o => {
-            const oo = o.observables!
-            const sub = oo.get(fv)!
-            oo.delete(fv)
-            oo.set(migrated, sub)
+            const conformingObservables = o.observables!
+            const sub = conformingObservables.get(fv)!
+            conformingObservables.delete(fv)
+            conformingObservables.set(migrated, sub)
             migratedObservers.add(o)
           })
           fv.observers = undefined
@@ -498,9 +498,9 @@ export class TransactionImpl extends Transaction {
         const migratedObservables = (migrated as unknown as Observer).observables
         if (observables) {
           observables.forEach((s, o) => {
-            const oo = o.observers!
-            oo.delete(fv as unknown as Observer)
-            oo.add(migrated as unknown as Observer)
+            const conformingObservers = o.observers!
+            conformingObservers.delete(fv as unknown as Observer)
+            conformingObservers.add(migrated as unknown as Observer)
             migratedObservables!.set(o, s)
           })
           observables.clear()
@@ -520,10 +520,10 @@ export class TransactionImpl extends Transaction {
           if (fvParent.observers === undefined)
             fvParent.observers = new Set()
           observers.forEach(o => {
-            const oo = o.observables!
-            const sub = oo.get(fv)!
-            oo.delete(fv)
-            oo.set(fvParent, sub)
+            const conformingObservables = o.observables!
+            const sub = conformingObservables.get(fv)!
+            conformingObservables.delete(fv)
+            conformingObservables.set(fvParent, sub)
             fvParent.observers!.add(o)
           })
         }
