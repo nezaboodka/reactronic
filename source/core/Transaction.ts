@@ -442,10 +442,10 @@ export class TransactionImpl extends Transaction {
         if (observers) {
           const migratedObservers = migrated.observers = new Set<Observer>()
           observers.forEach(o => {
-            const conformingObservables = o.observables!
-            const sub = conformingObservables.get(fvParent)!
-            conformingObservables.delete(fvParent)
-            conformingObservables.set(migrated, sub)
+            const conformingTriggers = o.triggers!
+            const sub = conformingTriggers.get(fvParent)!
+            conformingTriggers.delete(fvParent)
+            conformingTriggers.set(migrated, sub)
             migratedObservers.add(o)
           })
           fvParent.observers = undefined
@@ -457,25 +457,25 @@ export class TransactionImpl extends Transaction {
           if (migratedObservers === undefined)
             migratedObservers = migrated.observers = new Set<Observer>()
           observers.forEach(o => {
-            const conformingObservables = o.observables!
-            const sub = conformingObservables.get(fv)!
-            conformingObservables.delete(fv)
-            conformingObservables.set(migrated, sub)
+            const conformingTriggers = o.triggers!
+            const sub = conformingTriggers.get(fv)!
+            conformingTriggers.delete(fv)
+            conformingTriggers.set(migrated, sub)
             migratedObservers.add(o)
           })
           fv.observers = undefined
         }
-        // Migrate observables from current (child)
-        const observables = (fv as unknown as Observer).observables
-        const migratedObservables = (migrated as unknown as Observer).observables
-        if (observables) {
-          observables.forEach((s, o) => {
+        // Migrate triggers from current (child)
+        const triggers = (fv as unknown as Observer).triggers
+        const migratedTriggers = (migrated as unknown as Observer).triggers
+        if (triggers) {
+          triggers.forEach((s, o) => {
             const conformingObservers = o.observers!
             conformingObservers.delete(fv as unknown as Observer)!
             conformingObservers.add(migrated as unknown as Observer)
-            migratedObservables!.set(o, s)
+            migratedTriggers!.set(o, s)
           })
-          observables.clear()
+          triggers.clear()
         }
         ovParent.data[fk] = migrated
       }
@@ -485,25 +485,25 @@ export class TransactionImpl extends Transaction {
         if (observers) {
           const migratedObservers = migrated.observers = new Set<Observer>()
           observers.forEach(o => {
-            const conformingObservables = o.observables!
-            const sub = conformingObservables.get(fv)!
-            conformingObservables.delete(fv)
-            conformingObservables.set(migrated, sub)
+            const conformingTriggers = o.triggers!
+            const sub = conformingTriggers.get(fv)!
+            conformingTriggers.delete(fv)
+            conformingTriggers.set(migrated, sub)
             migratedObservers.add(o)
           })
           fv.observers = undefined
         }
-        // Migrate observables from current (child)
-        const observables = (fv as unknown as Observer).observables
-        const migratedObservables = (migrated as unknown as Observer).observables
-        if (observables) {
-          observables.forEach((s, o) => {
+        // Migrate triggers from current (child)
+        const triggers = (fv as unknown as Observer).triggers
+        const migratedTriggers = (migrated as unknown as Observer).triggers
+        if (triggers) {
+          triggers.forEach((s, o) => {
             const conformingObservers = o.observers!
             conformingObservers.delete(fv as unknown as Observer)
             conformingObservers.add(migrated as unknown as Observer)
-            migratedObservables!.set(o, s)
+            migratedTriggers!.set(o, s)
           })
-          observables.clear()
+          triggers.clear()
         }
         ovParent.data[fk] = migrated
       }
@@ -520,10 +520,10 @@ export class TransactionImpl extends Transaction {
           if (fvParent.observers === undefined)
             fvParent.observers = new Set()
           observers.forEach(o => {
-            const conformingObservables = o.observables!
-            const sub = conformingObservables.get(fv)!
-            conformingObservables.delete(fv)
-            conformingObservables.set(fvParent, sub)
+            const conformingTriggers = o.triggers!
+            const sub = conformingTriggers.get(fv)!
+            conformingTriggers.delete(fv)
+            conformingTriggers.set(fvParent, sub)
             fvParent.observers!.add(o)
           })
         }

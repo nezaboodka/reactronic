@@ -1,7 +1,7 @@
 ﻿
-// Observable User
+// Triggering User
 
-internal class User_O : User
+internal class User_T : User
 {
   public override
   string Name

@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, atomic, cached } from "../source/api.js"
+import { TriggeringObject, atomic, cached } from "../source/api.js"
 import { Component } from "./Component.js"
 
-class MyModel extends ObservableObject {
+class MyModel extends TriggeringObject {
   url: string = "https://nezaboodka.com"
   content: string = ""
   timestamp: number = Date.now()

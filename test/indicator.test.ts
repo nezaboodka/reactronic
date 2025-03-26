@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Indicator, ObservableObject, Reentrance, Transaction, atomic, reactive, options, pause, unobservable, atomicRun, ReactiveSystem } from "../source/api.js"
+import { Indicator, TriggeringObject, Reentrance, Transaction, atomic, reactive, options, pause, trigger, atomicRun, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
@@ -45,10 +45,10 @@ class SourceFile {
   constructor(readonly text: string) { }
 }
 
-class CompilationController extends ObservableObject {
+class CompilationController extends TriggeringObject {
   fsTreeVersion = 0
-  @unobservable fsTree = new Array<SourceFile>()
-  @unobservable compilation: Compilation | null = null
+  @trigger(false) fsTree = new Array<SourceFile>()
+  @trigger(false) compilation: Compilation | null = null
 
   @atomic
   add(text: string): void {

@@ -7,10 +7,10 @@
 
 import { Isolation } from "../Options.js"
 import { Worker } from "../Worker.js"
-import { ObservableObject, Mvcc } from "./Mvcc.js"
+import { TriggeringObject, Mvcc } from "./Mvcc.js"
 import { Transaction } from "./Transaction.js"
 
-export abstract class Indicator extends ObservableObject {
+export abstract class Indicator extends TriggeringObject {
   abstract readonly isBusy: boolean
   abstract readonly counter: number
   abstract readonly workers: ReadonlySet<Worker>

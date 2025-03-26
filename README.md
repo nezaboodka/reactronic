@@ -19,19 +19,20 @@ atomically applied, are **consistently propagated** to
 corresponding visual components for (re)rendering. All
 that is done in automatic, seamless, and fine-grained
 way. Reactronic **takes full care of tracking dependencies**
-between visual components (observers) and state
-(observable objects).
+between visual components (reactive functions) and
+application state (triggering objects).
 
 Transactional reactivity is based on four fundamental
 concepts:
 
-  - **Observable Objects** - a set of objects that store
-    data of an application (state);
+  - **Triggering Objects** - a set of objects that store
+    data of an application (state) and cause reactions
+    upon their changes;
   - **Atomic Function** - a function that makes changes in
-    observable objects in atomic way ("all or nothing");
+    triggering objects in atomic way ("all or nothing");
   - **Reactive Function** - a function that is
-    (re-)executed in response to changes made by atomic
-    actions;
+    (re-)executed in response to changes made in
+    triggering objects by atomic actions;
   - **Cached Function** -  a function which result is
     remembered and, if becomes obsolete, causes function
     to re-execute on-demand.
@@ -46,7 +47,7 @@ Quick introduction and detailed description is below.
 Here is an example of transactional reactive code:
 
 ``` typescript
-class Demo extends ObservableObject {
+class Demo extends TriggeringObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
@@ -66,7 +67,7 @@ class Demo extends ObservableObject {
 }
 ```
 
-In the example above, `Demo` is an observable object,
+In the example above, `Demo` is a triggering object,
 meaning that access to its fields are seamlessly tracked
 to determine dependent reactive and cached functions.
 Reactive function `printContact` reads `name` and `email`
@@ -78,7 +79,7 @@ Here is an example of a cached result that is
 (re-)computed on-demand:
 
 ``` typescript
-class Demo extends ObservableObject {
+class Demo extends TriggeringObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
@@ -105,15 +106,15 @@ thus causing execution of depending reactive function
 `printContact` runs it reads `contact` and causes its
 re-computation.
 
-## Observable Objects
+## Triggering Objects
 
-Observable objects are aimed to store data of an
-application. All such objects are transparently hooked
+Triggering objects (triggers) are aimed to store data of
+an application. All such objects are transparently hooked
 to track access to their properties, both on reads and
 writes.
 
 ``` typescript
-class MyModel extends ObservableObject {
+class MyModel extends TriggeringObject {
   url: string = "https://github.com/nezaboodka/reactronic"
   content: string = "transactional reactive state management"
   timestamp: Date = Date.now()
@@ -121,19 +122,19 @@ class MyModel extends ObservableObject {
 ```
 
 In the example above, the class `MyModel` is based on
-Reactronic's `ObservableObject` class and all its
+Reactronic's `TriggeringObject` class and all its
 properties `url`, `content`, and `timestamp` are hooked.
 
 ## Atomic Function
 
-Atomic function makes changes in observable objects
+Atomic function makes changes in triggering objects
 in atomic (transactional) way, thus provoking execution
 of dependent reactive and cached functions. Atomic
 function is instrumented with hooks to provide transparent atomicity
 (by implicit context switching and isolation).
 
 ``` typescript
-class MyModel extends ObservableObject {
+class MyModel extends TriggeringObject {
   // ...
   @atomic
   async load(url: string): Promise<void> {
@@ -180,12 +181,12 @@ chain of asynchronous operations is fully completed.
 ## Reactive & Cached Functions
 
 Reactive function is automatically and immediately called
-in response to changes in observable objects made by
+in response to changes in triggering objects made by
 atomic functions. Cached function is called on-demand to
 renew the result if it was marked as obsolete due to
 changes made by an atomic functions. Reactive and cached
 functions are instrumented with hooks to seamlessly
-subscribe to those observable objects and other cached
+subscribe to those triggering objects and other cached
 functions (dependencies), which are used during their
 execution.
 
@@ -248,14 +249,14 @@ cached value.
 
 In general case, all reactive and cached functions
 are automatically and immediately marked as obsolete
-when changes are made in those observable objects and
+when changes are made in those triggering objects and
 other cached results that were used during their
 execution. And once marked, the functions are
 automatically executed again, either immediately (for
 reactive functions) or on-demand (for cached functions).
 
 Reactronic takes full care of tracking dependencies
-between all the observable objects and reactive/cached
+between all the triggering objects and reactive/cached
 functions. With Reactronic, you no longer need to create
 data change events in one set of objects, subscribe to
 these events in other objects, and manually maintain
@@ -301,7 +302,7 @@ Key Reactronic principles and differentiators:
 
   - No compromises on consistency, clarity, and simplicity;
   - Minimalism and zero boilerplating (it's not a framework bloating your code);
-  - Asynchrony, patches, undo/redo, conflict resolving are provided out of the box;
+  - Async, patches, undo/redo, conflict resolving are provided out of the box;
   - Seamless integration with transactional reactive object-oriented databases like [Nezaboodka](https://nezaboodka.com/#products);
   - Compact dependency-free implementation consisting of less than 2K lines of code.
 
@@ -322,12 +323,12 @@ NPM: `npm install reactronic`
 // Classes
 
 class TransactionalObject { }
-class ObservableObject { }
+class TriggeringObject { }
 
 // Decorators & Operators
 
-function observable(proto, prop) // field only
-function unobservable(proto, prop) // field only
+function trigger(boolean) // field only
+function trigger(proto, prop) // field only
 function atomic(proto, prop, pd) // method only
 function reactive(proto, prop, pd) // method only
 function cached(proto, prop, pd) // method only

@@ -7,9 +7,9 @@
 
 /* istanbul ignore file */
 
-import { ObservableObject } from "./core/Mvcc.js"
+import { TriggeringObject } from "./core/Mvcc.js"
 
-export abstract class Pipe<T> extends ObservableObject {
+export abstract class Pipe<T> extends TriggeringObject {
   abstract readonly capacity: number
   abstract readonly count: number
   abstract put(...items: T[]): void

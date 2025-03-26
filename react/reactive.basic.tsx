@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, Transaction, unobservable, atomicRun, reactive, cached, ReactiveSystem } from "../source/api.js"
+import { TriggeringObject, Transaction, trigger, atomicRun, reactive, cached, ReactiveSystem } from "../source/api.js"
 
 export function autorender(render: () => React.JSX.Element): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -20,7 +20,7 @@ export function autorender(render: () => React.JSX.Element): React.JSX.Element {
 
 type ReactState = { rx: RxComponent }
 
-class RxComponent extends ObservableObject {
+class RxComponent extends TriggeringObject {
   @cached
   render(emit: () => React.JSX.Element): React.JSX.Element {
     return emit()
@@ -32,8 +32,8 @@ class RxComponent extends ObservableObject {
       Transaction.outside(this.refresh, {rx: this})
   }
 
-  @unobservable refresh: (next: ReactState) => void = nop
-  @unobservable readonly unmount = (): (() => void) => {
+  @trigger(false) refresh: (next: ReactState) => void = nop
+  @trigger(false) readonly unmount = (): (() => void) => {
     return (): void => { atomicRun(ReactiveSystem.dispose, this) }
   }
 

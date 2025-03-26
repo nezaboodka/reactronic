@@ -36,8 +36,8 @@ test("reentrance.error", async t => {
     t.is(app.rawField, "raw field")
     app.rawField = "raw field updated"
     t.is(app.rawField, "raw field updated")
-    t.is(app.observableField, "observable field")
-    t.throws(() => app.observableField = "observable field", { message: "observable property AsyncDemoView.observableField #24 can only be modified inside transaction" })
+    t.is(app.triggeringField, "triggering field")
+    t.throws(() => app.triggeringField = "triggering field", { message: "triggering property AsyncDemoView.triggeringField #24 can only be modified inside transaction" })
     t.throws(() => ReactiveSystem.getOperation(app.print).configure({ logging: TestsLoggingLevel }))
     atomicRun(() => {
       ReactiveSystem.getOperation(app.print).configure({ logging: TestsLoggingLevel })

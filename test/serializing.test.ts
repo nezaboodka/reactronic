@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { atomicRun, ReactiveSystem, ObservableObject } from "../source/api.js"
+import { atomicRun, ReactiveSystem, TriggeringObject } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
-class Serializable extends ObservableObject {
+class Serializable extends TriggeringObject {
   text: string = ""
   array?: Array<Serializable> = undefined
 }

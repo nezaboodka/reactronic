@@ -13,8 +13,8 @@ import { MvccObject } from "./Mvcc.js"
 export class MvccMap<K, V> extends MvccObject {
   private impl: Map<K, V>
 
-  constructor(isObservable: boolean, map: Map<K, V>) {
-    super(isObservable)
+  constructor(isTriggering: boolean, map: Map<K, V>) {
+    super(isTriggering)
     this.impl = map
   }
 
@@ -30,7 +30,7 @@ export class MvccMap<K, V> extends MvccObject {
   keys(): IterableIterator<K> { return this.impl.keys() }
   values(): IterableIterator<V> { return this.impl.values() }
 
-  [Symbol.toStringTag](): string { return this.impl[Symbol.toStringTag] }
+  override [Symbol.toStringTag](): string { return this.impl[Symbol.toStringTag] }
 
   private get mutable(): Map<K, V> {
     const createCopy = (this.impl as any)[Sealant.CreateCopy]
@@ -50,9 +50,9 @@ export class TransactionalMap<K, V> extends MvccMap<K, V> {
   }
 }
 
-// ObservableMap<K, V>
+// TriggeringMap<K, V>
 
-export class ObservableMap<K, V> extends MvccMap<K, V> {
+export class TriggeringMap<K, V> extends MvccMap<K, V> {
   constructor()
   constructor(iterable?: Iterable<readonly [K, V]> | null)
   constructor(args?: any) {

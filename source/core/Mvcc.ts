@@ -14,14 +14,14 @@ import { Changeset, Dump, EMPTY_OBJECT_VERSION } from "./Changeset.js"
 import { Journal } from "./Journal.js"
 import { Indicator } from "./Indicator.js"
 
-// MvccObject, TransactionalObject, ObservableObject
+// MvccObject, TransactionalObject, TriggeringObject
 
 export abstract class MvccObject {
-  protected constructor(observable: boolean) {
+  protected constructor(isTriggering: boolean) {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
     const h = Mvcc.createHandleForMvccObject(
-      proto, this, initial, new.target.name, observable)
+      proto, this, initial, new.target.name, isTriggering)
     return h.proxy
   }
 
@@ -38,7 +38,7 @@ export abstract class TransactionalObject extends MvccObject {
   }
 }
 
-export abstract class ObservableObject extends MvccObject {
+export abstract class TriggeringObject extends MvccObject {
   constructor() {
     super(true)
   }
@@ -108,12 +108,12 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static sensitivity: boolean = false
   static readonly transactional: Mvcc = new Mvcc(false)
-  static readonly observable: Mvcc = new Mvcc(true)
+  static readonly triggering: Mvcc = new Mvcc(true)
 
-  readonly isObservable: boolean
+  readonly isTriggering: boolean
 
-  constructor(isObservable: boolean) {
-    this.isObservable = isObservable
+  constructor(isTriggering: boolean) {
+    this.isTriggering = isTriggering
   }
 
   getPrototypeOf(h: ObjectHandle): object | null {
@@ -127,7 +127,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       const ov: ObjectVersion = cs.getObjectVersion(h, fk)
       result = ov.data[fk]
       if (result instanceof FieldVersion && !result.isLaunch) {
-        if (this.isObservable)
+        if (this.isTriggering)
           Changeset.markUsed(result, ov, fk, h, Kind.plain, false)
         result = result.content
       }
@@ -181,16 +181,16 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     return result
   }
 
-  static decorateData(isObservable: boolean, proto: any, fk: FieldKey): any {
-    if (isObservable) {
+  static decorateData(isTrigger: boolean, proto: any, fk: FieldKey): any {
+    if (isTrigger) {
       Meta.acquire(proto, Meta.Initial)[fk] = new FieldVersion(undefined, 0)
       const get = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.observable.get(h, fk, this)
+        return Mvcc.triggering.get(h, fk, this)
       }
       const set = function(this: any, value: any): boolean {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.observable.set(h, fk, value, this)
+        return Mvcc.triggering.set(h, fk, value, this)
       }
       const enumerable = true
       const configurable = false
@@ -241,10 +241,10 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     let h = obj[Meta.Handle]
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
-        throw misuse("only objects can be observable")
+        throw misuse("only objects can be triggering")
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
       const ov = new ObjectVersion(EMPTY_OBJECT_VERSION.changeset, EMPTY_OBJECT_VERSION, {...initial})
-      h = new ObjectHandle(obj, obj, Mvcc.observable, ov, obj.constructor.name)
+      h = new ObjectHandle(obj, obj, Mvcc.triggering, ov, obj.constructor.name)
       Meta.set(ov.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
       Meta.set(ov.data, Meta.Revision, new FieldVersion(1, 0))
@@ -252,9 +252,9 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     return h
   }
 
-  static createHandleForMvccObject(proto: any, data: any, blank: any, hint: string, isObservable: boolean): ObjectHandle {
+  static createHandleForMvccObject(proto: any, data: any, blank: any, hint: string, isTriggering: boolean): ObjectHandle {
     const ctx = Changeset.edit()
-    const mvcc = isObservable ? Mvcc.observable : Mvcc.transactional
+    const mvcc = isTriggering ? Mvcc.triggering : Mvcc.transactional
     const h = new ObjectHandle(data, undefined, mvcc, EMPTY_OBJECT_VERSION, hint)
     ctx.getEditableObjectVersion(h, Meta.Handle, blank)
     if (!Mvcc.reactivityAutoStartDisabled)

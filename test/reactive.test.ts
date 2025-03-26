@@ -6,15 +6,15 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, atomic, reactive, unobservable, atomicRun, nonReactiveRun, ReactiveSystem } from "../source/api.js"
+import { TriggeringObject, atomic, reactive, trigger, atomicRun, nonReactiveRun, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
-export class ReactiveDemo extends ObservableObject {
+export class ReactiveDemo extends TriggeringObject {
   title: string = "ReactiveDemo"
   titleNested: string = "Abc"
   content: string = "Content"
   data: string = "Data"
-  @unobservable rev: number = 0
+  @trigger(false) rev: number = 0
 
   @atomic
   setData(value: string): void {

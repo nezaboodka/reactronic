@@ -73,12 +73,16 @@ export function contextualRun<T>(p: Promise<T>): Promise<T> {
 
 // Decorators
 
-export function unobservable(proto: object, prop: PropertyKey): any {
-  return Mvcc.decorateData(false, proto, prop)
-}
-
-export function observable(proto: object, prop: PropertyKey): any {
-  return Mvcc.decorateData(true, proto, prop)
+export function trigger(enabled: boolean): (proto: object, prop: PropertyKey) => any
+export function trigger<T>(proto: object, prop: PropertyKey): any
+export function trigger<T>(protoOrEnabled: object | boolean, prop?: PropertyKey): any | ((proto: object, prop: PropertyKey) => any) {
+  if (typeof(protoOrEnabled) === "boolean") {
+    return (proto: T, prop: PropertyKey) => {
+      return Mvcc.decorateData(protoOrEnabled, proto, prop)
+    }
+  }
+  else
+    return Mvcc.decorateData(true, protoOrEnabled, prop!)
 }
 
 export function atomic(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any

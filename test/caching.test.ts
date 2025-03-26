@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, atomicRun, reactive, cached, unobservable, options, ReactiveSystem } from "../source/api.js"
+import { TriggeringObject, atomicRun, reactive, cached, trigger, options, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
-export class DemoBase extends ObservableObject {
-  @unobservable raw: string = "plain data"
+export class DemoBase extends TriggeringObject {
+  @trigger(false) raw: string = "plain data"
   title: string = "Demo"
   sideEffect: string = "no side effect"
   uninitialized?: any

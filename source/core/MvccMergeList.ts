@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import { MergeList, MergedItem, MergeListReader } from "../util/MergeList.js"
-import { ObservableObject } from "./Mvcc.js"
+import { TriggeringObject } from "./Mvcc.js"
 
-// ObservableMergeList
+// TriggeringMergeList
 
-export abstract class ObservableMergeList<T> extends ObservableObject implements MergeListReader<T> {
+export abstract class TriggeringMergeList<T> extends TriggeringObject implements MergeListReader<T> {
   protected abstract impl: MergeList<T>
   get isStrict(): boolean { return this.impl.isStrict }
   get count(): number { return this.impl.count }

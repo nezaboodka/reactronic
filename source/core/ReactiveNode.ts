@@ -10,9 +10,9 @@ import { LoggingOptions } from "../Logging.js"
 import { MergeList, MergeListReader, MergedItem } from "../util/MergeList.js"
 import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
 import { Isolation, MemberOptions, Reentrance } from "../Options.js"
-import { ObservableObject } from "../core/Mvcc.js"
+import { TriggeringObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, unobservable, reactive, atomicRun, nonReactiveRun } from "../ReactiveSystem.js"
+import { ReactiveSystem, options, trigger, reactive, atomicRun, nonReactiveRun } from "../ReactiveSystem.js"
 
 // Scripts
 
@@ -414,9 +414,9 @@ function invokeFinalizationUsingBasisChain(element: unknown, declaration: Reacti
 
 // ReactiveNodeContextImpl
 
-class ReactiveNodeContextImpl<T extends Object = Object> extends ObservableObject implements ReactiveNodeContext<T> {
-  @unobservable next: ReactiveNodeContextImpl<object> | undefined
-  @unobservable variable: ReactiveNodeVariable<T>
+class ReactiveNodeContextImpl<T extends Object = Object> extends TriggeringObject implements ReactiveNodeContext<T> {
+  @trigger(false) next: ReactiveNodeContextImpl<object> | undefined
+  @trigger(false) variable: ReactiveNodeVariable<T>
   value: T
 
   constructor(variable: ReactiveNodeVariable<T>, value: T) {

@@ -13,8 +13,8 @@ import { MvccObject } from "./Mvcc.js"
 export class MvccArray<T> extends MvccObject {
   private impl: Array<T>
 
-  constructor(isObservable: boolean, array: Array<T>) {
-    super(isObservable)
+  constructor(isTriggering: boolean, array: Array<T>) {
+    super(isTriggering)
     this.impl = array
   }
 
@@ -102,9 +102,9 @@ export class TransactionalArray<T> extends MvccArray<T> {
   }
 }
 
-// ObservableArray
+// TriggeringArray
 
-export class ObservableArray<T> extends MvccArray<T> {
+export class TriggeringArray<T> extends MvccArray<T> {
   constructor()
   constructor(arrayLength: number)
   constructor(arrayLength?: number)

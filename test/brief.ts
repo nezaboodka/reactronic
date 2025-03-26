@@ -5,11 +5,11 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, unobservable, atomicRun, atomic, reactive, cached, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
+import { TriggeringObject, trigger, atomicRun, atomic, reactive, cached, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
 
 export const output: string[] = []
 
-export class Demo extends ObservableObject {
+export class Demo extends TriggeringObject {
   static stamp = 0
   static journal = atomicRun(() => Journal.create())
 
@@ -17,7 +17,7 @@ export class Demo extends ObservableObject {
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
   // set computed(value: string) { /* nop */ }
 
-  @unobservable shared: string = "for testing purposes"
+  @trigger(false) shared: string = "for testing purposes"
   title: string = "Demo"
   users: Person[] = []
   collection1: Person[] = this.users
@@ -71,10 +71,10 @@ export class Demo extends ObservableObject {
   }
 }
 
-export class DemoView extends ObservableObject {
-  @unobservable raw: string = "plain field"
-  @unobservable shared: string = "for testing purposes"
-  @unobservable readonly model: Demo
+export class DemoView extends TriggeringObject {
+  @trigger(false) raw: string = "plain field"
+  @trigger(false) shared: string = "for testing purposes"
+  @trigger(false) readonly model: Demo
   userFilter: string = "Jo"
 
   constructor(model: Demo) {
@@ -133,8 +133,8 @@ export class DemoView extends ObservableObject {
 // Person
 
 /* istanbul ignore next */
-export class Person extends ObservableObject {
-  @unobservable dummy: string | null = null
+export class Person extends TriggeringObject {
+  @trigger(false) dummy: string | null = null
   id: string | null = null
   name: string | null = null
   age: number = 0

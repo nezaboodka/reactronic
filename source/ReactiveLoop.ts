@@ -6,11 +6,10 @@
 // automatically licensed under the license referred above.
 
 import { F } from "./util/Utils.js"
-import { ObservableObject } from "./core/Mvcc.js"
+import { TriggeringObject } from "./core/Mvcc.js"
 import { reactive } from "./ReactiveSystem.js"
 
-
-export class ReactiveLoop<T> extends ObservableObject
+export class ReactiveLoop<T> extends TriggeringObject
 {
   constructor(protected reactiveFunction: F<T>) {
     super()

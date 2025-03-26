@@ -137,7 +137,7 @@ test("brief", t => {
         const emails = daddy.emails = daddy.emails.toMutable()
         emails.push("dad@mail.com")
       }
-    }, undefined, "observable property Person.emails #26 can only be modified inside transaction")
+    }, undefined, "triggering property Person.emails #26 can only be modified inside transaction")
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: "cannot run transaction that is already sealed" })
     // Check protection and error handling
     t.throws(() => { ReactiveSystem.getOperation(daddy.setParent).configure({ indicator: null }) }, { message: "given method is not decorated as reactronic one: setParent" })
