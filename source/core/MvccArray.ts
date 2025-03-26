@@ -47,17 +47,17 @@ export class MvccArray<T> extends MvccObject {
 
   lastIndexOf(searchElement: T, fromIndex?: number): number { return this.impl.lastIndexOf(searchElement, fromIndex) }
 
-  every(predicate: (value: T, index: number, array: T[]) => unknown, thisArg?: any): boolean
+  every(predicate: (value: T, index: number, array: T[]) => boolean, thisArg?: any): boolean
   every<S extends T>(predicate: (value: T, index: number, array: T[]) => value is S, thisArg?: any): this is S[]
-  every(predicate: (value: T, index: number, array: T[]) => any, thisArg?: any): any { return this.impl.every(predicate, thisArg) }
+  every(predicate: (value: T, index: number, array: T[]) => boolean, thisArg?: any): any { return this.impl.every(predicate, thisArg) }
 
-  some(predicate: (value: T, index: number, array: T[]) => unknown, thisArg?: any): boolean { return this.impl.some(predicate, thisArg) }
+  some(predicate: (value: T, index: number, array: T[]) => boolean, thisArg?: any): boolean { return this.impl.some(predicate, thisArg) }
   forEach(callbackfn: (value: T, index: number, array: T[]) => void, thisArg?: any): void { return this.impl.forEach(callbackfn, thisArg) }
   map<U>(callbackfn: (value: T, index: number, array: T[]) => U, thisArg?: any): U[] { return this.impl.map(callbackfn, thisArg) }
 
-  filter(predicate: (value: T, index: number, array: T[]) => unknown, thisArg?: any): T[]
+  filter(predicate: (value: T, index: number, array: T[]) => boolean, thisArg?: any): T[]
   filter<S extends T>(predicate: (value: T, index: number, array: T[]) => value is S, thisArg?: any): S[]
-  filter(predicate: (value: T, index: number, array: T[]) => any, thisArg?: any): any[] { return this.impl.filter(predicate, thisArg) }
+  filter(predicate: (value: T, index: number, array: T[]) => boolean, thisArg?: any): any[] { return this.impl.filter(predicate, thisArg) }
 
   reduce(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: T[]) => T): T
   reduce(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: T[]) => T, initialValue: T): T
@@ -69,11 +69,11 @@ export class MvccArray<T> extends MvccObject {
   reduceRight<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U
   reduceRight(callbackfn: (previousValue: any, currentValue: T, currentIndex: number, array: T[]) => any, initialValue?: any): any { return initialValue !== undefined ? this.impl.reduceRight(callbackfn, initialValue) : this.impl.reduceRight(callbackfn) }
 
-  find(predicate: (value: T, index: number, obj: T[]) => unknown, thisArg?: any): T | undefined
+  find(predicate: (value: T, index: number, obj: T[]) => boolean, thisArg?: any): T | undefined
   find<S extends T>(predicate: (this: void, value: T, index: number, obj: T[]) => value is S, thisArg?: any): S | undefined
-  find(predicate: (value: T, index: number, obj: T[]) => any, thisArg?: any): T | undefined { return this.impl.find(predicate, thisArg) }
+  find(predicate: (value: T, index: number, obj: T[]) => boolean, thisArg?: any): T | undefined { return this.impl.find(predicate, thisArg) }
 
-  findIndex(predicate: (value: T, index: number, obj: T[]) => unknown, thisArg?: any): number { return this.impl.findIndex(predicate, thisArg) }
+  findIndex(predicate: (value: T, index: number, obj: T[]) => boolean, thisArg?: any): number { return this.impl.findIndex(predicate, thisArg) }
   fill(value: T, start?: number, end?: number): this { this.mutable.fill(value, start, end); return this }
   copyWithin(target: number, start: number, end?: number): this { this.mutable.copyWithin(target, start, end); return this }
 
