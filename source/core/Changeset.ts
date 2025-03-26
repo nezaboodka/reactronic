@@ -12,7 +12,7 @@ import { SealedArray } from "../util/SealedArray.js"
 import { SealedMap } from "../util/SealedMap.js"
 import { SealedSet } from "../util/SealedSet.js"
 import { Isolation, Kind, SnapshotOptions } from "../Options.js"
-import { AbstractChangeset, ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Observer, Meta } from "./Data.js"
+import { AbstractChangeset, ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Reaction, Meta } from "./Data.js"
 
 export const MAX_REVISION = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_REVISION = MAX_REVISION - 1
@@ -58,7 +58,7 @@ export class Changeset implements AbstractChangeset {
   private revision: number
   private bumper: number
   items: Map<ObjectHandle, ObjectVersion>
-  obsolete: Observer[]
+  obsolete: Reaction[]
   sealed: boolean
 
   constructor(options: SnapshotOptions | null, parent?: Changeset) {
@@ -80,7 +80,7 @@ export class Changeset implements AbstractChangeset {
   static tryResolveConflict: (theirValue: any, ourFormerValue: any, ourValue: any) => { isResolved: boolean, resolvedValue: any }  = UNDEF
   static propagateAllChangesThroughSubscriptions = (changeset: Changeset): void => { /* nop */ }
   static revokeAllSubscriptions = (changeset: Changeset): void => { /* nop */ }
-  static enqueueReactiveFunctionsToRun = (reactive: Array<Observer>): void => { /* nop */ }
+  static enqueueReactionsToRun = (reactions: Array<Reaction>): void => { /* nop */ }
 
   lookupObjectVersion(h: ObjectHandle, fk: FieldKey, editing: boolean): ObjectVersion {
     // TODO: Take into account timestamp of the member
@@ -260,13 +260,13 @@ export class Changeset implements AbstractChangeset {
       merged[fk] = ourFieldVersion
       // if (subscriptions && !theirs.changeset.sealed) {
       //   const theirValueSnapshot = theirs.data[fk] as ValueSnapshot
-      //   const theirObservers = theirValueSnapshot.observers
-      //   if (theirObservers) {
-      //     const ourObservers = ourValueSnapshot.observers
-      //     if (ourObservers)
-      //       theirObservers?.forEach(s => ourObservers.add(s))
+      //   const theirReactions = theirValueSnapshot.reactions
+      //   if (theirReactions) {
+      //     const ourReactions = ourValueSnapshot.reactions
+      //     if (ourReactions)
+      //       theirReactions?.forEach(s => ourReactions.add(s))
       //     else
-      //       ourValueSnapshot.observers = theirObservers
+      //       ourValueSnapshot.reactions = theirReactions
       //   }
       // }
       if (theirsDisposed || oursDisposed) {

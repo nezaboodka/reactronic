@@ -546,7 +546,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
         const ctx = node.context
         if (ctx) {
           ctx.variable = variable
-          ctx.value = value // update context thus invalidate observers
+          ctx.value = value // update context thus invalidate reactions
         }
         else
           node.context = new ReactiveNodeContextImpl<any>(variable, value)

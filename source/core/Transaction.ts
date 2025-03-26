@@ -9,7 +9,7 @@ import { UNDEF, F, pause } from "../util/Utils.js"
 import { Log, misuse, error, fatal } from "../util/Dbg.js"
 import { Worker } from "../Worker.js"
 import { SnapshotOptions, LoggingOptions, Isolation } from "../Options.js"
-import { Meta, ObjectHandle, ObjectVersion, Observer, FieldVersion, FieldKey } from "./Data.js"
+import { Meta, ObjectHandle, ObjectVersion, Reaction, FieldVersion, FieldKey } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, UNDEFINED_REVISION } from "./Changeset.js"
 
 export abstract class Transaction implements Worker {
@@ -302,11 +302,11 @@ export class TransactionImpl extends Transaction {
     finally {
       this.pending--
       if (this.sealed && this.pending === 0) {
-        const reactive = this.applyOrDiscard() // it's critical to have no exceptions inside this call
+        const obsolete = this.applyOrDiscard() // it's critical to have no exceptions inside this call
         if (p)
           p.runImpl(undefined, () => p.pending--)
         TransactionImpl.gCurr = outer
-        TransactionImpl.outside(Changeset.enqueueReactiveFunctionsToRun, reactive)
+        TransactionImpl.outside(Changeset.enqueueReactionsToRun, obsolete)
       }
       else
         TransactionImpl.gCurr = outer
@@ -338,14 +338,14 @@ export class TransactionImpl extends Transaction {
     throw error(`T${this.id}[${this.hint}] conflicts with: ${Dump.conflicts(conflicts)}`, undefined)
   }
 
-  private applyOrDiscard(): Array<Observer> {
+  private applyOrDiscard(): Array<Reaction> {
     // It's critical to have no exceptions in this block
-    let observers: Array<Observer>
+    let obsolete: Array<Reaction>
     try {
       if (Log.isOn && Log.opt.change)
         Log.write("╠═", "", "", undefined, "changes")
       this.changeset.seal()
-      observers = this.applyOrDiscardChangeset()
+      obsolete = this.applyOrDiscardChangeset()
       this.changeset.triggerGarbageCollection()
       if (this.promise) {
         if (this.canceled && !this.after)
@@ -360,10 +360,10 @@ export class TransactionImpl extends Transaction {
       fatal(e)
       throw e
     }
-    return observers
+    return obsolete
   }
 
-  applyOrDiscardChangeset(): Array<Observer> {
+  applyOrDiscardChangeset(): Array<Reaction> {
     const error = this.canceled
     const changeset = this.changeset
     changeset.items.forEach((ov: ObjectVersion, h: ObjectHandle) => {
@@ -437,42 +437,42 @@ export class TransactionImpl extends Transaction {
     if (fv.isLaunch) {
       const migrated = TransactionImpl.migrateFieldVersion(fv, tParent)
       if (ovParent.former.objectVersion.data[fk] !== fvParent) { // there are changes in parent
-        // Migrate observers from parent
-        let observers = fvParent.observers
-        if (observers) {
-          const migratedObservers = migrated.observers = new Set<Observer>()
-          observers.forEach(o => {
+        // Migrate reactions from parent
+        let reactions = fvParent.reactions
+        if (reactions) {
+          const migratedReactions = migrated.reactions = new Set<Reaction>()
+          reactions.forEach(o => {
             const conformingTriggers = o.triggers!
             const sub = conformingTriggers.get(fvParent)!
             conformingTriggers.delete(fvParent)
             conformingTriggers.set(migrated, sub)
-            migratedObservers.add(o)
+            migratedReactions.add(o)
           })
-          fvParent.observers = undefined
+          fvParent.reactions = undefined
         }
-        // Migrate observers from current (child)
-        observers = fv.observers
-        if (observers) {
-          let migratedObservers = migrated.observers
-          if (migratedObservers === undefined)
-            migratedObservers = migrated.observers = new Set<Observer>()
-          observers.forEach(o => {
+        // Migrate reactions from current (child)
+        reactions = fv.reactions
+        if (reactions) {
+          let migratedReactions = migrated.reactions
+          if (migratedReactions === undefined)
+            migratedReactions = migrated.reactions = new Set<Reaction>()
+          reactions.forEach(o => {
             const conformingTriggers = o.triggers!
             const sub = conformingTriggers.get(fv)!
             conformingTriggers.delete(fv)
             conformingTriggers.set(migrated, sub)
-            migratedObservers.add(o)
+            migratedReactions.add(o)
           })
-          fv.observers = undefined
+          fv.reactions = undefined
         }
         // Migrate triggers from current (child)
-        const triggers = (fv as unknown as Observer).triggers
-        const migratedTriggers = (migrated as unknown as Observer).triggers
+        const triggers = (fv as unknown as Reaction).triggers
+        const migratedTriggers = (migrated as unknown as Reaction).triggers
         if (triggers) {
           triggers.forEach((s, o) => {
-            const conformingObservers = o.observers!
-            conformingObservers.delete(fv as unknown as Observer)!
-            conformingObservers.add(migrated as unknown as Observer)
+            const conformingReactions = o.reactions!
+            conformingReactions.delete(fv as unknown as Reaction)!
+            conformingReactions.add(migrated as unknown as Reaction)
             migratedTriggers!.set(o, s)
           })
           triggers.clear()
@@ -480,27 +480,27 @@ export class TransactionImpl extends Transaction {
         ovParent.data[fk] = migrated
       }
       else {
-        // Migrate observers from current (child)
-        const observers = fv.observers
-        if (observers) {
-          const migratedObservers = migrated.observers = new Set<Observer>()
-          observers.forEach(o => {
+        // Migrate reactions from current (child)
+        const reactions = fv.reactions
+        if (reactions) {
+          const migratedReactions = migrated.reactions = new Set<Reaction>()
+          reactions.forEach(o => {
             const conformingTriggers = o.triggers!
             const sub = conformingTriggers.get(fv)!
             conformingTriggers.delete(fv)
             conformingTriggers.set(migrated, sub)
-            migratedObservers.add(o)
+            migratedReactions.add(o)
           })
-          fv.observers = undefined
+          fv.reactions = undefined
         }
         // Migrate triggers from current (child)
-        const triggers = (fv as unknown as Observer).triggers
-        const migratedTriggers = (migrated as unknown as Observer).triggers
+        const triggers = (fv as unknown as Reaction).triggers
+        const migratedTriggers = (migrated as unknown as Reaction).triggers
         if (triggers) {
           triggers.forEach((s, o) => {
-            const conformingObservers = o.observers!
-            conformingObservers.delete(fv as unknown as Observer)
-            conformingObservers.add(migrated as unknown as Observer)
+            const conformingReactions = o.reactions!
+            conformingReactions.delete(fv as unknown as Reaction)
+            conformingReactions.add(migrated as unknown as Reaction)
             migratedTriggers!.set(o, s)
           })
           triggers.clear()
@@ -515,16 +515,16 @@ export class TransactionImpl extends Transaction {
       if (ovParent.former.objectVersion.data[fk] !== fvParent) { // there are changes in parent
         fvParent.content = fv.content
         // Migrate subscriptions
-        const observers = fv.observers
-        if (observers) {
-          if (fvParent.observers === undefined)
-            fvParent.observers = new Set()
-          observers.forEach(o => {
+        const reactions = fv.reactions
+        if (reactions) {
+          if (fvParent.reactions === undefined)
+            fvParent.reactions = new Set()
+          reactions.forEach(o => {
             const conformingTriggers = o.triggers!
             const sub = conformingTriggers.get(fv)!
             conformingTriggers.delete(fv)
             conformingTriggers.set(fvParent, sub)
-            fvParent.observers!.add(o)
+            fvParent.reactions!.add(o)
           })
         }
       }

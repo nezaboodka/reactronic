@@ -8,7 +8,7 @@
 import { F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
 import { Operation, MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions, Isolation } from "../Options.js"
-import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Observer, Subscription, Meta, AbstractChangeset } from "./Data.js"
+import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Reaction, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, MAX_REVISION } from "./Changeset.js"
 import { Transaction, TransactionImpl } from "./Transaction.js"
 import { Indicator, IndicatorImpl } from "./Indicator.js"
@@ -241,9 +241,9 @@ export class OperationImpl implements Operation<any> {
 
 // Operation Launch
 
-class Launch extends FieldVersion implements Observer {
+class Launch extends FieldVersion implements Reaction {
   static current?: Launch = undefined
-  static queuedReactiveOperations: Array<Observer> = []
+  static queuedReactions: Array<Reaction> = []
   static deferredReactiveOperations: Array<Launch> = []
 
   readonly margin: number
@@ -362,7 +362,7 @@ class Launch extends FieldVersion implements Observer {
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(trigger: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, obsolete: Observer[]): void {
+  markObsoleteDueTo(trigger: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Reaction[]): void {
     if (this.triggers !== undefined) { // if not yet marked as obsolete
       const skip = !trigger.isLaunch &&
         changeset.id === this.lastEditorChangesetId /* &&
@@ -383,9 +383,9 @@ class Launch extends FieldVersion implements Observer {
 
         // Stop cascade propagation on reactive function, or continue otherwise
         if (isReactive)
-          obsolete.push(this)
+          collector.push(this)
         else
-          this.observers?.forEach(s => s.markObsoleteDueTo(this, this.operation.fieldKey, this.changeset, this.operation.ownerHandle, why, since, obsolete))
+          this.reactions?.forEach(s => s.markObsoleteDueTo(this, this.operation.fieldKey, this.changeset, this.operation.ownerHandle, why, since, collector))
 
         // Cancel own transaction if it is still in progress
         const tran = this.transaction
@@ -616,7 +616,7 @@ class Launch extends FieldVersion implements Observer {
         for (const fk in ov.former.objectVersion.data)
           Launch.propagateFieldChangeThroughSubscriptions(true, since, ov, fk, h, obsolete)
     })
-    obsolete.sort(compareObserversByOrder)
+    obsolete.sort(compareReactionsByOrder)
     changeset.options.journal?.edited(
       JournalImpl.buildPatch(changeset.hint, changeset.items))
   }
@@ -631,9 +631,9 @@ class Launch extends FieldVersion implements Observer {
   }
 
   private static propagateFieldChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,
-    ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, obsolete?: Observer[]): void {
+    ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, collector?: Reaction[]): void {
     const curr = ov.data[fk]
-    if (obsolete !== undefined) {
+    if (collector !== undefined) {
       // Propagate change to reactive functions
       const former = ov.former.objectVersion.data[fk]
       if (former !== undefined && former instanceof FieldVersion) {
@@ -652,9 +652,9 @@ class Launch extends FieldVersion implements Observer {
           else
             former.successor = undefined
         }
-        former.observers?.forEach(s => {
+        former.reactions?.forEach(s => {
           const t = (s as Launch).transaction
-          const o = t.isFinished ? obsolete : t.changeset.obsolete
+          const o = t.isFinished ? collector : t.changeset.obsolete
           return s.markObsoleteDueTo(former, fk, ov.changeset, h, why, timestamp, o)
         })
       }
@@ -671,25 +671,25 @@ class Launch extends FieldVersion implements Observer {
           curr.unsubscribeFromAllTriggers()
       }
     }
-    else if (curr instanceof FieldVersion && curr.observers) {
+    else if (curr instanceof FieldVersion && curr.reactions) {
       // // Unsubscribe from own-changed subscriptions
-      // curr.observers.forEach(o => {
+      // curr.reactions.forEach(o => {
       //   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       //   o.triggers!.delete(curr)
       //   if (Log.isOn && Log.opt.read)
       //     Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.snap(r, fk)}`)
       // })
-      // curr.observers = undefined
+      // curr.reactions = undefined
     }
   }
 
-  private static enqueueReactiveFunctionsToRun(reactive: Array<Observer>): void {
-    const queue = Launch.queuedReactiveOperations
+  private static enqueueReactionsToRun(reactions: Array<Reaction>): void {
+    const queue = Launch.queuedReactions
     const isKickOff = queue.length === 0
-    for (const r of reactive)
+    for (const r of reactions)
       queue.push(r)
     if (isKickOff)
-      OperationImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactiveOperations)
+      OperationImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactions)
   }
 
   private static migrateFieldVersion(fv: FieldVersion, target: Transaction): FieldVersion {
@@ -702,21 +702,21 @@ class Launch extends FieldVersion implements Observer {
     return result
   }
 
-  private static processQueuedReactiveOperations(): void {
-    const queue = Launch.queuedReactiveOperations
+  private static processQueuedReactions(): void {
+    const queue = Launch.queuedReactions
     let i = 0
     while (i < queue.length) {
       const reactive = queue[i]
       reactive.relaunchIfNotUpToDate(false, true)
       i++
     }
-    Launch.queuedReactiveOperations = [] // reset loop
+    Launch.queuedReactions = [] // reset loop
   }
 
   private unsubscribeFromAllTriggers(): void {
     // It's critical to have no exceptions here
     this.triggers?.forEach((info, value) => {
-      value.observers!.delete(this)
+      value.reactions!.delete(this)
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
         Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", "-", `${this.hint()} is unsubscribed from ${info.memberHint}`)
     })
@@ -734,12 +734,12 @@ class Launch extends FieldVersion implements Observer {
         times = existing ? existing.usageCount + 1 : 1
       }
       if (this.triggers !== undefined) {
-        // Acquire observers
-        if (!trigger.observers)
-          trigger.observers = new Set<Launch>()
+        // Acquire storage set
+        if (!trigger.reactions)
+          trigger.reactions = new Set<Launch>()
         // Two-way linking
         const subscription: Subscription = { memberHint: Dump.snapshot2(h, ov.changeset, fk), usageCount: times }
-        trigger.observers.add(this)
+        trigger.reactions.add(this)
         this.triggers!.set(trigger, subscription)
         if (Log.isOn && (Log.opt.read || this.options.logging?.read))
           Log.write("║", "  ∞", `${this.hint()} is subscribed to ${Dump.snapshot2(h, ov.changeset, fk, trigger)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ""}`)
@@ -806,7 +806,7 @@ class Launch extends FieldVersion implements Observer {
     Changeset.tryResolveConflict = Launch.tryResolveConflict // override
     Changeset.propagateAllChangesThroughSubscriptions = Launch.propagateAllChangesThroughSubscriptions // override
     Changeset.revokeAllSubscriptions = Launch.revokeAllSubscriptions // override
-    Changeset.enqueueReactiveFunctionsToRun = Launch.enqueueReactiveFunctionsToRun
+    Changeset.enqueueReactionsToRun = Launch.enqueueReactionsToRun
     TransactionImpl.migrateFieldVersion = Launch.migrateFieldVersion
     Mvcc.createOperation = Launch.createOperation // override
     Mvcc.rememberOperationOptions = Launch.rememberOperationOptions // override
@@ -904,8 +904,8 @@ function reactronicHookedThen(this: any,
   return ORIGINAL_PROMISE_THEN.call(this, resolve, reject)
 }
 
-function compareObserversByOrder(a: Observer, b: Observer): number {
-  return a.order - b.order
+function compareReactionsByOrder(r1: Reaction, r2: Reaction): number {
+  return r1.order - r2.order
 }
 
 /* istanbul ignore next */

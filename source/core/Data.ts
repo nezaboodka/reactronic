@@ -18,22 +18,24 @@ export type AbstractChangeset = {
   readonly sealed: boolean
 }
 
-// FieldVersion & Observer
+// FieldVersion
 
 export class FieldVersion<T = any> {
   content: T
-  observers?: Set<Observer>
+  reactions?: Set<Reaction>
   lastEditorChangesetId: number
   get isLaunch(): boolean { return false }
   constructor(content: T, lastEditorChangesetId: number) { this.content = content; this.lastEditorChangesetId = lastEditorChangesetId }
 }
 
-export type Observer = {
+// Reaction
+
+export type Reaction = {
   readonly order: number
   readonly triggers: Map<FieldVersion, Subscription> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(trigger: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, reactive: Array<Observer>): void
+  markObsoleteDueTo(trigger: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Array<Reaction>): void
   relaunchIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 
