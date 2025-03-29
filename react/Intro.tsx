@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { TriggeringObject, atomic, cached } from "../source/api.js"
+import { TriggeringObject, atomicBlock, cache } from "../source/api.js"
 import { Component } from "./Component.js"
 
 class MyModel extends TriggeringObject {
@@ -14,7 +14,7 @@ class MyModel extends TriggeringObject {
   content: string = ""
   timestamp: number = Date.now()
 
-  @atomic
+  @atomicBlock
   async goto(url: string): Promise<void> {
     this.url = url
     this.content = await (await fetch(url)).text()
@@ -23,7 +23,7 @@ class MyModel extends TriggeringObject {
 }
 
 class MyView extends Component<{model: MyModel}> {
-  @cached
+  @cache
   override render(): React.JSX.Element {
     const m = this.props.model
     return (

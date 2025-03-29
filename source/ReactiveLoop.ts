@@ -7,7 +7,7 @@
 
 import { F } from "./util/Utils.js"
 import { TriggeringObject } from "./core/Mvcc.js"
-import { reactive } from "./ReactiveSystem.js"
+import { reaction } from "./ReactiveSystem.js"
 
 export class ReactiveLoop<T> extends TriggeringObject
 {
@@ -15,7 +15,7 @@ export class ReactiveLoop<T> extends TriggeringObject
     super()
   }
 
-  @reactive
+  @reaction
   protected launch(): T {
     return this.reactiveFunction()
   }
