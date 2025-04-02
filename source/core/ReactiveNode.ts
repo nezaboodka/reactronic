@@ -187,10 +187,10 @@ export abstract class ReactiveNode<E = unknown> {
     ReactiveNodeImpl.nodeSlot.instance.childrenShuffling = value
   }
 
-  static triggerScriptRun(node: ReactiveNode<any>, triggers: unknown): void {
+  static triggerScriptRun(node: ReactiveNode<any>, triggers: unknown, force: boolean = false): void {
     const impl = node as ReactiveNodeImpl<any>
     const declaration = impl.declaration
-    if (!triggersAreEqual(triggers, declaration.triggers)) {
+    if (force || !triggersAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
       triggerScriptRunViaSlot(impl.slot!)
     }
