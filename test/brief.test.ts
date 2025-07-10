@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Transaction, Kind, atomicRun, nonReactiveRun, sensitiveRun, ReactiveSystem } from "../source/api.js"
+import { Transaction, Kind, runAtomically, runNonReactively, runSensitively, ReactiveSystem } from "../source/api.js"
 import { Person, Demo, DemoView, output, TestsLoggingLevel } from "./brief.js"
 
 const expected: string[] = [
@@ -42,7 +42,7 @@ test("brief", t => {
   ReactiveSystem.setLoggingMode(false)
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   // Simple transactions
-  const app = atomicRun(() => new DemoView(new Demo()))
+  const app = runAtomically(() => new DemoView(new Demo()))
   try {
     t.is(ReactiveSystem.why(), "<boot>")
     t.is(ReactiveSystem.getOperation(app.print).options.order, 123)
@@ -87,7 +87,7 @@ test("brief", t => {
       t.is(daddy.name, "John Smith")
       t.is(daddy.age, 40)
       t.is(Transaction.outside(() => daddy.age), 38)
-      t.is(nonReactiveRun(() => daddy.age), 40)
+      t.is(runNonReactively(() => daddy.age), 40)
       t.is(daddy.children.length, 3)
       app.userFilter = "Jo" // set to the same value
     })
@@ -153,8 +153,8 @@ test("brief", t => {
       op3.run(nop)
     }), { message: "test" })
     t.throws(() => op3.apply(), { message: "cannot apply transaction that is already canceled: Error: test" })
-    atomicRun(() => {
-      sensitiveRun(true, () => {
+    runAtomically(() => {
+      runSensitively(true, () => {
         app.userFilter = app.userFilter
       })
     })
@@ -163,7 +163,7 @@ test("brief", t => {
     app.model.testCollectionSealing()
     t.is(app.model.collection1 === app.model.collection2, false)
     t.is(app.raw, "DemoView.render #23t117s111e117   ◀◀   DemoView.userFilter[=\"\"] #23t116s111e111    ◀◀    T116[noname]")
-    t.is(render.options.kind, Kind.cached)
+    t.is(render.options.kind, Kind.cache)
     t.is(render.error, undefined)
     t.is(ReactiveSystem.getLoggingHint(app), "DemoView")
     ReactiveSystem.setLoggingHint(app, "App")
@@ -202,7 +202,7 @@ test("brief", t => {
     // t.is(daddy.age, 45)
   }
   finally {
-    atomicRun(() => {
+    runAtomically(() => {
       ReactiveSystem.dispose(app.model)
       ReactiveSystem.dispose(app)
     })

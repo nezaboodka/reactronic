@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { TriggeringObject, atomicBlock, reaction, cache, options, Transaction, Indicator, Reentrance, ReactiveSystem, trigger, all, pause } from "../source/api.js"
+import { TriggeringObject, atomic, reaction, cache, options, Transaction, Indicator, Reentrance, ReactiveSystem, trigger, all, pause } from "../source/api.js"
 
 export const output: string[] = []
 export const busy = Indicator.create("Busy", 0, 0, 1)
@@ -14,7 +14,7 @@ export class AsyncDemo extends TriggeringObject {
   url: string = "reactronic"
   log: string[] = ["RTA"]
 
-  @atomicBlock @options({ indicator: busy, reentrance: Reentrance.preventWithError })
+  @atomic @options({ indicator: busy, reentrance: Reentrance.preventWithError })
   async load(url: string, delay: number): Promise<void> {
     this.url = url
     await all([pause(delay)])

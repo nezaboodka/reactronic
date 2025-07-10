@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { TriggeringObject, Transaction, trigger, atomicRun, reaction, cache, ReactiveSystem, LoggingOptions } from "../source/api.js"
+import { TriggeringObject, Transaction, trigger, runAtomically, reaction, cache, ReactiveSystem, LoggingOptions } from "../source/api.js"
 
 export function autorender(render: (cycle: number) => React.JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState<React.JSX.Element>>(
@@ -37,7 +37,7 @@ class RxComponent<V> extends TriggeringObject {
   @trigger(false) cycle: number = 0
   @trigger(false) refresh: (next: ReactState<V>) => void = nop
   @trigger(false) readonly unmount = (): (() => void) => {
-    return (): void => { atomicRun(ReactiveSystem.dispose, this) }
+    return (): void => { runAtomically(ReactiveSystem.dispose, this) }
   }
 
   static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): RxComponent<V> {
@@ -54,7 +54,7 @@ class RxComponent<V> extends TriggeringObject {
 
 function createReactState<V>(name?: string, logging?: Partial<LoggingOptions>): ReactState<V> {
   const hint = name || (ReactiveSystem.isLogging ? getComponentName() : "<rx>")
-  const rx = atomicRun<RxComponent<V>>({ hint, logging }, RxComponent.create, hint, logging)
+  const rx = runAtomically<RxComponent<V>>({ hint, logging }, RxComponent.create, hint, logging)
   return {rx, cycle: 0}
 }
 

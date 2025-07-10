@@ -37,9 +37,9 @@ export class ReactiveSystem {
 
 // Operators
 
-export function atomicRun<T>(func: F<T>, ...args: any[]): T
-export function atomicRun<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
-export function atomicRun<T>(
+export function runAtomically<T>(func: F<T>, ...args: any[]): T
+export function runAtomically<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
+export function runAtomically<T>(
   p1: F<T> | SnapshotOptions,
   p2: any[] | F<T>,
   p3: undefined | any[]): T {
@@ -59,15 +59,15 @@ export function atomicRun<T>(
   }
 }
 
-export function nonReactiveRun<T>(func: F<T>, ...args: any[]): T {
+export function runNonReactively<T>(func: F<T>, ...args: any[]): T {
   return OperationImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
-export function sensitiveRun<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
+export function runSensitively<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
   return Mvcc.sensitive(sensitivity, func, ...args)
 }
 
-export function contextualRun<T>(p: Promise<T>): Promise<T> {
+export function runContextually<T>(p: Promise<T>): Promise<T> {
   throw new Error("not implemented yet")
 }
 
@@ -85,18 +85,18 @@ export function trigger<T>(protoOrEnabled: object | boolean, prop?: PropertyKey)
     return Mvcc.decorateData(true, protoOrEnabled, prop!)
 }
 
-export function atomicBlock(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
+export function atomic(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
 {
   const opts = {
     kind: Kind.atomic,
     isolation: Isolation.joinToCurrentTransaction,
   }
-  return Mvcc.decorateOperation(true, atomicBlock, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, atomic, opts, proto, prop, pd)
 }
 
 export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
-    kind: Kind.reactive,
+    kind: Kind.reaction,
     isolation: Isolation.joinAsNestedTransaction,
     throttling: -1, // immediate reactive call
   }
@@ -105,7 +105,7 @@ export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescripto
 
 export function cache(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
-    kind: Kind.cached,
+    kind: Kind.cache,
     isolation: Isolation.joinToCurrentTransaction,
     noSideEffects: true,
   }

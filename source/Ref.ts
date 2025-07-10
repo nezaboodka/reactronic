@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { atomicRun, nonReactiveRun } from "./ReactiveSystem.js"
+import { runAtomically, runNonReactively } from "./ReactiveSystem.js"
 
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
 export type GivenTypeOnly<T, V> = Pick<T, {[P in keyof T]: T[P] extends V ? P : never}[keyof T]>
@@ -52,7 +52,7 @@ export class Ref<T = any> {
   }
 
   unobs(): T {
-    return nonReactiveRun(() => this.variable)
+    return runNonReactively(() => this.variable)
   }
 
   observe(): T {
@@ -84,7 +84,7 @@ export class ToggleRef<T = boolean> extends Ref<T> {
   toggle(): void {
     const o = this.owner
     const p = this.name
-    atomicRun({ hint: `toggle ${(o as any).constructor.name}.${p}` }, () => {
+    runAtomically({ hint: `toggle ${(o as any).constructor.name}.${p}` }, () => {
       const v = o[p]
       const isOn = v === this.valueOn || (
         v instanceof Ref && this.valueOn instanceof Ref &&

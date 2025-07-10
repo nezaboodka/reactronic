@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { atomicRun, ReactiveSystem, TriggeringObject } from "../source/api.js"
+import { runAtomically, ReactiveSystem, TriggeringObject } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 class Serializable extends TriggeringObject {
@@ -16,7 +16,7 @@ class Serializable extends TriggeringObject {
 
 test("serializing", t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const serializable = atomicRun(() => {
+  const serializable = runAtomically(() => {
     const s1 = new Serializable()
     s1.text = "s1"
     const s2 = new Serializable()

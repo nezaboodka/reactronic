@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { TriggeringObject, atomicBlock, reaction, trigger, atomicRun, nonReactiveRun, ReactiveSystem } from "../source/api.js"
+import { TriggeringObject, atomic, reaction, trigger, runAtomically, runNonReactively, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 export class ReactiveDemo extends TriggeringObject {
@@ -16,7 +16,7 @@ export class ReactiveDemo extends TriggeringObject {
   data: string = "Data"
   @trigger(false) rev: number = 0
 
-  @atomicBlock
+  @atomic
   setData(value: string): void {
     this.data =  value
   }
@@ -27,7 +27,7 @@ export class ReactiveDemo extends TriggeringObject {
     this.title = "Title/1"
     this.content = "Content/1"
     this.title
-    nonReactiveRun(() => {
+    runNonReactively(() => {
       this.nestedReaction()
     })
   }
@@ -54,7 +54,7 @@ export class ReactiveDemo extends TriggeringObject {
 
 test("reactive", t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const demo = atomicRun(() => new ReactiveDemo())
+  const demo = runAtomically(() => new ReactiveDemo())
   t.is(demo.title, "Title/1")
   t.is(demo.content, "Content/1")
   t.is(demo.rev, 6)

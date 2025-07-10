@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { TriggeringObject, trigger, atomicRun, atomicBlock, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
+import { TriggeringObject, trigger, runAtomically, atomic, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
 
 export const output: string[] = []
 
 export class Demo extends TriggeringObject {
   static stamp = 0
-  static journal = atomicRun(() => Journal.create())
+  static journal = runAtomically(() => Journal.create())
 
   @cache
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
@@ -24,22 +24,22 @@ export class Demo extends TriggeringObject {
   collection2: Person[] = this.users
   usersWithoutLast: Person[] = this.users
 
-  @atomicBlock
+  @atomic
   loadUsers(): void {
     this._loadUsers()
   }
 
-  @atomicBlock
+  @atomic
   testCollectionSealing(): void {
     this.collection1 = this.collection2 = []
   }
 
-  @atomicBlock
+  @atomic
   testImmutableCollection(): void {
     this.collection1.push(...this.users)
   }
 
-  @atomicBlock @options({ journal: Demo.journal })
+  @atomic @options({ journal: Demo.journal })
   testUndo(): void {
     this.title = "Demo - undo/redo"
   }

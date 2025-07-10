@@ -28,14 +28,15 @@ concepts:
   - **Triggering Objects** - a set of objects that store
     data of an application (state) and cause reactions
     upon their changes;
-  - **Atomic Function** - a function that makes changes in
-    triggering objects in atomic way ("all or nothing");
-  - **Reactive Function** - a function that is
+  - **Atomic Block** - a code block that makes changes
+    in triggering objects in atomic way ("all or
+    nothing");
+  - **Reaction** - a function that is
     (re-)executed in response to changes made in
     triggering objects by atomic actions;
-  - **Cached Function** -  a function which result is
-    remembered and, if becomes obsolete, causes function
-    to re-execute on-demand.
+  - **Cache** -  a function which result is remembered
+    and, if becomes obsolete, causes function to
+    re-execute on-demand.
 
 Demo application built with Reactronic: https://nevod.io/#/playground.
 Source code of the demo: https://gitlab.com/nezaboodka/nevod.web.public/-/blob/master/README.md.
@@ -57,7 +58,7 @@ class Demo extends TriggeringObject {
     this.email = email
   }
 
-  @reactive
+  @reaction
   printContact(): void {
     // depends on `name` and `email` and reacts to their changes
     if (this.email.indexOf('@') >= 0)
@@ -83,12 +84,12 @@ class Demo extends TriggeringObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
-  @cachedResult
+  @cache
   get contact(): string {
     return this.name + ' <' + this.email + '>'
   }
 
-  @reactive
+  @reaction
   printContact(): void {
     if (this.contact !== '')
       Console.log(this.contact)
@@ -192,7 +193,7 @@ execution.
 
 ``` tsx
 class MyView extends Component<{model: MyModel}> {
-  @cachedResult
+  @cache
   render(): React.JSX.Element {
     return (
       <div>
@@ -206,12 +207,12 @@ class MyView extends Component<{model: MyModel}> {
 
 ``` tsx
 class Component<P> extends React.Component<P> {
-  @cachedResult
+  @cache
   render(): React.JSX.Element {
     throw new Error('render method is undefined')
   }
 
-  @reactive // called in response to changes
+  @reaction // called in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate()) {
       // Ask React to re-render
@@ -330,12 +331,12 @@ class TriggeringObject { }
 function trigger(boolean) // field only
 function trigger(proto, prop) // field only
 function atomic(proto, prop, pd) // method only
-function reactive(proto, prop, pd) // method only
-function cached(proto, prop, pd) // method only
+function reaction(proto, prop, pd) // method only
+function cache(proto, prop, pd) // method only
 function options(value: Partial<MemberOptions>): F<any>
 
-function nonReactiveRun<T>(func: F<T>, ...args: any[]): T
-function sensitiveRun<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
+function runNonReactively<T>(func: F<T>, ...args: any[]): T
+function runSensitively<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // SnapshotOptions, MemberOptions, Kind, Reentrance, Indicator, LoggingOptions, ProfilingOptions
 
@@ -363,8 +364,8 @@ type MemberOptions = {
 enum Kind {
   plain = 0,
   atomic = 1,
-  reactive = 2,
-  cached = 3
+  reaction = 2,
+  cache = 3
 }
 
 enum Reentrance {

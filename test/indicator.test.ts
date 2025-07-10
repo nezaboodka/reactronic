@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Indicator, TriggeringObject, Reentrance, Transaction, atomicBlock, reaction, options, pause, trigger, atomicRun, ReactiveSystem } from "../source/api.js"
+import { Indicator, TriggeringObject, Reentrance, Transaction, atomic, reaction, options, pause, trigger, runAtomically, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
@@ -50,7 +50,7 @@ class CompilationController extends TriggeringObject {
   @trigger(false) fsTree = new Array<SourceFile>()
   @trigger(false) compilation: Compilation | null = null
 
-  @atomicBlock
+  @atomic
   add(text: string): void {
     this.fsTree.push(new SourceFile(text))
     output.push(`Added file ${text}.`)
@@ -79,7 +79,7 @@ test("indicator", async t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   // RxSystem.setProfilingMode(true)
   const indicator = Indicator.create("indicator", 0, 0, 1000)
-  const controller = atomicRun(() => {
+  const controller = runAtomically(() => {
     const result = new CompilationController()
     ReactiveSystem.getOperation(result.reloadCompilation).configure({ indicator })
     return result

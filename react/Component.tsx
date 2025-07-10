@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { atomicRun, reaction, cache, Transaction, ReactiveSystem } from "../source/api.js"
+import { runAtomically, reaction, cache, Transaction, ReactiveSystem } from "../source/api.js"
 
 export class Component<P> extends React.Component<P> {
   @cache
@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   override componentWillUnmount(): void {
-    atomicRun(ReactiveSystem.dispose, this)
+    runAtomically(ReactiveSystem.dispose, this)
   }
 }

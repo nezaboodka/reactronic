@@ -369,20 +369,20 @@ class Launch extends FieldVersion implements Reaction {
         snapshot.changes.has(memberName) */
       if (!skip) {
         const why = `${Dump.snapshot2(h, changeset, fk, trigger)}    ◀◀    ${outer}`
-        const isReactive = this.options.kind === Kind.reactive /*&& this.snapshot.data[Meta.Disposed] === undefined*/
+        const isReaction = this.options.kind === Kind.reaction /*&& this.snapshot.data[Meta.Disposed] === undefined*/
 
         // Mark obsolete and unsubscribe from all (this.triggers = undefined)
         this.obsoleteDueTo = why
         this.obsoleteSince = since
         if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
-          Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", isReactive ? "█" : "▒",
-            isReactive && changeset === EMPTY_OBJECT_VERSION.changeset
+          Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", isReaction ? "█" : "▒",
+            isReaction && changeset === EMPTY_OBJECT_VERSION.changeset
               ? `${this.hint()} is reactive and will run automatically (order ${this.options.order})`
-              : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, fk)} since s${since}${isReactive ? ` and will run automatically (order ${this.options.order})` : ""}`)
+              : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, fk)} since s${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ""}`)
         this.unsubscribeFromAllTriggers()
 
         // Stop cascade propagation on reactive function, or continue otherwise
-        if (isReactive)
+        if (isReaction)
           collector.push(this)
         else
           this.reactions?.forEach(s => s.markObsoleteDueTo(this, this.operation.fieldKey, this.changeset, this.operation.ownerHandle, why, since, collector))
@@ -410,14 +410,14 @@ class Launch extends FieldVersion implements Reaction {
           const launch: Launch = this.operation.reuseOrRelaunch(false, undefined)
           if (launch.result instanceof Promise)
             launch.result.catch(error => {
-              if (launch.options.kind === Kind.reactive)
+              if (launch.options.kind === Kind.reaction)
                 misuse(`reactive function ${launch.hint()} failed and will not run anymore: ${error}`, error)
             })
         }
         catch (e) {
           if (!nothrow)
             throw e
-          else if (this.options.kind === Kind.reactive)
+          else if (this.options.kind === Kind.reaction)
             misuse(`reactive ${this.hint()} failed and will not run anymore: ${e}`, e)
         }
       }
@@ -781,11 +781,11 @@ class Launch extends FieldVersion implements Reaction {
     const opts = launch ? launch.options : OptionsImpl.INITIAL
     initial[fk] = launch = new Launch(Transaction.current, rx, EMPTY_OBJECT_VERSION.changeset, new OptionsImpl(getter, setter, opts, options, implicit), false)
     // Add to the list if it's a reactive function
-    if (launch.options.kind === Kind.reactive && launch.options.throttling < Number.MAX_SAFE_INTEGER) {
+    if (launch.options.kind === Kind.reaction && launch.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.acquire(proto, Meta.Reactive)
       reactive[fk] = launch
     }
-    else if (launch.options.kind === Kind.reactive && launch.options.throttling >= Number.MAX_SAFE_INTEGER) {
+    else if (launch.options.kind === Kind.reaction && launch.options.throttling >= Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.getFrom(proto, Meta.Reactive)
       delete reactive[fk]
     }

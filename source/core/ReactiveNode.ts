@@ -12,7 +12,7 @@ import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js
 import { Isolation, MemberOptions, Reentrance } from "../Options.js"
 import { TriggeringObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, trigger, reaction, atomicRun, nonReactiveRun } from "../ReactiveSystem.js"
+import { ReactiveSystem, options, trigger, reaction, runAtomically, runNonReactively } from "../ReactiveSystem.js"
 
 // Scripts
 
@@ -536,13 +536,13 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
   static setNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>, value: T | undefined): void {
     const node = ReactiveNodeImpl.nodeSlot.instance
     const owner = node.owner
-    const hostCtx = nonReactiveRun(() => owner.context?.value)
+    const hostCtx = runNonReactively(() => owner.context?.value)
     if (value && value !== hostCtx) {
       if (hostCtx)
         node.outer = owner
       else
         node.outer = owner.outer
-      atomicRun({ isolation: Isolation.joinAsNestedTransaction }, () => {
+      runAtomically({ isolation: Isolation.joinAsNestedTransaction }, () => {
         const ctx = node.context
         if (ctx) {
           ctx.variable = variable
@@ -691,19 +691,19 @@ function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveNodeImpl<any>>): v
           })
         })
       }
-      nonReactiveRun(node.script, node.declaration.triggers) // reactive auto-update
+      runNonReactively(node.script, node.declaration.triggers) // reactive auto-update
     }
     else if (node.owner !== node)
       runScriptNow(nodeSlot)
     else // root node
-      atomicRun(() => runScriptNow(nodeSlot))
+      runAtomically(() => runScriptNow(nodeSlot))
   }
 }
 
 function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
   const driver = node.driver
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
-    nonReactiveRun(() => {
+    runNonReactively(() => {
       node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as activated
       driver.runPreparation(node)
       if (!node.has(Mode.manualMount)) {
@@ -714,7 +714,7 @@ function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
     })
   }
   else if (node.isMoved && !node.has(Mode.manualMount) && node.host !== node)
-    nonReactiveRun(() => driver.runMount(node))
+    runNonReactively(() => driver.runMount(node))
 }
 
 function runScriptNow(nodeSlot: MergedItem<ReactiveNodeImpl<any>>): void {
@@ -752,7 +752,7 @@ function triggerFinalization(nodeSlot: MergedItem<ReactiveNodeImpl>, isLeader: b
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
     // Deactivate element itself and remove it from collection
-    const childrenAreLeaders = nonReactiveRun(() => driver.runFinalization(node, isLeader))
+    const childrenAreLeaders = runNonReactively(() => driver.runFinalization(node, isLeader))
     if (node.has(Mode.autonomous)) {
       // Defer disposal if element is reactive (having autonomous mode)
       nodeSlot.aux = undefined
@@ -762,7 +762,7 @@ function triggerFinalization(nodeSlot: MergedItem<ReactiveNodeImpl>, isLeader: b
       else
         gFirstToDispose = gLastToDispose = nodeSlot
       if (gFirstToDispose === nodeSlot)
-        atomicRun({ isolation: Isolation.disjoinForInternalDisposal, hint: `runDisposalLoop(initiator=${nodeSlot.instance.key})` }, () => {
+        runAtomically({ isolation: Isolation.disjoinForInternalDisposal, hint: `runDisposalLoop(initiator=${nodeSlot.instance.key})` }, () => {
           void runDisposalLoop().then(NOP, error => console.log(error))
         })
     }

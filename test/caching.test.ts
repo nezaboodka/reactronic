@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { TriggeringObject, atomicRun, reaction, cache, trigger, options, ReactiveSystem } from "../source/api.js"
+import { TriggeringObject, runAtomically, reaction, cache, trigger, options, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 export class DemoBase extends TriggeringObject {
@@ -63,7 +63,7 @@ export class Demo extends DemoBase {
 
 test("caching", t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const demo = atomicRun(() => {
+  const demo = runAtomically(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), "Demo")
     // d.title = 'Demo+'
