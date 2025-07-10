@@ -51,7 +51,7 @@ export class Ref<T = any> {
       this.owner[this.name][this.index] = value
   }
 
-  unobs(): T {
+  nonReactively(): T {
     return runNonReactively(() => this.variable)
   }
 
