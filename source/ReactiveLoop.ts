@@ -9,14 +9,14 @@ import { F } from "./util/Utils.js"
 import { TriggeringObject } from "./core/Mvcc.js"
 import { reaction } from "./ReactiveSystem.js"
 
-export class ReactiveLoop<T> extends TriggeringObject
+export class ReactiveOperation<T> extends TriggeringObject
 {
-  constructor(protected reactiveFunction: F<T>) {
+  constructor(protected operation: F<T>) {
     super()
   }
 
   @reaction
   protected launch(): T {
-    return this.reactiveFunction()
+    return this.operation()
   }
 }
