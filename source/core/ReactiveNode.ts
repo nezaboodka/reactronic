@@ -9,10 +9,12 @@ import { misuse } from "../util/Dbg.js"
 import { LoggingOptions } from "../Logging.js"
 import { MergeList, MergeListReader, MergedItem } from "../util/MergeList.js"
 import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
+import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { MemberOptions } from "../Options.js"
 import { TriggeringObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
 import { ReactiveSystem, options, trigger, reaction, runAtomically, runNonReactively } from "../ReactiveSystem.js"
+import { ReactiveTree } from "./ReactiveTree.js"
 
 // Scripts
 
@@ -20,15 +22,7 @@ export type Script<E> = (el: E, basis: () => void) => void
 export type ScriptAsync<E> = (el: E, basis: () => Promise<void>) => Promise<void>
 export type Handler<E = unknown, R = void> = (el: E) => R
 
-// Enums
-
-
-
-// Import ReactiveTree from separate file
-import { ReactiveTree } from "./ReactiveTree.js"
-import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
-
-// ReactiveTreeNode - Instance class for tree nodes
+// ReactiveTreeNode
 
 export abstract class ReactiveTreeNode<E = unknown> {
   abstract readonly key: string
@@ -54,11 +48,11 @@ export abstract class ReactiveTreeNode<E = unknown> {
 
 export type ReactiveNodeDecl<E = unknown> = {
   script?: Script<E>                // скрипт
-  scriptAsync?: ScriptAsync<E>      // скрипт-асин
+  scriptAsync?: ScriptAsync<E>      // скрипт-задача
   key?: string                      // ключ
   mode?: Mode                       // режим
   preparation?: Script<E>           // подготовка
-  preparationAsync?: ScriptAsync<E> // подготовка-асин
+  preparationAsync?: ScriptAsync<E> // подготовка-задача
   finalization?: Script<E>          // завершение
   triggers?: unknown                // триггеры
   basis?: ReactiveNodeDecl<E>       // базис

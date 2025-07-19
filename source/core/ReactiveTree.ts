@@ -10,7 +10,7 @@ import { ReactiveNodeDriver, ReactiveNodeDecl, Script, ScriptAsync, Handler, Rea
 import { MergeList, MergedItem } from "../util/MergeList.js"
 import { LoggingOptions } from "../Logging.js"
 
-// ReactiveTree - Static utility class for tree operations
+// ReactiveTree
 
 export class ReactiveTree {
   static readonly shortFrameDuration = 16 // ms
