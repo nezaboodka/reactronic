@@ -35,20 +35,20 @@ export enum Priority {
   background = 2
 }
 
-// ReactiveNode
+// ReactiveTreeNode
 
-export abstract class ReactiveNode<E = unknown> {
+export abstract class ReactiveTreeNode<E = unknown> {
   abstract readonly key: string
   abstract readonly driver: ReactiveNodeDriver<E>
   abstract readonly declaration: Readonly<ReactiveNodeDecl<E>/* | ReactiveNodeDeclAsync<E>*/>
   abstract readonly level: number
-  abstract readonly owner: ReactiveNode
+  abstract readonly owner: ReactiveTreeNode
   abstract element: E
-  abstract readonly host: ReactiveNode
-  abstract readonly children: MergeListReader<ReactiveNode>
-  abstract readonly slot: MergedItem<ReactiveNode<E>> | undefined
+  abstract readonly host: ReactiveTreeNode
+  abstract readonly children: MergeListReader<ReactiveTreeNode>
+  abstract readonly slot: MergedItem<ReactiveTreeNode<E>> | undefined
   abstract readonly stamp: number
-  abstract readonly outer: ReactiveNode
+  abstract readonly outer: ReactiveTreeNode
   abstract readonly context: ReactiveNodeContext | undefined
   abstract priority?: Priority
   abstract childrenShuffling: boolean
@@ -59,7 +59,7 @@ export abstract class ReactiveNode<E = unknown> {
   static readonly shortFrameDuration = 16 // ms
   static readonly longFrameDuration = 300 // ms
   static currentScriptPriority = Priority.realtime
-  static frameDuration = ReactiveNode.longFrameDuration
+  static frameDuration = ReactiveTreeNode.longFrameDuration
 
   static declare<E = void>(
     driver: ReactiveNodeDriver<E>,
@@ -71,23 +71,11 @@ export abstract class ReactiveNode<E = unknown> {
     preparationAsync?: ScriptAsync<E>,
     finalization?: Script<E>,
     triggers?: unknown,
-    basis?: ReactiveNodeDecl<E>): ReactiveNode<E>
+    basis?: ReactiveNodeDecl<E>): ReactiveTreeNode<E>
 
   static declare<E = void>(
     driver: ReactiveNodeDriver<E>,
-    declaration?: ReactiveNodeDecl<E>): ReactiveNode<E>
-
-  static declare<E = void>(
-    driver: ReactiveNodeDriver<E>,
-    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
-    scriptAsync?: ScriptAsync<E>,
-    key?: string,
-    mode?: Mode,
-    preparation?: Script<E>,
-    preparationAsync?: ScriptAsync<E>,
-    finalization?: Script<E>,
-    triggers?: unknown,
-    basis?: ReactiveNodeDecl<E>):  ReactiveNode<E>
+    declaration?: ReactiveNodeDecl<E>): ReactiveTreeNode<E>
 
   static declare<E = void>(
     driver: ReactiveNodeDriver<E>,
@@ -99,7 +87,19 @@ export abstract class ReactiveNode<E = unknown> {
     preparationAsync?: ScriptAsync<E>,
     finalization?: Script<E>,
     triggers?: unknown,
-    basis?: ReactiveNodeDecl<E>):  ReactiveNode<E> {
+    basis?: ReactiveNodeDecl<E>):  ReactiveTreeNode<E>
+
+  static declare<E = void>(
+    driver: ReactiveNodeDriver<E>,
+    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
+    scriptAsync?: ScriptAsync<E>,
+    key?: string,
+    mode?: Mode,
+    preparation?: Script<E>,
+    preparationAsync?: ScriptAsync<E>,
+    finalization?: Script<E>,
+    triggers?: unknown,
+    basis?: ReactiveNodeDecl<E>):  ReactiveTreeNode<E> {
     let result: ReactiveNodeImpl<E>
     let declaration: ReactiveNodeDecl<E>
     // Normalize parameters
@@ -187,7 +187,7 @@ export abstract class ReactiveNode<E = unknown> {
     ReactiveNodeImpl.nodeSlot.instance.childrenShuffling = value
   }
 
-  static triggerScriptRun(node: ReactiveNode<any>, triggers: unknown): void {
+  static triggerScriptRun(node: ReactiveTreeNode<any>, triggers: unknown): void {
     const impl = node as ReactiveNodeImpl<any>
     const declaration = impl.declaration
     if (!triggersAreEqual(triggers, declaration.triggers)) {
@@ -196,7 +196,7 @@ export abstract class ReactiveNode<E = unknown> {
     }
   }
 
-  static triggerFinalization(node: ReactiveNode<any>): void {
+  static triggerFinalization(node: ReactiveTreeNode<any>): void {
     const impl = node as ReactiveNodeImpl<any>
     triggerFinalization(impl.slot!, true, true)
   }
@@ -205,7 +205,7 @@ export abstract class ReactiveNode<E = unknown> {
     runNestedNodeScriptsThenDoImpl(ReactiveNodeImpl.nodeSlot, undefined, action)
   }
 
-  static markAsMounted(node: ReactiveNode<any>, yes: boolean): void {
+  static markAsMounted(node: ReactiveTreeNode<any>, yes: boolean): void {
     const n = node as ReactiveNodeImpl<any>
     if (n.stamp < 0)
       throw new Error("deactivated node cannot be mounted or unmounted")
@@ -215,7 +215,7 @@ export abstract class ReactiveNode<E = unknown> {
   }
 
   static findMatchingHost<E = unknown, R = unknown>(
-    node: ReactiveNode<E>, match: Handler<ReactiveNode<E>, boolean>): ReactiveNode<R> | undefined {
+    node: ReactiveTreeNode<E>, match: Handler<ReactiveTreeNode<E>, boolean>): ReactiveTreeNode<R> | undefined {
     let p = node.host as ReactiveNodeImpl<any>
     while (p !== p.host && !match(p))
       p = p.host
@@ -223,18 +223,18 @@ export abstract class ReactiveNode<E = unknown> {
   }
 
   static findMatchingPrevSibling<E = unknown, R = unknown>(
-    node: ReactiveNode<E>, match: Handler<ReactiveNode<E>, boolean>): ReactiveNode<R> | undefined {
+    node: ReactiveTreeNode<E>, match: Handler<ReactiveTreeNode<E>, boolean>): ReactiveTreeNode<R> | undefined {
     let p = node.slot!.prev
     while (p && !match(p.instance))
       p = p.prev
-    return p?.instance as ReactiveNode<R> | undefined
+    return p?.instance as ReactiveTreeNode<R> | undefined
   }
 
   static forEachChildRecursively<E = unknown>(
-    node: ReactiveNode<E>, action: Handler<ReactiveNode<E>>): void {
+    node: ReactiveTreeNode<E>, action: Handler<ReactiveTreeNode<E>>): void {
     action(node)
     for (const child of node.children.items())
-      ReactiveNode.forEachChildRecursively<E>(child.instance as ReactiveNode<any>, action)
+      ReactiveTreeNode.forEachChildRecursively<E>(child.instance as ReactiveTreeNode<any>, action)
   }
 
   static getDefaultLoggingOptions(): LoggingOptions | undefined {
@@ -267,22 +267,22 @@ export type ReactiveNodeDriver<E = unknown> = {
   readonly isPartition: boolean,
   readonly initialize?: Handler<E>
 
-  create(node: ReactiveNode<E>): E
+  create(node: ReactiveTreeNode<E>): E
 
-  runPreparation(node: ReactiveNode<E>): void
+  runPreparation(node: ReactiveTreeNode<E>): void
 
-  runFinalization(node: ReactiveNode<E>, isLeader: boolean): boolean
+  runFinalization(node: ReactiveTreeNode<E>, isLeader: boolean): boolean
 
-  runMount(node: ReactiveNode<E>): void
+  runMount(node: ReactiveTreeNode<E>): void
 
-  runScript(node: ReactiveNode<E>): void | Promise<void>
+  runScript(node: ReactiveTreeNode<E>): void | Promise<void>
 
-  declareChild(ownerNode: ReactiveNode<E>,
+  declareChild(ownerNode: ReactiveTreeNode<E>,
     childDriver: ReactiveNodeDriver<any>,
     childDeclaration?: ReactiveNodeDecl<any>,
-    childBasis?: ReactiveNodeDecl<any>): MergedItem<ReactiveNode> | undefined
+    childBasis?: ReactiveNodeDecl<any>): MergedItem<ReactiveTreeNode> | undefined
 
-  provideHost(node: ReactiveNode<E>): ReactiveNode<E>
+  provideHost(node: ReactiveTreeNode<E>): ReactiveTreeNode<E>
 }
 
 // ReactiveNodeContext
@@ -300,41 +300,41 @@ export abstract class BaseDriver<E = unknown> implements ReactiveNodeDriver<E> {
     readonly initialize?: Handler<E>) {
   }
 
-  abstract create(node: ReactiveNode<E>): E
+  abstract create(node: ReactiveTreeNode<E>): E
 
-  runPreparation(node: ReactiveNode<E>): void | Promise<void> {
+  runPreparation(node: ReactiveTreeNode<E>): void | Promise<void> {
     this.initialize?.(node.element)
     return invokePreparationUsingBasisChain(node.element, node.declaration)
   }
 
-  runFinalization(node: ReactiveNode<E>, isLeader: boolean): boolean {
+  runFinalization(node: ReactiveTreeNode<E>, isLeader: boolean): boolean {
     invokeFinalizationUsingBasisChain(node.element, node.declaration)
     return isLeader // treat children as deactivation leaders as well
   }
 
-  runMount(node: ReactiveNode<E>): void {
+  runMount(node: ReactiveTreeNode<E>): void {
     // nothing to do by default
   }
 
-  runScript(node: ReactiveNode<E>): void | Promise<void> {
+  runScript(node: ReactiveTreeNode<E>): void | Promise<void> {
     return invokeScriptUsingBasisChain(node.element, node.declaration)
   }
 
-  declareChild(ownerNode: ReactiveNode<E>,
+  declareChild(ownerNode: ReactiveTreeNode<E>,
     childDriver: ReactiveNodeDriver<any>,
     childDeclaration?: ReactiveNodeDecl<any>,
-    childBasis?: ReactiveNodeDecl<any>): MergedItem<ReactiveNode> | undefined {
+    childBasis?: ReactiveNodeDecl<any>): MergedItem<ReactiveTreeNode> | undefined {
     return undefined
   }
 
-  provideHost(node: ReactiveNode<E>): ReactiveNode<E> {
+  provideHost(node: ReactiveTreeNode<E>): ReactiveTreeNode<E> {
     return node
   }
 }
 
-// ReactiveNodeVariable
+// ReactiveTreeVariable
 
-export class ReactiveNodeVariable<T extends Object = Object> {
+export class ReactiveTreeVariable<T extends Object = Object> {
   readonly defaultValue: T | undefined
 
   constructor(defaultValue?: T) {
@@ -416,10 +416,10 @@ function invokeFinalizationUsingBasisChain(element: unknown, declaration: Reacti
 
 class ReactiveNodeContextImpl<T extends Object = Object> extends TriggeringObject implements ReactiveNodeContext<T> {
   @trigger(false) next: ReactiveNodeContextImpl<object> | undefined
-  @trigger(false) variable: ReactiveNodeVariable<T>
+  @trigger(false) variable: ReactiveTreeVariable<T>
   value: T
 
-  constructor(variable: ReactiveNodeVariable<T>, value: T) {
+  constructor(variable: ReactiveTreeVariable<T>, value: T) {
     super()
     this.next = undefined
     this.variable = variable
@@ -429,7 +429,7 @@ class ReactiveNodeContextImpl<T extends Object = Object> extends TriggeringObjec
 
 // ReactiveNodeImpl
 
-class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
+class ReactiveNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   // Static properties
   static logging: LoggingOptions | undefined = undefined
   static grandNodeCount: number = 0
@@ -519,21 +519,21 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
     return gNodeSlot
   }
 
-  static tryUseNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>): T | undefined {
+  static tryUseNodeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T | undefined {
     let node = ReactiveNodeImpl.nodeSlot.instance
     while (node.context?.variable !== variable && node.owner !== node)
       node = node.outer.slot!.instance
     return node.context?.value as any // TODO: to get rid of any
   }
 
-  static useNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>): T {
+  static useNodeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T {
     const result = ReactiveNodeImpl.tryUseNodeVariableValue(variable) ?? variable.defaultValue
     if (!result)
       throw new Error("unknown node variable")
     return result
   }
 
-  static setNodeVariableValue<T extends Object>(variable: ReactiveNodeVariable<T>, value: T | undefined): void {
+  static setNodeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>, value: T | undefined): void {
     const node = ReactiveNodeImpl.nodeSlot.instance
     const owner = node.owner
     const hostCtx = runNonReactively(() => owner.context?.value)
@@ -561,7 +561,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveNode<E> {
 
 // Internal
 
-function getNodeKey(node: ReactiveNode): string | undefined {
+function getNodeKey(node: ReactiveTreeNode): string | undefined {
   return node.stamp >= 0 ? node.key : undefined
 }
 
@@ -651,29 +651,29 @@ async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveNodeImpl>
   priority: Priority): Promise<void> {
   await Transaction.requestNextFrame()
   const node = owner.instance
-  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, ReactiveNode.shortFrameDuration / 3)) {
-    let outerPriority = ReactiveNode.currentScriptPriority
-    ReactiveNode.currentScriptPriority = priority
+  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, ReactiveTreeNode.shortFrameDuration / 3)) {
+    let outerPriority = ReactiveTreeNode.currentScriptPriority
+    ReactiveTreeNode.currentScriptPriority = priority
     try {
       if (node.childrenShuffling)
         shuffle(items)
-      const frameDurationLimit = priority === Priority.background ? ReactiveNode.shortFrameDuration : Infinity
-      let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveNode.frameDuration / 4, ReactiveNode.shortFrameDuration))
+      const frameDurationLimit = priority === Priority.background ? ReactiveTreeNode.shortFrameDuration : Infinity
+      let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveTreeNode.frameDuration / 4, ReactiveTreeNode.shortFrameDuration))
       for (const child of items) {
         triggerScriptRunViaSlot(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
-          ReactiveNode.currentScriptPriority = outerPriority
+          ReactiveTreeNode.currentScriptPriority = outerPriority
           await Transaction.requestNextFrame(0)
-          outerPriority = ReactiveNode.currentScriptPriority
-          ReactiveNode.currentScriptPriority = priority
-          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveNode.frameDuration))
+          outerPriority = ReactiveTreeNode.currentScriptPriority
+          ReactiveTreeNode.currentScriptPriority = priority
+          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveTreeNode.frameDuration))
         }
-        if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveNode.shortFrameDuration / 3))
+        if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveTreeNode.shortFrameDuration / 3))
           break
       }
     }
     finally {
-      ReactiveNode.currentScriptPriority = outerPriority
+      ReactiveTreeNode.currentScriptPriority = outerPriority
     }
   }
 }

@@ -26,6 +26,6 @@ export { Journal } from "./core/Journal.js"
 export { runAtomically, runNonReactively, runSensitively, runContextually } from "./ReactiveSystem.js"
 export { ReactiveSystem, trigger, atomic, reaction, cache, options } from "./ReactiveSystem.js"
 export { ReactiveLoop } from "./ReactiveLoop.js"
-export { ReactiveNode, Mode, Priority, BaseDriver, ReactiveNodeVariable } from "./core/ReactiveNode.js"
+export { ReactiveTreeNode, Mode, Priority, BaseDriver, ReactiveTreeVariable } from "./core/ReactiveNode.js"
 export type { Script, ScriptAsync, Handler, ReactiveNodeDecl, ReactiveNodeDriver, ReactiveNodeContext } from "./core/ReactiveNode.js"
 
