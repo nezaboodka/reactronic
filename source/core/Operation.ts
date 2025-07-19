@@ -7,7 +7,8 @@
 
 import { F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
-import { Operation, MemberOptions, Kind, Reentrance, LoggingOptions, SnapshotOptions, Isolation } from "../Options.js"
+import { Kind, Reentrance, Isolation } from "../Enums.js"
+import { Operation, MemberOptions, LoggingOptions, SnapshotOptions } from "../Options.js"
 import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Reaction, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, MAX_REVISION } from "./Changeset.js"
 import { Transaction, TransactionImpl } from "./Transaction.js"

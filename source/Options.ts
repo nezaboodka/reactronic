@@ -7,6 +7,7 @@
 
 import { LoggingOptions } from "./Logging.js"
 export { LoggingLevel } from "./Logging.js"
+import { Kind, Reentrance, Isolation } from "./Enums.js"
 export type { LoggingOptions, ProfilingOptions } from "./Logging.js"
 import { Journal } from "./core/Journal.js"
 import { Indicator } from "./core/Indicator.js"
@@ -33,29 +34,7 @@ export type MemberOptions = {
   readonly logging?: Partial<LoggingOptions>
 }
 
-export enum Kind {
-  plain = 0,
-  atomic = 1,
-  reaction = 2,
-  cache = 3,
-}
 
-export enum Reentrance {
-  preventWithError = 1, // fail with error if there is an existing call in progress (default)
-  waitAndRestart = 0, // wait for existing call to finish and then restart reentrant one
-  cancelPrevious = -1, // cancel previous call in favor of recent one
-  cancelAndWaitPrevious = -2, // cancel previous call in favor of recent one (but wait until canceling is completed)
-  overwritePrevious = -3, // allow previous to complete, but overwrite it with ignoring any conflicts
-  runSideBySide = -4, // multiple simultaneous operations are allowed
-}
-
-export enum Isolation {
-  joinToCurrentTransaction = 0,
-  joinAsNestedTransaction = 1,
-  disjoinFromOuterTransaction = 2,
-  disjoinFromOuterAndInnerTransactions = 3,
-  disjoinForInternalDisposal = 4,
-}
 
 // Operation
 

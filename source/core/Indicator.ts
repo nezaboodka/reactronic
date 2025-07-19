@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Isolation } from "../Options.js"
+import { Isolation } from "../Enums.js"
 import { Worker } from "../Worker.js"
 import { TriggeringObject, Mvcc } from "./Mvcc.js"
 import { Transaction } from "./Transaction.js"

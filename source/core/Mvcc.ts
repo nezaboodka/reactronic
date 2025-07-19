@@ -7,7 +7,8 @@
 
 import { UNDEF, F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
-import { Operation, MemberOptions, Kind, Reentrance, Isolation } from "../Options.js"
+import { Kind, Reentrance, Isolation } from "../Enums.js"
+import { Operation, MemberOptions } from "../Options.js"
 import { LoggingOptions, ProfilingOptions } from "../Logging.js"
 import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Meta } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION } from "./Changeset.js"

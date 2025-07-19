@@ -8,7 +8,8 @@
 import { UNDEF, F, pause } from "../util/Utils.js"
 import { Log, misuse, error, fatal } from "../util/Dbg.js"
 import { Worker } from "../Worker.js"
-import { SnapshotOptions, LoggingOptions, Isolation } from "../Options.js"
+import { Isolation } from "../Enums.js"
+import { SnapshotOptions, LoggingOptions } from "../Options.js"
 import { Meta, ObjectHandle, ObjectVersion, Reaction, FieldVersion, FieldKey } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, UNDEFINED_REVISION } from "./Changeset.js"
 

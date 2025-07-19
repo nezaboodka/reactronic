@@ -7,7 +7,8 @@
 
 import { F } from "./util/Utils.js"
 import { Log } from "./util/Dbg.js"
-import { Operation, Kind, MemberOptions, LoggingOptions, ProfilingOptions, Isolation, SnapshotOptions } from "./Options.js"
+import { Kind, Isolation } from "./Enums.js"
+import { Operation, MemberOptions, LoggingOptions, ProfilingOptions, SnapshotOptions } from "./Options.js"
 import { Meta, ObjectHandle } from "./core/Data.js"
 import { Changeset } from "./core/Changeset.js"
 import { Mvcc } from "./core/Mvcc.js"

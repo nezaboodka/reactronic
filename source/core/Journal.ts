@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { Isolation } from "../Options.js"
+import { Isolation } from "../Enums.js"
 import { TriggeringObject } from "./Mvcc.js"
 import { ObjectHandle, ObjectVersion, Meta, PatchSet, ValuePatch, FieldVersion, FieldKey } from "./Data.js"
 import { Changeset, EMPTY_OBJECT_VERSION } from "./Changeset.js"

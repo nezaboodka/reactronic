@@ -9,7 +9,7 @@ import { misuse } from "../util/Dbg.js"
 import { LoggingOptions } from "../Logging.js"
 import { MergeList, MergeListReader, MergedItem } from "../util/MergeList.js"
 import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
-import { Isolation, MemberOptions, Reentrance } from "../Options.js"
+import { MemberOptions } from "../Options.js"
 import { TriggeringObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
 import { ReactiveSystem, options, trigger, reaction, runAtomically, runNonReactively } from "../ReactiveSystem.js"
@@ -22,20 +22,13 @@ export type Handler<E = unknown, R = void> = (el: E) => R
 
 // Enums
 
-export enum Mode {
-  default = 0,
-  autonomous = 1,
-  manualMount = 2,
-  rootNode = 4,
-}
 
-export enum Priority {
-  realtime = 0,
-  normal = 1,
-  background = 2
-}
 
-// ReactiveTreeNode
+// Import ReactiveTree from separate file
+import { ReactiveTree } from "./ReactiveTree.js"
+import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
+
+// ReactiveTreeNode - Instance class for tree nodes
 
 export abstract class ReactiveTreeNode<E = unknown> {
   abstract readonly key: string
@@ -55,195 +48,6 @@ export abstract class ReactiveTreeNode<E = unknown> {
   abstract strictOrder: boolean
   abstract has(mode: Mode): boolean
   abstract configureReactronic(options: Partial<MemberOptions>): MemberOptions
-
-  static readonly shortFrameDuration = 16 // ms
-  static readonly longFrameDuration = 300 // ms
-  static currentScriptPriority = Priority.realtime
-  static frameDuration = ReactiveTreeNode.longFrameDuration
-
-  static declare<E = void>(
-    driver: ReactiveNodeDriver<E>,
-    script?: Script<E>,
-    scriptAsync?: ScriptAsync<E>,
-    key?: string,
-    mode?: Mode,
-    preparation?: Script<E>,
-    preparationAsync?: ScriptAsync<E>,
-    finalization?: Script<E>,
-    triggers?: unknown,
-    basis?: ReactiveNodeDecl<E>): ReactiveTreeNode<E>
-
-  static declare<E = void>(
-    driver: ReactiveNodeDriver<E>,
-    declaration?: ReactiveNodeDecl<E>): ReactiveTreeNode<E>
-
-  static declare<E = void>(
-    driver: ReactiveNodeDriver<E>,
-    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
-    scriptAsync?: ScriptAsync<E>,
-    key?: string,
-    mode?: Mode,
-    preparation?: Script<E>,
-    preparationAsync?: ScriptAsync<E>,
-    finalization?: Script<E>,
-    triggers?: unknown,
-    basis?: ReactiveNodeDecl<E>):  ReactiveTreeNode<E>
-
-  static declare<E = void>(
-    driver: ReactiveNodeDriver<E>,
-    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
-    scriptAsync?: ScriptAsync<E>,
-    key?: string,
-    mode?: Mode,
-    preparation?: Script<E>,
-    preparationAsync?: ScriptAsync<E>,
-    finalization?: Script<E>,
-    triggers?: unknown,
-    basis?: ReactiveNodeDecl<E>):  ReactiveTreeNode<E> {
-    let result: ReactiveNodeImpl<E>
-    let declaration: ReactiveNodeDecl<E>
-    // Normalize parameters
-    if (scriptOrDeclaration instanceof Function) {
-      declaration = {
-        script: scriptOrDeclaration, scriptAsync, key, mode,
-        preparation, preparationAsync, finalization, triggers, basis,
-      }
-    }
-    else
-      declaration = scriptOrDeclaration ?? {}
-    let effectiveKey = declaration.key
-    const owner = (getModeUsingBasisChain(declaration) & Mode.rootNode) !== Mode.rootNode ? gNodeSlot?.instance : undefined
-    if (owner) {
-      let existing = owner.driver.declareChild(owner, driver, declaration, declaration.basis)
-      // Reuse existing node or declare a new one
-      const children = owner.children
-      existing ??= children.tryMergeAsExisting(
-        effectiveKey = effectiveKey || generateKey(owner), undefined,
-        "nested elements can be declared inside 'script' only")
-      if (existing) {
-        // Reuse existing node
-        result = existing.instance as ReactiveNodeImpl<E>
-        if (result.driver !== driver && driver !== undefined)
-          throw new Error(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
-        const exTriggers = result.declaration.triggers
-        if (triggersAreEqual(declaration.triggers, exTriggers))
-          declaration.triggers = exTriggers // preserve triggers instance
-        result.declaration = declaration
-      }
-      else {
-        // Create new node
-        result = new ReactiveNodeImpl<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
-        result.slot = children.mergeAsAdded(result as ReactiveNodeImpl<unknown>) as MergedItem<ReactiveNodeImpl<E>>
-      }
-    }
-    else {
-      // Create new root node
-      result = new ReactiveNodeImpl(effectiveKey || "", driver, declaration, owner)
-      result.slot = MergeList.createItem(result)
-      triggerScriptRunViaSlot(result.slot)
-    }
-    return result
-  }
-
-  static withBasis<E = void>(
-    declaration?: ReactiveNodeDecl<E>,
-    basis?: ReactiveNodeDecl<E>): ReactiveNodeDecl<E> {
-    if (declaration)
-      declaration.basis = basis
-    else
-      declaration = basis ?? {}
-    return declaration
-  }
-
-  static get isFirstScriptRun(): boolean {
-    return ReactiveNodeImpl.nodeSlot.instance.stamp === 1
-  }
-
-  static get key(): string {
-    return ReactiveNodeImpl.nodeSlot.instance.key
-  }
-
-  static get stamp(): number {
-    return ReactiveNodeImpl.nodeSlot.instance.stamp
-  }
-
-  static get triggers(): unknown {
-    return ReactiveNodeImpl.nodeSlot.instance.declaration.triggers
-  }
-
-  static get priority(): Priority {
-    return ReactiveNodeImpl.nodeSlot.instance.priority
-  }
-
-  static set priority(value: Priority) {
-    ReactiveNodeImpl.nodeSlot.instance.priority = value
-  }
-
-  static get childrenShuffling(): boolean {
-    return ReactiveNodeImpl.nodeSlot.instance.childrenShuffling
-  }
-
-  static set childrenShuffling(value: boolean) {
-    ReactiveNodeImpl.nodeSlot.instance.childrenShuffling = value
-  }
-
-  static triggerScriptRun(node: ReactiveTreeNode<any>, triggers: unknown): void {
-    const impl = node as ReactiveNodeImpl<any>
-    const declaration = impl.declaration
-    if (!triggersAreEqual(triggers, declaration.triggers)) {
-      declaration.triggers = triggers // remember new triggers
-      triggerScriptRunViaSlot(impl.slot!)
-    }
-  }
-
-  static triggerFinalization(node: ReactiveTreeNode<any>): void {
-    const impl = node as ReactiveNodeImpl<any>
-    triggerFinalization(impl.slot!, true, true)
-  }
-
-  static runNestedNodeScriptsThenDo(action: (error: unknown) => void): void {
-    runNestedNodeScriptsThenDoImpl(ReactiveNodeImpl.nodeSlot, undefined, action)
-  }
-
-  static markAsMounted(node: ReactiveTreeNode<any>, yes: boolean): void {
-    const n = node as ReactiveNodeImpl<any>
-    if (n.stamp < 0)
-      throw new Error("deactivated node cannot be mounted or unmounted")
-    if (n.stamp >= Number.MAX_SAFE_INTEGER)
-      throw new Error("node must be activated before mounting")
-    n.stamp = yes ? 0 : Number.MAX_SAFE_INTEGER - 1
-  }
-
-  static findMatchingHost<E = unknown, R = unknown>(
-    node: ReactiveTreeNode<E>, match: Handler<ReactiveTreeNode<E>, boolean>): ReactiveTreeNode<R> | undefined {
-    let p = node.host as ReactiveNodeImpl<any>
-    while (p !== p.host && !match(p))
-      p = p.host
-    return p
-  }
-
-  static findMatchingPrevSibling<E = unknown, R = unknown>(
-    node: ReactiveTreeNode<E>, match: Handler<ReactiveTreeNode<E>, boolean>): ReactiveTreeNode<R> | undefined {
-    let p = node.slot!.prev
-    while (p && !match(p.instance))
-      p = p.prev
-    return p?.instance as ReactiveTreeNode<R> | undefined
-  }
-
-  static forEachChildRecursively<E = unknown>(
-    node: ReactiveTreeNode<E>, action: Handler<ReactiveTreeNode<E>>): void {
-    action(node)
-    for (const child of node.children.items())
-      ReactiveTreeNode.forEachChildRecursively<E>(child.instance as ReactiveTreeNode<any>, action)
-  }
-
-  static getDefaultLoggingOptions(): LoggingOptions | undefined {
-    return ReactiveNodeImpl.logging
-  }
-
-  static setDefaultLoggingOptions(logging?: LoggingOptions): void {
-    ReactiveNodeImpl.logging = logging
-  }
 }
 
 // ReactiveNodeDecl
@@ -356,7 +160,7 @@ export class ReactiveTreeVariable<T extends Object = Object> {
 
 // Utils
 
-function generateKey(owner: ReactiveNodeImpl): string {
+export function generateKey(owner: ReactiveNodeImpl): string {
   const n = owner.numerator++
   const lettered = emitLetters(n)
   let result: string
@@ -651,29 +455,29 @@ async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveNodeImpl>
   priority: Priority): Promise<void> {
   await Transaction.requestNextFrame()
   const node = owner.instance
-  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, ReactiveTreeNode.shortFrameDuration / 3)) {
-    let outerPriority = ReactiveTreeNode.currentScriptPriority
-    ReactiveTreeNode.currentScriptPriority = priority
+  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, ReactiveTree.shortFrameDuration / 3)) {
+    let outerPriority = ReactiveTree.currentScriptPriority
+    ReactiveTree.currentScriptPriority = priority
     try {
       if (node.childrenShuffling)
         shuffle(items)
-      const frameDurationLimit = priority === Priority.background ? ReactiveTreeNode.shortFrameDuration : Infinity
-      let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveTreeNode.frameDuration / 4, ReactiveTreeNode.shortFrameDuration))
+      const frameDurationLimit = priority === Priority.background ? ReactiveTree.shortFrameDuration : Infinity
+      let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveTree.frameDuration / 4, ReactiveTree.shortFrameDuration))
       for (const child of items) {
         triggerScriptRunViaSlot(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
-          ReactiveTreeNode.currentScriptPriority = outerPriority
+          ReactiveTree.currentScriptPriority = outerPriority
           await Transaction.requestNextFrame(0)
-          outerPriority = ReactiveTreeNode.currentScriptPriority
-          ReactiveTreeNode.currentScriptPriority = priority
-          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveTreeNode.frameDuration))
+          outerPriority = ReactiveTree.currentScriptPriority
+          ReactiveTree.currentScriptPriority = priority
+          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveTree.frameDuration))
         }
-        if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveTreeNode.shortFrameDuration / 3))
+        if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveTree.shortFrameDuration / 3))
           break
       }
     }
     finally {
-      ReactiveTreeNode.currentScriptPriority = outerPriority
+      ReactiveTree.currentScriptPriority = outerPriority
     }
   }
 }
@@ -810,7 +614,7 @@ function runInsideContextOfNode<T>(nodeSlot: MergedItem<ReactiveNodeImpl>, func:
   }
 }
 
-function triggersAreEqual(a1: any, a2: any): boolean {
+export function triggersAreEqual(a1: any, a2: any): boolean {
   let result = a1 === a2
   if (!result) {
     if (Array.isArray(a1)) {

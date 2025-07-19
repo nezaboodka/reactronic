@@ -11,7 +11,8 @@ import { Sealant } from "../util/Sealant.js"
 import { SealedArray } from "../util/SealedArray.js"
 import { SealedMap } from "../util/SealedMap.js"
 import { SealedSet } from "../util/SealedSet.js"
-import { Isolation, Kind, SnapshotOptions } from "../Options.js"
+import { Isolation, Kind } from "../Enums.js"
+import { SnapshotOptions } from "../Options.js"
 import { AbstractChangeset, ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Reaction, Meta } from "./Data.js"
 
 export const MAX_REVISION = Number.MAX_SAFE_INTEGER
