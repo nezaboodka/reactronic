@@ -13,8 +13,8 @@ import { MvccObject } from "./Mvcc.js"
 export class MvccMap<K, V> extends MvccObject {
   private impl: Map<K, V>
 
-  constructor(isTriggering: boolean, map: Map<K, V>) {
-    super(isTriggering)
+  constructor(isObservable: boolean, map: Map<K, V>) {
+    super(isObservable)
     this.impl = map
   }
 
@@ -40,9 +40,9 @@ export class MvccMap<K, V> extends MvccObject {
   }
 }
 
-// TransactionalMap<K, V>
+// AtomicMap<K, V>
 
-export class TransactionalMap<K, V> extends MvccMap<K, V> {
+export class AtomicMap<K, V> extends MvccMap<K, V> {
   constructor()
   constructor(iterable?: Iterable<readonly [K, V]> | null)
   constructor(args?: any) {
@@ -50,9 +50,9 @@ export class TransactionalMap<K, V> extends MvccMap<K, V> {
   }
 }
 
-// TriggeringMap<K, V>
+// ObservableMap<K, V>
 
-export class TriggeringMap<K, V> extends MvccMap<K, V> {
+export class ObservableMap<K, V> extends MvccMap<K, V> {
   constructor()
   constructor(iterable?: Iterable<readonly [K, V]> | null)
   constructor(args?: any) {

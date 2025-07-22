@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { TriggeringObject, Transaction, trigger, runAtomically, reaction, cache, ReactiveSystem, LoggingOptions } from "../source/api.js"
+import { ObservableObject, Transaction, observable, runAtomically, reaction, cache, ReactiveSystem, LoggingOptions } from "../source/api.js"
 
 export function autorender(render: (cycle: number) => React.JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState<React.JSX.Element>>(
@@ -22,7 +22,7 @@ export function autorender(render: (cycle: number) => React.JSX.Element, name?: 
 
 type ReactState<V> = { rx: RxComponent<V>, cycle: number }
 
-class RxComponent<V> extends TriggeringObject {
+class RxComponent<V> extends ObservableObject {
   @cache
   render(emit: (cycle: number) => V, op?: Transaction): V {
     return op ? op.inspect(() => emit(this.cycle)) : emit(this.cycle)
@@ -34,9 +34,9 @@ class RxComponent<V> extends TriggeringObject {
       Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
-  @trigger(false) cycle: number = 0
-  @trigger(false) refresh: (next: ReactState<V>) => void = nop
-  @trigger(false) readonly unmount = (): (() => void) => {
+  @observable(false) cycle: number = 0
+  @observable(false) refresh: (next: ReactState<V>) => void = nop
+  @observable(false) readonly unmount = (): (() => void) => {
     return (): void => { runAtomically(ReactiveSystem.dispose, this) }
   }
 

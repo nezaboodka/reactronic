@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import { F } from "./util/Utils.js"
-import { TriggeringObject } from "./core/Mvcc.js"
+import { ObservableObject } from "./core/Mvcc.js"
 import { reaction } from "./ReactiveSystem.js"
 
-export class ReactiveOperation<T> extends TriggeringObject
+export class ReactiveOperation<T> extends ObservableObject
 {
   constructor(protected operation: F<T>) {
     super()

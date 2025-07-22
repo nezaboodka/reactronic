@@ -11,9 +11,9 @@ import { MergeList, MergeListReader, MergedItem } from "../util/MergeList.js"
 import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
 import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { MemberOptions } from "../Options.js"
-import { TriggeringObject } from "../core/Mvcc.js"
+import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, trigger, reaction, runAtomically, runNonReactively } from "../ReactiveSystem.js"
+import { ReactiveSystem, options, observable, reaction, runAtomically, runNonReactively } from "../ReactiveSystem.js"
 import { ReactiveTree } from "./ReactiveTree.js"
 
 // Scripts
@@ -212,9 +212,9 @@ function invokeFinalizationUsingBasisChain(element: unknown, declaration: Reacti
 
 // ReactiveNodeContextImpl
 
-class ReactiveNodeContextImpl<T extends Object = Object> extends TriggeringObject implements ReactiveNodeContext<T> {
-  @trigger(false) next: ReactiveNodeContextImpl<object> | undefined
-  @trigger(false) variable: ReactiveTreeVariable<T>
+class ReactiveNodeContextImpl<T extends Object = Object> extends ObservableObject implements ReactiveNodeContext<T> {
+  @observable(false) next: ReactiveNodeContextImpl<object> | undefined
+  @observable(false) variable: ReactiveTreeVariable<T>
   value: T
 
   constructor(variable: ReactiveTreeVariable<T>, value: T) {
@@ -297,7 +297,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   @options({
     reentrance: Reentrance.cancelAndWaitPrevious,
     allowObsoleteToFinish: true,
-    triggeringArgs: true,
+    observableArgs: true,
     noSideEffects: false,
   })
   script(_triggers: unknown): void {
@@ -608,7 +608,7 @@ function runInsideContextOfNode<T>(nodeSlot: MergedItem<ReactiveNodeImpl>, func:
   }
 }
 
-export function triggersAreEqual(a1: any, a2: any): boolean {
+export function observablesAreEqual(a1: any, a2: any): boolean {
   let result = a1 === a2
   if (!result) {
     if (Array.isArray(a1)) {

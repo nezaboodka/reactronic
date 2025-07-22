@@ -1,5 +1,5 @@
 ﻿
-// Triggering User
+// Observable User
 
 internal class User_T : User
 {

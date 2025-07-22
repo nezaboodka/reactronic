@@ -25,7 +25,7 @@ export type MemberOptions = {
   readonly isolation: Isolation
   readonly order: number
   readonly noSideEffects: boolean
-  readonly triggeringArgs: boolean
+  readonly observableArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
   readonly allowObsoleteToFinish: boolean

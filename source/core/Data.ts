@@ -32,10 +32,10 @@ export class FieldVersion<T = any> {
 
 export type Reaction = {
   readonly order: number
-  readonly triggers: Map<FieldVersion, Subscription> | undefined
+  readonly observables: Map<FieldVersion, Subscription> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(trigger: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Array<Reaction>): void
+  markObsoleteDueTo(observable: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Array<Reaction>): void
   relaunchIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 

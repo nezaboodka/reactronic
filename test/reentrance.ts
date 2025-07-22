@@ -5,12 +5,12 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { TriggeringObject, atomic, reaction, cache, options, Transaction, Indicator, Reentrance, ReactiveSystem, trigger, all, pause } from "../source/api.js"
+import { ObservableObject, atomic, reaction, cache, options, Transaction, Indicator, Reentrance, ReactiveSystem, observable, all, pause } from "../source/api.js"
 
 export const output: string[] = []
 export const busy = Indicator.create("Busy", 0, 0, 1)
 
-export class AsyncDemo extends TriggeringObject {
+export class AsyncDemo extends ObservableObject {
   url: string = "reactronic"
   log: string[] = ["RTA"]
 
@@ -25,7 +25,7 @@ export class AsyncDemo extends TriggeringObject {
 
 export class AsyncDemoView {
   rawField: string = "raw field"
-  @trigger triggeringField: string = "triggering field"
+  @observable observableField: string = "observable field"
 
   constructor(readonly model: AsyncDemo) {
   }
@@ -41,7 +41,7 @@ export class AsyncDemoView {
     }
   }
 
-  @cache @options({ triggeringArgs: false })
+  @cache @options({ observableArgs: false })
   async render(): Promise<string[]> {
     const result: string[] = []
     result.push(`${busy.isBusy ? "[...] " : ""}Url: ${this.model.url}`)

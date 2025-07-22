@@ -18,7 +18,7 @@ import { JournalImpl } from "./Journal.js"
 
 const BOOT_ARGS: any[] = []
 const BOOT_CAUSE = "<boot>"
-const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.triggering, EMPTY_OBJECT_VERSION, "<boot>")
+const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.observable, EMPTY_OBJECT_VERSION, "<boot>")
 
 type ReuseOrRelaunchContext = {
   readonly launch: Launch
@@ -137,7 +137,7 @@ export class OperationImpl implements Operation<any> {
     const applied = this.ownerHandle.applied.data[this.fieldKey] as Launch
     const isReusable = launch.options.kind !== Kind.atomic && launch.cause !== BOOT_CAUSE &&
       (ctx === launch.changeset || ctx.timestamp < launch.obsoleteSince || applied.obsoleteDueTo === undefined) &&
-      (!launch.options.triggeringArgs || args === undefined ||
+      (!launch.options.observableArgs || args === undefined ||
         launch.args.length === args.length && launch.args.every((t, i) => t === args[i])) || ov.disposed
     return { launch, isReusable, changeset: ctx, objectVersion: ov }
   }
@@ -251,7 +251,7 @@ class Launch extends FieldVersion implements Reaction {
   readonly transaction: Transaction
   readonly operation: OperationImpl
   readonly changeset: AbstractChangeset
-  triggers: Map<FieldVersion, Subscription> | undefined
+  observables: Map<FieldVersion, Subscription> | undefined
   options: OptionsImpl
   cause: string | undefined
   args: any[]
@@ -268,7 +268,7 @@ class Launch extends FieldVersion implements Reaction {
     this.transaction = transaction
     this.operation = operation
     this.changeset = changeset
-    this.triggers = new Map<FieldVersion, Subscription>()
+    this.observables = new Map<FieldVersion, Subscription>()
     if (former instanceof Launch) {
       this.options = former.options
       this.cause = former.obsoleteDueTo
@@ -363,16 +363,16 @@ class Launch extends FieldVersion implements Reaction {
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(trigger: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Reaction[]): void {
-    if (this.triggers !== undefined) { // if not yet marked as obsolete
-      const skip = !trigger.isLaunch &&
+  markObsoleteDueTo(observable: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Reaction[]): void {
+    if (this.observables !== undefined) { // if not yet marked as obsolete
+      const skip = !observable.isLaunch &&
         changeset.id === this.lastEditorChangesetId /* &&
         snapshot.changes.has(memberName) */
       if (!skip) {
-        const why = `${Dump.snapshot2(h, changeset, fk, trigger)}    ◀◀    ${outer}`
+        const why = `${Dump.snapshot2(h, changeset, fk, observable)}    ◀◀    ${outer}`
         const isReaction = this.options.kind === Kind.reaction /*&& this.snapshot.data[Meta.Disposed] === undefined*/
 
-        // Mark obsolete and unsubscribe from all (this.triggers = undefined)
+        // Mark obsolete and unsubscribe from all (this.observables = undefined)
         this.obsoleteDueTo = why
         this.obsoleteSince = since
         if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
@@ -380,7 +380,7 @@ class Launch extends FieldVersion implements Reaction {
             isReaction && changeset === EMPTY_OBJECT_VERSION.changeset
               ? `${this.hint()} is reactive and will run automatically (order ${this.options.order})`
               : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, fk)} since s${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ""}`)
-        this.unsubscribeFromAllTriggers()
+        this.unsubscribeFromAllObservables()
 
         // Stop cascade propagation on reactive function, or continue otherwise
         if (isReaction)
@@ -393,11 +393,11 @@ class Launch extends FieldVersion implements Reaction {
         if (tran.changeset === changeset) {
           // do not cancel itself
         }
-        else if (!tran.isFinished && this !== trigger && !this.options.allowObsoleteToFinish) // restart after itself if canceled
+        else if (!tran.isFinished && this !== observable && !this.options.allowObsoleteToFinish) // restart after itself if canceled
           tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.snapshot2(h, changeset, fk)} changed by T${changeset.id}[${changeset.hint}]`), null)
       }
       else if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
-        Log.write(" ", "x", `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(h, changeset, fk, trigger)}`)
+        Log.write(" ", "x", `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(h, changeset, fk, observable)}`)
     }
   }
 
@@ -569,7 +569,7 @@ class Launch extends FieldVersion implements Reaction {
       x.relaunchIfNotUpToDate(true, true)
   }
 
-  private static markUsed(trigger: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean): void {
+  private static markUsed(observable: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean): void {
     if (kind !== Kind.atomic) {
       const launch: Launch | undefined = Launch.current // alias
       if (launch && launch.options.kind !== Kind.atomic &&
@@ -578,8 +578,8 @@ class Launch extends FieldVersion implements Reaction {
         if (ctx !== ov.changeset) // snapshot should not bump itself
           ctx.bumpBy(ov.changeset.timestamp)
         const t = weak ? -1 : ctx.timestamp
-        if (!launch.subscribeTo(trigger, ov, fk, h, t))
-          launch.markObsoleteDueTo(trigger, fk, h.applied.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
+        if (!launch.subscribeTo(observable, ov, fk, h, t))
+          launch.markObsoleteDueTo(observable, fk, h.applied.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
       }
     }
   }
@@ -643,7 +643,7 @@ class Launch extends FieldVersion implements Reaction {
           if ((former.obsoleteSince === MAX_REVISION || former.obsoleteSince <= 0)) {
             former.obsoleteDueTo = why
             former.obsoleteSince = timestamp
-            former.unsubscribeFromAllTriggers()
+            former.unsubscribeFromAllObservables()
           }
           const formerSuccessor = former.successor
           if (formerSuccessor !== curr) {
@@ -661,22 +661,22 @@ class Launch extends FieldVersion implements Reaction {
       }
     }
     if (curr instanceof Launch) {
-      if (curr.changeset === ov.changeset && curr.triggers !== undefined) {
+      if (curr.changeset === ov.changeset && curr.observables !== undefined) {
         if (Mvcc.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
-          curr.triggers.forEach((info, v) => { // performance tracking info
+          curr.observables.forEach((info, v) => { // performance tracking info
             if (info.usageCount > Mvcc.repetitiveUsageWarningThreshold)
               Log.write("", "[!]", `${curr.hint()} uses ${info.memberHint} ${info.usageCount} times (consider remembering it in a local variable)`, 0, " *** WARNING ***")
           })
         }
         if (unsubscribe)
-          curr.unsubscribeFromAllTriggers()
+          curr.unsubscribeFromAllObservables()
       }
     }
     else if (curr instanceof FieldVersion && curr.reactions) {
       // // Unsubscribe from own-changed subscriptions
       // curr.reactions.forEach(o => {
       //   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      //   o.triggers!.delete(curr)
+      //   o.observables!.delete(curr)
       //   if (Log.isOn && Log.opt.read)
       //     Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.snap(r, fk)}`)
       // })
@@ -714,54 +714,54 @@ class Launch extends FieldVersion implements Reaction {
     Launch.queuedReactions = [] // reset loop
   }
 
-  private unsubscribeFromAllTriggers(): void {
+  private unsubscribeFromAllObservables(): void {
     // It's critical to have no exceptions here
-    this.triggers?.forEach((info, value) => {
+    this.observables?.forEach((info, value) => {
       value.reactions!.delete(this)
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
         Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", "-", `${this.hint()} is unsubscribed from ${info.memberHint}`)
     })
-    this.triggers = undefined
+    this.observables = undefined
   }
 
-  private subscribeTo(trigger: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
+  private subscribeTo(observable: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
     const parent = this.transaction.changeset.parent
-    const ok = Launch.canSubscribeTo(trigger, ov, parent, fk, h, timestamp)
+    const ok = Launch.canSubscribeTo(observable, ov, parent, fk, h, timestamp)
     if (ok) {
       // Performance tracking
       let times: number = 0
       if (Mvcc.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
-        const existing = this.triggers!.get(trigger)
+        const existing = this.observables!.get(observable)
         times = existing ? existing.usageCount + 1 : 1
       }
-      if (this.triggers !== undefined) {
+      if (this.observables !== undefined) {
         // Acquire storage set
-        if (!trigger.reactions)
-          trigger.reactions = new Set<Launch>()
+        if (!observable.reactions)
+          observable.reactions = new Set<Launch>()
         // Two-way linking
         const subscription: Subscription = { memberHint: Dump.snapshot2(h, ov.changeset, fk), usageCount: times }
-        trigger.reactions.add(this)
-        this.triggers!.set(trigger, subscription)
+        observable.reactions.add(this)
+        this.observables!.set(observable, subscription)
         if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-          Log.write("║", "  ∞", `${this.hint()} is subscribed to ${Dump.snapshot2(h, ov.changeset, fk, trigger)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ""}`)
+          Log.write("║", "  ∞", `${this.hint()} is subscribed to ${Dump.snapshot2(h, ov.changeset, fk, observable)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ""}`)
       }
       else if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write("║", "  x", `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, ov.changeset, fk, trigger)}`)
+        Log.write("║", "  x", `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, ov.changeset, fk, observable)}`)
     }
     else {
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write("║", "  x", `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, ov.changeset, fk, trigger)}`)
+        Log.write("║", "  x", `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, ov.changeset, fk, observable)}`)
     }
     return ok // || subscription.next === r
   }
 
-  private static canSubscribeTo(trigger: FieldVersion, ov: ObjectVersion, parent: Changeset | undefined, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
+  private static canSubscribeTo(observable: FieldVersion, ov: ObjectVersion, parent: Changeset | undefined, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
     const parentSnapshot = parent ? parent.lookupObjectVersion(h, fk, false) : h.applied
-    const parentTrigger = parentSnapshot.data[fk]
-    let result = trigger === parentTrigger || (
-      !ov.changeset.sealed && ov.former.objectVersion.data[fk] === parentTrigger)
+    const parentObservable = parentSnapshot.data[fk]
+    let result = observable === parentObservable || (
+      !ov.changeset.sealed && ov.former.objectVersion.data[fk] === parentObservable)
     if (result && timestamp !== -1)
-      result = !(trigger instanceof Launch && timestamp >= trigger.obsoleteSince)
+      result = !(observable instanceof Launch && timestamp >= observable.obsoleteSince)
     return result
   }
 
@@ -794,7 +794,7 @@ class Launch extends FieldVersion implements Reaction {
   }
 
   // static freeze(c: CachedResult): void {
-  //   Utils.freezeMap(c.triggers)
+  //   Utils.freezeMap(c.observables)
   //   Object.freeze(c)
   // }
 
@@ -839,11 +839,11 @@ class Launch extends FieldVersion implements Reaction {
 
 // function propagationHint(cause: MemberInfo, full: boolean): string[] {
 //   const result: string[] = []
-//   let trigger: Trigger = cause.snapshot.data[cause.memberName]
-//   while (trigger instanceof Operation && trigger.obsoleteDueTo) {
+//   let observable: Observable = cause.snapshot.data[cause.memberName]
+//   while (observable instanceof Operation && observable.obsoleteDueTo) {
 //     full && result.push(Dump.snap(cause.snapshot, cause.memberName))
-//     cause = trigger.obsoleteDueTo
-//     trigger = cause.snapshot.data[cause.memberName]
+//     cause = observable.obsoleteDueTo
+//     observable = cause.snapshot.data[cause.memberName]
 //   }
 //   result.push(Dump.snap(cause.snapshot, cause.memberName))
 //   full && result.push(cause.snapshot.snapshot.hint)

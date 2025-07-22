@@ -443,10 +443,10 @@ export class TransactionImpl extends Transaction {
         if (reactions) {
           const migratedReactions = migrated.reactions = new Set<Reaction>()
           reactions.forEach(o => {
-            const conformingTriggers = o.triggers!
-            const sub = conformingTriggers.get(fvParent)!
-            conformingTriggers.delete(fvParent)
-            conformingTriggers.set(migrated, sub)
+            const conformingObservables = o.observables!
+            const sub = conformingObservables.get(fvParent)!
+            conformingObservables.delete(fvParent)
+            conformingObservables.set(migrated, sub)
             migratedReactions.add(o)
           })
           fvParent.reactions = undefined
@@ -458,25 +458,25 @@ export class TransactionImpl extends Transaction {
           if (migratedReactions === undefined)
             migratedReactions = migrated.reactions = new Set<Reaction>()
           reactions.forEach(o => {
-            const conformingTriggers = o.triggers!
-            const sub = conformingTriggers.get(fv)!
-            conformingTriggers.delete(fv)
-            conformingTriggers.set(migrated, sub)
+            const conformingObservables = o.observables!
+            const sub = conformingObservables.get(fv)!
+            conformingObservables.delete(fv)
+            conformingObservables.set(migrated, sub)
             migratedReactions.add(o)
           })
           fv.reactions = undefined
         }
-        // Migrate triggers from current (child)
-        const triggers = (fv as unknown as Reaction).triggers
-        const migratedTriggers = (migrated as unknown as Reaction).triggers
-        if (triggers) {
-          triggers.forEach((s, o) => {
+        // Migrate observables from current (child)
+        const observables = (fv as unknown as Reaction).observables
+        const migratedObservables = (migrated as unknown as Reaction).observables
+        if (observables) {
+          observables.forEach((s, o) => {
             const conformingReactions = o.reactions!
             conformingReactions.delete(fv as unknown as Reaction)!
             conformingReactions.add(migrated as unknown as Reaction)
-            migratedTriggers!.set(o, s)
+            migratedObservables!.set(o, s)
           })
-          triggers.clear()
+          observables.clear()
         }
         ovParent.data[fk] = migrated
       }
@@ -486,25 +486,25 @@ export class TransactionImpl extends Transaction {
         if (reactions) {
           const migratedReactions = migrated.reactions = new Set<Reaction>()
           reactions.forEach(o => {
-            const conformingTriggers = o.triggers!
-            const sub = conformingTriggers.get(fv)!
-            conformingTriggers.delete(fv)
-            conformingTriggers.set(migrated, sub)
+            const conformingObservables = o.observables!
+            const sub = conformingObservables.get(fv)!
+            conformingObservables.delete(fv)
+            conformingObservables.set(migrated, sub)
             migratedReactions.add(o)
           })
           fv.reactions = undefined
         }
-        // Migrate triggers from current (child)
-        const triggers = (fv as unknown as Reaction).triggers
-        const migratedTriggers = (migrated as unknown as Reaction).triggers
-        if (triggers) {
-          triggers.forEach((s, o) => {
+        // Migrate observables from current (child)
+        const observables = (fv as unknown as Reaction).observables
+        const migratedObservables = (migrated as unknown as Reaction).observables
+        if (observables) {
+          observables.forEach((s, o) => {
             const conformingReactions = o.reactions!
             conformingReactions.delete(fv as unknown as Reaction)
             conformingReactions.add(migrated as unknown as Reaction)
-            migratedTriggers!.set(o, s)
+            migratedObservables!.set(o, s)
           })
-          triggers.clear()
+          observables.clear()
         }
         ovParent.data[fk] = migrated
       }
@@ -521,10 +521,10 @@ export class TransactionImpl extends Transaction {
           if (fvParent.reactions === undefined)
             fvParent.reactions = new Set()
           reactions.forEach(o => {
-            const conformingTriggers = o.triggers!
-            const sub = conformingTriggers.get(fv)!
-            conformingTriggers.delete(fv)
-            conformingTriggers.set(fvParent, sub)
+            const conformingObservables = o.observables!
+            const sub = conformingObservables.get(fv)!
+            conformingObservables.delete(fv)
+            conformingObservables.set(fvParent, sub)
             fvParent.reactions!.add(o)
           })
         }

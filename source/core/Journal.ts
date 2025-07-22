@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Isolation } from "../Enums.js"
-import { TriggeringObject } from "./Mvcc.js"
+import { ObservableObject } from "./Mvcc.js"
 import { ObjectHandle, ObjectVersion, Meta, PatchSet, ValuePatch, FieldVersion, FieldKey } from "./Data.js"
 import { Changeset, EMPTY_OBJECT_VERSION } from "./Changeset.js"
 import { Transaction } from "./Transaction.js"
@@ -14,7 +14,7 @@ import { Sealant } from "../util/Sealant.js"
 
 export type Saver = (patch: PatchSet) => Promise<void>
 
-export abstract class Journal extends TriggeringObject {
+export abstract class Journal extends ObservableObject {
   abstract capacity: number
   abstract readonly edits: ReadonlyArray<PatchSet>
   abstract readonly unsaved: PatchSet

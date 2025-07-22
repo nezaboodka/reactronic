@@ -5,11 +5,11 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { TriggeringObject, trigger, runAtomically, atomic, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
+import { ObservableObject, observable, runAtomically, atomic, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
 
 export const output: string[] = []
 
-export class Demo extends TriggeringObject {
+export class Demo extends ObservableObject {
   static stamp = 0
   static journal = runAtomically(() => Journal.create())
 
@@ -17,7 +17,7 @@ export class Demo extends TriggeringObject {
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
   // set computed(value: string) { /* nop */ }
 
-  @trigger(false) shared: string = "for testing purposes"
+  @observable(false) shared: string = "for testing purposes"
   title: string = "Demo"
   users: Person[] = []
   collection1: Person[] = this.users
@@ -71,10 +71,10 @@ export class Demo extends TriggeringObject {
   }
 }
 
-export class DemoView extends TriggeringObject {
-  @trigger(false) raw: string = "plain field"
-  @trigger(false) shared: string = "for testing purposes"
-  @trigger(false) readonly model: Demo
+export class DemoView extends ObservableObject {
+  @observable(false) raw: string = "plain field"
+  @observable(false) shared: string = "for testing purposes"
+  @observable(false) readonly model: Demo
   userFilter: string = "Jo"
 
   constructor(model: Demo) {
@@ -111,7 +111,7 @@ export class DemoView extends TriggeringObject {
     return result
   }
 
-  @cache @options({ triggeringArgs: true })
+  @cache @options({ observableArgs: true })
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
     this.raw = ReactiveSystem.why(true)
@@ -133,8 +133,8 @@ export class DemoView extends TriggeringObject {
 // Person
 
 /* istanbul ignore next */
-export class Person extends TriggeringObject {
-  @trigger(false) dummy: string | null = null
+export class Person extends ObservableObject {
+  @observable(false) dummy: string | null = null
   id: string | null = null
   name: string | null = null
   age: number = 0

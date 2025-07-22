@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Priority, Mode } from "../Enums.js"
-import { ReactiveNodeDriver, ReactiveNodeDecl, Script, ScriptAsync, Handler, ReactiveTreeNode, generateKey, triggersAreEqual } from "./ReactiveTreeNode.js"
+import { ReactiveNodeDriver, ReactiveNodeDecl, Script, ScriptAsync, Handler, ReactiveTreeNode, generateKey, observablesAreEqual } from "./ReactiveTreeNode.js"
 import { MergeList, MergedItem } from "../util/MergeList.js"
 import { LoggingOptions } from "../Logging.js"
 
@@ -83,7 +83,7 @@ export class ReactiveTree {
         if (result.driver !== driver && driver !== undefined)
           throw new Error(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
         const exTriggers = result.declaration.triggers
-        if (triggersAreEqual(declaration.triggers, exTriggers))
+        if (observablesAreEqual(declaration.triggers, exTriggers))
           declaration.triggers = exTriggers // preserve triggers instance
         result.declaration = declaration
       }
@@ -147,7 +147,7 @@ export class ReactiveTree {
   static triggerScriptRun(node: ReactiveTreeNode<any>, triggers: unknown): void {
     const impl = node as ReactiveNodeImpl<any>
     const declaration = impl.declaration
-    if (!triggersAreEqual(triggers, declaration.triggers)) {
+    if (!observablesAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
       triggerScriptRunViaSlot(impl.slot!)
     }
