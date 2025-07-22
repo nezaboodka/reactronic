@@ -8,7 +8,7 @@
 import { UNDEF, F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
 import { Kind, Reentrance, Isolation } from "../Enums.js"
-import { OperationController, ReactivityOptions } from "../Options.js"
+import { OperationDescriptor, ReactivityOptions } from "../Options.js"
 import { LoggingOptions, ProfilingOptions } from "../Logging.js"
 import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Meta } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION } from "./Changeset.js"
@@ -213,7 +213,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     if (opts.getter === opts.setter) { // regular method
       const bootstrap = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
-        const operation = Mvcc.createOperationController(h, member, opts)
+        const operation = Mvcc.createOperationDescriptor(h, member, opts)
         Object.defineProperty(h.data, member, { value: operation, enumerable, configurable })
         return operation
       }
@@ -222,7 +222,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     else if (opts.setter === UNDEF) { // property with getter only
       const bootstrap = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
-        const operation = Mvcc.createOperationController(h, member, opts)
+        const operation = Mvcc.createOperationDescriptor(h, member, opts)
         Object.defineProperty(h.data, member, { get: operation, enumerable, configurable })
         return operation.call(this)
       }
@@ -260,7 +260,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     ctx.getEditableObjectVersion(h, Meta.Handle, blank)
     if (!Mvcc.reactivityAutoStartDisabled)
       for (const fk in Meta.getFrom(proto, Meta.Reactive))
-        (h.proxy[fk][Meta.Controller] as OperationController<any>).markObsolete()
+        (h.proxy[fk][Meta.Descriptor] as OperationDescriptor<any>).markObsolete()
     return h
   }
 
@@ -304,8 +304,8 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   }
 
   /* istanbul ignore next */
-  static createOperationController = function(h: ObjectHandle, fk: FieldKey, options: OptionsImpl): F<any> {
-    throw misuse("this implementation of createOperation should never be called")
+  static createOperationDescriptor = function(h: ObjectHandle, fk: FieldKey, options: OptionsImpl): F<any> {
+    throw misuse("this implementation of createOperationDescriptor should never be called")
   }
 
   /* istanbul ignore next */

@@ -33,7 +33,7 @@ test("reentrance.restart", async t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = runAtomically(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    ReactiveSystem.getController(a.model.load).configure({reentrance: Reentrance.waitAndRestart})
+    ReactiveSystem.getDescriptor(a.model.load).configure({reentrance: Reentrance.waitAndRestart})
     return a
   })
   try {

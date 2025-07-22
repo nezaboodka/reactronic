@@ -45,9 +45,9 @@ test("brief", t => {
   const app = runAtomically(() => new DemoView(new Demo()))
   try {
     t.is(ReactiveSystem.why(), "<boot>")
-    t.is(ReactiveSystem.getController(app.print).options.order, 123)
+    t.is(ReactiveSystem.getDescriptor(app.print).options.order, 123)
     t.notThrows(() => DemoView.test())
-    const render = ReactiveSystem.getController(app.render)
+    const render = ReactiveSystem.getDescriptor(app.render)
     t.is(render.isReusable, true)
     t.is(render.args.length, 1)
     t.is(render.result.length, 1)
@@ -140,8 +140,8 @@ test("brief", t => {
     }, undefined, "observable property Person.emails #26 can only be modified inside transaction")
     t.throws(() => tran1.run(/* istanbul ignore next */() => { /* nope */ }), { message: "cannot run transaction that is already sealed" })
     // Check protection and error handling
-    t.throws(() => { ReactiveSystem.getController(daddy.setParent).configure({ indicator: null }) }, { message: "given method is not decorated as reactronic one: setParent" })
-    t.throws(() => { console.log(ReactiveSystem.getController(daddy.setParent).options.indicator) }, { message: "given method is not decorated as reactronic one: setParent" })
+    t.throws(() => { ReactiveSystem.getDescriptor(daddy.setParent).configure({ indicator: null }) }, { message: "given method is not decorated as reactronic one: setParent" })
+    t.throws(() => { console.log(ReactiveSystem.getDescriptor(daddy.setParent).options.indicator) }, { message: "given method is not decorated as reactronic one: setParent" })
     const op2 = Transaction.create({ hint: "op2" })
     const zombi = op2.run(() => new Person())
     t.throws(() => console.log(zombi.age), { message: "Person.age #30 is not yet available for T1[<none>] because T114[op2] is not yet applied (last applied T0[<boot>])" })

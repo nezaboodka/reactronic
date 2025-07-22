@@ -308,7 +308,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   configureReactronic(options: Partial<ReactivityOptions>): ReactivityOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.autonomous))
       throw new Error("reactronic can be configured only for elements with autonomous mode and only during activation")
-    return ReactiveSystem.getController(this.script).configure(options)
+    return ReactiveSystem.getDescriptor(this.script).configure(options)
   }
 
   static get nodeSlot(): MergedItem<ReactiveTreeNodeImpl> {
@@ -484,7 +484,7 @@ function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>
         Transaction.outside(() => {
           if (ReactiveSystem.isLogging)
             ReactiveSystem.setLoggingHint(node.element, node.key)
-          ReactiveSystem.getController(node.script).configure({
+          ReactiveSystem.getDescriptor(node.script).configure({
             order: node.level,
           })
         })

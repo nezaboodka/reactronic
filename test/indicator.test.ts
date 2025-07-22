@@ -81,7 +81,7 @@ test("indicator", async t => {
   const indicator = Indicator.create("indicator", 0, 0, 1000)
   const controller = runAtomically(() => {
     const result = new CompilationController()
-    ReactiveSystem.getController(result.reloadCompilation).configure({ indicator })
+    ReactiveSystem.getDescriptor(result.reloadCompilation).configure({ indicator })
     return result
   })
   await indicator.whenIdle()

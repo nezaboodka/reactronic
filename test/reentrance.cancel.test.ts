@@ -29,8 +29,8 @@ test("reentrance.cancel", async t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = runAtomically(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    ReactiveSystem.getController(a.print).configure({ order: 0 })
-    ReactiveSystem.getController(a.model.load).configure({reentrance: Reentrance.cancelPrevious})
+    ReactiveSystem.getDescriptor(a.print).configure({ order: 0 })
+    ReactiveSystem.getDescriptor(a.model.load).configure({reentrance: Reentrance.cancelPrevious})
     return a
   })
   try {

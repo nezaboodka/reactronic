@@ -8,7 +8,7 @@
 import { F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
 import { Kind, Reentrance, Isolation } from "../Enums.js"
-import { OperationController, ReactivityOptions, LoggingOptions, SnapshotOptions } from "../Options.js"
+import { OperationDescriptor, ReactivityOptions, LoggingOptions, SnapshotOptions } from "../Options.js"
 import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Reaction, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, MAX_REVISION } from "./Changeset.js"
 import { Transaction, TransactionImpl } from "./Transaction.js"
@@ -27,11 +27,11 @@ type ReuseOrRelaunchContext = {
   readonly objectVersion: ObjectVersion
 }
 
-export class OperationControllerImpl implements OperationController<any> {
+export class OperationDescriptorImpl implements OperationDescriptor<any> {
   readonly ownerHandle: ObjectHandle
   readonly fieldKey: FieldKey
 
-  configure(options: Partial<ReactivityOptions>): ReactivityOptions { return OperationControllerImpl.configureImpl(this, options) }
+  configure(options: Partial<ReactivityOptions>): ReactivityOptions { return OperationDescriptorImpl.configureImpl(this, options) }
   get options(): ReactivityOptions { return this.peek(undefined).launch.options }
   get nonreactive(): any { return this.peek(undefined).launch.content }
   get args(): ReadonlyArray<any> { return this.use().launch.args }
@@ -39,7 +39,7 @@ export class OperationControllerImpl implements OperationController<any> {
   get error(): boolean { return this.use().launch.error }
   get stamp(): number { return this.use().objectVersion.changeset.timestamp }
   get isReusable(): boolean { return this.use().isReusable }
-  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.ownerHandle, this.fieldKey)})` : "markObsolete()" }, OperationControllerImpl.markObsolete, this) }
+  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.ownerHandle, this.fieldKey)})` : "markObsolete()" }, OperationDescriptorImpl.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.reuseOrRelaunch(true, args).content }
 
   constructor(h: ObjectHandle, fk: FieldKey) {
@@ -69,20 +69,20 @@ export class OperationControllerImpl implements OperationController<any> {
     else if (Log.isOn && Log.opt.operation && (opts.logging === undefined ||
       opts.logging.operation === undefined || opts.logging.operation === true))
       Log.write(Transaction.current.isFinished ? "" : "║", " (=)",
-        `${Dump.snapshot2(ror.launch.controller.ownerHandle, ror.changeset, this.fieldKey)} result is reused from T${ror.launch.transaction.id}[${ror.launch.transaction.hint}]`)
+        `${Dump.snapshot2(ror.launch.descriptor.ownerHandle, ror.changeset, this.fieldKey)} result is reused from T${ror.launch.transaction.id}[${ror.launch.transaction.hint}]`)
     const t = ror.launch
     Changeset.markUsed(t, ror.objectVersion, this.fieldKey, this.ownerHandle, t.options.kind, weak)
     return t
   }
 
-  static getController(method: F<any>): OperationController<any> {
-    const ctl = Meta.get<OperationController<any> | undefined>(method, Meta.Controller)
+  static getDescriptor(method: F<any>): OperationDescriptor<any> {
+    const ctl = Meta.get<OperationDescriptor<any> | undefined>(method, Meta.Descriptor)
     if (!ctl)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return ctl
   }
 
-  static configureImpl(self: OperationControllerImpl | undefined, options: Partial<ReactivityOptions>): ReactivityOptions {
+  static configureImpl(self: OperationDescriptorImpl | undefined, options: Partial<ReactivityOptions>): ReactivityOptions {
     let launch: Launch | undefined
     if (self)
       launch = self.edit().launch
@@ -168,9 +168,9 @@ export class OperationControllerImpl implements OperationController<any> {
   private acquireFromObjectVersion(ov: ObjectVersion, args: any[] | undefined): Launch {
     const fk = this.fieldKey
     let launch: Launch = ov.data[fk]
-    if (launch.controller !== this) {
+    if (launch.descriptor !== this) {
       if (ov.changeset !== EMPTY_OBJECT_VERSION.changeset) {
-        const hint: string = Log.isOn ? `${Dump.obj(this.ownerHandle, fk)}/init` : /* istanbul ignore next */ "OperationController/init"
+        const hint: string = Log.isOn ? `${Dump.obj(this.ownerHandle, fk)}/init` : /* istanbul ignore next */ "OperationDescriptor/init"
         const isolation = Isolation.joinToCurrentTransaction
         // if (ov.changeset.sealed || ov.former.snapshot !== EMPTY_SNAPSHOT)
         //   isolation = Isolation.disjoinFromOuterTransaction
@@ -178,7 +178,7 @@ export class OperationControllerImpl implements OperationController<any> {
           const h = this.ownerHandle
           let r: ObjectVersion = Changeset.current().getObjectVersion(h, fk)
           let relaunch = r.data[fk] as Launch
-          if (relaunch.controller !== this) {
+          if (relaunch.descriptor !== this) {
             r = Changeset.edit().getEditableObjectVersion(h, fk, Meta.Handle, this)
             const t = new Launch(Transaction.current, this, r.changeset, relaunch, false)
             if (args)
@@ -232,7 +232,7 @@ export class OperationControllerImpl implements OperationController<any> {
     return ror
   }
 
-  private static markObsolete(self: OperationControllerImpl): void {
+  private static markObsolete(self: OperationDescriptorImpl): void {
     const ror = self.peek(undefined)
     const ctx = ror.changeset
     const obsolete = ror.launch.transaction.isFinished ? ctx.obsolete : ror.launch.transaction.changeset.obsolete
@@ -249,7 +249,7 @@ class Launch extends FieldVersion implements Reaction {
 
   readonly margin: number
   readonly transaction: Transaction
-  readonly controller: OperationControllerImpl
+  readonly descriptor: OperationDescriptorImpl
   readonly changeset: AbstractChangeset
   observables: Map<FieldVersion, Subscription> | undefined
   options: OptionsImpl
@@ -262,11 +262,11 @@ class Launch extends FieldVersion implements Reaction {
   obsoleteSince: number
   successor: Launch | undefined
 
-  constructor(transaction: Transaction, controller: OperationControllerImpl, changeset: AbstractChangeset, former: Launch | OptionsImpl, clone: boolean) {
+  constructor(transaction: Transaction, descriptor: OperationDescriptorImpl, changeset: AbstractChangeset, former: Launch | OptionsImpl, clone: boolean) {
     super(undefined, 0)
     this.margin = Launch.current ? Launch.current.margin + 1 : 1
     this.transaction = transaction
-    this.controller = controller
+    this.descriptor = descriptor
     this.changeset = changeset
     this.observables = new Map<FieldVersion, Subscription>()
     if (former instanceof Launch) {
@@ -307,7 +307,7 @@ class Launch extends FieldVersion implements Reaction {
   }
 
   override get isLaunch(): boolean { return true } // override
-  hint(): string { return `${Dump.snapshot2(this.controller.ownerHandle, this.changeset, this.controller.fieldKey, this)}` } // override
+  hint(): string { return `${Dump.snapshot2(this.descriptor.ownerHandle, this.changeset, this.descriptor.fieldKey, this)}` } // override
   get order(): number { return this.options.order }
 
   get ["#this#"](): string {
@@ -315,14 +315,14 @@ class Launch extends FieldVersion implements Reaction {
   }
 
   clone(t: Transaction, cs: AbstractChangeset): FieldVersion {
-    return new Launch(t, this.controller, cs, this, true)
+    return new Launch(t, this.descriptor, cs, this, true)
   }
 
   why(): string {
     let cause: string
     if (this.cause)
       cause = `   ◀◀   ${this.cause}`
-    else if (this.controller.options.kind === Kind.atomic)
+    else if (this.descriptor.options.kind === Kind.atomic)
       cause = "   ◀◀   operation"
     else
       cause = `   ◀◀   T${this.changeset.id}[${this.changeset.hint}]`
@@ -342,7 +342,7 @@ class Launch extends FieldVersion implements Reaction {
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, "║", "‾\\", `${this.hint()} - step in  `, 0, "        │")
       const started = Date.now()
-      const result = OperationControllerImpl.proceedWithinGivenLaunch<T>(this, func, ...args)
+      const result = OperationDescriptorImpl.proceedWithinGivenLaunch<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, "║", "_/", `${this.hint()} - step out `, 0, this.started > 0 ? "        │" : "")
@@ -358,7 +358,7 @@ class Launch extends FieldVersion implements Reaction {
       this.args = args
     this.obsoleteSince = MAX_REVISION
     if (!this.error)
-      OperationControllerImpl.proceedWithinGivenLaunch<void>(this, Launch.proceed, this, proxy)
+      OperationDescriptorImpl.proceedWithinGivenLaunch<void>(this, Launch.proceed, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
@@ -386,7 +386,7 @@ class Launch extends FieldVersion implements Reaction {
         if (isReaction)
           collector.push(this)
         else
-          this.reactions?.forEach(s => s.markObsoleteDueTo(this, this.controller.fieldKey, this.changeset, this.controller.ownerHandle, why, since, collector))
+          this.reactions?.forEach(s => s.markObsoleteDueTo(this, this.descriptor.fieldKey, this.changeset, this.descriptor.ownerHandle, why, since, collector))
 
         // Cancel own transaction if it is still in progress
         const tran = this.transaction
@@ -408,7 +408,7 @@ class Launch extends FieldVersion implements Reaction {
     if (now || hold < 0) {
       if (this.isNotUpToDate()) {
         try {
-          const launch: Launch = this.controller.reuseOrRelaunch(false, undefined)
+          const launch: Launch = this.descriptor.reuseOrRelaunch(false, undefined)
           if (launch.result instanceof Promise)
             launch.result.catch(error => {
               if (launch.options.kind === Kind.reaction)
@@ -490,7 +490,7 @@ class Launch extends FieldVersion implements Reaction {
     if (this.options.indicator)
       this.indicatorEnter(this.options.indicator)
     if (Log.isOn && Log.opt.operation)
-      Log.write("║", "‾\\", `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.controller.ownerHandle, this.controller.fieldKey)} ]`)
+      Log.write("║", "‾\\", `${this.hint()} - enter`, undefined, `    [ ${Dump.obj(this.descriptor.ownerHandle, this.descriptor.fieldKey)} ]`)
     this.started = Date.now()
   }
 
@@ -538,7 +538,7 @@ class Launch extends FieldVersion implements Reaction {
       hint: "Indicator.enter",
       isolation: Isolation.disjoinFromOuterAndInnerTransactions,
       logging: Log.isOn && Log.opt.indicator ? undefined : Log.global }
-    OperationControllerImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
+    OperationDescriptorImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
       IndicatorImpl.enter, mon, this.transaction)
   }
 
@@ -549,7 +549,7 @@ class Launch extends FieldVersion implements Reaction {
           hint: "Indicator.leave",
           isolation: Isolation.disjoinFromOuterAndInnerTransactions,
           logging: Log.isOn && Log.opt.indicator ? undefined : Log.DefaultLevel }
-        OperationControllerImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
+        OperationDescriptorImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
           IndicatorImpl.leave, mon, this.transaction)
       }
       this.transaction.whenFinished().then(leave, leave)
@@ -690,13 +690,13 @@ class Launch extends FieldVersion implements Reaction {
     for (const r of reactions)
       queue.push(r)
     if (isKickOff)
-      OperationControllerImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactions)
+      OperationDescriptorImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactions)
   }
 
   private static migrateFieldVersion(fv: FieldVersion, target: Transaction): FieldVersion {
     let result: FieldVersion
     if (fv instanceof Launch)
-      result = new Launch(target, fv.controller, target.changeset, fv, true)
+      result = new Launch(target, fv.descriptor, target.changeset, fv, true)
     else
       result = new FieldVersion(fv.content, fv.lastEditorChangesetId)
     // TODO: Switch subscriptions
@@ -765,12 +765,12 @@ class Launch extends FieldVersion implements Reaction {
     return result
   }
 
-  private static createOperationController(h: ObjectHandle, fk: FieldKey, options: OptionsImpl): F<any> {
-    const ctl = new OperationControllerImpl(h, fk)
+  private static createOperationDescriptor(h: ObjectHandle, fk: FieldKey, options: OptionsImpl): F<any> {
+    const ctl = new OperationDescriptorImpl(h, fk)
     const operation: F<any> = (...args: any[]): any => {
       return ctl.reuseOrRelaunch(false, args).result
     }
-    Meta.set(operation, Meta.Controller, ctl)
+    Meta.set(operation, Meta.Descriptor, ctl)
     return operation
   }
 
@@ -778,7 +778,7 @@ class Launch extends FieldVersion implements Reaction {
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
     let launch: Launch | undefined = initial[fk]
-    const ctl = launch ? launch.controller : new OperationControllerImpl(EMPTY_HANDLE, fk)
+    const ctl = launch ? launch.descriptor : new OperationDescriptorImpl(EMPTY_HANDLE, fk)
     const opts = launch ? launch.options : OptionsImpl.INITIAL
     initial[fk] = launch = new Launch(Transaction.current, ctl, EMPTY_OBJECT_VERSION.changeset, new OptionsImpl(getter, setter, opts, options, implicit), false)
     // Add to the list if it's a reactive function
@@ -809,15 +809,15 @@ class Launch extends FieldVersion implements Reaction {
     Changeset.revokeAllSubscriptions = Launch.revokeAllSubscriptions // override
     Changeset.enqueueReactionsToRun = Launch.enqueueReactionsToRun
     TransactionImpl.migrateFieldVersion = Launch.migrateFieldVersion
-    Mvcc.createOperationController = Launch.createOperationController // override
+    Mvcc.createOperationDescriptor = Launch.createOperationDescriptor // override
     Mvcc.rememberOperationOptions = Launch.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, "rWhy", {
-        get: OperationControllerImpl.why, configurable: false, enumerable: false,
+        get: OperationDescriptorImpl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(globalThis, "rBriefWhy", {
-        get: OperationControllerImpl.briefWhy, configurable: false, enumerable: false,
+        get: OperationDescriptorImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -825,10 +825,10 @@ class Launch extends FieldVersion implements Reaction {
     }
     try {
       Object.defineProperty(global, "rWhy", {
-        get: OperationControllerImpl.why, configurable: false, enumerable: false,
+        get: OperationDescriptorImpl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(global, "rBriefWhy", {
-        get: OperationControllerImpl.briefWhy, configurable: false, enumerable: false,
+        get: OperationDescriptorImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -859,7 +859,7 @@ function valueHint(value: any): string {
   else if (value instanceof Map)
     result = `Map(${value.size})`
   else if (value instanceof Launch)
-    result = `#${value.controller.ownerHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.lastEditorChangesetId !== undefined && value.lastEditorChangesetId !== 0 ? `t${value.lastEditorChangesetId}` : ""}`
+    result = `#${value.descriptor.ownerHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.lastEditorChangesetId !== undefined && value.lastEditorChangesetId !== 0 ? `t${value.lastEditorChangesetId}` : ""}`
   else if (value === Meta.Undefined)
     result = "undefined"
   else if (typeof(value) === "string")

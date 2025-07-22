@@ -29,7 +29,7 @@ test("reentrance.cancelandwait", async t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = runAtomically(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    ReactiveSystem.getController(a.model.load).configure({reentrance: Reentrance.cancelAndWaitPrevious})
+    ReactiveSystem.getDescriptor(a.model.load).configure({reentrance: Reentrance.cancelAndWaitPrevious})
     return a
   })
   try {

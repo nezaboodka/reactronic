@@ -221,7 +221,7 @@ class Component<P> extends React.Component<P> {
   } // EnsureUpToDate is subscribed to render
 
   shouldComponentUpdate(): boolean {
-    const r = ReactiveSystem.getController(this.render)
+    const r = ReactiveSystem.getDescriptor(this.render)
     return !r.isUpToDate
   }
 

@@ -21,7 +21,7 @@ export class Component<P> extends React.Component<P> {
   } // ensureUpToDate is subscribed to render
 
   override shouldComponentUpdate(): boolean {
-    return !ReactiveSystem.getController(this.render).isReusable
+    return !ReactiveSystem.getDescriptor(this.render).isReusable
   }
 
   override componentDidMount(): void {

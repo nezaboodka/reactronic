@@ -10,7 +10,7 @@ const EMPTY_META = Object.freeze({})
 export abstract class Meta {
   static readonly Handle: unique symbol = Symbol("rx-handle")
   static readonly Revision: unique symbol = Symbol("rx-revision")
-  static readonly Controller: unique symbol = Symbol("rx-controller")
+  static readonly Descriptor: unique symbol = Symbol("rx-descriptor")
   static readonly Initial: unique symbol = Symbol("rx-initial")
   static readonly Reactive: unique symbol = Symbol("rx-reactive")
   static readonly Raw: unique symbol = Symbol("rx-raw")
