@@ -8,7 +8,7 @@
 import { UNDEF, F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
 import { Kind, Reentrance, Isolation } from "../Enums.js"
-import { Operation, MemberOptions } from "../Options.js"
+import { OperationController, ReactivityOptions } from "../Options.js"
 import { LoggingOptions, ProfilingOptions } from "../Logging.js"
 import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Meta } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION } from "./Changeset.js"
@@ -47,7 +47,7 @@ export abstract class ObservableObject extends MvccObject {
 
 // Options
 
-const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
+const DEFAULT_OPTIONS: ReactivityOptions = Object.freeze({
   kind: Kind.plain,
   isolation: Isolation.joinToCurrentTransaction,
   order: 0,
@@ -61,7 +61,7 @@ const DEFAULT_OPTIONS: MemberOptions = Object.freeze({
   logging: undefined,
 })
 
-export class OptionsImpl implements MemberOptions {
+export class OptionsImpl implements ReactivityOptions {
   readonly getter: Function
   readonly setter: Function
   readonly kind: Kind
@@ -202,7 +202,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   }
 
   static decorateOperation(implicit: boolean, decorator: Function,
-    options: Partial<MemberOptions>, proto: any, member: FieldKey,
+    options: Partial<ReactivityOptions>, proto: any, member: FieldKey,
     pd: PropertyDescriptor | undefined): any {
     if (pd === undefined || pd === proto) // pd !== proto only for the first decorator in a chain
       pd = EMPTY_PROP_DESCRIPTOR
@@ -213,7 +213,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     if (opts.getter === opts.setter) { // regular method
       const bootstrap = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
-        const operation = Mvcc.createOperation(h, member, opts)
+        const operation = Mvcc.createOperationController(h, member, opts)
         Object.defineProperty(h.data, member, { value: operation, enumerable, configurable })
         return operation
       }
@@ -222,7 +222,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     else if (opts.setter === UNDEF) { // property with getter only
       const bootstrap = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
-        const operation = Mvcc.createOperation(h, member, opts)
+        const operation = Mvcc.createOperationController(h, member, opts)
         Object.defineProperty(h.data, member, { get: operation, enumerable, configurable })
         return operation.call(this)
       }
@@ -232,7 +232,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       throw misuse(`${proto.constructor.name}.${member.toString()} has setter and cannot be decorated with @${decorator.name}`)
   }
 
-  static decorateOperationParametrized(decorator: Function, options: Partial<MemberOptions>): F<any> {
+  static decorateOperationParametrized(decorator: Function, options: Partial<ReactivityOptions>): F<any> {
     return function(proto: object, prop: PropertyKey, pd: TypedPropertyDescriptor<F<any>>): any {
       return Mvcc.decorateOperation(false, decorator, options, proto, prop, pd) /* istanbul ignore next */
     }
@@ -260,7 +260,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     ctx.getEditableObjectVersion(h, Meta.Handle, blank)
     if (!Mvcc.reactivityAutoStartDisabled)
       for (const fk in Meta.getFrom(proto, Meta.Reactive))
-        (h.proxy[fk][Meta.Controller] as Operation<any>).markObsolete()
+        (h.proxy[fk][Meta.Controller] as OperationController<any>).markObsolete()
     return h
   }
 
@@ -304,12 +304,12 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   }
 
   /* istanbul ignore next */
-  static createOperation = function(h: ObjectHandle, fk: FieldKey, options: OptionsImpl): F<any> {
+  static createOperationController = function(h: ObjectHandle, fk: FieldKey, options: OptionsImpl): F<any> {
     throw misuse("this implementation of createOperation should never be called")
   }
 
   /* istanbul ignore next */
-  static rememberOperationOptions = function(proto: any, fk: FieldKey, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<MemberOptions>, implicit: boolean): OptionsImpl {
+  static rememberOperationOptions = function(proto: any, fk: FieldKey, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<ReactivityOptions>, implicit: boolean): OptionsImpl {
     throw misuse("this implementation of rememberOperationOptions should never be called")
   }
 }

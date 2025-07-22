@@ -20,7 +20,7 @@ export type SnapshotOptions = {
   readonly token?: any
 }
 
-export type MemberOptions = {
+export type ReactivityOptions = {
   readonly kind: Kind
   readonly isolation: Isolation
   readonly order: number
@@ -34,19 +34,17 @@ export type MemberOptions = {
   readonly logging?: Partial<LoggingOptions>
 }
 
+// OperationController
 
-
-// Operation
-
-export type Operation<T> = {
-  readonly options: MemberOptions
+export type OperationController<T> = {
+  readonly options: ReactivityOptions
   readonly args: ReadonlyArray<any>
   readonly result: T
   readonly error: any
   readonly stamp: number
   readonly isReusable: boolean
 
-  configure(options: Partial<MemberOptions>): MemberOptions
+  configure(options: Partial<ReactivityOptions>): ReactivityOptions
   markObsolete(): void
   pullLastResult(args?: any[]): T | undefined
 }

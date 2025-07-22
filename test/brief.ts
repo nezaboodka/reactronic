@@ -90,7 +90,7 @@ export class DemoView extends ObservableObject {
       output.push(x) /* istanbul ignore next */
       if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) console.log(x)
     })
-    ReactiveSystem.configureCurrentOperation({ order: 123 })
+    ReactiveSystem.configure({ order: 123 })
   }
 
   // @transaction @options({ logging: LoggingLevel.Debug })

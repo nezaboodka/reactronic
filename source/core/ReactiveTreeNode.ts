@@ -10,7 +10,7 @@ import { LoggingOptions } from "../Logging.js"
 import { MergeList, MergeListReader, MergedItem } from "../util/MergeList.js"
 import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
 import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
-import { MemberOptions } from "../Options.js"
+import { ReactivityOptions } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
 import { ReactiveSystem, options, observable, reaction, runAtomically, runNonReactively } from "../ReactiveSystem.js"
@@ -41,7 +41,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
   abstract childrenShuffling: boolean
   abstract strictOrder: boolean
   abstract has(mode: Mode): boolean
-  abstract configureReactronic(options: Partial<MemberOptions>): MemberOptions
+  abstract configureReactronic(options: Partial<ReactivityOptions>): ReactivityOptions
 }
 
 // ReactiveNodeDecl
@@ -305,10 +305,10 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
     runScriptNow(this.slot!)
   }
 
-  configureReactronic(options: Partial<MemberOptions>): MemberOptions {
+  configureReactronic(options: Partial<ReactivityOptions>): ReactivityOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.autonomous))
       throw new Error("reactronic can be configured only for elements with autonomous mode and only during activation")
-    return ReactiveSystem.getOperation(this.script).configure(options)
+    return ReactiveSystem.getController(this.script).configure(options)
   }
 
   static get nodeSlot(): MergedItem<ReactiveNodeImpl> {
@@ -484,7 +484,7 @@ function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveNodeImpl<any>>): v
         Transaction.outside(() => {
           if (ReactiveSystem.isLogging)
             ReactiveSystem.setLoggingHint(node.element, node.key)
-          ReactiveSystem.getOperation(node.script).configure({
+          ReactiveSystem.getController(node.script).configure({
             order: node.level,
           })
         })

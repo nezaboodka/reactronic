@@ -333,12 +333,12 @@ function observable(proto, prop) // field only
 function atomic(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cache(proto, prop, pd) // method only
-function options(value: Partial<MemberOptions>): F<any>
+function options(value: Partial<ReactivityOptions>): F<any>
 
 function runNonReactively<T>(func: F<T>, ...args: any[]): T
 function runSensitively<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
-// SnapshotOptions, MemberOptions, Kind, Reentrance, Indicator, LoggingOptions, ProfilingOptions
+// SnapshotOptions, ReactivityOptions, Kind, Reentrance, Indicator, LoggingOptions, ProfilingOptions
 
 export type SnapshotOptions = {
   readonly hint?: string
@@ -348,7 +348,7 @@ export type SnapshotOptions = {
   readonly token?: any
 }
 
-type MemberOptions = {
+type ReactivityOptions = {
   readonly kind: Kind
   readonly isolation: Isolation
   readonly order: number

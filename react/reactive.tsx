@@ -30,7 +30,7 @@ class RxComponent<V> extends ObservableObject {
 
   @reaction
   protected ensureUpToDate(): void {
-    if (!ReactiveSystem.getOperation(this.render).isReusable)
+    if (!ReactiveSystem.getController(this.render).isReusable)
       Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
@@ -45,8 +45,8 @@ class RxComponent<V> extends ObservableObject {
     if (hint)
       ReactiveSystem.setLoggingHint(rx, hint)
     if (logging) {
-      ReactiveSystem.getOperation(rx.render).configure({ logging })
-      ReactiveSystem.getOperation(rx.ensureUpToDate).configure({ logging })
+      ReactiveSystem.getController(rx.render).configure({ logging })
+      ReactiveSystem.getController(rx.ensureUpToDate).configure({ logging })
     }
     return rx
   }
