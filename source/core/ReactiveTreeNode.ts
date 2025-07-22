@@ -26,8 +26,8 @@ export type Handler<E = unknown, R = void> = (el: E) => R
 
 export abstract class ReactiveTreeNode<E = unknown> {
   abstract readonly key: string
-  abstract readonly driver: ReactiveNodeDriver<E>
-  abstract readonly declaration: Readonly<ReactiveNodeDecl<E>/* | ReactiveNodeDeclAsync<E>*/>
+  abstract readonly driver: ReactiveTreeNodeDriver<E>
+  abstract readonly declaration: Readonly<ReactiveTreeNodeDecl<E>/* | ReactiveTreeNodeDeclAsync<E>*/>
   abstract readonly level: number
   abstract readonly owner: ReactiveTreeNode
   abstract element: E
@@ -36,7 +36,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
   abstract readonly slot: MergedItem<ReactiveTreeNode<E>> | undefined
   abstract readonly stamp: number
   abstract readonly outer: ReactiveTreeNode
-  abstract readonly context: ReactiveNodeContext | undefined
+  abstract readonly context: ReactiveTreeNodeContext | undefined
   abstract priority?: Priority
   abstract childrenShuffling: boolean
   abstract strictOrder: boolean
@@ -44,9 +44,9 @@ export abstract class ReactiveTreeNode<E = unknown> {
   abstract configureReactronic(options: Partial<ReactivityOptions>): ReactivityOptions
 }
 
-// ReactiveNodeDecl
+// ReactiveTreeNodeDecl
 
-export type ReactiveNodeDecl<E = unknown> = {
+export type ReactiveTreeNodeDecl<E = unknown> = {
   script?: Script<E>                // скрипт
   scriptAsync?: ScriptAsync<E>      // скрипт-задача
   key?: string                      // ключ
@@ -55,12 +55,12 @@ export type ReactiveNodeDecl<E = unknown> = {
   preparationAsync?: ScriptAsync<E> // подготовка-задача
   finalization?: Script<E>          // завершение
   triggers?: unknown                // триггеры
-  basis?: ReactiveNodeDecl<E>       // базис
+  basis?: ReactiveTreeNodeDecl<E>       // базис
 }
 
-// ReactiveNodeDriver
+// ReactiveTreeNodeDriver
 
-export type ReactiveNodeDriver<E = unknown> = {
+export type ReactiveTreeNodeDriver<E = unknown> = {
   readonly name: string,
   readonly isPartition: boolean,
   readonly initialize?: Handler<E>
@@ -76,22 +76,22 @@ export type ReactiveNodeDriver<E = unknown> = {
   runScript(node: ReactiveTreeNode<E>): void | Promise<void>
 
   declareChild(ownerNode: ReactiveTreeNode<E>,
-    childDriver: ReactiveNodeDriver<any>,
-    childDeclaration?: ReactiveNodeDecl<any>,
-    childBasis?: ReactiveNodeDecl<any>): MergedItem<ReactiveTreeNode> | undefined
+    childDriver: ReactiveTreeNodeDriver<any>,
+    childDeclaration?: ReactiveTreeNodeDecl<any>,
+    childBasis?: ReactiveTreeNodeDecl<any>): MergedItem<ReactiveTreeNode> | undefined
 
   provideHost(node: ReactiveTreeNode<E>): ReactiveTreeNode<E>
 }
 
-// ReactiveNodeContext
+// ReactiveTreeNodeContext
 
-export type ReactiveNodeContext<T extends Object = Object> = {
+export type ReactiveTreeNodeContext<T extends Object = Object> = {
   value: T
 }
 
 // BaseDriver
 
-export abstract class BaseDriver<E = unknown> implements ReactiveNodeDriver<E> {
+export abstract class BaseDriver<E = unknown> implements ReactiveTreeNodeDriver<E> {
   constructor(
     readonly name: string,
     readonly isPartition: boolean,
@@ -119,9 +119,9 @@ export abstract class BaseDriver<E = unknown> implements ReactiveNodeDriver<E> {
   }
 
   declareChild(ownerNode: ReactiveTreeNode<E>,
-    childDriver: ReactiveNodeDriver<any>,
-    childDeclaration?: ReactiveNodeDecl<any>,
-    childBasis?: ReactiveNodeDecl<any>): MergedItem<ReactiveTreeNode> | undefined {
+    childDriver: ReactiveTreeNodeDriver<any>,
+    childDeclaration?: ReactiveTreeNodeDecl<any>,
+    childBasis?: ReactiveTreeNodeDecl<any>): MergedItem<ReactiveTreeNode> | undefined {
     return undefined
   }
 
@@ -140,21 +140,21 @@ export class ReactiveTreeVariable<T extends Object = Object> {
   }
 
   set value(value: T) {
-    ReactiveNodeImpl.setNodeVariableValue(this, value)
+    ReactiveTreeNodeImpl.setNodeVariableValue(this, value)
   }
 
   get value(): T {
-    return ReactiveNodeImpl.useNodeVariableValue(this)
+    return ReactiveTreeNodeImpl.useNodeVariableValue(this)
   }
 
   get valueOrUndefined(): T | undefined {
-    return ReactiveNodeImpl.tryUseNodeVariableValue(this)
+    return ReactiveTreeNodeImpl.tryUseNodeVariableValue(this)
   }
 }
 
 // Utils
 
-export function generateKey(owner: ReactiveNodeImpl): string {
+export function generateKey(owner: ReactiveTreeNodeImpl): string {
   const n = owner.numerator++
   const lettered = emitLetters(n)
   let result: string
@@ -165,11 +165,11 @@ export function generateKey(owner: ReactiveNodeImpl): string {
   return result
 }
 
-function getModeUsingBasisChain(declaration?: ReactiveNodeDecl<any>): Mode {
+function getModeUsingBasisChain(declaration?: ReactiveTreeNodeDecl<any>): Mode {
   return declaration?.mode ?? (declaration?.basis ? getModeUsingBasisChain(declaration?.basis) : Mode.default)
 }
 
-function invokeScriptUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void | Promise<void> {
+function invokeScriptUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
   const script = declaration.script
@@ -185,7 +185,7 @@ function invokeScriptUsingBasisChain(element: unknown, declaration: ReactiveNode
   return result
 }
 
-function invokePreparationUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void | Promise<void> {
+function invokePreparationUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
   const preparation = declaration.preparation
@@ -201,7 +201,7 @@ function invokePreparationUsingBasisChain(element: unknown, declaration: Reactiv
   return result
 }
 
-function invokeFinalizationUsingBasisChain(element: unknown, declaration: ReactiveNodeDecl<any>): void {
+function invokeFinalizationUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void {
   const basis = declaration.basis
   const finalization = declaration.finalization
   if (finalization)
@@ -210,10 +210,10 @@ function invokeFinalizationUsingBasisChain(element: unknown, declaration: Reacti
     invokeFinalizationUsingBasisChain(element, basis)
 }
 
-// ReactiveNodeContextImpl
+// ReactiveTreeNodeContextImpl
 
-class ReactiveNodeContextImpl<T extends Object = Object> extends ObservableObject implements ReactiveNodeContext<T> {
-  @observable(false) next: ReactiveNodeContextImpl<object> | undefined
+class ReactiveTreeNodeContextImpl<T extends Object = Object> extends ObservableObject implements ReactiveTreeNodeContext<T> {
+  @observable(false) next: ReactiveTreeNodeContextImpl<object> | undefined
   @observable(false) variable: ReactiveTreeVariable<T>
   value: T
 
@@ -225,36 +225,36 @@ class ReactiveNodeContextImpl<T extends Object = Object> extends ObservableObjec
   }
 }
 
-// ReactiveNodeImpl
+// ReactiveTreeNodeImpl
 
-class ReactiveNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
+class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   // Static properties
   static logging: LoggingOptions | undefined = undefined
   static grandNodeCount: number = 0
   static disposableNodeCount: number = 0
 
   readonly key: string
-  readonly driver: ReactiveNodeDriver<E>
-  declaration: ReactiveNodeDecl<E>
+  readonly driver: ReactiveTreeNodeDriver<E>
+  declaration: ReactiveTreeNodeDecl<E>
   readonly level: number
-  readonly owner: ReactiveNodeImpl
+  readonly owner: ReactiveTreeNodeImpl
   readonly element: E
-  host: ReactiveNodeImpl
-  readonly children: MergeList<ReactiveNodeImpl>
-  slot: MergedItem<ReactiveNodeImpl<E>> | undefined
+  host: ReactiveTreeNodeImpl
+  readonly children: MergeList<ReactiveTreeNodeImpl>
+  slot: MergedItem<ReactiveTreeNodeImpl<E>> | undefined
   stamp: number
-  outer: ReactiveNodeImpl
-  context: ReactiveNodeContextImpl<any> | undefined
+  outer: ReactiveTreeNodeImpl
+  context: ReactiveTreeNodeContextImpl<any> | undefined
   numerator: number
   priority: Priority
   childrenShuffling: boolean
 
   constructor(
-    key: string, driver: ReactiveNodeDriver<E>,
-    declaration: Readonly<ReactiveNodeDecl<E>>,
-    owner: ReactiveNodeImpl | undefined) {
+    key: string, driver: ReactiveTreeNodeDriver<E>,
+    declaration: Readonly<ReactiveTreeNodeDecl<E>>,
+    owner: ReactiveTreeNodeImpl | undefined) {
     super()
-    const thisAsUnknown = this as ReactiveNodeImpl<unknown>
+    const thisAsUnknown = this as ReactiveTreeNodeImpl<unknown>
     this.key = key
     this.driver = driver
     this.declaration = declaration
@@ -271,7 +271,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
     }
     this.element = driver.create(this)
     this.host = thisAsUnknown // node is unmounted
-    this.children = new MergeList<ReactiveNodeImpl>(getNodeKey, true)
+    this.children = new MergeList<ReactiveTreeNodeImpl>(getNodeKey, true)
     this.slot = undefined
     this.stamp = Number.MAX_SAFE_INTEGER // newly created
     this.context = undefined
@@ -279,15 +279,15 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
     this.priority = Priority.realtime
     this.childrenShuffling = false
     // Monitoring
-    ReactiveNodeImpl.grandNodeCount++
+    ReactiveTreeNodeImpl.grandNodeCount++
     if (this.has(Mode.autonomous))
-      ReactiveNodeImpl.disposableNodeCount++
+      ReactiveTreeNodeImpl.disposableNodeCount++
   }
 
   get strictOrder(): boolean { return this.children.isStrict }
   set strictOrder(value: boolean) { this.children.isStrict = value }
 
-  get isMoved(): boolean { return this.owner.children.isMoved(this.slot! as MergedItem<ReactiveNodeImpl>) }
+  get isMoved(): boolean { return this.owner.children.isMoved(this.slot! as MergedItem<ReactiveTreeNodeImpl>) }
 
   has(mode: Mode): boolean {
     return (getModeUsingBasisChain(this.declaration) & mode) === mode
@@ -311,28 +311,28 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
     return ReactiveSystem.getController(this.script).configure(options)
   }
 
-  static get nodeSlot(): MergedItem<ReactiveNodeImpl> {
+  static get nodeSlot(): MergedItem<ReactiveTreeNodeImpl> {
     if (!gNodeSlot)
       throw new Error("current element is undefined")
     return gNodeSlot
   }
 
   static tryUseNodeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T | undefined {
-    let node = ReactiveNodeImpl.nodeSlot.instance
+    let node = ReactiveTreeNodeImpl.nodeSlot.instance
     while (node.context?.variable !== variable && node.owner !== node)
       node = node.outer.slot!.instance
     return node.context?.value as any // TODO: to get rid of any
   }
 
   static useNodeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T {
-    const result = ReactiveNodeImpl.tryUseNodeVariableValue(variable) ?? variable.defaultValue
+    const result = ReactiveTreeNodeImpl.tryUseNodeVariableValue(variable) ?? variable.defaultValue
     if (!result)
       throw new Error("unknown node variable")
     return result
   }
 
   static setNodeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>, value: T | undefined): void {
-    const node = ReactiveNodeImpl.nodeSlot.instance
+    const node = ReactiveTreeNodeImpl.nodeSlot.instance
     const owner = node.owner
     const hostCtx = runNonReactively(() => owner.context?.value)
     if (value && value !== hostCtx) {
@@ -347,7 +347,7 @@ class ReactiveNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
           ctx.value = value // update context thus invalidate reactions
         }
         else
-          node.context = new ReactiveNodeContextImpl<any>(variable, value)
+          node.context = new ReactiveTreeNodeContextImpl<any>(variable, value)
       })
     }
     else if (hostCtx)
@@ -363,7 +363,7 @@ function getNodeKey(node: ReactiveTreeNode): string | undefined {
   return node.stamp >= 0 ? node.key : undefined
 }
 
-function runNestedNodeScriptsThenDoImpl(nodeSlot: MergedItem<ReactiveNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
+function runNestedNodeScriptsThenDoImpl(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
   runInsideContextOfNode(nodeSlot, () => {
     const owner = nodeSlot.instance
     const children = owner.children
@@ -377,8 +377,8 @@ function runNestedNodeScriptsThenDoImpl(nodeSlot: MergedItem<ReactiveNodeImpl<an
         if (!error) {
           // Lay out and update actual elements
           const sequential = children.isStrict
-          let p1: Array<MergedItem<ReactiveNodeImpl>> | undefined = undefined
-          let p2: Array<MergedItem<ReactiveNodeImpl>> | undefined = undefined
+          let p1: Array<MergedItem<ReactiveTreeNodeImpl>> | undefined = undefined
+          let p2: Array<MergedItem<ReactiveTreeNodeImpl>> | undefined = undefined
           let mounting = false
           let partition = owner
           for (const child of children.items()) {
@@ -414,8 +414,8 @@ function runNestedNodeScriptsThenDoImpl(nodeSlot: MergedItem<ReactiveNodeImpl<an
   })
 }
 
-function markToMountIfNecessary(mounting: boolean, host: ReactiveNodeImpl,
-  nodeSlot: MergedItem<ReactiveNodeImpl>, children: MergeList<ReactiveNodeImpl>, sequential: boolean): boolean {
+function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNodeImpl,
+  nodeSlot: MergedItem<ReactiveTreeNodeImpl>, children: MergeList<ReactiveTreeNodeImpl>, sequential: boolean): boolean {
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
   const node = nodeSlot.instance
@@ -433,10 +433,10 @@ function markToMountIfNecessary(mounting: boolean, host: ReactiveNodeImpl,
 }
 
 async function startIncrementalNestedScriptsRun(
-  ownerSlot: MergedItem<ReactiveNodeImpl>,
-  allChildren: MergeList<ReactiveNodeImpl>,
-  priority1?: Array<MergedItem<ReactiveNodeImpl>>,
-  priority2?: Array<MergedItem<ReactiveNodeImpl>>): Promise<void> {
+  ownerSlot: MergedItem<ReactiveTreeNodeImpl>,
+  allChildren: MergeList<ReactiveTreeNodeImpl>,
+  priority1?: Array<MergedItem<ReactiveTreeNodeImpl>>,
+  priority2?: Array<MergedItem<ReactiveTreeNodeImpl>>): Promise<void> {
   const stamp = ownerSlot.instance.stamp
   if (priority1)
     await runNestedScriptsIncrementally(ownerSlot, stamp, allChildren, priority1, Priority.normal)
@@ -444,8 +444,8 @@ async function startIncrementalNestedScriptsRun(
     await runNestedScriptsIncrementally(ownerSlot, stamp, allChildren, priority2, Priority.background)
 }
 
-async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveNodeImpl>, stamp: number,
-  allChildren: MergeList<ReactiveNodeImpl>, items: Array<MergedItem<ReactiveNodeImpl>>,
+async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveTreeNodeImpl>, stamp: number,
+  allChildren: MergeList<ReactiveTreeNodeImpl>, items: Array<MergedItem<ReactiveTreeNodeImpl>>,
   priority: Priority): Promise<void> {
   await Transaction.requestNextFrame()
   const node = owner.instance
@@ -476,7 +476,7 @@ async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveNodeImpl>
   }
 }
 
-function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveNodeImpl<any>>): void {
+function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) { // if not deactivated yet
     if (node.has(Mode.autonomous)) {
@@ -498,7 +498,7 @@ function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveNodeImpl<any>>): v
   }
 }
 
-function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
+function mountOrRemountIfNecessary(node: ReactiveTreeNodeImpl): void {
   const driver = node.driver
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
     runNonReactively(() => {
@@ -515,7 +515,7 @@ function mountOrRemountIfNecessary(node: ReactiveNodeImpl): void {
     runNonReactively(() => driver.runMount(node))
 }
 
-function runScriptNow(nodeSlot: MergedItem<ReactiveNodeImpl<any>>): void {
+function runScriptNow(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
@@ -542,7 +542,7 @@ function runScriptNow(nodeSlot: MergedItem<ReactiveNodeImpl<any>>): void {
   }
 }
 
-function triggerFinalization(nodeSlot: MergedItem<ReactiveNodeImpl>, isLeader: boolean, individual: boolean): void {
+function triggerFinalization(nodeSlot: MergedItem<ReactiveTreeNodeImpl>, isLeader: boolean, individual: boolean): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) {
     const driver = node.driver
@@ -567,7 +567,7 @@ function triggerFinalization(nodeSlot: MergedItem<ReactiveNodeImpl>, isLeader: b
     // Deactivate children
     for (const child of node.children.items())
       triggerFinalization(child, childrenAreLeaders, false)
-    ReactiveNodeImpl.grandNodeCount--
+    ReactiveTreeNodeImpl.grandNodeCount--
   }
 }
 
@@ -579,9 +579,9 @@ async function runDisposalLoop(): Promise<void> {
       await Transaction.requestNextFrame()
     ReactiveSystem.dispose(slot.instance)
     slot = slot.aux
-    ReactiveNodeImpl.disposableNodeCount--
+    ReactiveTreeNodeImpl.disposableNodeCount--
   }
-  // console.log(`Element count: ${ReactiveNodeImpl.grandNodeCount} totally (${ReactiveNodeImpl.disposableNodeCount} disposable)`)
+  // console.log(`Element count: ${ReactiveTreeNodeImpl.grandNodeCount} totally (${ReactiveTreeNodeImpl.disposableNodeCount} disposable)`)
   gFirstToDispose = gLastToDispose = undefined // reset loop
 }
 
@@ -597,7 +597,7 @@ function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T 
   return wrappedToRunInside
 }
 
-function runInsideContextOfNode<T>(nodeSlot: MergedItem<ReactiveNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
+function runInsideContextOfNode<T>(nodeSlot: MergedItem<ReactiveTreeNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
   const outer = gNodeSlot
   try {
     gNodeSlot = nodeSlot
@@ -674,6 +674,6 @@ Promise.prototype.then = reactronicDomHookedThen
 const NOP: any = (...args: any[]): void => { /* nop */ }
 const NOP_ASYNC: any = async (...args: any[]): Promise<void> => { /* nop */ }
 
-let gNodeSlot: MergedItem<ReactiveNodeImpl> | undefined = undefined
-let gFirstToDispose: MergedItem<ReactiveNodeImpl> | undefined = undefined
-let gLastToDispose: MergedItem<ReactiveNodeImpl> | undefined = undefined
+let gNodeSlot: MergedItem<ReactiveTreeNodeImpl> | undefined = undefined
+let gFirstToDispose: MergedItem<ReactiveTreeNodeImpl> | undefined = undefined
+let gLastToDispose: MergedItem<ReactiveTreeNodeImpl> | undefined = undefined

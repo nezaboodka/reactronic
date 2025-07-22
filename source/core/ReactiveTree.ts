@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Priority, Mode } from "../Enums.js"
-import { ReactiveNodeDriver, ReactiveNodeDecl, Script, ScriptAsync, Handler, ReactiveTreeNode, generateKey, observablesAreEqual } from "./ReactiveTreeNode.js"
+import { ReactiveTreeNodeDriver, ReactiveTreeNodeDecl, Script, ScriptAsync, Handler, ReactiveTreeNode, generateKey, observablesAreEqual } from "./ReactiveTreeNode.js"
 import { MergeList, MergedItem } from "../util/MergeList.js"
 import { LoggingOptions } from "../Logging.js"
 
@@ -19,7 +19,7 @@ export class ReactiveTree {
   static frameDuration = ReactiveTree.longFrameDuration
 
   static declare<E = void>(
-    driver: ReactiveNodeDriver<E>,
+    driver: ReactiveTreeNodeDriver<E>,
     script?: Script<E>,
     scriptAsync?: ScriptAsync<E>,
     key?: string,
@@ -28,15 +28,15 @@ export class ReactiveTree {
     preparationAsync?: ScriptAsync<E>,
     finalization?: Script<E>,
     triggers?: unknown,
-    basis?: ReactiveNodeDecl<E>): ReactiveTreeNode<E>
+    basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNode<E>
 
   static declare<E = void>(
-    driver: ReactiveNodeDriver<E>,
-    declaration?: ReactiveNodeDecl<E>): ReactiveTreeNode<E>
+    driver: ReactiveTreeNodeDriver<E>,
+    declaration?: ReactiveTreeNodeDecl<E>): ReactiveTreeNode<E>
 
   static declare<E = void>(
-    driver: ReactiveNodeDriver<E>,
-    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
+    driver: ReactiveTreeNodeDriver<E>,
+    scriptOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
     scriptAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
@@ -44,11 +44,11 @@ export class ReactiveTree {
     preparationAsync?: ScriptAsync<E>,
     finalization?: Script<E>,
     triggers?: unknown,
-    basis?: ReactiveNodeDecl<E>):  ReactiveTreeNode<E>
+    basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E>
 
   static declare<E = void>(
-    driver: ReactiveNodeDriver<E>,
-    scriptOrDeclaration?: Script<E> | ReactiveNodeDecl<E>,
+    driver: ReactiveTreeNodeDriver<E>,
+    scriptOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
     scriptAsync?: ScriptAsync<E>,
     key?: string,
     mode?: Mode,
@@ -56,9 +56,9 @@ export class ReactiveTree {
     preparationAsync?: ScriptAsync<E>,
     finalization?: Script<E>,
     triggers?: unknown,
-    basis?: ReactiveNodeDecl<E>):  ReactiveTreeNode<E> {
-    let result: ReactiveNodeImpl<E>
-    let declaration: ReactiveNodeDecl<E>
+    basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E> {
+    let result: ReactiveTreeNodeImpl<E>
+    let declaration: ReactiveTreeNodeDecl<E>
     // Normalize parameters
     if (scriptOrDeclaration instanceof Function) {
       declaration = {
@@ -79,7 +79,7 @@ export class ReactiveTree {
         "nested elements can be declared inside 'script' only")
       if (existing) {
         // Reuse existing node
-        result = existing.instance as ReactiveNodeImpl<E>
+        result = existing.instance as ReactiveTreeNodeImpl<E>
         if (result.driver !== driver && driver !== undefined)
           throw new Error(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
         const exTriggers = result.declaration.triggers
@@ -89,13 +89,13 @@ export class ReactiveTree {
       }
       else {
         // Create new node
-        result = new ReactiveNodeImpl<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
-        result.slot = children.mergeAsAdded(result as ReactiveNodeImpl<unknown>) as MergedItem<ReactiveNodeImpl<E>>
+        result = new ReactiveTreeNodeImpl<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
+        result.slot = children.mergeAsAdded(result as ReactiveTreeNodeImpl<unknown>) as MergedItem<ReactiveTreeNodeImpl<E>>
       }
     }
     else {
       // Create new root node
-      result = new ReactiveNodeImpl(effectiveKey || "", driver, declaration, owner)
+      result = new ReactiveTreeNodeImpl(effectiveKey || "", driver, declaration, owner)
       result.slot = MergeList.createItem(result)
       triggerScriptRunViaSlot(result.slot)
     }
@@ -103,8 +103,8 @@ export class ReactiveTree {
   }
 
   static withBasis<E = void>(
-    declaration?: ReactiveNodeDecl<E>,
-    basis?: ReactiveNodeDecl<E>): ReactiveNodeDecl<E> {
+    declaration?: ReactiveTreeNodeDecl<E>,
+    basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNodeDecl<E> {
     if (declaration)
       declaration.basis = basis
     else
@@ -113,39 +113,39 @@ export class ReactiveTree {
   }
 
   static get isFirstScriptRun(): boolean {
-    return ReactiveNodeImpl.nodeSlot.instance.stamp === 1
+    return ReactiveTreeNodeImpl.nodeSlot.instance.stamp === 1
   }
 
   static get key(): string {
-    return ReactiveNodeImpl.nodeSlot.instance.key
+    return ReactiveTreeNodeImpl.nodeSlot.instance.key
   }
 
   static get stamp(): number {
-    return ReactiveNodeImpl.nodeSlot.instance.stamp
+    return ReactiveTreeNodeImpl.nodeSlot.instance.stamp
   }
 
   static get triggers(): unknown {
-    return ReactiveNodeImpl.nodeSlot.instance.declaration.triggers
+    return ReactiveTreeNodeImpl.nodeSlot.instance.declaration.triggers
   }
 
   static get priority(): Priority {
-    return ReactiveNodeImpl.nodeSlot.instance.priority
+    return ReactiveTreeNodeImpl.nodeSlot.instance.priority
   }
 
   static set priority(value: Priority) {
-    ReactiveNodeImpl.nodeSlot.instance.priority = value
+    ReactiveTreeNodeImpl.nodeSlot.instance.priority = value
   }
 
   static get childrenShuffling(): boolean {
-    return ReactiveNodeImpl.nodeSlot.instance.childrenShuffling
+    return ReactiveTreeNodeImpl.nodeSlot.instance.childrenShuffling
   }
 
   static set childrenShuffling(value: boolean) {
-    ReactiveNodeImpl.nodeSlot.instance.childrenShuffling = value
+    ReactiveTreeNodeImpl.nodeSlot.instance.childrenShuffling = value
   }
 
   static triggerScriptRun(node: ReactiveTreeNode<any>, triggers: unknown): void {
-    const impl = node as ReactiveNodeImpl<any>
+    const impl = node as ReactiveTreeNodeImpl<any>
     const declaration = impl.declaration
     if (!observablesAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
@@ -154,16 +154,16 @@ export class ReactiveTree {
   }
 
   static triggerFinalization(node: ReactiveTreeNode<any>): void {
-    const impl = node as ReactiveNodeImpl<any>
+    const impl = node as ReactiveTreeNodeImpl<any>
     triggerFinalization(impl.slot!, true, true)
   }
 
   static runNestedNodeScriptsThenDo(action: (error: unknown) => void): void {
-    runNestedNodeScriptsThenDoImpl(ReactiveNodeImpl.nodeSlot, undefined, action)
+    runNestedNodeScriptsThenDoImpl(ReactiveTreeNodeImpl.nodeSlot, undefined, action)
   }
 
   static markAsMounted(node: ReactiveTreeNode<any>, yes: boolean): void {
-    const n = node as ReactiveNodeImpl<any>
+    const n = node as ReactiveTreeNodeImpl<any>
     if (n.stamp < 0)
       throw new Error("deactivated node cannot be mounted or unmounted")
     if (n.stamp >= Number.MAX_SAFE_INTEGER)
@@ -173,7 +173,7 @@ export class ReactiveTree {
 
   static findMatchingHost<E = unknown, R = unknown>(
     node: ReactiveTreeNode<E>, match: Handler<ReactiveTreeNode<E>, boolean>): ReactiveTreeNode<R> | undefined {
-    let p = node.host as ReactiveNodeImpl<any>
+    let p = node.host as ReactiveTreeNodeImpl<any>
     while (p !== p.host && !match(p))
       p = p.host
     return p
@@ -195,44 +195,43 @@ export class ReactiveTree {
   }
 
   static getDefaultLoggingOptions(): LoggingOptions | undefined {
-    return ReactiveNodeImpl.logging
+    return ReactiveTreeNodeImpl.logging
   }
 
   static setDefaultLoggingOptions(logging?: LoggingOptions): void {
-    ReactiveNodeImpl.logging = logging
+    ReactiveTreeNodeImpl.logging = logging
   }
 }
 
-// Import necessary functions and variables from ReactiveNode.ts
-declare class ReactiveNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
-  static nodeSlot: MergedItem<ReactiveNodeImpl>
+declare class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
+  static nodeSlot: MergedItem<ReactiveTreeNodeImpl>
   static logging: LoggingOptions | undefined
-  declaration: ReactiveNodeDecl<E>
-  slot: MergedItem<ReactiveNodeImpl<E>> | undefined
+  declaration: ReactiveTreeNodeDecl<E>
+  slot: MergedItem<ReactiveTreeNodeImpl<E>> | undefined
   stamp: number
   priority: Priority
   childrenShuffling: boolean
-  host: ReactiveNodeImpl
-  outer: ReactiveNodeImpl
+  host: ReactiveTreeNodeImpl
+  outer: ReactiveTreeNodeImpl
   context: any
-  owner: ReactiveNodeImpl
-  children: MergeList<ReactiveNodeImpl>
+  owner: ReactiveTreeNodeImpl
+  children: MergeList<ReactiveTreeNodeImpl>
   element: E
   level: number
   key: string
-  driver: ReactiveNodeDriver<E>
+  driver: ReactiveTreeNodeDriver<E>
   strictOrder: boolean
   numerator: number
   isMoved: boolean
   script: (triggers: unknown) => void
 
-  constructor(key: string, driver: ReactiveNodeDriver<E>, declaration: Readonly<ReactiveNodeDecl<E>>, owner: ReactiveNodeImpl | undefined)
+  constructor(key: string, driver: ReactiveTreeNodeDriver<E>, declaration: Readonly<ReactiveTreeNodeDecl<E>>, owner: ReactiveTreeNodeImpl | undefined)
   has(mode: Mode): boolean
   configureReactronic(options: any): any
 }
 
-declare const gNodeSlot: MergedItem<ReactiveNodeImpl> | undefined
-declare function getModeUsingBasisChain(declaration?: ReactiveNodeDecl<any>): Mode
-declare function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveNodeImpl<any>>): void
-declare function triggerFinalization(nodeSlot: MergedItem<ReactiveNodeImpl>, isLeader: boolean, individual: boolean): void
-declare function runNestedNodeScriptsThenDoImpl(nodeSlot: MergedItem<ReactiveNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void
+declare const gNodeSlot: MergedItem<ReactiveTreeNodeImpl> | undefined
+declare function getModeUsingBasisChain(declaration?: ReactiveTreeNodeDecl<any>): Mode
+declare function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>): void
+declare function triggerFinalization(nodeSlot: MergedItem<ReactiveTreeNodeImpl>, isLeader: boolean, individual: boolean): void
+declare function runNestedNodeScriptsThenDoImpl(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void

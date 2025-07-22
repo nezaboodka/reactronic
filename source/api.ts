@@ -29,5 +29,5 @@ export { ReactiveSystem, observable, atomic, reaction, cache, options } from "./
 export { ReactiveOperation } from "./ReactiveOperation.js"
 export { ReactiveTreeNode, BaseDriver, ReactiveTreeVariable } from "./core/ReactiveTreeNode.js"
 export { ReactiveTree } from "./core/ReactiveTree.js"
-export type { Script, ScriptAsync, Handler, ReactiveNodeDecl, ReactiveNodeDriver, ReactiveNodeContext } from "./core/ReactiveTreeNode.js"
+export type { Script, ScriptAsync, Handler, ReactiveTreeNodeDecl, ReactiveTreeNodeDriver, ReactiveTreeNodeContext } from "./core/ReactiveTreeNode.js"
 
