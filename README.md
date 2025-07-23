@@ -58,7 +58,7 @@ class Demo extends ObservableObject {
     this.email = email
   }
 
-  @reaction
+  @reactive
   printContact(): void {
     // depends on `name` and `email` and reacts to their changes
     if (this.email.indexOf('@') >= 0)
@@ -84,12 +84,12 @@ class Demo extends ObservableObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
-  @cache
+  @cached
   get contact(): string {
     return this.name + ' <' + this.email + '>'
   }
 
-  @reaction
+  @reactive
   printContact(): void {
     if (this.contact !== '')
       Console.log(this.contact)
@@ -193,7 +193,7 @@ execution.
 
 ``` tsx
 class MyView extends Component<{model: MyModel}> {
-  @cache
+  @cached
   render(): React.JSX.Element {
     return (
       <div>
@@ -207,12 +207,12 @@ class MyView extends Component<{model: MyModel}> {
 
 ``` tsx
 class Component<P> extends React.Component<P> {
-  @cache
+  @cached
   render(): React.JSX.Element {
     throw new Error('render method is undefined')
   }
 
-  @reaction // called in response to changes
+  @reactive // called in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate()) {
       // Ask React to re-render
