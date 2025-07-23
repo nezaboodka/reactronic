@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, atomic, cache } from "../source/api.js"
+import { ObservableObject, atomic, cached } from "../source/api.js"
 import { Component } from "./Component.js"
 
 class MyModel extends ObservableObject {
@@ -23,7 +23,7 @@ class MyModel extends ObservableObject {
 }
 
 class MyView extends Component<{model: MyModel}> {
-  @cache
+  @cached
   override render(): React.JSX.Element {
     const m = this.props.model
     return (

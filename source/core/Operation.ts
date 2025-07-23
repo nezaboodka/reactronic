@@ -370,20 +370,20 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
         snapshot.changes.has(memberName) */
       if (!skip) {
         const why = `${Dump.snapshot2(h, changeset, fk, observable)}    ◀◀    ${outer}`
-        const isReaction = this.options.kind === Kind.reaction /*&& this.snapshot.data[Meta.Disposed] === undefined*/
+        const isReactive = this.options.kind === Kind.reactive /*&& this.snapshot.data[Meta.Disposed] === undefined*/
 
         // Mark obsolete and unsubscribe from all (this.observables = undefined)
         this.obsoleteDueTo = why
         this.obsoleteSince = since
         if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
-          Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", isReaction ? "█" : "▒",
-            isReaction && changeset === EMPTY_OBJECT_VERSION.changeset
+          Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", isReactive ? "█" : "▒",
+            isReactive && changeset === EMPTY_OBJECT_VERSION.changeset
               ? `${this.hint()} is reactive and will run automatically (order ${this.options.order})`
-              : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, fk)} since s${since}${isReaction ? ` and will run automatically (order ${this.options.order})` : ""}`)
+              : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, fk)} since s${since}${isReactive ? ` and will run automatically (order ${this.options.order})` : ""}`)
         this.unsubscribeFromAllObservables()
 
         // Stop cascade propagation on reactive function, or continue otherwise
-        if (isReaction)
+        if (isReactive)
           collector.push(this)
         else
           this.subscribers?.forEach(s => s.markObsoleteDueTo(this, this.descriptor.fieldKey, this.changeset, this.descriptor.ownerHandle, why, since, collector))
@@ -411,14 +411,14 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
           const footprint: OperationFootprintImpl = this.descriptor.reuseOrRelaunch(false, undefined)
           if (footprint.result instanceof Promise)
             footprint.result.catch(error => {
-              if (footprint.options.kind === Kind.reaction)
+              if (footprint.options.kind === Kind.reactive)
                 misuse(`reactive function ${footprint.hint()} failed and will not run anymore: ${error}`, error)
             })
         }
         catch (e) {
           if (!nothrow)
             throw e
-          else if (this.options.kind === Kind.reaction)
+          else if (this.options.kind === Kind.reactive)
             misuse(`reactive ${this.hint()} failed and will not run anymore: ${e}`, e)
         }
       }
@@ -782,11 +782,11 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
     const opts = footprint ? footprint.options : OptionsImpl.INITIAL
     initial[fk] = footprint = new OperationFootprintImpl(Transaction.current, ctl, EMPTY_OBJECT_VERSION.changeset, new OptionsImpl(getter, setter, opts, options, implicit), false)
     // Add to the list if it's a reactive function
-    if (footprint.options.kind === Kind.reaction && footprint.options.throttling < Number.MAX_SAFE_INTEGER) {
+    if (footprint.options.kind === Kind.reactive && footprint.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.acquire(proto, Meta.Reactive)
       reactive[fk] = footprint
     }
-    else if (footprint.options.kind === Kind.reaction && footprint.options.throttling >= Number.MAX_SAFE_INTEGER) {
+    else if (footprint.options.kind === Kind.reactive && footprint.options.throttling >= Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.getFrom(proto, Meta.Reactive)
       delete reactive[fk]
     }
