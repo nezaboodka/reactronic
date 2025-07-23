@@ -35,7 +35,7 @@ export type OperationFootprint = {
   readonly observables: Map<ContentFootprint, Subscription> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(observable: ContentFootprint, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Array<OperationFootprint>): void
+  markObsoleteDueTo(footprint: ContentFootprint, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Array<OperationFootprint>): void
   relaunchIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 
