@@ -9,7 +9,7 @@ import { F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
 import { Kind, Reentrance, Isolation } from "../Enums.js"
 import { OperationDescriptor, ReactivityOptions, LoggingOptions, SnapshotOptions } from "../Options.js"
-import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, OperationFootprint, Subscription, Meta, AbstractChangeset } from "./Data.js"
+import { ObjectVersion, FieldKey, ObjectHandle, ContentFootprint, OperationFootprint, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, MAX_REVISION } from "./Changeset.js"
 import { Transaction, TransactionImpl } from "./Transaction.js"
 import { Indicator, IndicatorImpl } from "./Indicator.js"
@@ -242,7 +242,7 @@ export class OperationDescriptorImpl implements OperationDescriptor<any> {
 
 // OperationFootprintImpl
 
-class OperationFootprintImpl extends FieldVersion implements OperationFootprint {
+class OperationFootprintImpl extends ContentFootprint implements OperationFootprint {
   static current?: OperationFootprintImpl = undefined
   static queuedReactions: Array<OperationFootprint> = []
   static deferredReactions: Array<OperationFootprintImpl> = []
@@ -251,7 +251,7 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
   readonly transaction: Transaction
   readonly descriptor: OperationDescriptorImpl
   readonly changeset: AbstractChangeset
-  observables: Map<FieldVersion, Subscription> | undefined
+  observables: Map<ContentFootprint, Subscription> | undefined
   options: OptionsImpl
   cause: string | undefined
   args: any[]
@@ -268,7 +268,7 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
     this.transaction = transaction
     this.descriptor = descriptor
     this.changeset = changeset
-    this.observables = new Map<FieldVersion, Subscription>()
+    this.observables = new Map<ContentFootprint, Subscription>()
     if (former instanceof OperationFootprintImpl) {
       this.options = former.options
       this.cause = former.obsoleteDueTo
@@ -306,7 +306,7 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
     }
   }
 
-  override get isOperation(): boolean { return true } // override
+  override get isComputed(): boolean { return true } // override
   hint(): string { return `${Dump.snapshot2(this.descriptor.ownerHandle, this.changeset, this.descriptor.fieldKey, this)}` } // override
   get order(): number { return this.options.order }
 
@@ -314,7 +314,7 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
     return `Operation: ${this.why()}`
   }
 
-  clone(t: Transaction, cs: AbstractChangeset): FieldVersion {
+  clone(t: Transaction, cs: AbstractChangeset): ContentFootprint {
     return new OperationFootprintImpl(t, this.descriptor, cs, this, true)
   }
 
@@ -363,13 +363,13 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(observable: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: OperationFootprint[]): void {
+  markObsoleteDueTo(footprint: ContentFootprint, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: OperationFootprint[]): void {
     if (this.observables !== undefined) { // if not yet marked as obsolete
-      const skip = !observable.isOperation &&
+      const skip = !footprint.isComputed &&
         changeset.id === this.lastEditorChangesetId /* &&
         snapshot.changes.has(memberName) */
       if (!skip) {
-        const why = `${Dump.snapshot2(h, changeset, fk, observable)}    ◀◀    ${outer}`
+        const why = `${Dump.snapshot2(h, changeset, fk, footprint)}    ◀◀    ${outer}`
         const isReactive = this.options.kind === Kind.reactive /*&& this.snapshot.data[Meta.Disposed] === undefined*/
 
         // Mark obsolete and unsubscribe from all (this.observables = undefined)
@@ -393,11 +393,11 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
         if (tran.changeset === changeset) {
           // do not cancel itself
         }
-        else if (!tran.isFinished && this !== observable && !this.options.allowObsoleteToFinish) // restart after itself if canceled
+        else if (!tran.isFinished && this !== footprint && !this.options.allowObsoleteToFinish) // restart after itself if canceled
           tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.snapshot2(h, changeset, fk)} changed by T${changeset.id}[${changeset.hint}]`), null)
       }
       else if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
-        Log.write(" ", "x", `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(h, changeset, fk, observable)}`)
+        Log.write(" ", "x", `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(h, changeset, fk, footprint)}`)
     }
   }
 
@@ -569,17 +569,17 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
       x.relaunchIfNotUpToDate(true, true)
   }
 
-  private static markUsed(observable: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean): void {
+  private static markUsed(footprint: ContentFootprint, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean): void {
     if (kind !== Kind.atomic) {
-      const footprint: OperationFootprintImpl | undefined = OperationFootprintImpl.current // alias
-      if (footprint && footprint.options.kind !== Kind.atomic &&
-        footprint.transaction === Transaction.current && fk !== Meta.Handle) {
+      const subscriber: OperationFootprintImpl | undefined = OperationFootprintImpl.current // alias
+      if (subscriber && subscriber.options.kind !== Kind.atomic &&
+        subscriber.transaction === Transaction.current && fk !== Meta.Handle) {
         const ctx = Changeset.current()
         if (ctx !== ov.changeset) // snapshot should not bump itself
           ctx.bumpBy(ov.changeset.timestamp)
         const t = weak ? -1 : ctx.timestamp
-        if (!footprint.subscribeTo(observable, ov, fk, h, t))
-          footprint.markObsoleteDueTo(observable, fk, h.applied.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
+        if (!subscriber.subscribeTo(footprint, ov, fk, h, t))
+          subscriber.markObsoleteDueTo(footprint, fk, h.applied.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
       }
     }
   }
@@ -637,7 +637,7 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
     if (collector !== undefined) {
       // Propagate change to reactive functions
       const former = ov.former.objectVersion.data[fk]
-      if (former !== undefined && former instanceof FieldVersion) {
+      if (former !== undefined && former instanceof ContentFootprint) {
         const why = `T${ov.changeset.id}[${ov.changeset.hint}]`
         if (former instanceof OperationFootprintImpl) {
           if ((former.obsoleteSince === MAX_REVISION || former.obsoleteSince <= 0)) {
@@ -672,7 +672,7 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
           curr.unsubscribeFromAllObservables()
       }
     }
-    else if (curr instanceof FieldVersion && curr.subscribers) {
+    else if (curr instanceof ContentFootprint && curr.subscribers) {
       // // Unsubscribe from own-changed subscriptions
       // curr.reactions.forEach(o => {
       //   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -693,12 +693,12 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
       OperationDescriptorImpl.proceedWithinGivenLaunch<void>(undefined, OperationFootprintImpl.processQueuedReactions)
   }
 
-  private static migrateFieldVersion(fv: FieldVersion, target: Transaction): FieldVersion {
-    let result: FieldVersion
-    if (fv instanceof OperationFootprintImpl)
-      result = new OperationFootprintImpl(target, fv.descriptor, target.changeset, fv, true)
+  private static migrateContentFootprint(cf: ContentFootprint, target: Transaction): ContentFootprint {
+    let result: ContentFootprint
+    if (cf instanceof OperationFootprintImpl)
+      result = new OperationFootprintImpl(target, cf.descriptor, target.changeset, cf, true)
     else
-      result = new FieldVersion(fv.content, fv.lastEditorChangesetId)
+      result = new ContentFootprint(cf.content, cf.lastEditorChangesetId)
     // TODO: Switch subscriptions
     return result
   }
@@ -724,44 +724,44 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
     this.observables = undefined
   }
 
-  private subscribeTo(observable: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
+  private subscribeTo(footprint: ContentFootprint, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
     const parent = this.transaction.changeset.parent
-    const ok = OperationFootprintImpl.canSubscribeTo(observable, ov, parent, fk, h, timestamp)
+    const ok = OperationFootprintImpl.canSubscribeTo(footprint, ov, parent, fk, h, timestamp)
     if (ok) {
       // Performance tracking
       let times: number = 0
       if (Mvcc.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
-        const existing = this.observables!.get(observable)
+        const existing = this.observables!.get(footprint)
         times = existing ? existing.usageCount + 1 : 1
       }
       if (this.observables !== undefined) {
         // Acquire storage set
-        if (!observable.subscribers)
-          observable.subscribers = new Set<OperationFootprintImpl>()
+        if (!footprint.subscribers)
+          footprint.subscribers = new Set<OperationFootprintImpl>()
         // Two-way linking
         const subscription: Subscription = { memberHint: Dump.snapshot2(h, ov.changeset, fk), usageCount: times }
-        observable.subscribers.add(this)
-        this.observables!.set(observable, subscription)
+        footprint.subscribers.add(this)
+        this.observables!.set(footprint, subscription)
         if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-          Log.write("║", "  ∞", `${this.hint()} is subscribed to ${Dump.snapshot2(h, ov.changeset, fk, observable)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ""}`)
+          Log.write("║", "  ∞", `${this.hint()} is subscribed to ${Dump.snapshot2(h, ov.changeset, fk, footprint)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ""}`)
       }
       else if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write("║", "  x", `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, ov.changeset, fk, observable)}`)
+        Log.write("║", "  x", `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, ov.changeset, fk, footprint)}`)
     }
     else {
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write("║", "  x", `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, ov.changeset, fk, observable)}`)
+        Log.write("║", "  x", `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, ov.changeset, fk, footprint)}`)
     }
     return ok // || subscription.next === r
   }
 
-  private static canSubscribeTo(observable: FieldVersion, ov: ObjectVersion, parent: Changeset | undefined, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
+  private static canSubscribeTo(footprint: ContentFootprint, ov: ObjectVersion, parent: Changeset | undefined, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
     const parentSnapshot = parent ? parent.lookupObjectVersion(h, fk, false) : h.applied
-    const parentObservable = parentSnapshot.data[fk]
-    let result = observable === parentObservable || (
-      !ov.changeset.sealed && ov.former.objectVersion.data[fk] === parentObservable)
+    const parentFootprint = parentSnapshot.data[fk]
+    let result = footprint === parentFootprint || (
+      !ov.changeset.sealed && ov.former.objectVersion.data[fk] === parentFootprint)
     if (result && timestamp !== -1)
-      result = !(observable instanceof OperationFootprintImpl && timestamp >= observable.obsoleteSince)
+      result = !(footprint instanceof OperationFootprintImpl && timestamp >= footprint.obsoleteSince)
     return result
   }
 
@@ -808,7 +808,7 @@ class OperationFootprintImpl extends FieldVersion implements OperationFootprint 
     Changeset.propagateAllChangesThroughSubscriptions = OperationFootprintImpl.propagateAllChangesThroughSubscriptions // override
     Changeset.revokeAllSubscriptions = OperationFootprintImpl.revokeAllSubscriptions // override
     Changeset.enqueueReactionsToRun = OperationFootprintImpl.enqueueReactionsToRun
-    TransactionImpl.migrateFieldVersion = OperationFootprintImpl.migrateFieldVersion
+    TransactionImpl.migrateContentFootprint = OperationFootprintImpl.migrateContentFootprint
     Mvcc.createOperationDescriptor = OperationFootprintImpl.createOperationDescriptor // override
     Mvcc.rememberOperationOptions = OperationFootprintImpl.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override

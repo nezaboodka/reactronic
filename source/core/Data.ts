@@ -18,13 +18,13 @@ export type AbstractChangeset = {
   readonly sealed: boolean
 }
 
-// FieldVersion
+// ContentFootprint
 
-export class FieldVersion<T = any> {
+export class ContentFootprint<T = any> {
   content: T
   subscribers?: Set<OperationFootprint>
   lastEditorChangesetId: number
-  get isOperation(): boolean { return false }
+  get isComputed(): boolean { return false }
   constructor(content: T, lastEditorChangesetId: number) { this.content = content; this.lastEditorChangesetId = lastEditorChangesetId }
 }
 
@@ -32,10 +32,10 @@ export class FieldVersion<T = any> {
 
 export type OperationFootprint = {
   readonly order: number
-  readonly observables: Map<FieldVersion, Subscription> | undefined
+  readonly observables: Map<ContentFootprint, Subscription> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(observable: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Array<OperationFootprint>): void
+  markObsoleteDueTo(observable: ContentFootprint, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Array<OperationFootprint>): void
   relaunchIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 
@@ -66,14 +66,14 @@ export class ObjectVersion {
   }
 
   get revision(): number {
-    return (this.data[Meta.Revision] as FieldVersion)?.content ?? 0
+    return (this.data[Meta.Revision] as ContentFootprint)?.content ?? 0
   }
 
   get disposed(): boolean { return this.revision < 0 }
   set disposed(value: boolean) {
     const rev = this.revision
     if (rev < 0 !== value)
-      (this.data[Meta.Revision] as FieldVersion).content = ~rev
+      (this.data[Meta.Revision] as ContentFootprint).content = ~rev
   }
 }
 

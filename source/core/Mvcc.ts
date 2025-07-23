@@ -10,7 +10,7 @@ import { Log, misuse } from "../util/Dbg.js"
 import { Kind, Reentrance, Isolation } from "../Enums.js"
 import { OperationDescriptor, ReactivityOptions } from "../Options.js"
 import { LoggingOptions, ProfilingOptions } from "../Logging.js"
-import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Meta } from "./Data.js"
+import { ObjectVersion, FieldKey, ObjectHandle, ContentFootprint, Meta } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION } from "./Changeset.js"
 import { Journal } from "./Journal.js"
 import { Indicator } from "./Indicator.js"
@@ -127,7 +127,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       const cs = Changeset.current()
       const ov: ObjectVersion = cs.getObjectVersion(h, fk)
       result = ov.data[fk]
-      if (result instanceof FieldVersion && !result.isOperation) {
+      if (result instanceof ContentFootprint && !result.isComputed) {
         if (this.isObservable)
           Changeset.markUsed(result, ov, fk, h, Kind.plain, false)
         result = result.content
@@ -176,7 +176,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     const result = []
     for (const fk of Object.getOwnPropertyNames(ov.data)) {
       const field = ov.data[fk]
-      if (!(field instanceof FieldVersion) || !field.isOperation)
+      if (!(field instanceof ContentFootprint) || !field.isComputed)
         result.push(fk)
     }
     return result
@@ -184,7 +184,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
 
   static decorateData(isObservable: boolean, proto: any, fk: FieldKey): any {
     if (isObservable) {
-      Meta.acquire(proto, Meta.Initial)[fk] = new FieldVersion(undefined, 0)
+      Meta.acquire(proto, Meta.Initial)[fk] = new ContentFootprint(undefined, 0)
       const get = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
         return Mvcc.observable.get(h, fk, this)
@@ -248,7 +248,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       h = new ObjectHandle(obj, obj, Mvcc.observable, ov, obj.constructor.name)
       Meta.set(ov.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
-      Meta.set(ov.data, Meta.Revision, new FieldVersion(1, 0))
+      Meta.set(ov.data, Meta.Revision, new ContentFootprint(1, 0))
     }
     return h
   }

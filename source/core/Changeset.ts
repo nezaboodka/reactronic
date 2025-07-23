@@ -13,7 +13,7 @@ import { SealedMap } from "../util/SealedMap.js"
 import { SealedSet } from "../util/SealedSet.js"
 import { Isolation, Kind } from "../Enums.js"
 import { SnapshotOptions } from "../Options.js"
-import { AbstractChangeset, ObjectVersion, FieldKey, ObjectHandle, FieldVersion, OperationFootprint, Meta } from "./Data.js"
+import { AbstractChangeset, ObjectVersion, FieldKey, ObjectHandle, ContentFootprint, OperationFootprint, Meta } from "./Data.js"
 
 export const MAX_REVISION = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_REVISION = MAX_REVISION - 1
@@ -25,7 +25,7 @@ Object.defineProperty(ObjectHandle.prototype, "#this#", {
     const data = Changeset.current().getObjectVersion(this, "#this#").data
     for (const fk in data) {
       const v = data[fk]
-      if (v instanceof FieldVersion)
+      if (v instanceof ContentFootprint)
         result[fk] = v.content
       else if (v === Meta.Raw)
         result[fk] = this.data[fk]
@@ -76,7 +76,7 @@ export class Changeset implements AbstractChangeset {
   // To be redefined by transaction implementation
   static current: () => Changeset = UNDEF
   static edit: () => Changeset = UNDEF
-  static markUsed: (fv: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean) => void = UNDEF
+  static markUsed: (cf: ContentFootprint, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean) => void = UNDEF
   static markEdited: (oldValue: any, newValue: any, edited: boolean, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle) => void = UNDEF
   static tryResolveConflict: (theirValue: any, ourFormerValue: any, ourValue: any) => { isResolved: boolean, resolvedValue: any }  = UNDEF
   static propagateAllChangesThroughSubscriptions = (changeset: Changeset): void => { /* nop */ }
@@ -122,7 +122,7 @@ export class Changeset implements AbstractChangeset {
         const revision = fk === Meta.Handle ? 1 : ov.revision + 1
         const data = { ...fk === Meta.Handle ? value : ov.data }
         Meta.set(data, Meta.Handle, h)
-        Meta.set(data, Meta.Revision, new FieldVersion(revision, this.id))
+        Meta.set(data, Meta.Revision, new ContentFootprint(revision, this.id))
         ov = new ObjectVersion(this, ov, data)
         this.items.set(h, ov)
         h.editing = ov
@@ -137,12 +137,12 @@ export class Changeset implements AbstractChangeset {
   }
 
   setFieldContent(h: ObjectHandle, fk: FieldKey, ov: ObjectVersion, content: any, receiver: any, sensitivity: boolean): void {
-    let existing = ov.data[fk] as FieldVersion
+    let existing = ov.data[fk] as ContentFootprint
     if (existing !== undefined || (ov.former.objectVersion.changeset === EMPTY_OBJECT_VERSION.changeset && (fk in h.data) === false)) {
       if (existing === undefined || existing.content !== content || sensitivity) {
         const existingContent = existing?.content
         if (ov.former.objectVersion.data[fk] === existing) {
-          existing = ov.data[fk] = new FieldVersion(content, this.id)
+          existing = ov.data[fk] = new ContentFootprint(content, this.id)
           Changeset.markEdited(existingContent, content, true, ov, fk, h)
         }
         else {
@@ -257,8 +257,8 @@ export class Changeset implements AbstractChangeset {
     const merged = { ...theirs.data } // clone
     ours.changes.forEach((o, fk) => {
       counter++
-      const ourFieldVersion = ours.data[fk] as FieldVersion
-      merged[fk] = ourFieldVersion
+      const ourContentFootprint = ours.data[fk] as ContentFootprint
+      merged[fk] = ourContentFootprint
       // if (subscriptions && !theirs.changeset.sealed) {
       //   const theirValueSnapshot = theirs.data[fk] as ValueSnapshot
       //   const theirReactions = theirValueSnapshot.reactions
@@ -282,10 +282,10 @@ export class Changeset implements AbstractChangeset {
       else {
         const theirValue = theirs.data[fk]
         const ourFormerValue = ours.former.objectVersion.data[fk]
-        const { isResolved, resolvedValue } = Changeset.tryResolveConflict(theirValue, ourFormerValue, ourFieldVersion)
+        const { isResolved, resolvedValue } = Changeset.tryResolveConflict(theirValue, ourFormerValue, ourContentFootprint)
         if (!isResolved)
           ours.conflicts.set(fk, theirs)
-        else if ((resolvedValue as FieldVersion).isOperation)
+        else if ((resolvedValue as ContentFootprint).isComputed)
           merged[fk] = resolvedValue
         if (Log.isOn && Log.opt.change)
           Log.write("║╠", "", `${Dump.snapshot2(h, ours.changeset, fk)} ${!isResolved ? "<>" : "=="} ${Dump.snapshot2(h, theirs.changeset, fk)}`, 0, !isResolved ? " *** CONFLICT ***" : undefined)
@@ -315,13 +315,13 @@ export class Changeset implements AbstractChangeset {
       h.editing = undefined
   }
 
-  static sealFieldVersion(fv: FieldVersion | symbol, fk: FieldKey, typeName: string): void {
-    if (fv instanceof FieldVersion) {
-      const content = fv.content
+  static sealFieldVersion(cf: ContentFootprint | symbol, fk: FieldKey, typeName: string): void {
+    if (cf instanceof ContentFootprint) {
+      const content = cf.content
       if (content !== undefined && content !== null) {
         const sealedType = Object.getPrototypeOf(content)[Sealant.SealedType]
         if (sealedType)
-          fv.content = Sealant.seal(content, sealedType, typeName, fk)
+          cf.content = Sealant.seal(content, sealedType, typeName, fk)
       }
     }
   }
@@ -409,14 +409,14 @@ export class Dump {
     return result
   }
 
-  static snapshot2(h: ObjectHandle, s: AbstractChangeset, fk?: FieldKey, o?: FieldVersion): string {
-    return Dump.obj(h, fk, s.timestamp, s.id, o?.lastEditorChangesetId, o?.content ?? Meta.Undefined)
+  static snapshot2(h: ObjectHandle, s: AbstractChangeset, fk?: FieldKey, cf?: ContentFootprint): string {
+    return Dump.obj(h, fk, s.timestamp, s.id, cf?.lastEditorChangesetId, cf?.content ?? Meta.Undefined)
   }
 
   static snapshot(ov: ObjectVersion, fk?: FieldKey): string {
     const h = Meta.get<ObjectHandle | undefined>(ov.data, Meta.Handle)
-    const fv = fk !== undefined ? ov.data[fk] as FieldVersion : undefined
-    return Dump.obj(h, fk, ov.changeset.timestamp, ov.changeset.id, fv?.lastEditorChangesetId)
+    const cf = fk !== undefined ? ov.data[fk] as ContentFootprint : undefined
+    return Dump.obj(h, fk, ov.changeset.timestamp, ov.changeset.id, cf?.lastEditorChangesetId)
   }
 
   static conflicts(conflicts: ObjectVersion[]): string {

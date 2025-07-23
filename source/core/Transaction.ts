@@ -10,7 +10,7 @@ import { Log, misuse, error, fatal } from "../util/Dbg.js"
 import { Worker } from "../Worker.js"
 import { Isolation } from "../Enums.js"
 import { SnapshotOptions, LoggingOptions } from "../Options.js"
-import { Meta, ObjectHandle, ObjectVersion, OperationFootprint, FieldVersion, FieldKey } from "./Data.js"
+import { Meta, ObjectHandle, ObjectVersion, OperationFootprint, ContentFootprint, FieldKey } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, UNDEFINED_REVISION } from "./Changeset.js"
 
 export abstract class Transaction implements Worker {
@@ -433,47 +433,47 @@ export class TransactionImpl extends Transaction {
 
   static migrateFieldVersionToAnotherTransaction(h: ObjectHandle, fk: FieldKey, ov: ObjectVersion, ovParent: ObjectVersion, tParent: Transaction): void {
     const csParent = tParent.changeset
-    const fv = ov.data[fk] as FieldVersion
-    const fvParent = ovParent.data[fk] as FieldVersion
-    if (fv.isOperation) {
-      const migrated = TransactionImpl.migrateFieldVersion(fv, tParent)
-      if (ovParent.former.objectVersion.data[fk] !== fvParent) { // there are changes in parent
-        // Migrate reactions from parent
-        let reactions = fvParent.subscribers
-        if (reactions) {
-          const migratedReactions = migrated.subscribers = new Set<OperationFootprint>()
-          reactions.forEach(o => {
+    const cf = ov.data[fk] as ContentFootprint
+    const cfParent = ovParent.data[fk] as ContentFootprint
+    if (cf.isComputed) {
+      const migrated = TransactionImpl.migrateContentFootprint(cf, tParent)
+      if (ovParent.former.objectVersion.data[fk] !== cfParent) { // there are changes in parent
+        // Migrate subscribers from parent
+        let subscribers = cfParent.subscribers
+        if (subscribers) {
+          const migratedSubscribers = migrated.subscribers = new Set<OperationFootprint>()
+          subscribers.forEach(o => {
             const conformingObservables = o.observables!
-            const sub = conformingObservables.get(fvParent)!
-            conformingObservables.delete(fvParent)
+            const sub = conformingObservables.get(cfParent)!
+            conformingObservables.delete(cfParent)
             conformingObservables.set(migrated, sub)
-            migratedReactions.add(o)
+            migratedSubscribers.add(o)
           })
-          fvParent.subscribers = undefined
+          cfParent.subscribers = undefined
         }
-        // Migrate reactions from current (child)
-        reactions = fv.subscribers
-        if (reactions) {
-          let migratedReactions = migrated.subscribers
-          if (migratedReactions === undefined)
-            migratedReactions = migrated.subscribers = new Set<OperationFootprint>()
-          reactions.forEach(o => {
+        // Migrate subscribers from current (child)
+        subscribers = cf.subscribers
+        if (subscribers) {
+          let migratedSubscribers = migrated.subscribers
+          if (migratedSubscribers === undefined)
+            migratedSubscribers = migrated.subscribers = new Set<OperationFootprint>()
+          subscribers.forEach(o => {
             const conformingObservables = o.observables!
-            const sub = conformingObservables.get(fv)!
-            conformingObservables.delete(fv)
+            const sub = conformingObservables.get(cf)!
+            conformingObservables.delete(cf)
             conformingObservables.set(migrated, sub)
-            migratedReactions.add(o)
+            migratedSubscribers.add(o)
           })
-          fv.subscribers = undefined
+          cf.subscribers = undefined
         }
         // Migrate observables from current (child)
-        const observables = (fv as unknown as OperationFootprint).observables
+        const observables = (cf as unknown as OperationFootprint).observables
         const migratedObservables = (migrated as unknown as OperationFootprint).observables
         if (observables) {
           observables.forEach((s, o) => {
-            const conformingReactions = o.subscribers!
-            conformingReactions.delete(fv as unknown as OperationFootprint)!
-            conformingReactions.add(migrated as unknown as OperationFootprint)
+            const conformingSubscribers = o.subscribers!
+            conformingSubscribers.delete(cf as unknown as OperationFootprint)!
+            conformingSubscribers.add(migrated as unknown as OperationFootprint)
             migratedObservables!.set(o, s)
           })
           observables.clear()
@@ -482,26 +482,26 @@ export class TransactionImpl extends Transaction {
       }
       else {
         // Migrate reactions from current (child)
-        const reactions = fv.subscribers
-        if (reactions) {
+        const subscribers = cf.subscribers
+        if (subscribers) {
           const migratedReactions = migrated.subscribers = new Set<OperationFootprint>()
-          reactions.forEach(o => {
+          subscribers.forEach(o => {
             const conformingObservables = o.observables!
-            const sub = conformingObservables.get(fv)!
-            conformingObservables.delete(fv)
+            const sub = conformingObservables.get(cf)!
+            conformingObservables.delete(cf)
             conformingObservables.set(migrated, sub)
             migratedReactions.add(o)
           })
-          fv.subscribers = undefined
+          cf.subscribers = undefined
         }
         // Migrate observables from current (child)
-        const observables = (fv as unknown as OperationFootprint).observables
+        const observables = (cf as unknown as OperationFootprint).observables
         const migratedObservables = (migrated as unknown as OperationFootprint).observables
         if (observables) {
           observables.forEach((s, o) => {
-            const conformingReactions = o.subscribers!
-            conformingReactions.delete(fv as unknown as OperationFootprint)
-            conformingReactions.add(migrated as unknown as OperationFootprint)
+            const conformingSubscribers = o.subscribers!
+            conformingSubscribers.delete(cf as unknown as OperationFootprint)
+            conformingSubscribers.add(migrated as unknown as OperationFootprint)
             migratedObservables!.set(o, s)
           })
           observables.clear()
@@ -512,26 +512,26 @@ export class TransactionImpl extends Transaction {
       Changeset.markEdited(undefined, migrated, true, ovParent, fk, h)
     }
     else {
-      const parentContent = fvParent?.content
-      if (ovParent.former.objectVersion.data[fk] !== fvParent) { // there are changes in parent
-        fvParent.content = fv.content
+      const parentContent = cfParent?.content
+      if (ovParent.former.objectVersion.data[fk] !== cfParent) { // there are changes in parent
+        cfParent.content = cf.content
         // Migrate subscriptions
-        const reactions = fv.subscribers
-        if (reactions) {
-          if (fvParent.subscribers === undefined)
-            fvParent.subscribers = new Set()
-          reactions.forEach(o => {
+        const subscribers = cf.subscribers
+        if (subscribers) {
+          if (cfParent.subscribers === undefined)
+            cfParent.subscribers = new Set()
+          subscribers.forEach(o => {
             const conformingObservables = o.observables!
-            const sub = conformingObservables.get(fv)!
-            conformingObservables.delete(fv)
-            conformingObservables.set(fvParent, sub)
-            fvParent.subscribers!.add(o)
+            const sub = conformingObservables.get(cf)!
+            conformingObservables.delete(cf)
+            conformingObservables.set(cfParent, sub)
+            cfParent.subscribers!.add(o)
           })
         }
       }
       else
-        ovParent.data[fk] = fv // just use field version instance from child transaction
-      Changeset.markEdited(parentContent, fv.content, true, ovParent, fk, h)
+        ovParent.data[fk] = cf // just use field version instance from child transaction
+      Changeset.markEdited(parentContent, cf.content, true, ovParent, fk, h)
     }
   }
 
@@ -556,8 +556,8 @@ export class TransactionImpl extends Transaction {
   }
 
   /* istanbul ignore next */
-  static migrateFieldVersion = function (fv: FieldVersion, target: Transaction): FieldVersion {
-    throw misuse("this implementation of cloneLaunch should never be called")
+  static migrateContentFootprint = function (fv: ContentFootprint, target: Transaction): ContentFootprint {
+    throw misuse("this implementation of migrateContentFootprint should never be called")
   }
 
   static _init(): void {

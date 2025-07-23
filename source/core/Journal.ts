@@ -7,7 +7,7 @@
 
 import { Isolation } from "../Enums.js"
 import { ObservableObject } from "./Mvcc.js"
-import { ObjectHandle, ObjectVersion, Meta, PatchSet, ValuePatch, FieldVersion, FieldKey } from "./Data.js"
+import { ObjectHandle, ObjectVersion, Meta, PatchSet, ValuePatch, ContentFootprint, FieldKey } from "./Data.js"
 import { Changeset, EMPTY_OBJECT_VERSION } from "./Changeset.js"
 import { Transaction } from "./Transaction.js"
 import { Sealant } from "../util/Sealant.js"
@@ -126,7 +126,7 @@ export class JournalImpl extends Journal {
           const content = undoing ? vp.formerContent : vp.freshContent
           const ov: ObjectVersion = ctx.getEditableObjectVersion(h, fk, content)
           if (ov.changeset === ctx) {
-            ov.data[fk] = new FieldVersion(content, ctx.id)
+            ov.data[fk] = new ContentFootprint(content, ctx.id)
             const existing: any = ov.former.objectVersion.data[fk]
             Changeset.markEdited(existing, content, existing !== content, ov, fk, h)
           }
@@ -166,8 +166,8 @@ export class JournalImpl extends Journal {
   }
 }
 
-function unseal(fv: FieldVersion): any {
-  const result = fv.content
+function unseal(cf: ContentFootprint): any {
+  const result = cf.content
   const createCopy = result?.[Sealant.CreateCopy] as () => any
   return createCopy !== undefined ? createCopy.call(result) : result
 }
