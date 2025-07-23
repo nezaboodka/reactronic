@@ -10,7 +10,7 @@ import { Log, misuse, error, fatal } from "../util/Dbg.js"
 import { Worker } from "../Worker.js"
 import { Isolation } from "../Enums.js"
 import { SnapshotOptions, LoggingOptions } from "../Options.js"
-import { Meta, ObjectHandle, ObjectVersion, Reaction, FieldVersion, FieldKey } from "./Data.js"
+import { Meta, ObjectHandle, ObjectVersion, OperationFootprint, FieldVersion, FieldKey } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, UNDEFINED_REVISION } from "./Changeset.js"
 
 export abstract class Transaction implements Worker {
@@ -339,9 +339,9 @@ export class TransactionImpl extends Transaction {
     throw error(`T${this.id}[${this.hint}] conflicts with: ${Dump.conflicts(conflicts)}`, undefined)
   }
 
-  private applyOrDiscard(): Array<Reaction> {
+  private applyOrDiscard(): Array<OperationFootprint> {
     // It's critical to have no exceptions in this block
-    let obsolete: Array<Reaction>
+    let obsolete: Array<OperationFootprint>
     try {
       if (Log.isOn && Log.opt.change)
         Log.write("╠═", "", "", undefined, "changes")
@@ -364,7 +364,7 @@ export class TransactionImpl extends Transaction {
     return obsolete
   }
 
-  applyOrDiscardChangeset(): Array<Reaction> {
+  applyOrDiscardChangeset(): Array<OperationFootprint> {
     const error = this.canceled
     const changeset = this.changeset
     changeset.items.forEach((ov: ObjectVersion, h: ObjectHandle) => {
@@ -435,13 +435,13 @@ export class TransactionImpl extends Transaction {
     const csParent = tParent.changeset
     const fv = ov.data[fk] as FieldVersion
     const fvParent = ovParent.data[fk] as FieldVersion
-    if (fv.isLaunch) {
+    if (fv.isOperation) {
       const migrated = TransactionImpl.migrateFieldVersion(fv, tParent)
       if (ovParent.former.objectVersion.data[fk] !== fvParent) { // there are changes in parent
         // Migrate reactions from parent
-        let reactions = fvParent.reactions
+        let reactions = fvParent.subscribers
         if (reactions) {
-          const migratedReactions = migrated.reactions = new Set<Reaction>()
+          const migratedReactions = migrated.subscribers = new Set<OperationFootprint>()
           reactions.forEach(o => {
             const conformingObservables = o.observables!
             const sub = conformingObservables.get(fvParent)!
@@ -449,14 +449,14 @@ export class TransactionImpl extends Transaction {
             conformingObservables.set(migrated, sub)
             migratedReactions.add(o)
           })
-          fvParent.reactions = undefined
+          fvParent.subscribers = undefined
         }
         // Migrate reactions from current (child)
-        reactions = fv.reactions
+        reactions = fv.subscribers
         if (reactions) {
-          let migratedReactions = migrated.reactions
+          let migratedReactions = migrated.subscribers
           if (migratedReactions === undefined)
-            migratedReactions = migrated.reactions = new Set<Reaction>()
+            migratedReactions = migrated.subscribers = new Set<OperationFootprint>()
           reactions.forEach(o => {
             const conformingObservables = o.observables!
             const sub = conformingObservables.get(fv)!
@@ -464,16 +464,16 @@ export class TransactionImpl extends Transaction {
             conformingObservables.set(migrated, sub)
             migratedReactions.add(o)
           })
-          fv.reactions = undefined
+          fv.subscribers = undefined
         }
         // Migrate observables from current (child)
-        const observables = (fv as unknown as Reaction).observables
-        const migratedObservables = (migrated as unknown as Reaction).observables
+        const observables = (fv as unknown as OperationFootprint).observables
+        const migratedObservables = (migrated as unknown as OperationFootprint).observables
         if (observables) {
           observables.forEach((s, o) => {
-            const conformingReactions = o.reactions!
-            conformingReactions.delete(fv as unknown as Reaction)!
-            conformingReactions.add(migrated as unknown as Reaction)
+            const conformingReactions = o.subscribers!
+            conformingReactions.delete(fv as unknown as OperationFootprint)!
+            conformingReactions.add(migrated as unknown as OperationFootprint)
             migratedObservables!.set(o, s)
           })
           observables.clear()
@@ -482,9 +482,9 @@ export class TransactionImpl extends Transaction {
       }
       else {
         // Migrate reactions from current (child)
-        const reactions = fv.reactions
+        const reactions = fv.subscribers
         if (reactions) {
-          const migratedReactions = migrated.reactions = new Set<Reaction>()
+          const migratedReactions = migrated.subscribers = new Set<OperationFootprint>()
           reactions.forEach(o => {
             const conformingObservables = o.observables!
             const sub = conformingObservables.get(fv)!
@@ -492,16 +492,16 @@ export class TransactionImpl extends Transaction {
             conformingObservables.set(migrated, sub)
             migratedReactions.add(o)
           })
-          fv.reactions = undefined
+          fv.subscribers = undefined
         }
         // Migrate observables from current (child)
-        const observables = (fv as unknown as Reaction).observables
-        const migratedObservables = (migrated as unknown as Reaction).observables
+        const observables = (fv as unknown as OperationFootprint).observables
+        const migratedObservables = (migrated as unknown as OperationFootprint).observables
         if (observables) {
           observables.forEach((s, o) => {
-            const conformingReactions = o.reactions!
-            conformingReactions.delete(fv as unknown as Reaction)
-            conformingReactions.add(migrated as unknown as Reaction)
+            const conformingReactions = o.subscribers!
+            conformingReactions.delete(fv as unknown as OperationFootprint)
+            conformingReactions.add(migrated as unknown as OperationFootprint)
             migratedObservables!.set(o, s)
           })
           observables.clear()
@@ -516,16 +516,16 @@ export class TransactionImpl extends Transaction {
       if (ovParent.former.objectVersion.data[fk] !== fvParent) { // there are changes in parent
         fvParent.content = fv.content
         // Migrate subscriptions
-        const reactions = fv.reactions
+        const reactions = fv.subscribers
         if (reactions) {
-          if (fvParent.reactions === undefined)
-            fvParent.reactions = new Set()
+          if (fvParent.subscribers === undefined)
+            fvParent.subscribers = new Set()
           reactions.forEach(o => {
             const conformingObservables = o.observables!
             const sub = conformingObservables.get(fv)!
             conformingObservables.delete(fv)
             conformingObservables.set(fvParent, sub)
-            fvParent.reactions!.add(o)
+            fvParent.subscribers!.add(o)
           })
         }
       }

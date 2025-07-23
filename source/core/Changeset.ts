@@ -13,7 +13,7 @@ import { SealedMap } from "../util/SealedMap.js"
 import { SealedSet } from "../util/SealedSet.js"
 import { Isolation, Kind } from "../Enums.js"
 import { SnapshotOptions } from "../Options.js"
-import { AbstractChangeset, ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Reaction, Meta } from "./Data.js"
+import { AbstractChangeset, ObjectVersion, FieldKey, ObjectHandle, FieldVersion, OperationFootprint, Meta } from "./Data.js"
 
 export const MAX_REVISION = Number.MAX_SAFE_INTEGER
 export const UNDEFINED_REVISION = MAX_REVISION - 1
@@ -59,7 +59,7 @@ export class Changeset implements AbstractChangeset {
   private revision: number
   private bumper: number
   items: Map<ObjectHandle, ObjectVersion>
-  obsolete: Reaction[]
+  obsolete: OperationFootprint[]
   sealed: boolean
 
   constructor(options: SnapshotOptions | null, parent?: Changeset) {
@@ -81,7 +81,7 @@ export class Changeset implements AbstractChangeset {
   static tryResolveConflict: (theirValue: any, ourFormerValue: any, ourValue: any) => { isResolved: boolean, resolvedValue: any }  = UNDEF
   static propagateAllChangesThroughSubscriptions = (changeset: Changeset): void => { /* nop */ }
   static revokeAllSubscriptions = (changeset: Changeset): void => { /* nop */ }
-  static enqueueReactionsToRun = (reactions: Array<Reaction>): void => { /* nop */ }
+  static enqueueReactionsToRun = (reactions: Array<OperationFootprint>): void => { /* nop */ }
 
   lookupObjectVersion(h: ObjectHandle, fk: FieldKey, editing: boolean): ObjectVersion {
     // TODO: Take into account timestamp of the member
@@ -285,7 +285,7 @@ export class Changeset implements AbstractChangeset {
         const { isResolved, resolvedValue } = Changeset.tryResolveConflict(theirValue, ourFormerValue, ourFieldVersion)
         if (!isResolved)
           ours.conflicts.set(fk, theirs)
-        else if ((resolvedValue as FieldVersion).isLaunch)
+        else if ((resolvedValue as FieldVersion).isOperation)
           merged[fk] = resolvedValue
         if (Log.isOn && Log.opt.change)
           Log.write("║╠", "", `${Dump.snapshot2(h, ours.changeset, fk)} ${!isResolved ? "<>" : "=="} ${Dump.snapshot2(h, theirs.changeset, fk)}`, 0, !isResolved ? " *** CONFLICT ***" : undefined)

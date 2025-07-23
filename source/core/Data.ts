@@ -22,20 +22,20 @@ export type AbstractChangeset = {
 
 export class FieldVersion<T = any> {
   content: T
-  reactions?: Set<Reaction>
+  subscribers?: Set<OperationFootprint>
   lastEditorChangesetId: number
-  get isLaunch(): boolean { return false }
+  get isOperation(): boolean { return false }
   constructor(content: T, lastEditorChangesetId: number) { this.content = content; this.lastEditorChangesetId = lastEditorChangesetId }
 }
 
-// Reaction
+// OperationFootprint
 
-export type Reaction = {
+export type OperationFootprint = {
   readonly order: number
   readonly observables: Map<FieldVersion, Subscription> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
-  markObsoleteDueTo(observable: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Array<Reaction>): void
+  markObsoleteDueTo(observable: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Array<OperationFootprint>): void
   relaunchIfNotUpToDate(now: boolean, nothrow: boolean): void
 }
 

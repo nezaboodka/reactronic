@@ -9,7 +9,7 @@ import { F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
 import { Kind, Reentrance, Isolation } from "../Enums.js"
 import { OperationDescriptor, ReactivityOptions, LoggingOptions, SnapshotOptions } from "../Options.js"
-import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, Reaction, Subscription, Meta, AbstractChangeset } from "./Data.js"
+import { ObjectVersion, FieldKey, ObjectHandle, FieldVersion, OperationFootprint, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, MAX_REVISION } from "./Changeset.js"
 import { Transaction, TransactionImpl } from "./Transaction.js"
 import { Indicator, IndicatorImpl } from "./Indicator.js"
@@ -21,7 +21,7 @@ const BOOT_CAUSE = "<boot>"
 const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.observable, EMPTY_OBJECT_VERSION, "<boot>")
 
 type ReuseOrRelaunchContext = {
-  readonly launch: Launch
+  readonly footprint: OperationFootprintImpl
   readonly isReusable: boolean
   readonly changeset: Changeset
   readonly objectVersion: ObjectVersion
@@ -32,11 +32,11 @@ export class OperationDescriptorImpl implements OperationDescriptor<any> {
   readonly fieldKey: FieldKey
 
   configure(options: Partial<ReactivityOptions>): ReactivityOptions { return OperationDescriptorImpl.configureImpl(this, options) }
-  get options(): ReactivityOptions { return this.peek(undefined).launch.options }
-  get nonreactive(): any { return this.peek(undefined).launch.content }
-  get args(): ReadonlyArray<any> { return this.use().launch.args }
+  get options(): ReactivityOptions { return this.peek(undefined).footprint.options }
+  get nonreactive(): any { return this.peek(undefined).footprint.content }
+  get args(): ReadonlyArray<any> { return this.use().footprint.args }
   get result(): any { return this.reuseOrRelaunch(true, undefined).content }
-  get error(): boolean { return this.use().launch.error }
+  get error(): boolean { return this.use().footprint.error }
   get stamp(): number { return this.use().objectVersion.changeset.timestamp }
   get isReusable(): boolean { return this.use().isReusable }
   markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.ownerHandle, this.fieldKey)})` : "markObsolete()" }, OperationDescriptorImpl.markObsolete, this) }
@@ -47,14 +47,14 @@ export class OperationDescriptorImpl implements OperationDescriptor<any> {
     this.fieldKey = fk
   }
 
-  reuseOrRelaunch(weak: boolean, args: any[] | undefined): Launch {
+  reuseOrRelaunch(weak: boolean, args: any[] | undefined): OperationFootprintImpl {
     let ror: ReuseOrRelaunchContext = this.peek(args)
     const ctx = ror.changeset
-    const launch: Launch = ror.launch
-    const opts = launch.options
+    const footprint: OperationFootprintImpl = ror.footprint
+    const opts = footprint.options
     if (!ror.isReusable && !ror.objectVersion.disposed
-      && (!weak || launch.cause === BOOT_CAUSE || !launch.successor ||
-        launch.successor.transaction.isFinished)) {
+      && (!weak || footprint.cause === BOOT_CAUSE || !footprint.successor ||
+        footprint.successor.transaction.isFinished)) {
       // transaction => joinToCurrent
       // reaction => joinAsNested
       // cached => joinToCurrent
@@ -62,15 +62,15 @@ export class OperationDescriptorImpl implements OperationDescriptor<any> {
       const isolation: Isolation = !weak ? opts.isolation : Isolation.disjoinFromOuterTransaction
       const token = opts.noSideEffects ? this : undefined
       const ror2 = this.relaunch(ror, isolation, opts, token, args)
-      const ctx2 = ror2.launch.changeset
+      const ctx2 = ror2.footprint.changeset
       if (!weak || ctx === ctx2 || (ctx2.sealed && ctx.timestamp >= ctx2.timestamp))
         ror = ror2
     }
     else if (Log.isOn && Log.opt.operation && (opts.logging === undefined ||
       opts.logging.operation === undefined || opts.logging.operation === true))
       Log.write(Transaction.current.isFinished ? "" : "║", " (=)",
-        `${Dump.snapshot2(ror.launch.descriptor.ownerHandle, ror.changeset, this.fieldKey)} result is reused from T${ror.launch.transaction.id}[${ror.launch.transaction.hint}]`)
-    const t = ror.launch
+        `${Dump.snapshot2(ror.footprint.descriptor.ownerHandle, ror.changeset, this.fieldKey)} result is reused from T${ror.footprint.transaction.id}[${ror.footprint.transaction.hint}]`)
+    const t = ror.footprint
     Changeset.markUsed(t, ror.objectVersion, this.fieldKey, this.ownerHandle, t.options.kind, weak)
     return t
   }
@@ -83,48 +83,48 @@ export class OperationDescriptorImpl implements OperationDescriptor<any> {
   }
 
   static configureImpl(self: OperationDescriptorImpl | undefined, options: Partial<ReactivityOptions>): ReactivityOptions {
-    let launch: Launch | undefined
+    let footprint: OperationFootprintImpl | undefined
     if (self)
-      launch = self.edit().launch
+      footprint = self.edit().footprint
     else
-      launch = Launch.current
-    if (!launch)
+      footprint = OperationFootprintImpl.current
+    if (!footprint)
       throw misuse("reactronic decorator is only applicable to methods")
-    launch.options = new OptionsImpl(launch.options.getter, launch.options.setter, launch.options, options, false)
+    footprint.options = new OptionsImpl(footprint.options.getter, footprint.options.setter, footprint.options, options, false)
     if (Log.isOn && Log.opt.write)
-      Log.write("║", "  =", `${launch.hint()}.options are changed`)
-    return launch.options
+      Log.write("║", "  =", `${footprint.hint()}.options are changed`)
+    return footprint.options
   }
 
-  static proceedWithinGivenLaunch<T>(launch: Launch | undefined, func: F<T>, ...args: any[]): T {
+  static proceedWithinGivenLaunch<T>(footprint: OperationFootprintImpl | undefined, func: F<T>, ...args: any[]): T {
     let result: T | undefined = undefined
-    const outer = Launch.current
+    const outer = OperationFootprintImpl.current
     try {
-      Launch.current = launch
+      OperationFootprintImpl.current = footprint
       result = func(...args)
     }
     catch (e) {
-      if (launch)
-        launch.error = e
+      if (footprint)
+        footprint.error = e
       throw e
     }
     finally {
-      Launch.current = outer
+      OperationFootprintImpl.current = outer
     }
     return result
   }
 
   static why(): string {
-    return Launch.current?.why() ?? BOOT_CAUSE
+    return OperationFootprintImpl.current?.why() ?? BOOT_CAUSE
   }
 
   static briefWhy(): string {
-    return Launch.current?.briefWhy() ?? BOOT_CAUSE
+    return OperationFootprintImpl.current?.briefWhy() ?? BOOT_CAUSE
   }
 
   /* istanbul ignore next */
   static dependencies(): string[] {
-    const l = Launch.current
+    const l = OperationFootprintImpl.current
     return l ? l.dependencies() : ["RxSystem.dependencies should be called from inside of reactive method"]
   }
 
@@ -133,19 +133,19 @@ export class OperationDescriptorImpl implements OperationDescriptor<any> {
   private peek(args: any[] | undefined): ReuseOrRelaunchContext {
     const ctx = Changeset.current()
     const ov: ObjectVersion = ctx.lookupObjectVersion(this.ownerHandle, this.fieldKey, false)
-    const launch: Launch = this.acquireFromObjectVersion(ov, args)
-    const applied = this.ownerHandle.applied.data[this.fieldKey] as Launch
-    const isReusable = launch.options.kind !== Kind.atomic && launch.cause !== BOOT_CAUSE &&
-      (ctx === launch.changeset || ctx.timestamp < launch.obsoleteSince || applied.obsoleteDueTo === undefined) &&
-      (!launch.options.observableArgs || args === undefined ||
-        launch.args.length === args.length && launch.args.every((t, i) => t === args[i])) || ov.disposed
-    return { launch, isReusable, changeset: ctx, objectVersion: ov }
+    const footprint: OperationFootprintImpl = this.acquireFromObjectVersion(ov, args)
+    const applied = this.ownerHandle.applied.data[this.fieldKey] as OperationFootprintImpl
+    const isReusable = footprint.options.kind !== Kind.atomic && footprint.cause !== BOOT_CAUSE &&
+      (ctx === footprint.changeset || ctx.timestamp < footprint.obsoleteSince || applied.obsoleteDueTo === undefined) &&
+      (!footprint.options.observableArgs || args === undefined ||
+        footprint.args.length === args.length && footprint.args.every((t, i) => t === args[i])) || ov.disposed
+    return { footprint, isReusable, changeset: ctx, objectVersion: ov }
   }
 
   private use(): ReuseOrRelaunchContext {
     const ror = this.peek(undefined)
-    Changeset.markUsed(ror.launch, ror.objectVersion,
-      this.fieldKey, this.ownerHandle, ror.launch.options.kind, true)
+    Changeset.markUsed(ror.footprint, ror.objectVersion,
+      this.fieldKey, this.ownerHandle, ror.footprint.options.kind, true)
     return ror
   }
 
@@ -154,55 +154,55 @@ export class OperationDescriptorImpl implements OperationDescriptor<any> {
     const fk = this.fieldKey
     const ctx = Changeset.edit()
     const ov: ObjectVersion = ctx.getEditableObjectVersion(h, fk, Meta.Handle, this)
-    let launch: Launch = this.acquireFromObjectVersion(ov, undefined)
-    if (launch.changeset !== ov.changeset) {
-      const relaunch = new Launch(Transaction.current, this, ov.changeset, launch, false)
-      ov.data[fk] = relaunch.reenterOver(launch)
+    let footprint: OperationFootprintImpl = this.acquireFromObjectVersion(ov, undefined)
+    if (footprint.changeset !== ov.changeset) {
+      const newFootprint = new OperationFootprintImpl(Transaction.current, this, ov.changeset, footprint, false)
+      ov.data[fk] = newFootprint.reenterOver(footprint)
       ctx.bumpBy(ov.former.objectVersion.changeset.timestamp)
-      Changeset.markEdited(launch, relaunch, true, ov, fk, h)
-      launch = relaunch
+      Changeset.markEdited(footprint, newFootprint, true, ov, fk, h)
+      footprint = newFootprint
     }
-    return { launch, isReusable: true, changeset: ctx, objectVersion: ov }
+    return { footprint, isReusable: true, changeset: ctx, objectVersion: ov }
   }
 
-  private acquireFromObjectVersion(ov: ObjectVersion, args: any[] | undefined): Launch {
+  private acquireFromObjectVersion(ov: ObjectVersion, args: any[] | undefined): OperationFootprintImpl {
     const fk = this.fieldKey
-    let launch: Launch = ov.data[fk]
-    if (launch.descriptor !== this) {
+    let footprint: OperationFootprintImpl = ov.data[fk]
+    if (footprint.descriptor !== this) {
       if (ov.changeset !== EMPTY_OBJECT_VERSION.changeset) {
         const hint: string = Log.isOn ? `${Dump.obj(this.ownerHandle, fk)}/init` : /* istanbul ignore next */ "OperationDescriptor/init"
         const isolation = Isolation.joinToCurrentTransaction
         // if (ov.changeset.sealed || ov.former.snapshot !== EMPTY_SNAPSHOT)
         //   isolation = Isolation.disjoinFromOuterTransaction
-        launch = Transaction.run<Launch>({ hint, isolation, token: this }, (): Launch => {
+        footprint = Transaction.run<OperationFootprintImpl>({ hint, isolation, token: this }, (): OperationFootprintImpl => {
           const h = this.ownerHandle
           let r: ObjectVersion = Changeset.current().getObjectVersion(h, fk)
-          let relaunch = r.data[fk] as Launch
-          if (relaunch.descriptor !== this) {
+          let newFootprint = r.data[fk] as OperationFootprintImpl
+          if (newFootprint.descriptor !== this) {
             r = Changeset.edit().getEditableObjectVersion(h, fk, Meta.Handle, this)
-            const t = new Launch(Transaction.current, this, r.changeset, relaunch, false)
+            const t = new OperationFootprintImpl(Transaction.current, this, r.changeset, newFootprint, false)
             if (args)
               t.args = args
             t.cause = BOOT_CAUSE
             r.data[fk] = t
-            Changeset.markEdited(relaunch, t, true, r, fk, h)
-            relaunch = t
+            Changeset.markEdited(newFootprint, t, true, r, fk, h)
+            newFootprint = t
           }
-          return relaunch
+          return newFootprint
         })
       }
       else {
-        const initialLaunch = new Launch(Transaction.current, this, ov.changeset, launch, false)
+        const initialFootprint = new OperationFootprintImpl(Transaction.current, this, ov.changeset, footprint, false)
         if (args)
-          initialLaunch.args = args
-        initialLaunch.cause = BOOT_CAUSE
-        ov.data[fk] = initialLaunch
-        launch = initialLaunch
+          initialFootprint.args = args
+        initialFootprint.cause = BOOT_CAUSE
+        ov.data[fk] = initialFootprint
+        footprint = initialFootprint
         if (Log.isOn && Log.opt.write)
           Log.write("║", " ++", `${Dump.obj(this.ownerHandle, fk)} is initialized (revision ${ov.revision})`)
       }
     }
-    return launch
+    return footprint
   }
 
   private relaunch(existing: ReuseOrRelaunchContext, isolation: Isolation, options: ReactivityOptions, token: any, args: any[] | undefined): ReuseOrRelaunchContext {
@@ -211,41 +211,41 @@ export class OperationDescriptorImpl implements OperationDescriptor<any> {
     let ror = existing
     const opts = { hint, isolation, journal: options.journal, logging: options.logging, token }
     const result = Transaction.run(opts, (argsx: any[] | undefined): any => {
-      if (!ror.launch.transaction.isCanceled) { // standard launch
+      if (!ror.footprint.transaction.isCanceled) { // standard launch
         ror = this.edit()
         if (Log.isOn && Log.opt.operation)
-          Log.write("║", "  o", `${ror.launch.why()}`)
-        ror.launch.proceed(this.ownerHandle.proxy, argsx)
+          Log.write("║", "  o", `${ror.footprint.why()}`)
+        ror.footprint.proceed(this.ownerHandle.proxy, argsx)
       }
       else { // retry launch
         ror = this.peek(argsx) // re-read on retry
-        if (ror.launch.options.kind === Kind.atomic || !ror.isReusable) {
+        if (ror.footprint.options.kind === Kind.atomic || !ror.isReusable) {
           ror = this.edit()
           if (Log.isOn && Log.opt.operation)
-            Log.write("║", "  o", `${ror.launch.why()}`)
-          ror.launch.proceed(this.ownerHandle.proxy, argsx)
+            Log.write("║", "  o", `${ror.footprint.why()}`)
+          ror.footprint.proceed(this.ownerHandle.proxy, argsx)
         }
       }
-      return ror.launch.result
+      return ror.footprint.result
     }, args)
-    ror.launch.result = result
+    ror.footprint.result = result
     return ror
   }
 
   private static markObsolete(self: OperationDescriptorImpl): void {
     const ror = self.peek(undefined)
     const ctx = ror.changeset
-    const obsolete = ror.launch.transaction.isFinished ? ctx.obsolete : ror.launch.transaction.changeset.obsolete
-    ror.launch.markObsoleteDueTo(ror.launch, self.fieldKey, EMPTY_OBJECT_VERSION.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, obsolete)
+    const obsolete = ror.footprint.transaction.isFinished ? ctx.obsolete : ror.footprint.transaction.changeset.obsolete
+    ror.footprint.markObsoleteDueTo(ror.footprint, self.fieldKey, EMPTY_OBJECT_VERSION.changeset, EMPTY_HANDLE, BOOT_CAUSE, ctx.timestamp, obsolete)
   }
 }
 
-// Operation Launch
+// OperationFootprintImpl
 
-class Launch extends FieldVersion implements Reaction {
-  static current?: Launch = undefined
-  static queuedReactions: Array<Reaction> = []
-  static deferredReactiveOperations: Array<Launch> = []
+class OperationFootprintImpl extends FieldVersion implements OperationFootprint {
+  static current?: OperationFootprintImpl = undefined
+  static queuedReactions: Array<OperationFootprint> = []
+  static deferredReactions: Array<OperationFootprintImpl> = []
 
   readonly margin: number
   readonly transaction: Transaction
@@ -260,16 +260,16 @@ class Launch extends FieldVersion implements Reaction {
   started: number
   obsoleteDueTo: string | undefined
   obsoleteSince: number
-  successor: Launch | undefined
+  successor: OperationFootprintImpl | undefined
 
-  constructor(transaction: Transaction, descriptor: OperationDescriptorImpl, changeset: AbstractChangeset, former: Launch | OptionsImpl, clone: boolean) {
+  constructor(transaction: Transaction, descriptor: OperationDescriptorImpl, changeset: AbstractChangeset, former: OperationFootprintImpl | OptionsImpl, clone: boolean) {
     super(undefined, 0)
-    this.margin = Launch.current ? Launch.current.margin + 1 : 1
+    this.margin = OperationFootprintImpl.current ? OperationFootprintImpl.current.margin + 1 : 1
     this.transaction = transaction
     this.descriptor = descriptor
     this.changeset = changeset
     this.observables = new Map<FieldVersion, Subscription>()
-    if (former instanceof Launch) {
+    if (former instanceof OperationFootprintImpl) {
       this.options = former.options
       this.cause = former.obsoleteDueTo
       this.args = former.args
@@ -306,7 +306,7 @@ class Launch extends FieldVersion implements Reaction {
     }
   }
 
-  override get isLaunch(): boolean { return true } // override
+  override get isOperation(): boolean { return true } // override
   hint(): string { return `${Dump.snapshot2(this.descriptor.ownerHandle, this.changeset, this.descriptor.fieldKey, this)}` } // override
   get order(): number { return this.options.order }
 
@@ -315,7 +315,7 @@ class Launch extends FieldVersion implements Reaction {
   }
 
   clone(t: Transaction, cs: AbstractChangeset): FieldVersion {
-    return new Launch(t, this.descriptor, cs, this, true)
+    return new OperationFootprintImpl(t, this.descriptor, cs, this, true)
   }
 
   why(): string {
@@ -358,14 +358,14 @@ class Launch extends FieldVersion implements Reaction {
       this.args = args
     this.obsoleteSince = MAX_REVISION
     if (!this.error)
-      OperationDescriptorImpl.proceedWithinGivenLaunch<void>(this, Launch.proceed, this, proxy)
+      OperationDescriptorImpl.proceedWithinGivenLaunch<void>(this, OperationFootprintImpl.proceed, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
 
-  markObsoleteDueTo(observable: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Reaction[]): void {
+  markObsoleteDueTo(observable: FieldVersion, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: OperationFootprint[]): void {
     if (this.observables !== undefined) { // if not yet marked as obsolete
-      const skip = !observable.isLaunch &&
+      const skip = !observable.isOperation &&
         changeset.id === this.lastEditorChangesetId /* &&
         snapshot.changes.has(memberName) */
       if (!skip) {
@@ -386,7 +386,7 @@ class Launch extends FieldVersion implements Reaction {
         if (isReaction)
           collector.push(this)
         else
-          this.reactions?.forEach(s => s.markObsoleteDueTo(this, this.descriptor.fieldKey, this.changeset, this.descriptor.ownerHandle, why, since, collector))
+          this.subscribers?.forEach(s => s.markObsoleteDueTo(this, this.descriptor.fieldKey, this.changeset, this.descriptor.ownerHandle, why, since, collector))
 
         // Cancel own transaction if it is still in progress
         const tran = this.transaction
@@ -408,11 +408,11 @@ class Launch extends FieldVersion implements Reaction {
     if (now || hold < 0) {
       if (this.isNotUpToDate()) {
         try {
-          const launch: Launch = this.descriptor.reuseOrRelaunch(false, undefined)
-          if (launch.result instanceof Promise)
-            launch.result.catch(error => {
-              if (launch.options.kind === Kind.reaction)
-                misuse(`reactive function ${launch.hint()} failed and will not run anymore: ${error}`, error)
+          const footprint: OperationFootprintImpl = this.descriptor.reuseOrRelaunch(false, undefined)
+          if (footprint.result instanceof Promise)
+            footprint.result.catch(error => {
+              if (footprint.options.kind === Kind.reaction)
+                misuse(`reactive function ${footprint.hint()} failed and will not run anymore: ${error}`, error)
             })
         }
         catch (e) {
@@ -436,7 +436,7 @@ class Launch extends FieldVersion implements Reaction {
       !this.successor || this.successor.transaction.isCanceled)
   }
 
-  reenterOver(head: Launch): this {
+  reenterOver(head: OperationFootprintImpl): this {
     let error: Error | undefined = undefined
     const opponent = head.successor
     if (opponent && !opponent.transaction.isFinished) {
@@ -474,15 +474,15 @@ class Launch extends FieldVersion implements Reaction {
 
   // Internal
 
-  private static proceed(launch: Launch, proxy: any): void {
-    launch.enter()
+  private static proceed(footprint: OperationFootprintImpl, proxy: any): void {
+    footprint.enter()
     try {
-      if (launch.options.getter === undefined)
+      if (footprint.options.getter === undefined)
         console.log("(!)")
-      launch.result = launch.options.getter.call(proxy, ...launch.args)
+      footprint.result = footprint.options.getter.call(proxy, ...footprint.args)
     }
     finally {
-      launch.leaveOrAsync()
+      footprint.leaveOrAsync()
     }
   }
 
@@ -557,29 +557,29 @@ class Launch extends FieldVersion implements Reaction {
   }
 
   private addToDeferredReactiveFunctions(): void {
-    Launch.deferredReactiveOperations.push(this)
-    if (Launch.deferredReactiveOperations.length === 1)
-      setTimeout(Launch.processDeferredReactiveFunctions, 0)
+    OperationFootprintImpl.deferredReactions.push(this)
+    if (OperationFootprintImpl.deferredReactions.length === 1)
+      setTimeout(OperationFootprintImpl.processDeferredReactions, 0)
   }
 
-  private static processDeferredReactiveFunctions(): void {
-    const deferred = Launch.deferredReactiveOperations
-    Launch.deferredReactiveOperations = [] // reset
+  private static processDeferredReactions(): void {
+    const deferred = OperationFootprintImpl.deferredReactions
+    OperationFootprintImpl.deferredReactions = [] // reset
     for (const x of deferred)
       x.relaunchIfNotUpToDate(true, true)
   }
 
   private static markUsed(observable: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean): void {
     if (kind !== Kind.atomic) {
-      const launch: Launch | undefined = Launch.current // alias
-      if (launch && launch.options.kind !== Kind.atomic &&
-        launch.transaction === Transaction.current && fk !== Meta.Handle) {
+      const footprint: OperationFootprintImpl | undefined = OperationFootprintImpl.current // alias
+      if (footprint && footprint.options.kind !== Kind.atomic &&
+        footprint.transaction === Transaction.current && fk !== Meta.Handle) {
         const ctx = Changeset.current()
         if (ctx !== ov.changeset) // snapshot should not bump itself
           ctx.bumpBy(ov.changeset.timestamp)
         const t = weak ? -1 : ctx.timestamp
-        if (!launch.subscribeTo(observable, ov, fk, h, t))
-          launch.markObsoleteDueTo(observable, fk, h.applied.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
+        if (!footprint.subscribeTo(observable, ov, fk, h, t))
+          footprint.markObsoleteDueTo(observable, fk, h.applied.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
       }
     }
   }
@@ -594,11 +594,11 @@ class Launch extends FieldVersion implements Reaction {
     let isResolved = theirValue === ourFormerValue
     let resolvedValue = ourValue
     if (!isResolved) {
-      if (ourValue instanceof Launch && ourValue.obsoleteDueTo === undefined) {
+      if (ourValue instanceof OperationFootprintImpl && ourValue.obsoleteDueTo === undefined) {
         isResolved = true
         resolvedValue = ourValue
       }
-      else if (theirValue instanceof Launch && (theirValue.obsoleteDueTo === undefined || theirValue.cause === BOOT_CAUSE)) {
+      else if (theirValue instanceof OperationFootprintImpl && (theirValue.obsoleteDueTo === undefined || theirValue.cause === BOOT_CAUSE)) {
         isResolved = true
         resolvedValue = theirValue
       }
@@ -610,12 +610,12 @@ class Launch extends FieldVersion implements Reaction {
     const since = changeset.timestamp
     const obsolete = changeset.obsolete
     changeset.items.forEach((ov: ObjectVersion, h: ObjectHandle) => {
-      Launch.propagateFieldChangeThroughSubscriptions(false, since, ov, Meta.Revision, h, obsolete)
+      OperationFootprintImpl.propagateFieldChangeThroughSubscriptions(false, since, ov, Meta.Revision, h, obsolete)
       if (!ov.disposed)
-        ov.changes.forEach((o, fk) => Launch.propagateFieldChangeThroughSubscriptions(false, since, ov, fk, h, obsolete))
+        ov.changes.forEach((o, fk) => OperationFootprintImpl.propagateFieldChangeThroughSubscriptions(false, since, ov, fk, h, obsolete))
       else
         for (const fk in ov.former.objectVersion.data)
-          Launch.propagateFieldChangeThroughSubscriptions(true, since, ov, fk, h, obsolete)
+          OperationFootprintImpl.propagateFieldChangeThroughSubscriptions(true, since, ov, fk, h, obsolete)
     })
     obsolete.sort(compareReactionsByOrder)
     changeset.options.journal?.edited(
@@ -624,22 +624,22 @@ class Launch extends FieldVersion implements Reaction {
 
   private static revokeAllSubscriptions(changeset: Changeset): void {
     changeset.items.forEach((ov: ObjectVersion, h: ObjectHandle) => {
-      Launch.propagateFieldChangeThroughSubscriptions(
+      OperationFootprintImpl.propagateFieldChangeThroughSubscriptions(
         true, changeset.timestamp, ov, Meta.Revision, h, undefined)
-      ov.changes.forEach((o, fk) => Launch.propagateFieldChangeThroughSubscriptions(
+      ov.changes.forEach((o, fk) => OperationFootprintImpl.propagateFieldChangeThroughSubscriptions(
         true, changeset.timestamp, ov, fk, h, undefined))
     })
   }
 
   private static propagateFieldChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,
-    ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, collector?: Reaction[]): void {
+    ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, collector?: OperationFootprint[]): void {
     const curr = ov.data[fk]
     if (collector !== undefined) {
       // Propagate change to reactive functions
       const former = ov.former.objectVersion.data[fk]
       if (former !== undefined && former instanceof FieldVersion) {
         const why = `T${ov.changeset.id}[${ov.changeset.hint}]`
-        if (former instanceof Launch) {
+        if (former instanceof OperationFootprintImpl) {
           if ((former.obsoleteSince === MAX_REVISION || former.obsoleteSince <= 0)) {
             former.obsoleteDueTo = why
             former.obsoleteSince = timestamp
@@ -653,14 +653,14 @@ class Launch extends FieldVersion implements Reaction {
           else
             former.successor = undefined
         }
-        former.reactions?.forEach(s => {
-          const t = (s as Launch).transaction
+        former.subscribers?.forEach(s => {
+          const t = (s as OperationFootprintImpl).transaction
           const o = t.isFinished ? collector : t.changeset.obsolete
           return s.markObsoleteDueTo(former, fk, ov.changeset, h, why, timestamp, o)
         })
       }
     }
-    if (curr instanceof Launch) {
+    if (curr instanceof OperationFootprintImpl) {
       if (curr.changeset === ov.changeset && curr.observables !== undefined) {
         if (Mvcc.repetitiveUsageWarningThreshold < Number.MAX_SAFE_INTEGER) {
           curr.observables.forEach((info, v) => { // performance tracking info
@@ -672,7 +672,7 @@ class Launch extends FieldVersion implements Reaction {
           curr.unsubscribeFromAllObservables()
       }
     }
-    else if (curr instanceof FieldVersion && curr.reactions) {
+    else if (curr instanceof FieldVersion && curr.subscribers) {
       // // Unsubscribe from own-changed subscriptions
       // curr.reactions.forEach(o => {
       //   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -684,19 +684,19 @@ class Launch extends FieldVersion implements Reaction {
     }
   }
 
-  private static enqueueReactionsToRun(reactions: Array<Reaction>): void {
-    const queue = Launch.queuedReactions
+  private static enqueueReactionsToRun(reactions: Array<OperationFootprint>): void {
+    const queue = OperationFootprintImpl.queuedReactions
     const isKickOff = queue.length === 0
     for (const r of reactions)
       queue.push(r)
     if (isKickOff)
-      OperationDescriptorImpl.proceedWithinGivenLaunch<void>(undefined, Launch.processQueuedReactions)
+      OperationDescriptorImpl.proceedWithinGivenLaunch<void>(undefined, OperationFootprintImpl.processQueuedReactions)
   }
 
   private static migrateFieldVersion(fv: FieldVersion, target: Transaction): FieldVersion {
     let result: FieldVersion
-    if (fv instanceof Launch)
-      result = new Launch(target, fv.descriptor, target.changeset, fv, true)
+    if (fv instanceof OperationFootprintImpl)
+      result = new OperationFootprintImpl(target, fv.descriptor, target.changeset, fv, true)
     else
       result = new FieldVersion(fv.content, fv.lastEditorChangesetId)
     // TODO: Switch subscriptions
@@ -704,20 +704,20 @@ class Launch extends FieldVersion implements Reaction {
   }
 
   private static processQueuedReactions(): void {
-    const queue = Launch.queuedReactions
+    const queue = OperationFootprintImpl.queuedReactions
     let i = 0
     while (i < queue.length) {
       const reactive = queue[i]
       reactive.relaunchIfNotUpToDate(false, true)
       i++
     }
-    Launch.queuedReactions = [] // reset loop
+    OperationFootprintImpl.queuedReactions = [] // reset loop
   }
 
   private unsubscribeFromAllObservables(): void {
     // It's critical to have no exceptions here
     this.observables?.forEach((info, value) => {
-      value.reactions!.delete(this)
+      value.subscribers!.delete(this)
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
         Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", "-", `${this.hint()} is unsubscribed from ${info.memberHint}`)
     })
@@ -726,7 +726,7 @@ class Launch extends FieldVersion implements Reaction {
 
   private subscribeTo(observable: FieldVersion, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
     const parent = this.transaction.changeset.parent
-    const ok = Launch.canSubscribeTo(observable, ov, parent, fk, h, timestamp)
+    const ok = OperationFootprintImpl.canSubscribeTo(observable, ov, parent, fk, h, timestamp)
     if (ok) {
       // Performance tracking
       let times: number = 0
@@ -736,11 +736,11 @@ class Launch extends FieldVersion implements Reaction {
       }
       if (this.observables !== undefined) {
         // Acquire storage set
-        if (!observable.reactions)
-          observable.reactions = new Set<Launch>()
+        if (!observable.subscribers)
+          observable.subscribers = new Set<OperationFootprintImpl>()
         // Two-way linking
         const subscription: Subscription = { memberHint: Dump.snapshot2(h, ov.changeset, fk), usageCount: times }
-        observable.reactions.add(this)
+        observable.subscribers.add(this)
         this.observables!.set(observable, subscription)
         if (Log.isOn && (Log.opt.read || this.options.logging?.read))
           Log.write("║", "  ∞", `${this.hint()} is subscribed to ${Dump.snapshot2(h, ov.changeset, fk, observable)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ""}`)
@@ -761,7 +761,7 @@ class Launch extends FieldVersion implements Reaction {
     let result = observable === parentObservable || (
       !ov.changeset.sealed && ov.former.objectVersion.data[fk] === parentObservable)
     if (result && timestamp !== -1)
-      result = !(observable instanceof Launch && timestamp >= observable.obsoleteSince)
+      result = !(observable instanceof OperationFootprintImpl && timestamp >= observable.obsoleteSince)
     return result
   }
 
@@ -777,20 +777,20 @@ class Launch extends FieldVersion implements Reaction {
   private static rememberOperationOptions(proto: any, fk: FieldKey, getter: Function | undefined, setter: Function | undefined, enumerable: boolean, configurable: boolean, options: Partial<ReactivityOptions>, implicit: boolean): OptionsImpl {
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
-    let launch: Launch | undefined = initial[fk]
-    const ctl = launch ? launch.descriptor : new OperationDescriptorImpl(EMPTY_HANDLE, fk)
-    const opts = launch ? launch.options : OptionsImpl.INITIAL
-    initial[fk] = launch = new Launch(Transaction.current, ctl, EMPTY_OBJECT_VERSION.changeset, new OptionsImpl(getter, setter, opts, options, implicit), false)
+    let footprint: OperationFootprintImpl | undefined = initial[fk]
+    const ctl = footprint ? footprint.descriptor : new OperationDescriptorImpl(EMPTY_HANDLE, fk)
+    const opts = footprint ? footprint.options : OptionsImpl.INITIAL
+    initial[fk] = footprint = new OperationFootprintImpl(Transaction.current, ctl, EMPTY_OBJECT_VERSION.changeset, new OptionsImpl(getter, setter, opts, options, implicit), false)
     // Add to the list if it's a reactive function
-    if (launch.options.kind === Kind.reaction && launch.options.throttling < Number.MAX_SAFE_INTEGER) {
+    if (footprint.options.kind === Kind.reaction && footprint.options.throttling < Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.acquire(proto, Meta.Reactive)
-      reactive[fk] = launch
+      reactive[fk] = footprint
     }
-    else if (launch.options.kind === Kind.reaction && launch.options.throttling >= Number.MAX_SAFE_INTEGER) {
+    else if (footprint.options.kind === Kind.reaction && footprint.options.throttling >= Number.MAX_SAFE_INTEGER) {
       const reactive = Meta.getFrom(proto, Meta.Reactive)
       delete reactive[fk]
     }
-    return launch.options
+    return footprint.options
   }
 
   // static freeze(c: CachedResult): void {
@@ -802,15 +802,15 @@ class Launch extends FieldVersion implements Reaction {
     Object.freeze(BOOT_ARGS)
     Log.getMergedLoggingOptions = getMergedLoggingOptions
     Dump.valueHint = valueHint
-    Changeset.markUsed = Launch.markUsed // override
-    Changeset.markEdited = Launch.markEdited // override
-    Changeset.tryResolveConflict = Launch.tryResolveConflict // override
-    Changeset.propagateAllChangesThroughSubscriptions = Launch.propagateAllChangesThroughSubscriptions // override
-    Changeset.revokeAllSubscriptions = Launch.revokeAllSubscriptions // override
-    Changeset.enqueueReactionsToRun = Launch.enqueueReactionsToRun
-    TransactionImpl.migrateFieldVersion = Launch.migrateFieldVersion
-    Mvcc.createOperationDescriptor = Launch.createOperationDescriptor // override
-    Mvcc.rememberOperationOptions = Launch.rememberOperationOptions // override
+    Changeset.markUsed = OperationFootprintImpl.markUsed // override
+    Changeset.markEdited = OperationFootprintImpl.markEdited // override
+    Changeset.tryResolveConflict = OperationFootprintImpl.tryResolveConflict // override
+    Changeset.propagateAllChangesThroughSubscriptions = OperationFootprintImpl.propagateAllChangesThroughSubscriptions // override
+    Changeset.revokeAllSubscriptions = OperationFootprintImpl.revokeAllSubscriptions // override
+    Changeset.enqueueReactionsToRun = OperationFootprintImpl.enqueueReactionsToRun
+    TransactionImpl.migrateFieldVersion = OperationFootprintImpl.migrateFieldVersion
+    Mvcc.createOperationDescriptor = OperationFootprintImpl.createOperationDescriptor // override
+    Mvcc.rememberOperationOptions = OperationFootprintImpl.rememberOperationOptions // override
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, "rWhy", {
@@ -858,7 +858,7 @@ function valueHint(value: any): string {
     result = `Set(${value.size})`
   else if (value instanceof Map)
     result = `Map(${value.size})`
-  else if (value instanceof Launch)
+  else if (value instanceof OperationFootprintImpl)
     result = `#${value.descriptor.ownerHandle.id}t${value.changeset.id}s${value.changeset.timestamp}${value.lastEditorChangesetId !== undefined && value.lastEditorChangesetId !== 0 ? `t${value.lastEditorChangesetId}` : ""}`
   else if (value === Meta.Undefined)
     result = "undefined"
@@ -875,8 +875,8 @@ function getMergedLoggingOptions(local: Partial<LoggingOptions> | undefined): Lo
   const t = Transaction.current
   let res = Log.merge(t.options.logging, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Changeset.idGen.toString().replace(/[0-9]/g, "-")}`, Log.global)
   res = Log.merge({margin1: t.margin}, undefined, undefined, res)
-  if (Launch.current)
-    res = Log.merge({margin2: Launch.current.margin}, undefined, undefined, res)
+  if (OperationFootprintImpl.current)
+    res = Log.merge({margin2: OperationFootprintImpl.current.margin}, undefined, undefined, res)
   if (local)
     res = Log.merge(local, undefined, undefined, res)
   return res
@@ -894,10 +894,10 @@ function reactronicHookedThen(this: any,
       resolve = resolveReturn
     if (!reject)
       reject = rejectRethrow
-    const launch = Launch.current
-    if (launch) {
-      resolve = launch.wrap(resolve)
-      reject = launch.wrap(reject)
+    const footprint = OperationFootprintImpl.current
+    if (footprint) {
+      resolve = footprint.wrap(resolve)
+      reject = footprint.wrap(reject)
     }
     resolve = tran.wrapAsPending(resolve, false)
     reject = tran.wrapAsPending(reject, true)
@@ -905,7 +905,7 @@ function reactronicHookedThen(this: any,
   return ORIGINAL_PROMISE_THEN.call(this, resolve, reject)
 }
 
-function compareReactionsByOrder(r1: Reaction, r2: Reaction): number {
+function compareReactionsByOrder(r1: OperationFootprint, r2: OperationFootprint): number {
   return r1.order - r2.order
 }
 
@@ -919,4 +919,4 @@ export function rejectRethrow(error: any): never {
   throw error
 }
 
-Launch.init()
+OperationFootprintImpl.init()

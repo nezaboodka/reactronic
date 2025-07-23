@@ -127,7 +127,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       const cs = Changeset.current()
       const ov: ObjectVersion = cs.getObjectVersion(h, fk)
       result = ov.data[fk]
-      if (result instanceof FieldVersion && !result.isLaunch) {
+      if (result instanceof FieldVersion && !result.isOperation) {
         if (this.isObservable)
           Changeset.markUsed(result, ov, fk, h, Kind.plain, false)
         result = result.content
@@ -176,7 +176,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     const result = []
     for (const fk of Object.getOwnPropertyNames(ov.data)) {
       const field = ov.data[fk]
-      if (!(field instanceof FieldVersion) || !field.isLaunch)
+      if (!(field instanceof FieldVersion) || !field.isOperation)
         result.push(fk)
     }
     return result
