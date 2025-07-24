@@ -47,8 +47,13 @@ export abstract class ReactiveTreeNode<E = unknown> {
   abstract has(mode: Mode): boolean
   abstract configureReactronic(options: Partial<ReactivityOptions>): ReactivityOptions
 
-  static get current(): ReactiveTreeNode { return ReactiveTreeNodeImpl.nodeSlot.instance }
-  static get isFirstScriptRun(): boolean { return ReactiveTreeNodeImpl.nodeSlot.instance.stamp === 1 }
+  static get current(): ReactiveTreeNode {
+    return ReactiveTreeNodeImpl.nodeSlot.instance
+  }
+
+  static get isFirstScriptRun(): boolean {
+    return ReactiveTreeNodeImpl.nodeSlot.instance.stamp === 1
+  }
 
   static declare<E = void>(
     driver: ReactiveTreeNodeDriver<E>,
@@ -442,10 +447,17 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
       ReactiveTreeNodeImpl.disposableNodeCount++
   }
 
-  get strictOrder(): boolean { return this.children.isStrict }
-  set strictOrder(value: boolean) { this.children.isStrict = value }
+  get strictOrder(): boolean {
+    return this.children.isStrict
+  }
 
-  get isMoved(): boolean { return this.owner.children.isMoved(this.slot! as MergedItem<ReactiveTreeNodeImpl>) }
+  set strictOrder(value: boolean) {
+    this.children.isStrict = value
+  }
+
+  get isMoved(): boolean {
+    return this.owner.children.isMoved(this.slot! as MergedItem<ReactiveTreeNodeImpl>)
+  }
 
   has(mode: Mode): boolean {
     return (getModeUsingBasisChain(this.declaration) & mode) === mode
