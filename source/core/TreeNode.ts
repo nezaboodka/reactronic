@@ -82,7 +82,7 @@ export type ReactiveTreeNodeDecl<E = unknown> = {
   preparationAsync?: ScriptAsync<E> // подготовка-задача
   finalization?: Script<E>          // завершение
   triggers?: unknown                // триггеры
-  basis?: ReactiveTreeNodeDecl<E>       // базис
+  basis?: ReactiveTreeNodeDecl<E>   // базис
 }
 
 // ReactiveTreeNodeDriver
