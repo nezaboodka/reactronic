@@ -719,7 +719,7 @@ function triggerFinalization(nodeSlot: MergedItem<ReactiveTreeNodeImpl>, isLeade
     if (individual && node.key !== node.declaration.key && !driver.isPartition)
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
-    // Deactivate element itself and remove it from collection
+    // Finalize element itself and remove it from collection
     const childrenAreLeaders = runNonReactively(() => driver.runFinalization(node, isLeader))
     if (node.has(Mode.autonomous)) {
       // Defer disposal if element is reactive (having autonomous mode)
@@ -734,7 +734,7 @@ function triggerFinalization(nodeSlot: MergedItem<ReactiveTreeNodeImpl>, isLeade
           void runDisposalLoop().then(NOP, error => console.log(error))
         })
     }
-    // Deactivate children
+    // Finalize children
     for (const child of node.children.items())
       triggerFinalization(child, childrenAreLeaders, false)
     ReactiveTreeNodeImpl.grandNodeCount--
