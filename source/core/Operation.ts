@@ -8,7 +8,7 @@
 import { F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
 import { Kind, Reentrance, Isolation } from "../Enums.js"
-import { OperationDescriptor, ReactivityOptions, LoggingOptions, SnapshotOptions } from "../Options.js"
+import { ReactiveOperation, ReactivityOptions, LoggingOptions, SnapshotOptions } from "../Options.js"
 import { ObjectVersion, FieldKey, ObjectHandle, ContentFootprint, OperationFootprint, Subscription, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, MAX_REVISION } from "./Changeset.js"
 import { Transaction, TransactionImpl } from "./Transaction.js"
@@ -27,11 +27,11 @@ type ReuseOrRelaunchContext = {
   readonly objectVersion: ObjectVersion
 }
 
-export class OperationDescriptorImpl implements OperationDescriptor<any> {
+export class ReactiveOperationImpl implements ReactiveOperation<any> {
   readonly ownerHandle: ObjectHandle
   readonly fieldKey: FieldKey
 
-  configure(options: Partial<ReactivityOptions>): ReactivityOptions { return OperationDescriptorImpl.configureImpl(this, options) }
+  configure(options: Partial<ReactivityOptions>): ReactivityOptions { return ReactiveOperationImpl.configureImpl(this, options) }
   get options(): ReactivityOptions { return this.peek(undefined).footprint.options }
   get nonreactive(): any { return this.peek(undefined).footprint.content }
   get args(): ReadonlyArray<any> { return this.use().footprint.args }
@@ -39,7 +39,7 @@ export class OperationDescriptorImpl implements OperationDescriptor<any> {
   get error(): boolean { return this.use().footprint.error }
   get stamp(): number { return this.use().objectVersion.changeset.timestamp }
   get isReusable(): boolean { return this.use().isReusable }
-  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.ownerHandle, this.fieldKey)})` : "markObsolete()" }, OperationDescriptorImpl.markObsolete, this) }
+  markObsolete(): void { Transaction.run({ hint: Log.isOn ? `markObsolete(${Dump.obj(this.ownerHandle, this.fieldKey)})` : "markObsolete()" }, ReactiveOperationImpl.markObsolete, this) }
   pullLastResult(args?: any[]): any { return this.reuseOrRelaunch(true, args).content }
 
   constructor(h: ObjectHandle, fk: FieldKey) {
@@ -75,14 +75,14 @@ export class OperationDescriptorImpl implements OperationDescriptor<any> {
     return t
   }
 
-  static getDescriptor(method: F<any>): OperationDescriptor<any> {
-    const ctl = Meta.get<OperationDescriptor<any> | undefined>(method, Meta.Descriptor)
+  static getDescriptor(method: F<any>): ReactiveOperation<any> {
+    const ctl = Meta.get<ReactiveOperation<any> | undefined>(method, Meta.Descriptor)
     if (!ctl)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)
     return ctl
   }
 
-  static configureImpl(self: OperationDescriptorImpl | undefined, options: Partial<ReactivityOptions>): ReactivityOptions {
+  static configureImpl(self: ReactiveOperationImpl | undefined, options: Partial<ReactivityOptions>): ReactivityOptions {
     let footprint: OperationFootprintImpl | undefined
     if (self)
       footprint = self.edit().footprint
@@ -232,7 +232,7 @@ export class OperationDescriptorImpl implements OperationDescriptor<any> {
     return ror
   }
 
-  private static markObsolete(self: OperationDescriptorImpl): void {
+  private static markObsolete(self: ReactiveOperationImpl): void {
     const ror = self.peek(undefined)
     const ctx = ror.changeset
     const obsolete = ror.footprint.transaction.isFinished ? ctx.obsolete : ror.footprint.transaction.changeset.obsolete
@@ -249,7 +249,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
 
   readonly margin: number
   readonly transaction: Transaction
-  readonly descriptor: OperationDescriptorImpl
+  readonly descriptor: ReactiveOperationImpl
   readonly changeset: AbstractChangeset
   observables: Map<ContentFootprint, Subscription> | undefined
   options: OptionsImpl
@@ -262,7 +262,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
   obsoleteSince: number
   successor: OperationFootprintImpl | undefined
 
-  constructor(transaction: Transaction, descriptor: OperationDescriptorImpl, changeset: AbstractChangeset, former: OperationFootprintImpl | OptionsImpl, clone: boolean) {
+  constructor(transaction: Transaction, descriptor: ReactiveOperationImpl, changeset: AbstractChangeset, former: OperationFootprintImpl | OptionsImpl, clone: boolean) {
     super(undefined, 0)
     this.margin = OperationFootprintImpl.current ? OperationFootprintImpl.current.margin + 1 : 1
     this.transaction = transaction
@@ -342,7 +342,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, "║", "‾\\", `${this.hint()} - step in  `, 0, "        │")
       const started = Date.now()
-      const result = OperationDescriptorImpl.proceedWithinGivenLaunch<T>(this, func, ...args)
+      const result = ReactiveOperationImpl.proceedWithinGivenLaunch<T>(this, func, ...args)
       const ms = Date.now() - started
       if (Log.isOn && Log.opt.step && this.result)
         Log.writeAs({margin2: this.margin}, "║", "_/", `${this.hint()} - step out `, 0, this.started > 0 ? "        │" : "")
@@ -358,7 +358,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
       this.args = args
     this.obsoleteSince = MAX_REVISION
     if (!this.error)
-      OperationDescriptorImpl.proceedWithinGivenLaunch<void>(this, OperationFootprintImpl.proceed, this, proxy)
+      ReactiveOperationImpl.proceedWithinGivenLaunch<void>(this, OperationFootprintImpl.proceed, this, proxy)
     else
       this.result = Promise.reject(this.error)
   }
@@ -538,7 +538,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
       hint: "Indicator.enter",
       isolation: Isolation.disjoinFromOuterAndInnerTransactions,
       logging: Log.isOn && Log.opt.indicator ? undefined : Log.global }
-    OperationDescriptorImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
+    ReactiveOperationImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
       IndicatorImpl.enter, mon, this.transaction)
   }
 
@@ -549,7 +549,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
           hint: "Indicator.leave",
           isolation: Isolation.disjoinFromOuterAndInnerTransactions,
           logging: Log.isOn && Log.opt.indicator ? undefined : Log.DefaultLevel }
-        OperationDescriptorImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
+        ReactiveOperationImpl.proceedWithinGivenLaunch<void>(undefined, Transaction.run, options,
           IndicatorImpl.leave, mon, this.transaction)
       }
       this.transaction.whenFinished().then(leave, leave)
@@ -690,7 +690,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
     for (const r of reactions)
       queue.push(r)
     if (isKickOff)
-      OperationDescriptorImpl.proceedWithinGivenLaunch<void>(undefined, OperationFootprintImpl.processQueuedReactions)
+      ReactiveOperationImpl.proceedWithinGivenLaunch<void>(undefined, OperationFootprintImpl.processQueuedReactions)
   }
 
   private static migrateContentFootprint(cf: ContentFootprint, target: Transaction): ContentFootprint {
@@ -766,7 +766,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
   }
 
   private static createOperationDescriptor(h: ObjectHandle, fk: FieldKey, options: OptionsImpl): F<any> {
-    const ctl = new OperationDescriptorImpl(h, fk)
+    const ctl = new ReactiveOperationImpl(h, fk)
     const operation: F<any> = (...args: any[]): any => {
       return ctl.reuseOrRelaunch(false, args).result
     }
@@ -778,7 +778,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
     // Configure options
     const initial: any = Meta.acquire(proto, Meta.Initial)
     let footprint: OperationFootprintImpl | undefined = initial[fk]
-    const ctl = footprint ? footprint.descriptor : new OperationDescriptorImpl(EMPTY_HANDLE, fk)
+    const ctl = footprint ? footprint.descriptor : new ReactiveOperationImpl(EMPTY_HANDLE, fk)
     const opts = footprint ? footprint.options : OptionsImpl.INITIAL
     initial[fk] = footprint = new OperationFootprintImpl(Transaction.current, ctl, EMPTY_OBJECT_VERSION.changeset, new OptionsImpl(getter, setter, opts, options, implicit), false)
     // Add to the list if it's a reactive function
@@ -814,10 +814,10 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
     Promise.prototype.then = reactronicHookedThen // override
     try {
       Object.defineProperty(globalThis, "rWhy", {
-        get: OperationDescriptorImpl.why, configurable: false, enumerable: false,
+        get: ReactiveOperationImpl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(globalThis, "rBriefWhy", {
-        get: OperationDescriptorImpl.briefWhy, configurable: false, enumerable: false,
+        get: ReactiveOperationImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {
@@ -825,10 +825,10 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
     }
     try {
       Object.defineProperty(global, "rWhy", {
-        get: OperationDescriptorImpl.why, configurable: false, enumerable: false,
+        get: ReactiveOperationImpl.why, configurable: false, enumerable: false,
       })
       Object.defineProperty(global, "rBriefWhy", {
-        get: OperationDescriptorImpl.briefWhy, configurable: false, enumerable: false,
+        get: ReactiveOperationImpl.briefWhy, configurable: false, enumerable: false,
       })
     }
     catch (e) {

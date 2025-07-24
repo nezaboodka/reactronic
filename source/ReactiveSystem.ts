@@ -8,18 +8,18 @@
 import { F } from "./util/Utils.js"
 import { Log } from "./util/Dbg.js"
 import { Kind, Isolation } from "./Enums.js"
-import { OperationDescriptor, ReactivityOptions, LoggingOptions, ProfilingOptions, SnapshotOptions } from "./Options.js"
+import { ReactiveOperation, ReactivityOptions, LoggingOptions, ProfilingOptions, SnapshotOptions } from "./Options.js"
 import { Meta, ObjectHandle } from "./core/Data.js"
 import { Changeset } from "./core/Changeset.js"
 import { Mvcc } from "./core/Mvcc.js"
 import { Transaction } from "./core/Transaction.js"
-import { OperationDescriptorImpl } from "./core/Operation.js"
+import { ReactiveOperationImpl } from "./core/Operation.js"
 
 export class ReactiveSystem {
-  static why(brief: boolean = false): string { return brief ? OperationDescriptorImpl.briefWhy() : OperationDescriptorImpl.why() }
-  static getDescriptor<T>(method: F<T>): OperationDescriptor<T> { return OperationDescriptorImpl.getDescriptor(method) }
+  static why(brief: boolean = false): string { return brief ? ReactiveOperationImpl.briefWhy() : ReactiveOperationImpl.why() }
+  static getDescriptor<T>(method: F<T>): ReactiveOperation<T> { return ReactiveOperationImpl.getDescriptor(method) }
   static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return ReactiveSystem.getDescriptor(method as any as F<T>).pullLastResult(args) }
-  static configure(options: Partial<ReactivityOptions>): ReactivityOptions { return OperationDescriptorImpl.configureImpl(undefined, options) }
+  static configure(options: Partial<ReactivityOptions>): ReactivityOptions { return ReactiveOperationImpl.configureImpl(undefined, options) }
   // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Mvcc.setObjectOptions(obj, options) }
   static getRevisionOf(obj: any): number { return obj[Meta.Revision] }
   static takeSnapshot<T>(obj: T): T { return Changeset.takeSnapshot(obj) }
@@ -61,7 +61,7 @@ export function runAtomically<T>(
 }
 
 export function runNonReactively<T>(func: F<T>, ...args: any[]): T {
-  return OperationDescriptorImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
+  return ReactiveOperationImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
 export function runSensitively<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {

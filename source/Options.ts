@@ -34,9 +34,9 @@ export type ReactivityOptions = {
   readonly logging?: Partial<LoggingOptions>
 }
 
-// OperationDescriptor
+// ReactiveOperation
 
-export type OperationDescriptor<T> = {
+export type ReactiveOperation<T> = {
   readonly options: ReactivityOptions
   readonly args: ReadonlyArray<any>
   readonly result: T

@@ -9,7 +9,7 @@ import { F } from "./util/Utils.js"
 import { ObservableObject } from "./core/Mvcc.js"
 import { reactive } from "./ReactiveSystem.js"
 
-export class ReactiveOperation<T> extends ObservableObject
+export class ReactiveOperationEx<T> extends ObservableObject
 {
   constructor(protected operation: F<T>) {
     super()

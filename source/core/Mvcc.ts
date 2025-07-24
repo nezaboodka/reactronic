@@ -8,7 +8,7 @@
 import { UNDEF, F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
 import { Kind, Reentrance, Isolation } from "../Enums.js"
-import { OperationDescriptor, ReactivityOptions } from "../Options.js"
+import { ReactiveOperation, ReactivityOptions } from "../Options.js"
 import { LoggingOptions, ProfilingOptions } from "../Logging.js"
 import { ObjectVersion, FieldKey, ObjectHandle, ContentFootprint, Meta } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION } from "./Changeset.js"
@@ -260,7 +260,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     ctx.getEditableObjectVersion(h, Meta.Handle, blank)
     if (!Mvcc.reactivityAutoStartDisabled)
       for (const fk in Meta.getFrom(proto, Meta.Reactive))
-        (h.proxy[fk][Meta.Descriptor] as OperationDescriptor<any>).markObsolete()
+        (h.proxy[fk][Meta.Descriptor] as ReactiveOperation<any>).markObsolete()
     return h
   }
 
