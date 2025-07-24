@@ -27,6 +27,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
   static readonly shortFrameDuration = 16 // ms
   static readonly longFrameDuration = 300 // ms
   static frameDuration = ReactiveTreeNode.longFrameDuration
+  static currentScriptPriority = Priority.realtime
 
   abstract readonly key: string
   abstract readonly driver: ReactiveTreeNodeDriver<E>
@@ -46,37 +47,8 @@ export abstract class ReactiveTreeNode<E = unknown> {
   abstract has(mode: Mode): boolean
   abstract configureReactronic(options: Partial<ReactivityOptions>): ReactivityOptions
 
-  static get key(): string {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.key
-  }
-
-  static get stamp(): number {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.stamp
-  }
-
-  static get triggers(): unknown {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.declaration.triggers
-  }
-
-  static get priority(): Priority {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.priority
-  }
-
-  static set priority(value: Priority) {
-    ReactiveTreeNodeImpl.nodeSlot.instance.priority = value
-  }
-
-  static get childrenShuffling(): boolean {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.childrenShuffling
-  }
-
-  static set childrenShuffling(value: boolean) {
-    ReactiveTreeNodeImpl.nodeSlot.instance.childrenShuffling = value
-  }
-
-  static get effectiveScriptPriority(): Priority  {
-    return ReactiveTreeNodeImpl.currentScriptPriority
-  }
+  static get current(): ReactiveTreeNode { return ReactiveTreeNodeImpl.nodeSlot.instance }
+  static get isFirstScriptRun(): boolean { return ReactiveTreeNodeImpl.nodeSlot.instance.stamp === 1 }
 
   static declare<E = void>(
     driver: ReactiveTreeNodeDriver<E>,
@@ -170,10 +142,6 @@ export abstract class ReactiveTreeNode<E = unknown> {
     else
       declaration = basis ?? {}
     return declaration
-  }
-
-  static get isFirstScriptRun(): boolean {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.stamp === 1
   }
 
   static triggerScriptRun(node: ReactiveTreeNode<any>, triggers: unknown): void {
@@ -422,7 +390,6 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   static logging: LoggingOptions | undefined = undefined
   static grandNodeCount: number = 0
   static disposableNodeCount: number = 0
-  static currentScriptPriority = Priority.realtime
 
   readonly key: string
   readonly driver: ReactiveTreeNodeDriver<E>
