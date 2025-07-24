@@ -45,14 +45,14 @@ export abstract class ReactiveTreeNode<E = unknown> {
   abstract childrenShuffling: boolean
   abstract strictOrder: boolean
   abstract has(mode: Mode): boolean
-  abstract configureReactronic(options: Partial<ReactivityOptions>): ReactivityOptions
+  abstract configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions
 
   static get current(): ReactiveTreeNode {
     return ReactiveTreeNodeImpl.nodeSlot.instance
   }
 
   static get isFirstScriptRun(): boolean {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.stamp === 1
+    return ReactiveTreeNode.current.stamp === 1
   }
 
   static declare<E = void>(
@@ -475,7 +475,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
     runScriptNow(this.slot!)
   }
 
-  configureReactronic(options: Partial<ReactivityOptions>): ReactivityOptions {
+  configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.autonomous))
       throw new Error("reactronic can be configured only for elements with autonomous mode and only during activation")
     return manageReactiveOperation(this.script).configure(options)
