@@ -419,7 +419,6 @@ class ReactiveTreeNodeContextImpl<T extends Object = Object> extends ObservableO
 // ReactiveTreeNodeImpl
 
 class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
-  // Static properties
   static logging: LoggingOptions | undefined = undefined
   static grandNodeCount: number = 0
   static disposableNodeCount: number = 0
