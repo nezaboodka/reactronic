@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, Transaction, observable, runAtomically, reactive, cached, ReactiveSystem, LoggingOptions } from "../source/api.js"
+import { ObservableObject, Transaction, observable, runAtomically, reactive, cached, ReactiveSystem, LoggingOptions, manageReactiveOperation, disposeObservableObject } from "../source/api.js"
 
 export function autorender(render: (cycle: number) => React.JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState<React.JSX.Element>>(
@@ -30,14 +30,14 @@ class RxComponent<V> extends ObservableObject {
 
   @reactive
   protected ensureUpToDate(): void {
-    if (!ReactiveSystem.getDescriptor(this.render).isReusable)
+    if (!manageReactiveOperation(this.render).isReusable)
       Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
   @observable(false) cycle: number = 0
   @observable(false) refresh: (next: ReactState<V>) => void = nop
   @observable(false) readonly unmount = (): (() => void) => {
-    return (): void => { runAtomically(ReactiveSystem.dispose, this) }
+    return (): void => { runAtomically(disposeObservableObject, this) }
   }
 
   static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): RxComponent<V> {
@@ -45,8 +45,8 @@ class RxComponent<V> extends ObservableObject {
     if (hint)
       ReactiveSystem.setLoggingHint(rx, hint)
     if (logging) {
-      ReactiveSystem.getDescriptor(rx.render).configure({ logging })
-      ReactiveSystem.getDescriptor(rx.ensureUpToDate).configure({ logging })
+      manageReactiveOperation(rx.render).configure({ logging })
+      manageReactiveOperation(rx.ensureUpToDate).configure({ logging })
     }
     return rx
   }

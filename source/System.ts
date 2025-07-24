@@ -17,13 +17,8 @@ import { ReactiveOperationImpl } from "./core/Operation.js"
 
 export class ReactiveSystem {
   static why(brief: boolean = false): string { return brief ? ReactiveOperationImpl.briefWhy() : ReactiveOperationImpl.why() }
-  static getDescriptor<T>(method: F<T>): ReactiveOperation<T> { return ReactiveOperationImpl.getDescriptor(method) }
-  static pullLastResult<T>(method: F<Promise<T>>, args?: any[]): T | undefined { return ReactiveSystem.getDescriptor(method as any as F<T>).pullLastResult(args) }
-  static configure(options: Partial<ReactivityOptions>): ReactivityOptions { return ReactiveOperationImpl.configureImpl(undefined, options) }
-  // static configureObject<T extends object>(obj: T, options: Partial<ObjectOptions>): void { Mvcc.setObjectOptions(obj, options) }
   static getRevisionOf(obj: any): number { return obj[Meta.Revision] }
   static takeSnapshot<T>(obj: T): T { return Changeset.takeSnapshot(obj) }
-  static dispose(obj: any): void { Changeset.dispose(obj) }
   // Configuration
   static get reactivityAutoStartDisabled(): boolean { return Mvcc.reactivityAutoStartDisabled }
   static set reactivityAutoStartDisabled(value: boolean) { Mvcc.reactivityAutoStartDisabled = value }
@@ -70,6 +65,18 @@ export function runSensitively<T>(sensitivity: boolean, func: F<T>, ...args: any
 
 export function runContextually<T>(p: Promise<T>): Promise<T> {
   throw new Error("not implemented yet")
+}
+
+export function manageReactiveOperation<T>(method: F<T>): ReactiveOperation<T> {
+  return ReactiveOperationImpl.manageReactiveOperation(method)
+}
+
+export function configureCurrentReactiveOperation(options: Partial<ReactivityOptions>): ReactivityOptions {
+  return ReactiveOperationImpl.configureImpl(undefined, options)
+}
+
+export function disposeObservableObject(obj: any): void {
+  Changeset.dispose(obj)
 }
 
 // Decorators

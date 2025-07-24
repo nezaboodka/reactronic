@@ -13,7 +13,7 @@ import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { ReactivityOptions } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, observable, reactive, runAtomically, runNonReactively } from "../System.js"
+import { ReactiveSystem, options, observable, reactive, runAtomically, runNonReactively, manageReactiveOperation, disposeObservableObject } from "../System.js"
 
 // Scripts
 
@@ -311,7 +311,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   configureReactronic(options: Partial<ReactivityOptions>): ReactivityOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.autonomous))
       throw new Error("reactronic can be configured only for elements with autonomous mode and only during activation")
-    return ReactiveSystem.getDescriptor(this.script).configure(options)
+    return manageReactiveOperation(this.script).configure(options)
   }
 
   static get nodeSlot(): MergedItem<ReactiveTreeNodeImpl> {
@@ -487,7 +487,7 @@ function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>
         Transaction.outside(() => {
           if (ReactiveSystem.isLogging)
             ReactiveSystem.setLoggingHint(node.element, node.key)
-          ReactiveSystem.getDescriptor(node.script).configure({
+          manageReactiveOperation(node.script).configure({
             order: node.level,
           })
         })
@@ -580,7 +580,7 @@ async function runDisposalLoop(): Promise<void> {
   while (slot !== undefined) {
     if (Transaction.isFrameOver(500, 5))
       await Transaction.requestNextFrame()
-    ReactiveSystem.dispose(slot.instance)
+    disposeObservableObject(slot.instance)
     slot = slot.aux
     ReactiveTreeNodeImpl.disposableNodeCount--
   }

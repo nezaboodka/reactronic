@@ -46,5 +46,5 @@ export type ReactiveOperation<T> = {
 
   configure(options: Partial<ReactivityOptions>): ReactivityOptions
   markObsolete(): void
-  pullLastResult(args?: any[]): T | undefined
+  pullLastResult(args?: any[]): any
 }

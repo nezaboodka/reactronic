@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, observable, runAtomically, atomic, reactive, cached, Journal, ReactiveSystem, LoggingOptions, options } from "../source/api.js"
+import { ObservableObject, observable, runAtomically, atomic, reactive, cached, Journal, ReactiveSystem, LoggingOptions, options, configureCurrentReactiveOperation } from "../source/api.js"
 
 export const output: string[] = []
 
@@ -90,7 +90,7 @@ export class DemoView extends ObservableObject {
       output.push(x) /* istanbul ignore next */
       if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) console.log(x)
     })
-    ReactiveSystem.configure({ order: 123 })
+    configureCurrentReactiveOperation({ order: 123 })
   }
 
   // @transaction @options({ logging: LoggingLevel.Debug })

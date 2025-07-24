@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { runAtomically, reactive, cached, Transaction, ReactiveSystem } from "../source/api.js"
+import { runAtomically, reactive, cached, Transaction, manageReactiveOperation, disposeObservableObject } from "../source/api.js"
 
 export class Component<P> extends React.Component<P> {
   @cached
@@ -21,7 +21,7 @@ export class Component<P> extends React.Component<P> {
   } // ensureUpToDate is subscribed to render
 
   override shouldComponentUpdate(): boolean {
-    return !ReactiveSystem.getDescriptor(this.render).isReusable
+    return !manageReactiveOperation(this.render).isReusable
   }
 
   override componentDidMount(): void {
@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   override componentWillUnmount(): void {
-    runAtomically(ReactiveSystem.dispose, this)
+    runAtomically(disposeObservableObject, this)
   }
 }

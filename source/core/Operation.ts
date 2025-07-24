@@ -75,7 +75,7 @@ export class ReactiveOperationImpl implements ReactiveOperation<any> {
     return t
   }
 
-  static getDescriptor(method: F<any>): ReactiveOperation<any> {
+  static manageReactiveOperation(method: F<any>): ReactiveOperation<any> {
     const ctl = Meta.get<ReactiveOperation<any> | undefined>(method, Meta.Descriptor)
     if (!ctl)
       throw misuse(`given method is not decorated as reactronic one: ${method.name}`)

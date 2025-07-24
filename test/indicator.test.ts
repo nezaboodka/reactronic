@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Indicator, ObservableObject, Reentrance, Transaction, atomic, reactive, options, pause, observable, runAtomically, ReactiveSystem } from "../source/api.js"
+import { Indicator, ObservableObject, Reentrance, Transaction, atomic, reactive, options, pause, observable, runAtomically, ReactiveSystem, manageReactiveOperation } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
@@ -81,7 +81,7 @@ test("indicator", async t => {
   const indicator = Indicator.create("indicator", 0, 0, 1000)
   const controller = runAtomically(() => {
     const result = new CompilationController()
-    ReactiveSystem.getDescriptor(result.reloadCompilation).configure({ indicator })
+    manageReactiveOperation(result.reloadCompilation).configure({ indicator })
     return result
   })
   await indicator.whenIdle()

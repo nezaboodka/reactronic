@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { runAtomically, pause, Reentrance, ReactiveSystem } from "../source/api.js"
+import { runAtomically, pause, Reentrance, ReactiveSystem, manageReactiveOperation, disposeObservableObject } from "../source/api.js"
 import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
 import { TestsLoggingLevel } from "./brief.js"
 
@@ -29,7 +29,7 @@ test("reentrance.error", async t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = runAtomically(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    ReactiveSystem.getDescriptor(a.model.load).configure({reentrance: Reentrance.preventWithError})
+    manageReactiveOperation(a.model.load).configure({reentrance: Reentrance.preventWithError})
     return a
   })
   try {
@@ -38,12 +38,12 @@ test("reentrance.error", async t => {
     t.is(app.rawField, "raw field updated")
     t.is(app.observableField, "observable field")
     t.throws(() => app.observableField = "observable field", { message: "observable property AsyncDemoView.observableField #24 can only be modified inside transaction" })
-    t.throws(() => ReactiveSystem.getDescriptor(app.print).configure({ logging: TestsLoggingLevel }))
+    t.throws(() => manageReactiveOperation(app.print).configure({ logging: TestsLoggingLevel }))
     runAtomically(() => {
-      ReactiveSystem.getDescriptor(app.print).configure({ logging: TestsLoggingLevel })
+      manageReactiveOperation(app.print).configure({ logging: TestsLoggingLevel })
     })
     await app.print() // initial reactive run
-    t.throws(() => ReactiveSystem.getDescriptor(app.print).configure({ logging: TestsLoggingLevel }))
+    t.throws(() => manageReactiveOperation(app.print).configure({ logging: TestsLoggingLevel }))
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { void requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
     t.is(busy.counter, 1)
@@ -57,12 +57,12 @@ test("reentrance.error", async t => {
   finally {
     t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
-    const r = ReactiveSystem.pullLastResult(app.render)
+    const r = manageReactiveOperation(app.render).pullLastResult()
     t.is(r && r.length, 2)
     await pause(300)
     runAtomically(() => {
-      ReactiveSystem.dispose(app)
-      ReactiveSystem.dispose(app.model)
+      disposeObservableObject(app)
+      disposeObservableObject(app.model)
     })
   } /* istanbul ignore next */
   if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled)
