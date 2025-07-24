@@ -35,7 +35,9 @@ class RxComponent<V> extends ObservableObject {
   }
 
   @observable(false) cycle: number = 0
+
   @observable(false) refresh: (next: ReactState<V>) => void = nop
+
   @observable(false) readonly unmount = (): (() => void) => {
     return (): void => { runAtomically(disposeObservableObject, this) }
   }
