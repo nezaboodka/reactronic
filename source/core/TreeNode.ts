@@ -14,7 +14,7 @@ import { ReactivityOptions } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
 import { ReactiveSystem, options, observable, reactive, runAtomically, runNonReactively } from "../ReactiveSystem.js"
-import { ReactiveTree } from "./ReactiveTree.js"
+import { ReactiveTree } from "./Tree.js"
 
 // Scripts
 

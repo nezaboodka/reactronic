@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Priority, Mode } from "../Enums.js"
-import { ReactiveTreeNodeDriver, ReactiveTreeNodeDecl, Script, ScriptAsync, Handler, ReactiveTreeNode, generateKey, observablesAreEqual } from "./ReactiveTreeNode.js"
+import { ReactiveTreeNodeDriver, ReactiveTreeNodeDecl, Script, ScriptAsync, Handler, ReactiveTreeNode, generateKey, observablesAreEqual } from "./TreeNode.js"
 import { MergeList, MergedItem } from "../util/MergeList.js"
 import { LoggingOptions } from "../Logging.js"
 
