@@ -13,7 +13,7 @@ import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { ReactivityOptions } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, observable, reactive, runAtomically, runNonReactively } from "../ReactiveSystem.js"
+import { ReactiveSystem, options, observable, reactive, runAtomically, runNonReactively } from "../System.js"
 
 // Scripts
 
