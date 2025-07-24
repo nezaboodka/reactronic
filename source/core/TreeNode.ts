@@ -229,6 +229,10 @@ export abstract class ReactiveTreeNode<E = unknown> {
   static set childrenShuffling(value: boolean) {
     ReactiveTreeNodeImpl.nodeSlot.instance.childrenShuffling = value
   }
+
+  static get effectiveScriptPriority(): Priority  {
+    return ReactiveTreeNodeImpl.currentScriptPriority
+  }
 }
 
 // ReactiveTreeNodeDecl
