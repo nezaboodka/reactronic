@@ -13,11 +13,6 @@ import { LoggingOptions } from "../Logging.js"
 // ReactiveTree
 
 export class ReactiveTree {
-  static readonly shortFrameDuration = 16 // ms
-  static readonly longFrameDuration = 300 // ms
-  static currentScriptPriority = Priority.realtime
-  static frameDuration = ReactiveTree.longFrameDuration
-
   static declare<E = void>(
     driver: ReactiveTreeNodeDriver<E>,
     script?: Script<E>,

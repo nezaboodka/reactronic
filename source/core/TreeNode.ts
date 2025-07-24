@@ -14,7 +14,6 @@ import { ReactivityOptions } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
 import { ReactiveSystem, options, observable, reactive, runAtomically, runNonReactively } from "../ReactiveSystem.js"
-import { ReactiveTree } from "./Tree.js"
 
 // Scripts
 
@@ -232,6 +231,10 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   static logging: LoggingOptions | undefined = undefined
   static grandNodeCount: number = 0
   static disposableNodeCount: number = 0
+  static readonly shortFrameDuration = 16 // ms
+  static readonly longFrameDuration = 300 // ms
+  static currentScriptPriority = Priority.realtime
+  static frameDuration = ReactiveTreeNodeImpl.longFrameDuration
 
   readonly key: string
   readonly driver: ReactiveTreeNodeDriver<E>
@@ -449,29 +452,29 @@ async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveTreeNodeI
   priority: Priority): Promise<void> {
   await Transaction.requestNextFrame()
   const node = owner.instance
-  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, ReactiveTree.shortFrameDuration / 3)) {
-    let outerPriority = ReactiveTree.currentScriptPriority
-    ReactiveTree.currentScriptPriority = priority
+  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, ReactiveTreeNodeImpl.shortFrameDuration / 3)) {
+    let outerPriority = ReactiveTreeNodeImpl.currentScriptPriority
+    ReactiveTreeNodeImpl.currentScriptPriority = priority
     try {
       if (node.childrenShuffling)
         shuffle(items)
-      const frameDurationLimit = priority === Priority.background ? ReactiveTree.shortFrameDuration : Infinity
-      let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveTree.frameDuration / 4, ReactiveTree.shortFrameDuration))
+      const frameDurationLimit = priority === Priority.background ? ReactiveTreeNodeImpl.shortFrameDuration : Infinity
+      let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveTreeNodeImpl.frameDuration / 4, ReactiveTreeNodeImpl.shortFrameDuration))
       for (const child of items) {
         triggerScriptRunViaSlot(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
-          ReactiveTree.currentScriptPriority = outerPriority
+          ReactiveTreeNodeImpl.currentScriptPriority = outerPriority
           await Transaction.requestNextFrame(0)
-          outerPriority = ReactiveTree.currentScriptPriority
-          ReactiveTree.currentScriptPriority = priority
-          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveTree.frameDuration))
+          outerPriority = ReactiveTreeNodeImpl.currentScriptPriority
+          ReactiveTreeNodeImpl.currentScriptPriority = priority
+          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveTreeNodeImpl.frameDuration))
         }
-        if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveTree.shortFrameDuration / 3))
+        if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveTreeNodeImpl.shortFrameDuration / 3))
           break
       }
     }
     finally {
-      ReactiveTree.currentScriptPriority = outerPriority
+      ReactiveTreeNodeImpl.currentScriptPriority = outerPriority
     }
   }
 }
