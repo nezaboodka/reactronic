@@ -21,9 +21,63 @@ export type Script<E> = (el: E, basis: () => void) => void
 export type ScriptAsync<E> = (el: E, basis: () => Promise<void>) => Promise<void>
 export type Handler<E = unknown, R = void> = (el: E) => R
 
-// ReactiveTree
+// ReactiveTreeNode
 
-export class ReactiveTree {
+export abstract class ReactiveTreeNode<E = unknown> {
+  static readonly shortFrameDuration = 16 // ms
+  static readonly longFrameDuration = 300 // ms
+  static frameDuration = ReactiveTreeNode.longFrameDuration
+
+  abstract readonly key: string
+  abstract readonly driver: ReactiveTreeNodeDriver<E>
+  abstract readonly declaration: Readonly<ReactiveTreeNodeDecl<E>/* | ReactiveTreeNodeDeclAsync<E>*/>
+  abstract readonly level: number
+  abstract readonly owner: ReactiveTreeNode
+  abstract element: E
+  abstract readonly host: ReactiveTreeNode
+  abstract readonly children: MergeListReader<ReactiveTreeNode>
+  abstract readonly slot: MergedItem<ReactiveTreeNode<E>> | undefined
+  abstract readonly stamp: number
+  abstract readonly outer: ReactiveTreeNode
+  abstract readonly context: ReactiveTreeNodeContext | undefined
+  abstract priority?: Priority
+  abstract childrenShuffling: boolean
+  abstract strictOrder: boolean
+  abstract has(mode: Mode): boolean
+  abstract configureReactronic(options: Partial<ReactivityOptions>): ReactivityOptions
+
+  static get key(): string {
+    return ReactiveTreeNodeImpl.nodeSlot.instance.key
+  }
+
+  static get stamp(): number {
+    return ReactiveTreeNodeImpl.nodeSlot.instance.stamp
+  }
+
+  static get triggers(): unknown {
+    return ReactiveTreeNodeImpl.nodeSlot.instance.declaration.triggers
+  }
+
+  static get priority(): Priority {
+    return ReactiveTreeNodeImpl.nodeSlot.instance.priority
+  }
+
+  static set priority(value: Priority) {
+    ReactiveTreeNodeImpl.nodeSlot.instance.priority = value
+  }
+
+  static get childrenShuffling(): boolean {
+    return ReactiveTreeNodeImpl.nodeSlot.instance.childrenShuffling
+  }
+
+  static set childrenShuffling(value: boolean) {
+    ReactiveTreeNodeImpl.nodeSlot.instance.childrenShuffling = value
+  }
+
+  static get effectiveScriptPriority(): Priority  {
+    return ReactiveTreeNodeImpl.currentScriptPriority
+  }
+
   static declare<E = void>(
     driver: ReactiveTreeNodeDriver<E>,
     script?: Script<E>,
@@ -169,7 +223,7 @@ export class ReactiveTree {
     node: ReactiveTreeNode<E>, action: Handler<ReactiveTreeNode<E>>): void {
     action(node)
     for (const child of node.children.items())
-      ReactiveTree.forEachChildRecursively<E>(child.instance as ReactiveTreeNode<any>, action)
+      ReactiveTreeNode.forEachChildRecursively<E>(child.instance as ReactiveTreeNode<any>, action)
   }
 
   static getDefaultLoggingOptions(): LoggingOptions | undefined {
@@ -178,60 +232,6 @@ export class ReactiveTree {
 
   static setDefaultLoggingOptions(logging?: LoggingOptions): void {
     ReactiveTreeNodeImpl.logging = logging
-  }
-}
-
-// ReactiveTreeNode
-
-export abstract class ReactiveTreeNode<E = unknown> {
-  abstract readonly key: string
-  abstract readonly driver: ReactiveTreeNodeDriver<E>
-  abstract readonly declaration: Readonly<ReactiveTreeNodeDecl<E>/* | ReactiveTreeNodeDeclAsync<E>*/>
-  abstract readonly level: number
-  abstract readonly owner: ReactiveTreeNode
-  abstract element: E
-  abstract readonly host: ReactiveTreeNode
-  abstract readonly children: MergeListReader<ReactiveTreeNode>
-  abstract readonly slot: MergedItem<ReactiveTreeNode<E>> | undefined
-  abstract readonly stamp: number
-  abstract readonly outer: ReactiveTreeNode
-  abstract readonly context: ReactiveTreeNodeContext | undefined
-  abstract priority?: Priority
-  abstract childrenShuffling: boolean
-  abstract strictOrder: boolean
-  abstract has(mode: Mode): boolean
-  abstract configureReactronic(options: Partial<ReactivityOptions>): ReactivityOptions
-
-  static get key(): string {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.key
-  }
-
-  static get stamp(): number {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.stamp
-  }
-
-  static get triggers(): unknown {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.declaration.triggers
-  }
-
-  static get priority(): Priority {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.priority
-  }
-
-  static set priority(value: Priority) {
-    ReactiveTreeNodeImpl.nodeSlot.instance.priority = value
-  }
-
-  static get childrenShuffling(): boolean {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.childrenShuffling
-  }
-
-  static set childrenShuffling(value: boolean) {
-    ReactiveTreeNodeImpl.nodeSlot.instance.childrenShuffling = value
-  }
-
-  static get effectiveScriptPriority(): Priority  {
-    return ReactiveTreeNodeImpl.currentScriptPriority
   }
 }
 
@@ -423,10 +423,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   static logging: LoggingOptions | undefined = undefined
   static grandNodeCount: number = 0
   static disposableNodeCount: number = 0
-  static readonly shortFrameDuration = 16 // ms
-  static readonly longFrameDuration = 300 // ms
   static currentScriptPriority = Priority.realtime
-  static frameDuration = ReactiveTreeNodeImpl.longFrameDuration
 
   readonly key: string
   readonly driver: ReactiveTreeNodeDriver<E>
@@ -650,8 +647,8 @@ async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveTreeNodeI
     try {
       if (node.childrenShuffling)
         shuffle(items)
-      const frameDurationLimit = priority === Priority.background ? ReactiveTreeNodeImpl.shortFrameDuration : Infinity
-      let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveTreeNodeImpl.frameDuration / 4, ReactiveTreeNodeImpl.shortFrameDuration))
+      const frameDurationLimit = priority === Priority.background ? ReactiveTreeNode.shortFrameDuration : Infinity
+      let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveTreeNode.frameDuration / 4, ReactiveTreeNode.shortFrameDuration))
       for (const child of items) {
         triggerScriptRunViaSlot(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
@@ -659,9 +656,9 @@ async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveTreeNodeI
           await Transaction.requestNextFrame(0)
           outerPriority = ReactiveTreeNodeImpl.currentScriptPriority
           ReactiveTreeNodeImpl.currentScriptPriority = priority
-          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveTreeNodeImpl.frameDuration))
+          frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveTreeNode.frameDuration))
         }
-        if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveTreeNodeImpl.shortFrameDuration / 3))
+        if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveTreeNode.shortFrameDuration / 3))
           break
       }
     }
