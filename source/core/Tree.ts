@@ -111,34 +111,6 @@ export class ReactiveTree {
     return ReactiveTreeNodeImpl.nodeSlot.instance.stamp === 1
   }
 
-  static get key(): string {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.key
-  }
-
-  static get stamp(): number {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.stamp
-  }
-
-  static get triggers(): unknown {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.declaration.triggers
-  }
-
-  static get priority(): Priority {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.priority
-  }
-
-  static set priority(value: Priority) {
-    ReactiveTreeNodeImpl.nodeSlot.instance.priority = value
-  }
-
-  static get childrenShuffling(): boolean {
-    return ReactiveTreeNodeImpl.nodeSlot.instance.childrenShuffling
-  }
-
-  static set childrenShuffling(value: boolean) {
-    ReactiveTreeNodeImpl.nodeSlot.instance.childrenShuffling = value
-  }
-
   static triggerScriptRun(node: ReactiveTreeNode<any>, triggers: unknown): void {
     const impl = node as ReactiveTreeNodeImpl<any>
     const declaration = impl.declaration
