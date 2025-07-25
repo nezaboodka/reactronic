@@ -304,15 +304,15 @@ export class ReactiveTreeVariable<T extends Object = Object> {
   }
 
   set value(value: T) {
-    ReactiveTreeNodeImpl.setNodeVariableValue(this, value)
+    ReactiveTreeNodeImpl.setTreeVariableValue(this, value)
   }
 
   get value(): T {
-    return ReactiveTreeNodeImpl.useNodeVariableValue(this)
+    return ReactiveTreeNodeImpl.useTreeVariableValue(this)
   }
 
   get valueOrUndefined(): T | undefined {
-    return ReactiveTreeNodeImpl.tryUseNodeVariableValue(this)
+    return ReactiveTreeNodeImpl.tryUseTreeVariableValue(this)
   }
 }
 
@@ -487,21 +487,21 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
     return gNodeSlot
   }
 
-  static tryUseNodeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T | undefined {
+  static tryUseTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T | undefined {
     let node = ReactiveTreeNodeImpl.nodeSlot.instance
     while (node.context?.variable !== variable && node.owner !== node)
       node = node.outer.slot!.instance
     return node.context?.value as any // TODO: to get rid of any
   }
 
-  static useNodeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T {
-    const result = ReactiveTreeNodeImpl.tryUseNodeVariableValue(variable) ?? variable.defaultValue
+  static useTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T {
+    const result = ReactiveTreeNodeImpl.tryUseTreeVariableValue(variable) ?? variable.defaultValue
     if (!result)
       throw new Error("unknown node variable")
     return result
   }
 
-  static setNodeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>, value: T | undefined): void {
+  static setTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>, value: T | undefined): void {
     const node = ReactiveTreeNodeImpl.nodeSlot.instance
     const owner = node.owner
     const hostCtx = runNonReactively(() => owner.context?.value)
