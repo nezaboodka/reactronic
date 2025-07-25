@@ -477,7 +477,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
 
   configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.autonomous))
-      throw new Error("reactronic can be configured only for elements with autonomous mode and only during activation")
+      throw new Error("reactronic can be configured only for elements with autonomous mode and only during preparation")
     return manageReactiveOperation(this.script).configure(options)
   }
 
