@@ -231,7 +231,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    atomicAction(ReactiveSystem.dispose, this)
+    atomicAction(disposeObservableObject, this)
   }
 }
 ```
