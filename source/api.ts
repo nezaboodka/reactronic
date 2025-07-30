@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 export { all, pause, proceedSyncOrAsync } from "./util/Utils.js"
-export { Uri } from "./Uri.js"
+export { Uri } from "./util/Uri.js"
 export { MergeList } from "./util/MergeList.js"
 export type { MergedItem, MergeListReader } from "./util/MergeList.js"
 export { SealedArray } from "./util/SealedArray.js"
