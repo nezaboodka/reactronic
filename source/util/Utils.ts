@@ -5,6 +5,8 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
+import { fatal, misuse } from "./Dbg.js"
+
 export type F<T> = (...args: any[]) => T
 
 export class Utils {
@@ -53,7 +55,7 @@ export class Utils {
 
 /* istanbul ignore next */
 export function UNDEF(...args: any[]): never {
-  throw new Error("this method should never be called")
+  throw fatal(new Error("this method should never be called"))
 }
 
 /* istanbul ignore next */
@@ -85,7 +87,7 @@ export function proceedSyncOrAsync<T>(result: T | Promise<T>, success: (v: any) 
 
 export function emitLetters(n: number): string {
   if (n < 0)
-    throw new Error(`emitLetters: argument (${n}) should not be negative or zero`)
+    throw misuse(`emitLetters: argument (${n}) should not be negative or zero`)
   let result = ""
   while (n >= 0) {
     const r = n % 26

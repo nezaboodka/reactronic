@@ -5,6 +5,8 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
+import { misuse } from "./Dbg.js"
+
 export interface UriComponents {
   scheme: string
   authority?: string
@@ -73,19 +75,19 @@ const DOUBLE_SLASH_START = /^\/\//
 
 function validateUri(uri: Uri, strict?: boolean): void {
   if (!uri.scheme && strict) {
-    throw new Error(`Scheme is missing: {scheme: "", authority: "${uri.authority}", path: "${uri.path}", query: "${uri.query}", fragment: "${uri.fragment}"}`)
+    throw misuse(`Scheme is missing: {scheme: "", authority: "${uri.authority}", path: "${uri.path}", query: "${uri.query}", fragment: "${uri.fragment}"}`)
   }
   if (uri.scheme && !SCHEME_PATTERN.test(uri.scheme)) {
-    throw new Error("Scheme contains illegal characters.")
+    throw misuse("Scheme contains illegal characters.")
   }
   if (uri.path) {
     if (uri.authority) {
       if (!SINGLE_SLASH_START.test(uri.path)) {
-        throw new Error("If a URI contains an authority component, then the path component must either be empty or begin with a slash character ('/').")
+        throw misuse("If a URI contains an authority component, then the path component must either be empty or begin with a slash character ('/').")
       }
     } else {
       if (DOUBLE_SLASH_START.test(uri.path)) {
-        throw new Error("If a URI does not contain an authority component, then the path cannot begin with two slash characters ('//').")
+        throw misuse("If a URI does not contain an authority component, then the path cannot begin with two slash characters ('//').")
       }
     }
   }

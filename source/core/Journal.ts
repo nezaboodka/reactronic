@@ -5,6 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
+import { misuse } from "../util/Dbg.js"
 import { Isolation } from "../Enums.js"
 import { ObservableObject } from "./Mvcc.js"
 import { ObjectHandle, ObjectVersion, Meta, PatchSet, ValuePatch, ContentFootprint, FieldKey } from "./Data.js"
@@ -59,7 +60,7 @@ export class JournalImpl extends Journal {
     if (this._unsaved === patch)
       this._unsaved = new Map<object, Map<FieldKey, ValuePatch>>()
     else
-      throw new Error("not implemented")
+      throw misuse("not implemented")
   }
 
   undo(count: number = 1): void {

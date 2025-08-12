@@ -5,6 +5,8 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
+import { misuse } from "./Dbg.js"
+
 export type GetMergedItemKey<T = unknown> = (item: T) => string | undefined
 
 export type MergeListReader<T> = {
@@ -62,7 +64,7 @@ export class MergeList<T> implements MergeListReader<T> {
   get isStrict(): boolean { return this.strict }
   set isStrict(value: boolean) {
     if (this.isMergeInProgress && this.current.count > 0)
-      throw new Error("cannot change strict mode in the middle of merge")
+      throw misuse("cannot change strict mode in the middle of merge")
     this.strict = value
   }
 
@@ -101,7 +103,7 @@ export class MergeList<T> implements MergeListReader<T> {
   tryMergeAsExisting(key: string, resolution?: { isDuplicate: boolean }, error?: string): MergedItem<T> | undefined {
     const tag = this.tag
     if (tag < 0)
-      throw new Error(error ?? "merge is not in progress")
+      throw misuse(error ?? "merge is not in progress")
     let item = this.strictNextItem
     if (key !== (item ? this.getKey(item.instance) : undefined))
       item = this.lookup(key) as MergedItemImpl<T> | undefined
@@ -120,7 +122,7 @@ export class MergeList<T> implements MergeListReader<T> {
       else if (resolution)
         resolution.isDuplicate = true
       else
-        throw new Error(`duplicate collection item: ${key}`)
+        throw misuse(`duplicate collection item: ${key}`)
     }
     else if (resolution)
       resolution.isDuplicate = false
@@ -130,7 +132,7 @@ export class MergeList<T> implements MergeListReader<T> {
   mergeAsAdded(instance: T): MergedItem<T> {
     const key = this.getKey(instance)
     if (this.lookup(key) !== undefined)
-      throw new Error(`key is already in use: ${key}`)
+      throw misuse(`key is already in use: ${key}`)
     let tag = this.tag
     if (tag < 0) { // merge is not in progress
       tag = ~this.tag + 1
@@ -156,12 +158,12 @@ export class MergeList<T> implements MergeListReader<T> {
   }
 
   move(item: MergedItem<T>, after: MergedItem<T>): void {
-    throw new Error("not implemented")
+    throw misuse("not implemented")
   }
 
   beginMerge(): void {
     if (this.isMergeInProgress)
-      throw new Error("merge is in progress already")
+      throw misuse("merge is in progress already")
     this.tag = ~this.tag + 1
     this.strictNextItem = this.current.first
     this.removed.grab(this.current, false)
@@ -170,7 +172,7 @@ export class MergeList<T> implements MergeListReader<T> {
 
   endMerge(error?: unknown): void {
     if (!this.isMergeInProgress)
-      throw new Error("merge is ended already")
+      throw misuse("merge is ended already")
     this.tag = ~this.tag
     if (error === undefined) {
       const currentCount = this.current.count

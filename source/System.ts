@@ -5,8 +5,8 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
+import { Log, misuse } from "./util/Dbg.js"
 import { F } from "./util/Utils.js"
-import { Log } from "./util/Dbg.js"
 import { Kind, Isolation } from "./Enums.js"
 import { ReactiveOperation, ReactivityOptions, LoggingOptions, ProfilingOptions, SnapshotOptions } from "./Options.js"
 import { Meta, ObjectHandle } from "./core/Data.js"
@@ -64,7 +64,7 @@ export function runSensitively<T>(sensitivity: boolean, func: F<T>, ...args: any
 }
 
 export function runContextually<T>(p: Promise<T>): Promise<T> {
-  throw new Error("not implemented yet")
+  throw misuse("not implemented yet")
 }
 
 export function manageReactiveOperation<T>(method: F<T>): ReactiveOperation<T> {

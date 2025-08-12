@@ -6,6 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { misuse } from "../util/Dbg.js"
+import { Uri } from "../util/Uri.js"
 import { LoggingOptions } from "../Logging.js"
 import { MergeList, MergeListReader, MergedItem } from "../util/MergeList.js"
 import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
@@ -44,6 +45,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
   abstract priority?: Priority
   abstract childrenShuffling: boolean
   abstract strictOrder: boolean
+  abstract getUri(relativeTo?: ReactiveTreeNode<any>): string
   abstract has(mode: Mode): boolean
   abstract configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions
 
@@ -118,7 +120,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
         // Reuse existing node
         result = existing.instance as ReactiveTreeNodeImpl<E>
         if (result.driver !== driver && driver !== undefined)
-          throw new Error(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
+          throw misuse(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
         const exTriggers = result.declaration.triggers
         if (observablesAreEqual(declaration.triggers, exTriggers))
           declaration.triggers = exTriggers // preserve triggers instance
@@ -132,7 +134,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
     }
     else {
       // Create new root node
-      result = new ReactiveTreeNodeImpl(effectiveKey || "", driver, declaration, owner)
+      result = new ReactiveTreeNodeImpl(effectiveKey || generateKey(owner), driver, declaration, owner)
       result.slot = MergeList.createItem(result)
       triggerScriptRunViaSlot(result.slot)
     }
@@ -170,10 +172,21 @@ export abstract class ReactiveTreeNode<E = unknown> {
   static markAsMounted(node: ReactiveTreeNode<any>, yes: boolean): void {
     const n = node as ReactiveTreeNodeImpl<any>
     if (n.stamp < 0)
-      throw new Error("deactivated node cannot be mounted or unmounted")
+      throw misuse("deactivated node cannot be mounted or unmounted")
     if (n.stamp >= Number.MAX_SAFE_INTEGER)
-      throw new Error("node must be activated before mounting")
+      throw misuse("node must be activated before mounting")
     n.stamp = yes ? 0 : Number.MAX_SAFE_INTEGER - 1
+  }
+
+  lookupTreeNodeByUri<E = unknown>(uri: string): ReactiveTreeNode<E> | undefined {
+    const t = Uri.parse(uri)
+    if (t.authority !== this.key)
+      throw misuse(`authority '${t.authority}' doesn't match root node key '${this.key}'`)
+    const segments = t.path.split("/")
+    let result = this as ReactiveTreeNode<any>
+    for (let i = 1; i < segments.length && result !== undefined; i++)
+      result = result.children.lookup(segments[i])?.instance as ReactiveTreeNode<E>
+    return result
   }
 
   static findMatchingHost<E = unknown, R = unknown>(
@@ -318,8 +331,8 @@ export class ReactiveTreeVariable<T extends Object = Object> {
 
 // Utils
 
-export function generateKey(owner: ReactiveTreeNodeImpl): string {
-  const n = owner.numerator++
+export function generateKey(owner?: ReactiveTreeNodeImpl): string {
+  const n = owner !== undefined ? owner.numerator++ : 0
   const lettered = emitLetters(n)
   let result: string
   if (ReactiveSystem.isLogging)
@@ -447,6 +460,17 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
       ReactiveTreeNodeImpl.disposableNodeCount++
   }
 
+  getUri(relativeTo?: ReactiveTreeNode<any>): string {
+    const path: Array<string> = []
+    const authority = gatherAuthorityAndPath(this, path)
+    const result = Uri.from({
+      scheme: "node",
+      authority,
+      path: "/" + path.join("/"),
+    })
+    return result.toString()
+  }
+
   get strictOrder(): boolean {
     return this.children.isStrict
   }
@@ -477,13 +501,13 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
 
   configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.autonomous))
-      throw new Error("reactronic can be configured only for elements with autonomous mode and only during preparation")
+      throw misuse("reactronic can be configured only for elements with autonomous mode and only during preparation")
     return manageReactiveOperation(this.script).configure(options)
   }
 
   static get nodeSlot(): MergedItem<ReactiveTreeNodeImpl> {
     if (!gNodeSlot)
-      throw new Error("current element is undefined")
+      throw misuse("current element is undefined")
     return gNodeSlot
   }
 
@@ -497,7 +521,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   static useTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T {
     const result = ReactiveTreeNodeImpl.tryUseTreeVariableValue(variable) ?? variable.defaultValue
     if (!result)
-      throw new Error("unknown node variable")
+      throw misuse("unknown node variable")
     return result
   }
 
@@ -528,6 +552,17 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
 }
 
 // Internal
+
+function gatherAuthorityAndPath<T>(node: ReactiveTreeNode<T>, path: Array<string>, relativeTo?: ReactiveTreeNode<any>): string {
+  let authority: string
+  if (node.owner !== node && node.owner !== relativeTo) {
+    authority = gatherAuthorityAndPath(node.owner, path)
+    path.push(node.key)
+  }
+  else
+    authority = node.key
+  return authority
+}
 
 function getNodeKey(node: ReactiveTreeNode): string | undefined {
   return node.stamp >= 0 ? node.key : undefined
