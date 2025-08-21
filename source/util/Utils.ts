@@ -53,6 +53,10 @@ export class Utils {
   // }
 }
 
+export function flags(value: number, flags: number): boolean {
+  return (value & flags) === flags
+}
+
 /* istanbul ignore next */
 export function UNDEF(...args: any[]): never {
   throw fatal(new Error("this method should never be called"))

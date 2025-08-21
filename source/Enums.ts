@@ -8,8 +8,8 @@
 export enum Mode {
   default = 0,
   autonomous = 1,
-  manualMount = 2,
-  rootNode = 4,
+  external = 2,
+  root = 4,
 }
 
 export enum Priority {

@@ -9,7 +9,7 @@ import { misuse } from "../util/Dbg.js"
 import { Uri } from "../util/Uri.js"
 import { LoggingOptions } from "../Logging.js"
 import { MergeList, MergeListReader, MergedItem } from "../util/MergeList.js"
-import { emitLetters, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
+import { emitLetters, flags, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
 import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { ReactivityOptions } from "../Options.js"
 import { ObservableObject } from "../core/Mvcc.js"
@@ -108,7 +108,8 @@ export abstract class ReactiveTreeNode<E = unknown> {
     else
       declaration = scriptOrDeclaration ?? {}
     let effectiveKey = declaration.key
-    const owner = (getModeUsingBasisChain(declaration) & Mode.rootNode) !== Mode.rootNode ? gNodeSlot?.instance : undefined
+    const isRoot = flags(getModeUsingBasisChain(declaration), Mode.root)
+    const owner = isRoot ? undefined : gNodeSlot?.instance
     if (owner) {
       let existing = owner.driver.declareChild(owner, driver, declaration, declaration.basis)
       // Reuse existing node or declare a new one
@@ -484,7 +485,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   }
 
   has(mode: Mode): boolean {
-    return (getModeUsingBasisChain(this.declaration) & mode) === mode
+    return flags(getModeUsingBasisChain(this.declaration), mode)
   }
 
   @reactive
@@ -625,7 +626,7 @@ function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNodeImpl,
   // exist among regular elements having native HTML elements
   const node = nodeSlot.instance
   // TODO: Get rid of "node.element.native"
-  if ((node.element as any).native && !node.has(Mode.manualMount)) {
+  if ((node.element as any).native && !node.has(Mode.external)) {
     if (mounting || node.host !== host) {
       children.markAsMoved(nodeSlot)
       mounting = false
@@ -709,15 +710,15 @@ function mountOrRemountIfNecessary(node: ReactiveTreeNodeImpl): void {
     runNonReactively(() => {
       node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as activated
       driver.runPreparation(node)
-      if (!node.has(Mode.manualMount)) {
+      if (!node.has(Mode.external)) {
         node.stamp = 0 // mark as mounted
         if (node.host !== node)
-          driver.runMount(node)
+          driver.runMount(node) // initial mount
       }
     })
   }
-  else if (node.isMoved && !node.has(Mode.manualMount) && node.host !== node)
-    runNonReactively(() => driver.runMount(node))
+  else if (node.isMoved && !node.has(Mode.external) && node.host !== node)
+    runNonReactively(() => driver.runMount(node)) // re-mount
 }
 
 function runScriptNow(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>): void {
