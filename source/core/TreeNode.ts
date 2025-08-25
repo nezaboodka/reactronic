@@ -22,6 +22,7 @@ export type Script<E> = (el: E, basis: () => void) => void
 export type ScriptAsync<E> = (el: E, basis: () => Promise<void>) => Promise<void>
 export type Handler<E = unknown, R = void> = (el: E) => R
 
+// Actions
 
 export function declare<E = void>(
   driver: ReactiveTreeNodeDriver<E>,
