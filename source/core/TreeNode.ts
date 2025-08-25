@@ -23,6 +23,99 @@ export type ScriptAsync<E> = (el: E, basis: () => Promise<void>) => Promise<void
 export type Handler<E = unknown, R = void> = (el: E) => R
 
 
+export function declare<E = void>(
+  driver: ReactiveTreeNodeDriver<E>,
+  script?: Script<E>,
+  scriptAsync?: ScriptAsync<E>,
+  key?: string,
+  mode?: Mode,
+  preparation?: Script<E>,
+  preparationAsync?: ScriptAsync<E>,
+  finalization?: Script<E>,
+  triggers?: unknown,
+  basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNode<E>
+
+export function declare<E = void>(
+  driver: ReactiveTreeNodeDriver<E>,
+  declaration?: ReactiveTreeNodeDecl<E>): ReactiveTreeNode<E>
+
+export function declare<E = void>(
+  driver: ReactiveTreeNodeDriver<E>,
+  scriptOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
+  scriptAsync?: ScriptAsync<E>,
+  key?: string,
+  mode?: Mode,
+  preparation?: Script<E>,
+  preparationAsync?: ScriptAsync<E>,
+  finalization?: Script<E>,
+  triggers?: unknown,
+  basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E>
+
+export function declare<E = void>(
+  driver: ReactiveTreeNodeDriver<E>,
+  scriptOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
+  scriptAsync?: ScriptAsync<E>,
+  key?: string,
+  mode?: Mode,
+  preparation?: Script<E>,
+  preparationAsync?: ScriptAsync<E>,
+  finalization?: Script<E>,
+  triggers?: unknown,
+  basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E> {
+  let result: ReactiveTreeNodeImpl<E>
+  let declaration: ReactiveTreeNodeDecl<E>
+  // Normalize parameters
+  if (scriptOrDeclaration instanceof Function) {
+    declaration = {
+      script: scriptOrDeclaration, scriptAsync, key, mode,
+      preparation, preparationAsync, finalization, triggers, basis,
+    }
+  }
+  else
+    declaration = scriptOrDeclaration ?? {}
+  let effectiveKey = declaration.key
+  const owner = gNodeSlot?.instance
+  if (owner) {
+    let existing = owner.driver.declareChild(owner, driver, declaration, declaration.basis)
+    // Reuse existing node or declare a new one
+    const children = owner.children
+    existing ??= children.tryMergeAsExisting(
+      effectiveKey = effectiveKey || generateKey(owner), undefined,
+      "nested elements can be declared inside 'script' only")
+    if (existing) {
+      // Reuse existing node
+      result = existing.instance as ReactiveTreeNodeImpl<E>
+      if (result.driver !== driver && driver !== undefined)
+        throw misuse(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
+      const exTriggers = result.declaration.triggers
+      if (observablesAreEqual(declaration.triggers, exTriggers))
+        declaration.triggers = exTriggers // preserve triggers instance
+      result.declaration = declaration
+    }
+    else {
+      // Create new node
+      result = new ReactiveTreeNodeImpl<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
+      result.slot = children.mergeAsAdded(result as ReactiveTreeNodeImpl<unknown>) as MergedItem<ReactiveTreeNodeImpl<E>>
+    }
+  }
+  else {
+    // Create new root node
+    result = new ReactiveTreeNodeImpl(effectiveKey || generateKey(owner), driver, declaration, owner)
+    result.slot = MergeList.createItem(result)
+  }
+  return result
+}
+
+export function derived<E = void>(
+  declaration?: ReactiveTreeNodeDecl<E>,
+  basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNodeDecl<E> {
+  if (declaration)
+    declaration.basis = basis
+  else
+    declaration = basis ?? {}
+  return declaration
+}
+
 export function launch<T>(node: ReactiveTreeNode<T>, triggers?: unknown): ReactiveTreeNode<T> {
   ReactiveTreeNode.launchScript(node, triggers)
   return node
@@ -63,99 +156,6 @@ export abstract class ReactiveTreeNode<E = unknown> {
     return ReactiveTreeNode.current.stamp === 1
   }
 
-  static declare<E = void>(
-    driver: ReactiveTreeNodeDriver<E>,
-    script?: Script<E>,
-    scriptAsync?: ScriptAsync<E>,
-    key?: string,
-    mode?: Mode,
-    preparation?: Script<E>,
-    preparationAsync?: ScriptAsync<E>,
-    finalization?: Script<E>,
-    triggers?: unknown,
-    basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNode<E>
-
-  static declare<E = void>(
-    driver: ReactiveTreeNodeDriver<E>,
-    declaration?: ReactiveTreeNodeDecl<E>): ReactiveTreeNode<E>
-
-  static declare<E = void>(
-    driver: ReactiveTreeNodeDriver<E>,
-    scriptOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
-    scriptAsync?: ScriptAsync<E>,
-    key?: string,
-    mode?: Mode,
-    preparation?: Script<E>,
-    preparationAsync?: ScriptAsync<E>,
-    finalization?: Script<E>,
-    triggers?: unknown,
-    basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E>
-
-  static declare<E = void>(
-    driver: ReactiveTreeNodeDriver<E>,
-    scriptOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
-    scriptAsync?: ScriptAsync<E>,
-    key?: string,
-    mode?: Mode,
-    preparation?: Script<E>,
-    preparationAsync?: ScriptAsync<E>,
-    finalization?: Script<E>,
-    triggers?: unknown,
-    basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E> {
-    let result: ReactiveTreeNodeImpl<E>
-    let declaration: ReactiveTreeNodeDecl<E>
-    // Normalize parameters
-    if (scriptOrDeclaration instanceof Function) {
-      declaration = {
-        script: scriptOrDeclaration, scriptAsync, key, mode,
-        preparation, preparationAsync, finalization, triggers, basis,
-      }
-    }
-    else
-      declaration = scriptOrDeclaration ?? {}
-    let effectiveKey = declaration.key
-    const owner = gNodeSlot?.instance
-    if (owner) {
-      let existing = owner.driver.declareChild(owner, driver, declaration, declaration.basis)
-      // Reuse existing node or declare a new one
-      const children = owner.children
-      existing ??= children.tryMergeAsExisting(
-        effectiveKey = effectiveKey || generateKey(owner), undefined,
-        "nested elements can be declared inside 'script' only")
-      if (existing) {
-        // Reuse existing node
-        result = existing.instance as ReactiveTreeNodeImpl<E>
-        if (result.driver !== driver && driver !== undefined)
-          throw misuse(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
-        const exTriggers = result.declaration.triggers
-        if (observablesAreEqual(declaration.triggers, exTriggers))
-          declaration.triggers = exTriggers // preserve triggers instance
-        result.declaration = declaration
-      }
-      else {
-        // Create new node
-        result = new ReactiveTreeNodeImpl<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
-        result.slot = children.mergeAsAdded(result as ReactiveTreeNodeImpl<unknown>) as MergedItem<ReactiveTreeNodeImpl<E>>
-      }
-    }
-    else {
-      // Create new root node
-      result = new ReactiveTreeNodeImpl(effectiveKey || generateKey(owner), driver, declaration, owner)
-      result.slot = MergeList.createItem(result)
-    }
-    return result
-  }
-
-  static withBasis<E = void>(
-    declaration?: ReactiveTreeNodeDecl<E>,
-    basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNodeDecl<E> {
-    if (declaration)
-      declaration.basis = basis
-    else
-      declaration = basis ?? {}
-    return declaration
-  }
-
   static launchScript(node: ReactiveTreeNode<any>, triggers: unknown): void {
     const impl = node as ReactiveTreeNodeImpl<any>
     const declaration = impl.declaration
@@ -170,8 +170,8 @@ export abstract class ReactiveTreeNode<E = unknown> {
     launchFinalization(impl.slot!, true, true)
   }
 
-  static runNestedNodeScriptsThenDo(action: (error: unknown) => void): void {
-    runNestedNodeScriptsThenDoImpl(ReactiveTreeNodeImpl.nodeSlot, undefined, action)
+  static launchNestedNodesThenDo(action: (error: unknown) => void): void {
+    launchNestedNodesThenDoImpl(ReactiveTreeNodeImpl.nodeSlot, undefined, action)
   }
 
   static markAsMounted(node: ReactiveTreeNode<any>, yes: boolean): void {
@@ -573,7 +573,7 @@ function getNodeKey(node: ReactiveTreeNode): string | undefined {
   return node.stamp >= 0 ? node.key : undefined
 }
 
-function runNestedNodeScriptsThenDoImpl(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
+function launchNestedNodesThenDoImpl(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
   runInsideContextOfNode(nodeSlot, () => {
     const owner = nodeSlot.instance
     const children = owner.children
@@ -739,11 +739,11 @@ function runScriptNow(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>): void {
           const driver = node.driver
           result = driver.runScript(node)
           result = proceedSyncOrAsync(result,
-            v => { runNestedNodeScriptsThenDoImpl(nodeSlot, undefined, NOP); return v },
-            e => { console.log(e); runNestedNodeScriptsThenDoImpl(nodeSlot, e ?? new Error("unknown error"), NOP) })
+            v => { launchNestedNodesThenDoImpl(nodeSlot, undefined, NOP); return v },
+            e => { console.log(e); launchNestedNodesThenDoImpl(nodeSlot, e ?? new Error("unknown error"), NOP) })
         }
         catch (e: unknown) {
-          runNestedNodeScriptsThenDoImpl(nodeSlot, e, NOP)
+          launchNestedNodesThenDoImpl(nodeSlot, e, NOP)
           console.log(`Reactive node script failed: ${node.key}`)
           console.log(`${e}`)
         }
