@@ -167,7 +167,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
 
   static launchFinalization(node: ReactiveTreeNode<any>): void {
     const impl = node as ReactiveTreeNodeImpl<any>
-    launchFinalization(impl.slot!, true, true)
+    launchFinalizationViaSlot(impl.slot!, true, true)
   }
 
   static launchNestedNodesThenDo(action: (error: unknown) => void): void {
@@ -583,7 +583,7 @@ function launchNestedNodesThenDoImpl(nodeSlot: MergedItem<ReactiveTreeNodeImpl<a
         children.endMerge(error)
         // Deactivate removed elements
         for (const child of children.removedItems(true))
-          launchFinalization(child, true, true)
+          launchFinalizationViaSlot(child, true, true)
         if (!error) {
           // Lay out and update actual elements
           const sequential = children.isStrict
@@ -752,7 +752,7 @@ function runScriptNow(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>): void {
   }
 }
 
-function launchFinalization(nodeSlot: MergedItem<ReactiveTreeNodeImpl>, isLeader: boolean, individual: boolean): void {
+function launchFinalizationViaSlot(nodeSlot: MergedItem<ReactiveTreeNodeImpl>, isLeader: boolean, individual: boolean): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) {
     const driver = node.driver
@@ -776,7 +776,7 @@ function launchFinalization(nodeSlot: MergedItem<ReactiveTreeNodeImpl>, isLeader
     }
     // Finalize children
     for (const child of node.children.items())
-      launchFinalization(child, childrenAreLeaders, false)
+      launchFinalizationViaSlot(child, childrenAreLeaders, false)
     ReactiveTreeNodeImpl.grandNodeCount--
   }
 }
