@@ -22,6 +22,12 @@ export type Script<E> = (el: E, basis: () => void) => void
 export type ScriptAsync<E> = (el: E, basis: () => Promise<void>) => Promise<void>
 export type Handler<E = unknown, R = void> = (el: E) => R
 
+
+export function launch<T>(node: ReactiveTreeNode<T>, triggers?: unknown): ReactiveTreeNode<T> {
+  ReactiveTreeNode.launchScript(node, triggers)
+  return node
+}
+
 // ReactiveTreeNode
 
 export abstract class ReactiveTreeNode<E = unknown> {
@@ -108,8 +114,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
     else
       declaration = scriptOrDeclaration ?? {}
     let effectiveKey = declaration.key
-    const isRoot = flags(getModeUsingBasisChain(declaration), Mode.root)
-    const owner = isRoot ? undefined : gNodeSlot?.instance
+    const owner = gNodeSlot?.instance
     if (owner) {
       let existing = owner.driver.declareChild(owner, driver, declaration, declaration.basis)
       // Reuse existing node or declare a new one
@@ -137,7 +142,6 @@ export abstract class ReactiveTreeNode<E = unknown> {
       // Create new root node
       result = new ReactiveTreeNodeImpl(effectiveKey || generateKey(owner), driver, declaration, owner)
       result.slot = MergeList.createItem(result)
-      triggerScriptRunViaSlot(result.slot)
     }
     return result
   }
@@ -152,18 +156,18 @@ export abstract class ReactiveTreeNode<E = unknown> {
     return declaration
   }
 
-  static triggerScriptRun(node: ReactiveTreeNode<any>, triggers: unknown): void {
+  static launchScript(node: ReactiveTreeNode<any>, triggers: unknown): void {
     const impl = node as ReactiveTreeNodeImpl<any>
     const declaration = impl.declaration
-    if (!observablesAreEqual(triggers, declaration.triggers)) {
+    if (node.stamp >= Number.MAX_SAFE_INTEGER || !observablesAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
-      triggerScriptRunViaSlot(impl.slot!)
+      launchScriptViaSlot(impl.slot!)
     }
   }
 
-  static triggerFinalization(node: ReactiveTreeNode<any>): void {
+  static launchFinalization(node: ReactiveTreeNode<any>): void {
     const impl = node as ReactiveTreeNodeImpl<any>
-    triggerFinalization(impl.slot!, true, true)
+    launchFinalization(impl.slot!, true, true)
   }
 
   static runNestedNodeScriptsThenDo(action: (error: unknown) => void): void {
@@ -579,7 +583,7 @@ function runNestedNodeScriptsThenDoImpl(nodeSlot: MergedItem<ReactiveTreeNodeImp
         children.endMerge(error)
         // Deactivate removed elements
         for (const child of children.removedItems(true))
-          triggerFinalization(child, true, true)
+          launchFinalization(child, true, true)
         if (!error) {
           // Lay out and update actual elements
           const sequential = children.isStrict
@@ -597,7 +601,7 @@ function runNestedNodeScriptsThenDoImpl(nodeSlot: MergedItem<ReactiveTreeNodeImp
               mounting, host, child, children, sequential)
             const p = childNode.priority ?? Priority.realtime
             if (p === Priority.realtime)
-              triggerScriptRunViaSlot(child) // synchronously
+              launchScriptViaSlot(child) // synchronously
             else if (p === Priority.normal)
               p1 = push(child, p1) // defer for P1 async script run
             else
@@ -664,7 +668,7 @@ async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveTreeNodeI
       const frameDurationLimit = priority === Priority.background ? ReactiveTreeNode.shortFrameDuration : Infinity
       let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveTreeNode.frameDuration / 4, ReactiveTreeNode.shortFrameDuration))
       for (const child of items) {
-        triggerScriptRunViaSlot(child)
+        launchScriptViaSlot(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
           ReactiveTreeNodeImpl.currentScriptPriority = outerPriority
           await Transaction.requestNextFrame(0)
@@ -682,7 +686,7 @@ async function runNestedScriptsIncrementally(owner: MergedItem<ReactiveTreeNodeI
   }
 }
 
-function triggerScriptRunViaSlot(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>): void {
+function launchScriptViaSlot(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) { // if not deactivated yet
     if (node.has(Mode.autonomous)) {
@@ -748,7 +752,7 @@ function runScriptNow(nodeSlot: MergedItem<ReactiveTreeNodeImpl<any>>): void {
   }
 }
 
-function triggerFinalization(nodeSlot: MergedItem<ReactiveTreeNodeImpl>, isLeader: boolean, individual: boolean): void {
+function launchFinalization(nodeSlot: MergedItem<ReactiveTreeNodeImpl>, isLeader: boolean, individual: boolean): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) {
     const driver = node.driver
@@ -772,7 +776,7 @@ function triggerFinalization(nodeSlot: MergedItem<ReactiveTreeNodeImpl>, isLeade
     }
     // Finalize children
     for (const child of node.children.items())
-      triggerFinalization(child, childrenAreLeaders, false)
+      launchFinalization(child, childrenAreLeaders, false)
     ReactiveTreeNodeImpl.grandNodeCount--
   }
 }
