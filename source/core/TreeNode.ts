@@ -106,7 +106,7 @@ export function declare<E = void>(
   return result
 }
 
-export function derived<E = void>(
+export function derivative<E = void>(
   declaration?: ReactiveTreeNodeDecl<E>,
   basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNodeDecl<E> {
   if (declaration)
