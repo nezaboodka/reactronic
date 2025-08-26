@@ -8,7 +8,7 @@
 import { misuse } from "../util/Dbg.js"
 import { Uri } from "../util/Uri.js"
 import { LoggingOptions } from "../Logging.js"
-import { ScriptedList, ScriptedListReader, LinkedItem } from "../util/ScriptedList.js"
+import { ReconciliationList, ReconciliationListReader, LinkedItem } from "../util/ScriptedList.js"
 import { emitLetters, flags, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
 import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { ReactivityOptions } from "../Options.js"
@@ -102,7 +102,7 @@ export function declare<E = void>(
   else {
     // Create new root node
     result = new ReactiveTreeNodeImpl(effectiveKey || generateKey(owner), driver, declaration, owner)
-    result.slot = ScriptedList.createItem(result)
+    result.slot = ReconciliationList.createItem(result)
   }
   return result
 }
@@ -137,7 +137,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
   abstract readonly owner: ReactiveTreeNode
   abstract element: E
   abstract readonly host: ReactiveTreeNode
-  abstract readonly children: ScriptedListReader<ReactiveTreeNode>
+  abstract readonly children: ReconciliationListReader<ReactiveTreeNode>
   abstract readonly slot: LinkedItem<ReactiveTreeNode<E>> | undefined
   abstract readonly stamp: number
   abstract readonly outer: ReactiveTreeNode
@@ -422,7 +422,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   readonly owner: ReactiveTreeNodeImpl
   readonly element: E
   host: ReactiveTreeNodeImpl
-  readonly children: ScriptedList<ReactiveTreeNodeImpl>
+  readonly children: ReconciliationList<ReactiveTreeNodeImpl>
   slot: LinkedItem<ReactiveTreeNodeImpl<E>> | undefined
   stamp: number
   outer: ReactiveTreeNodeImpl
@@ -453,7 +453,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
     }
     this.element = driver.create(this)
     this.host = thisAsUnknown // node is unmounted
-    this.children = new ScriptedList<ReactiveTreeNodeImpl>(getNodeKey, true)
+    this.children = new ReconciliationList<ReactiveTreeNodeImpl>(getNodeKey, true)
     this.slot = undefined
     this.stamp = Number.MAX_SAFE_INTEGER // newly created
     this.context = undefined
@@ -578,10 +578,10 @@ function launchNestedNodesThenDoImpl(nodeSlot: LinkedItem<ReactiveTreeNodeImpl<a
   runInsideContextOfNode(nodeSlot, () => {
     const owner = nodeSlot.instance
     const children = owner.children
-    if (children.isScriptingInProgress) {
+    if (children.isReconciliationInProgress) {
       let promised: Promise<void> | undefined = undefined
       try {
-        children.endScriptExecution(error)
+        children.endReconciliation(error)
         // Deactivate removed elements
         for (const child of children.itemsRemoved(true))
           launchFinalizationViaSlot(child, true, true)
@@ -626,7 +626,7 @@ function launchNestedNodesThenDoImpl(nodeSlot: LinkedItem<ReactiveTreeNodeImpl<a
 }
 
 function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNodeImpl,
-  nodeSlot: LinkedItem<ReactiveTreeNodeImpl>, children: ScriptedList<ReactiveTreeNodeImpl>, sequential: boolean): boolean {
+  nodeSlot: LinkedItem<ReactiveTreeNodeImpl>, children: ReconciliationList<ReactiveTreeNodeImpl>, sequential: boolean): boolean {
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
   const node = nodeSlot.instance
@@ -645,7 +645,7 @@ function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNodeImpl,
 
 async function startIncrementalNestedScriptsRun(
   ownerSlot: LinkedItem<ReactiveTreeNodeImpl>,
-  allChildren: ScriptedList<ReactiveTreeNodeImpl>,
+  allChildren: ReconciliationList<ReactiveTreeNodeImpl>,
   priority1?: Array<LinkedItem<ReactiveTreeNodeImpl>>,
   priority2?: Array<LinkedItem<ReactiveTreeNodeImpl>>): Promise<void> {
   const stamp = ownerSlot.instance.stamp
@@ -656,7 +656,7 @@ async function startIncrementalNestedScriptsRun(
 }
 
 async function runNestedScriptsIncrementally(owner: LinkedItem<ReactiveTreeNodeImpl>, stamp: number,
-  allChildren: ScriptedList<ReactiveTreeNodeImpl>, items: Array<LinkedItem<ReactiveTreeNodeImpl>>,
+  allChildren: ReconciliationList<ReactiveTreeNodeImpl>, items: Array<LinkedItem<ReactiveTreeNodeImpl>>,
   priority: Priority): Promise<void> {
   await Transaction.requestNextFrame()
   const node = owner.instance
@@ -736,7 +736,7 @@ function runScriptNow(nodeSlot: LinkedItem<ReactiveTreeNodeImpl<any>>): void {
         try {
           node.stamp++
           node.numerator = 0
-          node.children.beginScriptExecution()
+          node.children.beginReconciliation()
           const driver = node.driver
           result = driver.runScript(node)
           result = proceedSyncOrAsync(result,

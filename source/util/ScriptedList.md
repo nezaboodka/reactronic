@@ -1,12 +1,12 @@
 
-# **ScriptedList**
+# **ReconciliationList**
 
-ScriptedList provides fast reconciliation algorithm for
+ReconciliationList provides fast reconciliation algorithm for
 lists. It efficiently detects differences/changes: which
 items are added, moved, and removed.
 
 ``` typescript
-const list = new ScriptedList<string>(s => s, true)
+const list = new ReconciliationList<string>(s => s, true)
 
 const example1 = ['Hello', 'Welcome', 'Bye', 'End']
 for (const x of example1)
@@ -34,14 +34,14 @@ list.endScriptExecution(true)
 // list.isRemoved: Welcome
 ```
 
-ScriptedList API:
+ReconciliationList API:
 
 ``` typescript
 type LinkedItem<T> = {
   readonly instance: T
 }
 
-class ScriptedList<T> {
+class ReconciliationList<T> {
   readonly getKey: GetKey<T>
   readonly strict: boolean
   readonly count: number

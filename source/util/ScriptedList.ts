@@ -9,13 +9,13 @@ import { misuse } from "./Dbg.js"
 
 export type GetListItemKey<T = unknown> = (item: T) => string | undefined
 
-export type ScriptedListReader<T> = {
+export type ReconciliationListReader<T> = {
   // readonly getKey: GetListItemKey<T>
   readonly isStrict: boolean
   readonly count: number
   readonly countOfAdded: number
   readonly countOfRemoved: number
-  readonly isScriptingInProgress: boolean
+  readonly isReconciliationInProgress: boolean
 
   lookup(key: string): LinkedItem<T> | undefined
   firstItem(): LinkedItem<T> | undefined
@@ -38,11 +38,13 @@ export type LinkedItem<T> = {
   aux?: LinkedItem<T> // TODO: hide
 }
 
-export class ScriptedList<T> implements ScriptedListReader<T> {
+// ReconciliationList / СписокСверки
+
+export class ReconciliationList<T> implements ReconciliationListReader<T> {
   readonly getKey: GetListItemKey<T>
   private strict: boolean
   private map: Map<string | undefined, LinkedItemImpl<T>>
-  private cycle: number
+  private tag: number
   private fresh: LinkedItemChain<T>
   private added: LinkedItemChain<T>
   private removed: LinkedItemChain<T>
@@ -53,7 +55,7 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
     this.getKey = getKey
     this.strict = strict
     this.map = new Map<string | undefined, LinkedItemImpl<T>>()
-    this.cycle = ~0
+    this.tag = ~0
     this.fresh = new LinkedItemChain<T>()
     this.added = new LinkedItemChain<T>()
     this.removed = new LinkedItemChain<T>()
@@ -63,8 +65,8 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
 
   get isStrict(): boolean { return this.strict }
   set isStrict(value: boolean) {
-    if (this.isScriptingInProgress && this.fresh.count > 0)
-      throw misuse("cannot change strict mode in the middle of script execution")
+    if (this.isReconciliationInProgress && this.fresh.count > 0)
+      throw misuse("cannot change strict mode in the middle of reconciliation")
     this.strict = value
   }
 
@@ -80,8 +82,8 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
     return this.removed.count
   }
 
-  get isScriptingInProgress(): boolean {
-    return this.cycle > 0
+  get isReconciliationInProgress(): boolean {
+    return this.tag > 0
   }
 
   lookup(key: string | undefined): LinkedItem<T> | undefined {
@@ -101,17 +103,17 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
   }
 
   tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): LinkedItem<T> | undefined {
-    const cycle = this.cycle
-    if (cycle < 0)
-      throw misuse(error ?? "script execution is not in progress")
+    const tag = this.tag
+    if (tag < 0)
+      throw misuse(error ?? "reconciliation is not in progress")
     let item = this.strictNextItem
     if (key !== (item ? this.getKey(item.instance) : undefined))
       item = this.lookup(key) as LinkedItemImpl<T> | undefined
     if (item) {
-      if (item.cycle !== cycle) {
-        item.cycle = cycle
+      if (item.tag !== tag) {
+        item.tag = tag
         if (this.strict && item !== this.strictNextItem)
-          item.status = cycle // isAdded=false, isMoved=true
+          item.status = tag // isAdded=false, isMoved=true
         this.strictNextItem = item.next
         this.removed.exclude(item)
         item.index = this.fresh.count
@@ -133,13 +135,13 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
     const key = this.getKey(instance)
     if (this.lookup(key) !== undefined)
       throw misuse(`key is already in use: ${key}`)
-    let cycle = this.cycle
-    if (cycle < 0) { // script execution is not in progress
-      cycle = ~this.cycle + 1
-      this.cycle = ~cycle // one item merge cycle
+    let tag = this.tag
+    if (tag < 0) { // reconciliation is not in progress
+      tag = ~this.tag + 1
+      this.tag = ~tag // (!) EXTERNAL?
       // throw misuse("TBD")
     }
-    const item = new LinkedItemImpl<T>(instance, cycle)
+    const item = new LinkedItemImpl<T>(instance, tag)
     this.map.set(key, item)
     this.lastNotFoundKey = undefined
     this.strictNextItem = undefined
@@ -154,7 +156,7 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
     if (!this.isRemoved(t)) {
       this.fresh.exclude(t)
       this.removed.include(t)
-      t.cycle--
+      t.tag--
     }
   }
 
@@ -162,19 +164,19 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
     throw misuse("not implemented")
   }
 
-  beginScriptExecution(): void {
-    if (this.isScriptingInProgress)
-      throw misuse("script execution is in progress already")
-    this.cycle = ~this.cycle + 1
+  beginReconciliation(): void {
+    if (this.isReconciliationInProgress)
+      throw misuse("reconciliation is in progress already")
+    this.tag = ~this.tag + 1
     this.strictNextItem = this.fresh.first
     this.removed.grab(this.fresh, false)
     this.added.reset()
   }
 
-  endScriptExecution(error?: unknown): void {
-    if (!this.isScriptingInProgress)
-      throw misuse("script execution is ended already")
-    this.cycle = ~this.cycle
+  endReconciliation(error?: unknown): void {
+    if (!this.isReconciliationInProgress)
+      throw misuse("reconciliation is ended already")
+    this.tag = ~this.tag
     if (error === undefined) {
       const freshCount = this.fresh.count
       if (freshCount > 0) {
@@ -251,35 +253,35 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
 
   isAdded(item: LinkedItem<T>): boolean {
     const t = item as LinkedItemImpl<T>
-    let cycle = this.cycle
-    if (cycle < 0)
-      cycle = ~cycle
-    return t.status === ~cycle && t.cycle > 0
+    let tag = this.tag
+    if (tag < 0)
+      tag = ~tag
+    return t.status === ~tag && t.tag > 0
   }
 
   isMoved(item: LinkedItem<T>): boolean {
     const t = item as LinkedItemImpl<T>
-    let cycle = this.cycle
-    if (cycle < 0)
-      cycle = ~cycle
-    return t.status === cycle && t.cycle > 0
+    let tag = this.tag
+    if (tag < 0)
+      tag = ~tag
+    return t.status === tag && t.tag > 0
   }
 
   isRemoved(item: LinkedItem<T>): boolean {
     const t = item as LinkedItemImpl<T>
-    const cycle = this.cycle
-    return cycle > 0 ? t.cycle < cycle : t.cycle < cycle - 1
+    const tag = this.tag
+    return tag > 0 ? t.tag < tag : t.tag < tag - 1
   }
 
   isFresh(item: LinkedItem<T>): boolean {
     const t = item as LinkedItemImpl<T>
-    return t.cycle === this.cycle
+    return t.tag === this.tag
   }
 
   markAsMoved(item: LinkedItem<T>): void {
     const t = item as LinkedItemImpl<T>
-    if (t.cycle > 0) // if not removed, > is intentional
-      t.status = t.cycle
+    if (t.tag > 0) // if not removed, > is intentional
+      t.status = t.tag
   }
 
   static createItem<T>(instance: T): LinkedItem<T> {
@@ -290,17 +292,17 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
 class LinkedItemImpl<T> implements LinkedItem<T> {
   readonly instance: T
   index: number
-  cycle: number
+  tag: number
   status: number
   next?: LinkedItemImpl<T>
   prev?: LinkedItemImpl<T>
   aux?: LinkedItemImpl<T>
 
-  constructor(instance: T, cycle: number) {
+  constructor(instance: T, tag: number) {
     this.instance = instance
     this.index = -1
-    this.cycle = cycle
-    this.status = ~cycle // isAdded=true
+    this.tag = tag
+    this.status = ~tag // isAdded=true
     this.next = undefined
     this.prev = undefined
     this.aux = undefined

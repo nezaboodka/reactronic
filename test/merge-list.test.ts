@@ -6,15 +6,15 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ScriptedList, LinkedItem } from "../source/util/ScriptedList.js"
+import { ReconciliationList, LinkedItem } from "../source/util/ScriptedList.js"
 
-test("scripted-list", t => {
+test("reconciliation-list", t => {
   const etalon1 = ["Hello", "Welcome", "Bye", "End"]
   const etalon2 = ["Added1", "Bye", "End", "Added2", "Hello", "Added3"]
   const etalon2a = ["Hello", "Bye", "End", "Added1", "Added2", "Added3"]
 
   // Basic
-  const list = new ScriptedList<string>(s => s, true)
+  const list = new ReconciliationList<string>(s => s, true)
   for (const x of etalon1)
     list.add(x)
 
@@ -24,11 +24,11 @@ test("scripted-list", t => {
   t.true(compare(list.items(), etalon1))
 
   // Merge etalon2 with etalon1
-  list.beginScriptExecution()
+  list.beginReconciliation()
   for (const x of etalon2)
     if (!list.tryReuse(x))
       list.add(x)
-  list.endScriptExecution()
+  list.endReconciliation()
 
   t.is(list.count, 6)
   t.true(list.lastItem()?.index === 5)
@@ -50,7 +50,7 @@ test("scripted-list", t => {
   t.true(list.isMoved(list.lookup("Hello")!))
 
   // Merge back, but with error
-  list.beginScriptExecution()
+  list.beginReconciliation()
   for (const x of etalon1)
     if (!list.tryReuse(x))
       list.add(x)
@@ -58,21 +58,21 @@ test("scripted-list", t => {
   t.true(list.lastItem()?.index === 3)
   t.is(list.countOfRemoved, 3)
   t.is(list.countOfAdded, 1)
-  list.endScriptExecution("error")
+  list.endReconciliation("error")
   t.is(list.count, 6)
   t.is(list.countOfRemoved, 0)
   t.is(list.countOfAdded, 0)
   t.true(compare(list.items(), etalon2a))
 
   // Merge back again (success)
-  list.beginScriptExecution()
+  list.beginReconciliation()
   for (const x of etalon1)
     if (!list.tryReuse(x))
       list.add(x)
   t.is(list.count, 4)
   t.is(list.countOfRemoved, 3)
   t.is(list.countOfAdded, 1)
-  list.endScriptExecution()
+  list.endReconciliation()
   t.is(list.count, 4)
   t.is(list.countOfRemoved, 3)
   t.is(list.countOfAdded, 1)
