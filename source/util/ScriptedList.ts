@@ -27,7 +27,7 @@ export type ScriptedListReader<T> = {
   isAdded(item: LinkedItem<T>): boolean
   isMoved(item: LinkedItem<T>): boolean
   isRemoved(item: LinkedItem<T>): boolean
-  isAlive(item: LinkedItem<T>): boolean
+  isFresh(item: LinkedItem<T>): boolean
 }
 
 export type LinkedItem<T> = {
@@ -43,7 +43,7 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
   private strict: boolean
   private map: Map<string | undefined, LinkedItemImpl<T>>
   private cycle: number
-  private current: LinkedItemChain<T>
+  private fresh: LinkedItemChain<T>
   private added: LinkedItemChain<T>
   private removed: LinkedItemChain<T>
   private lastNotFoundKey: string | undefined
@@ -54,7 +54,7 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
     this.strict = strict
     this.map = new Map<string | undefined, LinkedItemImpl<T>>()
     this.cycle = ~0
-    this.current = new LinkedItemChain<T>()
+    this.fresh = new LinkedItemChain<T>()
     this.added = new LinkedItemChain<T>()
     this.removed = new LinkedItemChain<T>()
     this.lastNotFoundKey = undefined
@@ -63,13 +63,13 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
 
   get isStrict(): boolean { return this.strict }
   set isStrict(value: boolean) {
-    if (this.isScriptingInProgress && this.current.count > 0)
+    if (this.isScriptingInProgress && this.fresh.count > 0)
       throw misuse("cannot change strict mode in the middle of script execution")
     this.strict = value
   }
 
   get count(): number {
-    return this.current.count
+    return this.fresh.count
   }
 
   get countOfAdded(): number {
@@ -114,8 +114,8 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
           item.status = cycle // isAdded=false, isMoved=true
         this.strictNextItem = item.next
         this.removed.exclude(item)
-        item.index = this.current.count
-        this.current.include(item)
+        item.index = this.fresh.count
+        this.fresh.include(item)
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -143,8 +143,8 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
     this.map.set(key, item)
     this.lastNotFoundKey = undefined
     this.strictNextItem = undefined
-    item.index = this.current.count
-    this.current.include(item)
+    item.index = this.fresh.count
+    this.fresh.include(item)
     this.added.aux(item)
     return item
   }
@@ -152,7 +152,7 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
   remove(item: LinkedItem<T>): void {
     const t = item as LinkedItemImpl<T>
     if (!this.isRemoved(t)) {
-      this.current.exclude(t)
+      this.fresh.exclude(t)
       this.removed.include(t)
       t.cycle--
     }
@@ -166,8 +166,8 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
     if (this.isScriptingInProgress)
       throw misuse("script execution is in progress already")
     this.cycle = ~this.cycle + 1
-    this.strictNextItem = this.current.first
-    this.removed.grab(this.current, false)
+    this.strictNextItem = this.fresh.first
+    this.removed.grab(this.fresh, false)
     this.added.reset()
   }
 
@@ -176,17 +176,17 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
       throw misuse("script execution is ended already")
     this.cycle = ~this.cycle
     if (error === undefined) {
-      const currentCount = this.current.count
-      if (currentCount > 0) {
+      const freshCount = this.fresh.count
+      if (freshCount > 0) {
         const getKey = this.getKey
-        if (currentCount > this.removed.count) { // it should be faster to delete vanished items
+        if (freshCount > this.removed.count) { // it should be faster to delete vanished items
           const map = this.map
           for (const x of this.removed.items())
             map.delete(getKey(x.instance))
         }
-        else { // it should be faster to recreate map using current items
+        else { // it should be faster to recreate map using fresh items
           const map = this.map = new Map<string | undefined, LinkedItemImpl<T>>()
-          for (const x of this.current.items())
+          for (const x of this.fresh.items())
             map.set(getKey(x.instance), x)
         }
       }
@@ -194,11 +194,11 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
         this.map = new Map<string | undefined, LinkedItemImpl<T>>()
     }
     else {
-      this.current.grab(this.removed, true)
+      this.fresh.grab(this.removed, true)
       const getKey = this.getKey
       for (const x of this.added.itemsViaAux()) {
         this.map.delete(getKey(x.instance))
-        this.current.exclude(x)
+        this.fresh.exclude(x)
       }
       this.added.reset()
     }
@@ -210,15 +210,15 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
   }
 
   firstItem(): LinkedItem<T> | undefined {
-    return this.current.first
+    return this.fresh.first
   }
 
   lastItem(): LinkedItem<T> | undefined {
-    return this.current.last
+    return this.fresh.last
   }
 
   *items(onlyAfter?: LinkedItem<T>): Generator<LinkedItem<T>> {
-    let x = onlyAfter?.next ?? this.current.first
+    let x = onlyAfter?.next ?? this.fresh.first
     while (x !== undefined) {
       const next = x.next
       yield x
@@ -271,7 +271,7 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
     return cycle > 0 ? t.cycle < cycle : t.cycle < cycle - 1
   }
 
-  isAlive(item: LinkedItem<T>): boolean {
+  isFresh(item: LinkedItem<T>): boolean {
     const t = item as LinkedItemImpl<T>
     return t.cycle === this.cycle
   }

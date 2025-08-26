@@ -35,5 +35,5 @@ export abstract class ObservableScriptedList<T> extends ObservableObject impleme
   isAdded(item: LinkedItem<T>): boolean { return this.impl.isAdded(item) }
   isMoved(item: LinkedItem<T>): boolean { return this.impl.isMoved(item) }
   isRemoved(item: LinkedItem<T>): boolean { return this.impl.isRemoved(item) }
-  isAlive(item: LinkedItem<T>): boolean { return this.impl.isAlive(item) }
+  isFresh(item: LinkedItem<T>): boolean { return this.impl.isFresh(item) }
 }
