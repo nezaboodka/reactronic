@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ReconciliationList, LinkedItem } from "../source/util/ScriptedList.js"
+import { ReconciliationList, LinkedItem } from "../source/util/ReconciliationList.js"
 
 test("reconciliation-list", t => {
   const etalon1 = ["Hello", "Welcome", "Bye", "End"]

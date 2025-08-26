@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ReconciliationList, LinkedItem, ReconciliationListReader } from "../util/ScriptedList.js"
+import { ReconciliationList, LinkedItem, ReconciliationListReader } from "../util/ReconciliationList.js"
 import { ObservableObject } from "./Mvcc.js"
 
 // ObservableReconciliationList
