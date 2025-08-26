@@ -7,8 +7,8 @@
 
 export { all, pause, proceedSyncOrAsync } from "./util/Utils.js"
 export { Uri } from "./util/Uri.js"
-export { MergeList } from "./util/MergeList.js"
-export type { MergedItem, MergeListReader } from "./util/MergeList.js"
+export { ScriptedList } from "./util/MergeList.js"
+export type { LinkedItem, ScriptedListReader } from "./util/MergeList.js"
 export { SealedArray } from "./util/SealedArray.js"
 export { SealedMap } from "./util/SealedMap.js"
 export { SealedSet } from "./util/SealedSet.js"

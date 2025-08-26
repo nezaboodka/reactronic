@@ -1,70 +1,71 @@
 
-# **MergeList**
+# **ScriptedList**
 
-MergeList provides fast merge algorithm for lists.
-It efficiently detects differences/changes: which items
-are added, moved, and removed.
+ScriptedList provides fast reconciliation algorithm for
+lists. It efficiently detects differences/changes: which
+items are added, moved, and removed.
 
 ``` typescript
-const list = new MergeList<string>(s => s, true)
+const list = new ScriptedList<string>(s => s, true)
 
 const example1 = ['Hello', 'Welcome', 'Bye', 'End']
 for (const x of example1)
-  list.mergeAsAdded(x)
+  list.add(x)
 
 // list.items: Hello, Welcome, Bye, End
 
 const example2 = ['Added1', 'Bye', 'End', 'Added2', 'Hello', 'Added3']
-list.beginMerge()
+list.beginScriptExecution()
 for (const x of example2) {
-  const existing = list.tryMergeAsExisting(x)
+  const existing = list.tryReuse(x)
   if (existing) {
-    // merge x into existing (when item is an object)
+    // reuse existing item
   }
   else
-    list.mergeAsAdded(x, true)
+    list.add(x, true)
 }
-list.endMerge(true)
+list.endScriptExecution(true)
 
 // list.items: Added1, Bye, End, Added2, Hello, Added3
-// list.addedItems: Added1, Added2, Added3
-// list.removedItems: Welcome
+// list.itemsAdded: Added1, Added2, Added3
+// list.itemsRemoved: Welcome
 // list.isAdded: Added1, Added2, Added3
 // list.isMoved: Bye, Hello
 // list.isRemoved: Welcome
 ```
 
-MergeList API:
+ScriptedList API:
 
 ``` typescript
-type MergedItem<T> = {
+type LinkedItem<T> = {
   readonly instance: T
 }
 
-class MergeList<T> {
+class ScriptedList<T> {
   readonly getKey: GetKey<T>
   readonly strict: boolean
   readonly count: number
-  readonly addedCount: number
-  readonly removedCount: number
-  readonly isMergeInProgress: boolean
+  readonly countOfAdded: number
+  readonly countOfRemoved: number
+  readonly isScriptExecutionInProgress: boolean
 
-  lookup(key: string): MergedItem<T> | undefined
-  tryMergeAsExisting(key: string): MergedItem<T> | undefined
-  mergeAsAdded(instance: T, keepInAddedItems?: boolean): MergedItem<T>
-  mergeAsRemoved(item: MergedItem<T>, keepInRemovedItems?: boolean): void
-  move(item: MergedItem<T>, after: MergedItem<T>): void
-  beginMerge(): void
-  endMerge(clearAddedAndRemovedItems: boolean): void
+  lookup(key: string): LinkedItem<T> | undefined
+  tryReuse(key: string): LinkedItem<T> | undefined
+  add(instance: T, keepInAddedItems?: boolean): LinkedItem<T>
+  remove(item: LinkedItem<T>, keepInRemovedItems?: boolean): void
+  move(item: LinkedItem<T>, after: LinkedItem<T>): void
+  beginScriptExecution(): void
+  endScriptExecution(clearAddedAndRemovedItems: boolean): void
   resetAddedAndRemovedLists(): void
-  lastMergedItem(): MergedItem<T> | undefined
+  first(): LinkedItem<T> | undefined
+  last(): LinkedItem<T> | undefined
 
-  items(): Generator<MergedItem<T>>
-  addedItems(keep?: boolean): Generator<MergedItem<T>>
-  removedItems(keep?: boolean): Generator<MergedItem<T>>
-  isAdded(item: MergedItem<T>): boolean
-  isMoved(item: MergedItem<T>): boolean
-  isRemoved(item: MergedItem<T>): boolean
-  isActual(item: MergedItem<T>): boolean
+  items(): Generator<LinkedItem<T>>
+  itemsAdded(keep?: boolean): Generator<LinkedItem<T>>
+  itemsRemoved(keep?: boolean): Generator<LinkedItem<T>>
+  isAdded(item: LinkedItem<T>): boolean
+  isMoved(item: LinkedItem<T>): boolean
+  isRemoved(item: LinkedItem<T>): boolean
+  isAlive(item: LinkedItem<T>): boolean
 }
 ```

@@ -5,35 +5,35 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { MergeList, MergedItem, MergeListReader } from "../util/MergeList.js"
+import { ScriptedList, LinkedItem, ScriptedListReader } from "../util/MergeList.js"
 import { ObservableObject } from "./Mvcc.js"
 
-// ObservableMergeList
+// ObservableScriptedList
 
-export abstract class ObservableMergeList<T> extends ObservableObject implements MergeListReader<T> {
-  protected abstract impl: MergeList<T>
+export abstract class ObservableScriptedList<T> extends ObservableObject implements ScriptedListReader<T> {
+  protected abstract impl: ScriptedList<T>
   get isStrict(): boolean { return this.impl.isStrict }
   get count(): number { return this.impl.count }
-  get addedCount(): number { return this.impl.addedCount }
-  get removedCount(): number { return this.impl.removedCount }
-  get isMergeInProgress(): boolean { return this.impl.isMergeInProgress }
+  get countOfAdded(): number { return this.impl.countOfAdded }
+  get countOfRemoved(): number { return this.impl.countOfRemoved }
+  get isScriptingInProgress(): boolean { return this.impl.isScriptingInProgress }
 
-  lookup(key: string): MergedItem<T> | undefined { return this.impl.lookup(key) }
-  tryMergeAsExisting(key: string): MergedItem<T> | undefined { return this.impl.tryMergeAsExisting(key) }
-  mergeAsAdded(instance: T): MergedItem<T> { return this.impl.mergeAsAdded(instance) }
-  mergeAsRemoved(item: MergedItem<T>): void { return this.impl.mergeAsRemoved(item) }
-  move(item: MergedItem<T>, after: MergedItem<T>): void { this.impl.move(item, after) }
-  beginMerge(): void { this.impl.beginMerge() }
-  endMerge(error?: unknown): void { this.impl.endMerge(error) }
+  lookup(key: string): LinkedItem<T> | undefined { return this.impl.lookup(key) }
+  tryMergeAsExisting(key: string): LinkedItem<T> | undefined { return this.impl.tryReuse(key) }
+  mergeAsAdded(instance: T): LinkedItem<T> { return this.impl.add(instance) }
+  mergeAsRemoved(item: LinkedItem<T>): void { return this.impl.remove(item) }
+  move(item: LinkedItem<T>, after: LinkedItem<T>): void { this.impl.move(item, after) }
+  beginMerge(): void { this.impl.beginScriptExecution() }
+  endMerge(error?: unknown): void { this.impl.endScriptExecution(error) }
   resetAddedAndRemovedLists(): void { this.impl.resetAddedAndRemovedLists() }
-  firstMergedItem(): MergedItem<T> | undefined { return this.impl.firstMergedItem() }
-  lastMergedItem(): MergedItem<T> | undefined { return this.impl.lastMergedItem() }
+  firstItem(): LinkedItem<T> | undefined { return this.impl.firstItem() }
+  lastItem(): LinkedItem<T> | undefined { return this.impl.lastItem() }
 
-  items(): Generator<MergedItem<T>> { return this.impl.items() }
-  addedItems(reset?: boolean): Generator<MergedItem<T>> { return this.impl.addedItems(reset) }
-  removedItems(reset?: boolean): Generator<MergedItem<T>> { return this.impl.removedItems(reset) }
-  isAdded(item: MergedItem<T>): boolean { return this.impl.isAdded(item) }
-  isMoved(item: MergedItem<T>): boolean { return this.impl.isMoved(item) }
-  isRemoved(item: MergedItem<T>): boolean { return this.impl.isRemoved(item) }
-  isActual(item: MergedItem<T>): boolean { return this.impl.isActual(item) }
+  items(): Generator<LinkedItem<T>> { return this.impl.items() }
+  itemsAdded(reset?: boolean): Generator<LinkedItem<T>> { return this.impl.itemsAdded(reset) }
+  itemsRemoved(reset?: boolean): Generator<LinkedItem<T>> { return this.impl.itemsRemoved(reset) }
+  isAdded(item: LinkedItem<T>): boolean { return this.impl.isAdded(item) }
+  isMoved(item: LinkedItem<T>): boolean { return this.impl.isMoved(item) }
+  isRemoved(item: LinkedItem<T>): boolean { return this.impl.isRemoved(item) }
+  isAlive(item: LinkedItem<T>): boolean { return this.impl.isAlive(item) }
 }
