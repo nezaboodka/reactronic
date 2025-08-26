@@ -19,7 +19,7 @@ test("reconciliation-list", t => {
     list.add(x)
 
   t.is(list.count, 4)
-  t.is(list.countOfAdded, 4)
+  t.is(list.countOfAdded, 0)
   t.is(list.countOfRemoved, 0)
   t.true(compare(list.items(), etalon1))
 

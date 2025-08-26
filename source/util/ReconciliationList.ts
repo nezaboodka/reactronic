@@ -28,6 +28,7 @@ export type ReconciliationListReader<T> = {
   isMoved(item: LinkedItem<T>): boolean
   isRemoved(item: LinkedItem<T>): boolean
   isFresh(item: LinkedItem<T>): boolean
+  isExternal(item: LinkedItem<T>): boolean
 }
 
 export type LinkedItem<T> = {
@@ -113,7 +114,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
       if (item.tag !== tag) {
         item.tag = tag
         if (this.strict && item !== this.strictNextItem)
-          item.status = tag // isAdded=false, isMoved=true
+          item.moving = tag // isAdded=false, isMoved=true
         this.strictNextItem = item.next
         this.removed.exclude(item)
         item.index = this.fresh.count
@@ -135,19 +136,15 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     const key = this.getKey(instance)
     if (this.lookup(key) !== undefined)
       throw misuse(`key is already in use: ${key}`)
-    let tag = this.tag
-    if (tag < 0) { // reconciliation is not in progress
-      tag = ~this.tag + 1
-      this.tag = ~tag // (!) EXTERNAL?
-      // throw misuse("TBD")
-    }
+    const tag = this.tag > 0 ? this.tag : 0
     const item = new LinkedItemImpl<T>(instance, tag)
     this.map.set(key, item)
     this.lastNotFoundKey = undefined
     this.strictNextItem = undefined
     item.index = this.fresh.count
     this.fresh.include(item)
-    this.added.aux(item)
+    if (tag !== 0) // if not external
+      this.added.aux(item)
     return item
   }
 
@@ -256,7 +253,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     let tag = this.tag
     if (tag < 0)
       tag = ~tag
-    return t.status === ~tag && t.tag > 0
+    return t.moving === ~tag && t.tag > 0
   }
 
   isMoved(item: LinkedItem<T>): boolean {
@@ -264,7 +261,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     let tag = this.tag
     if (tag < 0)
       tag = ~tag
-    return t.status === tag && t.tag > 0
+    return t.moving === tag && t.tag > 0
   }
 
   isRemoved(item: LinkedItem<T>): boolean {
@@ -278,10 +275,15 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     return t.tag === this.tag
   }
 
+  isExternal(item: LinkedItem<T>): boolean {
+    const t = item as LinkedItemImpl<T>
+    return t.tag === 0
+  }
+
   markAsMoved(item: LinkedItem<T>): void {
     const t = item as LinkedItemImpl<T>
     if (t.tag > 0) // if not removed, > is intentional
-      t.status = t.tag
+      t.moving = t.tag
   }
 
   static createItem<T>(instance: T): LinkedItem<T> {
@@ -293,7 +295,7 @@ class LinkedItemImpl<T> implements LinkedItem<T> {
   readonly instance: T
   index: number
   tag: number
-  status: number
+  moving: number
   next?: LinkedItemImpl<T>
   prev?: LinkedItemImpl<T>
   aux?: LinkedItemImpl<T>
@@ -302,7 +304,7 @@ class LinkedItemImpl<T> implements LinkedItem<T> {
     this.instance = instance
     this.index = -1
     this.tag = tag
-    this.status = ~tag // isAdded=true
+    this.moving = ~tag // isAdded=true
     this.next = undefined
     this.prev = undefined
     this.aux = undefined
