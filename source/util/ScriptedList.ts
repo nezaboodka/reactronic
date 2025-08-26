@@ -137,7 +137,7 @@ export class ScriptedList<T> implements ScriptedListReader<T> {
     if (cycle < 0) { // script execution is not in progress
       cycle = ~this.cycle + 1
       this.cycle = ~cycle // one item merge cycle
-      throw misuse("TBD")
+      // throw misuse("TBD")
     }
     const item = new LinkedItemImpl<T>(instance, cycle)
     this.map.set(key, item)
