@@ -6,9 +6,9 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ScriptedList, LinkedItem } from "../source/util/MergeList.js"
+import { ScriptedList, LinkedItem } from "../source/util/ScriptedList.js"
 
-test("merge-list", t => {
+test("scripted-list", t => {
   const etalon1 = ["Hello", "Welcome", "Bye", "End"]
   const etalon2 = ["Added1", "Bye", "End", "Added2", "Hello", "Added3"]
   const etalon2a = ["Hello", "Bye", "End", "Added1", "Added2", "Added3"]

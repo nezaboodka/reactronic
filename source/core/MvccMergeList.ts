@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ScriptedList, LinkedItem, ScriptedListReader } from "../util/MergeList.js"
+import { ScriptedList, LinkedItem, ScriptedListReader } from "../util/ScriptedList.js"
 import { ObservableObject } from "./Mvcc.js"
 
 // ObservableScriptedList
