@@ -39,7 +39,7 @@ test("reconciliation-list", t => {
   t.true(compare(list.itemsAdded(), ["Added1", "Added2", "Added3"]))
   t.is(list.countOfRemoved, 1)
   t.is(list.countOfAdded, 3)
-  list.resetAddedAndRemovedLists()
+  list.clearAddedAndRemoved()
   t.is(list.countOfRemoved, 0)
   t.is(list.countOfAdded, 0)
   t.true(list.isAdded(list.lookup("Added1")!))

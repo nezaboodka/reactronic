@@ -19,19 +19,19 @@ export abstract class ObservableReconciliationList<T> extends ObservableObject i
   get isReconciliationInProgress(): boolean { return this.impl.isReconciliationInProgress }
 
   lookup(key: string): LinkedItem<T> | undefined { return this.impl.lookup(key) }
-  tryMergeAsExisting(key: string): LinkedItem<T> | undefined { return this.impl.tryReuse(key) }
-  mergeAsAdded(instance: T): LinkedItem<T> { return this.impl.add(instance) }
-  mergeAsRemoved(item: LinkedItem<T>): void { return this.impl.remove(item) }
+  tryReuse(key: string): LinkedItem<T> | undefined { return this.impl.tryReuse(key) }
+  add(instance: T): LinkedItem<T> { return this.impl.add(instance) }
+  remove(item: LinkedItem<T>): void { return this.impl.remove(item) }
   move(item: LinkedItem<T>, after: LinkedItem<T>): void { this.impl.move(item, after) }
-  beginMerge(): void { this.impl.beginReconciliation() }
-  endMerge(error?: unknown): void { this.impl.endReconciliation(error) }
-  resetAddedAndRemovedLists(): void { this.impl.resetAddedAndRemovedLists() }
+  beginReconciliation(): void { this.impl.beginReconciliation() }
+  endReconciliation(error?: unknown): void { this.impl.endReconciliation(error) }
+  clearAddedAndRemovedLists(): void { this.impl.clearAddedAndRemoved() }
   firstItem(): LinkedItem<T> | undefined { return this.impl.firstItem() }
   lastItem(): LinkedItem<T> | undefined { return this.impl.lastItem() }
 
   items(): Generator<LinkedItem<T>> { return this.impl.items() }
-  itemsAdded(reset?: boolean): Generator<LinkedItem<T>> { return this.impl.itemsAdded(reset) }
-  itemsRemoved(reset?: boolean): Generator<LinkedItem<T>> { return this.impl.itemsRemoved(reset) }
+  itemsAdded(clear?: boolean): Generator<LinkedItem<T>> { return this.impl.itemsAdded(clear) }
+  itemsRemoved(clear?: boolean): Generator<LinkedItem<T>> { return this.impl.itemsRemoved(clear) }
   isAdded(item: LinkedItem<T>): boolean { return this.impl.isAdded(item) }
   isMoved(item: LinkedItem<T>): boolean { return this.impl.isMoved(item) }
   isRemoved(item: LinkedItem<T>): boolean { return this.impl.isRemoved(item) }

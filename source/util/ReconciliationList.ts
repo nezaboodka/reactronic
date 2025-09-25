@@ -22,8 +22,8 @@ export type ReconciliationListReader<T> = {
   lastItem(): LinkedItem<T> | undefined
 
   items(onlyAfter?: LinkedItem<T>): Generator<LinkedItem<T>>
-  itemsAdded(reset?: boolean): Generator<LinkedItem<T>>
-  itemsRemoved(reset?: boolean): Generator<LinkedItem<T>>
+  itemsAdded(clear?: boolean): Generator<LinkedItem<T>>
+  itemsRemoved(clear?: boolean): Generator<LinkedItem<T>>
   isAdded(item: LinkedItem<T>): boolean
   isMoved(item: LinkedItem<T>): boolean
   isRemoved(item: LinkedItem<T>): boolean
@@ -144,7 +144,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     item.index = this.fresh.count
     this.fresh.include(item)
     if (tag !== 0) // if not external
-      this.added.aux(item)
+      this.added.includeAux(item)
     return item
   }
 
@@ -167,7 +167,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     this.tag = ~this.tag + 1
     this.strictNextItem = this.fresh.first
     this.removed.grab(this.fresh, false)
-    this.added.reset()
+    this.added.clear()
   }
 
   endReconciliation(error?: unknown): void {
@@ -195,17 +195,17 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     else {
       this.fresh.grab(this.removed, true)
       const getKey = this.getKey
-      for (const x of this.added.itemsViaAux()) {
+      for (const x of this.added.itemsAux()) {
         this.map.delete(getKey(x.instance))
         this.fresh.exclude(x)
       }
-      this.added.reset()
+      this.added.clear()
     }
   }
 
-  resetAddedAndRemovedLists(): void {
-    this.removed.reset()
-    this.added.reset()
+  clearAddedAndRemoved(): void {
+    this.removed.clear()
+    this.added.clear()
   }
 
   firstItem(): LinkedItem<T> | undefined {
@@ -225,7 +225,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     }
   }
 
-  *itemsAdded(reset?: boolean): Generator<LinkedItem<T>> {
+  *itemsAdded(clear?: boolean): Generator<LinkedItem<T>> {
     let x = this.added.first
     while (x !== undefined) {
       const next = x.aux
@@ -233,19 +233,19 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
         yield x
       x = next
     }
-    if (reset)
-      this.added.reset()
+    if (clear)
+      this.added.clear()
   }
 
-  *itemsRemoved(reset?: boolean): Generator<LinkedItem<T>> {
+  *itemsRemoved(clear?: boolean): Generator<LinkedItem<T>> {
     let x = this.removed.first
     while (x !== undefined) {
       const next = x.next
       yield x
       x = next
     }
-    if (reset)
-      this.removed.reset()
+    if (clear)
+      this.removed.clear()
   }
 
   isAdded(item: LinkedItem<T>): boolean {
@@ -325,7 +325,7 @@ class LinkedItemChain<T> {
     }
   }
 
-  public *itemsViaAux(): Generator<LinkedItemImpl<T>> {
+  public *itemsAux(): Generator<LinkedItemImpl<T>> {
     let x = this.first
     while (x !== undefined) {
       const next = x.aux
@@ -334,7 +334,7 @@ class LinkedItemChain<T> {
     }
   }
 
-  reset(): void {
+  clear(): void {
     this.count = 0
     this.first = undefined
     this.last = undefined
@@ -356,7 +356,7 @@ class LinkedItemChain<T> {
       this.first = head
       this.last = from.last
     }
-    from.reset()
+    from.clear()
   }
 
   include(item: LinkedItemImpl<T>): void {
@@ -370,6 +370,16 @@ class LinkedItemChain<T> {
     this.count++
   }
 
+  includeAux(item: LinkedItemImpl<T>): void {
+    item.aux = undefined
+    const last = this.last
+    if (last)
+      this.last = last.aux = item
+    else
+      this.first = this.last = item
+    this.count++
+  }
+
   exclude(item: LinkedItemImpl<T>): void {
     if (item.prev !== undefined)
       item.prev.next = item.next
@@ -378,15 +388,5 @@ class LinkedItemChain<T> {
     if (item === this.first)
       this.first = item.next
     this.count--
-  }
-
-  aux(item: LinkedItemImpl<T>): void {
-    item.aux = undefined
-    const last = this.last
-    if (last)
-      this.last = last.aux = item
-    else
-      this.first = this.last = item
-    this.count++
   }
 }
