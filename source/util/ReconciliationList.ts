@@ -27,7 +27,7 @@ export type ReconciliationListReader<T> = {
   isAdded(item: LinkedItem<T>): boolean
   isMoved(item: LinkedItem<T>): boolean
   isRemoved(item: LinkedItem<T>): boolean
-  isFresh(item: LinkedItem<T>): boolean
+  isActual(item: LinkedItem<T>): boolean
   isExternal(item: LinkedItem<T>): boolean
 }
 
@@ -46,7 +46,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
   private strict: boolean
   private map: Map<string | undefined, LinkedItemImpl<T>>
   private tag: number
-  private fresh: LinkedItemChain<T>
+  private actual: LinkedItemChain<T>
   private added: LinkedItemChain<T>
   private removed: LinkedItemChain<T>
   private lastNotFoundKey: string | undefined
@@ -57,7 +57,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     this.strict = strict
     this.map = new Map<string | undefined, LinkedItemImpl<T>>()
     this.tag = ~0
-    this.fresh = new LinkedItemChain<T>()
+    this.actual = new LinkedItemChain<T>()
     this.added = new LinkedItemChain<T>()
     this.removed = new LinkedItemChain<T>()
     this.lastNotFoundKey = undefined
@@ -66,13 +66,13 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
 
   get isStrict(): boolean { return this.strict }
   set isStrict(value: boolean) {
-    if (this.isReconciliationInProgress && this.fresh.count > 0)
+    if (this.isReconciliationInProgress && this.actual.count > 0)
       throw misuse("cannot change strict mode in the middle of reconciliation")
     this.strict = value
   }
 
   get count(): number {
-    return this.fresh.count
+    return this.actual.count
   }
 
   get countOfAdded(): number {
@@ -117,8 +117,8 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
           item.moving = tag // isAdded=false, isMoved=true
         this.strictNextItem = item.next
         this.removed.exclude(item)
-        item.index = this.fresh.count
-        this.fresh.include(item)
+        item.index = this.actual.count
+        this.actual.include(item)
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -141,8 +141,8 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     this.map.set(key, item)
     this.lastNotFoundKey = undefined
     this.strictNextItem = undefined
-    item.index = this.fresh.count
-    this.fresh.include(item)
+    item.index = this.actual.count
+    this.actual.include(item)
     if (tag !== 0) // if not external
       this.added.includeAux(item)
     return item
@@ -151,7 +151,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
   remove(item: LinkedItem<T>): void {
     const t = item as LinkedItemImpl<T>
     if (!this.isRemoved(t)) {
-      this.fresh.exclude(t)
+      this.actual.exclude(t)
       this.removed.include(t)
       t.tag--
     }
@@ -165,8 +165,8 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     if (this.isReconciliationInProgress)
       throw misuse("reconciliation is in progress already")
     this.tag = ~this.tag + 1
-    this.strictNextItem = this.fresh.first
-    this.removed.grab(this.fresh, false)
+    this.strictNextItem = this.actual.first
+    this.removed.grab(this.actual, false)
     this.added.clear()
   }
 
@@ -175,17 +175,17 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
       throw misuse("reconciliation is ended already")
     this.tag = ~this.tag
     if (error === undefined) {
-      const freshCount = this.fresh.count
-      if (freshCount > 0) {
+      const actualCount = this.actual.count
+      if (actualCount > 0) {
         const getKey = this.getKey
-        if (freshCount > this.removed.count) { // it should be faster to delete vanished items
+        if (actualCount > this.removed.count) { // it should be faster to delete vanished items
           const map = this.map
           for (const x of this.removed.items())
             map.delete(getKey(x.instance))
         }
-        else { // it should be faster to recreate map using fresh items
+        else { // it should be faster to recreate map using actual items
           const map = this.map = new Map<string | undefined, LinkedItemImpl<T>>()
-          for (const x of this.fresh.items())
+          for (const x of this.actual.items())
             map.set(getKey(x.instance), x)
         }
       }
@@ -193,11 +193,11 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
         this.map = new Map<string | undefined, LinkedItemImpl<T>>()
     }
     else {
-      this.fresh.grab(this.removed, true)
+      this.actual.grab(this.removed, true)
       const getKey = this.getKey
       for (const x of this.added.itemsAux()) {
         this.map.delete(getKey(x.instance))
-        this.fresh.exclude(x)
+        this.actual.exclude(x)
       }
       this.added.clear()
     }
@@ -209,15 +209,15 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
   }
 
   firstItem(): LinkedItem<T> | undefined {
-    return this.fresh.first
+    return this.actual.first
   }
 
   lastItem(): LinkedItem<T> | undefined {
-    return this.fresh.last
+    return this.actual.last
   }
 
   *items(onlyAfter?: LinkedItem<T>): Generator<LinkedItem<T>> {
-    let x = onlyAfter?.next ?? this.fresh.first
+    let x = onlyAfter?.next ?? this.actual.first
     while (x !== undefined) {
       const next = x.next
       yield x
@@ -270,7 +270,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     return tag > 0 ? t.tag < tag : t.tag < tag - 1
   }
 
-  isFresh(item: LinkedItem<T>): boolean {
+  isActual(item: LinkedItem<T>): boolean {
     const t = item as LinkedItemImpl<T>
     return t.tag === this.tag
   }

@@ -35,6 +35,6 @@ export abstract class ObservableReconciliationList<T> extends ObservableObject i
   isAdded(item: LinkedItem<T>): boolean { return this.impl.isAdded(item) }
   isMoved(item: LinkedItem<T>): boolean { return this.impl.isMoved(item) }
   isRemoved(item: LinkedItem<T>): boolean { return this.impl.isRemoved(item) }
-  isFresh(item: LinkedItem<T>): boolean { return this.impl.isFresh(item) }
+  isActual(item: LinkedItem<T>): boolean { return this.impl.isActual(item) }
   isExternal(item: LinkedItem<T>): boolean { return this.impl.isExternal(item) }
 }
