@@ -172,7 +172,7 @@ export class Chain<T> implements ChainReader<T> {
       throw misuse("update is in progress already")
     this.tag = ~tag + 1
     this.expectedNextItem = this.actual$.first
-    this.removed$.grabFrom(this.actual$, false)
+    this.removed$.join(this.actual$, false)
     this.added$.clear()
   }
 
@@ -189,7 +189,7 @@ export class Chain<T> implements ChainReader<T> {
       }
     }
     else {
-      this.actual$.grabFrom(this.removed$, true)
+      this.actual$.join(this.removed$, true)
       const getKey = this.getKey
       for (const x of this.added$.items()) {
         this.map.delete(getKey(x.payload))
@@ -317,7 +317,7 @@ class SubChain$<T> extends AbstractSubChain<T> {
     return prev
   }
 
-  grabFrom(from: SubChain$<T>, join: boolean): void {
+  join(from: SubChain$<T>, join: boolean): void {
     const head = from.first
     if (join !== undefined && head !== undefined) {
       const last = this.last
