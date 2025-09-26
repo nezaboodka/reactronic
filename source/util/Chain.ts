@@ -43,7 +43,7 @@ export class Chain<T> implements ChainReader<T> {
   private map: Map<string | undefined, Chained$<T>>
   private tag: number
   private actual$: SubChain<T>
-  private added$: SubChain<T>
+  private added$: AuxSubChain<T>
   private removed$: SubChain<T>
   private lastNotFoundKey: string | undefined
   private expectedNextItem?: Chained$<T>
@@ -54,7 +54,7 @@ export class Chain<T> implements ChainReader<T> {
     this.map = new Map<string | undefined, Chained$<T>>()
     this.tag = ~1
     this.actual$ = new SubChain<T>()
-    this.added$ = new SubChain<T>()
+    this.added$ = new AuxSubChain<T>()
     this.removed$ = new SubChain<T>()
     this.lastNotFoundKey = undefined
     this.expectedNextItem = undefined
@@ -141,7 +141,7 @@ export class Chain<T> implements ChainReader<T> {
     item.index = this.actual$.count
     this.actual$.include(item)
     if (tag !== 0) // if not external
-      this.added$.includeAux(item)
+      this.added$.include(item)
     return item
   }
 
@@ -197,7 +197,7 @@ export class Chain<T> implements ChainReader<T> {
     else {
       this.actual$.grab(this.removed$, true)
       const getKey = this.getKey
-      for (const x of this.added$.itemsAux()) {
+      for (const x of this.added$.items()) {
         this.map.delete(getKey(x.payload))
         this.actual$.exclude(x)
       }
@@ -316,24 +316,20 @@ export type SubChainReader<T> = {
   readonly last?: Chained<T>
 }
 
-class SubChain<T> implements SubChainReader<T> {
+abstract class AbstractSubChain<T> implements SubChainReader<T> {
   count: number = 0
   first?: Chained$<T> = undefined
   last?: Chained$<T> = undefined
 
+  protected abstract getActualNextOf(item: Chained$<T>): Chained$<T> | undefined
+  protected abstract setActualNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined
+  protected abstract getActualPrevOf(item: Chained$<T>): Chained$<T> | undefined
+  protected abstract setActualPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined
+
   public *items(): Generator<Chained$<T>> {
     let x = this.first
     while (x !== undefined) {
-      const next = x.next
-      yield x
-      x = next
-    }
-  }
-
-  public *itemsAux(): Generator<Chained$<T>> {
-    let x = this.first
-    while (x !== undefined) {
-      const next = x.aux
+      const next = this.getActualNextOf(x)
       yield x
       x = next
     }
@@ -345,13 +341,56 @@ class SubChain<T> implements SubChainReader<T> {
     this.last = undefined
   }
 
+  include(item: Chained$<T>): void {
+    const last = this.last
+    this.setActualPrevOf(item, last)
+    this.setActualNextOf(item, undefined)
+    if (last)
+      this.last = this.setActualNextOf(last, item)
+    else
+      this.first = this.last = item
+    this.count++
+  }
+
+  exclude(item: Chained$<T>): void {
+    const prev = this.getActualPrevOf(item)
+    if (prev !== undefined)
+      this.setActualNextOf(prev, this.getActualNextOf(item))
+    const next = this.getActualNextOf(item)
+    if (next !== undefined)
+      this.setActualPrevOf(next, this.getActualPrevOf(item))
+    if (item === this.first)
+      this.first = this.getActualNextOf(item)
+    this.count--
+  }
+}
+
+class SubChain<T> extends AbstractSubChain<T> {
+  protected override getActualNextOf(item: Chained$<T>): Chained$<T> | undefined {
+    return item.next
+  }
+
+  protected override setActualNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined {
+    item.next = next
+    return next
+  }
+
+  protected override getActualPrevOf(item: Chained$<T>): Chained$<T> | undefined {
+    return item.prev
+  }
+
+  protected override setActualPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined {
+    item.prev = prev
+    return prev
+  }
+
   grab(from: SubChain<T>, join: boolean): void {
     const head = from.first
     if (join && head) {
       const last = this.last
       head.prev = last
       if (last)
-        this.last = last.next = head
+        this.last = this.setActualNextOf(last, head)
       else
         this.first = this.last = head
       this.count += from.count
@@ -363,35 +402,23 @@ class SubChain<T> implements SubChainReader<T> {
     }
     from.clear()
   }
+}
 
-  include(item: Chained$<T>): void {
-    const last = this.last
-    item.prev = last
-    item.next = undefined
-    if (last)
-      this.last = last.next = item
-    else
-      this.first = this.last = item
-    this.count++
+class AuxSubChain<T> extends AbstractSubChain<T> {
+  protected override getActualNextOf(item: Chained$<T>): Chained$<T> | undefined {
+    return item.aux
   }
 
-  includeAux(item: Chained$<T>): void {
-    item.aux = undefined
-    const last = this.last
-    if (last)
-      this.last = last.aux = item
-    else
-      this.first = this.last = item
-    this.count++
+  protected override setActualNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined {
+    item.aux = next
+    return next
   }
 
-  exclude(item: Chained$<T>): void {
-    if (item.prev !== undefined)
-      item.prev.next = item.next
-    if (item.next !== undefined)
-      item.next.prev = item.prev
-    if (item === this.first)
-      this.first = item.next
-    this.count--
+  protected override getActualPrevOf(item: Chained$<T>): Chained$<T> | undefined {
+    throw misuse("aux sub chain is not two-way linked")
+  }
+
+  protected override setActualPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined {
+    throw misuse("aux sub chain is not two-way linked")
   }
 }
