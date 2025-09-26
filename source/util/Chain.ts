@@ -29,13 +29,13 @@ export type Chained<T> = {
 export type ChainReader<T> = {
   readonly isStrict: boolean
   readonly isUpdateInProgress: boolean
-  readonly actual: SubChainReader<T>
-  readonly added: SubChainReader<T>
-  readonly removed: SubChainReader<T>
+  readonly actual: SubChain<T>
+  readonly added: SubChain<T>
+  readonly removed: SubChain<T>
   lookup(key: string): Chained<T> | undefined
 }
 
-export type SubChainReader<T> = {
+export type SubChain<T> = {
   readonly count: number
   readonly first?: Chained<T>
   readonly last?: Chained<T>
@@ -48,9 +48,9 @@ export class Chain<T> implements ChainReader<T> {
   private isStrict$: boolean
   private map: Map<string | undefined, Chained$<T>>
   private tag: number
-  private actual$: SubChain<T>
+  private actual$: SubChain$<T>
   private added$: AuxSubChain<T>
-  private removed$: SubChain<T>
+  private removed$: SubChain$<T>
   private lastNotFoundKey: string | undefined
   private expectedNextItem?: Chained$<T>
 
@@ -59,9 +59,9 @@ export class Chain<T> implements ChainReader<T> {
     this.isStrict$ = isStrict
     this.map = new Map<string | undefined, Chained$<T>>()
     this.tag = ~1
-    this.actual$ = new SubChain<T>()
+    this.actual$ = new SubChain$<T>()
     this.added$ = new AuxSubChain<T>()
-    this.removed$ = new SubChain<T>()
+    this.removed$ = new SubChain$<T>()
     this.lastNotFoundKey = undefined
     this.expectedNextItem = undefined
   }
@@ -77,15 +77,15 @@ export class Chain<T> implements ChainReader<T> {
     return this.tag > 0
   }
 
-  get actual(): SubChainReader<T> {
+  get actual(): SubChain<T> {
     return this.actual$
   }
 
-  get added(): SubChainReader<T> {
+  get added(): SubChain<T> {
     return this.added$
   }
 
-  get removed(): SubChainReader<T> {
+  get removed(): SubChain<T> {
     return this.removed$
   }
 
@@ -259,7 +259,7 @@ class Chained$<T> implements Chained<T> {
 
 // AbstractSubChain
 
-abstract class AbstractSubChain<T> implements SubChainReader<T> {
+abstract class AbstractSubChain<T> implements SubChain<T> {
   count: number = 0
   first?: Chained$<T> = undefined
   last?: Chained$<T> = undefined
@@ -310,7 +310,7 @@ abstract class AbstractSubChain<T> implements SubChainReader<T> {
 
 // SubChain
 
-class SubChain<T> extends AbstractSubChain<T> {
+class SubChain$<T> extends AbstractSubChain<T> {
   override getActualNextOf(item: Chained$<T>): Chained$<T> | undefined {
     return item.next
   }
@@ -329,7 +329,7 @@ class SubChain<T> extends AbstractSubChain<T> {
     return prev
   }
 
-  grabFrom(from: SubChain<T>, join: boolean): void {
+  grabFrom(from: SubChain$<T>, join: boolean): void {
     const head = from.first
     if (join !== undefined && head !== undefined) {
       const last = this.last
