@@ -11,7 +11,7 @@ export type GetChainItemKey<T = unknown> = (payload: T) => string | undefined
 
 const TAG_FACTOR = 4
 
-export enum ChainedItemStatus {
+export enum UpdateStatus {
   reused = 0,
   added = 1,
   moved = 2,
@@ -21,7 +21,7 @@ export enum ChainedItemStatus {
 export type Chained<T> = {
   readonly payload: T
   readonly index: number
-  readonly status: ChainedItemStatus
+  readonly status: UpdateStatus
   readonly next?: Chained<T>
   readonly prev?: Chained<T>
 }
@@ -114,9 +114,9 @@ export class Chain<T> implements ChainReader<T> {
     if (item !== undefined) {
       if (!this.tagMatchesTo(item)) {
         if (this.isStrict$ && item !== this.expectedNextItem)
-          this.setChainedItemStatus(item, ChainedItemStatus.moved)
+          this.mark(item, UpdateStatus.moved)
         else
-          this.setChainedItemStatus(item, ChainedItemStatus.reused)
+          this.mark(item, UpdateStatus.reused)
         this.expectedNextItem = this.removed$.getActualNextOf(item)
         this.removed$.exclude(item)
         item.index = this.actual$.count
@@ -151,11 +151,11 @@ export class Chain<T> implements ChainReader<T> {
   }
 
   remove(item: Chained<T>): void {
-    if (item.status !== ChainedItemStatus.removed) {
+    if (item.status !== UpdateStatus.removed) {
       const x = item as Chained$<T>
       this.actual$.exclude(x)
       this.removed$.include(x)
-      this.setChainedItemStatus(x, ChainedItemStatus.removed)
+      this.mark(x, UpdateStatus.removed)
     }
   }
 
@@ -165,7 +165,7 @@ export class Chain<T> implements ChainReader<T> {
 
   markAsMoved(item: Chained<T>): void {
     const x = item as Chained$<T>
-    this.setChainedItemStatus(x, ChainedItemStatus.moved)
+    this.mark(x, UpdateStatus.moved)
   }
 
   beginUpdate(): void {
@@ -227,7 +227,7 @@ export class Chain<T> implements ChainReader<T> {
     return Math.trunc(item.tag / TAG_FACTOR) === this.tag
   }
 
-  private setChainedItemStatus(item: Chained$<T>, status: ChainedItemStatus): void {
+  private mark(item: Chained$<T>, status: UpdateStatus): void {
     const tag = this.tag > 0 ? this.tag : ~this.tag
     item.tag = tag * TAG_FACTOR + status
   }
@@ -252,7 +252,7 @@ class Chained$<T> implements Chained<T> {
     this.aux = undefined
   }
 
-  get status(): ChainedItemStatus {
+  get status(): UpdateStatus {
     return this.tag % TAG_FACTOR
   }
 }
