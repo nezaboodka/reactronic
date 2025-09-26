@@ -180,24 +180,13 @@ export class Chain<T> implements ChainReader<T> {
     const tag = this.tag
     if (tag < 0)
       throw misuse("update is ended already")
-    this.tag = ~tag
     if (error === undefined) {
-      const actualCount = this.actual$.count
-      if (actualCount > 0) {
-        const getKey = this.getKey
-        if (actualCount > this.removed$.count) { // it should be faster to delete vanished items
-          const map = this.map
-          for (const x of this.removed$.items())
-            map.delete(getKey(x.payload))
-        }
-        else { // it should be faster to recreate map using actual items
-          const map = this.map = new Map<string | undefined, Chained$<T>>()
-          for (const x of this.actual$.items())
-            map.set(getKey(x.payload), x)
-        }
+      const getKey = this.getKey
+      const map = this.map
+      for (const x of this.removed$.items()) {
+        this.mark(x, UpdateStatus.removed)
+        map.delete(getKey(x.payload))
       }
-      else // just create new empty map
-        this.map = new Map<string | undefined, Chained$<T>>()
     }
     else {
       this.actual$.grabFrom(this.removed$, true)
@@ -208,6 +197,7 @@ export class Chain<T> implements ChainReader<T> {
       }
       this.added$.clear()
     }
+    this.tag = ~tag
   }
 
   clearAddedAndRemoved(): void {
