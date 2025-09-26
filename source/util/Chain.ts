@@ -216,69 +216,11 @@ export class Chain<T> implements ChainReader<T> {
     this.removed$.clear()
   }
 
-  // *itemsActual(onlyAfter?: Chained<T>): Generator<Chained<T>> {
-  //   let x = onlyAfter?.next ?? this.actual$.first
-  //   while (x !== undefined) {
-  //     const next = x.next
-  //     yield x
-  //     x = next
-  //   }
-  // }
+  static createItem<T>(instance: T): Chained<T> {
+    return new Chained$<T>(instance, 0)
+  }
 
-  // *itemsAdded(clear?: boolean): Generator<Chained<T>> {
-  //   let x = this.added$.first
-  //   while (x !== undefined) {
-  //     const next = x.aux
-  //     if (x.status !== ChainedItemStatus.removed)
-  //       yield x
-  //     x = next
-  //   }
-  //   if (clear)
-  //     this.added$.clear()
-  // }
-
-  // *itemsRemoved(clear?: boolean): Generator<Chained<T>> {
-  //   let x = this.removed$.first
-  //   while (x !== undefined) {
-  //     const next = x.next
-  //     yield x
-  //     x = next
-  //   }
-  //   if (clear)
-  //     this.removed$.clear()
-  // }
-
-  // isAdded(item: Chained<T>): boolean {
-  //   const x = item as Chained$<T>
-  //   let tag = this.tag
-  //   if (tag < 0)
-  //     tag = ~tag
-  //   return x.moving === ~tag && x.tag > 0
-  // }
-
-  // isMoved(item: Chained<T>): boolean {
-  //   const x = item as Chained$<T>
-  //   let tag = this.tag
-  //   if (tag < 0)
-  //     tag = ~tag
-  //   return x.moving === tag && x.tag > 0
-  // }
-
-  // isRemoved(item: Chained<T>): boolean {
-  //   const x = item as Chained$<T>
-  //   const tag = this.tag
-  //   return tag > 0 ? x.tag < tag : x.tag < tag - 1
-  // }
-
-  // isActual(item: Chained<T>): boolean {
-  //   const x = item as Chained$<T>
-  //   return x.tag === this.tag
-  // }
-
-  // isExternal(item: Chained<T>): boolean {
-  //   const x = item as Chained$<T>
-  //   return x.tag === 0
-  // }
+  // Internal
 
   private tagMatchesTo(item: Chained$<T>): boolean {
     return Math.trunc(item.tag / TAG_FACTOR) === this.tag
@@ -287,10 +229,6 @@ export class Chain<T> implements ChainReader<T> {
   private setChainedItemStatus(item: Chained$<T>, status: ChainedItemStatus): void {
     const tag = this.tag > 0 ? this.tag : ~this.tag
     item.tag = tag * TAG_FACTOR + status
-  }
-
-  static createItem<T>(instance: T): Chained<T> {
-    return new Chained$<T>(instance, 0)
   }
 }
 
