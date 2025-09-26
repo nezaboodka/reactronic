@@ -169,18 +169,20 @@ export class Chain<T> implements ChainReader<T> {
   }
 
   beginUpdate(): void {
-    if (this.isUpdateInProgress)
+    const tag = this.tag
+    if (tag > 0)
       throw misuse("update is in progress already")
-    this.tag = ~this.tag + 1
+    this.tag = ~tag + 1
     this.expectedNextItem = this.actual$.first
     this.removed$.grabFrom(this.actual$, false)
     this.added$.clear()
   }
 
   endUpdate(error?: unknown): void {
-    if (!this.isUpdateInProgress)
+    const tag = this.tag
+    if (tag < 0)
       throw misuse("update is ended already")
-    this.tag = ~this.tag
+    this.tag = ~tag
     if (error === undefined) {
       const actualCount = this.actual$.count
       if (actualCount > 0) {
