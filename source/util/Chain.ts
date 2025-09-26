@@ -106,8 +106,7 @@ export class Chain<T> implements ChainReader<T> {
   }
 
   tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Chained<T> | undefined {
-    const tag = this.tag
-    if (tag < 0)
+    if (!this.isUpdateInProgress)
       throw misuse(error ?? "update is not in progress")
     let item = this.expectedNextItem
     if (key !== (item ? this.getKey(item.payload) : undefined))
