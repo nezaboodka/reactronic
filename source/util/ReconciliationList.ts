@@ -44,18 +44,18 @@ export type LinkedItem<T> = {
 export class ReconciliationList<T> implements ReconciliationListReader<T> {
   readonly getKey: GetListItemKey<T>
   private strict: boolean
-  private map: Map<string | undefined, LinkedItemImpl<T>>
+  private map: Map<string | undefined, LinkedItem$<T>>
   private tag: number
   private actual: LinkedItemChain<T>
   private added: LinkedItemChain<T>
   private removed: LinkedItemChain<T>
   private lastNotFoundKey: string | undefined
-  private strictNextItem?: LinkedItemImpl<T>
+  private strictNextItem?: LinkedItem$<T>
 
   constructor(getKey: GetListItemKey<T>, strict: boolean = false) {
     this.getKey = getKey
     this.strict = strict
-    this.map = new Map<string | undefined, LinkedItemImpl<T>>()
+    this.map = new Map<string | undefined, LinkedItem$<T>>()
     this.tag = ~0
     this.actual = new LinkedItemChain<T>()
     this.added = new LinkedItemChain<T>()
@@ -109,7 +109,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
       throw misuse(error ?? "reconciliation is not in progress")
     let item = this.strictNextItem
     if (key !== (item ? this.getKey(item.instance) : undefined))
-      item = this.lookup(key) as LinkedItemImpl<T> | undefined
+      item = this.lookup(key) as LinkedItem$<T> | undefined
     if (item) {
       if (item.tag !== tag) {
         item.tag = tag
@@ -137,7 +137,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
     if (this.lookup(key) !== undefined)
       throw misuse(`key is already in use: ${key}`)
     const tag = this.tag > 0 ? this.tag : 0
-    const item = new LinkedItemImpl<T>(instance, tag)
+    const item = new LinkedItem$<T>(instance, tag)
     this.map.set(key, item)
     this.lastNotFoundKey = undefined
     this.strictNextItem = undefined
@@ -149,7 +149,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
   }
 
   remove(item: LinkedItem<T>): void {
-    const t = item as LinkedItemImpl<T>
+    const t = item as LinkedItem$<T>
     if (!this.isRemoved(t)) {
       this.actual.exclude(t)
       this.removed.include(t)
@@ -184,13 +184,13 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
             map.delete(getKey(x.instance))
         }
         else { // it should be faster to recreate map using actual items
-          const map = this.map = new Map<string | undefined, LinkedItemImpl<T>>()
+          const map = this.map = new Map<string | undefined, LinkedItem$<T>>()
           for (const x of this.actual.items())
             map.set(getKey(x.instance), x)
         }
       }
       else // just create new empty map
-        this.map = new Map<string | undefined, LinkedItemImpl<T>>()
+        this.map = new Map<string | undefined, LinkedItem$<T>>()
     }
     else {
       this.actual.grab(this.removed, true)
@@ -249,7 +249,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
   }
 
   isAdded(item: LinkedItem<T>): boolean {
-    const t = item as LinkedItemImpl<T>
+    const t = item as LinkedItem$<T>
     let tag = this.tag
     if (tag < 0)
       tag = ~tag
@@ -257,7 +257,7 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
   }
 
   isMoved(item: LinkedItem<T>): boolean {
-    const t = item as LinkedItemImpl<T>
+    const t = item as LinkedItem$<T>
     let tag = this.tag
     if (tag < 0)
       tag = ~tag
@@ -265,40 +265,40 @@ export class ReconciliationList<T> implements ReconciliationListReader<T> {
   }
 
   isRemoved(item: LinkedItem<T>): boolean {
-    const t = item as LinkedItemImpl<T>
+    const t = item as LinkedItem$<T>
     const tag = this.tag
     return tag > 0 ? t.tag < tag : t.tag < tag - 1
   }
 
   isActual(item: LinkedItem<T>): boolean {
-    const t = item as LinkedItemImpl<T>
+    const t = item as LinkedItem$<T>
     return t.tag === this.tag
   }
 
   isExternal(item: LinkedItem<T>): boolean {
-    const t = item as LinkedItemImpl<T>
+    const t = item as LinkedItem$<T>
     return t.tag === 0
   }
 
   markAsMoved(item: LinkedItem<T>): void {
-    const t = item as LinkedItemImpl<T>
+    const t = item as LinkedItem$<T>
     if (t.tag > 0) // if not removed, > is intentional
       t.moving = t.tag
   }
 
   static createItem<T>(instance: T): LinkedItem<T> {
-    return new LinkedItemImpl(instance, 0)
+    return new LinkedItem$(instance, 0)
   }
 }
 
-class LinkedItemImpl<T> implements LinkedItem<T> {
+class LinkedItem$<T> implements LinkedItem<T> {
   readonly instance: T
   index: number
   tag: number
   moving: number
-  next?: LinkedItemImpl<T>
-  prev?: LinkedItemImpl<T>
-  aux?: LinkedItemImpl<T>
+  next?: LinkedItem$<T>
+  prev?: LinkedItem$<T>
+  aux?: LinkedItem$<T>
 
   constructor(instance: T, tag: number) {
     this.instance = instance
@@ -313,10 +313,10 @@ class LinkedItemImpl<T> implements LinkedItem<T> {
 
 class LinkedItemChain<T> {
   count: number = 0
-  first?: LinkedItemImpl<T> = undefined
-  last?: LinkedItemImpl<T> = undefined
+  first?: LinkedItem$<T> = undefined
+  last?: LinkedItem$<T> = undefined
 
-  public *items(): Generator<LinkedItemImpl<T>> {
+  public *items(): Generator<LinkedItem$<T>> {
     let x = this.first
     while (x !== undefined) {
       const next = x.next
@@ -325,7 +325,7 @@ class LinkedItemChain<T> {
     }
   }
 
-  public *itemsAux(): Generator<LinkedItemImpl<T>> {
+  public *itemsAux(): Generator<LinkedItem$<T>> {
     let x = this.first
     while (x !== undefined) {
       const next = x.aux
@@ -359,7 +359,7 @@ class LinkedItemChain<T> {
     from.clear()
   }
 
-  include(item: LinkedItemImpl<T>): void {
+  include(item: LinkedItem$<T>): void {
     const last = this.last
     item.prev = last
     item.next = undefined
@@ -370,7 +370,7 @@ class LinkedItemChain<T> {
     this.count++
   }
 
-  includeAux(item: LinkedItemImpl<T>): void {
+  includeAux(item: LinkedItem$<T>): void {
     item.aux = undefined
     const last = this.last
     if (last)
@@ -380,7 +380,7 @@ class LinkedItemChain<T> {
     this.count++
   }
 
-  exclude(item: LinkedItemImpl<T>): void {
+  exclude(item: LinkedItem$<T>): void {
     if (item.prev !== undefined)
       item.prev.next = item.next
     if (item.next !== undefined)

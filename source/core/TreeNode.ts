@@ -63,7 +63,7 @@ export function declare<E = void>(
   finalization?: Script<E>,
   triggers?: unknown,
   basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E> {
-  let result: ReactiveTreeNodeImpl<E>
+  let result: ReactiveTreeNode$<E>
   let declaration: ReactiveTreeNodeDecl<E>
   // Normalize parameters
   if (scriptOrDeclaration instanceof Function) {
@@ -85,7 +85,7 @@ export function declare<E = void>(
       "nested elements can be declared inside 'script' only")
     if (existing) {
       // Reuse existing node
-      result = existing.instance as ReactiveTreeNodeImpl<E>
+      result = existing.instance as ReactiveTreeNode$<E>
       if (result.driver !== driver && driver !== undefined)
         throw misuse(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
       const exTriggers = result.declaration.triggers
@@ -95,13 +95,13 @@ export function declare<E = void>(
     }
     else {
       // Create new node
-      result = new ReactiveTreeNodeImpl<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
-      result.slot = children.add(result as ReactiveTreeNodeImpl<unknown>) as LinkedItem<ReactiveTreeNodeImpl<E>>
+      result = new ReactiveTreeNode$<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
+      result.slot = children.add(result as ReactiveTreeNode$<unknown>) as LinkedItem<ReactiveTreeNode$<E>>
     }
   }
   else {
     // Create new root node
-    result = new ReactiveTreeNodeImpl(effectiveKey || generateKey(owner), driver, declaration, owner)
+    result = new ReactiveTreeNode$(effectiveKey || generateKey(owner), driver, declaration, owner)
     result.slot = ReconciliationList.createItem(result)
   }
   return result
@@ -150,7 +150,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
   abstract configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions
 
   static get current(): ReactiveTreeNode {
-    return ReactiveTreeNodeImpl.nodeSlot.instance
+    return ReactiveTreeNode$.nodeSlot.instance
   }
 
   static get isFirstScriptRun(): boolean {
@@ -158,7 +158,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
   }
 
   static launchScript(node: ReactiveTreeNode<any>, triggers: unknown): void {
-    const impl = node as ReactiveTreeNodeImpl<any>
+    const impl = node as ReactiveTreeNode$<any>
     const declaration = impl.declaration
     if (node.stamp >= Number.MAX_SAFE_INTEGER || !observablesAreEqual(triggers, declaration.triggers)) {
       declaration.triggers = triggers // remember new triggers
@@ -167,16 +167,16 @@ export abstract class ReactiveTreeNode<E = unknown> {
   }
 
   static launchFinalization(node: ReactiveTreeNode<any>): void {
-    const impl = node as ReactiveTreeNodeImpl<any>
+    const impl = node as ReactiveTreeNode$<any>
     launchFinalizationViaSlot(impl.slot!, true, true)
   }
 
   static launchNestedNodesThenDo(action: (error: unknown) => void): void {
-    launchNestedNodesThenDoImpl(ReactiveTreeNodeImpl.nodeSlot, undefined, action)
+    launchNestedNodesThenDoImpl(ReactiveTreeNode$.nodeSlot, undefined, action)
   }
 
   static markAsMounted(node: ReactiveTreeNode<any>, yes: boolean): void {
-    const n = node as ReactiveTreeNodeImpl<any>
+    const n = node as ReactiveTreeNode$<any>
     if (n.stamp < 0)
       throw misuse("deactivated node cannot be mounted or unmounted")
     if (n.stamp >= Number.MAX_SAFE_INTEGER)
@@ -197,7 +197,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
 
   static findMatchingHost<E = unknown, R = unknown>(
     node: ReactiveTreeNode<E>, match: Handler<ReactiveTreeNode<E>, boolean>): ReactiveTreeNode<R> | undefined {
-    let p = node.host as ReactiveTreeNodeImpl<any>
+    let p = node.host as ReactiveTreeNode$<any>
     while (p !== p.host && !match(p))
       p = p.host
     return p
@@ -219,11 +219,11 @@ export abstract class ReactiveTreeNode<E = unknown> {
   }
 
   static getDefaultLoggingOptions(): LoggingOptions | undefined {
-    return ReactiveTreeNodeImpl.logging
+    return ReactiveTreeNode$.logging
   }
 
   static setDefaultLoggingOptions(logging?: LoggingOptions): void {
-    ReactiveTreeNodeImpl.logging = logging
+    ReactiveTreeNode$.logging = logging
   }
 }
 
@@ -323,21 +323,21 @@ export class ReactiveTreeVariable<T extends Object = Object> {
   }
 
   set value(value: T) {
-    ReactiveTreeNodeImpl.setTreeVariableValue(this, value)
+    ReactiveTreeNode$.setTreeVariableValue(this, value)
   }
 
   get value(): T {
-    return ReactiveTreeNodeImpl.useTreeVariableValue(this)
+    return ReactiveTreeNode$.useTreeVariableValue(this)
   }
 
   get valueOrUndefined(): T | undefined {
-    return ReactiveTreeNodeImpl.tryUseTreeVariableValue(this)
+    return ReactiveTreeNode$.tryUseTreeVariableValue(this)
   }
 }
 
 // Utils
 
-export function generateKey(owner?: ReactiveTreeNodeImpl): string {
+export function generateKey(owner?: ReactiveTreeNode$): string {
   const n = owner !== undefined ? owner.numerator++ : 0
   const lettered = emitLetters(n)
   let result: string
@@ -393,10 +393,10 @@ function invokeFinalizationUsingBasisChain(element: unknown, declaration: Reacti
     invokeFinalizationUsingBasisChain(element, basis)
 }
 
-// ReactiveTreeNodeContextImpl
+// ReactiveTreeNodeContext$
 
-class ReactiveTreeNodeContextImpl<T extends Object = Object> extends ObservableObject implements ReactiveTreeNodeContext<T> {
-  @observable(false) next: ReactiveTreeNodeContextImpl<object> | undefined
+class ReactiveTreeNodeContext$<T extends Object = Object> extends ObservableObject implements ReactiveTreeNodeContext<T> {
+  @observable(false) next: ReactiveTreeNodeContext$<object> | undefined
   @observable(false) variable: ReactiveTreeVariable<T>
   value: T
 
@@ -410,7 +410,7 @@ class ReactiveTreeNodeContextImpl<T extends Object = Object> extends ObservableO
 
 // ReactiveTreeNodeImpl
 
-class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
+class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   static logging: LoggingOptions | undefined = undefined
   static grandNodeCount: number = 0
   static disposableNodeCount: number = 0
@@ -419,14 +419,14 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   readonly driver: ReactiveTreeNodeDriver<E>
   declaration: ReactiveTreeNodeDecl<E>
   readonly level: number
-  readonly owner: ReactiveTreeNodeImpl
+  readonly owner: ReactiveTreeNode$
   readonly element: E
-  host: ReactiveTreeNodeImpl
-  readonly children: ReconciliationList<ReactiveTreeNodeImpl>
-  slot: LinkedItem<ReactiveTreeNodeImpl<E>> | undefined
+  host: ReactiveTreeNode$
+  readonly children: ReconciliationList<ReactiveTreeNode$>
+  slot: LinkedItem<ReactiveTreeNode$<E>> | undefined
   stamp: number
-  outer: ReactiveTreeNodeImpl
-  context: ReactiveTreeNodeContextImpl<any> | undefined
+  outer: ReactiveTreeNode$
+  context: ReactiveTreeNodeContext$<any> | undefined
   numerator: number
   priority: Priority
   childrenShuffling: boolean
@@ -434,9 +434,9 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   constructor(
     key: string, driver: ReactiveTreeNodeDriver<E>,
     declaration: Readonly<ReactiveTreeNodeDecl<E>>,
-    owner: ReactiveTreeNodeImpl | undefined) {
+    owner: ReactiveTreeNode$ | undefined) {
     super()
-    const thisAsUnknown = this as ReactiveTreeNodeImpl<unknown>
+    const thisAsUnknown = this as ReactiveTreeNode$<unknown>
     this.key = key
     this.driver = driver
     this.declaration = declaration
@@ -453,7 +453,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
     }
     this.element = driver.create(this)
     this.host = thisAsUnknown // node is unmounted
-    this.children = new ReconciliationList<ReactiveTreeNodeImpl>(getNodeKey, true)
+    this.children = new ReconciliationList<ReactiveTreeNode$>(getNodeKey, true)
     this.slot = undefined
     this.stamp = Number.MAX_SAFE_INTEGER // newly created
     this.context = undefined
@@ -461,9 +461,9 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
     this.priority = Priority.realtime
     this.childrenShuffling = false
     // Monitoring
-    ReactiveTreeNodeImpl.grandNodeCount++
+    ReactiveTreeNode$.grandNodeCount++
     if (this.has(Mode.autonomous))
-      ReactiveTreeNodeImpl.disposableNodeCount++
+      ReactiveTreeNode$.disposableNodeCount++
   }
 
   getUri(relativeTo?: ReactiveTreeNode<any>): string {
@@ -486,7 +486,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
   }
 
   get isMoved(): boolean {
-    return this.owner.children.isMoved(this.slot! as LinkedItem<ReactiveTreeNodeImpl>)
+    return this.owner.children.isMoved(this.slot! as LinkedItem<ReactiveTreeNode$>)
   }
 
   has(mode: Mode): boolean {
@@ -511,28 +511,28 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
     return manageReactiveOperation(this.script).configure(options)
   }
 
-  static get nodeSlot(): LinkedItem<ReactiveTreeNodeImpl> {
+  static get nodeSlot(): LinkedItem<ReactiveTreeNode$> {
     if (!gNodeSlot)
       throw misuse("current element is undefined")
     return gNodeSlot
   }
 
   static tryUseTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T | undefined {
-    let node = ReactiveTreeNodeImpl.nodeSlot.instance
+    let node = ReactiveTreeNode$.nodeSlot.instance
     while (node.context?.variable !== variable && node.owner !== node)
       node = node.outer.slot!.instance
     return node.context?.value as any // TODO: to get rid of any
   }
 
   static useTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T {
-    const result = ReactiveTreeNodeImpl.tryUseTreeVariableValue(variable) ?? variable.defaultValue
+    const result = ReactiveTreeNode$.tryUseTreeVariableValue(variable) ?? variable.defaultValue
     if (!result)
       throw misuse("unknown node variable")
     return result
   }
 
   static setTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>, value: T | undefined): void {
-    const node = ReactiveTreeNodeImpl.nodeSlot.instance
+    const node = ReactiveTreeNode$.nodeSlot.instance
     const owner = node.owner
     const hostCtx = runNonReactively(() => owner.context?.value)
     if (value && value !== hostCtx) {
@@ -547,7 +547,7 @@ class ReactiveTreeNodeImpl<E = unknown> extends ReactiveTreeNode<E> {
           ctx.value = value // update context thus invalidate reactions
         }
         else
-          node.context = new ReactiveTreeNodeContextImpl<any>(variable, value)
+          node.context = new ReactiveTreeNodeContext$<any>(variable, value)
       })
     }
     else if (hostCtx)
@@ -574,7 +574,7 @@ function getNodeKey(node: ReactiveTreeNode): string | undefined {
   return node.stamp >= 0 ? node.key : undefined
 }
 
-function launchNestedNodesThenDoImpl(nodeSlot: LinkedItem<ReactiveTreeNodeImpl<any>>, error: unknown, action: (error: unknown) => void): void {
+function launchNestedNodesThenDoImpl(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>, error: unknown, action: (error: unknown) => void): void {
   runInsideContextOfNode(nodeSlot, () => {
     const owner = nodeSlot.instance
     const children = owner.children
@@ -588,8 +588,8 @@ function launchNestedNodesThenDoImpl(nodeSlot: LinkedItem<ReactiveTreeNodeImpl<a
         if (!error) {
           // Lay out and update actual elements
           const sequential = children.isStrict
-          let p1: Array<LinkedItem<ReactiveTreeNodeImpl>> | undefined = undefined
-          let p2: Array<LinkedItem<ReactiveTreeNodeImpl>> | undefined = undefined
+          let p1: Array<LinkedItem<ReactiveTreeNode$>> | undefined = undefined
+          let p2: Array<LinkedItem<ReactiveTreeNode$>> | undefined = undefined
           let mounting = false
           let partition = owner
           for (const child of children.items()) {
@@ -625,8 +625,8 @@ function launchNestedNodesThenDoImpl(nodeSlot: LinkedItem<ReactiveTreeNodeImpl<a
   })
 }
 
-function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNodeImpl,
-  nodeSlot: LinkedItem<ReactiveTreeNodeImpl>, children: ReconciliationList<ReactiveTreeNodeImpl>, sequential: boolean): boolean {
+function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNode$,
+  nodeSlot: LinkedItem<ReactiveTreeNode$>, children: ReconciliationList<ReactiveTreeNode$>, sequential: boolean): boolean {
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
   const node = nodeSlot.instance
@@ -644,10 +644,10 @@ function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNodeImpl,
 }
 
 async function startIncrementalNestedScriptsRun(
-  ownerSlot: LinkedItem<ReactiveTreeNodeImpl>,
-  allChildren: ReconciliationList<ReactiveTreeNodeImpl>,
-  priority1?: Array<LinkedItem<ReactiveTreeNodeImpl>>,
-  priority2?: Array<LinkedItem<ReactiveTreeNodeImpl>>): Promise<void> {
+  ownerSlot: LinkedItem<ReactiveTreeNode$>,
+  allChildren: ReconciliationList<ReactiveTreeNode$>,
+  priority1?: Array<LinkedItem<ReactiveTreeNode$>>,
+  priority2?: Array<LinkedItem<ReactiveTreeNode$>>): Promise<void> {
   const stamp = ownerSlot.instance.stamp
   if (priority1)
     await runNestedScriptsIncrementally(ownerSlot, stamp, allChildren, priority1, Priority.normal)
@@ -655,14 +655,14 @@ async function startIncrementalNestedScriptsRun(
     await runNestedScriptsIncrementally(ownerSlot, stamp, allChildren, priority2, Priority.background)
 }
 
-async function runNestedScriptsIncrementally(owner: LinkedItem<ReactiveTreeNodeImpl>, stamp: number,
-  allChildren: ReconciliationList<ReactiveTreeNodeImpl>, items: Array<LinkedItem<ReactiveTreeNodeImpl>>,
+async function runNestedScriptsIncrementally(owner: LinkedItem<ReactiveTreeNode$>, stamp: number,
+  allChildren: ReconciliationList<ReactiveTreeNode$>, items: Array<LinkedItem<ReactiveTreeNode$>>,
   priority: Priority): Promise<void> {
   await Transaction.requestNextFrame()
   const node = owner.instance
-  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, ReactiveTreeNodeImpl.shortFrameDuration / 3)) {
-    let outerPriority = ReactiveTreeNodeImpl.currentScriptPriority
-    ReactiveTreeNodeImpl.currentScriptPriority = priority
+  if (!Transaction.isCanceled || !Transaction.isFrameOver(1, ReactiveTreeNode$.shortFrameDuration / 3)) {
+    let outerPriority = ReactiveTreeNode$.currentScriptPriority
+    ReactiveTreeNode$.currentScriptPriority = priority
     try {
       if (node.childrenShuffling)
         shuffle(items)
@@ -671,10 +671,10 @@ async function runNestedScriptsIncrementally(owner: LinkedItem<ReactiveTreeNodeI
       for (const child of items) {
         launchScriptViaSlot(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
-          ReactiveTreeNodeImpl.currentScriptPriority = outerPriority
+          ReactiveTreeNode$.currentScriptPriority = outerPriority
           await Transaction.requestNextFrame(0)
-          outerPriority = ReactiveTreeNodeImpl.currentScriptPriority
-          ReactiveTreeNodeImpl.currentScriptPriority = priority
+          outerPriority = ReactiveTreeNode$.currentScriptPriority
+          ReactiveTreeNode$.currentScriptPriority = priority
           frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveTreeNode.frameDuration))
         }
         if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveTreeNode.shortFrameDuration / 3))
@@ -682,12 +682,12 @@ async function runNestedScriptsIncrementally(owner: LinkedItem<ReactiveTreeNodeI
       }
     }
     finally {
-      ReactiveTreeNodeImpl.currentScriptPriority = outerPriority
+      ReactiveTreeNode$.currentScriptPriority = outerPriority
     }
   }
 }
 
-function launchScriptViaSlot(nodeSlot: LinkedItem<ReactiveTreeNodeImpl<any>>): void {
+function launchScriptViaSlot(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) { // if not deactivated yet
     if (node.has(Mode.autonomous)) {
@@ -709,7 +709,7 @@ function launchScriptViaSlot(nodeSlot: LinkedItem<ReactiveTreeNodeImpl<any>>): v
   }
 }
 
-function mountOrRemountIfNecessary(node: ReactiveTreeNodeImpl): void {
+function mountOrRemountIfNecessary(node: ReactiveTreeNode$): void {
   const driver = node.driver
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
     runNonReactively(() => {
@@ -726,7 +726,7 @@ function mountOrRemountIfNecessary(node: ReactiveTreeNodeImpl): void {
     runNonReactively(() => driver.runMount(node)) // re-mount
 }
 
-function runScriptNow(nodeSlot: LinkedItem<ReactiveTreeNodeImpl<any>>): void {
+function runScriptNow(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
@@ -753,7 +753,7 @@ function runScriptNow(nodeSlot: LinkedItem<ReactiveTreeNodeImpl<any>>): void {
   }
 }
 
-function launchFinalizationViaSlot(nodeSlot: LinkedItem<ReactiveTreeNodeImpl>, isLeader: boolean, individual: boolean): void {
+function launchFinalizationViaSlot(nodeSlot: LinkedItem<ReactiveTreeNode$>, isLeader: boolean, individual: boolean): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) {
     const driver = node.driver
@@ -778,7 +778,7 @@ function launchFinalizationViaSlot(nodeSlot: LinkedItem<ReactiveTreeNodeImpl>, i
     // Finalize children
     for (const child of node.children.items())
       launchFinalizationViaSlot(child, childrenAreLeaders, false)
-    ReactiveTreeNodeImpl.grandNodeCount--
+    ReactiveTreeNode$.grandNodeCount--
   }
 }
 
@@ -790,7 +790,7 @@ async function runDisposalLoop(): Promise<void> {
       await Transaction.requestNextFrame()
     disposeObservableObject(slot.instance)
     slot = slot.aux
-    ReactiveTreeNodeImpl.disposableNodeCount--
+    ReactiveTreeNode$.disposableNodeCount--
   }
   // console.log(`Element count: ${ReactiveTreeNodeImpl.grandNodeCount} totally (${ReactiveTreeNodeImpl.disposableNodeCount} disposable)`)
   gFirstToDispose = gLastToDispose = undefined // reset loop
@@ -808,7 +808,7 @@ function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T 
   return wrappedToRunInside
 }
 
-function runInsideContextOfNode<T>(nodeSlot: LinkedItem<ReactiveTreeNodeImpl>, func: (...args: any[]) => T, ...args: any[]): T {
+function runInsideContextOfNode<T>(nodeSlot: LinkedItem<ReactiveTreeNode$>, func: (...args: any[]) => T, ...args: any[]): T {
   const outer = gNodeSlot
   try {
     gNodeSlot = nodeSlot
@@ -885,6 +885,6 @@ Promise.prototype.then = reactronicDomHookedThen
 const NOP: any = (...args: any[]): void => { /* nop */ }
 const NOP_ASYNC: any = async (...args: any[]): Promise<void> => { /* nop */ }
 
-let gNodeSlot: LinkedItem<ReactiveTreeNodeImpl> | undefined = undefined
-let gFirstToDispose: LinkedItem<ReactiveTreeNodeImpl> | undefined = undefined
-let gLastToDispose: LinkedItem<ReactiveTreeNodeImpl> | undefined = undefined
+let gNodeSlot: LinkedItem<ReactiveTreeNode$> | undefined = undefined
+let gFirstToDispose: LinkedItem<ReactiveTreeNode$> | undefined = undefined
+let gLastToDispose: LinkedItem<ReactiveTreeNode$> | undefined = undefined
