@@ -335,12 +335,6 @@ abstract class AbstractSubChain<T> implements SubChainReader<T> {
     }
   }
 
-  clear(): void {
-    this.count = 0
-    this.first = undefined
-    this.last = undefined
-  }
-
   include(item: Chained$<T>): void {
     const last = this.last
     this.setActualPrevOf(item, last)
@@ -362,6 +356,12 @@ abstract class AbstractSubChain<T> implements SubChainReader<T> {
     if (item === this.first)
       this.first = this.getActualNextOf(item)
     this.count--
+  }
+
+  clear(): void {
+    this.count = 0
+    this.first = undefined
+    this.last = undefined
   }
 }
 
