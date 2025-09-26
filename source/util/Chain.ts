@@ -232,6 +232,8 @@ export class Chain<T> implements ChainReader<T> {
   }
 }
 
+// Chained$
+
 class Chained$<T> implements Chained<T> {
   readonly payload: T
   index: number
@@ -253,6 +255,8 @@ class Chained$<T> implements Chained<T> {
     return this.tag % TAG_FACTOR
   }
 }
+
+// AbstractSubChain
 
 abstract class AbstractSubChain<T> implements SubChainReader<T> {
   count: number = 0
@@ -303,6 +307,8 @@ abstract class AbstractSubChain<T> implements SubChainReader<T> {
   }
 }
 
+// SubChain
+
 class SubChain<T> extends AbstractSubChain<T> {
   override getActualNextOf(item: Chained$<T>): Chained$<T> | undefined {
     return item.next
@@ -341,6 +347,8 @@ class SubChain<T> extends AbstractSubChain<T> {
     from.clear()
   }
 }
+
+// AuxSubChain
 
 class AuxSubChain<T> extends AbstractSubChain<T> {
   override getActualNextOf(item: Chained$<T>): Chained$<T> | undefined {
