@@ -12,7 +12,7 @@ export type GetChainItemKey<T = unknown> = (payload: T) => string | undefined
 const TAG_FACTOR = 4
 
 export enum ChainedItemStatus {
-  retained = 0,
+  reused = 0,
   added = 1,
   moved = 2,
   removed = 3,
@@ -117,7 +117,7 @@ export class Chain<T> implements ChainReader<T> {
         if (this.isStrict$ && item !== this.expectedNextItem)
           this.setChainedItemStatus(item, ChainedItemStatus.moved)
         else
-          this.setChainedItemStatus(item, ChainedItemStatus.retained)
+          this.setChainedItemStatus(item, ChainedItemStatus.reused)
         this.expectedNextItem = this.removed$.getActualNextOf(item)
         this.removed$.exclude(item)
         item.index = this.actual$.count
