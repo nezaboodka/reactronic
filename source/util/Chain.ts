@@ -360,11 +360,11 @@ class AuxSubChain<T> extends AbstractSubChain<T> {
   }
 
   override getActualPrevOf(item: Chained$<T>): Chained$<T> | undefined {
-    throw misuse("aux sub chain is not two-way linked")
+    return undefined
   }
 
   override setActualPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined {
-    throw misuse("aux sub chain is not two-way linked")
+    return undefined
   }
 }
 
