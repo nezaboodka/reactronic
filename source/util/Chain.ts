@@ -9,8 +9,6 @@ import { misuse } from "./Dbg.js"
 
 export type GetChainItemKey<T = unknown> = (payload: T) => string | undefined
 
-const TAG_FACTOR = 4
-
 export enum UpdateStatus {
   reused = 0,
   added = 1,
@@ -369,3 +367,5 @@ class AuxSubChain<T> extends AbstractSubChain<T> {
     throw misuse("aux sub chain is not two-way linked")
   }
 }
+
+const TAG_FACTOR = 4
