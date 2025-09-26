@@ -93,7 +93,7 @@ export class Chain<T> implements ChainReader<T> {
     let result: Chained<T> | undefined = undefined
     if (key !== undefined && key !== this.lastNotFoundKey) {
       result = this.map.get(key)
-      if (result) {
+      if (result !== undefined) {
         if (this.getKey(result.payload) !== key) {
           this.lastNotFoundKey = key
           result = undefined
@@ -111,7 +111,7 @@ export class Chain<T> implements ChainReader<T> {
     let item = this.expectedNextItem
     if (key !== (item ? this.getKey(item.payload) : undefined))
       item = this.lookup(key) as Chained$<T> | undefined
-    if (item) {
+    if (item !== undefined) {
       if (!this.tagMatchesTo(item)) {
         if (this.isStrict$ && item !== this.expectedNextItem)
           this.setChainedItemStatus(item, ChainedItemStatus.moved)
@@ -280,7 +280,7 @@ abstract class AbstractSubChain<T> implements SubChainReader<T> {
     const last = this.last
     this.setActualPrevOf(item, last)
     this.setActualNextOf(item, undefined)
-    if (last)
+    if (last !== undefined)
       this.last = this.setActualNextOf(last, item)
     else
       this.first = this.last = item
@@ -329,10 +329,10 @@ class SubChain<T> extends AbstractSubChain<T> {
 
   grabFrom(from: SubChain<T>, join: boolean): void {
     const head = from.first
-    if (join && head) {
+    if (join !== undefined && head !== undefined) {
       const last = this.last
       this.setActualPrevOf(head, last)
-      if (last)
+      if (last !== undefined)
         this.last = this.setActualNextOf(last, head)
       else
         this.first = this.last = head
