@@ -9,14 +9,14 @@ import { misuse } from "./Dbg.js"
 
 export type GetChainItemKey<T = unknown> = (payload: T) => string | undefined
 
+const TAG_FACTOR = 4
+
 export enum ChainedItemStatus {
   retained = 0,
   added = 1,
   moved = 2,
   removed = 3,
 }
-
-const TAG_FACTOR = 4
 
 export type Chained<T> = {
   readonly payload: T
@@ -33,6 +33,12 @@ export type ChainReader<T> = {
   readonly added: SubChainReader<T>
   readonly removed: SubChainReader<T>
   lookup(key: string): Chained<T> | undefined
+}
+
+export type SubChainReader<T> = {
+  readonly count: number
+  readonly first?: Chained<T>
+  readonly last?: Chained<T>
 }
 
 // Chain / Цепочка
@@ -308,12 +314,6 @@ class Chained$<T> implements Chained<T> {
   get status(): ChainedItemStatus {
     return this.tag % TAG_FACTOR
   }
-}
-
-export type SubChainReader<T> = {
-  readonly count: number
-  readonly first?: Chained<T>
-  readonly last?: Chained<T>
 }
 
 abstract class AbstractSubChain<T> implements SubChainReader<T> {
