@@ -112,7 +112,7 @@ export class Chain<T> implements ChainReader<T> {
           this.setChainedItemStatus(item, ChainedItemStatus.moved)
         else
           this.setChainedItemStatus(item, ChainedItemStatus.retained)
-        this.expectedNextItem = item.next
+        this.expectedNextItem = this.removed$.getActualNextOf(item)
         this.removed$.exclude(item)
         item.index = this.actual$.count
         this.actual$.include(item)
@@ -321,12 +321,12 @@ abstract class AbstractSubChain<T> implements SubChainReader<T> {
   first?: Chained$<T> = undefined
   last?: Chained$<T> = undefined
 
-  protected abstract getActualNextOf(item: Chained$<T>): Chained$<T> | undefined
-  protected abstract setActualNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined
-  protected abstract getActualPrevOf(item: Chained$<T>): Chained$<T> | undefined
-  protected abstract setActualPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined
+  abstract getActualNextOf(item: Chained$<T>): Chained$<T> | undefined
+  abstract setActualNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined
+  abstract getActualPrevOf(item: Chained$<T>): Chained$<T> | undefined
+  abstract setActualPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined
 
-  public *items(): Generator<Chained$<T>> {
+  *items(): Generator<Chained$<T>> {
     let x = this.first
     while (x !== undefined) {
       const next = this.getActualNextOf(x)
@@ -366,20 +366,20 @@ abstract class AbstractSubChain<T> implements SubChainReader<T> {
 }
 
 class SubChain<T> extends AbstractSubChain<T> {
-  protected override getActualNextOf(item: Chained$<T>): Chained$<T> | undefined {
+  override getActualNextOf(item: Chained$<T>): Chained$<T> | undefined {
     return item.next
   }
 
-  protected override setActualNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined {
+  override setActualNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined {
     item.next = next
     return next
   }
 
-  protected override getActualPrevOf(item: Chained$<T>): Chained$<T> | undefined {
+  override getActualPrevOf(item: Chained$<T>): Chained$<T> | undefined {
     return item.prev
   }
 
-  protected override setActualPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined {
+  override setActualPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined {
     item.prev = prev
     return prev
   }
@@ -388,7 +388,7 @@ class SubChain<T> extends AbstractSubChain<T> {
     const head = from.first
     if (join && head) {
       const last = this.last
-      head.prev = last
+      this.setActualPrevOf(head, last)
       if (last)
         this.last = this.setActualNextOf(last, head)
       else
@@ -405,20 +405,20 @@ class SubChain<T> extends AbstractSubChain<T> {
 }
 
 class AuxSubChain<T> extends AbstractSubChain<T> {
-  protected override getActualNextOf(item: Chained$<T>): Chained$<T> | undefined {
+  override getActualNextOf(item: Chained$<T>): Chained$<T> | undefined {
     return item.aux
   }
 
-  protected override setActualNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined {
+  override setActualNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined {
     item.aux = next
     return next
   }
 
-  protected override getActualPrevOf(item: Chained$<T>): Chained$<T> | undefined {
+  override getActualPrevOf(item: Chained$<T>): Chained$<T> | undefined {
     throw misuse("aux sub chain is not two-way linked")
   }
 
-  protected override setActualPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined {
+  override setActualPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined {
     throw misuse("aux sub chain is not two-way linked")
   }
 }
