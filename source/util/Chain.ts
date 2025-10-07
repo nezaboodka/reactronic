@@ -67,7 +67,7 @@ export class Chain<T> implements ChainReader<T> {
   get isStrict(): boolean { return this.isStrict$ }
   set isStrict(value: boolean) {
     if (this.isUpdateInProgress && this.actual$.count > 0)
-      throw misuse("cannot change strict mode in the middle of reconciliation")
+      throw misuse("cannot change strict mode in the middle of update")
     this.isStrict$ = value
   }
 
@@ -110,11 +110,12 @@ export class Chain<T> implements ChainReader<T> {
     if (key !== (item ? this.getKey(item.payload) : undefined))
       item = this.lookup(key) as Chained$<T> | undefined
     if (item !== undefined) {
-      if (!this.markerMatchesTo(item)) {
+      const marker = this.marker
+      if (!matching(item.marker, marker)) {
         if (this.isStrict$ && item !== this.expectedNextItem)
-          this.mark(item, UpdateStatus.moved)
+          item.marker = pack(UpdateStatus.moved, marker)
         else
-          this.mark(item, UpdateStatus.reused)
+          item.marker = pack(UpdateStatus.reused, marker)
         this.expectedNextItem = this.removedDuringUpdate$.getActualNextOf(item)
         this.removedDuringUpdate$.exclude(item)
         item.index = this.actual$.count
@@ -136,14 +137,15 @@ export class Chain<T> implements ChainReader<T> {
     const key = this.getKey(instance)
     if (this.lookup(key) !== undefined)
       throw misuse(`key is already in use: ${key}`)
-    const marker = this.marker > 0 ? this.marker : 0
-    const item = new Chained$<T>(instance, marker)
+    const marker = this.marker
+    const m = pack(marker > 0 ? UpdateStatus.added : UpdateStatus.reused, marker) 
+    const item = new Chained$<T>(instance, m)
     this.map.set(key, item)
     this.lastNotFoundKey = undefined
     this.expectedNextItem = undefined
     item.index = this.actual$.count
     this.actual$.include(item, before as Chained$<T>)
-    if (marker !== 0) // if not external
+    if (marker > 0)
       this.addedDuringUpdate$.include(item)
     return item
   }
@@ -152,8 +154,11 @@ export class Chain<T> implements ChainReader<T> {
     if (item.status !== UpdateStatus.removed) {
       const x = item as Chained$<T>
       this.actual$.exclude(x)
-      this.removedDuringUpdate$.include(x)
-      this.mark(x, UpdateStatus.removed)
+      const marker = this.marker
+      if (marker > 0) {
+        this.removedDuringUpdate$.include(x)
+        x.marker = pack(UpdateStatus.removed, marker)
+      }
     }
   }
 
@@ -162,8 +167,11 @@ export class Chain<T> implements ChainReader<T> {
   }
 
   markAsMoved(item: Chained<T>): void {
+    const marker = this.marker
+    if (marker < 0)
+      throw misuse("item cannot be marked as moved outside of update cycle")
     const x = item as Chained$<T>
-    this.mark(x, UpdateStatus.moved)
+    x.marker = pack(UpdateStatus.moved, marker)
   }
 
   beginUpdate(): void {
@@ -184,7 +192,7 @@ export class Chain<T> implements ChainReader<T> {
       const getKey = this.getKey
       const map = this.map
       for (const x of this.removedDuringUpdate$.items()) {
-        this.mark(x, UpdateStatus.removed)
+        x.marker = pack(UpdateStatus.removed, marker)
         map.delete(getKey(x.payload))
       }
     }
@@ -208,17 +216,18 @@ export class Chain<T> implements ChainReader<T> {
   static createItem<T>(instance: T): Chained<T> {
     return new Chained$<T>(instance, 0)
   }
+}
 
-  // Internal
-
-  private markerMatchesTo(item: Chained$<T>): boolean {
-    return Math.trunc(item.marker / MARKER_SIZE) === this.marker
+function matching(itemMarker: number, chainMarker: number): boolean {
+    return Math.trunc(itemMarker / UPDATE_STATUS_SIZE) === chainMarker
   }
 
-  private mark(item: Chained$<T>, status: UpdateStatus): void {
-    const marker = this.marker > 0 ? this.marker : ~this.marker
-    item.marker = marker * MARKER_SIZE + status
-  }
+  function pack(status: UpdateStatus, chainMarker: number): number {
+  return chainMarker * UPDATE_STATUS_SIZE + status
+}
+
+function unpack(marker: number): UpdateStatus {
+  return marker % UPDATE_STATUS_SIZE
 }
 
 // Chained$
@@ -226,22 +235,22 @@ export class Chain<T> implements ChainReader<T> {
 class Chained$<T> implements Chained<T> {
   readonly payload: T
   index: number
-  marker: number
   next?: Chained$<T>
   prev?: Chained$<T>
   aux?: Chained$<T>
+  marker: number
 
   constructor(instance: T, marker: number) {
     this.payload = instance
     this.index = -1
-    this.marker = marker
     this.next = undefined
     this.prev = undefined
     this.aux = undefined
+    this.marker = marker
   }
 
   get status(): UpdateStatus {
-    return this.marker % MARKER_SIZE
+    return unpack(this.marker)
   }
 }
 
@@ -358,4 +367,4 @@ class AuxSubChain$<T> extends AbstractSubChain<T> {
   }
 }
 
-const MARKER_SIZE = 4
+const UPDATE_STATUS_SIZE = 4
