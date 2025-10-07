@@ -222,7 +222,7 @@ function matching(itemMarker: number, chainMarker: number): boolean {
     return Math.trunc(itemMarker / UPDATE_STATUS_SIZE) === chainMarker
   }
 
-  function pack(status: UpdateStatus, chainMarker: number): number {
+function pack(status: UpdateStatus, chainMarker: number): number {
   return chainMarker * UPDATE_STATUS_SIZE + status
 }
 
