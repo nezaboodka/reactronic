@@ -139,8 +139,8 @@ export class Chain<T> implements ChainReader<T> {
     if (this.lookup(key) !== undefined)
       throw misuse(`key is already in use: ${key}`)
     const m = this.marker
-    const packed = m > 0 ? m + UpdateStatus.added : m
-    const item = new Chained$<T>(instance, packed)
+    const item = new Chained$<T>(instance,
+      m > 0 ? m + UpdateStatus.added : m)
     this.map.set(key, item)
     this.lastNotFoundKey = undefined
     this.expectedNextItem = undefined
