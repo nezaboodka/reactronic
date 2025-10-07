@@ -156,7 +156,7 @@ export class Chain<T> implements ChainReader<T> {
       const x = item as Chained$<T>
       this.actual$.exclude(x)
       const m = this.marker
-      if (m > 0) {
+      if (m > 0) { // update is in progress
         this.removedDuringUpdate$.include(x)
         x.marker = m + UpdateStatus.removed
       }
@@ -187,7 +187,7 @@ export class Chain<T> implements ChainReader<T> {
 
   endUpdate(error?: unknown): void {
     const m = this.marker
-    if (m < 0)
+    if (m <= 0)
       throw misuse("update is ended already")
     if (error === undefined) {
       const getKey = this.getKey
