@@ -66,7 +66,7 @@ export class Chain<T> implements ChainReader<T> {
 
   get isStrict(): boolean { return this.isStrict$ }
   set isStrict(value: boolean) {
-    if (this.isUpdateInProgress && this.actual$.count > 0)
+    if (this.marker > 0)
       throw misuse("cannot change strict mode in the middle of update")
     this.isStrict$ = value
   }
