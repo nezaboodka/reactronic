@@ -9,19 +9,20 @@ import { misuse } from "./Dbg.js"
 
 export type GetChainItemKey<T = unknown> = (payload: T) => string | undefined
 
-export enum UpdateStatus {
+export enum Mark {
   reused = 0,
   added = 1,
   moved = 2,
   removed = 3,
 }
 
-export type Chained<T> = {
-  readonly payload: T
+export type Spot<T> = {
+  readonly node: T
+  readonly owner: Spot<T>
   readonly index: number
-  readonly status: UpdateStatus
-  readonly next?: Chained<T>
-  readonly prev?: Chained<T>
+  readonly mark: Mark
+  readonly next?: Spot<T>
+  readonly prev?: Spot<T>
 }
 
 export type ChainReader<T> = {
@@ -30,13 +31,13 @@ export type ChainReader<T> = {
   readonly actual: SubChain<T>
   readonly addedDuringUpdate: SubChain<T>
   readonly removedDuringUpdate: SubChain<T>
-  lookup(key: string): Chained<T> | undefined
+  lookup(key: string): Spot<T> | undefined
 }
 
 export type SubChain<T> = {
   readonly count: number
-  readonly first?: Chained<T>
-  readonly last?: Chained<T>
+  readonly first?: Spot<T>
+  readonly last?: Spot<T>
 }
 
 // Chain / Цепочка
@@ -44,18 +45,18 @@ export type SubChain<T> = {
 export class Chain<T> implements ChainReader<T> {
   readonly getKey: GetChainItemKey<T>
   private isStrict$: boolean
-  private map: Map<string | undefined, Chained$<T>>
+  private map: Map<string | undefined, Spot$<T>>
   private marker: number
   private actual$: SubChain$<T>
   private addedDuringUpdate$: AuxSubChain$<T>
   private removedDuringUpdate$: SubChain$<T>
   private lastNotFoundKey: string | undefined
-  private expectedNextItem?: Chained$<T>
+  private expectedNextItem?: Spot$<T>
 
   constructor(getKey: GetChainItemKey<T>, isStrict: boolean = false) {
     this.getKey = getKey
     this.isStrict$ = isStrict
-    this.map = new Map<string | undefined, Chained$<T>>()
+    this.map = new Map<string | undefined, Spot$<T>>()
     this.marker = ~1
     this.actual$ = new SubChain$<T>()
     this.addedDuringUpdate$ = new AuxSubChain$<T>()
@@ -87,12 +88,12 @@ export class Chain<T> implements ChainReader<T> {
     return this.removedDuringUpdate$
   }
 
-  lookup(key: string | undefined): Chained<T> | undefined {
-    let result: Chained<T> | undefined = undefined
+  lookup(key: string | undefined): Spot<T> | undefined {
+    let result: Spot<T> | undefined = undefined
     if (key !== undefined && key !== this.lastNotFoundKey) {
       result = this.map.get(key)
       if (result !== undefined) {
-        if (this.getKey(result.payload) !== key) {
+        if (this.getKey(result.node) !== key) {
           this.lastNotFoundKey = key
           result = undefined
         }
@@ -103,20 +104,20 @@ export class Chain<T> implements ChainReader<T> {
     return result
   }
 
-  tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Chained<T> | undefined {
+  tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Spot<T> | undefined {
     const m = this.marker
     if (m <= 0)
       throw misuse(error ?? "update is not in progress")
     let item = this.expectedNextItem
-    if (key !== (item ? this.getKey(item.payload) : undefined))
-      item = this.lookup(key) as Chained$<T> | undefined
+    if (key !== (item ? this.getKey(item.node) : undefined))
+      item = this.lookup(key) as Spot$<T> | undefined
     if (item !== undefined) {
-      const distance = item.marker - m
-      if (distance < 0 || distance >= STATUS_SIZE) {
+      const distance = item.mark$ - m
+      if (distance < 0 || distance >= MARK_MOD) {
         if (this.isStrict$ && item !== this.expectedNextItem)
-          item.marker = m + UpdateStatus.moved
+          item.mark$ = m + Mark.moved
         else
-          item.marker = m + UpdateStatus.reused
+          item.mark$ = m + Mark.reused
         this.expectedNextItem = this.removedDuringUpdate$.nextOf(item)
         this.removedDuringUpdate$.exclude(item)
         item.index = this.actual$.count
@@ -134,52 +135,52 @@ export class Chain<T> implements ChainReader<T> {
     return item
   }
 
-  add(instance: T, before?: Chained<T>): Chained<T> {
+  add(instance: T, before?: Spot<T>): Spot<T> {
     const key = this.getKey(instance)
     if (this.lookup(key) !== undefined)
       throw misuse(`key is already in use: ${key}`)
     const m = this.marker
-    const item = new Chained$<T>(instance,
-      m > 0 ? m + UpdateStatus.added : m)
+    const item = new Spot$<T>(instance,
+      m > 0 ? m + Mark.added : m)
     this.map.set(key, item)
     this.lastNotFoundKey = undefined
     this.expectedNextItem = undefined
     item.index = this.actual$.count
-    this.actual$.include(item, before as Chained$<T>)
+    this.actual$.include(item, before as Spot$<T>)
     if (m > 0) // update is in progress
       this.addedDuringUpdate$.include(item)
     return item
   }
 
-  remove(item: Chained<T>): void {
-    if (item.status !== UpdateStatus.removed) {
-      const x = item as Chained$<T>
+  remove(item: Spot<T>): void {
+    if (item.mark !== Mark.removed) {
+      const x = item as Spot$<T>
       this.actual$.exclude(x)
       const m = this.marker
       if (m > 0) { // update is in progress
         this.removedDuringUpdate$.include(x)
-        x.marker = m + UpdateStatus.removed
+        x.mark$ = m + Mark.removed
       }
     }
   }
 
-  move(item: Chained<T>, before: Chained<T> | undefined): void {
+  move(item: Spot<T>, before: Spot<T> | undefined): void {
     throw misuse("not implemented")
   }
 
-  markAsMoved(item: Chained<T>): void {
+  markAsMoved(item: Spot<T>): void {
     const m = this.marker
     if (m <= 0) // update is not in progress
       throw misuse("item cannot be marked as moved outside of update cycle")
-    const x = item as Chained$<T>
-    x.marker = m + UpdateStatus.moved
+    const x = item as Spot$<T>
+    x.mark$ = m + Mark.moved
   }
 
   beginUpdate(): void {
     const m = this.marker
     if (m > 0)
       throw misuse("update is in progress already")
-    this.marker = ~m + STATUS_SIZE
+    this.marker = ~m + MARK_MOD
     this.expectedNextItem = this.actual$.first
     this.removedDuringUpdate$.grab(this.actual$, false)
     this.addedDuringUpdate$.clear()
@@ -193,15 +194,15 @@ export class Chain<T> implements ChainReader<T> {
       const getKey = this.getKey
       const map = this.map
       for (const x of this.removedDuringUpdate$.items()) {
-        x.marker = m + UpdateStatus.removed
-        map.delete(getKey(x.payload))
+        x.mark$ = m + Mark.removed
+        map.delete(getKey(x.node))
       }
     }
     else {
       this.actual$.grab(this.removedDuringUpdate$, true)
       const getKey = this.getKey
       for (const x of this.addedDuringUpdate$.items()) {
-        this.map.delete(getKey(x.payload))
+        this.map.delete(getKey(x.node))
         this.actual$.exclude(x)
       }
       this.addedDuringUpdate$.clear()
@@ -214,32 +215,34 @@ export class Chain<T> implements ChainReader<T> {
     this.removedDuringUpdate$.clear()
   }
 
-  static createItem<T>(instance: T): Chained<T> {
-    return new Chained$<T>(instance, 0)
+  static createItem<T>(instance: T): Spot<T> {
+    return new Spot$<T>(instance, 0)
   }
 }
 
-// Chained$
+// Spot$
 
-class Chained$<T> implements Chained<T> {
-  readonly payload: T
+class Spot$<T> implements Spot<T> {
+  readonly node: T
+  owner: Spot$<T>
   index: number
-  next?: Chained$<T>
-  prev?: Chained$<T>
-  aux?: Chained$<T>
-  marker: number
+  next?: Spot$<T>
+  prev?: Spot$<T>
+  aux?: Spot$<T>
+  mark$: number
 
-  constructor(instance: T, marker: number) {
-    this.payload = instance
+  constructor(node: T, mark$: number) {
+    this.node = node
+    this.owner = this
     this.index = -1
     this.next = undefined
     this.prev = undefined
     this.aux = undefined
-    this.marker = marker
+    this.mark$ = mark$
   }
 
-  get status(): UpdateStatus {
-    return this.marker % STATUS_SIZE
+  get mark(): Mark {
+    return this.mark$ % MARK_MOD
   }
 }
 
@@ -247,15 +250,15 @@ class Chained$<T> implements Chained<T> {
 
 abstract class AbstractSubChain<T> implements SubChain<T> {
   count: number = 0
-  first?: Chained$<T> = undefined
-  last?: Chained$<T> = undefined
+  first?: Spot$<T> = undefined
+  last?: Spot$<T> = undefined
 
-  abstract nextOf(item: Chained$<T>): Chained$<T> | undefined
-  abstract setNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined
-  abstract prevOf(item: Chained$<T>): Chained$<T> | undefined
-  abstract setPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined
+  abstract nextOf(item: Spot$<T>): Spot$<T> | undefined
+  abstract setNextOf(item: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined
+  abstract prevOf(item: Spot$<T>): Spot$<T> | undefined
+  abstract setPrevOf(item: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined
 
-  *items(): Generator<Chained$<T>> {
+  *items(): Generator<Spot$<T>> {
     let x = this.first
     while (x !== undefined) {
       const next = this.nextOf(x)
@@ -264,7 +267,7 @@ abstract class AbstractSubChain<T> implements SubChain<T> {
     }
   }
 
-  include(item: Chained$<T>, before?: Chained$<T>): void {
+  include(item: Spot$<T>, before?: Spot$<T>): void {
     const last = this.last
     this.setPrevOf(item, last)
     this.setNextOf(item, undefined)
@@ -275,7 +278,7 @@ abstract class AbstractSubChain<T> implements SubChain<T> {
     this.count++
   }
 
-  exclude(item: Chained$<T>): void {
+  exclude(item: Spot$<T>): void {
     const prev = this.prevOf(item)
     if (prev !== undefined)
       this.setNextOf(prev, this.nextOf(item))
@@ -297,20 +300,20 @@ abstract class AbstractSubChain<T> implements SubChain<T> {
 // SubChain
 
 class SubChain$<T> extends AbstractSubChain<T> {
-  override nextOf(item: Chained$<T>): Chained$<T> | undefined {
+  override nextOf(item: Spot$<T>): Spot$<T> | undefined {
     return item.next
   }
 
-  override setNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined {
+  override setNextOf(item: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined {
     item.next = next
     return next
   }
 
-  override prevOf(item: Chained$<T>): Chained$<T> | undefined {
+  override prevOf(item: Spot$<T>): Spot$<T> | undefined {
     return item.prev
   }
 
-  override setPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined {
+  override setPrevOf(item: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined {
     item.prev = prev
     return prev
   }
@@ -338,22 +341,22 @@ class SubChain$<T> extends AbstractSubChain<T> {
 // AuxSubChain
 
 class AuxSubChain$<T> extends AbstractSubChain<T> {
-  override nextOf(item: Chained$<T>): Chained$<T> | undefined {
+  override nextOf(item: Spot$<T>): Spot$<T> | undefined {
     return item.aux
   }
 
-  override setNextOf(item: Chained$<T>, next: Chained$<T> | undefined): Chained$<T> | undefined {
+  override setNextOf(item: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined {
     item.aux = next
     return next
   }
 
-  override prevOf(item: Chained$<T>): Chained$<T> | undefined {
+  override prevOf(item: Spot$<T>): Spot$<T> | undefined {
     return undefined
   }
 
-  override setPrevOf(item: Chained$<T>, prev: Chained$<T> | undefined): Chained$<T> | undefined {
+  override setPrevOf(item: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined {
     return undefined
   }
 }
 
-const STATUS_SIZE = 4
+const MARK_MOD = 4
