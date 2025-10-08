@@ -23,7 +23,7 @@ const MARK_MOD = 4
 export type GetSpotKey<T = unknown> = (payload: T) => string | undefined
 
 export type Spot<T> = {
-  readonly node: T
+  readonly payload: T
   readonly owner: Spot<T>
   readonly index: number
   readonly next?: Spot<T>
@@ -101,7 +101,7 @@ export class SpotList<T> implements SpotListReader<T> {
     if (key !== undefined && key !== this.lastNotFoundKey) {
       result = this.map.get(key)
       if (result !== undefined) {
-        if (this.getKey(result.node) !== key) {
+        if (this.getKey(result.payload) !== key) {
           this.lastNotFoundKey = key
           result = undefined
         }
@@ -117,7 +117,7 @@ export class SpotList<T> implements SpotListReader<T> {
     if (m <= 0)
       throw misuse(error ?? "update is not in progress")
     let spot = this.expectedNextSpot
-    if (key !== (spot ? this.getKey(spot.node) : undefined))
+    if (key !== (spot ? this.getKey(spot.payload) : undefined))
       spot = this.lookup(key) as Spot$<T> | undefined
     if (spot !== undefined) {
       const distance = spot.mark$ - m
@@ -203,14 +203,14 @@ export class SpotList<T> implements SpotListReader<T> {
       const map = this.map
       for (const x of this.removedDuringUpdate$.items()) {
         x.mark$ = m + Mark.removed
-        map.delete(getKey(x.node))
+        map.delete(getKey(x.payload))
       }
     }
     else {
       this.actual$.grab(this.removedDuringUpdate$, true)
       const getKey = this.getKey
       for (const x of this.addedDuringUpdate$.items()) {
-        this.map.delete(getKey(x.node))
+        this.map.delete(getKey(x.payload))
         this.actual$.exclude(x)
       }
       this.addedDuringUpdate$.clear()
@@ -223,15 +223,15 @@ export class SpotList<T> implements SpotListReader<T> {
     this.removedDuringUpdate$.clear()
   }
 
-  static createSpot<T>(node: T): Spot<T> {
-    return new Spot$<T>(node, 0)
+  static createSpot<T>(payload: T): Spot<T> {
+    return new Spot$<T>(payload, 0)
   }
 }
 
 // Spot$
 
 class Spot$<T> implements Spot<T> {
-  readonly node: T
+  readonly payload: T
   owner: Spot$<T>
   index: number
   next?: Spot$<T>
@@ -239,8 +239,8 @@ class Spot$<T> implements Spot<T> {
   aux?: Spot$<T>
   mark$: number
 
-  constructor(node: T, mark$: number) {
-    this.node = node
+  constructor(payload: T, mark$: number) {
+    this.payload = payload
     this.owner = this
     this.index = -1
     this.next = undefined
