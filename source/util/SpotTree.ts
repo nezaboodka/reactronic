@@ -25,9 +25,9 @@ export type GetSpotKey<T = unknown> = (payload: T) => string | undefined
 export interface Spot<T> {
   readonly payload: T
   readonly owner: Spot<T>
-  readonly index: number
   readonly next?: Spot<T>
   readonly prev?: Spot<T>
+  readonly index: number
   readonly mark: Mark
 }
 
@@ -39,6 +39,12 @@ export interface SpotTreeReader<T> {
   readonly addedDuringUpdate: SpotSubTreeReader<T>
   readonly removedDuringUpdate: SpotSubTreeReader<T>
   lookup(key: string): Spot<T> | undefined
+}
+
+export interface SpotSubTreeReader<T> {
+  readonly count: number
+  readonly first?: Spot<T>
+  readonly last?: Spot<T>
 }
 
 // SpotTreeUpdater / СпотДеревоОбновляемое
@@ -53,12 +59,6 @@ export interface SpotTreeUpdater<T> {
   move(spot: Spot<T>, before: Spot<T> | undefined): void
   markAsMoved(spot: Spot<T>): void
   clearAddedAndRemoved(): void
-}
-
-export interface SpotSubTreeReader<T> {
-  readonly count: number
-  readonly first?: Spot<T>
-  readonly last?: Spot<T>
 }
 
 // SpotTree / СпотДерево
@@ -246,19 +246,19 @@ export class SpotTree<T> implements SpotTreeReader<T> {
 class Spot$<T> implements Spot<T> {
   readonly payload: T
   owner: Spot$<T>
-  index: number
   next?: Spot$<T>
   prev?: Spot$<T>
   aux?: Spot$<T>
+  index: number
   mark$: number
 
   constructor(payload: T, mark$: number) {
     this.payload = payload
     this.owner = this
-    this.index = -1
     this.next = undefined
     this.prev = undefined
     this.aux = undefined
+    this.index = -1
     this.mark$ = mark$
   }
 
