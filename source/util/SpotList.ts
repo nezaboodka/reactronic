@@ -22,7 +22,7 @@ const MARK_MOD = 4
 
 export type GetSpotKey<T = unknown> = (payload: T) => string | undefined
 
-export type Spot<T> = {
+export interface Spot<T> {
   readonly payload: T
   readonly owner: Spot<T>
   readonly index: number
@@ -33,16 +33,29 @@ export type Spot<T> = {
 
 // SpotListReader / СпотСписокЧитаемый
 
-export type SpotListReader<T> = {
+export interface SpotListReader<T> {
   readonly isStrict: boolean
-  readonly isUpdateInProgress: boolean
   readonly actual: SpotSubList<T>
   readonly addedDuringUpdate: SpotSubList<T>
   readonly removedDuringUpdate: SpotSubList<T>
   lookup(key: string): Spot<T> | undefined
 }
 
-export type SpotSubList<T> = {
+// SpotListUpdater / СпотСписокОбновляемый
+
+export interface SpotListUpdater<T> {
+  readonly isUpdateInProgress: boolean
+  beginUpdate(): void
+  endUpdate(error?: unknown): void
+  tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Spot<T> | undefined
+  add(instance: T, before?: Spot<T>): Spot<T>
+  remove(spot: Spot<T>): void
+  move(spot: Spot<T>, before: Spot<T> | undefined): void
+  markAsMoved(spot: Spot<T>): void
+  clearAddedAndRemoved(): void
+}
+
+export interface SpotSubList<T> {
   readonly count: number
   readonly first?: Spot<T>
   readonly last?: Spot<T>
@@ -110,6 +123,40 @@ export class SpotList<T> implements SpotListReader<T> {
         this.lastNotFoundKey = key
     }
     return result
+  }
+
+  beginUpdate(): void {
+    const m = this.mark$
+    if (m > 0)
+      throw misuse("update is in progress already")
+    this.mark$ = ~m + MARK_MOD
+    this.expectedNextSpot = this.actual$.first
+    this.removedDuringUpdate$.grab(this.actual$, false)
+    this.addedDuringUpdate$.clear()
+  }
+
+  endUpdate(error?: unknown): void {
+    const m = this.mark$
+    if (m <= 0)
+      throw misuse("update is ended already")
+    if (error === undefined) {
+      const getKey = this.getKey
+      const map = this.map
+      for (const x of this.removedDuringUpdate$.items()) {
+        x.mark$ = m + Mark.removed
+        map.delete(getKey(x.payload))
+      }
+    }
+    else {
+      this.actual$.grab(this.removedDuringUpdate$, true)
+      const getKey = this.getKey
+      for (const x of this.addedDuringUpdate$.items()) {
+        this.map.delete(getKey(x.payload))
+        this.actual$.exclude(x)
+      }
+      this.addedDuringUpdate$.clear()
+    }
+    this.mark$ = ~m
   }
 
   tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Spot<T> | undefined {
@@ -182,40 +229,6 @@ export class SpotList<T> implements SpotListReader<T> {
       throw misuse("spot cannot be marked as moved outside of update cycle")
     const x = spot as Spot$<T>
     x.mark$ = m + Mark.moved
-  }
-
-  beginUpdate(): void {
-    const m = this.mark$
-    if (m > 0)
-      throw misuse("update is in progress already")
-    this.mark$ = ~m + MARK_MOD
-    this.expectedNextSpot = this.actual$.first
-    this.removedDuringUpdate$.grab(this.actual$, false)
-    this.addedDuringUpdate$.clear()
-  }
-
-  endUpdate(error?: unknown): void {
-    const m = this.mark$
-    if (m <= 0)
-      throw misuse("update is ended already")
-    if (error === undefined) {
-      const getKey = this.getKey
-      const map = this.map
-      for (const x of this.removedDuringUpdate$.items()) {
-        x.mark$ = m + Mark.removed
-        map.delete(getKey(x.payload))
-      }
-    }
-    else {
-      this.actual$.grab(this.removedDuringUpdate$, true)
-      const getKey = this.getKey
-      for (const x of this.addedDuringUpdate$.items()) {
-        this.map.delete(getKey(x.payload))
-        this.actual$.exclude(x)
-      }
-      this.addedDuringUpdate$.clear()
-    }
-    this.mark$ = ~m
   }
 
   clearAddedAndRemoved(): void {
