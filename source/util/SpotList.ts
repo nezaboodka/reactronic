@@ -24,9 +24,9 @@ export type Spot<T> = {
   readonly node: T
   readonly owner: Spot<T>
   readonly index: number
-  readonly mark: Mark
   readonly next?: Spot<T>
   readonly prev?: Spot<T>
+  readonly mark: Mark
 }
 
 // SpotListReader / СпотСписокЧитаемый
