@@ -31,19 +31,19 @@ export interface Spot<T> {
   readonly mark: Mark
 }
 
-// SpotListReader / СпотСписокЧитаемый
+// SpotTreeReader / СпотДеревоЧитаемое
 
-export interface SpotListReader<T> {
+export interface SpotTreeReader<T> {
   readonly isStrict: boolean
-  readonly actual: SpotSubList<T>
-  readonly addedDuringUpdate: SpotSubList<T>
-  readonly removedDuringUpdate: SpotSubList<T>
+  readonly actual: SpotSubTreeReader<T>
+  readonly addedDuringUpdate: SpotSubTreeReader<T>
+  readonly removedDuringUpdate: SpotSubTreeReader<T>
   lookup(key: string): Spot<T> | undefined
 }
 
-// SpotListUpdater / СпотСписокОбновляемый
+// SpotTreeUpdater / СпотДеревоОбновляемое
 
-export interface SpotListUpdater<T> {
+export interface SpotTreeUpdater<T> {
   readonly isUpdateInProgress: boolean
   beginUpdate(): void
   endUpdate(error?: unknown): void
@@ -55,22 +55,22 @@ export interface SpotListUpdater<T> {
   clearAddedAndRemoved(): void
 }
 
-export interface SpotSubList<T> {
+export interface SpotSubTreeReader<T> {
   readonly count: number
   readonly first?: Spot<T>
   readonly last?: Spot<T>
 }
 
-// SpotList / СпотСписок
+// SpotTree / СпотДерево
 
-export class SpotList<T> implements SpotListReader<T> {
+export class SpotTree<T> implements SpotTreeReader<T> {
   readonly getKey: GetSpotKey<T>
   private isStrict$: boolean
   private map: Map<string | undefined, Spot$<T>>
   private mark$: number
-  private actual$: SpotSubList$<T>
-  private addedDuringUpdate$: SpotAuxSubList$<T>
-  private removedDuringUpdate$: SpotSubList$<T>
+  private actual$: SpotSubTree$<T>
+  private addedDuringUpdate$: SpotAuxSubTree$<T>
+  private removedDuringUpdate$: SpotSubTree$<T>
   private lastNotFoundKey: string | undefined
   private expectedNextSpot?: Spot$<T>
 
@@ -79,9 +79,9 @@ export class SpotList<T> implements SpotListReader<T> {
     this.isStrict$ = isStrict
     this.map = new Map<string | undefined, Spot$<T>>()
     this.mark$ = ~1
-    this.actual$ = new SpotSubList$<T>()
-    this.addedDuringUpdate$ = new SpotAuxSubList$<T>()
-    this.removedDuringUpdate$ = new SpotSubList$<T>()
+    this.actual$ = new SpotSubTree$<T>()
+    this.addedDuringUpdate$ = new SpotAuxSubTree$<T>()
+    this.removedDuringUpdate$ = new SpotSubTree$<T>()
     this.lastNotFoundKey = undefined
     this.expectedNextSpot = undefined
   }
@@ -97,15 +97,15 @@ export class SpotList<T> implements SpotListReader<T> {
     return this.mark$ > 0
   }
 
-  get actual(): SpotSubList<T> {
+  get actual(): SpotSubTreeReader<T> {
     return this.actual$
   }
 
-  get addedDuringUpdate(): SpotSubList<T> {
+  get addedDuringUpdate(): SpotSubTreeReader<T> {
     return this.addedDuringUpdate$
   }
 
-  get removedDuringUpdate(): SpotSubList<T> {
+  get removedDuringUpdate(): SpotSubTreeReader<T> {
     return this.removedDuringUpdate$
   }
 
@@ -267,9 +267,9 @@ class Spot$<T> implements Spot<T> {
   }
 }
 
-// AbstractSpotSubList
+// AbstractSpotSubTree
 
-abstract class AbstractSpotSubList<T> implements SpotSubList<T> {
+abstract class AbstractSpotSubTree<T> implements SpotSubTreeReader<T> {
   count: number = 0
   first?: Spot$<T> = undefined
   last?: Spot$<T> = undefined
@@ -318,9 +318,9 @@ abstract class AbstractSpotSubList<T> implements SpotSubList<T> {
   }
 }
 
-// SpotSubList$
+// SpotSubTree$
 
-class SpotSubList$<T> extends AbstractSpotSubList<T> {
+class SpotSubTree$<T> extends AbstractSpotSubTree<T> {
   override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
     return spot.next
   }
@@ -339,7 +339,7 @@ class SpotSubList$<T> extends AbstractSpotSubList<T> {
     return prev
   }
 
-  grab(from: SpotSubList$<T>, join: boolean): void {
+  grab(from: SpotSubTree$<T>, join: boolean): void {
     const head = from.first
     if (join !== undefined && head !== undefined) {
       const last = this.last
@@ -359,9 +359,9 @@ class SpotSubList$<T> extends AbstractSpotSubList<T> {
   }
 }
 
-// SpotAuxSubList
+// SpotAuxSubTree
 
-class SpotAuxSubList$<T> extends AbstractSpotSubList<T> {
+class SpotAuxSubTree$<T> extends AbstractSpotSubTree<T> {
   override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
     return spot.aux
   }
