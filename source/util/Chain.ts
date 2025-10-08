@@ -7,7 +7,7 @@
 
 import { misuse } from "./Dbg.js"
 
-export type GetChainItemKey<T = unknown> = (payload: T) => string | undefined
+export type GetSpotKey<T = unknown> = (payload: T) => string | undefined
 
 export enum Mark {
   reused = 0,
@@ -25,7 +25,7 @@ export type Spot<T> = {
   readonly prev?: Spot<T>
 }
 
-export type ChainReader<T> = {
+export type SpotListReader<T> = {
   readonly isStrict: boolean
   readonly isUpdateInProgress: boolean
   readonly actual: SubChain<T>
@@ -40,10 +40,10 @@ export type SubChain<T> = {
   readonly last?: Spot<T>
 }
 
-// Chain / Цепочка
+// SpotList / СпотСписок
 
-export class Chain<T> implements ChainReader<T> {
-  readonly getKey: GetChainItemKey<T>
+export class SpotList<T> implements SpotListReader<T> {
+  readonly getKey: GetSpotKey<T>
   private isStrict$: boolean
   private map: Map<string | undefined, Spot$<T>>
   private marker: number
@@ -51,9 +51,9 @@ export class Chain<T> implements ChainReader<T> {
   private addedDuringUpdate$: AuxSubChain$<T>
   private removedDuringUpdate$: SubChain$<T>
   private lastNotFoundKey: string | undefined
-  private expectedNextItem?: Spot$<T>
+  private expectedNextSpot?: Spot$<T>
 
-  constructor(getKey: GetChainItemKey<T>, isStrict: boolean = false) {
+  constructor(getKey: GetSpotKey<T>, isStrict: boolean = false) {
     this.getKey = getKey
     this.isStrict$ = isStrict
     this.map = new Map<string | undefined, Spot$<T>>()
@@ -62,7 +62,7 @@ export class Chain<T> implements ChainReader<T> {
     this.addedDuringUpdate$ = new AuxSubChain$<T>()
     this.removedDuringUpdate$ = new SubChain$<T>()
     this.lastNotFoundKey = undefined
-    this.expectedNextItem = undefined
+    this.expectedNextSpot = undefined
   }
 
   get isStrict(): boolean { return this.isStrict$ }
@@ -108,31 +108,31 @@ export class Chain<T> implements ChainReader<T> {
     const m = this.marker
     if (m <= 0)
       throw misuse(error ?? "update is not in progress")
-    let item = this.expectedNextItem
-    if (key !== (item ? this.getKey(item.node) : undefined))
-      item = this.lookup(key) as Spot$<T> | undefined
-    if (item !== undefined) {
-      const distance = item.mark$ - m
+    let spot = this.expectedNextSpot
+    if (key !== (spot ? this.getKey(spot.node) : undefined))
+      spot = this.lookup(key) as Spot$<T> | undefined
+    if (spot !== undefined) {
+      const distance = spot.mark$ - m
       if (distance < 0 || distance >= MARK_MOD) {
-        if (this.isStrict$ && item !== this.expectedNextItem)
-          item.mark$ = m + Mark.moved
+        if (this.isStrict$ && spot !== this.expectedNextSpot)
+          spot.mark$ = m + Mark.moved
         else
-          item.mark$ = m + Mark.reused
-        this.expectedNextItem = this.removedDuringUpdate$.nextOf(item)
-        this.removedDuringUpdate$.exclude(item)
-        item.index = this.actual$.count
-        this.actual$.include(item)
+          spot.mark$ = m + Mark.reused
+        this.expectedNextSpot = this.removedDuringUpdate$.nextOf(spot)
+        this.removedDuringUpdate$.exclude(spot)
+        spot.index = this.actual$.count
+        this.actual$.include(spot)
         if (resolution)
           resolution.isDuplicate = false
       }
       else if (resolution)
         resolution.isDuplicate = true
       else
-        throw misuse(`duplicate collection item: ${key}`)
+        throw misuse(`duplicate key: ${key}`)
     }
     else if (resolution)
       resolution.isDuplicate = false
-    return item
+    return spot
   }
 
   add(instance: T, before?: Spot<T>): Spot<T> {
@@ -140,21 +140,21 @@ export class Chain<T> implements ChainReader<T> {
     if (this.lookup(key) !== undefined)
       throw misuse(`key is already in use: ${key}`)
     const m = this.marker
-    const item = new Spot$<T>(instance,
+    const spot = new Spot$<T>(instance,
       m > 0 ? m + Mark.added : m)
-    this.map.set(key, item)
+    this.map.set(key, spot)
     this.lastNotFoundKey = undefined
-    this.expectedNextItem = undefined
-    item.index = this.actual$.count
-    this.actual$.include(item, before as Spot$<T>)
+    this.expectedNextSpot = undefined
+    spot.index = this.actual$.count
+    this.actual$.include(spot, before as Spot$<T>)
     if (m > 0) // update is in progress
-      this.addedDuringUpdate$.include(item)
-    return item
+      this.addedDuringUpdate$.include(spot)
+    return spot
   }
 
-  remove(item: Spot<T>): void {
-    if (item.mark !== Mark.removed) {
-      const x = item as Spot$<T>
+  remove(spot: Spot<T>): void {
+    if (spot.mark !== Mark.removed) {
+      const x = spot as Spot$<T>
       this.actual$.exclude(x)
       const m = this.marker
       if (m > 0) { // update is in progress
@@ -164,15 +164,15 @@ export class Chain<T> implements ChainReader<T> {
     }
   }
 
-  move(item: Spot<T>, before: Spot<T> | undefined): void {
+  move(spot: Spot<T>, before: Spot<T> | undefined): void {
     throw misuse("not implemented")
   }
 
-  markAsMoved(item: Spot<T>): void {
+  markAsMoved(spot: Spot<T>): void {
     const m = this.marker
     if (m <= 0) // update is not in progress
-      throw misuse("item cannot be marked as moved outside of update cycle")
-    const x = item as Spot$<T>
+      throw misuse("spot cannot be marked as moved outside of update cycle")
+    const x = spot as Spot$<T>
     x.mark$ = m + Mark.moved
   }
 
@@ -181,7 +181,7 @@ export class Chain<T> implements ChainReader<T> {
     if (m > 0)
       throw misuse("update is in progress already")
     this.marker = ~m + MARK_MOD
-    this.expectedNextItem = this.actual$.first
+    this.expectedNextSpot = this.actual$.first
     this.removedDuringUpdate$.grab(this.actual$, false)
     this.addedDuringUpdate$.clear()
   }
@@ -215,8 +215,8 @@ export class Chain<T> implements ChainReader<T> {
     this.removedDuringUpdate$.clear()
   }
 
-  static createItem<T>(instance: T): Spot<T> {
-    return new Spot$<T>(instance, 0)
+  static createSpot<T>(node: T): Spot<T> {
+    return new Spot$<T>(node, 0)
   }
 }
 
@@ -253,10 +253,10 @@ abstract class AbstractSubChain<T> implements SubChain<T> {
   first?: Spot$<T> = undefined
   last?: Spot$<T> = undefined
 
-  abstract nextOf(item: Spot$<T>): Spot$<T> | undefined
-  abstract setNextOf(item: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined
-  abstract prevOf(item: Spot$<T>): Spot$<T> | undefined
-  abstract setPrevOf(item: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined
+  abstract nextOf(spot: Spot$<T>): Spot$<T> | undefined
+  abstract setNextOf(spot: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined
+  abstract prevOf(spot: Spot$<T>): Spot$<T> | undefined
+  abstract setPrevOf(spot: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined
 
   *items(): Generator<Spot$<T>> {
     let x = this.first
@@ -267,26 +267,26 @@ abstract class AbstractSubChain<T> implements SubChain<T> {
     }
   }
 
-  include(item: Spot$<T>, before?: Spot$<T>): void {
+  include(spot: Spot$<T>, before?: Spot$<T>): void {
     const last = this.last
-    this.setPrevOf(item, last)
-    this.setNextOf(item, undefined)
+    this.setPrevOf(spot, last)
+    this.setNextOf(spot, undefined)
     if (last !== undefined)
-      this.last = this.setNextOf(last, item)
+      this.last = this.setNextOf(last, spot)
     else
-      this.first = this.last = item
+      this.first = this.last = spot
     this.count++
   }
 
-  exclude(item: Spot$<T>): void {
-    const prev = this.prevOf(item)
+  exclude(spot: Spot$<T>): void {
+    const prev = this.prevOf(spot)
     if (prev !== undefined)
-      this.setNextOf(prev, this.nextOf(item))
-    const next = this.nextOf(item)
+      this.setNextOf(prev, this.nextOf(spot))
+    const next = this.nextOf(spot)
     if (next !== undefined)
-      this.setPrevOf(next, this.prevOf(item))
-    if (item === this.first)
-      this.first = this.nextOf(item)
+      this.setPrevOf(next, this.prevOf(spot))
+    if (spot === this.first)
+      this.first = this.nextOf(spot)
     this.count--
   }
 
@@ -300,21 +300,21 @@ abstract class AbstractSubChain<T> implements SubChain<T> {
 // SubChain
 
 class SubChain$<T> extends AbstractSubChain<T> {
-  override nextOf(item: Spot$<T>): Spot$<T> | undefined {
-    return item.next
+  override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
+    return spot.next
   }
 
-  override setNextOf(item: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined {
-    item.next = next
+  override setNextOf(spot: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined {
+    spot.next = next
     return next
   }
 
-  override prevOf(item: Spot$<T>): Spot$<T> | undefined {
-    return item.prev
+  override prevOf(spot: Spot$<T>): Spot$<T> | undefined {
+    return spot.prev
   }
 
-  override setPrevOf(item: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined {
-    item.prev = prev
+  override setPrevOf(spot: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined {
+    spot.prev = prev
     return prev
   }
 
@@ -341,20 +341,20 @@ class SubChain$<T> extends AbstractSubChain<T> {
 // AuxSubChain
 
 class AuxSubChain$<T> extends AbstractSubChain<T> {
-  override nextOf(item: Spot$<T>): Spot$<T> | undefined {
-    return item.aux
+  override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
+    return spot.aux
   }
 
-  override setNextOf(item: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined {
-    item.aux = next
+  override setNextOf(spot: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined {
+    spot.aux = next
     return next
   }
 
-  override prevOf(item: Spot$<T>): Spot$<T> | undefined {
+  override prevOf(spot: Spot$<T>): Spot$<T> | undefined {
     return undefined
   }
 
-  override setPrevOf(item: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined {
+  override setPrevOf(spot: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined {
     return undefined
   }
 }
