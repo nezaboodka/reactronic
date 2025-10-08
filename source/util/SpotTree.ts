@@ -20,10 +20,10 @@ const MARK_MOD = 4
 
 // Spot / Спот
 
-export type GetSpotKey<T = unknown> = (payload: T) => string | undefined
+export type GetSpotKey<T = unknown> = (node: T) => string | undefined
 
 export interface Spot<T> {
-  readonly payload: T
+  readonly node: T
   readonly owner: Spot<T>
   readonly next?: Spot<T>
   readonly prev?: Spot<T>
@@ -34,11 +34,11 @@ export interface Spot<T> {
 // SpotTreeReader / СпотДеревоЧитаемое
 
 export interface SpotTreeReader<T> {
-  readonly isStrict: boolean
-  readonly actual: SpotSubTreeReader<T>
-  readonly addedDuringUpdate: SpotSubTreeReader<T>
-  readonly removedDuringUpdate: SpotSubTreeReader<T>
-  lookup(key: string): Spot<T> | undefined
+  readonly isStrictChildrenOrder: boolean
+  readonly children: SpotSubTreeReader<T>
+  readonly childrenAddedDuringUpdate: SpotSubTreeReader<T>
+  readonly childrenRemovedDuringUpdate: SpotSubTreeReader<T>
+  lookupChild(key: string): Spot<T> | undefined
 }
 
 export interface SpotSubTreeReader<T> {
@@ -50,22 +50,22 @@ export interface SpotSubTreeReader<T> {
 // SpotTreeUpdater / СпотДеревоОбновляемое
 
 export interface SpotTreeUpdater<T> {
-  readonly isUpdateInProgress: boolean
-  beginUpdate(): void
-  endUpdate(error?: unknown): void
-  tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Spot<T> | undefined
-  add(instance: T, before?: Spot<T>): Spot<T>
-  remove(spot: Spot<T>): void
-  move(spot: Spot<T>, before: Spot<T> | undefined): void
-  markAsMoved(spot: Spot<T>): void
-  clearAddedAndRemoved(): void
+  readonly isChildrenUpdateInProgress: boolean
+  beginChildrenUpdate(): void
+  endChildrenUpdate(error?: unknown): void
+  tryReuseChild(key: string, resolution?: { isDuplicate: boolean }, error?: string): Spot<T> | undefined
+  addChild(instance: T, before?: Spot<T>): Spot<T>
+  removeChild(spot: Spot<T>): void
+  moveChild(spot: Spot<T>, before: Spot<T> | undefined): void
+  markChildAsMoved(spot: Spot<T>): void
+  clearAddedAndRemovedChildren(): void
 }
 
 // SpotTree / СпотДерево
 
 export class SpotTree<T> implements SpotTreeReader<T> {
   readonly getKey: GetSpotKey<T>
-  private isStrict$: boolean
+  private isStrictOrder$: boolean
   private map: Map<string | undefined, Spot$<T>>
   private mark$: number
   private actual$: SpotSubTree$<T>
@@ -74,9 +74,9 @@ export class SpotTree<T> implements SpotTreeReader<T> {
   private lastNotFoundKey: string | undefined
   private expectedNextSpot?: Spot$<T>
 
-  constructor(getKey: GetSpotKey<T>, isStrict: boolean = false) {
+  constructor(getKey: GetSpotKey<T>, isStrictOrder: boolean = false) {
     this.getKey = getKey
-    this.isStrict$ = isStrict
+    this.isStrictOrder$ = isStrictOrder
     this.map = new Map<string | undefined, Spot$<T>>()
     this.mark$ = ~1
     this.actual$ = new SpotSubTree$<T>()
@@ -86,35 +86,35 @@ export class SpotTree<T> implements SpotTreeReader<T> {
     this.expectedNextSpot = undefined
   }
 
-  get isStrict(): boolean { return this.isStrict$ }
-  set isStrict(value: boolean) {
+  get isStrictChildrenOrder(): boolean { return this.isStrictOrder$ }
+  set isStrictChildrenOrder(value: boolean) {
     if (this.mark$ > 0)
       throw misuse("cannot change strict mode in the middle of update")
-    this.isStrict$ = value
+    this.isStrictOrder$ = value
   }
 
   get isUpdateInProgress(): boolean {
     return this.mark$ > 0
   }
 
-  get actual(): SpotSubTreeReader<T> {
+  get children(): SpotSubTreeReader<T> {
     return this.actual$
   }
 
-  get addedDuringUpdate(): SpotSubTreeReader<T> {
+  get childrenAddedDuringUpdate(): SpotSubTreeReader<T> {
     return this.addedDuringUpdate$
   }
 
-  get removedDuringUpdate(): SpotSubTreeReader<T> {
+  get childrenRemovedDuringUpdate(): SpotSubTreeReader<T> {
     return this.removedDuringUpdate$
   }
 
-  lookup(key: string | undefined): Spot<T> | undefined {
+  lookupChild(key: string | undefined): Spot<T> | undefined {
     let result: Spot<T> | undefined = undefined
     if (key !== undefined && key !== this.lastNotFoundKey) {
       result = this.map.get(key)
       if (result !== undefined) {
-        if (this.getKey(result.payload) !== key) {
+        if (this.getKey(result.node) !== key) {
           this.lastNotFoundKey = key
           result = undefined
         }
@@ -144,14 +144,14 @@ export class SpotTree<T> implements SpotTreeReader<T> {
       const map = this.map
       for (const x of this.removedDuringUpdate$.items()) {
         x.mark$ = m + Mark.removed
-        map.delete(getKey(x.payload))
+        map.delete(getKey(x.node))
       }
     }
     else {
       this.actual$.grab(this.removedDuringUpdate$, true)
       const getKey = this.getKey
       for (const x of this.addedDuringUpdate$.items()) {
-        this.map.delete(getKey(x.payload))
+        this.map.delete(getKey(x.node))
         this.actual$.exclude(x)
       }
       this.addedDuringUpdate$.clear()
@@ -164,12 +164,12 @@ export class SpotTree<T> implements SpotTreeReader<T> {
     if (m <= 0)
       throw misuse(error ?? "update is not in progress")
     let spot = this.expectedNextSpot
-    if (key !== (spot ? this.getKey(spot.payload) : undefined))
-      spot = this.lookup(key) as Spot$<T> | undefined
+    if (key !== (spot ? this.getKey(spot.node) : undefined))
+      spot = this.lookupChild(key) as Spot$<T> | undefined
     if (spot !== undefined) {
       const distance = spot.mark$ - m
       if (distance < 0 || distance >= MARK_MOD) {
-        if (this.isStrict$ && spot !== this.expectedNextSpot)
+        if (this.isStrictOrder$ && spot !== this.expectedNextSpot)
           spot.mark$ = m + Mark.moved
         else
           spot.mark$ = m + Mark.existing
@@ -192,7 +192,7 @@ export class SpotTree<T> implements SpotTreeReader<T> {
 
   add(instance: T, before?: Spot<T>): Spot<T> {
     const key = this.getKey(instance)
-    if (this.lookup(key) !== undefined)
+    if (this.lookupChild(key) !== undefined)
       throw misuse(`key is already in use: ${key}`)
     const m = this.mark$
     const spot = new Spot$<T>(instance,
@@ -236,15 +236,15 @@ export class SpotTree<T> implements SpotTreeReader<T> {
     this.removedDuringUpdate$.clear()
   }
 
-  static createSpot<T>(payload: T): Spot<T> {
-    return new Spot$<T>(payload, 0)
+  static createSpot<T>(node: T): Spot<T> {
+    return new Spot$<T>(node, 0)
   }
 }
 
 // Spot$
 
 class Spot$<T> implements Spot<T> {
-  readonly payload: T
+  readonly node: T
   owner: Spot$<T>
   next?: Spot$<T>
   prev?: Spot$<T>
@@ -252,8 +252,8 @@ class Spot$<T> implements Spot<T> {
   index: number
   mark$: number
 
-  constructor(payload: T, mark$: number) {
-    this.payload = payload
+  constructor(node: T, mark$: number) {
+    this.node = node
     this.owner = this
     this.next = undefined
     this.prev = undefined
