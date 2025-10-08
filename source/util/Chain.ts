@@ -7,14 +7,18 @@
 
 import { misuse } from "./Dbg.js"
 
-export type GetSpotKey<T = unknown> = (payload: T) => string | undefined
+// Mark / Отметка
 
 export enum Mark {
-  reused = 0,
-  added = 1,
-  moved = 2,
-  removed = 3,
+  existing = 0, // существующий
+  added = 1,    // добавленный
+  moved = 2,    // перемещённый
+  removed = 3,  // удалённый
 }
+
+// Spot / Спот
+
+export type GetSpotKey<T = unknown> = (payload: T) => string | undefined
 
 export type Spot<T> = {
   readonly node: T
@@ -24,6 +28,8 @@ export type Spot<T> = {
   readonly next?: Spot<T>
   readonly prev?: Spot<T>
 }
+
+// SpotListReader / СпотСписокЧитаемый
 
 export type SpotListReader<T> = {
   readonly isStrict: boolean
@@ -46,7 +52,7 @@ export class SpotList<T> implements SpotListReader<T> {
   readonly getKey: GetSpotKey<T>
   private isStrict$: boolean
   private map: Map<string | undefined, Spot$<T>>
-  private marker: number
+  private mark$: number
   private actual$: SubChain$<T>
   private addedDuringUpdate$: AuxSubChain$<T>
   private removedDuringUpdate$: SubChain$<T>
@@ -57,7 +63,7 @@ export class SpotList<T> implements SpotListReader<T> {
     this.getKey = getKey
     this.isStrict$ = isStrict
     this.map = new Map<string | undefined, Spot$<T>>()
-    this.marker = ~1
+    this.mark$ = ~1
     this.actual$ = new SubChain$<T>()
     this.addedDuringUpdate$ = new AuxSubChain$<T>()
     this.removedDuringUpdate$ = new SubChain$<T>()
@@ -67,13 +73,13 @@ export class SpotList<T> implements SpotListReader<T> {
 
   get isStrict(): boolean { return this.isStrict$ }
   set isStrict(value: boolean) {
-    if (this.marker > 0)
+    if (this.mark$ > 0)
       throw misuse("cannot change strict mode in the middle of update")
     this.isStrict$ = value
   }
 
   get isUpdateInProgress(): boolean {
-    return this.marker > 0
+    return this.mark$ > 0
   }
 
   get actual(): SubChain<T> {
@@ -105,7 +111,7 @@ export class SpotList<T> implements SpotListReader<T> {
   }
 
   tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Spot<T> | undefined {
-    const m = this.marker
+    const m = this.mark$
     if (m <= 0)
       throw misuse(error ?? "update is not in progress")
     let spot = this.expectedNextSpot
@@ -117,7 +123,7 @@ export class SpotList<T> implements SpotListReader<T> {
         if (this.isStrict$ && spot !== this.expectedNextSpot)
           spot.mark$ = m + Mark.moved
         else
-          spot.mark$ = m + Mark.reused
+          spot.mark$ = m + Mark.existing
         this.expectedNextSpot = this.removedDuringUpdate$.nextOf(spot)
         this.removedDuringUpdate$.exclude(spot)
         spot.index = this.actual$.count
@@ -139,7 +145,7 @@ export class SpotList<T> implements SpotListReader<T> {
     const key = this.getKey(instance)
     if (this.lookup(key) !== undefined)
       throw misuse(`key is already in use: ${key}`)
-    const m = this.marker
+    const m = this.mark$
     const spot = new Spot$<T>(instance,
       m > 0 ? m + Mark.added : m)
     this.map.set(key, spot)
@@ -156,7 +162,7 @@ export class SpotList<T> implements SpotListReader<T> {
     if (spot.mark !== Mark.removed) {
       const x = spot as Spot$<T>
       this.actual$.exclude(x)
-      const m = this.marker
+      const m = this.mark$
       if (m > 0) { // update is in progress
         this.removedDuringUpdate$.include(x)
         x.mark$ = m + Mark.removed
@@ -169,7 +175,7 @@ export class SpotList<T> implements SpotListReader<T> {
   }
 
   markAsMoved(spot: Spot<T>): void {
-    const m = this.marker
+    const m = this.mark$
     if (m <= 0) // update is not in progress
       throw misuse("spot cannot be marked as moved outside of update cycle")
     const x = spot as Spot$<T>
@@ -177,17 +183,17 @@ export class SpotList<T> implements SpotListReader<T> {
   }
 
   beginUpdate(): void {
-    const m = this.marker
+    const m = this.mark$
     if (m > 0)
       throw misuse("update is in progress already")
-    this.marker = ~m + MARK_MOD
+    this.mark$ = ~m + MARK_MOD
     this.expectedNextSpot = this.actual$.first
     this.removedDuringUpdate$.grab(this.actual$, false)
     this.addedDuringUpdate$.clear()
   }
 
   endUpdate(error?: unknown): void {
-    const m = this.marker
+    const m = this.mark$
     if (m <= 0)
       throw misuse("update is ended already")
     if (error === undefined) {
@@ -207,7 +213,7 @@ export class SpotList<T> implements SpotListReader<T> {
       }
       this.addedDuringUpdate$.clear()
     }
-    this.marker = ~m
+    this.mark$ = ~m
   }
 
   clearAddedAndRemoved(): void {
