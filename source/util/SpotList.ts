@@ -16,6 +16,8 @@ export enum Mark {
   removed = 3,  // удалённый
 }
 
+const MARK_MOD = 4
+
 // Spot / Спот
 
 export type GetSpotKey<T = unknown> = (payload: T) => string | undefined
@@ -34,13 +36,13 @@ export type Spot<T> = {
 export type SpotListReader<T> = {
   readonly isStrict: boolean
   readonly isUpdateInProgress: boolean
-  readonly actual: SubChain<T>
-  readonly addedDuringUpdate: SubChain<T>
-  readonly removedDuringUpdate: SubChain<T>
+  readonly actual: SpotSubList<T>
+  readonly addedDuringUpdate: SpotSubList<T>
+  readonly removedDuringUpdate: SpotSubList<T>
   lookup(key: string): Spot<T> | undefined
 }
 
-export type SubChain<T> = {
+export type SpotSubList<T> = {
   readonly count: number
   readonly first?: Spot<T>
   readonly last?: Spot<T>
@@ -53,9 +55,9 @@ export class SpotList<T> implements SpotListReader<T> {
   private isStrict$: boolean
   private map: Map<string | undefined, Spot$<T>>
   private mark$: number
-  private actual$: SubChain$<T>
-  private addedDuringUpdate$: AuxSubChain$<T>
-  private removedDuringUpdate$: SubChain$<T>
+  private actual$: SpotSubList$<T>
+  private addedDuringUpdate$: SpotAuxSubList$<T>
+  private removedDuringUpdate$: SpotSubList$<T>
   private lastNotFoundKey: string | undefined
   private expectedNextSpot?: Spot$<T>
 
@@ -64,9 +66,9 @@ export class SpotList<T> implements SpotListReader<T> {
     this.isStrict$ = isStrict
     this.map = new Map<string | undefined, Spot$<T>>()
     this.mark$ = ~1
-    this.actual$ = new SubChain$<T>()
-    this.addedDuringUpdate$ = new AuxSubChain$<T>()
-    this.removedDuringUpdate$ = new SubChain$<T>()
+    this.actual$ = new SpotSubList$<T>()
+    this.addedDuringUpdate$ = new SpotAuxSubList$<T>()
+    this.removedDuringUpdate$ = new SpotSubList$<T>()
     this.lastNotFoundKey = undefined
     this.expectedNextSpot = undefined
   }
@@ -82,15 +84,15 @@ export class SpotList<T> implements SpotListReader<T> {
     return this.mark$ > 0
   }
 
-  get actual(): SubChain<T> {
+  get actual(): SpotSubList<T> {
     return this.actual$
   }
 
-  get addedDuringUpdate(): SubChain<T> {
+  get addedDuringUpdate(): SpotSubList<T> {
     return this.addedDuringUpdate$
   }
 
-  get removedDuringUpdate(): SubChain<T> {
+  get removedDuringUpdate(): SpotSubList<T> {
     return this.removedDuringUpdate$
   }
 
@@ -252,9 +254,9 @@ class Spot$<T> implements Spot<T> {
   }
 }
 
-// AbstractSubChain
+// AbstractSpotSubList
 
-abstract class AbstractSubChain<T> implements SubChain<T> {
+abstract class AbstractSpotSubList<T> implements SpotSubList<T> {
   count: number = 0
   first?: Spot$<T> = undefined
   last?: Spot$<T> = undefined
@@ -303,9 +305,9 @@ abstract class AbstractSubChain<T> implements SubChain<T> {
   }
 }
 
-// SubChain
+// SpotSubList$
 
-class SubChain$<T> extends AbstractSubChain<T> {
+class SpotSubList$<T> extends AbstractSpotSubList<T> {
   override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
     return spot.next
   }
@@ -324,7 +326,7 @@ class SubChain$<T> extends AbstractSubChain<T> {
     return prev
   }
 
-  grab(from: SubChain$<T>, join: boolean): void {
+  grab(from: SpotSubList$<T>, join: boolean): void {
     const head = from.first
     if (join !== undefined && head !== undefined) {
       const last = this.last
@@ -344,9 +346,9 @@ class SubChain$<T> extends AbstractSubChain<T> {
   }
 }
 
-// AuxSubChain
+// SpotAuxSubList
 
-class AuxSubChain$<T> extends AbstractSubChain<T> {
+class SpotAuxSubList$<T> extends AbstractSpotSubList<T> {
   override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
     return spot.aux
   }
@@ -364,5 +366,3 @@ class AuxSubChain$<T> extends AbstractSubChain<T> {
     return undefined
   }
 }
-
-const MARK_MOD = 4
