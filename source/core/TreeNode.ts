@@ -18,9 +18,9 @@ import { ReactiveSystem, options, observable, reactive, runAtomically, runNonRea
 
 // Scripts
 
-export type Script<E> = (el: E, basis: () => void) => void
-export type ScriptAsync<E> = (el: E, basis: () => Promise<void>) => Promise<void>
-export type Handler<E = unknown, R = void> = (el: E) => R
+export type Script<E> = (o: E, basis: () => void) => void
+export type ScriptAsync<E> = (o: E, basis: () => Promise<void>) => Promise<void>
+export type Handler<E = unknown, R = void> = (o: E) => R
 
 // Actions
 
