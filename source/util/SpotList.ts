@@ -69,6 +69,7 @@ export class SpotList<T> implements SpotListReader<T> {
   private map: Map<string | undefined, Spot$<T>>
   private mark$: number
   private actual$: SpotSubList$<T>
+  // TODO: Move to an object like UpdateDetails
   private addedDuringUpdate$: SpotAuxSubList$<T>
   private removedDuringUpdate$: SpotSubList$<T>
   private lastNotFoundKey: string | undefined
