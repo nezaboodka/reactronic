@@ -23,7 +23,7 @@ const MARK_MOD = 4
 export type GetSpotKey<T = unknown> = (node: T) => string | undefined
 
 export interface Spot<T> {
-  readonly node: T
+  readonly value: T
   readonly owner: Spot<T>
   readonly next?: Spot<T>
   readonly prev?: Spot<T>
@@ -31,25 +31,25 @@ export interface Spot<T> {
   readonly mark: Mark
 }
 
-// SpotTreeReader / СпотДеревоЧитаемое
+// SpotListReader / СпотДеревоЧитаемое
 
-export interface SpotTreeReader<T> {
+export interface SpotListReader<T> {
   readonly isStrictChildrenOrder: boolean
-  readonly children: SpotSubTreeReader<T>
-  readonly childrenAddedDuringUpdate: SpotSubTreeReader<T>
-  readonly childrenRemovedDuringUpdate: SpotSubTreeReader<T>
+  readonly children: SpotSubListReader<T>
+  readonly childrenAddedDuringUpdate: SpotSubListReader<T>
+  readonly childrenRemovedDuringUpdate: SpotSubListReader<T>
   lookupChild(key: string): Spot<T> | undefined
 }
 
-export interface SpotSubTreeReader<T> {
+export interface SpotSubListReader<T> {
   readonly count: number
   readonly first?: Spot<T>
   readonly last?: Spot<T>
 }
 
-// SpotTreeUpdater / СпотДеревоОбновляемое
+// SpotListUpdater / СпотСписокОбновляемый
 
-export interface SpotTreeUpdater<T> {
+export interface SpotListUpdater<T> {
   readonly isChildrenUpdateInProgress: boolean
   beginChildrenUpdate(): void
   endChildrenUpdate(error?: unknown): void
@@ -61,16 +61,16 @@ export interface SpotTreeUpdater<T> {
   clearAddedAndRemovedChildren(): void
 }
 
-// SpotTree / СпотДерево
+// SpotList / СпотДерево
 
-export class SpotTree<T> implements SpotTreeReader<T> {
+export class SpotList<T> implements SpotListReader<T> {
   readonly getKey: GetSpotKey<T>
   private isStrictOrder$: boolean
   private map: Map<string | undefined, Spot$<T>>
   private mark$: number
-  private actual$: SpotSubTree$<T>
-  private addedDuringUpdate$: SpotAuxSubTree$<T>
-  private removedDuringUpdate$: SpotSubTree$<T>
+  private actual$: SpotSubList$<T>
+  private addedDuringUpdate$: SpotAuxSubList$<T>
+  private removedDuringUpdate$: SpotSubList$<T>
   private lastNotFoundKey: string | undefined
   private expectedNextSpot?: Spot$<T>
 
@@ -79,9 +79,9 @@ export class SpotTree<T> implements SpotTreeReader<T> {
     this.isStrictOrder$ = isStrictOrder
     this.map = new Map<string | undefined, Spot$<T>>()
     this.mark$ = ~1
-    this.actual$ = new SpotSubTree$<T>()
-    this.addedDuringUpdate$ = new SpotAuxSubTree$<T>()
-    this.removedDuringUpdate$ = new SpotSubTree$<T>()
+    this.actual$ = new SpotSubList$<T>()
+    this.addedDuringUpdate$ = new SpotAuxSubList$<T>()
+    this.removedDuringUpdate$ = new SpotSubList$<T>()
     this.lastNotFoundKey = undefined
     this.expectedNextSpot = undefined
   }
@@ -97,15 +97,15 @@ export class SpotTree<T> implements SpotTreeReader<T> {
     return this.mark$ > 0
   }
 
-  get children(): SpotSubTreeReader<T> {
+  get children(): SpotSubListReader<T> {
     return this.actual$
   }
 
-  get childrenAddedDuringUpdate(): SpotSubTreeReader<T> {
+  get childrenAddedDuringUpdate(): SpotSubListReader<T> {
     return this.addedDuringUpdate$
   }
 
-  get childrenRemovedDuringUpdate(): SpotSubTreeReader<T> {
+  get childrenRemovedDuringUpdate(): SpotSubListReader<T> {
     return this.removedDuringUpdate$
   }
 
@@ -114,7 +114,7 @@ export class SpotTree<T> implements SpotTreeReader<T> {
     if (key !== undefined && key !== this.lastNotFoundKey) {
       result = this.map.get(key)
       if (result !== undefined) {
-        if (this.getKey(result.node) !== key) {
+        if (this.getKey(result.value) !== key) {
           this.lastNotFoundKey = key
           result = undefined
         }
@@ -144,14 +144,14 @@ export class SpotTree<T> implements SpotTreeReader<T> {
       const map = this.map
       for (const x of this.removedDuringUpdate$.items()) {
         x.mark$ = m + Mark.removed
-        map.delete(getKey(x.node))
+        map.delete(getKey(x.value))
       }
     }
     else {
       this.actual$.grab(this.removedDuringUpdate$, true)
       const getKey = this.getKey
       for (const x of this.addedDuringUpdate$.items()) {
-        this.map.delete(getKey(x.node))
+        this.map.delete(getKey(x.value))
         this.actual$.exclude(x)
       }
       this.addedDuringUpdate$.clear()
@@ -164,7 +164,7 @@ export class SpotTree<T> implements SpotTreeReader<T> {
     if (m <= 0)
       throw misuse(error ?? "update is not in progress")
     let spot = this.expectedNextSpot
-    if (key !== (spot ? this.getKey(spot.node) : undefined))
+    if (key !== (spot ? this.getKey(spot.value) : undefined))
       spot = this.lookupChild(key) as Spot$<T> | undefined
     if (spot !== undefined) {
       const distance = spot.mark$ - m
@@ -244,7 +244,7 @@ export class SpotTree<T> implements SpotTreeReader<T> {
 // Spot$
 
 class Spot$<T> implements Spot<T> {
-  readonly node: T
+  readonly value: T
   owner: Spot$<T>
   next?: Spot$<T>
   prev?: Spot$<T>
@@ -253,7 +253,7 @@ class Spot$<T> implements Spot<T> {
   mark$: number
 
   constructor(node: T, mark$: number) {
-    this.node = node
+    this.value = node
     this.owner = this
     this.next = undefined
     this.prev = undefined
@@ -267,9 +267,9 @@ class Spot$<T> implements Spot<T> {
   }
 }
 
-// AbstractSpotSubTree
+// AbstractSpotSubList
 
-abstract class AbstractSpotSubTree<T> implements SpotSubTreeReader<T> {
+abstract class AbstractSpotSubList<T> implements SpotSubListReader<T> {
   count: number = 0
   first?: Spot$<T> = undefined
   last?: Spot$<T> = undefined
@@ -318,9 +318,9 @@ abstract class AbstractSpotSubTree<T> implements SpotSubTreeReader<T> {
   }
 }
 
-// SpotSubTree$
+// SpotSubList$
 
-class SpotSubTree$<T> extends AbstractSpotSubTree<T> {
+class SpotSubList$<T> extends AbstractSpotSubList<T> {
   override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
     return spot.next
   }
@@ -339,7 +339,7 @@ class SpotSubTree$<T> extends AbstractSpotSubTree<T> {
     return prev
   }
 
-  grab(from: SpotSubTree$<T>, join: boolean): void {
+  grab(from: SpotSubList$<T>, join: boolean): void {
     const head = from.first
     if (join !== undefined && head !== undefined) {
       const last = this.last
@@ -359,9 +359,9 @@ class SpotSubTree$<T> extends AbstractSpotSubTree<T> {
   }
 }
 
-// SpotAuxSubTree
+// SpotAuxSubList
 
-class SpotAuxSubTree$<T> extends AbstractSpotSubTree<T> {
+class SpotAuxSubList$<T> extends AbstractSpotSubList<T> {
   override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
     return spot.aux
   }
