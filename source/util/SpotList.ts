@@ -24,7 +24,7 @@ export type GetSpotKey<T = unknown> = (node: T) => string | undefined
 
 export interface Spot<T> {
   readonly value: T
-  readonly owner: Spot<T>
+  readonly list: SpotList<T>
   readonly next?: Spot<T>
   readonly prev?: Spot<T>
   readonly index: number
@@ -196,7 +196,7 @@ export class SpotList<T> implements SpotListReader<T> {
     if (this.lookupChild(key) !== undefined)
       throw misuse(`key is already in use: ${key}`)
     const m = this.mark$
-    const spot = new Spot$<T>(instance,
+    const spot = new Spot$<T>(instance, this,
       m > 0 ? m + Mark.added : m)
     this.map.set(key, spot)
     this.lastNotFoundKey = undefined
@@ -237,8 +237,8 @@ export class SpotList<T> implements SpotListReader<T> {
     this.removedDuringUpdate$.clear()
   }
 
-  static createSpot<T>(node: T): Spot<T> {
-    return new Spot$<T>(node, 0)
+  static createSpot<T>(list: SpotList<T>, value: T): Spot<T> {
+    return new Spot$<T>(value, list, 0)
   }
 }
 
@@ -246,16 +246,16 @@ export class SpotList<T> implements SpotListReader<T> {
 
 class Spot$<T> implements Spot<T> {
   readonly value: T
-  owner: Spot$<T>
+  list: SpotList<T>
   next?: Spot$<T>
   prev?: Spot$<T>
   aux?: Spot$<T>
   index: number
   mark$: number
 
-  constructor(node: T, mark$: number) {
-    this.value = node
-    this.owner = this
+  constructor(value: T, list: SpotList<T>, mark$: number) {
+    this.value = value
+    this.list = list
     this.next = undefined
     this.prev = undefined
     this.aux = undefined
