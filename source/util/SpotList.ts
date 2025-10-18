@@ -64,9 +64,9 @@ export interface SpotSubListReader<T> {
 
 }
 
-// SpotListReconciliation / СверкаСпотСписка
+// SpotListRenovation / РеновацияСпотСписка
 
-export interface SpotListReconciliation<T> {
+export interface SpotListRenovation<T> {
 
   mark: number
 
@@ -92,7 +92,7 @@ export interface SpotListReconciliation<T> {
 
 }
 
-export class SpotListReconciliation$<T> implements SpotListReconciliation<T> {
+export class SpotListRenovation$<T> implements SpotListRenovation<T> {
 
   private static markGen: number = 0
 
@@ -111,7 +111,7 @@ export class SpotListReconciliation$<T> implements SpotListReconciliation<T> {
   private lastUnknownKey: string | undefined
 
   constructor(list: SpotList<T>, actual: SpotSubList$<T>, unconfirmed: SpotSubList$<T>) {
-    this.mark = (SpotListReconciliation$.markGen += MARK_MOD)
+    this.mark = (SpotListRenovation$.markGen += MARK_MOD)
     this.list = list
     this.actual$ = actual
     this.added$ = undefined
@@ -138,8 +138,8 @@ export class SpotListReconciliation$<T> implements SpotListReconciliation<T> {
 
   tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Spot<T> | undefined {
     const list = this.list
-    if (!list.isUpdateInProgress)
-      throw misuse(error ?? "update is not in progress")
+    if (!list.isRenovationInProgress)
+      throw misuse(error ?? "renovation is not in progress")
     let spot = this.expectedNext
     if (key !== (spot ? list.extractKey(spot.value) : undefined))
       spot = this.lookup(key) as Spot$<T> | undefined
@@ -193,8 +193,8 @@ export class SpotListReconciliation$<T> implements SpotListReconciliation<T> {
   }
 
   markAsMoved(spot: Spot<T>): void {
-    if (!this.list.isUpdateInProgress)
-      throw misuse("spot cannot be marked as moved outside of update cycle")
+    if (!this.list.isRenovationInProgress)
+      throw misuse("spot cannot be marked as moved outside of renovation cycle")
     const x = spot as Spot$<T>
     x.mark$ = this.mark + Mark.moved
   }
@@ -211,10 +211,10 @@ export class SpotListReconciliation$<T> implements SpotListReconciliation<T> {
     throw misuse("not implemented")
   }
 
-  done(error?: unknown): void {
+  done(error: unknown): void {
     const list = this.list
-    if (!list.isUpdateInProgress)
-      throw misuse("update is ended already")
+    if (!list.isRenovationInProgress)
+      throw misuse("renovation is ended already")
     if (error === undefined) {
       for (const x of this.unconfirmed$.items()) {
         x.mark$ = this.mark + Mark.removed
@@ -259,11 +259,11 @@ export class SpotList<T> implements SpotListReader<T> {
   get isStrictChildrenOrder(): boolean { return this.isStrictOrder$ }
   set isStrictChildrenOrder(value: boolean) {
     if (this.unconfirmed$ !== undefined)
-      throw misuse("cannot change strict mode in the middle of update")
+      throw misuse("cannot change strict mode in the middle of renovation")
     this.isStrictOrder$ = value
   }
 
-  get isUpdateInProgress(): boolean {
+  get isRenovationInProgress(): boolean {
     return this.unconfirmed$ !== undefined
   }
 
@@ -293,17 +293,17 @@ export class SpotList<T> implements SpotListReader<T> {
     throw misuse("not implemented")
   }
 
-  beginReconciliation(): SpotListReconciliation<T> {
+  beginRenovation(): SpotListRenovation<T> {
     if (this.unconfirmed$ !== undefined)
-      throw misuse("update is in progress already")
+      throw misuse("renovation is in progress already")
     const existing = this.actual$
     this.actual$ = new SpotSubList$<T>()
-    return new SpotListReconciliation$<T>(this, this.actual$, existing)
+    return new SpotListRenovation$<T>(this, this.actual$, existing)
   }
 
-  endReconciliation(reconciliation: SpotListReconciliation<T>, error?: unknown): void {
-    const r = reconciliation as SpotListReconciliation$<T>
-    r.done()
+  endRenovation(renovation: SpotListRenovation<T>, error?: unknown): void {
+    const r = renovation as SpotListRenovation$<T>
+    r.done(error)
     this.unconfirmed$ = undefined
   }
 
