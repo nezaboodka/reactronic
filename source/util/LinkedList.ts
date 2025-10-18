@@ -31,7 +31,7 @@ export interface Linked<T> {
 
   readonly value: T
 
-  readonly owner: LinkedSubList<T>
+  readonly list: LinkedSubList<T>
 
   readonly next?: Linked<T>
 
@@ -315,7 +315,7 @@ class Linked$<T> implements Linked<T> {
 
   readonly value: T
 
-  owner: LinkedSubList<T>
+  list: LinkedSubList<T>
 
   next?: Linked$<T>
 
@@ -325,9 +325,9 @@ class Linked$<T> implements Linked<T> {
 
   mark$: number
 
-  constructor(value: T, owner: LinkedSubList<T>, mark$: number) {
+  constructor(value: T, list: LinkedSubList<T>, mark$: number) {
     this.value = value
-    this.owner = owner
+    this.list = list
     this.next = undefined
     this.prev = undefined
     this.index = -1
@@ -348,20 +348,12 @@ abstract class LinkedSubList<T> implements LinkedSubListReader<T> {
 
   first?: Linked$<T> = undefined
 
-  last?: Linked$<T> = undefined
-
-  abstract nextOf(item: Linked$<T>): Linked$<T> | undefined
-
-  abstract setNextOf(item: Linked$<T>, next: Linked$<T> | undefined): Linked$<T> | undefined
-
-  abstract prevOf(item: Linked$<T>): Linked$<T> | undefined
-
-  abstract setPrevOf(item: Linked$<T>, prev: Linked$<T> | undefined): Linked$<T> | undefined
+  last?: Linked$<T> = undefined;
 
   *items(): Generator<Linked$<T>> {
     let x = this.first
     while (x !== undefined) {
-      const next = this.nextOf(x)
+      const next = x.next
       yield x
       x = next
     }
@@ -369,25 +361,25 @@ abstract class LinkedSubList<T> implements LinkedSubListReader<T> {
 
   include(item: Linked$<T>, before?: Linked$<T>): void {
     const last = this.last
-    item.owner = this
-    this.setPrevOf(item, last)
-    this.setNextOf(item, undefined)
+    item.list = this
+    item.prev = last
+    item.next = undefined
     if (last !== undefined)
-      this.last = this.setNextOf(last, item)
+      this.last = last.next = item
     else
       this.first = this.last = item
     this.count++
   }
 
   exclude(item: Linked$<T>): void {
-    const prev = this.prevOf(item)
+    const prev = item.prev
     if (prev !== undefined)
-      this.setNextOf(prev, this.nextOf(item))
-    const next = this.nextOf(item)
+      prev.next = item.next
+    const next = item.next
     if (next !== undefined)
-      this.setPrevOf(next, this.prevOf(item))
+      next.prev = item.prev
     if (item === this.first)
-      this.first = this.nextOf(item)
+      this.first = item.next
     this.count--
   }
 
@@ -403,31 +395,13 @@ abstract class LinkedSubList<T> implements LinkedSubListReader<T> {
 
 class LinkedSubList$<T> extends LinkedSubList<T> {
 
-  override nextOf(item: Linked$<T>): Linked$<T> | undefined {
-    return item.next
-  }
-
-  override setNextOf(item: Linked$<T>, next: Linked$<T> | undefined): Linked$<T> | undefined {
-    item.next = next
-    return next
-  }
-
-  override prevOf(item: Linked$<T>): Linked$<T> | undefined {
-    return item.prev
-  }
-
-  override setPrevOf(item: Linked$<T>, prev: Linked$<T> | undefined): Linked$<T> | undefined {
-    item.prev = prev
-    return prev
-  }
-
   grab(from: LinkedSubList$<T>, join: boolean): void {
     const head = from.first
     if (join !== undefined && head !== undefined) {
       const last = this.last
-      this.setPrevOf(head, last)
+      head.prev = last
       if (last !== undefined)
-        this.last = this.setNextOf(last, head)
+        this.last = last.next = head
       else
         this.first = this.last = head
       this.count += from.count
