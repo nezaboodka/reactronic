@@ -301,9 +301,9 @@ export class SpotList<T> implements SpotListReader<T> {
     return new SpotListRenovation$<T>(this, this.actual$, existing)
   }
 
-  endRenovation(renovation: SpotListRenovation<T>, error?: unknown): void {
-    const r = renovation as SpotListRenovation$<T>
-    r.done(error)
+  endRenovation(r: SpotListRenovation<T>, error?: unknown): void {
+    const renovation = r as SpotListRenovation$<T>
+    renovation.done(error)
     this.unconfirmed$ = undefined
   }
 
