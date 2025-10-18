@@ -84,7 +84,7 @@ export interface LinkedListRenovation<T> {
 
   move(item: Linked<T>, before: Linked<T> | undefined): void
 
-  markAsMoved(item: Linked<T>): void
+  setMark(item: Linked<T>, value: Mark): void
 
   added(): Generator<Linked<T>>
 
@@ -192,11 +192,11 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     throw misuse("not implemented")
   }
 
-  markAsMoved(item: Linked<T>): void {
+  setMark(item: Linked<T>, value: Mark): void {
     if (!this.list.isRenovationInProgress)
-      throw misuse("item cannot be marked as moved outside of renovation cycle")
+      throw misuse("item cannot be marked outside of renovation cycle")
     const x = item as Linked$<T>
-    x.mark$ = this.mark + Mark.moved
+    x.mark$ = this.mark + value
   }
 
   *actual(): Generator<Linked<T>> {
