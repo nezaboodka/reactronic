@@ -31,7 +31,7 @@ export interface Linked<T> {
 
   readonly value: T
 
-  readonly list: LinkedList<T>
+  readonly owner: LinkedSubList<T>
 
   readonly next?: Linked<T>
 
@@ -283,7 +283,7 @@ export class LinkedList<T> implements LinkedListReader<T> {
     const key = this.extractKey(value)
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
-    const item = new Linked$<T>(value, this, 0)
+    const item = new Linked$<T>(value, this.actual$, 0)
     this.map.set(key, item)
     this.actual$.include(item)
     return item
@@ -315,7 +315,7 @@ class Linked$<T> implements Linked<T> {
 
   readonly value: T
 
-  list: LinkedList<T>
+  owner: LinkedSubList<T>
 
   next?: Linked$<T>
 
@@ -325,9 +325,9 @@ class Linked$<T> implements Linked<T> {
 
   mark$: number
 
-  constructor(value: T, list: LinkedList<T>, mark$: number) {
+  constructor(value: T, owner: LinkedSubList<T>, mark$: number) {
     this.value = value
-    this.list = list
+    this.owner = owner
     this.next = undefined
     this.prev = undefined
     this.index = -1
@@ -340,9 +340,9 @@ class Linked$<T> implements Linked<T> {
 
 }
 
-// AbstractLinkedSubList
+// LinkedSubList
 
-abstract class AbstractLinkedSubList<T> implements LinkedSubListReader<T> {
+abstract class LinkedSubList<T> implements LinkedSubListReader<T> {
 
   count: number = 0
 
@@ -369,6 +369,7 @@ abstract class AbstractLinkedSubList<T> implements LinkedSubListReader<T> {
 
   include(item: Linked$<T>, before?: Linked$<T>): void {
     const last = this.last
+    item.owner = this
     this.setPrevOf(item, last)
     this.setNextOf(item, undefined)
     if (last !== undefined)
@@ -400,7 +401,7 @@ abstract class AbstractLinkedSubList<T> implements LinkedSubListReader<T> {
 
 // LinkedSubList$
 
-class LinkedSubList$<T> extends AbstractLinkedSubList<T> {
+class LinkedSubList$<T> extends LinkedSubList<T> {
 
   override nextOf(item: Linked$<T>): Linked$<T> | undefined {
     return item.next
