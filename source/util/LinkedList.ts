@@ -104,19 +104,19 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
   private added$: Array<Linked$<T>> | undefined
 
-  private unconfirmed$: LinkedSubList$<T>
+  private pending$: LinkedSubList$<T>
 
   private expectedNext: Linked$<T> | undefined
 
   private lastUnknownKey: string | undefined
 
-  constructor(list: LinkedList<T>, actual: LinkedSubList$<T>, unconfirmed: LinkedSubList$<T>) {
+  constructor(list: LinkedList<T>, actual: LinkedSubList$<T>, pending: LinkedSubList$<T>) {
     this.mark = (LinkedListRenovation$.markGen += MARK_MOD)
     this.list = list
     this.actual$ = actual
     this.added$ = undefined
-    this.unconfirmed$ = unconfirmed
-    this.expectedNext = unconfirmed.first
+    this.pending$ = pending
+    this.expectedNext = pending.first
     this.lastUnknownKey = undefined
   }
 
@@ -151,8 +151,8 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
           item.mark$ = m + Mark.moved
         else
           item.mark$ = m + Mark.existing
-        this.expectedNext = this.unconfirmed$.nextOf(item)
-        this.unconfirmed$.exclude(item)
+        this.expectedNext = this.pending$.nextOf(item)
+        this.pending$.exclude(item)
         item.index = this.actual$.count
         this.actual$.include(item)
         if (resolution)
@@ -216,13 +216,13 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     if (!list.isRenovationInProgress)
       throw misuse("renovation is ended already")
     if (error === undefined) {
-      for (const x of this.unconfirmed$.items()) {
+      for (const x of this.pending$.items()) {
         x.mark$ = this.mark + Mark.removed
         list.remove(x)
       }
     }
     else {
-      this.actual$.grab(this.unconfirmed$, true)
+      this.actual$.grab(this.pending$, true)
       if (this.added$ !== undefined) {
         for (const x of this.added$) {
           list.remove(x)
@@ -246,29 +246,29 @@ export class LinkedList<T> implements LinkedListReader<T> {
 
   private actual$: LinkedSubList$<T>
 
-  private unconfirmed$: LinkedSubList$<T> | undefined
+  private pending$: LinkedSubList$<T> | undefined
 
   constructor(extractKey: ExtractItemKey<T>, isStrictOrder: boolean = false) {
     this.extractKey = extractKey
     this.isStrictOrder$ = isStrictOrder
     this.map = new Map<string | undefined, Linked$<T>>()
     this.actual$ = new LinkedSubList$<T>()
-    this.unconfirmed$ = undefined
+    this.pending$ = undefined
   }
 
   get isStrictChildrenOrder(): boolean { return this.isStrictOrder$ }
   set isStrictChildrenOrder(value: boolean) {
-    if (this.unconfirmed$ !== undefined)
+    if (this.pending$ !== undefined)
       throw misuse("cannot change strict mode in the middle of renovation")
     this.isStrictOrder$ = value
   }
 
   get isRenovationInProgress(): boolean {
-    return this.unconfirmed$ !== undefined
+    return this.pending$ !== undefined
   }
 
   get count(): number {
-    return this.actual$.count + (this.unconfirmed$?.count ?? 0)
+    return this.actual$.count + (this.pending$?.count ?? 0)
   }
 
   get items(): LinkedSubListReader<T> {
@@ -294,7 +294,7 @@ export class LinkedList<T> implements LinkedListReader<T> {
   }
 
   beginRenovation(): LinkedListRenovation<T> {
-    if (this.unconfirmed$ !== undefined)
+    if (this.pending$ !== undefined)
       throw misuse("renovation is in progress already")
     const existing = this.actual$
     this.actual$ = new LinkedSubList$<T>()
@@ -304,7 +304,7 @@ export class LinkedList<T> implements LinkedListReader<T> {
   endRenovation(r: LinkedListRenovation<T>, error?: unknown): void {
     const renovation = r as LinkedListRenovation$<T>
     renovation.done(error)
-    this.unconfirmed$ = undefined
+    this.pending$ = undefined
   }
 
 }
