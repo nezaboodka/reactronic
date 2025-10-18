@@ -45,7 +45,7 @@ export interface Linked<T> {
 
 export interface LinkedListReader<T> {
 
-  readonly isStrictChildrenOrder: boolean
+  readonly isStrictOrder: boolean
 
   readonly items: LinkedSubListReader<T>
 
@@ -145,7 +145,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
       const m = this.mark$
       const distance = item.mark$ - m
       if (distance < 0 || distance >= MARK_MOD) {
-        if (list.isStrictChildrenOrder && item !== this.expectedNext)
+        if (list.isStrictOrder && item !== this.expectedNext)
           item.mark$ = m + Mark.moved
         else
           item.mark$ = m + Mark.existing
@@ -254,8 +254,8 @@ export class LinkedList<T> implements LinkedListReader<T> {
     this.pending$ = undefined
   }
 
-  get isStrictChildrenOrder(): boolean { return this.isStrictOrder$ }
-  set isStrictChildrenOrder(value: boolean) {
+  get isStrictOrder(): boolean { return this.isStrictOrder$ }
+  set isStrictOrder(value: boolean) {
     if (this.pending$ !== undefined)
       throw misuse("cannot change strict mode in the middle of renovation")
     this.isStrictOrder$ = value
