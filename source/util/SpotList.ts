@@ -10,172 +10,149 @@ import { misuse } from "./Dbg.js"
 // Mark / Отметка
 
 export enum Mark {
+
   existing = 0, // существующий
+
   added = 1,    // добавленный
+
   moved = 2,    // перемещённый
+
   removed = 3,  // удалённый
+
 }
 
 const MARK_MOD = 4
 
 // Spot / Спот
 
-export type GetSpotKey<T = unknown> = (node: T) => string | undefined
+export type ExtractSpotKey<T = unknown> = (node: T) => string | undefined
 
 export interface Spot<T> {
+
   readonly value: T
+
   readonly list: SpotList<T>
+
   readonly next?: Spot<T>
+
   readonly prev?: Spot<T>
+
   readonly index: number
+
   readonly mark: Mark
+
 }
 
 // SpotListReader / СпотДеревоЧитаемое
 
 export interface SpotListReader<T> {
+
   readonly isStrictChildrenOrder: boolean
-  readonly children: SpotSubListReader<T>
-  readonly childrenAddedDuringUpdate: SpotSubListReader<T>
-  readonly childrenRemovedDuringUpdate: SpotSubListReader<T>
-  lookupChild(key: string): Spot<T> | undefined
+
+  readonly items: SpotSubListReader<T>
+
+  lookup(key: string): Spot<T> | undefined
 }
 
 export interface SpotSubListReader<T> {
+
   readonly count: number
+
   readonly first?: Spot<T>
+
   readonly last?: Spot<T>
+
 }
 
-// SpotListUpdater / СпотСписокОбновляемый
+// SpotListReconciliation / СверкаСпотСписка
 
-export interface SpotListUpdater<T> {
-  readonly isChildrenUpdateInProgress: boolean
-  beginChildrenUpdate(): void
-  endChildrenUpdate(error?: unknown): void
-  tryReuseChild(key: string, resolution?: { isDuplicate: boolean }, error?: string): Spot<T> | undefined
-  addChild(instance: T, before?: Spot<T>): Spot<T>
-  removeChild(spot: Spot<T>): void
-  moveChild(spot: Spot<T>, before: Spot<T> | undefined): void
-  markChildAsMoved(spot: Spot<T>): void
-  clearAddedAndRemovedChildren(): void
+export interface SpotListReconciliation<T> {
+
+  mark: number
+
+  list: SpotList<T>
+
+  lookup(key: string | undefined): Spot<T> | undefined
+
+  tryReuse(key: string,
+    resolution?: { isDuplicate: boolean },
+    error?: string): Spot<T> | undefined
+
+  add(instance: T, before?: Spot<T>): Spot<T>
+
+  remove(spot: Spot<T>): void
+
+  move(spot: Spot<T>, before: Spot<T> | undefined): void
+
+  markAsMoved(spot: Spot<T>): void
+
+  added(): Generator<Spot<T>>
+
+  removed(): Generator<Spot<T>>
+
 }
 
-// SpotList / СпотДерево
+export class SpotListReconciliation$<T> implements SpotListReconciliation<T> {
 
-export class SpotList<T> implements SpotListReader<T> {
-  readonly getKey: GetSpotKey<T>
-  private isStrictOrder$: boolean
-  private map: Map<string | undefined, Spot$<T>>
-  private mark$: number
+  private static markGen: number = 0
+
+  mark: number
+
+  list: SpotList<T>
+
   private actual$: SpotSubList$<T>
-  // TODO: Move to an object like UpdateDetails
-  private addedDuringUpdate$: SpotAuxSubList$<T>
-  private removedDuringUpdate$: SpotSubList$<T>
-  private lastNotFoundKey: string | undefined
-  private expectedNextSpot?: Spot$<T>
 
-  constructor(getKey: GetSpotKey<T>, isStrictOrder: boolean = false) {
-    this.getKey = getKey
-    this.isStrictOrder$ = isStrictOrder
-    this.map = new Map<string | undefined, Spot$<T>>()
-    this.mark$ = ~1
-    this.actual$ = new SpotSubList$<T>()
-    this.addedDuringUpdate$ = new SpotAuxSubList$<T>()
-    this.removedDuringUpdate$ = new SpotSubList$<T>()
-    this.lastNotFoundKey = undefined
-    this.expectedNextSpot = undefined
+  private added$: Array<Spot$<T>> | undefined
+
+  private unconfirmed$: SpotSubList$<T>
+
+  private expectedNext: Spot$<T> | undefined
+
+  private lastUnknownKey: string | undefined
+
+  constructor(list: SpotList<T>, actual: SpotSubList$<T>, unconfirmed: SpotSubList$<T>) {
+    this.mark = (SpotListReconciliation$.markGen += MARK_MOD)
+    this.list = list
+    this.actual$ = actual
+    this.added$ = undefined
+    this.unconfirmed$ = unconfirmed
+    this.expectedNext = unconfirmed.first
+    this.lastUnknownKey = undefined
   }
 
-  get isStrictChildrenOrder(): boolean { return this.isStrictOrder$ }
-  set isStrictChildrenOrder(value: boolean) {
-    if (this.mark$ > 0)
-      throw misuse("cannot change strict mode in the middle of update")
-    this.isStrictOrder$ = value
-  }
-
-  get isUpdateInProgress(): boolean {
-    return this.mark$ > 0
-  }
-
-  get children(): SpotSubListReader<T> {
-    return this.actual$
-  }
-
-  get childrenAddedDuringUpdate(): SpotSubListReader<T> {
-    return this.addedDuringUpdate$
-  }
-
-  get childrenRemovedDuringUpdate(): SpotSubListReader<T> {
-    return this.removedDuringUpdate$
-  }
-
-  lookupChild(key: string | undefined): Spot<T> | undefined {
+  lookup(key: string | undefined): Spot<T> | undefined {
     let result: Spot<T> | undefined = undefined
-    if (key !== undefined && key !== this.lastNotFoundKey) {
-      result = this.map.get(key)
+    if (key !== undefined && key !== this.lastUnknownKey) {
+      result = this.list.lookup(key)
       if (result !== undefined) {
-        if (this.getKey(result.value) !== key) {
-          this.lastNotFoundKey = key
+        if (this.list.extractKey(result.value) !== key) {
+          this.lastUnknownKey = key
           result = undefined
         }
       }
       else
-        this.lastNotFoundKey = key
+        this.lastUnknownKey = key
     }
     return result
   }
 
-  beginUpdate(): void {
-    const m = this.mark$
-    if (m > 0)
-      throw misuse("update is in progress already")
-    this.mark$ = ~m + MARK_MOD
-    this.expectedNextSpot = this.actual$.first
-    this.removedDuringUpdate$.grab(this.actual$, false)
-    this.addedDuringUpdate$.clear()
-  }
-
-  endUpdate(error?: unknown): void {
-    const m = this.mark$
-    if (m <= 0)
-      throw misuse("update is ended already")
-    if (error === undefined) {
-      const getKey = this.getKey
-      const map = this.map
-      for (const x of this.removedDuringUpdate$.items()) {
-        x.mark$ = m + Mark.removed
-        map.delete(getKey(x.value))
-      }
-    }
-    else {
-      this.actual$.grab(this.removedDuringUpdate$, true)
-      const getKey = this.getKey
-      for (const x of this.addedDuringUpdate$.items()) {
-        this.map.delete(getKey(x.value))
-        this.actual$.exclude(x)
-      }
-      this.addedDuringUpdate$.clear()
-    }
-    this.mark$ = ~m
-  }
-
   tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Spot<T> | undefined {
-    const m = this.mark$
-    if (m <= 0)
+    const list = this.list
+    if (!list.isUpdateInProgress)
       throw misuse(error ?? "update is not in progress")
-    let spot = this.expectedNextSpot
-    if (key !== (spot ? this.getKey(spot.value) : undefined))
-      spot = this.lookupChild(key) as Spot$<T> | undefined
+    let spot = this.expectedNext
+    if (key !== (spot ? list.extractKey(spot.value) : undefined))
+      spot = this.lookup(key) as Spot$<T> | undefined
     if (spot !== undefined) {
+      const m = this.mark
       const distance = spot.mark$ - m
       if (distance < 0 || distance >= MARK_MOD) {
-        if (this.isStrictOrder$ && spot !== this.expectedNextSpot)
+        if (list.isStrictChildrenOrder && spot !== this.expectedNext)
           spot.mark$ = m + Mark.moved
         else
           spot.mark$ = m + Mark.existing
-        this.expectedNextSpot = this.removedDuringUpdate$.nextOf(spot)
-        this.removedDuringUpdate$.exclude(spot)
+        this.expectedNext = this.unconfirmed$.nextOf(spot)
+        this.unconfirmed$.exclude(spot)
         spot.index = this.actual$.count
         this.actual$.include(spot)
         if (resolution)
@@ -191,33 +168,24 @@ export class SpotList<T> implements SpotListReader<T> {
     return spot
   }
 
-  add(instance: T, before?: Spot<T>): Spot<T> {
-    const key = this.getKey(instance)
-    if (this.lookupChild(key) !== undefined)
-      throw misuse(`key is already in use: ${key}`)
-    const m = this.mark$
-    const spot = new Spot$<T>(instance, this,
-      m > 0 ? m + Mark.added : m)
-    this.map.set(key, spot)
-    this.lastNotFoundKey = undefined
-    this.expectedNextSpot = undefined
+  add(value: T, before?: Spot<T>): Spot<T> {
+    const spot = this.list.add(value) as Spot$<T>
+    const m = this.mark
+    spot.mark$ = m > 0 ? m + Mark.added : m
+    this.lastUnknownKey = undefined
+    this.expectedNext = undefined
     spot.index = this.actual$.count
-    this.actual$.include(spot, before as Spot$<T>)
-    if (m > 0) // update is in progress
-      this.addedDuringUpdate$.include(spot)
+    let added = this.added$
+    if (added == undefined)
+      added = this.added$ = []
+    added.push(spot)
     return spot
   }
 
   remove(spot: Spot<T>): void {
-    if (spot.mark !== Mark.removed) {
-      const x = spot as Spot$<T>
-      this.actual$.exclude(x)
-      const m = this.mark$
-      if (m > 0) { // update is in progress
-        this.removedDuringUpdate$.include(x)
-        x.mark$ = m + Mark.removed
-      }
-    }
+    const x = spot as Spot$<T>
+    const m = this.mark
+    x.mark$ = m + Mark.removed
   }
 
   move(spot: Spot<T>, before: Spot<T> | undefined): void {
@@ -225,32 +193,138 @@ export class SpotList<T> implements SpotListReader<T> {
   }
 
   markAsMoved(spot: Spot<T>): void {
-    const m = this.mark$
-    if (m <= 0) // update is not in progress
+    if (!this.list.isUpdateInProgress)
       throw misuse("spot cannot be marked as moved outside of update cycle")
     const x = spot as Spot$<T>
-    x.mark$ = m + Mark.moved
+    x.mark$ = this.mark + Mark.moved
   }
 
-  clearAddedAndRemoved(): void {
-    this.addedDuringUpdate$.clear()
-    this.removedDuringUpdate$.clear()
+  *actual(): Generator<Spot<T>> {
+    throw misuse("not implemented")
   }
 
-  static createSpot<T>(list: SpotList<T>, value: T): Spot<T> {
-    return new Spot$<T>(value, list, 0)
+  *added(): Generator<Spot<T>> {
+    throw misuse("not implemented")
   }
+
+  *removed(): Generator<Spot<T>> {
+    throw misuse("not implemented")
+  }
+
+  done(error?: unknown): void {
+    const list = this.list
+    if (!list.isUpdateInProgress)
+      throw misuse("update is ended already")
+    if (error === undefined) {
+      for (const x of this.unconfirmed$.items()) {
+        x.mark$ = this.mark + Mark.removed
+        list.remove(x)
+      }
+    }
+    else {
+      this.actual$.grab(this.unconfirmed$, true)
+      if (this.added$ !== undefined) {
+        for (const x of this.added$) {
+          list.remove(x)
+        }
+        this.added$ = undefined
+      }
+    }
+  }
+
+}
+
+// SpotList / СпотДерево
+
+export class SpotList<T> implements SpotListReader<T> {
+
+  readonly extractKey: ExtractSpotKey<T>
+
+  private isStrictOrder$: boolean
+
+  private map: Map<string | undefined, Spot$<T>>
+
+  private actual$: SpotSubList$<T>
+
+  private unconfirmed$: SpotSubList$<T> | undefined
+
+  constructor(extractKey: ExtractSpotKey<T>, isStrictOrder: boolean = false) {
+    this.extractKey = extractKey
+    this.isStrictOrder$ = isStrictOrder
+    this.map = new Map<string | undefined, Spot$<T>>()
+    this.actual$ = new SpotSubList$<T>()
+    this.unconfirmed$ = undefined
+  }
+
+  get isStrictChildrenOrder(): boolean { return this.isStrictOrder$ }
+  set isStrictChildrenOrder(value: boolean) {
+    if (this.unconfirmed$ !== undefined)
+      throw misuse("cannot change strict mode in the middle of update")
+    this.isStrictOrder$ = value
+  }
+
+  get isUpdateInProgress(): boolean {
+    return this.unconfirmed$ !== undefined
+  }
+
+  get count(): number {
+    return this.actual$.count + (this.unconfirmed$?.count ?? 0)
+  }
+
+  get items(): SpotSubListReader<T> {
+    return this.actual$
+  }
+
+  lookup(key: string | undefined): Spot<T> | undefined {
+    return this.map.get(key)
+  }
+
+  add(value: T): Spot<T> {
+    const key = this.extractKey(value)
+    if (this.map.get(key) !== undefined)
+      throw misuse(`key is already in use: ${key}`)
+    const spot = new Spot$<T>(value, this, 0)
+    this.map.set(key, spot)
+    this.actual$.include(spot)
+    return spot
+  }
+
+  remove(spot: Spot<T>): void {
+    throw misuse("not implemented")
+  }
+
+  beginReconciliation(): SpotListReconciliation<T> {
+    if (this.unconfirmed$ !== undefined)
+      throw misuse("update is in progress already")
+    const existing = this.actual$
+    this.actual$ = new SpotSubList$<T>()
+    return new SpotListReconciliation$<T>(this, this.actual$, existing)
+  }
+
+  endReconciliation(reconciliation: SpotListReconciliation<T>, error?: unknown): void {
+    const r = reconciliation as SpotListReconciliation$<T>
+    r.done()
+    this.unconfirmed$ = undefined
+  }
+
 }
 
 // Spot$
 
 class Spot$<T> implements Spot<T> {
+
   readonly value: T
+
   list: SpotList<T>
+
   next?: Spot$<T>
+
   prev?: Spot$<T>
+
   aux?: Spot$<T>
+
   index: number
+
   mark$: number
 
   constructor(value: T, list: SpotList<T>, mark$: number) {
@@ -266,18 +340,25 @@ class Spot$<T> implements Spot<T> {
   get mark(): Mark {
     return this.mark$ % MARK_MOD
   }
+
 }
 
 // AbstractSpotSubList
 
 abstract class AbstractSpotSubList<T> implements SpotSubListReader<T> {
+
   count: number = 0
+
   first?: Spot$<T> = undefined
+
   last?: Spot$<T> = undefined
 
   abstract nextOf(spot: Spot$<T>): Spot$<T> | undefined
+
   abstract setNextOf(spot: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined
+
   abstract prevOf(spot: Spot$<T>): Spot$<T> | undefined
+
   abstract setPrevOf(spot: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined
 
   *items(): Generator<Spot$<T>> {
@@ -317,11 +398,13 @@ abstract class AbstractSpotSubList<T> implements SpotSubListReader<T> {
     this.first = undefined
     this.last = undefined
   }
+
 }
 
 // SpotSubList$
 
 class SpotSubList$<T> extends AbstractSpotSubList<T> {
+
   override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
     return spot.next
   }
@@ -358,11 +441,13 @@ class SpotSubList$<T> extends AbstractSpotSubList<T> {
     }
     from.clear()
   }
+
 }
 
 // SpotAuxSubList
 
 class SpotAuxSubList$<T> extends AbstractSpotSubList<T> {
+
   override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
     return spot.aux
   }
@@ -379,4 +464,5 @@ class SpotAuxSubList$<T> extends AbstractSpotSubList<T> {
   override setPrevOf(spot: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined {
     return undefined
   }
+
 }
