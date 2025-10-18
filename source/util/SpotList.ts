@@ -23,19 +23,19 @@ export enum Mark {
 
 const MARK_MOD = 4
 
-// Spot / Спот
+// Linked / Связанное
 
-export type ExtractSpotKey<T = unknown> = (node: T) => string | undefined
+export type ExtractItemKey<T = unknown> = (node: T) => string | undefined
 
-export interface Spot<T> {
+export interface Linked<T> {
 
   readonly value: T
 
-  readonly list: SpotList<T>
+  readonly list: LinkedList<T>
 
-  readonly next?: Spot<T>
+  readonly next?: Linked<T>
 
-  readonly prev?: Spot<T>
+  readonly prev?: Linked<T>
 
   readonly index: number
 
@@ -43,75 +43,75 @@ export interface Spot<T> {
 
 }
 
-// SpotListReader / СпотДеревоЧитаемое
+// LinkedListReader / СписокСвязанныйЧитаемый
 
-export interface SpotListReader<T> {
+export interface LinkedListReader<T> {
 
   readonly isStrictChildrenOrder: boolean
 
-  readonly items: SpotSubListReader<T>
+  readonly items: LinkedSubListReader<T>
 
-  lookup(key: string): Spot<T> | undefined
+  lookup(key: string): Linked<T> | undefined
 }
 
-export interface SpotSubListReader<T> {
+export interface LinkedSubListReader<T> {
 
   readonly count: number
 
-  readonly first?: Spot<T>
+  readonly first?: Linked<T>
 
-  readonly last?: Spot<T>
+  readonly last?: Linked<T>
 
 }
 
-// SpotListRenovation / РеновацияСпотСписка
+// LinkedListRenovation / РеновацияСпискаСвязанного
 
-export interface SpotListRenovation<T> {
+export interface LinkedListRenovation<T> {
 
   mark: number
 
-  list: SpotList<T>
+  list: LinkedList<T>
 
-  lookup(key: string | undefined): Spot<T> | undefined
+  lookup(key: string | undefined): Linked<T> | undefined
 
   tryReuse(key: string,
     resolution?: { isDuplicate: boolean },
-    error?: string): Spot<T> | undefined
+    error?: string): Linked<T> | undefined
 
-  add(instance: T, before?: Spot<T>): Spot<T>
+  add(instance: T, before?: Linked<T>): Linked<T>
 
-  remove(spot: Spot<T>): void
+  remove(item: Linked<T>): void
 
-  move(spot: Spot<T>, before: Spot<T> | undefined): void
+  move(item: Linked<T>, before: Linked<T> | undefined): void
 
-  markAsMoved(spot: Spot<T>): void
+  markAsMoved(item: Linked<T>): void
 
-  added(): Generator<Spot<T>>
+  added(): Generator<Linked<T>>
 
-  removed(): Generator<Spot<T>>
+  removed(): Generator<Linked<T>>
 
 }
 
-export class SpotListRenovation$<T> implements SpotListRenovation<T> {
+export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
   private static markGen: number = 0
 
   mark: number
 
-  list: SpotList<T>
+  list: LinkedList<T>
 
-  private actual$: SpotSubList$<T>
+  private actual$: LinkedSubList$<T>
 
-  private added$: Array<Spot$<T>> | undefined
+  private added$: Array<Linked$<T>> | undefined
 
-  private unconfirmed$: SpotSubList$<T>
+  private unconfirmed$: LinkedSubList$<T>
 
-  private expectedNext: Spot$<T> | undefined
+  private expectedNext: Linked$<T> | undefined
 
   private lastUnknownKey: string | undefined
 
-  constructor(list: SpotList<T>, actual: SpotSubList$<T>, unconfirmed: SpotSubList$<T>) {
-    this.mark = (SpotListRenovation$.markGen += MARK_MOD)
+  constructor(list: LinkedList<T>, actual: LinkedSubList$<T>, unconfirmed: LinkedSubList$<T>) {
+    this.mark = (LinkedListRenovation$.markGen += MARK_MOD)
     this.list = list
     this.actual$ = actual
     this.added$ = undefined
@@ -120,8 +120,8 @@ export class SpotListRenovation$<T> implements SpotListRenovation<T> {
     this.lastUnknownKey = undefined
   }
 
-  lookup(key: string | undefined): Spot<T> | undefined {
-    let result: Spot<T> | undefined = undefined
+  lookup(key: string | undefined): Linked<T> | undefined {
+    let result: Linked<T> | undefined = undefined
     if (key !== undefined && key !== this.lastUnknownKey) {
       result = this.list.lookup(key)
       if (result !== undefined) {
@@ -136,25 +136,25 @@ export class SpotListRenovation$<T> implements SpotListRenovation<T> {
     return result
   }
 
-  tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Spot<T> | undefined {
+  tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Linked<T> | undefined {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse(error ?? "renovation is not in progress")
-    let spot = this.expectedNext
-    if (key !== (spot ? list.extractKey(spot.value) : undefined))
-      spot = this.lookup(key) as Spot$<T> | undefined
-    if (spot !== undefined) {
+    let item = this.expectedNext
+    if (key !== (item ? list.extractKey(item.value) : undefined))
+      item = this.lookup(key) as Linked$<T> | undefined
+    if (item !== undefined) {
       const m = this.mark
-      const distance = spot.mark$ - m
+      const distance = item.mark$ - m
       if (distance < 0 || distance >= MARK_MOD) {
-        if (list.isStrictChildrenOrder && spot !== this.expectedNext)
-          spot.mark$ = m + Mark.moved
+        if (list.isStrictChildrenOrder && item !== this.expectedNext)
+          item.mark$ = m + Mark.moved
         else
-          spot.mark$ = m + Mark.existing
-        this.expectedNext = this.unconfirmed$.nextOf(spot)
-        this.unconfirmed$.exclude(spot)
-        spot.index = this.actual$.count
-        this.actual$.include(spot)
+          item.mark$ = m + Mark.existing
+        this.expectedNext = this.unconfirmed$.nextOf(item)
+        this.unconfirmed$.exclude(item)
+        item.index = this.actual$.count
+        this.actual$.include(item)
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -165,49 +165,49 @@ export class SpotListRenovation$<T> implements SpotListRenovation<T> {
     }
     else if (resolution)
       resolution.isDuplicate = false
-    return spot
+    return item
   }
 
-  add(value: T, before?: Spot<T>): Spot<T> {
-    const spot = this.list.add(value) as Spot$<T>
+  add(value: T, before?: Linked<T>): Linked<T> {
+    const item = this.list.add(value) as Linked$<T>
     const m = this.mark
-    spot.mark$ = m > 0 ? m + Mark.added : m
+    item.mark$ = m > 0 ? m + Mark.added : m
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
-    spot.index = this.actual$.count
+    item.index = this.actual$.count
     let added = this.added$
     if (added == undefined)
       added = this.added$ = []
-    added.push(spot)
-    return spot
+    added.push(item)
+    return item
   }
 
-  remove(spot: Spot<T>): void {
-    const x = spot as Spot$<T>
+  remove(item: Linked<T>): void {
+    const x = item as Linked$<T>
     const m = this.mark
     x.mark$ = m + Mark.removed
   }
 
-  move(spot: Spot<T>, before: Spot<T> | undefined): void {
+  move(item: Linked<T>, before: Linked<T> | undefined): void {
     throw misuse("not implemented")
   }
 
-  markAsMoved(spot: Spot<T>): void {
+  markAsMoved(item: Linked<T>): void {
     if (!this.list.isRenovationInProgress)
-      throw misuse("spot cannot be marked as moved outside of renovation cycle")
-    const x = spot as Spot$<T>
+      throw misuse("item cannot be marked as moved outside of renovation cycle")
+    const x = item as Linked$<T>
     x.mark$ = this.mark + Mark.moved
   }
 
-  *actual(): Generator<Spot<T>> {
+  *actual(): Generator<Linked<T>> {
     throw misuse("not implemented")
   }
 
-  *added(): Generator<Spot<T>> {
+  *added(): Generator<Linked<T>> {
     throw misuse("not implemented")
   }
 
-  *removed(): Generator<Spot<T>> {
+  *removed(): Generator<Linked<T>> {
     throw misuse("not implemented")
   }
 
@@ -234,25 +234,25 @@ export class SpotListRenovation$<T> implements SpotListRenovation<T> {
 
 }
 
-// SpotList / СпотДерево
+// LinkedList / СписокСвязанный
 
-export class SpotList<T> implements SpotListReader<T> {
+export class LinkedList<T> implements LinkedListReader<T> {
 
-  readonly extractKey: ExtractSpotKey<T>
+  readonly extractKey: ExtractItemKey<T>
 
   private isStrictOrder$: boolean
 
-  private map: Map<string | undefined, Spot$<T>>
+  private map: Map<string | undefined, Linked$<T>>
 
-  private actual$: SpotSubList$<T>
+  private actual$: LinkedSubList$<T>
 
-  private unconfirmed$: SpotSubList$<T> | undefined
+  private unconfirmed$: LinkedSubList$<T> | undefined
 
-  constructor(extractKey: ExtractSpotKey<T>, isStrictOrder: boolean = false) {
+  constructor(extractKey: ExtractItemKey<T>, isStrictOrder: boolean = false) {
     this.extractKey = extractKey
     this.isStrictOrder$ = isStrictOrder
-    this.map = new Map<string | undefined, Spot$<T>>()
-    this.actual$ = new SpotSubList$<T>()
+    this.map = new Map<string | undefined, Linked$<T>>()
+    this.actual$ = new LinkedSubList$<T>()
     this.unconfirmed$ = undefined
   }
 
@@ -271,68 +271,65 @@ export class SpotList<T> implements SpotListReader<T> {
     return this.actual$.count + (this.unconfirmed$?.count ?? 0)
   }
 
-  get items(): SpotSubListReader<T> {
+  get items(): LinkedSubListReader<T> {
     return this.actual$
   }
 
-  lookup(key: string | undefined): Spot<T> | undefined {
+  lookup(key: string | undefined): Linked<T> | undefined {
     return this.map.get(key)
   }
 
-  add(value: T): Spot<T> {
+  add(value: T): Linked<T> {
     const key = this.extractKey(value)
     if (this.map.get(key) !== undefined)
       throw misuse(`key is already in use: ${key}`)
-    const spot = new Spot$<T>(value, this, 0)
-    this.map.set(key, spot)
-    this.actual$.include(spot)
-    return spot
+    const item = new Linked$<T>(value, this, 0)
+    this.map.set(key, item)
+    this.actual$.include(item)
+    return item
   }
 
-  remove(spot: Spot<T>): void {
+  remove(item: Linked<T>): void {
     throw misuse("not implemented")
   }
 
-  beginRenovation(): SpotListRenovation<T> {
+  beginRenovation(): LinkedListRenovation<T> {
     if (this.unconfirmed$ !== undefined)
       throw misuse("renovation is in progress already")
     const existing = this.actual$
-    this.actual$ = new SpotSubList$<T>()
-    return new SpotListRenovation$<T>(this, this.actual$, existing)
+    this.actual$ = new LinkedSubList$<T>()
+    return new LinkedListRenovation$<T>(this, this.actual$, existing)
   }
 
-  endRenovation(r: SpotListRenovation<T>, error?: unknown): void {
-    const renovation = r as SpotListRenovation$<T>
+  endRenovation(r: LinkedListRenovation<T>, error?: unknown): void {
+    const renovation = r as LinkedListRenovation$<T>
     renovation.done(error)
     this.unconfirmed$ = undefined
   }
 
 }
 
-// Spot$
+// Linked$
 
-class Spot$<T> implements Spot<T> {
+class Linked$<T> implements Linked<T> {
 
   readonly value: T
 
-  list: SpotList<T>
+  list: LinkedList<T>
 
-  next?: Spot$<T>
+  next?: Linked$<T>
 
-  prev?: Spot$<T>
-
-  aux?: Spot$<T>
+  prev?: Linked$<T>
 
   index: number
 
   mark$: number
 
-  constructor(value: T, list: SpotList<T>, mark$: number) {
+  constructor(value: T, list: LinkedList<T>, mark$: number) {
     this.value = value
     this.list = list
     this.next = undefined
     this.prev = undefined
-    this.aux = undefined
     this.index = -1
     this.mark$ = mark$
   }
@@ -343,25 +340,25 @@ class Spot$<T> implements Spot<T> {
 
 }
 
-// AbstractSpotSubList
+// AbstractLinkedSubList
 
-abstract class AbstractSpotSubList<T> implements SpotSubListReader<T> {
+abstract class AbstractLinkedSubList<T> implements LinkedSubListReader<T> {
 
   count: number = 0
 
-  first?: Spot$<T> = undefined
+  first?: Linked$<T> = undefined
 
-  last?: Spot$<T> = undefined
+  last?: Linked$<T> = undefined
 
-  abstract nextOf(spot: Spot$<T>): Spot$<T> | undefined
+  abstract nextOf(item: Linked$<T>): Linked$<T> | undefined
 
-  abstract setNextOf(spot: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined
+  abstract setNextOf(item: Linked$<T>, next: Linked$<T> | undefined): Linked$<T> | undefined
 
-  abstract prevOf(spot: Spot$<T>): Spot$<T> | undefined
+  abstract prevOf(item: Linked$<T>): Linked$<T> | undefined
 
-  abstract setPrevOf(spot: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined
+  abstract setPrevOf(item: Linked$<T>, prev: Linked$<T> | undefined): Linked$<T> | undefined
 
-  *items(): Generator<Spot$<T>> {
+  *items(): Generator<Linked$<T>> {
     let x = this.first
     while (x !== undefined) {
       const next = this.nextOf(x)
@@ -370,26 +367,26 @@ abstract class AbstractSpotSubList<T> implements SpotSubListReader<T> {
     }
   }
 
-  include(spot: Spot$<T>, before?: Spot$<T>): void {
+  include(item: Linked$<T>, before?: Linked$<T>): void {
     const last = this.last
-    this.setPrevOf(spot, last)
-    this.setNextOf(spot, undefined)
+    this.setPrevOf(item, last)
+    this.setNextOf(item, undefined)
     if (last !== undefined)
-      this.last = this.setNextOf(last, spot)
+      this.last = this.setNextOf(last, item)
     else
-      this.first = this.last = spot
+      this.first = this.last = item
     this.count++
   }
 
-  exclude(spot: Spot$<T>): void {
-    const prev = this.prevOf(spot)
+  exclude(item: Linked$<T>): void {
+    const prev = this.prevOf(item)
     if (prev !== undefined)
-      this.setNextOf(prev, this.nextOf(spot))
-    const next = this.nextOf(spot)
+      this.setNextOf(prev, this.nextOf(item))
+    const next = this.nextOf(item)
     if (next !== undefined)
-      this.setPrevOf(next, this.prevOf(spot))
-    if (spot === this.first)
-      this.first = this.nextOf(spot)
+      this.setPrevOf(next, this.prevOf(item))
+    if (item === this.first)
+      this.first = this.nextOf(item)
     this.count--
   }
 
@@ -401,29 +398,29 @@ abstract class AbstractSpotSubList<T> implements SpotSubListReader<T> {
 
 }
 
-// SpotSubList$
+// LinkedSubList$
 
-class SpotSubList$<T> extends AbstractSpotSubList<T> {
+class LinkedSubList$<T> extends AbstractLinkedSubList<T> {
 
-  override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
-    return spot.next
+  override nextOf(item: Linked$<T>): Linked$<T> | undefined {
+    return item.next
   }
 
-  override setNextOf(spot: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined {
-    spot.next = next
+  override setNextOf(item: Linked$<T>, next: Linked$<T> | undefined): Linked$<T> | undefined {
+    item.next = next
     return next
   }
 
-  override prevOf(spot: Spot$<T>): Spot$<T> | undefined {
-    return spot.prev
+  override prevOf(item: Linked$<T>): Linked$<T> | undefined {
+    return item.prev
   }
 
-  override setPrevOf(spot: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined {
-    spot.prev = prev
+  override setPrevOf(item: Linked$<T>, prev: Linked$<T> | undefined): Linked$<T> | undefined {
+    item.prev = prev
     return prev
   }
 
-  grab(from: SpotSubList$<T>, join: boolean): void {
+  grab(from: LinkedSubList$<T>, join: boolean): void {
     const head = from.first
     if (join !== undefined && head !== undefined) {
       const last = this.last
@@ -440,29 +437,6 @@ class SpotSubList$<T> extends AbstractSpotSubList<T> {
       this.last = from.last
     }
     from.clear()
-  }
-
-}
-
-// SpotAuxSubList
-
-class SpotAuxSubList$<T> extends AbstractSpotSubList<T> {
-
-  override nextOf(spot: Spot$<T>): Spot$<T> | undefined {
-    return spot.aux
-  }
-
-  override setNextOf(spot: Spot$<T>, next: Spot$<T> | undefined): Spot$<T> | undefined {
-    spot.aux = next
-    return next
-  }
-
-  override prevOf(spot: Spot$<T>): Spot$<T> | undefined {
-    return undefined
-  }
-
-  override setPrevOf(spot: Spot$<T>, prev: Spot$<T> | undefined): Spot$<T> | undefined {
-    return undefined
   }
 
 }
