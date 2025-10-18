@@ -7,9 +7,9 @@
 
 import { misuse } from "./Dbg.js"
 
-// Marker / Отметка
+// Mark / Отметка
 
-export enum Marker {
+export enum Mark {
 
   existing = 0, // существующий
 
@@ -39,7 +39,7 @@ export interface Linked<T> {
 
   readonly index: number
 
-  readonly marker: Marker
+  readonly mark: Mark
 
 }
 
@@ -68,7 +68,7 @@ export interface LinkedSubListReader<T> {
 
 export interface LinkedListRenovation<T> {
 
-  marker$: number
+  mark$: number
 
   list: LinkedList<T>
 
@@ -84,7 +84,7 @@ export interface LinkedListRenovation<T> {
 
   move(item: Linked<T>, before: Linked<T> | undefined): void
 
-  mark(item: Linked<T>, value: Marker): void
+  setMark(item: Linked<T>, value: Mark): void
 
   added(): Generator<Linked<T>>
 
@@ -96,7 +96,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
   private static markGen: number = 0
 
-  marker$: number
+  mark$: number
 
   list: LinkedList<T>
 
@@ -111,7 +111,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
   private lastUnknownKey: string | undefined
 
   constructor(list: LinkedList<T>, actual: LinkedSubList$<T>, pending: LinkedSubList$<T>) {
-    this.marker$ = (LinkedListRenovation$.markGen += MARK_MOD)
+    this.mark$ = (LinkedListRenovation$.markGen += MARK_MOD)
     this.list = list
     this.actual$ = actual
     this.added$ = undefined
@@ -144,13 +144,13 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     if (key !== (item ? list.extractKey(item.value) : undefined))
       item = this.lookup(key) as Linked$<T> | undefined
     if (item !== undefined) {
-      const m = this.marker$
-      const distance = item.marker$ - m
+      const m = this.mark$
+      const distance = item.mark$ - m
       if (distance < 0 || distance >= MARK_MOD) {
         if (list.isStrictChildrenOrder && item !== this.expectedNext)
-          item.marker$ = m + Marker.moved
+          item.mark$ = m + Mark.moved
         else
-          item.marker$ = m + Marker.existing
+          item.mark$ = m + Mark.existing
         this.expectedNext = item.next
         this.pending$.exclude(item)
         item.index = this.actual$.count
@@ -170,8 +170,8 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
   add(value: T, before?: Linked<T>): Linked<T> {
     const item = this.list.add(value) as Linked$<T>
-    const m = this.marker$
-    item.marker$ = m > 0 ? m + Marker.added : m
+    const m = this.mark$
+    item.mark$ = m > 0 ? m + Mark.added : m
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
     item.index = this.actual$.count
@@ -184,19 +184,19 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
   remove(item: Linked<T>): void {
     const x = item as Linked$<T>
-    const m = this.marker$
-    x.marker$ = m + Marker.removed
+    const m = this.mark$
+    x.mark$ = m + Mark.removed
   }
 
   move(item: Linked<T>, before: Linked<T> | undefined): void {
     throw misuse("not implemented")
   }
 
-  mark(item: Linked<T>, value: Marker): void {
+  setMark(item: Linked<T>, value: Mark): void {
     if (!this.list.isRenovationInProgress)
       throw misuse("item cannot be marked outside of renovation cycle")
     const x = item as Linked$<T>
-    x.marker$ = this.marker$ + value
+    x.mark$ = this.mark$ + value
   }
 
   *actual(): Generator<Linked<T>> {
@@ -217,7 +217,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
       throw misuse("renovation is ended already")
     if (error === undefined) {
       for (const x of this.pending$.items()) {
-        x.marker$ = this.marker$ + Marker.removed
+        x.mark$ = this.mark$ + Mark.removed
         list.remove(x)
       }
     }
@@ -323,19 +323,19 @@ class Linked$<T> implements Linked<T> {
 
   index: number
 
-  marker$: number
+  mark$: number
 
-  constructor(value: T, list: LinkedSubList<T>, marker: number) {
+  constructor(value: T, list: LinkedSubList<T>, mark: number) {
     this.value = value
     this.list = list
     this.next = undefined
     this.prev = undefined
     this.index = -1
-    this.marker$ = marker
+    this.mark$ = mark
   }
 
-  get marker(): Marker {
-    return this.marker$ % MARK_MOD
+  get mark(): Mark {
+    return this.mark$ % MARK_MOD
   }
 
 }
