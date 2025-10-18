@@ -282,7 +282,7 @@ export class LinkedList<T> implements LinkedListReader<T> {
   add(value: T): Linked<T> {
     const key = this.extractKey(value)
     if (this.map.get(key) !== undefined)
-      throw misuse(`key is already in use: ${key}`)
+      throw misuse(`item with given key already exists: ${key}`)
     const item = new Linked$<T>(value, this, 0)
     this.map.set(key, item)
     this.actual$.include(item)
