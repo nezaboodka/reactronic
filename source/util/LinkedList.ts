@@ -31,8 +31,6 @@ export interface Linked<T> {
 
   readonly value: T
 
-  readonly list: LinkedSubList<T>
-
   readonly next?: Linked<T>
 
   readonly prev?: Linked<T>
