@@ -151,7 +151,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
           item.mark$ = m + Mark.moved
         else
           item.mark$ = m + Mark.existing
-        this.expectedNext = this.pending$.nextOf(item)
+        this.expectedNext = item.next
         this.pending$.exclude(item)
         item.index = this.actual$.count
         this.actual$.include(item)
