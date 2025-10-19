@@ -113,13 +113,13 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
   private lastUnknownKey: string | undefined
 
-  constructor(list: LinkedList<T>, target: LinkedSubList$<T>, existing: LinkedSubList$<T>) {
+  constructor(list: LinkedList<T>, target: LinkedSubList$<T>, former: LinkedSubList$<T>) {
     this.mark$ = (LinkedListRenovation$.markGen += MARK_MOD)
     this.list = list
     this.renovated$ = target
     this.added$ = undefined
-    this.removed$ = existing
-    this.expectedNext = existing.first
+    this.removed$ = former
+    this.expectedNext = former.first
     this.lastUnknownKey = undefined
   }
 
@@ -262,35 +262,35 @@ export class LinkedList<T> implements CollectionReader<Linked<T>> {
 
   private map: Map<string | undefined, Linked$<T>>
 
-  private actual$: LinkedSubList$<T>
+  private current$: LinkedSubList$<T>
 
-  private pending$: LinkedSubList$<T> | undefined
+  private former$: LinkedSubList$<T> | undefined
 
   constructor(extractKey: ExtractItemKey<T>, isStrictOrder: boolean = false) {
     this.extractKey = extractKey
     this.isStrictOrder$ = isStrictOrder
     this.map = new Map<string | undefined, Linked$<T>>()
-    this.actual$ = new LinkedSubList$<T>()
-    this.pending$ = undefined
+    this.current$ = new LinkedSubList$<T>()
+    this.former$ = undefined
   }
 
   get isStrictOrder(): boolean { return this.isStrictOrder$ }
   set isStrictOrder(value: boolean) {
-    if (this.pending$ !== undefined)
+    if (this.former$ !== undefined)
       throw misuse("cannot change strict mode in the middle of renovation")
     this.isStrictOrder$ = value
   }
 
   get isRenovationInProgress(): boolean {
-    return this.pending$ !== undefined
+    return this.former$ !== undefined
   }
 
   get count(): number {
-    return this.actual$.count + (this.pending$?.count ?? 0)
+    return this.current$.count + (this.former$?.count ?? 0)
   }
 
   items(): Generator<Linked<T>> {
-    return this.actual$.items()
+    return this.current$.items()
   }
 
   lookup(key: string | undefined): Linked<T> | undefined {
@@ -301,9 +301,9 @@ export class LinkedList<T> implements CollectionReader<Linked<T>> {
     const key = this.extractKey(value)
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
-    const item = new Linked$<T>(value, this.actual$, 0)
+    const item = new Linked$<T>(value, this.current$, 0)
     this.map.set(key, item)
-    this.actual$.include(item)
+    this.current$.include(item)
     return item
   }
 
@@ -312,17 +312,17 @@ export class LinkedList<T> implements CollectionReader<Linked<T>> {
   }
 
   beginRenovation(): LinkedListRenovation<T> {
-    if (this.pending$ !== undefined)
+    if (this.former$ !== undefined)
       throw misuse("renovation is in progress already")
-    const existing = this.actual$
-    const target = this.actual$ = new LinkedSubList$<T>()
-    return new LinkedListRenovation$<T>(this, target, existing)
+    const former = this.current$
+    const target = this.current$ = new LinkedSubList$<T>()
+    return new LinkedListRenovation$<T>(this, target, former)
   }
 
   endRenovation(r: LinkedListRenovation<T>, error?: unknown): void {
     const renovation = r as LinkedListRenovation$<T>
     renovation.done(error)
-    this.pending$ = undefined
+    this.former$ = undefined
   }
 
 }
