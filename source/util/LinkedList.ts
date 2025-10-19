@@ -41,16 +41,13 @@ export interface Linked<T> {
 
 }
 
-// LinkedListReader / СписокСвязанныйЧитаемый
-
-export interface LinkedListReader<T> {
-
-  readonly isStrictOrder: boolean
-
-  readonly items: LinkedSubListReader<T>
-
-  lookup(key: string): Linked<T> | undefined
+export interface CollectionReader<T>
+{
+  count: number
+  items(): Generator<T>
 }
+
+// LinkedListReader / СписокСвязанныйЧитаемый
 
 export interface LinkedSubListReader<T> {
 
@@ -84,7 +81,15 @@ export interface LinkedListRenovation<T> {
 
   setMark(item: Linked<T>, value: Mark): void
 
+  readonly renovatedCount: number
+
+  renovated(): Generator<Linked<T>>
+
+  readonly addedCount: number
+
   added(): Generator<Linked<T>>
+
+  readonly removedCount: number
 
   removed(): Generator<Linked<T>>
 
@@ -98,23 +103,23 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
   list: LinkedList<T>
 
-  private actual$: LinkedSubList$<T>
+  private renovated$: LinkedSubList$<T>
 
   private added$: Array<Linked$<T>> | undefined
 
-  private pending$: LinkedSubList$<T>
+  private removed$: LinkedSubList$<T>
 
   private expectedNext: Linked$<T> | undefined
 
   private lastUnknownKey: string | undefined
 
-  constructor(list: LinkedList<T>, actual: LinkedSubList$<T>, pending: LinkedSubList$<T>) {
+  constructor(list: LinkedList<T>, target: LinkedSubList$<T>, existing: LinkedSubList$<T>) {
     this.mark$ = (LinkedListRenovation$.markGen += MARK_MOD)
     this.list = list
-    this.actual$ = actual
+    this.renovated$ = target
     this.added$ = undefined
-    this.pending$ = pending
-    this.expectedNext = pending.first
+    this.removed$ = existing
+    this.expectedNext = existing.first
     this.lastUnknownKey = undefined
   }
 
@@ -150,9 +155,9 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
         else
           item.mark$ = m + Mark.existing
         this.expectedNext = item.next
-        this.pending$.exclude(item)
-        item.index = this.actual$.count
-        this.actual$.include(item)
+        this.removed$.exclude(item)
+        item.index = this.renovated$.count
+        this.renovated$.include(item)
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -172,7 +177,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     item.mark$ = m > 0 ? m + Mark.added : m
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
-    item.index = this.actual$.count
+    item.index = this.renovated$.count
     let added = this.added$
     if (added == undefined)
       added = this.added$ = []
@@ -197,16 +202,31 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     x.mark$ = this.mark$ + value
   }
 
-  *actual(): Generator<Linked<T>> {
-    throw misuse("not implemented")
+  get renovatedCount(): number {
+    return this.renovated$.count
+  }
+
+  renovated(): Generator<Linked<T>> {
+    return this.renovated$.items()
+  }
+
+  get addedCount(): number {
+    return this.added$?.length ?? 0
   }
 
   *added(): Generator<Linked<T>> {
-    throw misuse("not implemented")
+    const added = this.added$
+    if (added !== undefined)
+      for (const x of added)
+        yield x
   }
 
-  *removed(): Generator<Linked<T>> {
-    throw misuse("not implemented")
+  get removedCount(): number {
+    return this.removed$.count
+  }
+
+  removed(): Generator<Linked<T>> {
+    return this.removed$.items()
   }
 
   done(error: unknown): void {
@@ -214,13 +234,13 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     if (!list.isRenovationInProgress)
       throw misuse("renovation is ended already")
     if (error === undefined) {
-      for (const x of this.pending$.items()) {
+      for (const x of this.removed$.items()) {
         x.mark$ = this.mark$ + Mark.removed
         list.remove(x)
       }
     }
     else {
-      this.actual$.grab(this.pending$, true)
+      this.renovated$.grab(this.removed$, true)
       if (this.added$ !== undefined) {
         for (const x of this.added$) {
           list.remove(x)
@@ -234,7 +254,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
 // LinkedList / СписокСвязанный
 
-export class LinkedList<T> implements LinkedListReader<T> {
+export class LinkedList<T> implements CollectionReader<Linked<T>> {
 
   readonly extractKey: ExtractItemKey<T>
 
@@ -269,8 +289,8 @@ export class LinkedList<T> implements LinkedListReader<T> {
     return this.actual$.count + (this.pending$?.count ?? 0)
   }
 
-  get items(): LinkedSubListReader<T> {
-    return this.actual$
+  items(): Generator<Linked<T>> {
+    return this.actual$.items()
   }
 
   lookup(key: string | undefined): Linked<T> | undefined {
@@ -295,8 +315,8 @@ export class LinkedList<T> implements LinkedListReader<T> {
     if (this.pending$ !== undefined)
       throw misuse("renovation is in progress already")
     const existing = this.actual$
-    this.actual$ = new LinkedSubList$<T>()
-    return new LinkedListRenovation$<T>(this, this.actual$, existing)
+    const target = this.actual$ = new LinkedSubList$<T>()
+    return new LinkedListRenovation$<T>(this, target, existing)
   }
 
   endRenovation(r: LinkedListRenovation<T>, error?: unknown): void {
