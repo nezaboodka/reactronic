@@ -46,3 +46,65 @@ export interface CollectionReader<T>
   count: number
   items(): Generator<T>
 }
+
+// LinkedListRenovation / РеновацияСпискаСвязанного
+
+export interface LinkedListRenovation<T> {
+
+  mark$: number
+
+  list: AbstractLinkedList<T>
+
+  lookup(key: string | undefined): Linked<T> | undefined
+
+  tryReuse(key: string,
+    resolution?: { isDuplicate: boolean },
+    error?: string): Linked<T> | undefined
+
+  add(instance: T, before?: Linked<T>): Linked<T>
+
+  remove(item: Linked<T>): void
+
+  move(item: Linked<T>, before: Linked<T> | undefined): void
+
+  setMark(item: Linked<T>, value: Mark): void
+
+  readonly renovatedCount: number
+
+  renovated(): Generator<Linked<T>>
+
+  readonly addedCount: number
+
+  added(): Generator<Linked<T>>
+
+  readonly removedCount: number
+
+  removed(): Generator<Linked<T>>
+
+}
+
+// LinkedList / СписокСвязанный
+
+export interface AbstractLinkedList<T> extends CollectionReader<Linked<T>> {
+
+  readonly extractKey: ExtractItemKey<T>
+
+  isStrictOrder: boolean
+
+  readonly isRenovationInProgress: boolean
+
+  readonly count: number
+
+  items(): Generator<Linked<T>>
+
+  lookup(key: string | undefined): Linked<T> | undefined
+
+  add(value: T): Linked<T>
+
+  remove(item: Linked<T>): void
+
+  beginRenovation(): LinkedListRenovation<T>
+
+  endRenovation(r: LinkedListRenovation<T>, error?: unknown): void
+
+}

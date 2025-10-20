@@ -6,45 +6,9 @@
 // automatically licensed under the license referred above.
 
 import { misuse } from "./Dbg.js"
-import { ExtractItemKey, Mark, Linked, CollectionReader } from "./LinkedList.defs.js"
+import { ExtractItemKey, Mark, Linked, AbstractLinkedList, LinkedListRenovation } from "./LinkedList.defs.js"
 
 const MARK_MOD = 4
-
-// LinkedListRenovation / РеновацияСпискаСвязанного
-
-export interface LinkedListRenovation<T> {
-
-  mark$: number
-
-  list: LinkedList<T>
-
-  lookup(key: string | undefined): Linked<T> | undefined
-
-  tryReuse(key: string,
-    resolution?: { isDuplicate: boolean },
-    error?: string): Linked<T> | undefined
-
-  add(instance: T, before?: Linked<T>): Linked<T>
-
-  remove(item: Linked<T>): void
-
-  move(item: Linked<T>, before: Linked<T> | undefined): void
-
-  setMark(item: Linked<T>, value: Mark): void
-
-  readonly renovatedCount: number
-
-  renovated(): Generator<Linked<T>>
-
-  readonly addedCount: number
-
-  added(): Generator<Linked<T>>
-
-  readonly removedCount: number
-
-  removed(): Generator<Linked<T>>
-
-}
 
 export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
@@ -52,7 +16,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
   mark$: number
 
-  list: LinkedList<T>
+  list: AbstractLinkedList<T>
 
   private renovated$: LinkedSubList$<T>
 
@@ -137,6 +101,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
   }
 
   remove(item: Linked<T>): void {
+    this.list.remove(item)
     const x = item as Linked$<T>
     const m = this.mark$
     x.mark$ = m + Mark.removed
@@ -205,7 +170,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
 // LinkedList / СписокСвязанный
 
-export class LinkedList<T> implements CollectionReader<Linked<T>> {
+export class LinkedList<T> implements AbstractLinkedList<T> {
 
   readonly extractKey: ExtractItemKey<T>
 
