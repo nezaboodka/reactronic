@@ -59,7 +59,7 @@ export interface LinkedListRenovation<T> {
     resolution?: { isDuplicate: boolean },
     error?: string): Linked<T> | undefined
 
-  add(instance: T, before?: Linked<T>): Linked<T>
+  add(item: Linked<T>, before?: Linked<T>): void
 
   remove(item: Linked<T>): void
 
@@ -67,17 +67,17 @@ export interface LinkedListRenovation<T> {
 
   setMark(item: Linked<T>, value: Mark): void
 
-  readonly renovatedCount: number
+  readonly currentCount: number
 
-  renovated(): Generator<Linked<T>>
+  current(): Generator<Linked<T>>
 
   readonly addedCount: number
 
   added(): Generator<Linked<T>>
 
-  readonly removedCount: number
+  readonly disappearedCount: number
 
-  removed(): Generator<Linked<T>>
+  disappeared(): Generator<Linked<T>>
 
 }
 
@@ -97,7 +97,7 @@ export interface AbstractLinkedList<T> extends CollectionReader<Linked<T>> {
 
   lookup(key: string | undefined): Linked<T> | undefined
 
-  add(value: T): Linked<T>
+  add(item: Linked<T>): void
 
   remove(item: Linked<T>): void
 

@@ -55,14 +55,13 @@ export class LinkedList<T> implements AbstractLinkedList<T> {
     return this.map.get(key)
   }
 
-  add(value: T): Linked<T> {
-    const key = this.extractKey(value)
+  add(item: Linked<T>): void {
+    const t = item as Linked$<T>
+    const key = this.extractKey(item.value)
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
-    const item = new Linked$<T>(value, this.current$, 0)
-    this.map.set(key, item)
-    this.current$.include(item)
-    return item
+    this.map.set(key, t)
+    this.current$.include(t)
   }
 
   remove(item: Linked<T>): void {
@@ -192,21 +191,21 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
   list: AbstractLinkedList<T>
 
-  private renovated$: LinkedSubList$<T>
+  private current$: LinkedSubList$<T>
 
   private added$: Array<Linked$<T>> | undefined
 
-  private removed$: LinkedSubList$<T>
+  private former$: LinkedSubList$<T>
 
   private expectedNext: Linked$<T> | undefined
 
   private lastUnknownKey: string | undefined
 
-  constructor(list: LinkedList<T>, target: LinkedSubList$<T>, former: LinkedSubList$<T>) {
+  constructor(list: LinkedList<T>, current: LinkedSubList$<T>, former: LinkedSubList$<T>) {
     this.list = list
-    this.renovated$ = target
+    this.current$ = current
     this.added$ = undefined
-    this.removed$ = former
+    this.former$ = former
     this.expectedNext = former.first
     this.lastUnknownKey = undefined
   }
@@ -235,15 +234,15 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     if (key !== (item ? list.extractKey(item.value) : undefined))
       item = this.lookup(key) as Linked$<T> | undefined
     if (item !== undefined) {
-      if (item.list !== this.renovated$) {
+      if (item.list !== this.current$) {
         if (list.isStrictOrder && item !== this.expectedNext)
           item.mark$ = Mark.moved
         else
           item.mark$ = Mark.existing
         this.expectedNext = item.next
-        this.removed$.exclude(item)
-        item.index = this.renovated$.count
-        this.renovated$.include(item)
+        this.former$.exclude(item)
+        item.index = this.current$.count
+        this.current$.include(item)
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -257,16 +256,17 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     return item
   }
 
-  add(value: T, before?: Linked<T>): Linked<T> {
-    const item = this.list.add(value) as Linked$<T>
-    item.mark$ = Mark.added
+  add(item: Linked<T>, before?: Linked<T>): Linked<T> {
+    const t = item as Linked$<T>
+    this.list.add(item)
+    t.mark$ = Mark.added
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
-    item.index = this.renovated$.count
+    t.index = this.current$.count
     let added = this.added$
     if (added == undefined)
       added = this.added$ = []
-    added.push(item)
+    added.push(t)
     return item
   }
 
@@ -287,12 +287,12 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     x.mark$ = value
   }
 
-  get renovatedCount(): number {
-    return this.renovated$.count
+  get currentCount(): number {
+    return this.current$.count
   }
 
-  renovated(): Generator<Linked<T>> {
-    return this.renovated$.items()
+  current(): Generator<Linked<T>> {
+    return this.current$.items()
   }
 
   get addedCount(): number {
@@ -306,12 +306,12 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
         yield x
   }
 
-  get removedCount(): number {
-    return this.removed$.count
+  get disappearedCount(): number {
+    return this.former$.count
   }
 
-  removed(): Generator<Linked<T>> {
-    return this.removed$.items()
+  disappeared(): Generator<Linked<T>> {
+    return this.former$.items()
   }
 
   done(error: unknown): void {
@@ -319,13 +319,13 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     if (!list.isRenovationInProgress)
       throw misuse("renovation is ended already")
     if (error === undefined) {
-      for (const x of this.removed$.items()) {
+      for (const x of this.former$.items()) {
         x.mark$ = Mark.removed
         list.remove(x)
       }
     }
     else {
-      this.renovated$.grab(this.removed$, true)
+      this.current$.grab(this.former$, true)
       if (this.added$ !== undefined) {
         for (const x of this.added$) {
           list.remove(x)
