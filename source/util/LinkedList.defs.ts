@@ -51,8 +51,6 @@ export interface CollectionReader<T>
 
 export interface LinkedListRenovation<T> {
 
-  mark$: number
-
   list: AbstractLinkedList<T>
 
   lookup(key: string | undefined): Linked<T> | undefined

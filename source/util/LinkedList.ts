@@ -12,10 +12,6 @@ const MARK_MOD = 4
 
 export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
-  private static markGen: number = 0
-
-  mark$: number
-
   list: AbstractLinkedList<T>
 
   private renovated$: LinkedSubList$<T>
@@ -29,7 +25,6 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
   private lastUnknownKey: string | undefined
 
   constructor(list: LinkedList<T>, target: LinkedSubList$<T>, former: LinkedSubList$<T>) {
-    this.mark$ = (LinkedListRenovation$.markGen += MARK_MOD)
     this.list = list
     this.renovated$ = target
     this.added$ = undefined
@@ -62,13 +57,11 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     if (key !== (item ? list.extractKey(item.value) : undefined))
       item = this.lookup(key) as Linked$<T> | undefined
     if (item !== undefined) {
-      const m = this.mark$
-      const distance = item.mark$ - m
-      if (distance < 0 || distance >= MARK_MOD) {
+      if (item.list !== this.renovated$) {
         if (list.isStrictOrder && item !== this.expectedNext)
-          item.mark$ = m + Mark.moved
+          item.mark$ = Mark.moved
         else
-          item.mark$ = m + Mark.existing
+          item.mark$ = Mark.existing
         this.expectedNext = item.next
         this.removed$.exclude(item)
         item.index = this.renovated$.count
@@ -88,8 +81,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
 
   add(value: T, before?: Linked<T>): Linked<T> {
     const item = this.list.add(value) as Linked$<T>
-    const m = this.mark$
-    item.mark$ = m > 0 ? m + Mark.added : m
+    item.mark$ = Mark.added
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
     item.index = this.renovated$.count
@@ -103,8 +95,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
   remove(item: Linked<T>): void {
     this.list.remove(item)
     const x = item as Linked$<T>
-    const m = this.mark$
-    x.mark$ = m + Mark.removed
+    x.mark$ = Mark.removed
   }
 
   move(item: Linked<T>, before: Linked<T> | undefined): void {
@@ -115,7 +106,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
     if (!this.list.isRenovationInProgress)
       throw misuse("item cannot be marked outside of renovation cycle")
     const x = item as Linked$<T>
-    x.mark$ = this.mark$ + value
+    x.mark$ = value
   }
 
   get renovatedCount(): number {
@@ -151,7 +142,7 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
       throw misuse("renovation is ended already")
     if (error === undefined) {
       for (const x of this.removed$.items()) {
-        x.mark$ = this.mark$ + Mark.removed
+        x.mark$ = Mark.removed
         list.remove(x)
       }
     }
