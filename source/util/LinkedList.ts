@@ -249,7 +249,7 @@ class Linked$<T> implements Linked<T> {
 
   readonly value: T
 
-  list: LinkedSubList<T>
+  list: LinkedSubList$<T>
 
   next?: Linked$<T>
 
@@ -259,7 +259,7 @@ class Linked$<T> implements Linked<T> {
 
   mark$: number
 
-  constructor(value: T, list: LinkedSubList<T>, mark: number) {
+  constructor(value: T, list: LinkedSubList$<T>, mark: number) {
     this.value = value
     this.list = list
     this.next = undefined
@@ -274,9 +274,9 @@ class Linked$<T> implements Linked<T> {
 
 }
 
-// LinkedSubList
+// LinkedSubList$
 
-abstract class LinkedSubList<T> {
+class LinkedSubList$<T> {
 
   count: number = 0
 
@@ -322,12 +322,6 @@ abstract class LinkedSubList<T> {
     this.first = undefined
     this.last = undefined
   }
-
-}
-
-// LinkedSubList$
-
-class LinkedSubList$<T> extends LinkedSubList<T> {
 
   grab(from: LinkedSubList$<T>, join: boolean): void {
     const head = from.first
