@@ -6,58 +6,9 @@
 // automatically licensed under the license referred above.
 
 import { misuse } from "./Dbg.js"
-
-// Mark / Отметка
-
-export enum Mark {
-
-  existing = 0, // существующий
-
-  added = 1,    // добавленный
-
-  moved = 2,    // перемещённый
-
-  removed = 3,  // удалённый
-
-}
+import { ExtractItemKey, Mark, Linked, CollectionReader } from "./LinkedList.defs.js"
 
 const MARK_MOD = 4
-
-// Linked / Связанное
-
-export type ExtractItemKey<T = unknown> = (node: T) => string | undefined
-
-export interface Linked<T> {
-
-  readonly value: T
-
-  readonly next?: Linked<T>
-
-  readonly prev?: Linked<T>
-
-  readonly index: number
-
-  readonly mark: Mark
-
-}
-
-export interface CollectionReader<T>
-{
-  count: number
-  items(): Generator<T>
-}
-
-// LinkedListReader / СписокСвязанныйЧитаемый
-
-export interface LinkedSubListReader<T> {
-
-  readonly count: number
-
-  readonly first?: Linked<T>
-
-  readonly last?: Linked<T>
-
-}
 
 // LinkedListRenovation / РеновацияСпискаСвязанного
 
@@ -360,7 +311,7 @@ class Linked$<T> implements Linked<T> {
 
 // LinkedSubList
 
-abstract class LinkedSubList<T> implements LinkedSubListReader<T> {
+abstract class LinkedSubList<T> {
 
   count: number = 0
 
