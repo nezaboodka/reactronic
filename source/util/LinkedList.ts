@@ -129,24 +129,7 @@ class Linked$<T> implements Linked<T> {
 
 
   link$(list: LinkedSubList$<T> | undefined, before: Linked$<T> | undefined): void {
-    if (before !== undefined) {
-      if (list === undefined)
-        list = before.list!
-      else if (list !== before.list)
-        throw misuse("sibling is not in the given list")
-      this.unlink()
-      const after = before.prev$
-      this.prev$ = after
-      this.next$ = before
-      before.prev$ = this
-      if (after !== undefined)
-        after.next$ = this
-      if (before == list.first)
-        list.first = this
-      this.list$ = list
-      list.count++
-    }
-    else {
+    if (before === undefined) {
       this.unlink()
       if (list !== undefined) {
         this.list$ = list
@@ -164,6 +147,23 @@ class Linked$<T> implements Linked<T> {
         this.next$ = undefined
         this.prev$ = undefined
       }
+    }
+    else {
+      if (list === undefined)
+        list = before.list!
+      else if (list !== before.list)
+        throw misuse("sibling is not in the given list")
+      this.unlink()
+      const after = before.prev$
+      this.prev$ = after
+      this.next$ = before
+      before.prev$ = this
+      if (after !== undefined)
+        after.next$ = this
+      if (before == list.first)
+        list.first = this
+      this.list$ = list
+      list.count++
     }
   }
 
