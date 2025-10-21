@@ -119,15 +119,6 @@ class Linked$<T> implements Linked<T> {
     return this.mark$ % MARK_MOD
   }
 
-  // const last = this.last
-  // item.link$(this, last, undefined)
-  // if (last !== undefined)
-  //   this.last = last.next = item
-  // else
-  //   this.first = this.last = item
-  // this.count++
-
-
   link$(list: LinkedSubList$<T> | undefined, before: Linked$<T> | undefined): void {
     if (before === undefined) {
       this.unlink()
