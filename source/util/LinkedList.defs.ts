@@ -27,7 +27,7 @@ export enum Mark {
 
 export interface Linked<T> {
 
-  readonly value: T
+  value: T
 
   readonly next?: Linked<T>
 

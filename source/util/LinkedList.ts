@@ -61,7 +61,7 @@ export class LinkedList<T> implements AbstractLinkedList<T> {
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
     this.map.set(key, t)
-    this.current$.include(t)
+    t.link$(this.current$, undefined)
   }
 
   remove(item: Linked<T>): void {
@@ -88,29 +88,98 @@ export class LinkedList<T> implements AbstractLinkedList<T> {
 
 class Linked$<T> implements Linked<T> {
 
-  readonly value: T
+  private list$: LinkedSubList$<T> | undefined
 
-  list: LinkedSubList$<T>
+  private next$: Linked$<T> | undefined
 
-  next?: Linked$<T>
+  private prev$: Linked$<T> | undefined
 
-  prev?: Linked$<T>
+  value: T
+
+  get list(): LinkedSubList$<T> | undefined { return this.list$ }
+
+  get next(): Linked$<T> | undefined { return this.next$ }
+
+  get prev(): Linked$<T> | undefined { return this.prev$ }
 
   index: number
 
   mark$: number
 
-  constructor(value: T, list: LinkedSubList$<T>, mark: number) {
+  constructor(value: T) {
     this.value = value
-    this.list = list
-    this.next = undefined
-    this.prev = undefined
+    this.list$ = undefined
+    this.next$ = undefined
+    this.prev$ = undefined
     this.index = -1
-    this.mark$ = mark
+    this.mark$ = 0
   }
 
   get mark(): Mark {
     return this.mark$ % MARK_MOD
+  }
+
+  // const last = this.last
+  // item.link$(this, last, undefined)
+  // if (last !== undefined)
+  //   this.last = last.next = item
+  // else
+  //   this.first = this.last = item
+  // this.count++
+
+
+  link$(list: LinkedSubList$<T> | undefined, before: Linked$<T> | undefined): void {
+    if (before !== undefined) {
+      if (list === undefined)
+        list = before.list!
+      else if (list !== before.list)
+        throw misuse("sibling is not in the given list")
+      this.unlink()
+      const after = before.prev$
+      this.prev$ = after
+      this.next$ = before
+      before.prev$ = this
+      if (after !== undefined)
+        after.next$ = this
+      if (before == list.first)
+        list.first = this
+      this.list$ = list
+      list.count++
+    }
+    else {
+      this.unlink()
+      if (list !== undefined) {
+        this.list$ = list
+        const last = list.last
+        this.prev$ = last
+        this.next$ = undefined
+        if (last !== undefined)
+          list.last = last.next$ = this
+        else
+          list.first = list.last = this
+        list.count++
+      }
+      else {
+        this.list$ = undefined
+        this.next$ = undefined
+        this.prev$ = undefined
+      }
+    }
+  }
+
+  private unlink(): void {
+    const list = this.list
+    if (list) {
+      const prev = this.prev$
+      if (prev !== undefined)
+        prev.next$ = this.next$
+      const next = this.next$
+      if (next !== undefined)
+        next.prev$ = this.prev$
+      if (this === list.first)
+        list.first = this.next$
+      list.count--
+    }
   }
 
 }
@@ -134,29 +203,27 @@ class LinkedSubList$<T> {
     }
   }
 
-  include(item: Linked$<T>, before?: Linked$<T>): void {
-    const last = this.last
-    item.list = this
-    item.prev = last
-    item.next = undefined
-    if (last !== undefined)
-      this.last = last.next = item
-    else
-      this.first = this.last = item
-    this.count++
-  }
+  // include(item: Linked$<T>, before?: Linked$<T>): void {
+  //   const last = this.last
+  //   item.link$(this, last, undefined)
+  //   if (last !== undefined)
+  //     this.last = last.next = item
+  //   else
+  //     this.first = this.last = item
+  //   this.count++
+  // }
 
-  exclude(item: Linked$<T>): void {
-    const prev = item.prev
-    if (prev !== undefined)
-      prev.next = item.next
-    const next = item.next
-    if (next !== undefined)
-      next.prev = item.prev
-    if (item === this.first)
-      this.first = item.next
-    this.count--
-  }
+  // exclude(item: Linked$<T>): void {
+  //   const prev = item.prev
+  //   if (prev !== undefined)
+  //     prev.next = item.next
+  //   const next = item.next
+  //   if (next !== undefined)
+  //     next.prev = item.prev
+  //   if (item === this.first)
+  //     this.first = item.next
+  //   this.count--
+  // }
 
   clear(): void {
     this.count = 0
@@ -167,12 +234,12 @@ class LinkedSubList$<T> {
   grab(from: LinkedSubList$<T>, join: boolean): void {
     const head = from.first
     if (join !== undefined && head !== undefined) {
-      const last = this.last
-      head.prev = last
-      if (last !== undefined)
-        this.last = last.next = head
-      else
-        this.first = this.last = head
+      // const last = this.last
+      // head.prev$ = last
+      // if (last !== undefined)
+      //   this.last = last.next$ = head
+      // else
+      //   this.first = this.last = head
       this.count += from.count
     }
     else {
@@ -240,9 +307,8 @@ export class LinkedListRenovation$<T> implements LinkedListRenovation<T> {
         else
           item.mark$ = Mark.existing
         this.expectedNext = item.next
-        this.former$.exclude(item)
-        item.index = this.current$.count
-        this.current$.include(item)
+        item.link$(this.current$, undefined)
+        item.index = this.current$.count - 1
         if (resolution)
           resolution.isDuplicate = false
       }
