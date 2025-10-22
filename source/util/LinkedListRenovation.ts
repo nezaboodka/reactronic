@@ -8,9 +8,9 @@
 import { misuse } from "./Dbg.js"
 import { LinkedList, LinkedSubList, Linked, Mark } from "./LinkedList.js"
 
-// LinkedListRenovation$
+// LinkedListRenovation
 
-export class LinkedListRenovation$<T> {
+export class LinkedListRenovation<T> {
 
   list: LinkedList<T>
 
