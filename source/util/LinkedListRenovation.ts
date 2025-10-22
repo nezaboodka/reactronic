@@ -59,7 +59,7 @@ export class LinkedListRenovation<T> {
       throw misuse(error ?? "renovation is not in progress")
     let item = this.expectedNext
     if (key !== (item ? list.extractKey(item.value) : undefined))
-      item = this.lookup(key) as Linked<T> | undefined
+      item = this.lookup(key)
     if (item !== undefined) {
       const current = this.confirmed$
       if (item.list !== current) {
@@ -69,7 +69,7 @@ export class LinkedListRenovation<T> {
           item.mark$ = Mark.existing
         this.expectedNext = item.next
         item.link$(current, undefined)
-        item.index = current.count - 1
+        item.index$ = current.count - 1
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -84,23 +84,21 @@ export class LinkedListRenovation<T> {
   }
 
   add(item: Linked<T>, before?: Linked<T>): Linked<T> {
-    const t = item as Linked<T>
     this.list.add(item)
-    t.mark$ = Mark.added
+    item.mark$ = Mark.added
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
-    t.index = this.confirmed$.count
+    item.index$ = this.confirmed$.count
     let added = this.added$
     if (added == undefined)
       added = this.added$ = []
-    added.push(t)
+    added.push(item)
     return item
   }
 
   remove(item: Linked<T>): void {
     this.list.remove(item)
-    const x = item as Linked<T>
-    x.mark$ = Mark.removed
+    item.mark$ = Mark.removed
   }
 
   move(item: Linked<T>, before: Linked<T> | undefined): void {
@@ -110,8 +108,7 @@ export class LinkedListRenovation<T> {
   setMark(item: Linked<T>, value: Mark): void {
     if (!this.list.isRenovationInProgress)
       throw misuse("item cannot be marked outside of renovation cycle")
-    const x = item as Linked<T>
-    x.mark$ = value
+    item.mark$ = value
   }
 
   get confirmedCount(): number {

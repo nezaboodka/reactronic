@@ -113,7 +113,7 @@ export class Linked<T> {
 
   get prev(): Linked<T> | undefined { return this.prev$ }
 
-  index: number
+  index$: number
 
   mark$: number
 
@@ -122,7 +122,7 @@ export class Linked<T> {
     this.list$ = undefined
     this.next$ = undefined
     this.prev$ = undefined
-    this.index = -1
+    this.index$ = -1
     this.mark$ = 0
   }
 
