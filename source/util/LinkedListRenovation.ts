@@ -14,11 +14,11 @@ export class LinkedListRenovation<T> {
 
   list: LinkedList<T>
 
-  private current$: LinkedSubList<T>
+  private confirmed$: LinkedSubList<T>
 
   private added$: Array<Linked<T>> | undefined
 
-  private former$: LinkedSubList<T>
+  private unconfirmed$: LinkedSubList<T>
 
   private expectedNext: Linked<T> | undefined
 
@@ -27,14 +27,13 @@ export class LinkedListRenovation<T> {
   constructor(list: LinkedList<T>) {
     if (list.former$ !== undefined)
       throw misuse("renovation is in progress already")
-    const former = list.current$
-    const current = list.current$ = new LinkedSubList<T>()
-    list.former$ = former
+    const confirmed = new LinkedSubList<T>()
+    const unconfirmed = list.current$
     this.list = list
-    this.current$ = current
+    this.confirmed$ = list.current$ = confirmed
     this.added$ = undefined
-    this.former$ = former
-    this.expectedNext = former.first
+    this.unconfirmed$ = list.former$ = unconfirmed
+    this.expectedNext = unconfirmed.first
     this.lastUnknownKey = undefined
   }
 
@@ -62,7 +61,7 @@ export class LinkedListRenovation<T> {
     if (key !== (item ? list.extractKey(item.value) : undefined))
       item = this.lookup(key) as Linked<T> | undefined
     if (item !== undefined) {
-      const current = this.current$
+      const current = this.confirmed$
       if (item.list !== current) {
         if (list.isStrictOrder && item !== this.expectedNext)
           item.mark$ = Mark.moved
@@ -90,7 +89,7 @@ export class LinkedListRenovation<T> {
     t.mark$ = Mark.added
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
-    t.index = this.current$.count
+    t.index = this.confirmed$.count
     let added = this.added$
     if (added == undefined)
       added = this.added$ = []
@@ -115,12 +114,12 @@ export class LinkedListRenovation<T> {
     x.mark$ = value
   }
 
-  get currentCount(): number {
-    return this.current$.count
+  get confirmedCount(): number {
+    return this.confirmed$.count
   }
 
-  current(): Generator<Linked<T>> {
-    return this.current$.items()
+  confirmed(): Generator<Linked<T>> {
+    return this.confirmed$.items()
   }
 
   get addedCount(): number {
@@ -134,12 +133,12 @@ export class LinkedListRenovation<T> {
         yield x
   }
 
-  get disappearedCount(): number {
-    return this.former$.count
+  get unconfirmedCount(): number {
+    return this.unconfirmed$.count
   }
 
-  disappeared(): Generator<Linked<T>> {
-    return this.former$.items()
+  unconfirmed(): Generator<Linked<T>> {
+    return this.unconfirmed$.items()
   }
 
   done(error: unknown): void {
@@ -147,13 +146,13 @@ export class LinkedListRenovation<T> {
     if (!list.isRenovationInProgress)
       throw misuse("renovation is ended already")
     if (error === undefined) {
-      for (const x of this.former$.items()) {
+      for (const x of this.unconfirmed$.items()) {
         x.mark$ = Mark.removed
         list.remove(x)
       }
     }
     else {
-      this.current$.grab(this.former$, true)
+      this.confirmed$.grab(this.unconfirmed$, true)
       if (this.added$ !== undefined) {
         for (const x of this.added$) {
           list.remove(x)
