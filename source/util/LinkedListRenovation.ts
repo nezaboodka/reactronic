@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { misuse } from "./Dbg.js"
-import { LinkedList, LinkedSubList, Linked, Mark } from "./LinkedList.js"
+import { LinkedList, Linked, LinkedSubList, Mark } from "./LinkedList.js"
 
 // LinkedListRenovation
 
