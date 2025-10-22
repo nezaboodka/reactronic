@@ -62,14 +62,15 @@ export class LinkedListRenovation<T> {
     if (key !== (item ? list.extractKey(item.value) : undefined))
       item = this.lookup(key) as Linked<T> | undefined
     if (item !== undefined) {
-      if (item.list !== this.current$) {
+      const current = this.current$
+      if (item.list !== current) {
         if (list.isStrictOrder && item !== this.expectedNext)
           item.mark$ = Mark.moved
         else
           item.mark$ = Mark.existing
         this.expectedNext = item.next
-        item.link$(this.current$, undefined)
-        item.index = this.current$.count - 1
+        item.link$(current, undefined)
+        item.index = current.count - 1
         if (resolution)
           resolution.isDuplicate = false
       }
