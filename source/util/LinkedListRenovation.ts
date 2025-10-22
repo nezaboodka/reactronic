@@ -29,6 +29,7 @@ export class LinkedListRenovation<T> {
       throw misuse("renovation is in progress already")
     const former = list.current$
     const current = list.current$ = new LinkedSubList<T>()
+    list.former$ = former
     this.list = list
     this.current$ = current
     this.added$ = undefined
