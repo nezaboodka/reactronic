@@ -105,23 +105,23 @@ export class Linked<T> {
 
   private prev$: Linked<T> | undefined
 
-  value: T
-
   get list(): LinkedSubList<T> | undefined { return this.list$ }
 
   get next(): Linked<T> | undefined { return this.next$ }
 
   get prev(): Linked<T> | undefined { return this.prev$ }
 
+  value: T
+
   index$: number
 
   mark$: number
 
   constructor(value: T) {
-    this.value = value
     this.list$ = undefined
     this.next$ = undefined
     this.prev$ = undefined
+    this.value = value
     this.index$ = -1
     this.mark$ = 0
   }
