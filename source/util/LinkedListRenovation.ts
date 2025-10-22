@@ -16,9 +16,9 @@ export class LinkedListRenovation<T> {
 
   private confirmed$: LinkedSubList<T>
 
-  private added$: Array<Linked<T>> | undefined
-
   private unconfirmed$: LinkedSubList<T>
+
+  private added$: Array<Linked<T>> | undefined
 
   private expectedNext: Linked<T> | undefined
 
@@ -31,8 +31,8 @@ export class LinkedListRenovation<T> {
     const unconfirmed = list.current$
     this.list = list
     this.confirmed$ = list.current$ = confirmed
-    this.added$ = undefined
     this.unconfirmed$ = list.former$ = unconfirmed
+    this.added$ = undefined
     this.expectedNext = unconfirmed.first
     this.lastUnknownKey = undefined
   }
