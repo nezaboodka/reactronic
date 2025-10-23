@@ -77,13 +77,13 @@ export class LinkedList<T> {
   remove(item: Linked<T>): void {
     if (item.list !== this.current$ && item.list !== this.former$)
       throw misuse("given item doesn't belong to the given list")
-    LinkedList.deleteKey(this, item)
+    LinkedList.deleteKey$(this, item)
     Linked.link$(item, undefined, undefined)
   }
 
   // Internal
 
-  static deleteKey<T>(list: LinkedList<T>, item: Linked<T>): void {
+  static deleteKey$<T>(list: LinkedList<T>, item: Linked<T>): void {
     const key = list.extractKey(item)
     list.map.delete(key)
   }

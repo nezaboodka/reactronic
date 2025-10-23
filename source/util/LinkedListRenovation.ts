@@ -164,7 +164,7 @@ export class LinkedListRenovation<T> {
       throw misuse("renovation is ended already")
     if (error === undefined) {
       for (const x of this.unconfirmed$.items()) {
-        LinkedList.deleteKey(list, x)
+        LinkedList.deleteKey$(list, x)
         this.setStatus(x, 0, Mark.removed)
       }
     }
