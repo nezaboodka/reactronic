@@ -81,12 +81,11 @@ export class LinkedList<T> {
   }
 
   add(item: Linked<T>): void {
-    const t = item as Linked<T>
     const key = this.extractKey(item.value)
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
-    this.map.set(key, t)
-    t.link$(this.current$, undefined)
+    this.map.set(key, item)
+    Linked.link$(item, this.current$, undefined)
   }
 
   remove(item: Linked<T>): void {
@@ -128,41 +127,43 @@ export class Linked<T> {
 
   get mark(): Mark { return this.mark$ % MARK_MOD }
 
-  link$(list: LinkedSubList<T> | undefined, before: Linked<T> | undefined): void {
+  // Internal
+
+  static link$<T>(item: Linked<T>, list: LinkedSubList<T> | undefined, before: Linked<T> | undefined): void {
     if (before === undefined) {
-      this.unlink$()
+      Linked.unlink$(item)
       if (list !== undefined) {
         // Link to another list
-        this.list$ = list
+        item.list$ = list
         const last = list.last
-        this.prev$ = last
-        this.next$ = undefined
+        item.prev$ = last
+        item.next$ = undefined
         if (last !== undefined)
-          list.last = last.next$ = this
+          list.last = last.next$ = item
         else
-          list.first = list.last = this
+          list.first = list.last = item
         list.count++
       }
       else {
         // Leave item fully unlinked
-        this.list$ = undefined
-        this.next$ = undefined
-        this.prev$ = undefined
+        item.list$ = undefined
+        item.next$ = undefined
+        item.prev$ = undefined
       }
     }
     else {
       if (list === before.list && list !== undefined) {
-        this.unlink$()
+        Linked.unlink$(item)
         // Link to another list
         const after = before.prev$
-        this.prev$ = after
-        this.next$ = before
-        before.prev$ = this
+        item.prev$ = after
+        item.next$ = before
+        before.prev$ = item
         if (after !== undefined)
-          after.next$ = this
+          after.next$ = item
         if (before == list.first)
-          list.first = this
-        this.list$ = list
+          list.first = item
+        item.list$ = list
         list.count++
       }
       else {
@@ -177,21 +178,20 @@ export class Linked<T> {
     }
   }
 
-  private unlink$(): void {
-    const list = this.list
+  static unlink$<T>(item: Linked<T>): void {
+    const list = item.list
     if (list) {
       // Configure item
-      const prev = this.prev$
+      const prev = item.prev$
       if (prev !== undefined)
-        prev.next$ = this.next$
-      const next = this.next$
+        prev.next$ = item.next$
+      const next = item.next$
       if (next !== undefined)
-        next.prev$ = this.prev$
-
+        next.prev$ = item.prev$
       // Configure list
-      if (this === list.first)
-        list.first = this.next$
-      if (this === list.last)
+      if (item === list.first)
+        list.first = item.next$
+      if (item === list.last)
         list.last = undefined
       list.count--
     }
