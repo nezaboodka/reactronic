@@ -105,12 +105,6 @@ export class Linked<T> {
 
   private prev$: Linked<T> | undefined
 
-  get list(): LinkedSubList<T> | undefined { return this.list$ }
-
-  get next(): Linked<T> | undefined { return this.next$ }
-
-  get prev(): Linked<T> | undefined { return this.prev$ }
-
   value: T
 
   index$: number
@@ -126,9 +120,13 @@ export class Linked<T> {
     this.mark$ = 0
   }
 
-  get mark(): Mark {
-    return this.mark$ % MARK_MOD
-  }
+  get list(): LinkedSubList<T> | undefined { return this.list$ }
+
+  get next(): Linked<T> | undefined { return this.next$ }
+
+  get prev(): Linked<T> | undefined { return this.prev$ }
+
+  get mark(): Mark { return this.mark$ % MARK_MOD }
 
   link$(list: LinkedSubList<T> | undefined, before: Linked<T> | undefined): void {
     if (before === undefined) {
