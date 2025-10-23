@@ -9,7 +9,7 @@ import { misuse } from "./Dbg.js"
 
 // ExtractItemKey / ИзвлечьКлючЭлемента
 
-export type ExtractItemKey<T = unknown> = (node: T) => string | undefined
+export type ExtractItemKey<T = unknown> = (item: T) => string | undefined
 
 // CollectionReader / КоллекцияЧитаемая
 
@@ -23,7 +23,7 @@ export interface CollectionReader<T>
 
 export class LinkedList<T> {
 
-  readonly extractKey: ExtractItemKey<T>
+  readonly extractKey: ExtractItemKey<Linked<T>>
 
   private isStrictOrder$: boolean
 
@@ -35,7 +35,7 @@ export class LinkedList<T> {
   /* internal */
   former$: LinkedSubList<T> | undefined
 
-  constructor(extractKey: ExtractItemKey<T>, isStrictOrder: boolean = false) {
+  constructor(extractKey: ExtractItemKey<Linked<T>>, isStrictOrder: boolean = false) {
     this.extractKey = extractKey
     this.isStrictOrder$ = isStrictOrder
     this.map = new Map<string | undefined, Linked<T>>()
@@ -67,7 +67,7 @@ export class LinkedList<T> {
   }
 
   add(item: Linked<T>): void {
-    const key = this.extractKey(item.value)
+    const key = this.extractKey(item)
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
     this.map.set(key, item)
@@ -75,7 +75,11 @@ export class LinkedList<T> {
   }
 
   remove(item: Linked<T>): void {
-    throw misuse("not implemented")
+    if (item.list !== this.current$ && item.list !== this.former$)
+      throw misuse("given item doesn't belong to the given list")
+    const key = this.extractKey(item)
+    this.map.delete(key)
+    Linked.link$(item, undefined, undefined)
   }
 
 }
@@ -117,7 +121,7 @@ export class Linked<T> {
     list: LinkedSubList<T> | undefined,
     before: Linked<T> | undefined): void {
     if (before === undefined) {
-      Linked.unlink$(item)
+      Linked.unlink(item)
       if (list !== undefined) {
         // Link to another list
         item.list$ = list
@@ -139,7 +143,7 @@ export class Linked<T> {
     }
     else {
       if (list === before.list && list !== undefined) {
-        Linked.unlink$(item)
+        Linked.unlink(item)
         // Link to another list
         const after = before.prev$
         item.prev$ = after
@@ -164,7 +168,7 @@ export class Linked<T> {
     }
   }
 
-  static unlink$<T>(item: Linked<T>): void {
+  private static unlink<T>(item: Linked<T>): void {
     const list = item.list
     if (list) {
       // Configure item
