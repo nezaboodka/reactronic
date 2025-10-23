@@ -130,8 +130,9 @@ export class Linked<T> {
 
   link$(list: LinkedSubList<T> | undefined, before: Linked<T> | undefined): void {
     if (before === undefined) {
-      this.unlink()
+      this.unlink$()
       if (list !== undefined) {
+        // Link to another list
         this.list$ = list
         const last = list.last
         this.prev$ = last
@@ -143,41 +144,55 @@ export class Linked<T> {
         list.count++
       }
       else {
+        // Leave item fully unlinked
         this.list$ = undefined
         this.next$ = undefined
         this.prev$ = undefined
       }
     }
     else {
-      if (list === undefined)
-        list = before.list!
-      else if (list !== before.list)
-        throw misuse("sibling is not in the given list")
-      this.unlink()
-      const after = before.prev$
-      this.prev$ = after
-      this.next$ = before
-      before.prev$ = this
-      if (after !== undefined)
-        after.next$ = this
-      if (before == list.first)
-        list.first = this
-      this.list$ = list
-      list.count++
+      if (list === before.list && list !== undefined) {
+        // Link to another list
+        this.unlink$()
+        const after = before.prev$
+        this.prev$ = after
+        this.next$ = before
+        before.prev$ = this
+        if (after !== undefined)
+          after.next$ = this
+        if (before == list.first)
+          list.first = this
+        this.list$ = list
+        list.count++
+      }
+      else {
+        // Check for inconsistencies
+        if (list !== before.list)
+          throw misuse("sibling is not in the given list")
+        else if (before.list === undefined)
+          throw misuse("cannot link to sibling that is not in a list")
+        else
+          throw misuse("linked list invariant is broken")
+      }
     }
   }
 
-  private unlink(): void {
+  private unlink$(): void {
     const list = this.list
     if (list) {
+      // Configure item
       const prev = this.prev$
       if (prev !== undefined)
         prev.next$ = this.next$
       const next = this.next$
       if (next !== undefined)
         next.prev$ = this.prev$
+
+      // Configure list
       if (this === list.first)
         list.first = this.next$
+      if (this === list.last)
+        list.last = undefined
       list.count--
     }
   }
