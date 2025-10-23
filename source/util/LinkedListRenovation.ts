@@ -173,7 +173,7 @@ export class LinkedListRenovation<T> {
       const current = list.current$
       for (const x of unconfirmed.items()) {
         Linked.link$(x, current, undefined)
-        this.setStatus(x, 0, Mark.existing)
+        this.setStatus(x, current.count, Mark.existing)
       }
     }
     list.former$ = undefined
