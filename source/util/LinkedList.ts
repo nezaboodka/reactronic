@@ -11,22 +11,6 @@ import { misuse } from "./Dbg.js"
 
 export type ExtractItemKey<T = unknown> = (node: T) => string | undefined
 
-// Mark / Отметка
-
-export enum Mark {
-
-  existing = 0, // существующий
-
-  added = 1,    // добавленный
-
-  moved = 2,    // перемещённый
-
-  removed = 3,  // удалённый
-
-}
-
-const MARK_MOD = 4
-
 // CollectionReader / КоллекцияЧитаемая
 
 export interface CollectionReader<T>
@@ -45,9 +29,11 @@ export class LinkedList<T> {
 
   private map: Map<string | undefined, Linked<T>>
 
-  /* internal */ current$: LinkedSubList<T>
+  /* internal */
+  current$: LinkedSubList<T>
 
-  /* internal */ former$: LinkedSubList<T> | undefined
+  /* internal */
+  former$: LinkedSubList<T> | undefined
 
   constructor(extractKey: ExtractItemKey<T>, isStrictOrder: boolean = false) {
     this.extractKey = extractKey
@@ -125,11 +111,11 @@ export class Linked<T> {
 
   get prev(): Linked<T> | undefined { return this.prev$ }
 
-  get mark(): Mark { return this.mark$ % MARK_MOD }
-
   // Internal
 
-  static link$<T>(item: Linked<T>, list: LinkedSubList<T> | undefined, before: Linked<T> | undefined): void {
+  static link$<T>(item: Linked<T>,
+    list: LinkedSubList<T> | undefined,
+    before: Linked<T> | undefined): void {
     if (before === undefined) {
       Linked.unlink$(item)
       if (list !== undefined) {

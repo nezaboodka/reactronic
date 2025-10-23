@@ -6,7 +6,25 @@
 // automatically licensed under the license referred above.
 
 import { misuse } from "./Dbg.js"
-import { LinkedList, Linked, LinkedSubList, Mark } from "./LinkedList.js"
+import { LinkedList, Linked, LinkedSubList } from "./LinkedList.js"
+
+// Mark / Отметка
+
+export enum Mark {
+
+  existing = 0, // существующий
+
+  added = 1,    // добавленный
+
+  moved = 2,    // перемещённый
+
+  removed = 3,  // удалённый
+
+}
+
+const MARK_MOD = 4
+
+// LinkedListRenovation<T>
 
 export class LinkedListRenovation<T> {
 
@@ -63,13 +81,13 @@ export class LinkedListRenovation<T> {
     if (item !== undefined) {
       const current = this.confirmed$
       if (item.list !== current) {
+        this.expectedNext = item.next
         if (list.isStrictOrder && item !== this.expectedNext)
           item.mark$ = Mark.moved
         else
           item.mark$ = Mark.existing
-        this.expectedNext = item.next
-        item.link$(current, undefined)
-        item.index$ = current.count - 1
+        item.index$ = current.count
+        Linked.link$(item, current, undefined)
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -109,6 +127,10 @@ export class LinkedListRenovation<T> {
     if (!this.list.isRenovationInProgress)
       throw misuse("item cannot be marked outside of renovation cycle")
     item.mark$ = value
+  }
+
+  getMark(item: Linked<T>): Mark {
+    return item.mark$ % MARK_MOD
   }
 
   get confirmedCount(): number {
