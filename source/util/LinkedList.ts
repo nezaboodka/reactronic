@@ -96,17 +96,14 @@ export class Linked<T> {
 
   value: T
 
-  index$: number
-
-  mark$: number
+  status$: number
 
   constructor(value: T) {
     this.list$ = undefined
     this.next$ = undefined
     this.prev$ = undefined
     this.value = value
-    this.index$ = -1
-    this.mark$ = 0
+    this.status$ = 0
   }
 
   get list(): LinkedSubList<T> | undefined { return this.list$ }

@@ -82,12 +82,13 @@ export class LinkedListRenovation<T> {
       const current = this.confirmed$
       if (item.list !== current) {
         this.expectedNext = item.next
-        if (list.isStrictOrder && item !== this.expectedNext)
-          item.mark$ = Mark.moved
-        else
-          item.mark$ = Mark.existing
-        item.index$ = current.count
         Linked.link$(item, current, undefined)
+        let mark: Mark
+        if (list.isStrictOrder && item !== this.expectedNext)
+          mark = Mark.moved
+        else
+          mark = Mark.existing
+        this.setStatus(item, current.count, mark)
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -103,10 +104,9 @@ export class LinkedListRenovation<T> {
 
   add(item: Linked<T>, before?: Linked<T>): Linked<T> {
     this.list.add(item)
-    item.mark$ = Mark.added
+    this.setStatus(item, this.confirmed$.count, Mark.added)
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
-    item.index$ = this.confirmed$.count
     let added = this.added$
     if (added == undefined)
       added = this.added$ = []
@@ -116,21 +116,19 @@ export class LinkedListRenovation<T> {
 
   remove(item: Linked<T>): void {
     this.list.remove(item)
-    item.mark$ = Mark.removed
+    this.setStatus(item, 0, Mark.removed)
   }
 
   move(item: Linked<T>, before: Linked<T> | undefined): void {
     throw misuse("not implemented")
   }
 
-  setMark(item: Linked<T>, value: Mark): void {
-    if (!this.list.isRenovationInProgress)
-      throw misuse("item cannot be marked outside of renovation cycle")
-    item.mark$ = value
+  private setStatus(item: Linked<T>, index: number, value: Mark): void {
+    item.status$ = index * MARK_MOD + value
   }
 
   getMark(item: Linked<T>): Mark {
-    return item.mark$ % MARK_MOD
+    return item.status$ % MARK_MOD
   }
 
   get confirmedCount(): number {
@@ -166,8 +164,8 @@ export class LinkedListRenovation<T> {
       throw misuse("renovation is ended already")
     if (error === undefined) {
       for (const x of this.unconfirmed$.items()) {
-        x.mark$ = Mark.removed
         list.remove(x)
+        this.setStatus(x, 0, Mark.removed)
       }
     }
     else {
