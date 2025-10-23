@@ -162,14 +162,20 @@ export class LinkedListRenovation<T> {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse("renovation is ended already")
+    const unconfirmed = this.unconfirmed$
     if (error === undefined) {
-      for (const x of this.unconfirmed$.items()) {
+      for (const x of unconfirmed.items()) {
         LinkedList.deleteKey$(list, x)
         this.setStatus(x, 0, Mark.removed)
       }
     }
-    else
-      this.confirmed$.grab(this.unconfirmed$, true)
+    else {
+      const current = list.current$
+      for (const x of unconfirmed.items()) {
+        Linked.link$(x, current, undefined)
+        this.setStatus(x, 0, Mark.existing)
+      }
+    }
     list.former$ = undefined
   }
 
