@@ -88,7 +88,7 @@ export class LinkedListRenovation<T> {
           mark = Mark.moved
         else
           mark = Mark.existing
-        this.setStatus(item, current.count, mark)
+        this.setStatus(item, mark, current.count)
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -104,7 +104,7 @@ export class LinkedListRenovation<T> {
 
   add(item: Linked<T>, before?: Linked<T>): Linked<T> {
     this.list.add(item)
-    this.setStatus(item, this.confirmed$.count, Mark.added)
+    this.setStatus(item, Mark.added, this.confirmed$.count)
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
     let added = this.added$
@@ -116,15 +116,15 @@ export class LinkedListRenovation<T> {
 
   remove(item: Linked<T>): void {
     this.list.remove(item)
-    this.setStatus(item, 0, Mark.removed)
+    this.setStatus(item, Mark.removed, 0)
   }
 
   move(item: Linked<T>, before: Linked<T> | undefined): void {
     throw misuse("not implemented")
   }
 
-  private setStatus(item: Linked<T>, index: number, value: Mark): void {
-    item.status$ = index * MARK_MOD + value
+  private setStatus(item: Linked<T>, value: Mark, position: number): void {
+    item.status$ = position * MARK_MOD + value
   }
 
   getMark(item: Linked<T>): Mark {
@@ -166,14 +166,14 @@ export class LinkedListRenovation<T> {
     if (error === undefined) {
       for (const x of unconfirmed.items()) {
         LinkedList.deleteKey$(list, x)
-        this.setStatus(x, 0, Mark.removed)
+        this.setStatus(x, Mark.removed, 0)
       }
     }
     else {
       const confirmed = this.confirmed$
       for (const x of unconfirmed.items()) {
         Linked.link$(x, confirmed, undefined)
-        this.setStatus(x, confirmed.count, Mark.existing)
+        this.setStatus(x, Mark.existing, confirmed.count)
       }
     }
     list.former$ = undefined
