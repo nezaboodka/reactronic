@@ -152,8 +152,8 @@ export class Linked<T> {
     }
     else {
       if (list === before.list && list !== undefined) {
-        // Link to another list
         this.unlink$()
+        // Link to another list
         const after = before.prev$
         this.prev$ = after
         this.next$ = before
@@ -166,7 +166,7 @@ export class Linked<T> {
         list.count++
       }
       else {
-        // Check for inconsistencies
+        // Check invariants
         if (list !== before.list)
           throw misuse("sibling is not in the given list")
         else if (before.list === undefined)
