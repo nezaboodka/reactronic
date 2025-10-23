@@ -77,9 +77,15 @@ export class LinkedList<T> {
   remove(item: Linked<T>): void {
     if (item.list !== this.current$ && item.list !== this.former$)
       throw misuse("given item doesn't belong to the given list")
-    const key = this.extractKey(item)
-    this.map.delete(key)
+    LinkedList.deleteKey(this, item)
     Linked.link$(item, undefined, undefined)
+  }
+
+  // Internal
+
+  static deleteKey<T>(list: LinkedList<T>, item: Linked<T>): void {
+    const key = list.extractKey(item)
+    list.map.delete(key)
   }
 
 }
@@ -204,28 +210,6 @@ export class LinkedSubList<T> {
       x = next
     }
   }
-
-  // include(item: Linked$<T>, before?: Linked$<T>): void {
-  //   const last = this.last
-  //   item.link$(this, last, undefined)
-  //   if (last !== undefined)
-  //     this.last = last.next = item
-  //   else
-  //     this.first = this.last = item
-  //   this.count++
-  // }
-
-  // exclude(item: Linked$<T>): void {
-  //   const prev = item.prev
-  //   if (prev !== undefined)
-  //     prev.next = item.next
-  //   const next = item.next
-  //   if (next !== undefined)
-  //     next.prev = item.prev
-  //   if (item === this.first)
-  //     this.first = item.next
-  //   this.count--
-  // }
 
   clear(): void {
     this.count = 0
