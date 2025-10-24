@@ -83,15 +83,13 @@ export class LinkedListRenovation<T> {
       if (item.list !== confirmed) {
         const next = item.next // remember before re-linking
         Linked.link$(item, confirmed, undefined)
-        let mark: Mark
         if (list.isStrictOrder && item !== this.expectedNext)
-          mark = Mark.moved
+          this.setStatus(item, Mark.moved, confirmed.count)
         else
-          mark = Mark.existing
-        this.setStatus(item, mark, confirmed.count)
+          this.setStatus(item, Mark.existing, confirmed.count)
+        this.expectedNext = reuseManualItemsIfAny(next, confirmed)
         if (resolution)
           resolution.isDuplicate = false
-        this.expectedNext = reuseManualItemsIfAny(next, confirmed)
       }
       else if (resolution)
         resolution.isDuplicate = true
