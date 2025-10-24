@@ -150,15 +150,15 @@ export class LinkedListRenovation<T> {
     return this.unconfirmed$.items()
   }
 
-  private setStatus(item: Linked<T>, value: Mark, position: number): void {
-    item.status$ = position * MARK_MOD + value
+  private setStatus(item: Linked<T>, value: Mark, order: number): void {
+    item.status$ = order * MARK_MOD + value
   }
 
   getMark(item: Linked<T>): Mark {
     return item.status$ % MARK_MOD
   }
 
-  getPosition(item: Linked<T>): number {
+  getOrder(item: Linked<T>): number {
     return Math.trunc(item.status$ / MARK_MOD)
   }
 
