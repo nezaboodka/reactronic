@@ -123,14 +123,6 @@ export class LinkedListRenovation<T> {
     throw misuse("not implemented")
   }
 
-  private setStatus(item: Linked<T>, value: Mark, position: number): void {
-    item.status$ = position * MARK_MOD + value
-  }
-
-  getMark(item: Linked<T>): Mark {
-    return item.status$ % MARK_MOD
-  }
-
   get confirmedCount(): number {
     return this.confirmed$.count
   }
@@ -156,6 +148,18 @@ export class LinkedListRenovation<T> {
 
   unconfirmed(): Generator<Linked<T>> {
     return this.unconfirmed$.items()
+  }
+
+  private setStatus(item: Linked<T>, value: Mark, position: number): void {
+    item.status$ = position * MARK_MOD + value
+  }
+
+  getMark(item: Linked<T>): Mark {
+    return item.status$ % MARK_MOD
+  }
+
+  getPosition(item: Linked<T>): number {
+    return Math.trunc(item.status$ / MARK_MOD)
   }
 
   done(error: unknown): void {
