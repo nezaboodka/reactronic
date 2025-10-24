@@ -7,19 +7,9 @@
 
 import { misuse } from "./Dbg.js"
 
-// ExtractItemKey / ИзвлечьКлючЭлемента
+// LinkedList / СписокСвязанный
 
 export type ExtractItemKey<T = unknown> = (item: T) => string | undefined
-
-// CollectionReader / КоллекцияЧитаемая
-
-export interface CollectionReader<T>
-{
-  count: number
-  items(): Generator<T>
-}
-
-// LinkedList / СписокСвязанный
 
 export class LinkedList<T> {
 
