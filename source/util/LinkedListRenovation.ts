@@ -51,7 +51,7 @@ export class LinkedListRenovation<T> {
     list.former$ = unconfirmed
     this.unconfirmed$ = unconfirmed
     this.added$ = undefined
-    this.expectedNext = unconfirmed.first
+    this.expectedNext = reuseManualItemsIfAny(unconfirmed.first, confirmed)
     this.lastUnknownKey = undefined
   }
 
@@ -79,18 +79,19 @@ export class LinkedListRenovation<T> {
     if (key !== (item ? list.extractKey(item) : undefined))
       item = this.lookup(key)
     if (item !== undefined) {
-      const current = this.confirmed$
-      if (item.list !== current) {
-        this.expectedNext = item.next
-        Linked.link$(item, current, undefined)
+      const confirmed = this.confirmed$
+      if (item.list !== confirmed) {
+        const next = item.next // remember before re-linking
+        Linked.link$(item, confirmed, undefined)
         let mark: Mark
         if (list.isStrictOrder && item !== this.expectedNext)
           mark = Mark.moved
         else
           mark = Mark.existing
-        this.setStatus(item, mark, current.count)
+        this.setStatus(item, mark, confirmed.count)
         if (resolution)
           resolution.isDuplicate = false
+        this.expectedNext = reuseManualItemsIfAny(next, confirmed)
       }
       else if (resolution)
         resolution.isDuplicate = true
@@ -162,6 +163,10 @@ export class LinkedListRenovation<T> {
     return Math.trunc(item.status$ / MARK_MOD)
   }
 
+  isManual(item: Linked<T>): boolean {
+    return item.status$ === 0
+  }
+
   done(error: unknown): void {
     const list = this.list
     if (!list.isRenovationInProgress)
@@ -183,4 +188,14 @@ export class LinkedListRenovation<T> {
     list.former$ = undefined
   }
 
+}
+
+function reuseManualItemsIfAny<T>(
+  item: Linked<T> | undefined,
+  confirmed: LinkedSubList<T>): Linked<T> | undefined {
+  while (item !== undefined && item.status$ === 0) {
+    Linked.link$(item, confirmed, undefined)
+    item = item.next
+  }
+  return item
 }
