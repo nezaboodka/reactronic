@@ -14,8 +14,6 @@ export class LinkedListRenovation<T> {
 
   readonly list: LinkedList<T>
 
-  private confirmed$: LinkedSubList<T>
-
   private unconfirmed$: LinkedSubList<T>
 
   private added$: Array<Linked<T>> | undefined
@@ -27,15 +25,14 @@ export class LinkedListRenovation<T> {
   constructor(list: LinkedList<T>) {
     if (list.former$ !== undefined)
       throw misuse("renovation is in progress already")
-    const confirmed = new LinkedSubList<T>()
+    const current = new LinkedSubList<T>()
     const unconfirmed = list.current$
     this.list = list
-    list.current$ = confirmed
-    this.confirmed$ = confirmed
+    list.current$ = current
     list.former$ = unconfirmed
     this.unconfirmed$ = unconfirmed
     this.added$ = undefined
-    this.expectedNext = reuseManualItemsIfAny(unconfirmed.first, confirmed)
+    this.expectedNext = reuseManualItemsIfAny(unconfirmed.first, current)
     this.lastUnknownKey = undefined
   }
 
@@ -63,15 +60,15 @@ export class LinkedListRenovation<T> {
     if (key !== (item ? list.extractKey(item) : undefined))
       item = this.lookup(key)
     if (item !== undefined) {
-      const confirmed = this.confirmed$
-      if (item.list !== confirmed) {
+      const current = this.list.current$
+      if (item.list !== current) {
         const next = item.next // remember before re-linking
-        Linked.link$(item, confirmed, undefined)
+        Linked.link$(item, current, undefined)
         if (list.isStrictOrder && item !== this.expectedNext)
-          Linked.setStatus$(item, Mark.moved, confirmed.count)
+          Linked.setStatus$(item, Mark.moved, current.count)
         else
-          Linked.setStatus$(item, Mark.existing, confirmed.count)
-        this.expectedNext = reuseManualItemsIfAny(next, confirmed)
+          Linked.setStatus$(item, Mark.existing, current.count)
+        this.expectedNext = reuseManualItemsIfAny(next, current)
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -87,7 +84,7 @@ export class LinkedListRenovation<T> {
 
   add(item: Linked<T>, before?: Linked<T>): Linked<T> {
     this.list.add(item)
-    Linked.setStatus$(item, Mark.added, this.confirmed$.count)
+    Linked.setStatus$(item, Mark.added, this.list.current$.count)
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
     let added = this.added$
@@ -104,14 +101,6 @@ export class LinkedListRenovation<T> {
 
   move(item: Linked<T>, before: Linked<T> | undefined): void {
     throw misuse("not implemented")
-  }
-
-  get confirmedCount(): number {
-    return this.confirmed$.count
-  }
-
-  confirmed(): Generator<Linked<T>> {
-    return this.confirmed$.items()
   }
 
   get addedCount(): number {
@@ -145,10 +134,10 @@ export class LinkedListRenovation<T> {
       }
     }
     else {
-      const confirmed = this.confirmed$
+      const current = this.list.current$
       for (const x of unconfirmed.items()) {
-        Linked.link$(x, confirmed, undefined)
-        Linked.setStatus$(x, Mark.existing, confirmed.count)
+        Linked.link$(x, current, undefined)
+        Linked.setStatus$(x, Mark.existing, current.count)
       }
     }
     list.former$ = undefined
@@ -158,9 +147,9 @@ export class LinkedListRenovation<T> {
 
 function reuseManualItemsIfAny<T>(
   item: Linked<T> | undefined,
-  confirmed: LinkedSubList<T>): Linked<T> | undefined {
+  current: LinkedSubList<T>): Linked<T> | undefined {
   while (item !== undefined && item.isManual) {
-    Linked.link$(item, confirmed, undefined)
+    Linked.link$(item, current, undefined)
     item = item.next
   }
   return item
