@@ -165,7 +165,7 @@ export class LinkedListRenovation<T> {
     return item.status$ === 0
   }
 
-  done(error: unknown): void {
+  done(error?: unknown): void {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse("renovation is ended already")
