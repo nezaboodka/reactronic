@@ -7,10 +7,13 @@
 
 import { misuse } from "./Dbg.js"
 
-// LinkedList / СписокСвязанный
+// Extractor
 
 export type Extractor<T, V> = (item: T) => V
+
 export type KeyExtractor<T> = Extractor<T, string | undefined>
+
+// LinkedList / СписокСвязанный
 
 export class LinkedList<T extends Linked<T>> {
 
