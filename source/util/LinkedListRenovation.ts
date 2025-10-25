@@ -25,14 +25,14 @@ export class LinkedListRenovation<T> {
   constructor(list: LinkedList<T>) {
     if (list.former$ !== undefined)
       throw misuse("renovation is in progress already")
-    const current = new LinkedSubList<T>()
-    const lost = list.current$
+    const items = new LinkedSubList<T>()
+    const lost = list.items$
     this.list = list
-    list.current$ = current
+    list.items$ = items
     list.former$ = lost
     this.lost$ = lost
     this.changes$ = []
-    this.expectedNext = grabManualSiblings(lost.first, current)
+    this.expectedNext = grabManualSiblings(lost.first, items)
     this.lastUnknownKey = undefined
   }
 
@@ -60,15 +60,15 @@ export class LinkedListRenovation<T> {
     if (key !== (item ? list.extractKey(item) : undefined))
       item = this.lookup(key)
     if (item !== undefined) {
-      const current = this.list.current$
-      if (item.list !== current) {
+      const items = this.list.items$
+      if (item.list !== items) {
         const next = item.next // remember before re-linking
-        Linked.link$(item, current, undefined)
+        Linked.link$(item, items, undefined)
         if (list.isStrictOrder && item !== this.expectedNext)
-          Linked.setStatus$(item, Mark.moved, current.count)
+          Linked.setStatus$(item, Mark.moved, items.count)
         else
-          Linked.setStatus$(item, Mark.same, current.count)
-        this.expectedNext = grabManualSiblings(next, current)
+          Linked.setStatus$(item, Mark.same, items.count)
+        this.expectedNext = grabManualSiblings(next, items)
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -84,7 +84,7 @@ export class LinkedListRenovation<T> {
 
   add(item: Linked<T>, before?: Linked<T>): Linked<T> {
     this.list.add(item)
-    Linked.setStatus$(item, Mark.added, this.list.current$.count)
+    Linked.setStatus$(item, Mark.added, this.list.items$.count)
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
     this.changes$.push(item)
@@ -132,10 +132,10 @@ export class LinkedListRenovation<T> {
       }
     }
     else {
-      const current = this.list.current$
+      const items = this.list.items$
       for (const x of lost.items()) {
-        Linked.link$(x, current, undefined)
-        Linked.setStatus$(x, Mark.same, current.count)
+        Linked.link$(x, items, undefined)
+        Linked.setStatus$(x, Mark.same, items.count)
       }
     }
     list.former$ = undefined
@@ -145,9 +145,9 @@ export class LinkedListRenovation<T> {
 
 function grabManualSiblings<T>(
   item: Linked<T> | undefined,
-  current: LinkedSubList<T>): Linked<T> | undefined {
+  list: LinkedSubList<T>): Linked<T> | undefined {
   while (item !== undefined && item.isManual) {
-    Linked.link$(item, current, undefined)
+    Linked.link$(item, list, undefined)
     item = item.next
   }
   return item

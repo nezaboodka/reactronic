@@ -20,7 +20,7 @@ export class LinkedList<T> {
   private map: Map<string | undefined, Linked<T>>
 
   /* internal */
-  current$: LinkedSubList<T>
+  items$: LinkedSubList<T>
 
   /* internal */
   former$: LinkedSubList<T> | undefined
@@ -29,7 +29,7 @@ export class LinkedList<T> {
     this.extractKey = extractKey
     this.isStrictOrder$ = isStrictOrder
     this.map = new Map<string | undefined, Linked<T>>()
-    this.current$ = new LinkedSubList<T>()
+    this.items$ = new LinkedSubList<T>()
     this.former$ = undefined
   }
 
@@ -45,11 +45,11 @@ export class LinkedList<T> {
   }
 
   get count(): number {
-    return this.current$.count + (this.former$?.count ?? 0)
+    return this.items$.count + (this.former$?.count ?? 0)
   }
 
   items(): Generator<Linked<T>> {
-    return this.current$.items()
+    return this.items$.items()
   }
 
   lookup(key: string | undefined): Linked<T> | undefined {
@@ -61,20 +61,20 @@ export class LinkedList<T> {
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
     this.map.set(key, item)
-    Linked.link$(item, this.current$, before)
+    Linked.link$(item, this.items$, before)
   }
 
   remove(item: Linked<T>): void {
-    if (item.list !== this.current$ && item.list !== this.former$)
+    if (item.list !== this.items$ && item.list !== this.former$)
       throw misuse("given item doesn't belong to the given list")
     LinkedList.deleteKey$(this, item)
     Linked.link$(item, undefined, undefined)
   }
 
   move(item: Linked<T>, before: Linked<T> | undefined): void {
-    if (item.list !== this.current$ && item.list !== this.former$)
+    if (item.list !== this.items$ && item.list !== this.former$)
       throw misuse("given item doesn't belong to the given list")
-    Linked.link$(item, this.current$, before)
+    Linked.link$(item, this.items$, before)
   }
 
   // Internal
