@@ -16,7 +16,7 @@ export class LinkedListRenovation<T> {
 
   private unconfirmed$: LinkedSubList<T>
 
-  private added$: Array<Linked<T>> | undefined
+  private changes$: Array<Linked<T>>
 
   private expectedNext: Linked<T> | undefined
 
@@ -31,7 +31,7 @@ export class LinkedListRenovation<T> {
     list.current$ = current
     list.former$ = unconfirmed
     this.unconfirmed$ = unconfirmed
-    this.added$ = undefined
+    this.changes$ = []
     this.expectedNext = reuseManualItemsIfAny(unconfirmed.first, current)
     this.lastUnknownKey = undefined
   }
@@ -87,10 +87,7 @@ export class LinkedListRenovation<T> {
     Linked.setStatus$(item, Mark.added, this.list.current$.count)
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
-    let added = this.added$
-    if (added == undefined)
-      added = this.added$ = []
-    added.push(item)
+    this.changes$.push(item)
     return item
   }
 
@@ -103,16 +100,16 @@ export class LinkedListRenovation<T> {
     throw misuse("not implemented")
   }
 
-  get addedCount(): number {
-    return this.added$?.length ?? 0
-  }
+  // get addedCount(): number {
+  //   return this.changes$?.length ?? 0
+  // }
 
-  *added(): Generator<Linked<T>> {
-    const added = this.added$
-    if (added !== undefined)
-      for (const x of added)
-        yield x
-  }
+  // *added(): Generator<Linked<T>> {
+  //   const added = this.changes$
+  //   if (added !== undefined)
+  //     for (const x of added)
+  //       yield x
+  // }
 
   get unconfirmedCount(): number {
     return this.unconfirmed$.count
