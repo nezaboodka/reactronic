@@ -102,6 +102,8 @@ export enum Mark {
 
 const MARK_MOD = 6
 
+// Linked<T> / Связано<Т>
+
 export class Linked<T> {
 
   private list$: LinkedSubList<T> | undefined
