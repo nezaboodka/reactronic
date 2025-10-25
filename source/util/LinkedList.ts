@@ -86,8 +86,6 @@ export class LinkedList<T> {
 
 }
 
-// Linked
-
 // Mark / Отметка
 
 export enum Mark {
@@ -108,7 +106,7 @@ export enum Mark {
 
 const MARK_MOD = 6
 
-// Linked<T> / Связано<Т>
+// Linked<T> / Связанное<Т>
 
 export class Linked<T> {
 
