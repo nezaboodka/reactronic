@@ -13,7 +13,7 @@ export type Extractor<T, V> = (item: T) => V
 
 export class LinkedList<T extends Linked<T>> {
 
-  readonly extractKey: Extractor<T, string | undefined>
+  readonly keyOf: Extractor<T, string | undefined>
 
   private isStrictOrder$: boolean
 
@@ -26,9 +26,9 @@ export class LinkedList<T extends Linked<T>> {
   former$: LinkedSubList<T> | undefined
 
   constructor(
-    extractKey: Extractor<T, string | undefined>,
+    keyExtractor: Extractor<T, string | undefined>,
     isStrictOrder: boolean = false) {
-    this.extractKey = extractKey
+    this.keyOf = keyExtractor
     this.isStrictOrder$ = isStrictOrder
     this.map = new Map<string | undefined, T>()
     this.items$ = new LinkedSubList<T>()
@@ -59,7 +59,7 @@ export class LinkedList<T extends Linked<T>> {
   }
 
   add(item: T, before?: T): void {
-    const key = this.extractKey(item)
+    const key = this.keyOf(item)
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
     this.map.set(key, item)
@@ -82,7 +82,7 @@ export class LinkedList<T extends Linked<T>> {
   // Internal
 
   static deleteKey$<T extends Linked<T>>(list: LinkedList<T>, item: T): void {
-    const key = list.extractKey(item)
+    const key = list.keyOf(item)
     list.map.delete(key)
   }
 

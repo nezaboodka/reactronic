@@ -41,7 +41,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
     if (key !== undefined && key !== this.lastUnknownKey) {
       result = this.list.lookup(key)
       if (result !== undefined) {
-        if (this.list.extractKey(result) !== key) {
+        if (this.list.keyOf(result) !== key) {
           this.lastUnknownKey = key
           result = undefined
         }
@@ -57,7 +57,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
     if (!list.isRenovationInProgress)
       throw misuse(error ?? "renovation is no longer in progress")
     let item = this.expectedNext
-    if (key !== (item ? list.extractKey(item) : undefined))
+    if (key !== (item ? list.keyOf(item) : undefined))
       item = this.lookup(key)
     if (item !== undefined) {
       const items = this.list.items$
