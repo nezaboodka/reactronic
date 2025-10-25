@@ -9,7 +9,7 @@ import { misuse } from "./Dbg.js"
 
 // Extractor
 
-export type Extractor<T, V> = (item: T) => V
+export type Extractor<T, Result> = (item: T) => Result
 
 export type KeyExtractor<T> = Extractor<T, string | undefined>
 
