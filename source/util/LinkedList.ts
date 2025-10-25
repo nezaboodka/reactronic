@@ -82,6 +82,22 @@ export class LinkedList<T> {
 
 // Linked
 
+// Mark / Отметка
+
+export enum Mark {
+
+  existing = 0, // существующий
+
+  added = 1,    // добавленный
+
+  moved = 2,    // перемещённый
+
+  removed = 3,  // удалённый
+
+}
+
+const MARK_MOD = 4
+
 export class Linked<T> {
 
   private list$: LinkedSubList<T> | undefined
@@ -90,16 +106,16 @@ export class Linked<T> {
 
   private prev$: Linked<T> | undefined
 
-  value: T
+  private status: number
 
-  status$: number
+  value: T
 
   constructor(value: T) {
     this.list$ = undefined
     this.next$ = undefined
     this.prev$ = undefined
+    this.status = 0
     this.value = value
-    this.status$ = 0
   }
 
   get list(): LinkedSubList<T> | undefined { return this.list$ }
@@ -108,7 +124,23 @@ export class Linked<T> {
 
   get prev(): Linked<T> | undefined { return this.prev$ }
 
+  get mark(): Mark {
+    return this.status % MARK_MOD
+  }
+
+  get order(): number {
+    return Math.trunc(this.status / MARK_MOD)
+  }
+
+  get isManual(): boolean {
+    return this.status === 0
+  }
+
   // Internal
+
+  static setStatus$<T>(item: Linked<T>, mark: Mark, order: number): void {
+    item.status = order * MARK_MOD + mark
+  }
 
   static link$<T>(item: Linked<T>,
     list: LinkedSubList<T> | undefined,

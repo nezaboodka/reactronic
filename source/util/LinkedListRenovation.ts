@@ -6,23 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { misuse } from "./Dbg.js"
-import { LinkedList, Linked, LinkedSubList } from "./LinkedList.js"
-
-// Mark / Отметка
-
-export enum Mark {
-
-  existing = 0, // существующий
-
-  added = 1,    // добавленный
-
-  moved = 2,    // перемещённый
-
-  removed = 3,  // удалённый
-
-}
-
-const MARK_MOD = 4
+import { LinkedList, Linked, LinkedSubList, Mark } from "./LinkedList.js"
 
 // LinkedListRenovation<T>
 
@@ -84,9 +68,9 @@ export class LinkedListRenovation<T> {
         const next = item.next // remember before re-linking
         Linked.link$(item, confirmed, undefined)
         if (list.isStrictOrder && item !== this.expectedNext)
-          this.setStatus(item, Mark.moved, confirmed.count)
+          Linked.setStatus$(item, Mark.moved, confirmed.count)
         else
-          this.setStatus(item, Mark.existing, confirmed.count)
+          Linked.setStatus$(item, Mark.existing, confirmed.count)
         this.expectedNext = reuseManualItemsIfAny(next, confirmed)
         if (resolution)
           resolution.isDuplicate = false
@@ -103,7 +87,7 @@ export class LinkedListRenovation<T> {
 
   add(item: Linked<T>, before?: Linked<T>): Linked<T> {
     this.list.add(item)
-    this.setStatus(item, Mark.added, this.confirmed$.count)
+    Linked.setStatus$(item, Mark.added, this.confirmed$.count)
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
     let added = this.added$
@@ -115,7 +99,7 @@ export class LinkedListRenovation<T> {
 
   remove(item: Linked<T>): void {
     this.list.remove(item)
-    this.setStatus(item, Mark.removed, 0)
+    Linked.setStatus$(item, Mark.removed, 0)
   }
 
   move(item: Linked<T>, before: Linked<T> | undefined): void {
@@ -149,22 +133,6 @@ export class LinkedListRenovation<T> {
     return this.unconfirmed$.items()
   }
 
-  private setStatus(item: Linked<T>, value: Mark, order: number): void {
-    item.status$ = order * MARK_MOD + value
-  }
-
-  getMark(item: Linked<T>): Mark {
-    return item.status$ % MARK_MOD
-  }
-
-  getOrder(item: Linked<T>): number {
-    return Math.trunc(item.status$ / MARK_MOD)
-  }
-
-  isManual(item: Linked<T>): boolean {
-    return item.status$ === 0
-  }
-
   done(error?: unknown): void {
     const list = this.list
     if (!list.isRenovationInProgress)
@@ -173,14 +141,14 @@ export class LinkedListRenovation<T> {
     if (error === undefined) {
       for (const x of unconfirmed.items()) {
         LinkedList.deleteKey$(list, x)
-        this.setStatus(x, Mark.removed, 0)
+        Linked.setStatus$(x, Mark.removed, 0)
       }
     }
     else {
       const confirmed = this.confirmed$
       for (const x of unconfirmed.items()) {
         Linked.link$(x, confirmed, undefined)
-        this.setStatus(x, Mark.existing, confirmed.count)
+        Linked.setStatus$(x, Mark.existing, confirmed.count)
       }
     }
     list.former$ = undefined
@@ -191,7 +159,7 @@ export class LinkedListRenovation<T> {
 function reuseManualItemsIfAny<T>(
   item: Linked<T> | undefined,
   confirmed: LinkedSubList<T>): Linked<T> | undefined {
-  while (item !== undefined && item.status$ === 0) {
+  while (item !== undefined && item.isManual) {
     Linked.link$(item, confirmed, undefined)
     item = item.next
   }
