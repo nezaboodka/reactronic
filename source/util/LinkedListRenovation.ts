@@ -55,7 +55,7 @@ export class LinkedListRenovation<T> {
   tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Linked<T> | undefined {
     const list = this.list
     if (!list.isRenovationInProgress)
-      throw misuse(error ?? "renovation is not in progress")
+      throw misuse(error ?? "renovation is no longer in progress")
     let item = this.expectedNext
     if (key !== (item ? list.extractKey(item) : undefined))
       item = this.lookup(key)
