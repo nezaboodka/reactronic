@@ -10,14 +10,19 @@ import { LinkedList, Linked } from "../source/util/LinkedList.js"
 import { LinkedListRenovation } from "../source/util/LinkedListRenovation.js"
 
 test("linked-list", t => {
+
+  const list = new LinkedList<string>(x => x.value, true)
+
+  // Etalon
+
   const etalon1 = ["Hello", "Welcome", "Bye", "End"]
   const etalon2 = ["Added1", "Bye", "End", "Added2", "Hello", "Added3"]
   const etalon2c = ["Added1", "Bye", "End", "Manual", "Added2", "Hello", "Added3"]
   const etalon2u = ["Welcome"]
   // const etalon2a = ["Hello", "Bye", "End", "Added1", "Added2", "Added3"]
 
-  // Basic
-  const list = new LinkedList<string>(x => x.value, true)
+  // Initial renovation
+
   const r = new LinkedListRenovation<string>(list)
   for (const x of etalon1) {
     r.add(new Linked<string>(x))
@@ -29,8 +34,12 @@ test("linked-list", t => {
   t.is(r.unconfirmedCount, 0)
   t.true(compare(list.items(), etalon1))
 
+  // Manual item
+
   list.add(new Linked<string>("Manual"))
   t.is(list.count, 5)
+
+  // Second renovation
 
   const r2 = new LinkedListRenovation<string>(list)
   for (const x of etalon2) {
