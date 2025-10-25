@@ -25,8 +25,8 @@ test("linked-list", t => {
   r.done()
 
   t.is(list.count, 4)
-  // t.is(list.countOfAdded, 0)
-  // t.is(list.countOfRemoved, 0)
+  t.is(r.confirmedCount, list.count)
+  t.is(r.unconfirmedCount, 0)
   t.true(compare(list.items(), etalon1))
 
   list.add(new Linked<string>("Manual"))
