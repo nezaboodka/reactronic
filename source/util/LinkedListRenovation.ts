@@ -32,7 +32,7 @@ export class LinkedListRenovation<T> {
     list.former$ = lost
     this.lost$ = lost
     this.changes$ = []
-    this.expectedNext = reuseManualSiblings(lost.first, current)
+    this.expectedNext = grabManualSiblings(lost.first, current)
     this.lastUnknownKey = undefined
   }
 
@@ -68,7 +68,7 @@ export class LinkedListRenovation<T> {
           Linked.setStatus$(item, Mark.moved, current.count)
         else
           Linked.setStatus$(item, Mark.same, current.count)
-        this.expectedNext = reuseManualSiblings(next, current)
+        this.expectedNext = grabManualSiblings(next, current)
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -143,7 +143,7 @@ export class LinkedListRenovation<T> {
 
 }
 
-function reuseManualSiblings<T>(
+function grabManualSiblings<T>(
   item: Linked<T> | undefined,
   current: LinkedSubList<T>): Linked<T> | undefined {
   while (item !== undefined && item.isManual) {
