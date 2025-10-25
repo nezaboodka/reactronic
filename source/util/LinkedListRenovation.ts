@@ -75,7 +75,7 @@ export class LinkedListRenovation<T> {
       else if (resolution)
         resolution.isDuplicate = true
       else
-        throw misuse(`duplicate key: ${key}`)
+        throw misuse(`duplicate linked item key: ${key}`)
     }
     else if (resolution)
       resolution.isDuplicate = false
