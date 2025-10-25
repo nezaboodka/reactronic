@@ -11,13 +11,13 @@ import { misuse } from "./Dbg.js"
 
 export type ExtractItemKey<T = unknown> = (item: T) => string | undefined
 
-export class LinkedList<T> {
+export class LinkedList<T extends Linked<T>> {
 
-  readonly extractKey: ExtractItemKey<Linked<T>>
+  readonly extractKey: ExtractItemKey<T>
 
   private isStrictOrder$: boolean
 
-  private map: Map<string | undefined, Linked<T>>
+  private map: Map<string | undefined, T>
 
   /* internal */
   items$: LinkedSubList<T>
@@ -25,10 +25,10 @@ export class LinkedList<T> {
   /* internal */
   former$: LinkedSubList<T> | undefined
 
-  constructor(extractKey: ExtractItemKey<Linked<T>>, isStrictOrder: boolean = false) {
+  constructor(extractKey: ExtractItemKey<T>, isStrictOrder: boolean = false) {
     this.extractKey = extractKey
     this.isStrictOrder$ = isStrictOrder
-    this.map = new Map<string | undefined, Linked<T>>()
+    this.map = new Map<string | undefined, T>()
     this.items$ = new LinkedSubList<T>()
     this.former$ = undefined
   }
@@ -48,15 +48,15 @@ export class LinkedList<T> {
     return this.items$.count + (this.former$?.count ?? 0)
   }
 
-  items(): Generator<Linked<T>> {
+  items(): Generator<T> {
     return this.items$.items()
   }
 
-  lookup(key: string | undefined): Linked<T> | undefined {
+  lookup(key: string | undefined): T | undefined {
     return this.map.get(key)
   }
 
-  add(item: Linked<T>, before?: Linked<T>): void {
+  add(item: T, before?: T): void {
     const key = this.extractKey(item)
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
@@ -64,14 +64,14 @@ export class LinkedList<T> {
     Linked.link$(item, this.items$, before)
   }
 
-  remove(item: Linked<T>): void {
+  remove(item: T): void {
     if (item.list !== this.items$ && item.list !== this.former$)
       throw misuse("given item doesn't belong to the given list")
     LinkedList.deleteKey$(this, item)
     Linked.link$(item, undefined, undefined)
   }
 
-  move(item: Linked<T>, before: Linked<T> | undefined): void {
+  move(item: T, before: T | undefined): void {
     if (item.list !== this.items$ && item.list !== this.former$)
       throw misuse("given item doesn't belong to the given list")
     Linked.link$(item, this.items$, before)
@@ -79,7 +79,7 @@ export class LinkedList<T> {
 
   // Internal
 
-  static deleteKey$<T>(list: LinkedList<T>, item: Linked<T>): void {
+  static deleteKey$<T extends Linked<T>>(list: LinkedList<T>, item: T): void {
     const key = list.extractKey(item)
     list.map.delete(key)
   }
@@ -106,33 +106,30 @@ export enum Mark {
 
 const MARK_MOD = 6
 
-// Linked<T> / Связанное<Т>
+// Linked / Связанное
 
-export class Linked<T> {
+export class Linked<T extends Linked<T>> {
 
   private list$: LinkedSubList<T> | undefined
 
-  private next$: Linked<T> | undefined
+  private next$: T | undefined
 
-  private prev$: Linked<T> | undefined
+  private prev$: T | undefined
 
   private status: number
 
-  value: T
-
-  constructor(value: T) {
+  constructor() {
     this.list$ = undefined
     this.next$ = undefined
     this.prev$ = undefined
     this.status = 0
-    this.value = value
   }
 
   get list(): LinkedSubList<T> | undefined { return this.list$ }
 
-  get next(): Linked<T> | undefined { return this.next$ }
+  get next(): T | undefined { return this.next$ }
 
-  get prev(): Linked<T> | undefined { return this.prev$ }
+  get prev(): T | undefined { return this.prev$ }
 
   get mark(): Mark { return this.status % MARK_MOD }
 
@@ -142,13 +139,13 @@ export class Linked<T> {
 
   // Internal
 
-  static setStatus$<T>(item: Linked<T>, mark: Mark, rank: number): void {
+  static setStatus$<T extends Linked<T>>(item: T, mark: Mark, rank: number): void {
     item.status = rank * MARK_MOD + mark
   }
 
-  static link$<T>(item: Linked<T>,
+  static link$<T extends Linked<T>>(item: T,
     list: LinkedSubList<T> | undefined,
-    before: Linked<T> | undefined): void {
+    before: T | undefined): void {
     if (before === undefined) {
       Linked.unlink(item)
       if (list !== undefined) {
@@ -197,7 +194,7 @@ export class Linked<T> {
     }
   }
 
-  private static unlink<T>(item: Linked<T>): void {
+  private static unlink<T extends Linked<T>>(item: T): void {
     const list = item.list
     if (list) {
       // Configure item
@@ -218,17 +215,27 @@ export class Linked<T> {
 
 }
 
+export class NodeX extends Linked<NodeX> {
+  value = "hello"
+
+  constructor()
+  {
+    super()
+    this.value = "asdfs"
+  }
+}
+
 // LinkedSubList
 
-export class LinkedSubList<T> {
+export class LinkedSubList<T extends Linked<T>> {
 
   count: number = 0
 
-  first?: Linked<T> = undefined
+  first?: T = undefined
 
-  last?: Linked<T> = undefined;
+  last?: T = undefined;
 
-  *items(): Generator<Linked<T>> {
+  *items(): Generator<T> {
     let x = this.first
     while (x !== undefined) {
       const next = x.next

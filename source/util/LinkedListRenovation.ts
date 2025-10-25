@@ -10,15 +10,15 @@ import { LinkedList, Linked, LinkedSubList, Mark } from "./LinkedList.js"
 
 // LinkedListRenovation<T>
 
-export class LinkedListRenovation<T> {
+export class LinkedListRenovation<T extends Linked<T>> {
 
   readonly list: LinkedList<T>
 
   private lost$: LinkedSubList<T>
 
-  private changes$: Array<Linked<T>>
+  private changes$: Array<T>
 
-  private expectedNext: Linked<T> | undefined
+  private expectedNext: T | undefined
 
   private lastUnknownKey: string | undefined
 
@@ -36,8 +36,8 @@ export class LinkedListRenovation<T> {
     this.lastUnknownKey = undefined
   }
 
-  lookup(key: string | undefined): Linked<T> | undefined {
-    let result: Linked<T> | undefined = undefined
+  lookup(key: string | undefined): T | undefined {
+    let result: T | undefined = undefined
     if (key !== undefined && key !== this.lastUnknownKey) {
       result = this.list.lookup(key)
       if (result !== undefined) {
@@ -52,7 +52,7 @@ export class LinkedListRenovation<T> {
     return result
   }
 
-  tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): Linked<T> | undefined {
+  tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse(error ?? "renovation is no longer in progress")
@@ -82,7 +82,7 @@ export class LinkedListRenovation<T> {
     return item
   }
 
-  add(item: Linked<T>, before?: Linked<T>): Linked<T> {
+  add(item: T, before?: T): T {
     this.list.add(item)
     Linked.setStatus$(item, Mark.added, this.list.items$.count)
     this.lastUnknownKey = undefined
@@ -91,12 +91,12 @@ export class LinkedListRenovation<T> {
     return item
   }
 
-  remove(item: Linked<T>): void {
+  remove(item: T): void {
     this.list.remove(item)
     Linked.setStatus$(item, Mark.removed, 0)
   }
 
-  move(item: Linked<T>, before: Linked<T> | undefined): void {
+  move(item: T, before: T | undefined): void {
     this.list.move(item, before)
     Linked.setStatus$(item, Mark.moved, 0)
   }
@@ -105,7 +105,7 @@ export class LinkedListRenovation<T> {
   //   return this.changes$?.length ?? 0
   // }
 
-  // *added(): Generator<Linked<T>> {
+  // *added(): Generator<T> {
   //   const added = this.changes$
   //   if (added !== undefined)
   //     for (const x of added)
@@ -116,7 +116,7 @@ export class LinkedListRenovation<T> {
     return this.lost$.count
   }
 
-  lost(): Generator<Linked<T>> {
+  lost(): Generator<T> {
     return this.lost$.items()
   }
 
@@ -145,9 +145,9 @@ export class LinkedListRenovation<T> {
 
 }
 
-function grabManualSiblings<T>(
-  item: Linked<T> | undefined,
-  list: LinkedSubList<T>): Linked<T> | undefined {
+function grabManualSiblings<T extends Linked<T>>(
+  item: T | undefined,
+  list: LinkedSubList<T>): T | undefined {
   while (item !== undefined && item.isManual) {
     Linked.link$(item, list, undefined)
     item = item.next

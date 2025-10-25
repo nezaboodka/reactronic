@@ -9,9 +9,18 @@ import test from "ava"
 import { LinkedList, Linked } from "../source/util/LinkedList.js"
 import { LinkedListRenovation } from "../source/util/LinkedListRenovation.js"
 
+class LinkedValue<T> extends Linked<LinkedValue<T>> {
+  value: T
+
+  constructor(value: T) {
+    super()
+    this.value = value
+  }
+}
+
 test("linked-list", t => {
 
-  const list = new LinkedList<string>(x => x.value, true)
+  const list = new LinkedList<LinkedValue<string>>(x => x.value, true)
 
   // Etalon
 
@@ -23,9 +32,9 @@ test("linked-list", t => {
 
   // Initial renovation
 
-  const r = new LinkedListRenovation<string>(list)
+  const r = new LinkedListRenovation<LinkedValue<string>>(list)
   for (const x of etalon1) {
-    r.add(new Linked<string>(x))
+    r.add(new LinkedValue<string>(x))
   }
   r.done()
 
@@ -35,15 +44,15 @@ test("linked-list", t => {
 
   // Manual item
 
-  list.add(new Linked<string>("Manual"))
+  list.add(new LinkedValue<string>("Manual"))
   t.is(list.count, 5)
 
   // Second renovation
 
-  const r2 = new LinkedListRenovation<string>(list)
+  const r2 = new LinkedListRenovation<LinkedValue<string>>(list)
   for (const x of etalon2) {
     if (r2.tryReuse(x) === undefined)
-      r2.add(new Linked<string>(x))
+      r2.add(new LinkedValue<string>(x))
   }
   r2.done()
 
@@ -56,7 +65,7 @@ test("linked-list", t => {
 
 })
 
-function compare(list: Generator<Linked<unknown>>, array: Array<unknown>): boolean {
+function compare(list: Generator<LinkedValue<any>>, array: Array<any>): boolean {
   let result = true
   let i = 0
   for (const item of list) {
