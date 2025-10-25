@@ -14,7 +14,7 @@ export class LinkedListRenovation<T> {
 
   readonly list: LinkedList<T>
 
-  private unconfirmed$: LinkedSubList<T>
+  private lost$: LinkedSubList<T>
 
   private changes$: Array<Linked<T>>
 
@@ -26,13 +26,13 @@ export class LinkedListRenovation<T> {
     if (list.former$ !== undefined)
       throw misuse("renovation is in progress already")
     const current = new LinkedSubList<T>()
-    const unconfirmed = list.current$
+    const lost = list.current$
     this.list = list
     list.current$ = current
-    list.former$ = unconfirmed
-    this.unconfirmed$ = unconfirmed
+    list.former$ = lost
+    this.lost$ = lost
     this.changes$ = []
-    this.expectedNext = reuseManualItemsIfAny(unconfirmed.first, current)
+    this.expectedNext = reuseManualItemsIfAny(lost.first, current)
     this.lastUnknownKey = undefined
   }
 
@@ -67,7 +67,7 @@ export class LinkedListRenovation<T> {
         if (list.isStrictOrder && item !== this.expectedNext)
           Linked.setStatus$(item, Mark.moved, current.count)
         else
-          Linked.setStatus$(item, Mark.existing, current.count)
+          Linked.setStatus$(item, Mark.same, current.count)
         this.expectedNext = reuseManualItemsIfAny(next, current)
         if (resolution)
           resolution.isDuplicate = false
@@ -111,30 +111,30 @@ export class LinkedListRenovation<T> {
   //       yield x
   // }
 
-  get unconfirmedCount(): number {
-    return this.unconfirmed$.count
+  get lostCount(): number {
+    return this.lost$.count
   }
 
-  unconfirmed(): Generator<Linked<T>> {
-    return this.unconfirmed$.items()
+  lost(): Generator<Linked<T>> {
+    return this.lost$.items()
   }
 
   done(error?: unknown): void {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse("renovation is ended already")
-    const unconfirmed = this.unconfirmed$
+    const lost = this.lost$
     if (error === undefined) {
-      for (const x of unconfirmed.items()) {
+      for (const x of lost.items()) {
         LinkedList.deleteKey$(list, x)
-        Linked.setStatus$(x, Mark.removed, 0)
+        Linked.setStatus$(x, Mark.lost, 0)
       }
     }
     else {
       const current = this.list.current$
-      for (const x of unconfirmed.items()) {
+      for (const x of lost.items()) {
         Linked.link$(x, current, undefined)
-        Linked.setStatus$(x, Mark.existing, current.count)
+        Linked.setStatus$(x, Mark.same, current.count)
       }
     }
     list.former$ = undefined

@@ -86,17 +86,21 @@ export class LinkedList<T> {
 
 export enum Mark {
 
-  existing = 0, // существующий
+  same = 0,      // прежнее
 
-  added = 1,    // добавленный
+  added = 1,     // добавлено
 
-  moved = 2,    // перемещённый
+  replaced = 2,  // заменено
 
-  removed = 3,  // удалённый
+  moved = 3,     // перемещено
+
+  removed = 4,   // удалено
+
+  lost = 5,      // утеряно
 
 }
 
-const MARK_MOD = 4
+const MARK_MOD = 6
 
 export class Linked<T> {
 
