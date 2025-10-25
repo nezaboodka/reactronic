@@ -124,17 +124,11 @@ export class Linked<T> {
 
   get prev(): Linked<T> | undefined { return this.prev$ }
 
-  get mark(): Mark {
-    return this.status % MARK_MOD
-  }
+  get mark(): Mark { return this.status % MARK_MOD }
 
-  get order(): number {
-    return Math.trunc(this.status / MARK_MOD)
-  }
+  get order(): number { return Math.trunc(this.status / MARK_MOD) }
 
-  get isManual(): boolean {
-    return this.status === 0
-  }
+  get isManual(): boolean { return this.status === 0 }
 
   // Internal
 
