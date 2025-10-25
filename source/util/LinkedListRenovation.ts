@@ -128,7 +128,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
     if (error === undefined) {
       // Mark lost items
       for (const x of lost.items()) {
-        LinkedList.deleteKey$(list, x)
+        LinkedList.deleteKey$(list, list.keyOf(x))
         Linked.setStatus$(x, Mark.lost, 0)
       }
     }
