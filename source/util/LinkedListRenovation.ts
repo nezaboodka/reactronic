@@ -67,7 +67,7 @@ export class LinkedListRenovation<T> {
         if (list.isStrictOrder && item !== this.expectedNext)
           Linked.setStatus$(item, Mark.moved, items.count)
         else
-          Linked.setStatus$(item, Mark.same, items.count)
+          Linked.setStatus$(item, Mark.found, items.count)
         this.expectedNext = grabManualSiblings(next, items)
         if (resolution)
           resolution.isDuplicate = false
@@ -126,16 +126,18 @@ export class LinkedListRenovation<T> {
       throw misuse("renovation is ended already")
     const lost = this.lost$
     if (error === undefined) {
+      // Mark lost items
       for (const x of lost.items()) {
         LinkedList.deleteKey$(list, x)
         Linked.setStatus$(x, Mark.lost, 0)
       }
     }
     else {
+      // Restore lost items in case of error
       const items = this.list.items$
       for (const x of lost.items()) {
         Linked.link$(x, items, undefined)
-        Linked.setStatus$(x, Mark.same, items.count)
+        Linked.setStatus$(x, Mark.found, items.count)
       }
     }
     list.former$ = undefined

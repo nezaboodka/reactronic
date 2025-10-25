@@ -90,11 +90,11 @@ export class LinkedList<T> {
 
 export enum Mark {
 
-  same = 0,      // прежнее
+  found = 0,     // обнаружено
 
   added = 1,     // добавлено
 
-  replaced = 2,  // заменено
+  modified = 2,  // изменено
 
   moved = 3,     // перемещено
 
