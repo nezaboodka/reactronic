@@ -10,10 +10,11 @@ import { misuse } from "./Dbg.js"
 // LinkedList / СписокСвязанный
 
 export type Extractor<T, V> = (item: T) => V
+export type KeyExtractor<T> = Extractor<T, string | undefined>
 
 export class LinkedList<T extends Linked<T>> {
 
-  readonly keyOf: Extractor<T, string | undefined>
+  readonly keyOf: KeyExtractor<T>
 
   private isStrictOrder$: boolean
 
@@ -26,7 +27,7 @@ export class LinkedList<T extends Linked<T>> {
   former$: LinkedSubList<T> | undefined
 
   constructor(
-    keyExtractor: Extractor<T, string | undefined>,
+    keyExtractor: KeyExtractor<T>,
     isStrictOrder: boolean = false) {
     this.keyOf = keyExtractor
     this.isStrictOrder$ = isStrictOrder
