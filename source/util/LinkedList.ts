@@ -132,14 +132,14 @@ export class Linked<T> {
 
   get mark(): Mark { return this.status % MARK_MOD }
 
-  get order(): number { return Math.trunc(this.status / MARK_MOD) }
+  get rank(): number { return Math.trunc(this.status / MARK_MOD) }
 
   get isManual(): boolean { return this.status === 0 }
 
   // Internal
 
-  static setStatus$<T>(item: Linked<T>, mark: Mark, order: number): void {
-    item.status = order * MARK_MOD + mark
+  static setStatus$<T>(item: Linked<T>, mark: Mark, rank: number): void {
+    item.status = rank * MARK_MOD + mark
   }
 
   static link$<T>(item: Linked<T>,
