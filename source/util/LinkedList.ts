@@ -9,11 +9,11 @@ import { misuse } from "./Dbg.js"
 
 // LinkedList / СписокСвязанный
 
-export type ExtractItemKey<T = unknown> = (item: T) => string | undefined
+export type Extractor<T, V> = (item: T) => V
 
 export class LinkedList<T extends Linked<T>> {
 
-  readonly extractKey: ExtractItemKey<T>
+  readonly extractKey: Extractor<T, string | undefined>
 
   private isStrictOrder$: boolean
 
@@ -25,7 +25,9 @@ export class LinkedList<T extends Linked<T>> {
   /* internal */
   former$: LinkedSubList<T> | undefined
 
-  constructor(extractKey: ExtractItemKey<T>, isStrictOrder: boolean = false) {
+  constructor(
+    extractKey: Extractor<T, string | undefined>,
+    isStrictOrder: boolean = false) {
     this.extractKey = extractKey
     this.isStrictOrder$ = isStrictOrder
     this.map = new Map<string | undefined, T>()
