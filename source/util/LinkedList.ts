@@ -71,6 +71,12 @@ export class LinkedList<T> {
     Linked.link$(item, undefined, undefined)
   }
 
+  move(item: Linked<T>, before: Linked<T> | undefined): void {
+    if (item.list !== this.current$ && item.list !== this.former$)
+      throw misuse("given item doesn't belong to the given list")
+    Linked.link$(item, this.current$, before)
+  }
+
   // Internal
 
   static deleteKey$<T>(list: LinkedList<T>, item: Linked<T>): void {

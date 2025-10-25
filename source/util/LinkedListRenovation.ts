@@ -97,7 +97,8 @@ export class LinkedListRenovation<T> {
   }
 
   move(item: Linked<T>, before: Linked<T> | undefined): void {
-    throw misuse("not implemented")
+    this.list.move(item, before)
+    Linked.setStatus$(item, Mark.moved, 0)
   }
 
   // get addedCount(): number {
