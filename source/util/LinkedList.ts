@@ -215,16 +215,6 @@ export class Linked<T extends Linked<T>> {
 
 }
 
-export class NodeX extends Linked<NodeX> {
-  value = "hello"
-
-  constructor()
-  {
-    super()
-    this.value = "asdfs"
-  }
-}
-
 // LinkedSubList
 
 export class LinkedSubList<T extends Linked<T>> {
