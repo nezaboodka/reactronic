@@ -56,12 +56,12 @@ export class LinkedList<T> {
     return this.map.get(key)
   }
 
-  add(item: Linked<T>): void {
+  add(item: Linked<T>, before?: Linked<T>): void {
     const key = this.extractKey(item)
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
     this.map.set(key, item)
-    Linked.link$(item, this.current$, undefined)
+    Linked.link$(item, this.current$, before)
   }
 
   remove(item: Linked<T>): void {
