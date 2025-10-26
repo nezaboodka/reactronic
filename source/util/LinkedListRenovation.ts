@@ -67,7 +67,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
         if (list.isStrictOrder && item !== this.expectedNext)
           Linked.setStatus$(item, Mark.moved, items.count)
         else
-          Linked.setStatus$(item, Mark.found, items.count)
+          Linked.setStatus$(item, Mark.known, items.count)
         this.expectedNext = grabManualSiblings(next, items)
         if (resolution)
           resolution.isDuplicate = false
@@ -137,7 +137,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
       const items = this.list.items$
       for (const x of lost.items()) {
         Linked.link$(x, items, undefined)
-        Linked.setStatus$(x, Mark.found, items.count)
+        Linked.setStatus$(x, Mark.known, items.count)
       }
     }
     list.former$ = undefined

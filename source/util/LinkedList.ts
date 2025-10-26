@@ -95,7 +95,7 @@ export class LinkedList<T extends Linked<T>> {
 
 export enum Mark {
 
-  found = 0,     // обнаружено
+  known = 0,     // знакомо
 
   added = 1,     // добавлено
 
