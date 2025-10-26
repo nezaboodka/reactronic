@@ -64,8 +64,10 @@ export class LinkedListRenovation<T extends Linked<T>> {
       if (item.list !== items) {
         const next = item.next // remember before re-linking
         Linked.link$(item, items, undefined)
-        if (list.isStrictOrder && item !== this.expectedNext)
+        if (list.isStrictOrder && item !== this.expectedNext) {
           Linked.setStatus$(item, Mark.moved, items.count)
+          this.changes$.push(item)
+        }
         else
           Linked.setStatus$(item, Mark.known, items.count)
         this.expectedNext = grabManualSiblings(next, items)
@@ -83,7 +85,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
   }
 
   add(item: T, before?: T): T {
-    this.list.add(item)
+    this.list.add(item, before)
     Linked.setStatus$(item, Mark.added, this.list.items$.count)
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
@@ -94,23 +96,14 @@ export class LinkedListRenovation<T extends Linked<T>> {
   remove(item: T): void {
     this.list.remove(item)
     Linked.setStatus$(item, Mark.removed, 0)
+    this.changes$.push(item)
   }
 
   move(item: T, before: T | undefined): void {
     this.list.move(item, before)
     Linked.setStatus$(item, Mark.moved, 0)
+    this.changes$.push(item)
   }
-
-  // get addedCount(): number {
-  //   return this.changes$?.length ?? 0
-  // }
-
-  // *added(): Generator<T> {
-  //   const added = this.changes$
-  //   if (added !== undefined)
-  //     for (const x of added)
-  //       yield x
-  // }
 
   get lostCount(): number {
     return this.lost$.count
