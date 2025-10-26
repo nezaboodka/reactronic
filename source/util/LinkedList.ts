@@ -72,14 +72,14 @@ export class LinkedList<T extends Linked<T>> {
 
   remove(item: T): void {
     if (item.list !== this.items$ && item.list !== this.former$)
-      throw misuse("given item doesn't belong to the given list")
+      throw misuse("cannot remove item from a list which it doesn't belong to")
     LinkedList.deleteKey$(this, this.keyOf(item))
     Linked.link$(item, undefined, undefined)
   }
 
   move(item: T, before: T | undefined): void {
     if (item.list !== this.items$ && item.list !== this.former$)
-      throw misuse("given item doesn't belong to the given list")
+      throw misuse("cannot move item inside a list which it doesn't belong to")
     Linked.link$(item, this.items$, before)
   }
 
