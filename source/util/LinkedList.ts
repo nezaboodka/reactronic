@@ -73,19 +73,27 @@ export class LinkedList<T extends Linked<T>> {
   remove(item: T): void {
     if (item.list !== this.items$ && item.list !== this.former$)
       throw misuse("cannot remove item from a list which it doesn't belong to")
-    LinkedList.deleteKey$(this, this.keyOf(item))
-    Linked.link$(item, undefined, undefined)
+    LinkedList.remove$(this, item)
   }
 
   move(item: T, before: T | undefined): void {
     if (item.list !== this.items$ && item.list !== this.former$)
       throw misuse("cannot move item inside a list which it doesn't belong to")
-    Linked.link$(item, this.items$, before)
+    LinkedList.move$(this, item, before)
   }
 
   // Internal
 
-  static deleteKey$<T extends Linked<T>>(list: LinkedList<T>, key: string | undefined): void {
+  static remove$<T extends Linked<T>>(list: LinkedList<T>, item: T): void {
+    LinkedList.removeKey$(list, list.keyOf(item))
+    Linked.link$(item, undefined, undefined)
+  }
+
+  static move$<T extends Linked<T>>(list: LinkedList<T>, item: T, before: T | undefined): void {
+    Linked.link$(item, list.items$, before)
+  }
+
+  static removeKey$<T extends Linked<T>>(list: LinkedList<T>, key: string | undefined): void {
     list.map.delete(key)
   }
 

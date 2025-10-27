@@ -94,13 +94,17 @@ export class LinkedListRenovation<T extends Linked<T>> {
   }
 
   remove(item: T): void {
-    this.list.remove(item)
+    if (item.list !== this.list.former$)
+      throw misuse("cannot remove item which doesn't belong to former list")
+    LinkedList.remove$(this.list, item)
     Linked.setStatus$(item, Mark.removed, 0)
     this.changes$.push(item)
   }
 
   move(item: T, before: T | undefined): void {
-    this.list.move(item, before)
+    if (item.list !== this.list.former$)
+      throw misuse("cannot move item which doesn't belong to former list")
+    LinkedList.move$(this.list, item, before)
     Linked.setStatus$(item, Mark.modified, 0)
     this.changes$.push(item)
   }
@@ -121,7 +125,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
     if (error === undefined) {
       // Mark lost items
       for (const x of lost.items()) {
-        LinkedList.deleteKey$(list, list.keyOf(x))
+        LinkedList.removeKey$(list, list.keyOf(x))
         Linked.setStatus$(x, Mark.lost, 0)
       }
     }
