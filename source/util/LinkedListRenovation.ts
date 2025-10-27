@@ -84,6 +84,16 @@ export class LinkedListRenovation<T extends Linked<T>> {
     return item
   }
 
+  markModified(item: T): void {
+    if (item.list !== this.list.items$)
+      throw misuse("only reused items can be marked as modified")
+    const m = item.mark
+    if (m === Mark.reused)
+      Linked.setStatus$(item, Mark.modified, item.rank)
+    else if (m !== Mark.modified)
+      throw misuse("item is renovated already and cannot be marked as modified")
+  }
+
   add(item: T, before?: T): T {
     this.list.add(item, before)
     Linked.setStatus$(item, Mark.added, this.list.items$.count)
