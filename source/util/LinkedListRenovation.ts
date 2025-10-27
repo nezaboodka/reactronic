@@ -65,7 +65,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
         const next = item.next // remember before re-linking
         Linked.link$(item, items, undefined)
         if (list.isStrictOrder && item !== this.expectedNext) {
-          Linked.setStatus$(item, Mark.moved, items.count)
+          Linked.setStatus$(item, Mark.refined, items.count)
           this.changes$.push(item)
         }
         else
@@ -101,7 +101,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
 
   move(item: T, before: T | undefined): void {
     this.list.move(item, before)
-    Linked.setStatus$(item, Mark.moved, 0)
+    Linked.setStatus$(item, Mark.refined, 0)
     this.changes$.push(item)
   }
 
