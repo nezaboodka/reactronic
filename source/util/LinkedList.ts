@@ -95,11 +95,11 @@ export class LinkedList<T extends Linked<T>> {
 
 export enum Mark {
 
-  known = 0,     // знакомо
+  reused = 0,    // повторено
 
   added = 1,     // добавлено
 
-  refined = 2,   // уточнено (изменено и/или перемещено)
+  modified = 2,  // изменено (включая перемещение)
 
   removed = 4,   // удалено
 
