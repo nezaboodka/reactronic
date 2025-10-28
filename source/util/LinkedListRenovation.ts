@@ -12,9 +12,9 @@ import { LinkedList, LinkedItem, LinkedSubList, Mark } from "./LinkedList.js"
 
 export class LinkedListRenovation<T extends LinkedItem<T>> {
 
-  readonly list: LinkedList<T>
+  readonly list: LinkedList<T> // список
 
-  readonly diff: Array<T> | undefined
+  readonly diff: Array<T> | undefined // дельта
 
   private lost$: LinkedSubList<T>
 
