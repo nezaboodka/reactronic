@@ -160,7 +160,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 }
 
 function grabAllPrevSiblingsWhileManual<T extends LinkedItem<T>>(
-  item: T, list: LinkedSubList<T>): void {
+  item: T, list: LinkedSubList<T>): T | undefined {
   let x = item.prev
   let before: T | undefined = undefined
   while (x !== undefined && x.isManual) {
@@ -168,4 +168,5 @@ function grabAllPrevSiblingsWhileManual<T extends LinkedItem<T>>(
     before = x
     x = x.prev
   }
+  return before
 }
