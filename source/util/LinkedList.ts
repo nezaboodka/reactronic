@@ -70,14 +70,6 @@ export class LinkedList<T extends LinkedItem<T>> {
     LinkedItem.link$(this.items$, item, before)
   }
 
-  remove(item: T): void {
-    if (item.list !== this.items$)
-      throw misuse("cannot remove item from a list which it doesn't belong to")
-    if (!item.isExternal)
-      throw misuse("external item cannot be removed outside of renovation cycle")
-    LinkedList.remove$(this, item)
-  }
-
   move(item: T, before: T | undefined): void {
     if (item.list !== this.items$)
       throw misuse("cannot move item inside a list which it doesn't belong to")
@@ -86,15 +78,23 @@ export class LinkedList<T extends LinkedItem<T>> {
     LinkedList.move$(this, item, before)
   }
 
+  remove(item: T): void {
+    if (item.list !== this.items$)
+      throw misuse("cannot remove item from a list which it doesn't belong to")
+    if (!item.isExternal)
+      throw misuse("external item cannot be removed outside of renovation cycle")
+    LinkedList.remove$(this, item)
+  }
+
   // Internal
+
+  static move$<T extends LinkedItem<T>>(list: LinkedList<T>, item: T, before: T | undefined): void {
+    LinkedItem.link$(list.items$, item, before)
+  }
 
   static remove$<T extends LinkedItem<T>>(list: LinkedList<T>, item: T): void {
     LinkedList.removeKey$(list, list.keyOf(item))
     LinkedItem.link$(undefined, item, undefined)
-  }
-
-  static move$<T extends LinkedItem<T>>(list: LinkedList<T>, item: T, before: T | undefined): void {
-    LinkedItem.link$(list.items$, item, before)
   }
 
   static removeKey$<T extends LinkedItem<T>>(list: LinkedList<T>, key: string | undefined): void {

@@ -107,21 +107,21 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
       throw misuse("item is renovated already and cannot be marked as modified")
   }
 
-  // это-удалено
-  thisIsRemoved(item: T): void {
-    if (item.list !== this.list.former$)
-      throw misuse("cannot remove item which doesn't belong to former list")
-    LinkedList.remove$(this.list, item)
-    LinkedItem.setStatus$(item, Mark.removed, 0)
-    this.diff?.push(item)
-  }
-
   // это-перемещено
   thisIsMoved(item: T, before: T | undefined): void {
     if (item.list !== this.list.former$)
       throw misuse("cannot move item which doesn't belong to former list")
     LinkedList.move$(this.list, item, before)
     LinkedItem.setStatus$(item, Mark.modified, 0)
+    this.diff?.push(item)
+  }
+
+  // это-удалено
+  thisIsRemoved(item: T): void {
+    if (item.list !== this.list.former$)
+      throw misuse("cannot remove item which doesn't belong to former list")
+    LinkedList.remove$(this.list, item)
+    LinkedItem.setStatus$(item, Mark.removed, 0)
     this.diff?.push(item)
   }
 
