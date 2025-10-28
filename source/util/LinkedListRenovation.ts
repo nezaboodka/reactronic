@@ -18,7 +18,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   private expected: T | undefined
 
-  private lastUnknownKey: string | undefined
+  private absent: string | undefined
 
   readonly changes: Array<T> | undefined
 
@@ -32,23 +32,23 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     list.former$ = lost
     this.lost$ = lost
     this.expected = lost.first
-    this.lastUnknownKey = undefined
+    this.absent = undefined
     this.changes = changes
   }
 
   // найти
   lookup(key: string | undefined): T | undefined {
     let result: T | undefined = undefined
-    if (key !== undefined && key !== this.lastUnknownKey) {
+    if (key !== undefined && key !== this.absent) {
       result = this.list.lookup(key)
       if (result !== undefined) {
         if (this.list.keyOf(result) !== key) {
-          this.lastUnknownKey = key
+          this.absent = key
           result = undefined
         }
       }
       else
-        this.lastUnknownKey = key
+        this.absent = key
     }
     return result
   }
@@ -102,7 +102,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
   thisIsAdded(item: T, before?: T): T {
     this.list.add(item, before)
     LinkedItem.setStatus$(item, Mark.added, this.list.items$.count)
-    this.lastUnknownKey = undefined
+    this.absent = undefined
     this.expected = undefined
     this.changes?.push(item)
     return item
