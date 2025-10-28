@@ -16,13 +16,13 @@ export class LinkedListRenovation<T extends Linked<T>> {
 
   private lost$: LinkedSubList<T>
 
-  private changes$: Array<T>
+  private changes$: Array<T> | undefined
 
   private expectedNext: T | undefined
 
   private lastUnknownKey: string | undefined
 
-  constructor(list: LinkedList<T>) {
+  constructor(list: LinkedList<T>, changes?: Array<T>) {
     if (list.former$ !== undefined)
       throw misuse("renovation is in progress already")
     const items = new LinkedSubList<T>()
@@ -31,7 +31,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
     list.items$ = items
     list.former$ = lost
     this.lost$ = lost
-    this.changes$ = []
+    this.changes$ = changes
     this.expectedNext = grabManualSiblings(lost.first, items)
     this.lastUnknownKey = undefined
   }
@@ -66,7 +66,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
         Linked.link$(item, items, undefined)
         if (list.isStrictOrder && item !== this.expectedNext) {
           Linked.setStatus$(item, Mark.modified, items.count)
-          this.changes$.push(item)
+          this.changes$?.push(item)
         }
         else
           Linked.setStatus$(item, Mark.reused, items.count)
@@ -99,7 +99,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
     Linked.setStatus$(item, Mark.added, this.list.items$.count)
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
-    this.changes$.push(item)
+    this.changes$?.push(item)
     return item
   }
 
@@ -108,7 +108,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
       throw misuse("cannot remove item which doesn't belong to former list")
     LinkedList.remove$(this.list, item)
     Linked.setStatus$(item, Mark.removed, 0)
-    this.changes$.push(item)
+    this.changes$?.push(item)
   }
 
   move(item: T, before: T | undefined): void {
@@ -116,7 +116,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
       throw misuse("cannot move item which doesn't belong to former list")
     LinkedList.move$(this.list, item, before)
     Linked.setStatus$(item, Mark.modified, 0)
-    this.changes$.push(item)
+    this.changes$?.push(item)
   }
 
   get lostCount(): number {
