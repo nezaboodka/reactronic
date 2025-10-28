@@ -25,15 +25,14 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
   constructor(list: LinkedList<T>, diff?: Array<T>) {
     if (list.former$ !== undefined)
       throw misuse("renovation is in progress already")
-    const items = new LinkedSubList<T>()
-    const lost = list.items$
+    const former = list.items$
     this.list = list
     this.diff = diff
-    list.items$ = items
-    list.former$ = lost
-    this.lost$ = lost
-    this.expected = lost.first
+    this.lost$ = former
+    this.expected = former.first
     this.absent = undefined
+    list.former$ = former
+    list.items$ = new LinkedSubList<T>()
   }
 
   // найти
