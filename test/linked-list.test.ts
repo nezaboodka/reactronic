@@ -29,6 +29,7 @@ test("linked-list", t => {
   // Initial renovation
 
   const r1list = ["A", "B", "C", "D"]
+  const r1marks = [Mark.added, Mark.added, Mark.added, Mark.added]
 
   const r = new LinkedListRenovation<Property>(list)
   for (const x of r1list) {
@@ -39,21 +40,26 @@ test("linked-list", t => {
   t.is(list.count, 4)
   t.is(r.lostItemCount, 0)
   t.true(compare(list.items(), r1list))
+  t.true(compare(list.items(), r1list))
+  t.true(compareMarks(marks(list.items()), r1marks))
 
   // External items
 
   const m1result = ["A", "B", "C", "m1", "D", "m2"]
+  const m1marks = [Mark.added, Mark.added, Mark.added, Mark.prolonged, Mark.added, Mark.prolonged]
 
   list.add(new Property("m1"), list.lookup("D"))
   list.add(new Property("m2"))
   t.is(list.count, m1result.length)
   t.true(compare(list.items(), m1result))
+  t.true(compareMarks(marks(list.items()), m1marks))
 
   // Second renovation
 
   const r2list = ["X", "C", "D", "Y", "A", "Z"]
   const r2result = ["X", "C", "m1", "D", "Y", "A", "Z", "m2"]
   const r2lost = ["B"]
+  const r2marks = [Mark.added, Mark.modified, Mark.prolonged, Mark.prolonged, Mark.added, Mark.modified, Mark.added, Mark.prolonged]
 
   const r2 = new LinkedListRenovation<Property>(list)
   for (const x of r2list) {
@@ -67,6 +73,7 @@ test("linked-list", t => {
   t.true(compare(list.items(), r2result))
   t.true(compare(r2.lostItems(), r2lost))
   t.is(list.lookup("A")?.mark, Mark.modified)
+  t.true(compareMarks(marks(list.items()), r2marks))
 
   // Third renovation
 
@@ -109,4 +116,22 @@ function compare(list: Generator<Property>, array: Array<string>): boolean {
     i++
   }
   return result && i === array.length
+}
+
+function compareMarks(marks: Generator<Mark>, array: Array<Mark>): boolean {
+  let result = true
+  let i = 0
+  for (const m of marks) {
+    if (m !== array[i]) {
+      result = false
+      break
+    }
+    i++
+  }
+  return result && i === array.length
+}
+
+function *marks(list: Generator<Property>): Generator<Mark> {
+  for (const x of list)
+    yield x.mark
 }
