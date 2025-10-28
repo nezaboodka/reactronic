@@ -107,7 +107,7 @@ export enum Mark {
 
   added = 1,      // добавлено
 
-  modified = 2,   // изменено (включая перемещение)
+  modified = 2,   // изменено
 
   removed = 3,    // удалено
 
