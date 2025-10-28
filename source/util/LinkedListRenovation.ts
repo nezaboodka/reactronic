@@ -87,6 +87,16 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     return x
   }
 
+  // это-добавлено
+  thisIsAdded(item: T, before?: T): T {
+    this.list.add(item, before)
+    LinkedItem.setStatus$(item, Mark.added, this.list.items$.count)
+    this.absent = undefined
+    this.expected = undefined
+    this.changes?.push(item)
+    return item
+  }
+
   // это-изменено
   thisIsModified(item: T): void {
     if (item.list !== this.list.items$)
@@ -96,16 +106,6 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
       LinkedItem.setStatus$(item, Mark.modified, item.rank)
     else if (m !== Mark.modified)
       throw misuse("item is renovated already and cannot be marked as modified")
-  }
-
-  // это-добавлено
-  thisIsAdded(item: T, before?: T): T {
-    this.list.add(item, before)
-    LinkedItem.setStatus$(item, Mark.added, this.list.items$.count)
-    this.absent = undefined
-    this.expected = undefined
-    this.changes?.push(item)
-    return item
   }
 
   // это-удалено
