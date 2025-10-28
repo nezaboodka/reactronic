@@ -16,7 +16,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   private lost$: LinkedSubList<T>
 
-  private expectedNext: T | undefined
+  private expected: T | undefined
 
   private lastUnknownKey: string | undefined
 
@@ -31,7 +31,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     list.items$ = items
     list.former$ = lost
     this.lost$ = lost
-    this.expectedNext = lost.first
+    this.expected = lost.first
     this.lastUnknownKey = undefined
     this.changes = changes
   }
@@ -58,22 +58,22 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse(error ?? "renovation is no longer in progress")
-    let item = this.expectedNext
+    let item = this.expected
     if (key !== (item ? list.keyOf(item) : undefined))
       item = this.lookup(key)
     if (item !== undefined) {
       const items = this.list.items$
       if (item.list !== items) {
         const next = item.next // remember before re-linking
-        grabAllPrevSiblingsWhileManual(item, items)
+        const expected = grabAllPrevSiblingsWhileManual(item, items) ?? item
         LinkedItem.link$(items, item, undefined)
-        if (list.isStrictOrder && item !== this.expectedNext) {
+        if (list.isStrictOrder && expected !== this.expected) {
           LinkedItem.setStatus$(item, Mark.modified, items.count)
           this.changes?.push(item)
         }
         else
           LinkedItem.setStatus$(item, Mark.prolonged, items.count)
-        this.expectedNext = next
+        this.expected = next
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -103,7 +103,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     this.list.add(item, before)
     LinkedItem.setStatus$(item, Mark.added, this.list.items$.count)
     this.lastUnknownKey = undefined
-    this.expectedNext = undefined
+    this.expected = undefined
     this.changes?.push(item)
     return item
   }
