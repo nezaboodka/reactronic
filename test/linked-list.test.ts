@@ -26,23 +26,9 @@ test("linked-list", t => {
 
   const list = new LinkedList<Property>(x => x.value, true)
 
-  // Datasets
+  // Initial renovation
 
   const r1list = ["A", "B", "C", "D"]
-
-  const m1result = ["A", "B", "C", "m1", "D", "m2"]
-
-  const r2list = ["X", "C", "D", "Y", "A", "Z"]
-  const r2result = ["X", "C", "m1", "D", "Y", "A", "Z", "m2"]
-  const r2lost = ["B"]
-
-  const r3list = ["X", "C", "Y", "A", "Z"]
-  const r3result = ["X", "C", "Y", "A", "Z", "m1", "m2"]
-  const r3lost = ["D"]
-
-  const m2result = ["X", "C", "Y", "A", "Z"]
-
-  // Initial renovation
 
   const r = new LinkedListRenovation<Property>(list)
   for (const x of r1list) {
@@ -56,12 +42,18 @@ test("linked-list", t => {
 
   // External items
 
+  const m1result = ["A", "B", "C", "m1", "D", "m2"]
+
   list.add(new Property("m1"), list.lookup("D"))
   list.add(new Property("m2"))
   t.is(list.count, m1result.length)
   t.true(compare(list.items(), m1result))
 
   // Second renovation
+
+  const r2list = ["X", "C", "D", "Y", "A", "Z"]
+  const r2result = ["X", "C", "m1", "D", "Y", "A", "Z", "m2"]
+  const r2lost = ["B"]
 
   const r2 = new LinkedListRenovation<Property>(list)
   for (const x of r2list) {
@@ -80,6 +72,10 @@ test("linked-list", t => {
 
   // Third renovation
 
+  const r3list = ["X", "C", "Y", "A", "Z"]
+  const r3result = ["X", "C", "Y", "A", "Z", "m1", "m2"]
+  const r3lost = ["D"]
+
   const r3 = new LinkedListRenovation<Property>(list)
   for (const x of r3list) {
     if (r3.tryToProlonge(x) === undefined)
@@ -95,6 +91,8 @@ test("linked-list", t => {
   t.true(compare(r3.lostItems(), r3lost))
 
   // External items
+
+  const m2result = ["X", "C", "Y", "A", "Z"]
 
   t.throws(() => list.remove(list.lookup("X")!), {
     message: "external item cannot be removed outside of renovation cycle" })
