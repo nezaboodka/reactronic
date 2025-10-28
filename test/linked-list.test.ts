@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { LinkedList, Linked } from "../source/util/LinkedList.js"
+import { LinkedList, LinkedItem } from "../source/util/LinkedList.js"
 import { LinkedListRenovation } from "../source/util/LinkedListRenovation.js"
 
-class Property extends Linked<Property> {
+class Property extends LinkedItem<Property> {
   value: string
 
   constructor(value: string) {
@@ -65,7 +65,7 @@ test("linked-list", t => {
 
 })
 
-function compare(list: Generator<Property<any>>, array: Array<any>): boolean {
+function compare(list: Generator<Property>, array: Array<string>): boolean {
   let result = true
   let i = 0
   for (const item of list) {

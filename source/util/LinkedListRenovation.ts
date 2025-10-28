@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import { misuse } from "./Dbg.js"
-import { LinkedList, Linked, LinkedSubList, Mark } from "./LinkedList.js"
+import { LinkedList, LinkedItem, LinkedSubList, Mark } from "./LinkedList.js"
 
 // LinkedListRenovation<T>
 
-export class LinkedListRenovation<T extends Linked<T>> {
+export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   readonly list: LinkedList<T>
 
@@ -63,13 +63,13 @@ export class LinkedListRenovation<T extends Linked<T>> {
       const items = this.list.items$
       if (item.list !== items) {
         const next = item.next // remember before re-linking
-        Linked.link$(item, items, undefined)
+        LinkedItem.link$(item, items, undefined)
         if (list.isStrictOrder && item !== this.expectedNext) {
-          Linked.setStatus$(item, Mark.modified, items.count)
+          LinkedItem.setStatus$(item, Mark.modified, items.count)
           this.changes?.push(item)
         }
         else
-          Linked.setStatus$(item, Mark.prolonged, items.count)
+          LinkedItem.setStatus$(item, Mark.prolonged, items.count)
         this.expectedNext = grabManualSiblings(next, items)
         if (resolution)
           resolution.isDuplicate = false
@@ -89,14 +89,14 @@ export class LinkedListRenovation<T extends Linked<T>> {
       throw misuse("only prolonged items can be marked as modified")
     const m = item.mark
     if (m === Mark.prolonged)
-      Linked.setStatus$(item, Mark.modified, item.rank)
+      LinkedItem.setStatus$(item, Mark.modified, item.rank)
     else if (m !== Mark.modified)
       throw misuse("item is renovated already and cannot be marked as modified")
   }
 
   add(item: T, before?: T): T {
     this.list.add(item, before)
-    Linked.setStatus$(item, Mark.added, this.list.items$.count)
+    LinkedItem.setStatus$(item, Mark.added, this.list.items$.count)
     this.lastUnknownKey = undefined
     this.expectedNext = undefined
     this.changes?.push(item)
@@ -107,7 +107,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
     if (item.list !== this.list.former$)
       throw misuse("cannot remove item which doesn't belong to former list")
     LinkedList.remove$(this.list, item)
-    Linked.setStatus$(item, Mark.removed, 0)
+    LinkedItem.setStatus$(item, Mark.removed, 0)
     this.changes?.push(item)
   }
 
@@ -115,7 +115,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
     if (item.list !== this.list.former$)
       throw misuse("cannot move item which doesn't belong to former list")
     LinkedList.move$(this.list, item, before)
-    Linked.setStatus$(item, Mark.modified, 0)
+    LinkedItem.setStatus$(item, Mark.modified, 0)
     this.changes?.push(item)
   }
 
@@ -132,15 +132,15 @@ export class LinkedListRenovation<T extends Linked<T>> {
       // Mark lost items
       for (const x of lost.items()) {
         LinkedList.removeKey$(list, list.keyOf(x))
-        Linked.setStatus$(x, Mark.removed, 0)
+        LinkedItem.setStatus$(x, Mark.removed, 0)
       }
     }
     else {
       // Restore lost items in case of error
       const items = this.list.items$
       for (const x of lost.items()) {
-        Linked.link$(x, items, undefined)
-        Linked.setStatus$(x, Mark.prolonged, items.count)
+        LinkedItem.link$(x, items, undefined)
+        LinkedItem.setStatus$(x, Mark.prolonged, items.count)
       }
     }
     list.former$ = undefined
@@ -148,11 +148,11 @@ export class LinkedListRenovation<T extends Linked<T>> {
 
 }
 
-function grabManualSiblings<T extends Linked<T>>(
+function grabManualSiblings<T extends LinkedItem<T>>(
   item: T | undefined,
   list: LinkedSubList<T>): T | undefined {
   while (item !== undefined && item.isManual) {
-    Linked.link$(item, list, undefined)
+    LinkedItem.link$(item, list, undefined)
     item = item.next
   }
   return item

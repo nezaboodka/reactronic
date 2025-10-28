@@ -15,7 +15,7 @@ export type KeyExtractor<T> = Extractor<T, string | undefined>
 
 // LinkedList / СписокСвязанный
 
-export class LinkedList<T extends Linked<T>> {
+export class LinkedList<T extends LinkedItem<T>> {
 
   readonly keyOf: KeyExtractor<T>
 
@@ -67,7 +67,7 @@ export class LinkedList<T extends Linked<T>> {
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
     this.map.set(key, item)
-    Linked.link$(item, this.items$, before)
+    LinkedItem.link$(item, this.items$, before)
   }
 
   remove(item: T): void {
@@ -84,16 +84,16 @@ export class LinkedList<T extends Linked<T>> {
 
   // Internal
 
-  static remove$<T extends Linked<T>>(list: LinkedList<T>, item: T): void {
+  static remove$<T extends LinkedItem<T>>(list: LinkedList<T>, item: T): void {
     LinkedList.removeKey$(list, list.keyOf(item))
-    Linked.link$(item, undefined, undefined)
+    LinkedItem.link$(item, undefined, undefined)
   }
 
-  static move$<T extends Linked<T>>(list: LinkedList<T>, item: T, before: T | undefined): void {
-    Linked.link$(item, list.items$, before)
+  static move$<T extends LinkedItem<T>>(list: LinkedList<T>, item: T, before: T | undefined): void {
+    LinkedItem.link$(item, list.items$, before)
   }
 
-  static removeKey$<T extends Linked<T>>(list: LinkedList<T>, key: string | undefined): void {
+  static removeKey$<T extends LinkedItem<T>>(list: LinkedList<T>, key: string | undefined): void {
     list.map.delete(key)
   }
 
@@ -115,9 +115,9 @@ export enum Mark {
 
 const MARK_MOD = 4
 
-// Linked / Связанное
+// LinkedItem / СвязанныйЭлемент
 
-export class Linked<T extends Linked<T>> {
+export class LinkedItem<T extends LinkedItem<T>> {
 
   private list$: LinkedSubList<T> | undefined
 
@@ -148,15 +148,15 @@ export class Linked<T extends Linked<T>> {
 
   // Internal
 
-  static setStatus$<T extends Linked<T>>(item: T, mark: Mark, rank: number): void {
+  static setStatus$<T extends LinkedItem<T>>(item: T, mark: Mark, rank: number): void {
     item.status = rank * MARK_MOD + mark
   }
 
-  static link$<T extends Linked<T>>(item: T,
+  static link$<T extends LinkedItem<T>>(item: T,
     list: LinkedSubList<T> | undefined,
     before: T | undefined): void {
     if (before === undefined) {
-      Linked.unlink(item)
+      LinkedItem.unlink(item)
       if (list !== undefined) {
         // Link to another list
         item.list$ = list
@@ -178,7 +178,7 @@ export class Linked<T extends Linked<T>> {
     }
     else {
       if (list === before.list && list !== undefined) {
-        Linked.unlink(item)
+        LinkedItem.unlink(item)
         // Link to another list
         const after = before.prev$
         item.prev$ = after
@@ -203,7 +203,7 @@ export class Linked<T extends Linked<T>> {
     }
   }
 
-  private static unlink<T extends Linked<T>>(item: T): void {
+  private static unlink<T extends LinkedItem<T>>(item: T): void {
     const list = item.list
     if (list) {
       // Configure item
@@ -226,7 +226,7 @@ export class Linked<T extends Linked<T>> {
 
 // LinkedSubList
 
-export class LinkedSubList<T extends Linked<T>> {
+export class LinkedSubList<T extends LinkedItem<T>> {
 
   count: number = 0
 
