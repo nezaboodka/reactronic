@@ -24,15 +24,15 @@ test("linked-list", t => {
 
   // Datasets
 
-  const r1list = ["Hello", "Welcome", "Bye", "End"]
+  const r1list = ["A", "B", "C", "D"]
 
-  const r2list = ["Added1", "Bye", "End", "Added2", "Hello", "Added3"]
-  const r2result = ["Added1", "Bye", "End", "Manual", "Added2", "Hello", "Added3"]
-  const r2lost = ["Welcome"]
+  const r2list = ["X", "C", "D", "Y", "A", "Z"]
+  const r2result = ["X", "C", "D", "Manual", "Y", "A", "Z"]
+  const r2lost = ["B"]
 
-  const r3list = ["Added1", "Bye", "Added2", "Hello", "Added3"]
-  const r3result = ["Added1", "Bye", "Added2", "Hello", "Added3", "Manual"]
-  const r3lost = ["End"]
+  const r3list = ["X", "C", "Y", "A", "Z"]
+  const r3result = ["X", "C", "Y", "A", "Z", "Manual"]
+  const r3lost = ["D"]
 
   // Initial renovation
 
