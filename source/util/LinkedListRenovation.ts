@@ -136,7 +136,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
       // Mark lost items
       for (const x of lost.items()) {
         LinkedList.removeKey$(list, list.keyOf(x))
-        Linked.setStatus$(x, Mark.lost, 0)
+        Linked.setStatus$(x, Mark.removed, 0)
       }
     }
     else {

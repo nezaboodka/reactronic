@@ -109,13 +109,11 @@ export enum Mark {
 
   modified = 2,  // изменено (включая перемещение)
 
-  removed = 4,   // удалено
-
-  lost = 5,      // утеряно
+  removed = 3,   // удалено
 
 }
 
-const MARK_MOD = 6
+const MARK_MOD = 4
 
 // Linked / Связанное
 
