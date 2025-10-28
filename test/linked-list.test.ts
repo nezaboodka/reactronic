@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { LinkedList, LinkedItem } from "../source/util/LinkedList.js"
+import { LinkedList, LinkedItem, Mark } from "../source/util/LinkedList.js"
 import { LinkedListRenovation } from "../source/util/LinkedListRenovation.js"
 
 class Property extends LinkedItem<Property> {
@@ -70,6 +70,7 @@ test("linked-list", t => {
   // t.is(list.countOfRemoved, 0)
   t.true(compare(list.items(), r2result))
   t.true(compare(r2.lostItems(), r2lost))
+  t.is(list.lookup("A")?.mark, Mark.modified)
 
   // Third renovation
 
