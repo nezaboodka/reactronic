@@ -36,6 +36,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     this.changes = changes
   }
 
+  // найти
   lookup(key: string | undefined): T | undefined {
     let result: T | undefined = undefined
     if (key !== undefined && key !== this.lastUnknownKey) {
@@ -52,7 +53,8 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     return result
   }
 
-  tryProlong(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
+  // это-продлено
+  thisIsProlonged(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse(error ?? "renovation is no longer in progress")
@@ -84,7 +86,8 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     return item
   }
 
-  markModified(item: T): void {
+  // это-изменено
+  thisIsModified(item: T): void {
     if (item.list !== this.list.items$)
       throw misuse("only prolonged items can be marked as modified")
     const m = item.mark
@@ -94,7 +97,8 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
       throw misuse("item is renovated already and cannot be marked as modified")
   }
 
-  add(item: T, before?: T): T {
+  // это-добавлено
+  thisIsAdded(item: T, before?: T): T {
     this.list.add(item, before)
     LinkedItem.setStatus$(item, Mark.added, this.list.items$.count)
     this.lastUnknownKey = undefined
@@ -103,7 +107,8 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     return item
   }
 
-  remove(item: T): void {
+  // это-удалено
+  thisIsRemoved(item: T): void {
     if (item.list !== this.list.former$)
       throw misuse("cannot remove item which doesn't belong to former list")
     LinkedList.remove$(this.list, item)
@@ -111,7 +116,8 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     this.changes?.push(item)
   }
 
-  move(item: T, before: T | undefined): void {
+  // это-перемещено
+  thisIsMoved(item: T, before: T | undefined): void {
     if (item.list !== this.list.former$)
       throw misuse("cannot move item which doesn't belong to former list")
     LinkedList.move$(this.list, item, before)
