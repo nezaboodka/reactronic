@@ -64,8 +64,6 @@ test("linked-list", t => {
 
   t.is(list.count, r2result.length)
   t.is(r2.lostItemCount, r2lost.length)
-  // t.is(list.countOfAdded, 0)
-  // t.is(list.countOfRemoved, 0)
   t.true(compare(list.items(), r2result))
   t.true(compare(r2.lostItems(), r2lost))
   t.is(list.lookup("A")?.mark, Mark.modified)
@@ -85,8 +83,6 @@ test("linked-list", t => {
 
   t.is(list.count, r3result.length)
   t.is(r3.lostItemCount, r3lost.length)
-  // t.is(list.countOfAdded, 0)
-  // t.is(list.countOfRemoved, 0)
   t.true(compare(list.items(), r3result))
   t.true(compare(r3.lostItems(), r3lost))
 
