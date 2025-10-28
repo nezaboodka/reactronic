@@ -26,12 +26,14 @@ test("linked-list", t => {
 
   const r1list = ["A", "B", "C", "D"]
 
+  const m1result = ["A", "B", "C", "M1", "D", "M2"]
+
   const r2list = ["X", "C", "D", "Y", "A", "Z"]
-  const r2result = ["X", "C", "D", "Manual", "Y", "A", "Z"]
+  const r2result = ["X", "C", "M1", "D", "M2", "Y", "A", "Z"]
   const r2lost = ["B"]
 
   const r3list = ["X", "C", "Y", "A", "Z"]
-  const r3result = ["X", "C", "Y", "A", "Z", "Manual"]
+  const r3result = ["X", "C", "M1", "Y", "A", "Z", "M2"]
   const r3lost = ["D"]
 
   // Initial renovation
@@ -48,8 +50,10 @@ test("linked-list", t => {
 
   // Manual item
 
-  list.add(new Property("Manual"))
-  t.is(list.count, 5)
+  list.add(new Property("M1"), list.lookup("D"))
+  list.add(new Property("M2"))
+  t.is(list.count, m1result.length)
+  t.true(compare(list.items(), m1result))
 
   // Second renovation
 
