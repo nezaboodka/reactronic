@@ -58,21 +58,21 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse(error ?? "renovation is no longer in progress")
-    let item = this.expected
-    if (key !== (item ? list.keyOf(item) : undefined))
-      item = this.lookup(key)
-    if (item !== undefined) {
+    let x = this.expected
+    if (key !== (x ? list.keyOf(x) : undefined))
+      x = this.lookup(key)
+    if (x !== undefined) {
       const target = this.list.items$
-      if (item.list !== target) {
-        const next = item.next // remember before re-linking
-        const expected = grabManualItems(target, item) ?? item
-        LinkedItem.link$(target, item, undefined)
+      if (x.list !== target) {
+        const next = x.next // remember before re-linking
+        const expected = prolongManualItemsIfAny(target, x) ?? x
+        LinkedItem.link$(target, x, undefined)
         if (list.isStrictOrder && expected !== this.expected) {
-          LinkedItem.setStatus$(item, Mark.modified, target.count)
-          this.changes?.push(item)
+          LinkedItem.setStatus$(x, Mark.modified, target.count)
+          this.changes?.push(x)
         }
         else
-          LinkedItem.setStatus$(item, Mark.prolonged, target.count)
+          LinkedItem.setStatus$(x, Mark.prolonged, target.count)
         this.expected = next
         if (resolution)
           resolution.isDuplicate = false
@@ -84,7 +84,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     }
     else if (resolution)
       resolution.isDuplicate = false
-    return item
+    return x
   }
 
   // это-изменено
@@ -162,7 +162,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
 }
 
-function grabManualItems<T extends LinkedItem<T>>(
+function prolongManualItemsIfAny<T extends LinkedItem<T>>(
   list: LinkedSubList<T>, item: T): T | undefined {
   let x = item.prev
   let before: T | undefined = undefined
