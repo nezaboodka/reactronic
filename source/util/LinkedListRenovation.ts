@@ -14,7 +14,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   readonly list: LinkedList<T>
 
-  readonly changes: Array<T> | undefined
+  readonly diff: Array<T> | undefined
 
   private lost$: LinkedSubList<T>
 
@@ -22,13 +22,13 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   private absent: string | undefined
 
-  constructor(list: LinkedList<T>, changes?: Array<T>) {
+  constructor(list: LinkedList<T>, diff?: Array<T>) {
     if (list.former$ !== undefined)
       throw misuse("renovation is in progress already")
     const items = new LinkedSubList<T>()
     const lost = list.items$
     this.list = list
-    this.changes = changes
+    this.diff = diff
     list.items$ = items
     list.former$ = lost
     this.lost$ = lost
@@ -69,7 +69,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
         LinkedItem.link$(target, x, undefined)
         if (list.isStrictOrder && expected !== this.expected) {
           LinkedItem.setStatus$(x, Mark.modified, target.count)
-          this.changes?.push(x)
+          this.diff?.push(x)
         }
         else
           LinkedItem.setStatus$(x, Mark.prolonged, target.count)
@@ -93,7 +93,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     LinkedItem.setStatus$(item, Mark.added, this.list.items$.count)
     this.absent = undefined
     this.expected = undefined
-    this.changes?.push(item)
+    this.diff?.push(item)
     return item
   }
 
@@ -114,7 +114,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
       throw misuse("cannot remove item which doesn't belong to former list")
     LinkedList.remove$(this.list, item)
     LinkedItem.setStatus$(item, Mark.removed, 0)
-    this.changes?.push(item)
+    this.diff?.push(item)
   }
 
   // это-перемещено
@@ -123,7 +123,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
       throw misuse("cannot move item which doesn't belong to former list")
     LinkedList.move$(this.list, item, before)
     LinkedItem.setStatus$(item, Mark.modified, 0)
-    this.changes?.push(item)
+    this.diff?.push(item)
   }
 
   // количество-утерянных-элементов
