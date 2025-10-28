@@ -92,6 +92,7 @@ test("linked-list", t => {
 
   // Manual manipulations
 
+  t.throws(() => list.remove(list.lookup("X")!), { message: "this item cannot be removed outside of renovation cycle" })
   list.remove(list.lookup("m1")!)
   list.remove(list.lookup("m2")!)
   t.is(list.count, m2result.length)
