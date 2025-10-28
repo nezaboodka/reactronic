@@ -126,10 +126,13 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     this.changes?.push(item)
   }
 
+  // количество-утерянных-элементов
   get lostItemCount(): number { return this.lost$.count }
 
+  // утерянные-элементы
   lostItems(): Generator<T> { return this.lost$.items() }
 
+  // готово
   done(error?: unknown): void {
     const list = this.list
     if (!list.isRenovationInProgress)
