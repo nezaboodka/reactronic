@@ -36,6 +36,8 @@ test("linked-list", t => {
   const r3result = ["X", "C", "m1", "Y", "A", "Z", "m2"]
   const r3lost = ["D"]
 
+  const m2result = ["X", "C", "Y", "A", "Z"]
+
   // Initial renovation
 
   const r = new LinkedListRenovation<Property>(list)
@@ -48,7 +50,7 @@ test("linked-list", t => {
   t.is(r.lostItemCount, 0)
   t.true(compare(list.items(), r1list))
 
-  // Manual item
+  // Manual manipulations
 
   list.add(new Property("m1"), list.lookup("D"))
   list.add(new Property("m2"))
@@ -87,6 +89,13 @@ test("linked-list", t => {
   // t.is(list.countOfRemoved, 0)
   t.true(compare(list.items(), r3result))
   t.true(compare(r3.lostItems(), r3lost))
+
+  // Manual manipulations
+
+  list.remove(list.lookup("m1")!)
+  list.remove(list.lookup("m2")!)
+  t.is(list.count, m2result.length)
+  t.true(compare(list.items(), m2result))
 })
 
 function compare(list: Generator<Property>, array: Array<string>): boolean {
