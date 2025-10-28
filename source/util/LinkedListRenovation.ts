@@ -14,13 +14,13 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   readonly list: LinkedList<T>
 
+  readonly changes: Array<T> | undefined
+
   private lost$: LinkedSubList<T>
 
   private expected: T | undefined
 
   private absent: string | undefined
-
-  readonly changes: Array<T> | undefined
 
   constructor(list: LinkedList<T>, changes?: Array<T>) {
     if (list.former$ !== undefined)
@@ -28,12 +28,12 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     const items = new LinkedSubList<T>()
     const lost = list.items$
     this.list = list
+    this.changes = changes
     list.items$ = items
     list.former$ = lost
     this.lost$ = lost
     this.expected = lost.first
     this.absent = undefined
-    this.changes = changes
   }
 
   // найти
