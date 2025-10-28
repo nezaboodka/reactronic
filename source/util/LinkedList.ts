@@ -67,7 +67,7 @@ export class LinkedList<T extends LinkedItem<T>> {
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
     this.map.set(key, item)
-    LinkedItem.link$(item, this.items$, before)
+    LinkedItem.link$(this.items$, item, before)
   }
 
   remove(item: T): void {
@@ -90,11 +90,11 @@ export class LinkedList<T extends LinkedItem<T>> {
 
   static remove$<T extends LinkedItem<T>>(list: LinkedList<T>, item: T): void {
     LinkedList.removeKey$(list, list.keyOf(item))
-    LinkedItem.link$(item, undefined, undefined)
+    LinkedItem.link$(undefined, item, undefined)
   }
 
   static move$<T extends LinkedItem<T>>(list: LinkedList<T>, item: T, before: T | undefined): void {
-    LinkedItem.link$(item, list.items$, before)
+    LinkedItem.link$(list.items$, item, before)
   }
 
   static removeKey$<T extends LinkedItem<T>>(list: LinkedList<T>, key: string | undefined): void {
@@ -156,9 +156,9 @@ export class LinkedItem<T extends LinkedItem<T>> {
     item.status = rank * MARK_MOD + mark
   }
 
-  static link$<T extends LinkedItem<T>>(item: T,
+  static link$<T extends LinkedItem<T>>(
     list: LinkedSubList<T> | undefined,
-    before: T | undefined): void {
+    item: T, before: T | undefined): void {
     if (before === undefined) {
       LinkedItem.unlink(item)
       if (list !== undefined) {

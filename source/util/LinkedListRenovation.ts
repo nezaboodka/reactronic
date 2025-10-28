@@ -31,7 +31,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     list.items$ = items
     list.former$ = lost
     this.lost$ = lost
-    this.expectedNext = grabManualSiblings(lost.first, items)
+    this.expectedNext = lost.first
     this.lastUnknownKey = undefined
     this.changes = changes
   }
@@ -65,14 +65,15 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
       const items = this.list.items$
       if (item.list !== items) {
         const next = item.next // remember before re-linking
-        LinkedItem.link$(item, items, undefined)
+        grabAllPrevSiblingsWhileManual(item, items)
+        LinkedItem.link$(items, item, undefined)
         if (list.isStrictOrder && item !== this.expectedNext) {
           LinkedItem.setStatus$(item, Mark.modified, items.count)
           this.changes?.push(item)
         }
         else
           LinkedItem.setStatus$(item, Mark.prolonged, items.count)
-        this.expectedNext = grabManualSiblings(next, items)
+        this.expectedNext = next
         if (resolution)
           resolution.isDuplicate = false
       }
@@ -143,13 +144,13 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
           LinkedItem.setStatus$(x, Mark.removed, 0)
         }
         else // always prolong manual items
-          LinkedItem.link$(x, items, undefined)
+          LinkedItem.link$(items, x, undefined)
       }
     }
     else {
       // Prolong lost items in case of error
       for (const x of lost.items()) {
-        LinkedItem.link$(x, items, undefined)
+        LinkedItem.link$(items, x, undefined)
         LinkedItem.setStatus$(x, Mark.prolonged, items.count)
       }
     }
@@ -158,12 +159,13 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
 }
 
-function grabManualSiblings<T extends LinkedItem<T>>(
-  item: T | undefined,
-  list: LinkedSubList<T>): T | undefined {
-  while (item !== undefined && item.isManual) {
-    LinkedItem.link$(item, list, undefined)
-    item = item.next
+function grabAllPrevSiblingsWhileManual<T extends LinkedItem<T>>(
+  item: T, list: LinkedSubList<T>): void {
+  let x = item.prev
+  let before: T | undefined = undefined
+  while (x !== undefined && x.isManual) {
+    LinkedItem.link$(list, x, before)
+    before = x
+    x = x.prev
   }
-  return item
 }

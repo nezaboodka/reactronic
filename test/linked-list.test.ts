@@ -33,11 +33,11 @@ test("linked-list", t => {
   const m1result = ["A", "B", "C", "m1", "D", "m2"]
 
   const r2list = ["X", "C", "D", "Y", "A", "Z"]
-  const r2result = ["X", "C", "m1", "D", "m2", "Y", "A", "Z"]
+  const r2result = ["X", "C", "m1", "D", "Y", "A", "Z", "m2"]
   const r2lost = ["B"]
 
   const r3list = ["X", "C", "Y", "A", "Z"]
-  const r3result = ["X", "C", "m1", "Y", "A", "Z", "m2"]
+  const r3result = ["X", "C", "Y", "A", "Z", "m1", "m2"]
   const r3lost = ["D"]
 
   const m2result = ["X", "C", "Y", "A", "Z"]
