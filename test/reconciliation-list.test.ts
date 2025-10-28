@@ -6,9 +6,14 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
+import { TestsLoggingLevel } from "./brief.js"
+import { ReactiveSystem } from "../source/api.js"
 import { ReconciliationList, LinkedItem } from "../source/util/ReconciliationList.js"
 
 test("reconciliation-list", t => {
+
+  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
+
   const etalon1 = ["Hello", "Welcome", "Bye", "End"]
   const etalon2 = ["Added1", "Bye", "End", "Added2", "Hello", "Added3"]
   const etalon2a = ["Hello", "Bye", "End", "Added1", "Added2", "Added3"]

@@ -6,6 +6,8 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
+import { TestsLoggingLevel } from "./brief.js"
+import { ReactiveSystem } from "../source/api.js"
 import { LinkedList, LinkedItem, Mark } from "../source/util/LinkedList.js"
 import { LinkedListRenovation } from "../source/util/LinkedListRenovation.js"
 
@@ -19,6 +21,8 @@ class Property extends LinkedItem<Property> {
 }
 
 test("linked-list", t => {
+
+  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
 
   const list = new LinkedList<Property>(x => x.value, true)
 
@@ -92,7 +96,7 @@ test("linked-list", t => {
 
   // Manual manipulations
 
-  t.throws(() => list.remove(list.lookup("X")!), { message: "this item cannot be removed outside of renovation cycle" })
+  t.throws(() => list.remove(list.lookup("X")!), { message: "manual item cannot be removed outside of renovation cycle" })
   list.remove(list.lookup("m1")!)
   list.remove(list.lookup("m2")!)
   t.is(list.count, m2result.length)
