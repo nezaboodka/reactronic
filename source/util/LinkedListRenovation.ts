@@ -61,17 +61,17 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     if (key !== (x ? list.keyOf(x) : undefined))
       x = this.lookup(key)
     if (x !== undefined) {
-      const target = this.list.items$
-      if (x.list !== target) {
+      const result = this.list.items$
+      if (x.list !== result) {
         const next = x.next // remember before re-linking
-        const expected = prolongExternalsIfAny(target, x) ?? x
-        LinkedItem.link$(target, x, undefined)
+        const expected = prolongExternalsIfAny(result, x) ?? x
+        LinkedItem.link$(result, x, undefined)
         if (list.isStrictOrder && expected !== this.expected) {
-          LinkedItem.setStatus$(x, Mark.modified, target.count)
+          LinkedItem.setStatus$(x, Mark.modified, result.count)
           this.diff?.push(x)
         }
         else
-          LinkedItem.setStatus$(x, Mark.prolonged, target.count)
+          LinkedItem.setStatus$(x, Mark.prolonged, result.count)
         this.expected = next
         if (resolution)
           resolution.isDuplicate = false
