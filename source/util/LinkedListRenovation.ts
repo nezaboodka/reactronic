@@ -53,8 +53,8 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     return result
   }
 
-  // это-продлено
-  thisIsProlonged(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
+  // попробовать-продлить
+  tryToProlonge(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse(error ?? "renovation is no longer in progress")
