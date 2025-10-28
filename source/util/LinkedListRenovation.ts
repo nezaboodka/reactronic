@@ -65,7 +65,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
       const target = this.list.items$
       if (x.list !== target) {
         const next = x.next // remember before re-linking
-        const expected = prolongManualItemsIfAny(target, x) ?? x
+        const expected = prolongExternalsIfAny(target, x) ?? x
         LinkedItem.link$(target, x, undefined)
         if (list.isStrictOrder && expected !== this.expected) {
           LinkedItem.setStatus$(x, Mark.modified, target.count)
@@ -142,11 +142,11 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     if (error === undefined) {
       // Mark lost items
       for (const x of lost.items()) {
-        if (!x.isManual) {
+        if (!x.isExternal) {
           LinkedList.removeKey$(list, list.keyOf(x))
           LinkedItem.setStatus$(x, Mark.removed, 0)
         }
-        else // always prolong manual items
+        else // always prolong external items
           LinkedItem.link$(items, x, undefined)
       }
     }
@@ -162,11 +162,11 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
 }
 
-function prolongManualItemsIfAny<T extends LinkedItem<T>>(
+function prolongExternalsIfAny<T extends LinkedItem<T>>(
   list: LinkedSubList<T>, item: T): T | undefined {
   let x = item.prev
   let before: T | undefined = undefined
-  while (x !== undefined && x.isManual) {
+  while (x !== undefined && x.isExternal) {
     LinkedItem.link$(list, x, before)
     before = x
     x = x.prev

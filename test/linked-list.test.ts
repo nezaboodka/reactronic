@@ -54,7 +54,7 @@ test("linked-list", t => {
   t.is(r.lostItemCount, 0)
   t.true(compare(list.items(), r1list))
 
-  // Manual manipulations
+  // External items
 
   list.add(new Property("m1"), list.lookup("D"))
   list.add(new Property("m2"))
@@ -94,9 +94,9 @@ test("linked-list", t => {
   t.true(compare(list.items(), r3result))
   t.true(compare(r3.lostItems(), r3lost))
 
-  // Manual manipulations
+  // External items
 
-  t.throws(() => list.remove(list.lookup("X")!), { message: "manual item cannot be removed outside of renovation cycle" })
+  t.throws(() => list.remove(list.lookup("X")!), { message: "external item cannot be removed outside of renovation cycle" })
   list.remove(list.lookup("m1")!)
   list.remove(list.lookup("m2")!)
   t.is(list.count, m2result.length)

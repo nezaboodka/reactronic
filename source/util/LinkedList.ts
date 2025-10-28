@@ -73,16 +73,16 @@ export class LinkedList<T extends LinkedItem<T>> {
   remove(item: T): void {
     if (item.list !== this.items$)
       throw misuse("cannot remove item from a list which it doesn't belong to")
-    if (!item.isManual)
-      throw misuse("manual item cannot be removed outside of renovation cycle")
+    if (!item.isExternal)
+      throw misuse("external item cannot be removed outside of renovation cycle")
     LinkedList.remove$(this, item)
   }
 
   move(item: T, before: T | undefined): void {
     if (item.list !== this.items$)
       throw misuse("cannot move item inside a list which it doesn't belong to")
-    if (!item.isManual)
-      throw misuse("manual item cannot be moved outside of renovation cycle")
+    if (!item.isExternal)
+      throw misuse("external item cannot be moved outside of renovation cycle")
     LinkedList.move$(this, item, before)
   }
 
@@ -148,7 +148,7 @@ export class LinkedItem<T extends LinkedItem<T>> {
 
   get rank(): number { return Math.trunc(this.status / MARK_MOD) }
 
-  get isManual(): boolean { return this.status === 0 }
+  get isExternal(): boolean { return this.status === 0 }
 
   // Internal
 
