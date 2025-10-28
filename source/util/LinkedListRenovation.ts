@@ -62,17 +62,17 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     if (key !== (item ? list.keyOf(item) : undefined))
       item = this.lookup(key)
     if (item !== undefined) {
-      const items = this.list.items$
-      if (item.list !== items) {
+      const target = this.list.items$
+      if (item.list !== target) {
         const next = item.next // remember before re-linking
-        const expected = grabAllPrevSiblingsWhileManual(item, items) ?? item
-        LinkedItem.link$(items, item, undefined)
+        const expected = grabManualItems(target, item) ?? item
+        LinkedItem.link$(target, item, undefined)
         if (list.isStrictOrder && expected !== this.expected) {
-          LinkedItem.setStatus$(item, Mark.modified, items.count)
+          LinkedItem.setStatus$(item, Mark.modified, target.count)
           this.changes?.push(item)
         }
         else
-          LinkedItem.setStatus$(item, Mark.prolonged, items.count)
+          LinkedItem.setStatus$(item, Mark.prolonged, target.count)
         this.expected = next
         if (resolution)
           resolution.isDuplicate = false
@@ -162,8 +162,8 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
 }
 
-function grabAllPrevSiblingsWhileManual<T extends LinkedItem<T>>(
-  item: T, list: LinkedSubList<T>): T | undefined {
+function grabManualItems<T extends LinkedItem<T>>(
+  list: LinkedSubList<T>, item: T): T | undefined {
   let x = item.prev
   let before: T | undefined = undefined
   while (x !== undefined && x.isManual) {
