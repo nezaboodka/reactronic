@@ -52,7 +52,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
     return result
   }
 
-  tryReuse(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
+  tryProlong(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse(error ?? "renovation is no longer in progress")
@@ -69,7 +69,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
           this.changes?.push(item)
         }
         else
-          Linked.setStatus$(item, Mark.reused, items.count)
+          Linked.setStatus$(item, Mark.prolonged, items.count)
         this.expectedNext = grabManualSiblings(next, items)
         if (resolution)
           resolution.isDuplicate = false
@@ -86,9 +86,9 @@ export class LinkedListRenovation<T extends Linked<T>> {
 
   markModified(item: T): void {
     if (item.list !== this.list.items$)
-      throw misuse("only reused items can be marked as modified")
+      throw misuse("only prolonged items can be marked as modified")
     const m = item.mark
-    if (m === Mark.reused)
+    if (m === Mark.prolonged)
       Linked.setStatus$(item, Mark.modified, item.rank)
     else if (m !== Mark.modified)
       throw misuse("item is renovated already and cannot be marked as modified")
@@ -144,7 +144,7 @@ export class LinkedListRenovation<T extends Linked<T>> {
       const items = this.list.items$
       for (const x of lost.items()) {
         Linked.link$(x, items, undefined)
-        Linked.setStatus$(x, Mark.reused, items.count)
+        Linked.setStatus$(x, Mark.prolonged, items.count)
       }
     }
     list.former$ = undefined

@@ -51,7 +51,7 @@ test("linked-list", t => {
 
   const r2 = new LinkedListRenovation<LinkedValue<string>>(list)
   for (const x of etalon2) {
-    if (r2.tryReuse(x) === undefined)
+    if (r2.tryProlong(x) === undefined)
       r2.add(new LinkedValue<string>(x))
   }
   r2.done()
