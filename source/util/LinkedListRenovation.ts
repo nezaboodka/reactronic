@@ -119,13 +119,9 @@ export class LinkedListRenovation<T extends Linked<T>> {
     this.changes?.push(item)
   }
 
-  get lostCount(): number {
-    return this.lost$.count
-  }
+  get lostItemCount(): number { return this.lost$.count }
 
-  lost(): Generator<T> {
-    return this.lost$.items()
-  }
+  lostItems(): Generator<T> { return this.lost$.items() }
 
   done(error?: unknown): void {
     const list = this.list

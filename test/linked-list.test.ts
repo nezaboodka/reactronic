@@ -39,7 +39,7 @@ test("linked-list", t => {
   r.done()
 
   t.is(list.count, 4)
-  t.is(r.lostCount, 0)
+  t.is(r.lostItemCount, 0)
   t.true(compare(list.items(), etalon1))
 
   // Manual item
@@ -57,11 +57,11 @@ test("linked-list", t => {
   r2.done()
 
   t.is(list.count, etalon2c.length)
-  t.is(r2.lostCount, etalon2u.length)
+  t.is(r2.lostItemCount, etalon2u.length)
   // t.is(list.countOfAdded, 0)
   // t.is(list.countOfRemoved, 0)
   t.true(compare(list.items(), etalon2c))
-  t.true(compare(r2.lost(), etalon2u))
+  t.true(compare(r2.lostItems(), etalon2u))
 
 })
 
