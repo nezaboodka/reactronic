@@ -127,17 +127,21 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse("renovation is ended already")
+    const items = this.list.items$
     const lost = this.lost$
     if (error === undefined) {
       // Mark lost items
       for (const x of lost.items()) {
-        LinkedList.removeKey$(list, list.keyOf(x))
-        LinkedItem.setStatus$(x, Mark.removed, 0)
+        if (!x.isManual) {
+          LinkedList.removeKey$(list, list.keyOf(x))
+          LinkedItem.setStatus$(x, Mark.removed, 0)
+        }
+        else // always prolong manual items
+          LinkedItem.link$(x, items, undefined)
       }
     }
     else {
-      // Restore lost items in case of error
-      const items = this.list.items$
+      // Prolong lost items in case of error
       for (const x of lost.items()) {
         LinkedItem.link$(x, items, undefined)
         LinkedItem.setStatus$(x, Mark.prolonged, items.count)

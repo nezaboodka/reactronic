@@ -30,7 +30,7 @@ test("linked-list", t => {
   const etalon2lost = ["Welcome"]
   // const etalon2a = ["Hello", "Bye", "End", "Added1", "Added2", "Added3"]
   const etalon3 = ["Added1", "Bye", "Added2", "Hello", "Added3"]
-  const etalon3result = ["Added1", "Bye", "Manual", "Added2", "Hello", "Added3"]
+  const etalon3result = ["Added1", "Bye", "Added2", "Hello", "Added3", "Manual"]
   const etalon3lost = ["End"]
 
   // Initial renovation
