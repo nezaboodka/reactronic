@@ -26,9 +26,12 @@ test("linked-list", t => {
 
   const etalon1 = ["Hello", "Welcome", "Bye", "End"]
   const etalon2 = ["Added1", "Bye", "End", "Added2", "Hello", "Added3"]
-  const etalon2c = ["Added1", "Bye", "End", "Manual", "Added2", "Hello", "Added3"]
-  const etalon2u = ["Welcome"]
+  const etalon2result = ["Added1", "Bye", "End", "Manual", "Added2", "Hello", "Added3"]
+  const etalon2lost = ["Welcome"]
   // const etalon2a = ["Hello", "Bye", "End", "Added1", "Added2", "Added3"]
+  const etalon3 = ["Added1", "Bye", "Added2", "Hello", "Added3"]
+  const etalon3result = ["Added1", "Bye", "Manual", "Added2", "Hello", "Added3"]
+  const etalon3lost = ["End"]
 
   // Initial renovation
 
@@ -56,13 +59,28 @@ test("linked-list", t => {
   }
   r2.done()
 
-  t.is(list.count, etalon2c.length)
-  t.is(r2.lostItemCount, etalon2u.length)
+  t.is(list.count, etalon2result.length)
+  t.is(r2.lostItemCount, etalon2lost.length)
   // t.is(list.countOfAdded, 0)
   // t.is(list.countOfRemoved, 0)
-  t.true(compare(list.items(), etalon2c))
-  t.true(compare(r2.lostItems(), etalon2u))
+  t.true(compare(list.items(), etalon2result))
+  t.true(compare(r2.lostItems(), etalon2lost))
 
+  // Third renovation
+
+  const r3 = new LinkedListRenovation<Property>(list)
+  for (const x of etalon3) {
+    if (r3.tryProlong(x) === undefined)
+      r3.add(new Property(x))
+  }
+  r3.done()
+
+  t.is(list.count, etalon3result.length)
+  t.is(r3.lostItemCount, etalon3lost.length)
+  // t.is(list.countOfAdded, 0)
+  // t.is(list.countOfRemoved, 0)
+  t.true(compare(list.items(), etalon3result))
+  t.true(compare(r3.lostItems(), etalon3lost))
 })
 
 function compare(list: Generator<Property>, array: Array<string>): boolean {
