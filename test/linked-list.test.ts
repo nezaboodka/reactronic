@@ -80,6 +80,7 @@ test("linked-list", t => {
   const r3list = ["X", "C", "Y", "A", "Z"]
   const r3result = ["X", "C", "Y", "A", "Z", "m1", "m2"]
   const r3lost = ["D"]
+  const r3marks = [Mark.prolonged, Mark.prolonged, Mark.modified, Mark.prolonged, Mark.prolonged, Mark.prolonged, Mark.prolonged]
 
   const r3 = new LinkedListRenovation<Property>(list)
   for (const x of r3list) {
@@ -92,10 +93,12 @@ test("linked-list", t => {
   t.is(r3.lostItemCount, r3lost.length)
   t.true(compare(list.items(), r3result))
   t.true(compare(r3.lostItems(), r3lost))
+  t.true(compareMarks(marks(list.items()), r3marks))
 
   // External items
 
   const m2result = ["X", "C", "Y", "A", "Z"]
+  const m2marks = [Mark.prolonged, Mark.prolonged, Mark.modified, Mark.prolonged, Mark.prolonged]
 
   t.throws(() => list.remove(list.lookup("X")!), {
     message: "external item cannot be removed outside of renovation cycle" })
@@ -103,6 +106,7 @@ test("linked-list", t => {
   list.remove(list.lookup("m2")!)
   t.is(list.count, m2result.length)
   t.true(compare(list.items(), m2result))
+  t.true(compareMarks(marks(list.items()), m2marks))
 })
 
 function compare(list: Generator<Property>, array: Array<string>): boolean {
