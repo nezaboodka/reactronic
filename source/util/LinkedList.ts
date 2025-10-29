@@ -72,17 +72,17 @@ export class LinkedList<T extends LinkedItem<T>> {
 
   move(item: T, before: T | undefined): void {
     if (item.list !== this.items$)
-      throw misuse("cannot move item inside a list which it doesn't belong to")
+      throw misuse("cannot move item that belongs to another list")
     if (!item.isExternal)
-      throw misuse("external item cannot be moved outside of renovation cycle")
+      throw misuse("cannot move non-external item outside of renovation cycle")
     LinkedList.move$(this, item, before)
   }
 
   remove(item: T): void {
     if (item.list !== this.items$)
-      throw misuse("cannot remove item from a list which it doesn't belong to")
+      throw misuse("cannot remove item that belongs to another list")
     if (!item.isExternal)
-      throw misuse("external item cannot be removed outside of renovation cycle")
+      throw misuse("cannot remove non-external item outside of renovation cycle")
     LinkedList.remove$(this, item)
   }
 
