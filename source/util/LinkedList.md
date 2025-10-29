@@ -31,9 +31,4 @@ for (const x of example2) {
 r2.done()
 
 // list.items: Added1, Bye, End, Added2, Hello, Added3
-// list.itemsAdded: Added1, Added2, Added3
-// list.itemsRemoved: Welcome
-// list.isAdded: Added1, Added2, Added3
-// list.isMoved: Bye, Hello
-// list.isRemoved: Welcome
 ```
