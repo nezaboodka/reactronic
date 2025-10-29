@@ -11,6 +11,11 @@ import { ReactiveSystem } from "../source/api.js"
 import { LinkedList, LinkedItem, Mark } from "../source/util/LinkedList.js"
 import { LinkedListRenovation } from "../source/util/LinkedListRenovation.js"
 
+const P = Mark.prolonged
+const A = Mark.added
+const M = Mark.modified
+const R = Mark.removed
+
 class Property extends LinkedItem<Property> {
   value: string
 
@@ -19,11 +24,6 @@ class Property extends LinkedItem<Property> {
     this.value = value
   }
 }
-
-const P = Mark.prolonged
-const A = Mark.added
-const M = Mark.modified
-const R = Mark.removed
 
 test("linked-list", t => {
 
