@@ -20,6 +20,11 @@ class Property extends LinkedItem<Property> {
   }
 }
 
+const P = Mark.prolonged
+const A = Mark.added
+const M = Mark.modified
+const R = Mark.removed
+
 test("linked-list", t => {
 
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
@@ -46,7 +51,7 @@ test("linked-list", t => {
   // External items
 
   const m1result = ["A", "B", "C", "m1", "D", "m2"]
-  const m1marks = [Mark.added, Mark.added, Mark.added, Mark.prolonged, Mark.added, Mark.prolonged]
+  const m1marks = [A, A, A, P, A, P]
 
   list.add(new Property("m1"), list.lookup("D"))
   list.add(new Property("m2"))
@@ -59,7 +64,7 @@ test("linked-list", t => {
   const r2list = ["X", "C", "D", "Y", "A", "Z"]
   const r2result = ["X", "C", "m1", "D", "Y", "A", "Z", "m2"]
   const r2lost = ["B"]
-  const r2marks = [Mark.added, Mark.modified, Mark.prolonged, Mark.prolonged, Mark.added, Mark.modified, Mark.added, Mark.prolonged]
+  const r2marks = [A, M, P, P, A, M, A, P]
 
   const r2 = new LinkedListRenovation<Property>(list)
   for (const x of r2list) {
@@ -72,7 +77,7 @@ test("linked-list", t => {
   t.is(r2.lostItemCount, r2lost.length)
   t.true(compare(list.items(), r2result))
   t.true(compare(r2.lostItems(), r2lost))
-  t.is(list.lookup("A")?.mark, Mark.modified)
+  t.true([...r2.lostItems()].every(x => x.mark === R))
   t.true(compareMarks(marks(list.items()), r2marks))
 
   // Third renovation
@@ -80,7 +85,7 @@ test("linked-list", t => {
   const r3list = ["X", "C", "Y", "A", "Z"]
   const r3result = ["X", "C", "Y", "A", "Z", "m1", "m2"]
   const r3lost = ["D"]
-  const r3marks = [Mark.prolonged, Mark.prolonged, Mark.modified, Mark.prolonged, Mark.prolonged, Mark.prolonged, Mark.prolonged]
+  const r3marks = [P, P, M, P, P, P, P]
 
   const r3 = new LinkedListRenovation<Property>(list)
   for (const x of r3list) {
@@ -93,12 +98,13 @@ test("linked-list", t => {
   t.is(r3.lostItemCount, r3lost.length)
   t.true(compare(list.items(), r3result))
   t.true(compare(r3.lostItems(), r3lost))
+  t.true([...r3.lostItems()].every(x => x.mark === R))
   t.true(compareMarks(marks(list.items()), r3marks))
 
   // External items
 
   const m2result = ["X", "C", "Y", "A", "Z"]
-  const m2marks = [Mark.prolonged, Mark.prolonged, Mark.modified, Mark.prolonged, Mark.prolonged]
+  const m2marks = [P, P, M, P, P]
 
   t.throws(() => list.remove(list.lookup("X")!), {
     message: "external item cannot be removed outside of renovation cycle" })
