@@ -44,8 +44,8 @@ test("linked-list", t => {
 
   t.is(list.count, 4)
   t.is(r.lostItemCount, 0)
-  t.true(compare(list.items(), r1list))
-  t.true(compare(list.items(), r1list))
+  t.true(compareValues(list.items(), r1list))
+  t.true(compareValues(list.items(), r1list))
   t.true(compareMarks(marks(list.items()), r1marks))
 
   // External items
@@ -56,7 +56,7 @@ test("linked-list", t => {
   list.add(new Property("m1"), list.lookup("D"))
   list.add(new Property("m2"))
   t.is(list.count, m1result.length)
-  t.true(compare(list.items(), m1result))
+  t.true(compareValues(list.items(), m1result))
   t.true(compareMarks(marks(list.items()), m1marks))
 
   // Second renovation
@@ -75,8 +75,8 @@ test("linked-list", t => {
 
   t.is(list.count, r2result.length)
   t.is(r2.lostItemCount, r2lost.length)
-  t.true(compare(list.items(), r2result))
-  t.true(compare(r2.lostItems(), r2lost))
+  t.true(compareValues(list.items(), r2result))
+  t.true(compareValues(r2.lostItems(), r2lost))
   t.true([...r2.lostItems()].every(x => x.mark === R))
   t.true(compareMarks(marks(list.items()), r2marks))
 
@@ -96,8 +96,8 @@ test("linked-list", t => {
 
   t.is(list.count, r3result.length)
   t.is(r3.lostItemCount, r3lost.length)
-  t.true(compare(list.items(), r3result))
-  t.true(compare(r3.lostItems(), r3lost))
+  t.true(compareValues(list.items(), r3result))
+  t.true(compareValues(r3.lostItems(), r3lost))
   t.true([...r3.lostItems()].every(x => x.mark === R))
   t.true(compareMarks(marks(list.items()), r3marks))
 
@@ -111,11 +111,11 @@ test("linked-list", t => {
   list.remove(list.lookup("m1")!)
   list.remove(list.lookup("m2")!)
   t.is(list.count, m2result.length)
-  t.true(compare(list.items(), m2result))
+  t.true(compareValues(list.items(), m2result))
   t.true(compareMarks(marks(list.items()), m2marks))
 })
 
-function compare(list: Generator<Property>, array: Array<string>): boolean {
+function compareValues(list: Generator<Property>, array: Array<string>): boolean {
   let result = true
   let i = 0
   for (const item of list) {
