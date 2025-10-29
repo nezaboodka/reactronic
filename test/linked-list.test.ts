@@ -34,7 +34,7 @@ test("linked-list", t => {
   // Initial renovation
 
   const r1list = ["A", "B", "C", "D"]
-  const r1marks = [Mark.added, Mark.added, Mark.added, Mark.added]
+  const r1marks = [A, A, A, A]
 
   const r = new LinkedListRenovation<Property>(list)
   for (const x of r1list) {
@@ -43,10 +43,10 @@ test("linked-list", t => {
   r.done()
 
   t.is(list.count, 4)
-  t.is(r.lostItemCount, 0)
   t.true(compareValues(list.items(), r1list))
   t.true(compareValues(list.items(), r1list))
   t.true(compareMarks(marks(list.items()), r1marks))
+  t.is(r.lostItemCount, 0)
 
   // External items
 
@@ -58,13 +58,14 @@ test("linked-list", t => {
   t.is(list.count, m1result.length)
   t.true(compareValues(list.items(), m1result))
   t.true(compareMarks(marks(list.items()), m1marks))
+  t.is(r.lostItemCount, 0)
 
   // Second renovation
 
   const r2list = ["X", "C", "D", "Y", "A", "Z"]
   const r2result = ["X", "C", "m1", "D", "Y", "A", "Z", "m2"]
-  const r2lost = ["B"]
   const r2marks = [A, M, P, P, A, M, A, P]
+  const r2lost = ["B"]
 
   const r2 = new LinkedListRenovation<Property>(list)
   for (const x of r2list) {
@@ -74,18 +75,17 @@ test("linked-list", t => {
   r2.done()
 
   t.is(list.count, r2result.length)
-  t.is(r2.lostItemCount, r2lost.length)
   t.true(compareValues(list.items(), r2result))
+  t.true(compareMarks(marks(list.items()), r2marks))
   t.true(compareValues(r2.lostItems(), r2lost))
   t.true([...r2.lostItems()].every(x => x.mark === R))
-  t.true(compareMarks(marks(list.items()), r2marks))
 
   // Third renovation
 
   const r3list = ["X", "C", "Y", "A", "Z"]
   const r3result = ["X", "C", "Y", "A", "Z", "m1", "m2"]
-  const r3lost = ["D"]
   const r3marks = [P, P, M, P, P, P, P]
+  const r3lost = ["D"]
 
   const r3 = new LinkedListRenovation<Property>(list)
   for (const x of r3list) {
@@ -95,11 +95,10 @@ test("linked-list", t => {
   r3.done()
 
   t.is(list.count, r3result.length)
-  t.is(r3.lostItemCount, r3lost.length)
   t.true(compareValues(list.items(), r3result))
+  t.true(compareMarks(marks(list.items()), r3marks))
   t.true(compareValues(r3.lostItems(), r3lost))
   t.true([...r3.lostItems()].every(x => x.mark === R))
-  t.true(compareMarks(marks(list.items()), r3marks))
 
   // External items
 
@@ -113,6 +112,7 @@ test("linked-list", t => {
   t.is(list.count, m2result.length)
   t.true(compareValues(list.items(), m2result))
   t.true(compareMarks(marks(list.items()), m2marks))
+  t.is(r.lostItemCount, 0)
 })
 
 function compareValues(list: Generator<Property>, array: Array<string>): boolean {
