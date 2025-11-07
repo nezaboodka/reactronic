@@ -73,16 +73,16 @@ export class LinkedList<T extends LinkedItem<T>> {
   move(item: T, before: T | undefined): void {
     if (item.list !== this.items$)
       throw misuse("cannot move item that belongs to another list")
-    if (!item.isUnmanaged)
-      throw misuse("cannot move managed item outside of renovation cycle")
+    if (!item.isManagedExternally)
+      throw misuse("cannot move given item outside of renovation cycle")
     LinkedList.move$(this, item, before)
   }
 
   remove(item: T): void {
     if (item.list !== this.items$)
       throw misuse("cannot remove item that belongs to another list")
-    if (!item.isUnmanaged)
-      throw misuse("cannot remove managed item outside of renovation cycle")
+    if (!item.isManagedExternally)
+      throw misuse("cannot remove given item outside of renovation cycle")
     LinkedList.remove$(this, item)
   }
 
@@ -148,7 +148,7 @@ export class LinkedItem<T extends LinkedItem<T>> {
 
   get rank(): number { return Math.trunc(this.status / MARK_MOD) }
 
-  get isUnmanaged(): boolean { return this.status === 0 }
+  get isManagedExternally(): boolean { return this.status === 0 }
 
   // Internal
 

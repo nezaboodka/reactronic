@@ -64,7 +64,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
       const result = this.list.items$
       if (x.list !== result) {
         const next = x.next // remember before re-linking
-        const expected = grabUnmanagedIfAny(result, x) ?? x
+        const expected = grabExternalIfAny(result, x) ?? x
         LinkedItem.link$(result, x, undefined)
         if (list.isStrictOrder && expected !== this.expected) {
           LinkedItem.setStatus$(x, Mark.modified, result.count)
@@ -141,11 +141,11 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     if (error === undefined) {
       // Mark lost items
       for (const x of lost.items()) {
-        if (!x.isUnmanaged) {
+        if (!x.isManagedExternally) {
           LinkedList.removeKey$(list, list.keyOf(x))
           LinkedItem.setStatus$(x, Mark.removed, 0)
         }
-        else // always prolong unmanaged items
+        else // always prolong externally managed items
           LinkedItem.link$(items, x, undefined)
       }
     }
@@ -161,11 +161,11 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
 }
 
-function grabUnmanagedIfAny<T extends LinkedItem<T>>(
+function grabExternalIfAny<T extends LinkedItem<T>>(
   list: LinkedSubList<T>, item: T): T | undefined {
   let x = item.prev
   let before: T | undefined = undefined
-  while (x !== undefined && x.isUnmanaged) {
+  while (x !== undefined && x.isManagedExternally) {
     LinkedItem.link$(list, x, before)
     before = x
     x = x.prev
