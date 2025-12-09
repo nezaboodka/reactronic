@@ -14,7 +14,7 @@ import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { ReactivityOptions } from "../Options.js"
 import { SxObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, signal, reaction, runTransactional, runNonReactive, manageReaction, disposeSignallingObject as disposeSignallingObject } from "../System.js"
+import { ReactiveSystem, options, signal, reaction, runTransactional, runNonReactive, manageReaction, disposeSignallingObject } from "../System.js"
 
 // Scripts
 
