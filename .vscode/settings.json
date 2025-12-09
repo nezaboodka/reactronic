@@ -4,11 +4,13 @@
   "editor.insertSpaces": true,
   "files.exclude": {
     "**/node_modules/": true,
+    ".tsimp": true,
   },
   "files.watcherExclude": {
     "**/node_modules/": true,
     "**/build/": true,
     "**/Build/": true,
+    ".tsimp": true,
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "cSpell.ignorePaths": [
@@ -49,6 +51,7 @@
     "Roadmap",
     "Serializable",
     "sidebyside",
+    "tsimp",
     "typeless",
     "unmount",
     "untracked",

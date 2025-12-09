@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from "ava"
+import test, { ExecutionContext } from "ava"
 import { SxObject, transaction, reaction, signal, runTransactional, runNonReactive, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
@@ -52,7 +52,7 @@ export class ReactiveDemo extends SxObject {
   }
 }
 
-test("reactive", t => {
+test("reactive", (t: ExecutionContext<unknown>) => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   const demo = runTransactional(() => new ReactiveDemo())
   t.is(demo.title, "Title/1")

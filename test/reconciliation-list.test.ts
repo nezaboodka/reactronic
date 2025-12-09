@@ -5,12 +5,12 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from "ava"
+import test, { ExecutionContext } from "ava"
 import { TestsLoggingLevel } from "./brief.js"
 import { ReactiveSystem } from "../source/api.js"
 import { ReconciliationList, LinkedItem } from "../source/util/ReconciliationList.js"
 
-test("reconciliation-list", t => {
+test("reconciliation-list", (t: ExecutionContext<unknown>) => {
 
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
 

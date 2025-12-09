@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from "ava"
+import test, { ExecutionContext } from "ava"
 import { Indicator, SxObject, Reentrance, Transaction, transaction, reaction, options, pause, signal, runTransactional, ReactiveSystem, manageReaction } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
@@ -75,7 +75,7 @@ class CompilationController extends SxObject {
   }
 }
 
-test("indicator", async t => {
+test("indicator", async (t: ExecutionContext<unknown>) => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   // RxSystem.setProfilingMode(true)
   const indicator = Indicator.create("indicator", 0, 0, 1000)

@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from "ava"
+import test, { ExecutionContext } from "ava"
 import { TestsLoggingLevel } from "./brief.js"
 import { ReactiveSystem } from "../source/api.js"
 import { LinkedList, LinkedItem, Mark } from "../source/util/LinkedList.js"
@@ -25,7 +25,7 @@ class Property extends LinkedItem<Property> {
   }
 }
 
-test("linked-list", t => {
+test("linked-list", (t: ExecutionContext<unknown>) => {
 
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
 

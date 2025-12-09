@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from "ava"
+import test, { ExecutionContext } from "ava"
 import { runTransactional, ReactiveSystem, SxObject } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
@@ -14,7 +14,7 @@ class Serializable extends SxObject {
   array?: Array<Serializable> = undefined
 }
 
-test("serializing", t => {
+test("serializing", (t: ExecutionContext<unknown>) => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   const serializable = runTransactional(() => {
     const s1 = new Serializable()

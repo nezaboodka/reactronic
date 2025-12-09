@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from "ava"
+import test, { ExecutionContext } from "ava"
 import { runTransactional, pause, Reentrance, ReactiveSystem, manageReaction, disposeSignallingObject } from "../source/api.js"
 import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
 import { TestsLoggingLevel } from "./brief.js"
@@ -25,7 +25,7 @@ const expected: Array<string> = [
   "Log: RTA, nezaboodka.com/500",
 ]
 
-test("reentrance.error", async t => {
+test("reentrance.error", async (t: ExecutionContext<unknown>) => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = runTransactional(() => {
     const a = new AsyncDemoView(new AsyncDemo())

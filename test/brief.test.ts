@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import test from "ava"
+import test, { ExecutionContext } from "ava"
 import { Transaction, Kind, runTransactional, runNonReactive, runSensitive, ReactiveSystem, manageReaction, disposeSignallingObject } from "../source/api.js"
 import { Person, Demo, DemoView, output, TestsLoggingLevel } from "./brief.js"
 
@@ -28,7 +28,7 @@ const expected: string[] = [
   "Kevin's children: Britney",
 ]
 
-test("brief", t => {
+test("brief", (t: ExecutionContext<unknown>) => {
   ReactiveSystem.reactivityAutoStartDisabled = !ReactiveSystem.reactivityAutoStartDisabled
   ReactiveSystem.reactivityAutoStartDisabled = false
   ReactiveSystem.setProfilingMode(false)
