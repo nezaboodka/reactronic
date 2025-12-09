@@ -6,44 +6,44 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, atomic, reactive, observable, runAtomically, runNonReactively, ReactiveSystem } from "../source/api.js"
+import { SxObject, transaction, reaction, signal, runTransactional, runNonReactive, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
-export class ReactiveDemo extends ObservableObject {
+export class ReactiveDemo extends SxObject {
   title: string = "ReactiveDemo"
   titleNested: string = "Abc"
   content: string = "Content"
   data: string = "Data"
-  @observable(false) rev: number = 0
+  @signal(false) rev: number = 0
 
-  @atomic
+  @transaction
   setData(value: string): void {
     this.data =  value
   }
 
-  @reactive
+  @reaction
   protected actualize1(): void {
     this.title
     this.title = "Title/1"
     this.content = "Content/1"
     this.title
-    runNonReactively(() => {
+    runNonReactive(() => {
       this.nestedReaction()
     })
   }
 
-  @reactive
+  @reaction
   protected actualize2(): void {
     this.content
     this.title = "Title/2"
   }
 
-  @reactive
+  @reaction
   protected reactOnAnyChange(): void {
     this.rev = ReactiveSystem.getRevisionOf(this)
   }
 
-  @reactive
+  @reaction
   protected nestedReaction(): void {
     this.content
     this.title = "Title/Nested"
@@ -54,7 +54,7 @@ export class ReactiveDemo extends ObservableObject {
 
 test("reactive", t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const demo = runAtomically(() => new ReactiveDemo())
+  const demo = runTransactional(() => new ReactiveDemo())
   t.is(demo.title, "Title/1")
   t.is(demo.content, "Content/1")
   t.is(demo.rev, 6)

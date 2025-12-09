@@ -5,16 +5,16 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, atomic, reactive, cached, options, Transaction, Indicator, Reentrance, ReactiveSystem, observable, all, pause } from "../source/api.js"
+import { SxObject, transaction, reaction, cache, options, Transaction, Indicator, Reentrance, ReactiveSystem, signal, all, pause } from "../source/api.js"
 
 export const output: string[] = []
 export const busy = Indicator.create("Busy", 0, 0, 1)
 
-export class AsyncDemo extends ObservableObject {
+export class AsyncDemo extends SxObject {
   url: string = "reactronic"
   log: string[] = ["RTA"]
 
-  @atomic @options({ indicator: busy, reentrance: Reentrance.preventWithError })
+  @transaction @options({ indicator: busy, reentrance: Reentrance.preventWithError })
   async load(url: string, delay: number): Promise<void> {
     this.url = url
     await all([pause(delay)])
@@ -25,12 +25,12 @@ export class AsyncDemo extends ObservableObject {
 
 export class AsyncDemoView {
   rawField: string = "raw field"
-  @observable observableField: string = "observable field"
+  @signal signalField: string = "signal field"
 
   constructor(readonly model: AsyncDemo) {
   }
 
-  @reactive @options({ throttling: -1 })
+  @reaction @options({ throttling: -1 })
   async print(): Promise<void> {
     const lines: string[] = await this.render()
     if (!Transaction.current.isCanceled) {
@@ -41,7 +41,7 @@ export class AsyncDemoView {
     }
   }
 
-  @cached @options({ observableArgs: false })
+  @cache @options({ signalArgs: false })
   async render(): Promise<string[]> {
     const result: string[] = []
     result.push(`${busy.isBusy ? "[...] " : ""}Url: ${this.model.url}`)

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { misuse } from "./util/Dbg.js"
-import { runAtomically, runNonReactively } from "./System.js"
+import { runTransactional, runNonReactive } from "./System.js"
 
 export type BoolOnly<T> = Pick<T, {[P in keyof T]: T[P] extends boolean ? P : never}[keyof T]>
 export type GivenTypeOnly<T, V> = Pick<T, {[P in keyof T]: T[P] extends V ? P : never}[keyof T]>
@@ -53,14 +53,14 @@ export class Ref<T = any> {
   }
 
   nonReactively(): T {
-    return runNonReactively(() => this.variable)
+    return runNonReactive(() => this.variable)
   }
 
-  observe(): T {
+  signalling(): T {
     return this.variable
   }
 
-  unobserve(): T {
+  nonSignalling(): T {
     throw misuse("not implemented")
   }
 
@@ -85,7 +85,7 @@ export class ToggleRef<T = boolean> extends Ref<T> {
   toggle(): void {
     const o = this.owner
     const p = this.name
-    runAtomically({ hint: `toggle ${(o as any).constructor.name}.${p}` }, () => {
+    runTransactional({ hint: `toggle ${(o as any).constructor.name}.${p}` }, () => {
       const v = o[p]
       const isOn = v === this.valueOn || (
         v instanceof Ref && this.valueOn instanceof Ref &&

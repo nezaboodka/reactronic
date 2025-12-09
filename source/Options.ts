@@ -25,7 +25,7 @@ export type ReactivityOptions = {
   readonly isolation: Isolation
   readonly order: number
   readonly noSideEffects: boolean
-  readonly observableArgs: boolean
+  readonly signalArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
   readonly allowObsoleteToFinish: boolean
@@ -34,9 +34,9 @@ export type ReactivityOptions = {
   readonly logging?: Partial<LoggingOptions>
 }
 
-// ReactiveOperation
+// Reaction
 
-export type ReactiveOperation<T> = {
+export type Reaction<T> = {
   readonly options: ReactivityOptions
   readonly args: ReadonlyArray<any>
   readonly result: T

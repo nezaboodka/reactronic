@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, Transaction, observable, runAtomically, reactive, cached, manageReactiveOperation, disposeObservableObject } from "../source/api.js"
+import { SxObject, Transaction, signal, runTransactional, reaction, cache, manageReaction, disposeSignallingObject } from "../source/api.js"
 
 export function autorender(render: () => React.JSX.Element): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState>(createReactState)
@@ -20,22 +20,22 @@ export function autorender(render: () => React.JSX.Element): React.JSX.Element {
 
 type ReactState = { rx: RxComponent }
 
-class RxComponent extends ObservableObject {
-  @cached
+class RxComponent extends SxObject {
+  @cache
   render(emit: () => React.JSX.Element): React.JSX.Element {
     return emit()
   }
 
-  @reactive
+  @reaction
   protected ensureUpToDate(): void {
-    if (!manageReactiveOperation(this.render).isReusable)
+    if (!manageReaction(this.render).isReusable)
       Transaction.outside(this.refresh, {rx: this})
   }
 
-  @observable(false) refresh: (next: ReactState) => void = nop
+  @signal(false) refresh: (next: ReactState) => void = nop
 
-  @observable(false) readonly unmount = (): (() => void) => {
-    return (): void => { runAtomically(disposeObservableObject, this) }
+  @signal(false) readonly unmount = (): (() => void) => {
+    return (): void => { runTransactional(disposeSignallingObject, this) }
   }
 
   static create(): RxComponent {
@@ -44,7 +44,7 @@ class RxComponent extends ObservableObject {
 }
 
 function createReactState(): ReactState {
-  const rx = runAtomically<RxComponent>({ hint: "<rx>" }, RxComponent.create)
+  const rx = runTransactional<RxComponent>({ hint: "<rx>" }, RxComponent.create)
   return {rx}
 }
 

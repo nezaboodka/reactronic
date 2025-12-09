@@ -6,23 +6,23 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { ObservableObject, runAtomically, reactive, cached, observable, options, ReactiveSystem } from "../source/api.js"
+import { SxObject, runTransactional, reaction, cache, signal, options, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
-export class DemoBase extends ObservableObject {
-  @observable(false) raw: string = "plain data"
+export class DemoBase extends SxObject {
+  @signal(false) raw: string = "plain data"
   title: string = "Demo"
   sideEffect: string = "no side effect"
   uninitialized?: any
 
-  @reactive
+  @reaction
   normalizeTitle(): void {
     const stamp = new Date().toUTCString()
     const t = this.title.toLowerCase()
     this.title = `${t} - ${stamp}`
   }
 
-  @reactive @options({ noSideEffects: true })
+  @reaction @options({ noSideEffects: true })
   reactiveWithNoSideEffects(): void {
     this.sideEffect = "side effect"
   }
@@ -32,30 +32,30 @@ export class DemoBase extends ObservableObject {
   //   this.uninitialized = value
   // }
 
-  @cached
+  @cache
   cachedTitle(): string {
     return this.title
   }
 
-  @cached @options({ logging: {} })
+  @cache @options({ logging: {} })
   produceSideEffect(): void {
     this.raw = ReactiveSystem.why()
     this.title = "should fail on this line"
   }
 
-  @cached
+  @cache
   cachedMap(): Map<string, any> {
     return new Map<string, any>()
   }
 
-  @cached
+  @cache
   cachedSet(): Set<string> {
     return new Set<string>()
   }
 }
 
 export class Demo extends DemoBase {
-  @reactive
+  @reaction
   oneMoreReactiveFunction(): void {
     // do nothing, the reactive function is just to test inheritance chain
   }
@@ -63,7 +63,7 @@ export class Demo extends DemoBase {
 
 test("caching", t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const demo = runAtomically(() => {
+  const demo = runTransactional(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), "Demo")
     // d.title = 'Demo+'

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { runAtomically, pause, Reentrance, ReactiveSystem, manageReactiveOperation, disposeObservableObject } from "../source/api.js"
+import { runTransactional, pause, Reentrance, ReactiveSystem, manageReaction, disposeSignallingObject } from "../source/api.js"
 import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
 import { TestsLoggingLevel } from "./brief.js"
 
@@ -27,23 +27,23 @@ const expected: Array<string> = [
 
 test("reentrance.error", async t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const app = runAtomically(() => {
+  const app = runTransactional(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    manageReactiveOperation(a.model.load).configure({reentrance: Reentrance.preventWithError})
+    manageReaction(a.model.load).configure({reentrance: Reentrance.preventWithError})
     return a
   })
   try {
     t.is(app.rawField, "raw field")
     app.rawField = "raw field updated"
     t.is(app.rawField, "raw field updated")
-    t.is(app.observableField, "observable field")
-    t.throws(() => app.observableField = "observable field", { message: "observable property AsyncDemoView.observableField #24 can only be modified inside transaction" })
-    t.throws(() => manageReactiveOperation(app.print).configure({ logging: TestsLoggingLevel }))
-    runAtomically(() => {
-      manageReactiveOperation(app.print).configure({ logging: TestsLoggingLevel })
+    t.is(app.signalField, "signal field")
+    t.throws(() => app.signalField = "signal field", { message: "signal property AsyncDemoView.signalField #24 can only be modified inside transaction" })
+    t.throws(() => manageReaction(app.print).configure({ logging: TestsLoggingLevel }))
+    runTransactional(() => {
+      manageReaction(app.print).configure({ logging: TestsLoggingLevel })
     })
     await app.print() // initial reactive run
-    t.throws(() => manageReactiveOperation(app.print).configure({ logging: TestsLoggingLevel }))
+    t.throws(() => manageReaction(app.print).configure({ logging: TestsLoggingLevel }))
     const first = app.model.load(requests[0].url, requests[0].delay)
     t.throws(() => { void requests.slice(1).map(x => app.model.load(x.url, x.delay)) })
     t.is(busy.counter, 1)
@@ -57,12 +57,12 @@ test("reentrance.error", async t => {
   finally {
     t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
-    const r = manageReactiveOperation(app.render).pullLastResult()
+    const r = manageReaction(app.render).pullLastResult()
     t.is(r && r.length, 2)
     await pause(300)
-    runAtomically(() => {
-      disposeObservableObject(app)
-      disposeObservableObject(app.model)
+    runTransactional(() => {
+      disposeSignallingObject(app)
+      disposeSignallingObject(app.model)
     })
   } /* istanbul ignore next */
   if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled)

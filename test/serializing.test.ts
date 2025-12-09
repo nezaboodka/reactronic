@@ -6,17 +6,17 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { runAtomically, ReactiveSystem, ObservableObject } from "../source/api.js"
+import { runTransactional, ReactiveSystem, SxObject } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
-class Serializable extends ObservableObject {
+class Serializable extends SxObject {
   text: string = ""
   array?: Array<Serializable> = undefined
 }
 
 test("serializing", t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const serializable = runAtomically(() => {
+  const serializable = runTransactional(() => {
     const s1 = new Serializable()
     s1.text = "s1"
     const s2 = new Serializable()

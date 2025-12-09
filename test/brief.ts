@@ -5,46 +5,46 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { ObservableObject, observable, runAtomically, atomic, reactive, cached, Journal, ReactiveSystem, LoggingOptions, options, configureCurrentReactiveOperation } from "../source/api.js"
+import { SxObject, signal, runTransactional, transaction, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options, configureCurrentReaction } from "../source/api.js"
 
 export const output: string[] = []
 
-export class Demo extends ObservableObject {
+export class Demo extends SxObject {
   static stamp = 0
-  static journal = runAtomically(() => Journal.create())
+  static journal = runTransactional(() => Journal.create())
 
-  @cached
+  @cache
   get computed(): string { return `${this.title}.computed @ ${++Demo.stamp}` }
   // set computed(value: string) { /* nop */ }
 
-  @observable(false) shared: string = "for testing purposes"
+  @signal(false) shared: string = "for testing purposes"
   title: string = "Demo"
   users: Person[] = []
   collection1: Person[] = this.users
   collection2: Person[] = this.users
   usersWithoutLast: Person[] = this.users
 
-  @atomic
+  @transaction
   loadUsers(): void {
     this._loadUsers()
   }
 
-  @atomic
+  @transaction
   testCollectionSealing(): void {
     this.collection1 = this.collection2 = []
   }
 
-  @atomic
+  @transaction
   testImmutableCollection(): void {
     this.collection1.push(...this.users)
   }
 
-  @atomic @options({ journal: Demo.journal })
+  @transaction @options({ journal: Demo.journal })
   testUndo(): void {
     this.title = "Demo - undo/redo"
   }
 
-  @reactive @options({ order: 1 })
+  @reaction @options({ order: 1 })
   protected backup(): void {
     this.usersWithoutLast = this.users.slice()
     this.usersWithoutLast.pop()
@@ -71,10 +71,10 @@ export class Demo extends ObservableObject {
   }
 }
 
-export class DemoView extends ObservableObject {
-  @observable(false) raw: string = "plain field"
-  @observable(false) shared: string = "for testing purposes"
-  @observable(false) readonly model: Demo
+export class DemoView extends SxObject {
+  @signal(false) raw: string = "plain field"
+  @signal(false) shared: string = "for testing purposes"
+  @signal(false) readonly model: Demo
   userFilter: string = "Jo"
 
   constructor(model: Demo) {
@@ -83,14 +83,14 @@ export class DemoView extends ObservableObject {
     // R.configureObject(this, { sensitivity: Sensitivity.ReactOnFinalDifferenceOnly })
   }
 
-  @reactive
+  @reaction
   print(): void {
     const lines = this.render(0)
     lines.forEach(x => {
       output.push(x) /* istanbul ignore next */
       if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) console.log(x)
     })
-    configureCurrentReactiveOperation({ order: 123 })
+    configureCurrentReaction({ order: 123 })
   }
 
   // @transaction @options({ logging: LoggingLevel.Debug })
@@ -98,7 +98,7 @@ export class DemoView extends ObservableObject {
   //   this.render().forEach(x => output.push(x));
   // }
 
-  @cached
+  @cache
   filteredUsers(): Person[] {
     const m = this.model
     let result: Person[] = m.users.slice()
@@ -111,7 +111,7 @@ export class DemoView extends ObservableObject {
     return result
   }
 
-  @cached @options({ observableArgs: true })
+  @cache @options({ signalArgs: true })
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
     this.raw = ReactiveSystem.why(true)
@@ -133,8 +133,8 @@ export class DemoView extends ObservableObject {
 // Person
 
 /* istanbul ignore next */
-export class Person extends ObservableObject {
-  @observable(false) dummy: string | null = null
+export class Person extends SxObject {
+  @signal(false) dummy: string | null = null
   id: string | null = null
   name: string | null = null
   age: number = 0

@@ -8,9 +8,9 @@
 /* istanbul ignore file */
 
 import { misuse } from "./util/Dbg.js"
-import { ObservableObject } from "./core/Mvcc.js"
+import { SxObject } from "./core/Mvcc.js"
 
-export abstract class Pipe<T> extends ObservableObject {
+export abstract class Pipe<T> extends SxObject {
   abstract readonly capacity: number
   abstract readonly count: number
   abstract put(...items: T[]): void

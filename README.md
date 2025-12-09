@@ -20,23 +20,23 @@ corresponding visual components for (re)rendering. All
 that is done in automatic, seamless, and fine-grained
 way. Reactronic **takes full care of tracking dependencies**
 between visual components (reactive functions) and
-application state (observable objects).
+application state (signalling objects).
 
 Transactional reactivity is based on four fundamental
 concepts:
 
-  - **Observable Objects** - a set of objects that store
+  - **Signalling Objects** - a set of objects that store
     data of an application (state) and cause reactions
     upon their changes;
-  - **Atomic Block** - a code block that makes changes
-    in observable objects in atomic way ("all or
-    nothing");
-  - **Reaction** - a function that is
+  - **Transactional Function** - a function that makes
+    changes in signalling objects in atomic way ("all
+    or nothing");
+  - **Reactive Function** - a function that is
     (re-)executed in response to changes made in
-    observable objects by atomic actions;
-  - **Cache** -  a function which result is remembered
-    and, if becomes obsolete, causes function to
-    re-execute on-demand.
+    signalling objects by transactional functions;
+  - **Cache Function** -  a function which result is
+    remembered and, if becomes obsolete, causes
+    function to re-execute on-demand.
 
 Demo application built with Reactronic: https://nevod.io/#/playground.
 Source code of the demo: https://gitlab.com/nezaboodka/nevod.web.public/-/blob/master/README.md.
@@ -48,17 +48,17 @@ Quick introduction and detailed description is below.
 Here is an example of transactional reactive code:
 
 ``` typescript
-class Demo extends ObservableObject {
+class Demo extends SignallingObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
-  @atomic
+  @transaction
   saveContact(name: string, email: string): void {
     this.name = name
     this.email = email
   }
 
-  @reactive
+  @reaction
   printContact(): void {
     // depends on `name` and `email` and reacts to their changes
     if (this.email.indexOf('@') >= 0)
@@ -68,28 +68,28 @@ class Demo extends ObservableObject {
 }
 ```
 
-In the example above, `Demo` is an observable object,
+In the example above, `Demo` is a signalling object,
 meaning that access to its fields are seamlessly tracked
 to determine dependent reactive and cached functions.
 Reactive function `printContact` reads `name` and `email`
 fields, thus depends on them. It is executed automatically
-in response to changes of these fields made by the atomic
-function `saveContact`.
+in response to changes of these fields made by the
+transactional function `saveContact`.
 
 Here is an example of a cached result that is
 (re-)computed on-demand:
 
 ``` typescript
-class Demo extends ObservableObject {
+class Demo extends SignallingObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
-  @cached
+  @cache
   get contact(): string {
     return this.name + ' <' + this.email + '>'
   }
 
-  @reactive
+  @reaction
   printContact(): void {
     if (this.contact !== '')
       Console.log(this.contact)
@@ -107,15 +107,15 @@ thus causing execution of depending reactive function
 `printContact` runs it reads `contact` and causes its
 re-computation.
 
-## Observable Objects
+## Signalling Objects
 
-Observable objects are aimed to store data of
+Signalling objects are aimed to store data of
 an application. All such objects are transparently hooked
 to track access to their properties, both on reads and
 writes.
 
 ``` typescript
-class MyModel extends ObservableObject {
+class MyModel extends SignallingObject {
   url: string = "https://github.com/nezaboodka/reactronic"
   content: string = "transactional reactive state management"
   timestamp: Date = Date.now()
@@ -123,21 +123,22 @@ class MyModel extends ObservableObject {
 ```
 
 In the example above, the class `MyModel` is based on
-Reactronic's `ObservableObject` class and all its
+Reactronic's `SignallingObject` class and all its
 properties `url`, `content`, and `timestamp` are hooked.
 
-## Atomic Function
+## Transactional Function
 
-Atomic function makes changes in observable objects
-in atomic (transactional) way, thus provoking execution
-of dependent reactive and cached functions. Atomic
-function is instrumented with hooks to provide transparent atomicity
-(by implicit context switching and isolation).
+Transactional function makes changes in signalling
+objects in atomic way ("all or nothing"), thus provoking
+execution of dependent reactive and cached functions.
+Transactional function is instrumented with hooks to
+provide transparent atomicity (by implicit context
+switching and isolation).
 
 ``` typescript
-class MyModel extends ObservableObject {
+class MyModel extends SignallingObject {
   // ...
-  @atomic
+  @transaction
   async load(url: string): Promise<void> {
     this.url = url
     this.content = await fetch(url)
@@ -146,9 +147,9 @@ class MyModel extends ObservableObject {
 }
 ```
 
-In the example above, the atomic function `load` makes
+In the example above, the transactional function `load` makes
 changes to `url`, `content` and `timestamp` properties.
-While atomic function is running, the changes are visible
+While transactional function is running, the changes are visible
 only inside the function itself. The new values become
 atomically visible outside of the function only upon its
 completion.
@@ -159,41 +160,41 @@ function until it is fully finished and applied. Multiple
 objects and their properties can be changed with full
 respect to the all-or-nothing principle. To do so,
 separate data snapshot is automatically maintained for
-each atomic function. That is a logical snapshot that does
-not create a full copy of all the data.
+each transactional function. That is a logical snapshot
+that does not create a full copy of all the data.
 
 Compensating rollback operations are not needed in case
-of the atomic function failure, because all the changes
-made by the atomic function in its logical snapshot are
-simply discarded. In case the atomic function is
+of a transactional function failure, because all the changes
+made by transactional function in its logical snapshot are
+simply discarded. In case a transaction function is
 successfully applied, affected cached results are marked
 as obsolete and corresponding caching functions are
 re-executed in a proper order (but only when all the
 data changes are fully applied).
 
 Asynchronous operations (promises) are supported out of
-the box during atomic function execution. Atomic function
-may consist of a set of asynchronous calls prolonging
-the function until completion of all of them. An
-asynchronous call may spawn other asynchronous calls,
-which prolong atomic atomic execution until the whole
+the box during transactional function execution.
+Transactional function may consist of a set of asynchronous
+calls prolonging the function until completion of all of
+them. An asynchronous call may spawn other asynchronous
+calls, which prolong transactional execution until the whole
 chain of asynchronous operations is fully completed.
 
 ## Reactive & Cached Functions
 
 Reactive function is automatically and immediately called
-in response to changes in observable objects made by
-atomic functions. Cached function is called on-demand to
-renew the result if it was marked as obsolete due to
-changes made by an atomic functions. Reactive and cached
+in response to changes in signalling objects made by
+transactional functions. Cached function is called on-demand
+to renew the result if it was marked as obsolete due to
+changes made by an transactional functions. Reactive and cached
 functions are instrumented with hooks to seamlessly
-subscribe to those observable objects and other cached
+subscribe to those signalling objects and other cached
 functions (dependencies), which are used during their
 execution.
 
 ``` tsx
 class MyView extends Component<{model: MyModel}> {
-  @cached
+  @cache
   render(): React.JSX.Element {
     return (
       <div>
@@ -207,12 +208,12 @@ class MyView extends Component<{model: MyModel}> {
 
 ``` tsx
 class Component<P> extends React.Component<P> {
-  @cached
+  @cache
   render(): React.JSX.Element {
     throw new Error('render method is undefined')
   }
 
-  @reactive // called in response to changes
+  @reaction // called in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate()) {
       // Ask React to re-render
@@ -231,7 +232,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    atomicAction(disposeObservableObject, this)
+    runTransactional(disposeSignallingObject, this)
   }
 }
 ```
@@ -250,14 +251,14 @@ cached value.
 
 In general case, all reactive and cached functions
 are automatically and immediately marked as obsolete
-when changes are made in those observable objects and
+when changes are made in those signalling objects and
 other cached results that were used during their
 execution. And once marked, the functions are
 automatically executed again, either immediately (for
 reactive functions) or on-demand (for cached functions).
 
 Reactronic takes full care of tracking dependencies
-between all the observable objects and reactive/cached
+between all the signalling objects and reactive/cached
 functions. With Reactronic, you no longer need to create
 data change events in one set of objects, subscribe to
 these events in other objects, and manually maintain
@@ -277,11 +278,11 @@ reactive functions:
 is executed in case of recurring changes:
 
   - `(ms)` - minimal delay in milliseconds between executions;
-  - `-1` - execute immediately once atomic function is applied (synchronously);
+  - `-1` - execute immediately once transactional function changes are applied (synchronously);
   - `0` - execute immediately via event loop (asynchronously with zero timeout);
   - `>= Number.MAX_SAFE_INTEGER` - never execute (suspended reaction).
 
-**Reentrance** option defines how to handle reentrant calls of atomic
+**Reentrance** option defines how to handle reentrant calls of transactional
 and reactive functions:
 
   - `preventWithError` - fail with error if there is an existing call in progress;
@@ -292,7 +293,7 @@ and reactive functions:
 
 **Indicator** is an object that maintains status of running functions,
 which it is attached to. A single indicator object can be shared between
-multiple atomic, reactive, and cached functions, thus maintaining
+multiple transactional, reactive, and cached functions, thus maintaining
 consolidated status for all of them (busy, workers, etc).
 
 ## Notes
@@ -323,20 +324,20 @@ NPM: `npm install reactronic`
 
 // Classes
 
-class AtomicObject { }
-class ObservableObject { }
+class TransactionalObject { }
+class SignallingObject { }
 
 // Decorators & Operators
 
-function observable(boolean) // field only
-function observable(proto, prop) // field only
-function atomic(proto, prop, pd) // method only
+function signal(boolean) // field only
+function signal(proto, prop) // field only
+function transaction(proto, prop, pd) // method only
 function reaction(proto, prop, pd) // method only
 function cache(proto, prop, pd) // method only
 function options(value: Partial<ReactivityOptions>): F<any>
 
-function runNonReactively<T>(func: F<T>, ...args: any[]): T
-function runSensitively<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
+function runNonReactive<T>(func: F<T>, ...args: any[]): T
+function runSensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
 
 // SnapshotOptions, ReactivityOptions, Kind, Reentrance, Indicator, LoggingOptions, ProfilingOptions
 
@@ -353,7 +354,7 @@ type ReactivityOptions = {
   readonly isolation: Isolation
   readonly order: number
   readonly noSideEffects: boolean
-  readonly observableArgs: boolean
+  readonly signalArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
   readonly journal: Journal | undefined
@@ -363,7 +364,7 @@ type ReactivityOptions = {
 
 enum Kind {
   plain = 0,
-  atomic = 1,
+  transaction = 1,
   reaction = 2,
   cache = 3
 }

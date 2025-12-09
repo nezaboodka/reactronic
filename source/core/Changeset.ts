@@ -176,7 +176,7 @@ export class Changeset implements AbstractChangeset {
 
   private isNewObjectVersionRequired(h: ObjectHandle, ov: ObjectVersion, fk: FieldKey, existing: any, value: any, token: any): boolean {
     if (this.sealed && ov.changeset !== EMPTY_OBJECT_VERSION.changeset)
-      throw misuse(`observable property ${Dump.obj(h, fk)} can only be modified inside transaction`)
+      throw misuse(`signal property ${Dump.obj(h, fk)} can only be modified inside transaction`)
     // if (fk !== Meta.Handle && value !== Meta.Handle && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.snapshot !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.snapshot(r, fk)}`)
     // if (r === ROOT_REV && fk !== Meta.Handle && value !== Meta.Handle) /* istanbul ignore next */

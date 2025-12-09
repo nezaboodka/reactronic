@@ -8,21 +8,21 @@
 import { UNDEF, F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
 import { Kind, Reentrance, Isolation } from "../Enums.js"
-import { ReactiveOperation, ReactivityOptions } from "../Options.js"
+import { Reaction, ReactivityOptions } from "../Options.js"
 import { LoggingOptions, ProfilingOptions } from "../Logging.js"
 import { ObjectVersion, FieldKey, ObjectHandle, ContentFootprint, Meta } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION } from "./Changeset.js"
 import { Journal } from "./Journal.js"
 import { Indicator } from "./Indicator.js"
 
-// MvccObject, AtomicObject, ObservableObject
+// MvccObject, TransactionalObject, SignalObject
 
 export abstract class MvccObject {
-  protected constructor(isObservable: boolean) {
+  protected constructor(isSignal: boolean) {
     const proto = new.target.prototype
     const initial = Meta.getFrom(proto, Meta.Initial)
     const h = Mvcc.createHandleForMvccObject(
-      proto, this, initial, new.target.name, isObservable)
+      proto, this, initial, new.target.name, isSignal)
     return h.proxy
   }
 
@@ -33,13 +33,13 @@ export abstract class MvccObject {
   }
 }
 
-export abstract class AtomicObject extends MvccObject {
+export abstract class TxObject extends MvccObject {
   constructor() {
     super(false)
   }
 }
 
-export abstract class ObservableObject extends MvccObject {
+export abstract class SxObject extends MvccObject {
   constructor() {
     super(true)
   }
@@ -52,7 +52,7 @@ const DEFAULT_OPTIONS: ReactivityOptions = Object.freeze({
   isolation: Isolation.joinToCurrentTransaction,
   order: 0,
   noSideEffects: false,
-  observableArgs: false,
+  signalArgs: false,
   throttling: Number.MAX_SAFE_INTEGER, // disabled, @reactive sets it to -1 to enable
   reentrance: Reentrance.preventWithError,
   allowObsoleteToFinish: false,
@@ -68,7 +68,7 @@ export class OptionsImpl implements ReactivityOptions {
   readonly isolation: Isolation
   readonly order: number
   readonly noSideEffects: boolean
-  readonly observableArgs: boolean
+  readonly signalArgs: boolean
   readonly throttling: number
   readonly reentrance: Reentrance
   readonly allowObsoleteToFinish: boolean
@@ -84,7 +84,7 @@ export class OptionsImpl implements ReactivityOptions {
     this.isolation = merge(DEFAULT_OPTIONS.isolation, existing.isolation, patch.isolation, implicit)
     this.order = merge(DEFAULT_OPTIONS.order, existing.order, patch.order, implicit)
     this.noSideEffects = merge(DEFAULT_OPTIONS.noSideEffects, existing.noSideEffects, patch.noSideEffects, implicit)
-    this.observableArgs = merge(DEFAULT_OPTIONS.observableArgs, existing.observableArgs, patch.observableArgs, implicit)
+    this.signalArgs = merge(DEFAULT_OPTIONS.signalArgs, existing.signalArgs, patch.signalArgs, implicit)
     this.throttling = merge(DEFAULT_OPTIONS.throttling, existing.throttling, patch.throttling, implicit)
     this.reentrance = merge(DEFAULT_OPTIONS.reentrance, existing.reentrance, patch.reentrance, implicit)
     this.allowObsoleteToFinish = merge(DEFAULT_OPTIONS.allowObsoleteToFinish, existing.allowObsoleteToFinish, patch.allowObsoleteToFinish, implicit)
@@ -108,13 +108,13 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   static mainThreadBlockingWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static sensitivity: boolean = false
-  static readonly atomic: Mvcc = new Mvcc(false)
-  static readonly observable: Mvcc = new Mvcc(true)
+  static readonly tx: Mvcc = new Mvcc(false)
+  static readonly sx: Mvcc = new Mvcc(true)
 
-  readonly isObservable: boolean
+  readonly isSignal: boolean
 
-  constructor(isObservable: boolean) {
-    this.isObservable = isObservable
+  constructor(isSignal: boolean) {
+    this.isSignal = isSignal
   }
 
   getPrototypeOf(h: ObjectHandle): object | null {
@@ -128,7 +128,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       const ov: ObjectVersion = cs.getObjectVersion(h, fk)
       result = ov.data[fk]
       if (result instanceof ContentFootprint && !result.isComputed) {
-        if (this.isObservable)
+        if (this.isSignal)
           Changeset.markUsed(result, ov, fk, h, Kind.plain, false)
         result = result.content
       }
@@ -182,16 +182,16 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     return result
   }
 
-  static decorateData(isObservable: boolean, proto: any, fk: FieldKey): any {
-    if (isObservable) {
+  static decorateData(isSignal: boolean, proto: any, fk: FieldKey): any {
+    if (isSignal) {
       Meta.acquire(proto, Meta.Initial)[fk] = new ContentFootprint(undefined, 0)
       const get = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.observable.get(h, fk, this)
+        return Mvcc.sx.get(h, fk, this)
       }
       const set = function(this: any, value: any): boolean {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.observable.set(h, fk, value, this)
+        return Mvcc.sx.set(h, fk, value, this)
       }
       const enumerable = true
       const configurable = false
@@ -242,10 +242,10 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     let h = obj[Meta.Handle]
     if (!h) {
       if (obj !== Object(obj) || Array.isArray(obj)) /* istanbul ignore next */
-        throw misuse("only objects can be observable")
+        throw misuse("only objects can be signalling")
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
       const ov = new ObjectVersion(EMPTY_OBJECT_VERSION.changeset, EMPTY_OBJECT_VERSION, {...initial})
-      h = new ObjectHandle(obj, obj, Mvcc.observable, ov, obj.constructor.name)
+      h = new ObjectHandle(obj, obj, Mvcc.sx, ov, obj.constructor.name)
       Meta.set(ov.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
       Meta.set(ov.data, Meta.Revision, new ContentFootprint(1, 0))
@@ -253,14 +253,14 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
     return h
   }
 
-  static createHandleForMvccObject(proto: any, data: any, blank: any, hint: string, isObservable: boolean): ObjectHandle {
+  static createHandleForMvccObject(proto: any, data: any, blank: any, hint: string, isSignal: boolean): ObjectHandle {
     const ctx = Changeset.edit()
-    const mvcc = isObservable ? Mvcc.observable : Mvcc.atomic
+    const mvcc = isSignal ? Mvcc.sx : Mvcc.tx
     const h = new ObjectHandle(data, undefined, mvcc, EMPTY_OBJECT_VERSION, hint)
     ctx.getEditableObjectVersion(h, Meta.Handle, blank)
     if (!Mvcc.reactivityAutoStartDisabled)
       for (const fk in Meta.getFrom(proto, Meta.Reactive))
-        (h.proxy[fk][Meta.Descriptor] as ReactiveOperation<any>).markObsolete()
+        (h.proxy[fk][Meta.Descriptor] as Reaction<any>).markObsolete()
     return h
   }
 

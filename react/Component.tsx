@@ -6,22 +6,22 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { runAtomically, reactive, cached, Transaction, manageReactiveOperation, disposeObservableObject } from "../source/api.js"
+import { runTransactional, reaction, cache, Transaction, manageReaction, disposeSignallingObject } from "../source/api.js"
 
 export class Component<P> extends React.Component<P> {
-  @cached
+  @cache
   override render(): React.JSX.Element {
     throw new Error("render method is undefined")
   }
 
-  @reactive // called immediately in response to changes
+  @reaction // called immediately in response to changes
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
       Transaction.outside(() => this.setState({})) // ask React to re-render
   } // ensureUpToDate is subscribed to render
 
   override shouldComponentUpdate(): boolean {
-    return !manageReactiveOperation(this.render).isReusable
+    return !manageReaction(this.render).isReusable
   }
 
   override componentDidMount(): void {
@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   override componentWillUnmount(): void {
-    runAtomically(disposeObservableObject, this)
+    runTransactional(disposeSignallingObject, this)
   }
 }

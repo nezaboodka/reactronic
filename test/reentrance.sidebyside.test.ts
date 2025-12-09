@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Reentrance, ReactiveSystem, all, pause, runAtomically, manageReactiveOperation, disposeObservableObject } from "../source/api.js"
+import { Reentrance, ReactiveSystem, all, pause, runTransactional, manageReaction, disposeSignallingObject } from "../source/api.js"
 import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
 import { TestsLoggingLevel } from "./brief.js"
 
@@ -30,9 +30,9 @@ const expected: Array<string> = [
 
 test("reentrance.sidebyside", async t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  const app = runAtomically(() => {
+  const app = runTransactional(() => {
     const a = new AsyncDemoView(new AsyncDemo())
-    manageReactiveOperation(a.model.load).configure({reentrance: Reentrance.runSideBySide})
+    manageReaction(a.model.load).configure({reentrance: Reentrance.runSideBySide})
     return a
   })
   try {
@@ -50,9 +50,9 @@ test("reentrance.sidebyside", async t => {
     t.is(busy.counter, 0)
     t.is(busy.workers.size, 0)
     await pause(300)
-    runAtomically(() => {
-      disposeObservableObject(app)
-      disposeObservableObject(app.model)
+    runTransactional(() => {
+      disposeSignallingObject(app)
+      disposeSignallingObject(app.model)
     })
   } /* istanbul ignore next */
   if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled)

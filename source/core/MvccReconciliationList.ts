@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import { ReconciliationList, LinkedItem, ReconciliationListReader } from "../util/ReconciliationList.js"
-import { ObservableObject } from "./Mvcc.js"
+import { SxObject } from "./Mvcc.js"
 
-// ObservableReconciliationList
+// SxReconciliationList
 
-export abstract class ObservableReconciliationList<T> extends ObservableObject implements ReconciliationListReader<T> {
+export abstract class SxReconciliationList<T> extends SxObject implements ReconciliationListReader<T> {
   protected abstract impl: ReconciliationList<T>
   get isStrict(): boolean { return this.impl.isStrict }
   get count(): number { return this.impl.count }

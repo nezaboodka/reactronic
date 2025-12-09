@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { ObservableObject, Transaction, observable, runAtomically, reactive, cached, ReactiveSystem, LoggingOptions, manageReactiveOperation, disposeObservableObject } from "../source/api.js"
+import { SxObject, Transaction, signal, runTransactional, reaction, cache, ReactiveSystem, LoggingOptions, manageReaction, disposeSignallingObject } from "../source/api.js"
 
 export function autorender(render: (cycle: number) => React.JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState<React.JSX.Element>>(
@@ -22,24 +22,24 @@ export function autorender(render: (cycle: number) => React.JSX.Element, name?: 
 
 type ReactState<V> = { rx: RxComponent<V>, cycle: number }
 
-class RxComponent<V> extends ObservableObject {
-  @cached
+class RxComponent<V> extends SxObject {
+  @cache
   render(emit: (cycle: number) => V, op?: Transaction): V {
     return op ? op.inspect(() => emit(this.cycle)) : emit(this.cycle)
   }
 
-  @reactive
+  @reaction
   protected ensureUpToDate(): void {
-    if (!manageReactiveOperation(this.render).isReusable)
+    if (!manageReaction(this.render).isReusable)
       Transaction.outside(this.refresh, {rx: this, cycle: this.cycle + 1})
   }
 
-  @observable(false) cycle: number = 0
+  @signal(false) cycle: number = 0
 
-  @observable(false) refresh: (next: ReactState<V>) => void = nop
+  @signal(false) refresh: (next: ReactState<V>) => void = nop
 
-  @observable(false) readonly unmount = (): (() => void) => {
-    return (): void => { runAtomically(disposeObservableObject, this) }
+  @signal(false) readonly unmount = (): (() => void) => {
+    return (): void => { runTransactional(disposeSignallingObject, this) }
   }
 
   static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): RxComponent<V> {
@@ -47,8 +47,8 @@ class RxComponent<V> extends ObservableObject {
     if (hint)
       ReactiveSystem.setLoggingHint(rx, hint)
     if (logging) {
-      manageReactiveOperation(rx.render).configure({ logging })
-      manageReactiveOperation(rx.ensureUpToDate).configure({ logging })
+      manageReaction(rx.render).configure({ logging })
+      manageReaction(rx.ensureUpToDate).configure({ logging })
     }
     return rx
   }
@@ -56,7 +56,7 @@ class RxComponent<V> extends ObservableObject {
 
 function createReactState<V>(name?: string, logging?: Partial<LoggingOptions>): ReactState<V> {
   const hint = name || (ReactiveSystem.isLogging ? getComponentName() : "<rx>")
-  const rx = runAtomically<RxComponent<V>>({ hint, logging }, RxComponent.create, hint, logging)
+  const rx = runTransactional<RxComponent<V>>({ hint, logging }, RxComponent.create, hint, logging)
   return {rx, cycle: 0}
 }
 
@@ -70,7 +70,7 @@ function getComponentName(): string {
   const stack = error.stack || ""
   Error.stackTraceLimit = restore
   const lines = stack.split("\n")
-  const i = lines.findIndex(x => x.indexOf(reactive.name) >= 0) || 6
+  const i = lines.findIndex(x => x.indexOf(reaction.name) >= 0) || 6
   let result: string = lines[i + 1] || ""
   result = (result.match(/^\s*at\s*(\S+)/) || [])[1]
   return result !== undefined ? `<${result}>` : "<Rx>"

@@ -8,15 +8,15 @@
 import { Log, misuse } from "./util/Dbg.js"
 import { F } from "./util/Utils.js"
 import { Kind, Isolation } from "./Enums.js"
-import { ReactiveOperation, ReactivityOptions, LoggingOptions, ProfilingOptions, SnapshotOptions } from "./Options.js"
+import { Reaction, ReactivityOptions, LoggingOptions, ProfilingOptions, SnapshotOptions } from "./Options.js"
 import { Meta, ObjectHandle } from "./core/Data.js"
 import { Changeset } from "./core/Changeset.js"
 import { Mvcc } from "./core/Mvcc.js"
 import { Transaction } from "./core/Transaction.js"
-import { ReactiveOperationImpl } from "./core/Operation.js"
+import { ReactionImpl } from "./core/Operation.js"
 
 export class ReactiveSystem {
-  static why(brief: boolean = false): string { return brief ? ReactiveOperationImpl.briefWhy() : ReactiveOperationImpl.why() }
+  static why(brief: boolean = false): string { return brief ? ReactionImpl.briefWhy() : ReactionImpl.why() }
   static getRevisionOf(obj: any): number { return obj[Meta.Revision] }
   static takeSnapshot<T>(obj: T): T { return Changeset.takeSnapshot(obj) }
   // Configuration
@@ -33,9 +33,9 @@ export class ReactiveSystem {
 
 // Operators
 
-export function runAtomically<T>(func: F<T>, ...args: any[]): T
-export function runAtomically<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
-export function runAtomically<T>(
+export function runTransactional<T>(func: F<T>, ...args: any[]): T
+export function runTransactional<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
+export function runTransactional<T>(
   p1: F<T> | SnapshotOptions,
   p2: any[] | F<T>,
   p3: undefined | any[]): T {
@@ -55,35 +55,35 @@ export function runAtomically<T>(
   }
 }
 
-export function runNonReactively<T>(func: F<T>, ...args: any[]): T {
-  return ReactiveOperationImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
+export function runNonReactive<T>(func: F<T>, ...args: any[]): T {
+  return ReactionImpl.proceedWithinGivenLaunch<T>(undefined, func, ...args)
 }
 
-export function runSensitively<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
+export function runSensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T {
   return Mvcc.sensitive(sensitivity, func, ...args)
 }
 
-export function runContextually<T>(p: Promise<T>): Promise<T> {
+export function runContextual<T>(p: Promise<T>): Promise<T> {
   throw misuse("not implemented yet")
 }
 
-export function manageReactiveOperation<T>(method: F<T>): ReactiveOperation<T> {
-  return ReactiveOperationImpl.manageReactiveOperation(method)
+export function manageReaction<T>(method: F<T>): Reaction<T> {
+  return ReactionImpl.manageReaction(method)
 }
 
-export function configureCurrentReactiveOperation(options: Partial<ReactivityOptions>): ReactivityOptions {
-  return ReactiveOperationImpl.configureImpl(undefined, options)
+export function configureCurrentReaction(options: Partial<ReactivityOptions>): ReactivityOptions {
+  return ReactionImpl.configureImpl(undefined, options)
 }
 
-export function disposeObservableObject(obj: any): void {
+export function disposeSignallingObject(obj: any): void {
   Changeset.dispose(obj)
 }
 
 // Decorators
 
-export function observable(enabled: boolean): (proto: object, prop: PropertyKey) => any
-export function observable<T>(proto: object, prop: PropertyKey): any
-export function observable<T>(protoOrEnabled: object | boolean, prop?: PropertyKey): any | ((proto: object, prop: PropertyKey) => any) {
+export function signal(enabled: boolean): (proto: object, prop: PropertyKey) => any
+export function signal<T>(proto: object, prop: PropertyKey): any
+export function signal<T>(protoOrEnabled: object | boolean, prop?: PropertyKey): any | ((proto: object, prop: PropertyKey) => any) {
   if (typeof(protoOrEnabled) === "boolean") {
     return (proto: T, prop: PropertyKey) => {
       return Mvcc.decorateData(protoOrEnabled, proto, prop)
@@ -93,31 +93,31 @@ export function observable<T>(protoOrEnabled: object | boolean, prop?: PropertyK
     return Mvcc.decorateData(true, protoOrEnabled, prop!)
 }
 
-export function atomic(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
+export function transaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any
 {
   const opts = {
-    kind: Kind.atomic,
+    kind: Kind.transaction,
     isolation: Isolation.joinToCurrentTransaction,
   }
-  return Mvcc.decorateOperation(true, atomic, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, transaction, opts, proto, prop, pd)
 }
 
-export function reactive(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+export function reaction(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
-    kind: Kind.reactive,
+    kind: Kind.reaction,
     isolation: Isolation.joinAsNestedTransaction,
     throttling: -1, // immediate reactive call
   }
-  return Mvcc.decorateOperation(true, reactive, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, reaction, opts, proto, prop, pd)
 }
 
-export function cached(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
+export function cache(proto: object, prop: PropertyKey, pd: PropertyDescriptor): any {
   const opts = {
-    kind: Kind.cached,
+    kind: Kind.cache,
     isolation: Isolation.joinToCurrentTransaction,
     noSideEffects: true,
   }
-  return Mvcc.decorateOperation(true, cached, opts, proto, prop, pd)
+  return Mvcc.decorateOperation(true, cache, opts, proto, prop, pd)
 }
 
 export function options(value: Partial<ReactivityOptions>): F<any> {

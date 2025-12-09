@@ -6,16 +6,16 @@
 // automatically licensed under the license referred above.
 
 import { F } from "./util/Utils.js"
-import { ObservableObject } from "./core/Mvcc.js"
-import { reactive } from "./System.js"
+import { SxObject } from "./core/Mvcc.js"
+import { reaction } from "./System.js"
 
-export class ReactiveOperationEx<T> extends ObservableObject
+export class ReactionEx<T> extends SxObject
 {
   constructor(protected operation: F<T>) {
     super()
   }
 
-  @reactive
+  @reaction
   protected launch(): T {
     return this.operation()
   }

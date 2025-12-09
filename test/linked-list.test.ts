@@ -106,7 +106,7 @@ test("linked-list", t => {
   const m2marks = [P, P, M, P, P]
 
   t.throws(() => list.remove(list.lookup("X")!), {
-    message: "external item cannot be removed outside of renovation cycle" })
+    message: "cannot remove given item outside of renovation cycle" })
   list.remove(list.lookup("m1")!)
   list.remove(list.lookup("m2")!)
   t.is(list.count, m2result.length)

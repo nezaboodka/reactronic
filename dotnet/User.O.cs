@@ -1,5 +1,5 @@
 ﻿
-// Observable User
+// Signalling User
 
 internal class User_T : User
 {

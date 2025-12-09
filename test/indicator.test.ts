@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test from "ava"
-import { Indicator, ObservableObject, Reentrance, Transaction, atomic, reactive, options, pause, observable, runAtomically, ReactiveSystem, manageReactiveOperation } from "../source/api.js"
+import { Indicator, SxObject, Reentrance, Transaction, transaction, reaction, options, pause, signal, runTransactional, ReactiveSystem, manageReaction } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
@@ -45,19 +45,19 @@ class SourceFile {
   constructor(readonly text: string) { }
 }
 
-class CompilationController extends ObservableObject {
+class CompilationController extends SxObject {
   fsTreeVersion = 0
-  @observable(false) fsTree = new Array<SourceFile>()
-  @observable(false) compilation: Compilation | null = null
+  @signal(false) fsTree = new Array<SourceFile>()
+  @signal(false) compilation: Compilation | null = null
 
-  @atomic
+  @transaction
   add(text: string): void {
     this.fsTree.push(new SourceFile(text))
     output.push(`Added file ${text}.`)
     this.fsTreeVersion++
   }
 
-  @reactive @options({ reentrance: Reentrance.cancelAndWaitPrevious })
+  @reaction @options({ reentrance: Reentrance.cancelAndWaitPrevious })
   async reloadCompilation(): Promise<void> {
     this.fsTreeVersion // subscribe
     const sourceFiles = new Array<SourceFile>()
@@ -79,9 +79,9 @@ test("indicator", async t => {
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
   // RxSystem.setProfilingMode(true)
   const indicator = Indicator.create("indicator", 0, 0, 1000)
-  const controller = runAtomically(() => {
+  const controller = runTransactional(() => {
     const result = new CompilationController()
-    manageReactiveOperation(result.reloadCompilation).configure({ indicator })
+    manageReaction(result.reloadCompilation).configure({ indicator })
     return result
   })
   await indicator.whenIdle()

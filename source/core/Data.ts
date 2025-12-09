@@ -32,7 +32,7 @@ export class ContentFootprint<T = any> {
 
 export type OperationFootprint = {
   readonly order: number
-  readonly observables: Map<ContentFootprint, Subscription> | undefined
+  readonly signals: Map<ContentFootprint, Subscription> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
   markObsoleteDueTo(footprint: ContentFootprint, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Array<OperationFootprint>): void

@@ -443,10 +443,10 @@ export class TransactionImpl extends Transaction {
         if (subscribers) {
           const migratedSubscribers = migrated.subscribers = new Set<OperationFootprint>()
           subscribers.forEach(o => {
-            const conformingObservables = o.observables!
-            const sub = conformingObservables.get(cfParent)!
-            conformingObservables.delete(cfParent)
-            conformingObservables.set(migrated, sub)
+            const conformingSignals = o.signals!
+            const sub = conformingSignals.get(cfParent)!
+            conformingSignals.delete(cfParent)
+            conformingSignals.set(migrated, sub)
             migratedSubscribers.add(o)
           })
           cfParent.subscribers = undefined
@@ -458,25 +458,25 @@ export class TransactionImpl extends Transaction {
           if (migratedSubscribers === undefined)
             migratedSubscribers = migrated.subscribers = new Set<OperationFootprint>()
           subscribers.forEach(o => {
-            const conformingObservables = o.observables!
-            const sub = conformingObservables.get(cf)!
-            conformingObservables.delete(cf)
-            conformingObservables.set(migrated, sub)
+            const conformingSignals = o.signals!
+            const sub = conformingSignals.get(cf)!
+            conformingSignals.delete(cf)
+            conformingSignals.set(migrated, sub)
             migratedSubscribers.add(o)
           })
           cf.subscribers = undefined
         }
-        // Migrate observables from current (child)
-        const observables = (cf as unknown as OperationFootprint).observables
-        const migratedObservables = (migrated as unknown as OperationFootprint).observables
-        if (observables) {
-          observables.forEach((s, o) => {
+        // Migrate signals from current (child)
+        const signals = (cf as unknown as OperationFootprint).signals
+        const migratedSignals = (migrated as unknown as OperationFootprint).signals
+        if (signals) {
+          signals.forEach((s, o) => {
             const conformingSubscribers = o.subscribers!
             conformingSubscribers.delete(cf as unknown as OperationFootprint)!
             conformingSubscribers.add(migrated as unknown as OperationFootprint)
-            migratedObservables!.set(o, s)
+            migratedSignals!.set(o, s)
           })
-          observables.clear()
+          signals.clear()
         }
         ovParent.data[fk] = migrated
       }
@@ -486,25 +486,25 @@ export class TransactionImpl extends Transaction {
         if (subscribers) {
           const migratedReactions = migrated.subscribers = new Set<OperationFootprint>()
           subscribers.forEach(o => {
-            const conformingObservables = o.observables!
-            const sub = conformingObservables.get(cf)!
-            conformingObservables.delete(cf)
-            conformingObservables.set(migrated, sub)
+            const conformingSignals = o.signals!
+            const sub = conformingSignals.get(cf)!
+            conformingSignals.delete(cf)
+            conformingSignals.set(migrated, sub)
             migratedReactions.add(o)
           })
           cf.subscribers = undefined
         }
-        // Migrate observables from current (child)
-        const observables = (cf as unknown as OperationFootprint).observables
-        const migratedObservables = (migrated as unknown as OperationFootprint).observables
-        if (observables) {
-          observables.forEach((s, o) => {
+        // Migrate signals from current (child)
+        const signals = (cf as unknown as OperationFootprint).signals
+        const migratedSignals = (migrated as unknown as OperationFootprint).signals
+        if (signals) {
+          signals.forEach((s, o) => {
             const conformingSubscribers = o.subscribers!
             conformingSubscribers.delete(cf as unknown as OperationFootprint)
             conformingSubscribers.add(migrated as unknown as OperationFootprint)
-            migratedObservables!.set(o, s)
+            migratedSignals!.set(o, s)
           })
-          observables.clear()
+          signals.clear()
         }
         ovParent.data[fk] = migrated
       }
@@ -521,10 +521,10 @@ export class TransactionImpl extends Transaction {
           if (cfParent.subscribers === undefined)
             cfParent.subscribers = new Set()
           subscribers.forEach(o => {
-            const conformingObservables = o.observables!
-            const sub = conformingObservables.get(cf)!
-            conformingObservables.delete(cf)
-            conformingObservables.set(cfParent, sub)
+            const conformingSignals = o.signals!
+            const sub = conformingSignals.get(cf)!
+            conformingSignals.delete(cf)
+            conformingSignals.set(cfParent, sub)
             cfParent.subscribers!.add(o)
           })
         }
