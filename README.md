@@ -324,8 +324,8 @@ NPM: `npm install reactronic`
 
 // Classes
 
-class TransactionalObject { }
-class SignallingObject { }
+class TxObject { } // transactional object
+class SxObject { } // signalling object
 
 // Decorators & Operators
 
@@ -447,9 +447,9 @@ class Transaction implements Worker {
   static isCanceled: boolean
 }
 
-// Operation
+// Reaction
 
-abstract class Operation<T> {
+abstract class Reaction<T> {
   readonly options: Options
   readonly args: ReadonlyArray<any>
   readonly value: T
@@ -467,7 +467,7 @@ abstract class Operation<T> {
 class ReactiveSystem {
   static why(short: boolean = false): string
   static getMethodCache<T>(method: F<T>): Cache<T>
-  static configureCurrentOperation(options: Partial<Options>): Options
+  static configureCurrentReaction(options: Partial<Options>): Options
   static getRevisionOf(obj: any): number
   static takeSnapshot<T>(obj: T): T
   static dispose(obj: any): void
