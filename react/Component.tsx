@@ -18,14 +18,14 @@ export class Component<P> extends React.Component<P> {
   ensureUpToDate(): void {
     if (this.shouldComponentUpdate())
       Transaction.outside(() => this.setState({})) // ask React to re-render
-  } // ensureUpToDate is subscribed to render
+  } // ensureUpToDate is listening to render
 
   override shouldComponentUpdate(): boolean {
     return !manageReaction(this.render).isReusable
   }
 
   override componentDidMount(): void {
-    this.ensureUpToDate() // run to subscribe for the first time
+    this.ensureUpToDate() // run for the first time to start listening
   }
 
   override componentWillUnmount(): void {

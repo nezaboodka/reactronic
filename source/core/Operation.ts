@@ -9,7 +9,7 @@ import { F } from "../util/Utils.js"
 import { Log, misuse } from "../util/Dbg.js"
 import { Kind, Reentrance, Isolation } from "../Enums.js"
 import { Reaction, ReactivityOptions, LoggingOptions, SnapshotOptions } from "../Options.js"
-import { ObjectVersion, FieldKey, ObjectHandle, ContentFootprint, OperationFootprint, Subscription, Meta, AbstractChangeset } from "./Data.js"
+import { ObjectVersion, FieldKey, ObjectHandle, ContentFootprint, OperationFootprint, ListeningInfo, Meta, AbstractChangeset } from "./Data.js"
 import { Changeset, Dump, EMPTY_OBJECT_VERSION, MAX_REVISION } from "./Changeset.js"
 import { Transaction, TransactionImpl } from "./Transaction.js"
 import { Indicator, IndicatorImpl } from "./Indicator.js"
@@ -251,7 +251,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
   readonly transaction: Transaction
   readonly descriptor: ReactionImpl
   readonly changeset: AbstractChangeset
-  signals: Map<ContentFootprint, Subscription> | undefined
+  signals: Map<ContentFootprint, ListeningInfo> | undefined
   options: OptionsImpl
   cause: string | undefined
   args: any[]
@@ -268,7 +268,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
     this.transaction = transaction
     this.descriptor = descriptor
     this.changeset = changeset
-    this.signals = new Map<ContentFootprint, Subscription>()
+    this.signals = new Map<ContentFootprint, ListeningInfo>()
     if (former instanceof OperationFootprintImpl) {
       this.options = former.options
       this.cause = former.obsoleteDueTo
@@ -372,7 +372,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
         const why = `${Dump.snapshot2(h, changeset, fk, footprint)}    ◀◀    ${outer}`
         const isReactive = this.options.kind === Kind.reaction /*&& this.snapshot.data[Meta.Disposed] === undefined*/
 
-        // Mark obsolete and unsubscribe from all (this.signals = undefined)
+        // Mark obsolete and stop listening to all signals (this.signals = undefined)
         this.obsoleteDueTo = why
         this.obsoleteSince = since
         if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
@@ -380,13 +380,13 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
             isReactive && changeset === EMPTY_OBJECT_VERSION.changeset
               ? `${this.hint()} is reactive and will run automatically (order ${this.options.order})`
               : `${this.hint()} is obsolete due to ${Dump.snapshot2(h, changeset, fk)} since s${since}${isReactive ? ` and will run automatically (order ${this.options.order})` : ""}`)
-        this.unsubscribeFromAllSignals()
+        this.stopListeningAllSignals()
 
         // Stop cascade propagation on reactive function, or continue otherwise
         if (isReactive)
           collector.push(this)
         else
-          this.subscribers?.forEach(s => s.markObsoleteDueTo(this, this.descriptor.fieldKey, this.changeset, this.descriptor.ownerHandle, why, since, collector))
+          this.listeners?.forEach(s => s.markObsoleteDueTo(this, this.descriptor.fieldKey, this.changeset, this.descriptor.ownerHandle, why, since, collector))
 
         // Cancel own transaction if it is still in progress
         const tran = this.transaction
@@ -571,15 +571,15 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
 
   private static markUsed(footprint: ContentFootprint, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean): void {
     if (kind !== Kind.transaction) {
-      const subscriber: OperationFootprintImpl | undefined = OperationFootprintImpl.current // alias
-      if (subscriber && subscriber.options.kind !== Kind.transaction &&
-        subscriber.transaction === Transaction.current && fk !== Meta.Handle) {
+      const listener: OperationFootprintImpl | undefined = OperationFootprintImpl.current // alias
+      if (listener && listener.options.kind !== Kind.transaction &&
+        listener.transaction === Transaction.current && fk !== Meta.Handle) {
         const ctx = Changeset.current()
         if (ctx !== ov.changeset) // snapshot should not bump itself
           ctx.bumpBy(ov.changeset.timestamp)
         const t = weak ? -1 : ctx.timestamp
-        if (!subscriber.subscribeTo(footprint, ov, fk, h, t))
-          subscriber.markObsoleteDueTo(footprint, fk, h.applied.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
+        if (!listener.listenTo(footprint, ov, fk, h, t))
+          listener.markObsoleteDueTo(footprint, fk, h.applied.changeset, h, BOOT_CAUSE, ctx.timestamp, ctx.obsolete)
       }
     }
   }
@@ -606,32 +606,32 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
     return { isResolved, resolvedValue }
   }
 
-  private static propagateAllChangesThroughSubscriptions(changeset: Changeset): void {
+  private static propagateAllChangesToListeners(changeset: Changeset): void {
     const since = changeset.timestamp
     const obsolete = changeset.obsolete
     changeset.items.forEach((ov: ObjectVersion, h: ObjectHandle) => {
-      OperationFootprintImpl.propagateFieldChangeThroughSubscriptions(false, since, ov, Meta.Revision, h, obsolete)
+      OperationFootprintImpl.propagateFieldChangeToListeners(false, since, ov, Meta.Revision, h, obsolete)
       if (!ov.disposed)
-        ov.changes.forEach((o, fk) => OperationFootprintImpl.propagateFieldChangeThroughSubscriptions(false, since, ov, fk, h, obsolete))
+        ov.changes.forEach((o, fk) => OperationFootprintImpl.propagateFieldChangeToListeners(false, since, ov, fk, h, obsolete))
       else
         for (const fk in ov.former.objectVersion.data)
-          OperationFootprintImpl.propagateFieldChangeThroughSubscriptions(true, since, ov, fk, h, obsolete)
+          OperationFootprintImpl.propagateFieldChangeToListeners(true, since, ov, fk, h, obsolete)
     })
     obsolete.sort(compareReactionsByOrder)
     changeset.options.journal?.edited(
       JournalImpl.buildPatch(changeset.hint, changeset.items))
   }
 
-  private static revokeAllSubscriptions(changeset: Changeset): void {
+  private static discardAllListeners(changeset: Changeset): void {
     changeset.items.forEach((ov: ObjectVersion, h: ObjectHandle) => {
-      OperationFootprintImpl.propagateFieldChangeThroughSubscriptions(
+      OperationFootprintImpl.propagateFieldChangeToListeners(
         true, changeset.timestamp, ov, Meta.Revision, h, undefined)
-      ov.changes.forEach((o, fk) => OperationFootprintImpl.propagateFieldChangeThroughSubscriptions(
+      ov.changes.forEach((o, fk) => OperationFootprintImpl.propagateFieldChangeToListeners(
         true, changeset.timestamp, ov, fk, h, undefined))
     })
   }
 
-  private static propagateFieldChangeThroughSubscriptions(unsubscribe: boolean, timestamp: number,
+  private static propagateFieldChangeToListeners(stopListening: boolean, timestamp: number,
     ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, collector?: OperationFootprint[]): void {
     const curr = ov.data[fk]
     if (collector !== undefined) {
@@ -643,7 +643,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
           if ((former.obsoleteSince === MAX_REVISION || former.obsoleteSince <= 0)) {
             former.obsoleteDueTo = why
             former.obsoleteSince = timestamp
-            former.unsubscribeFromAllSignals()
+            former.stopListeningAllSignals()
           }
           const formerSuccessor = former.successor
           if (formerSuccessor !== curr) {
@@ -653,7 +653,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
           else
             former.successor = undefined
         }
-        former.subscribers?.forEach(s => {
+        former.listeners?.forEach(s => {
           const t = (s as OperationFootprintImpl).transaction
           const o = t.isFinished ? collector : t.changeset.obsolete
           return s.markObsoleteDueTo(former, fk, ov.changeset, h, why, timestamp, o)
@@ -668,17 +668,17 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
               Log.write("", "[!]", `${curr.hint()} uses ${info.memberHint} ${info.usageCount} times (consider remembering it in a local variable)`, 0, " *** WARNING ***")
           })
         }
-        if (unsubscribe)
-          curr.unsubscribeFromAllSignals()
+        if (stopListening)
+          curr.stopListeningAllSignals()
       }
     }
-    else if (curr instanceof ContentFootprint && curr.subscribers) {
-      // // Unsubscribe from own-changed subscriptions
+    else if (curr instanceof ContentFootprint && curr.listeners) {
+      // // Stop listening to own-changed signals
       // curr.reactions.forEach(o => {
       //   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       //   o.signals!.delete(curr)
       //   if (Log.isOn && Log.opt.read)
-      //     Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', '-', `${o.hint()} is unsubscribed from own-changed ${Dump.snap(r, fk)}`)
+      //     Log.write(Log.opt.transaction && !Changeset.current().sealed ? '║' : ' ', '-', `${o.hint()} is no longer listening own-changed ${Dump.snap(r, fk)}`)
       // })
       // curr.reactions = undefined
     }
@@ -699,7 +699,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
       result = new OperationFootprintImpl(target, cf.descriptor, target.changeset, cf, true)
     else
       result = new ContentFootprint(cf.content, cf.lastEditorChangesetId)
-    // TODO: Switch subscriptions
+    // TODO: Switch listened signals
     return result
   }
 
@@ -714,19 +714,19 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
     OperationFootprintImpl.queuedReactions = [] // reset loop
   }
 
-  private unsubscribeFromAllSignals(): void {
+  private stopListeningAllSignals(): void {
     // It's critical to have no exceptions here
     this.signals?.forEach((info, value) => {
-      value.subscribers!.delete(this)
+      value.listeners!.delete(this)
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", "-", `${this.hint()} is unsubscribed from ${info.memberHint}`)
+        Log.write(Log.opt.transaction && !Changeset.current().sealed ? "║" : " ", "-", `${this.hint()} is no longer listening to ${info.memberHint}`)
     })
     this.signals = undefined
   }
 
-  private subscribeTo(footprint: ContentFootprint, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
+  private listenTo(footprint: ContentFootprint, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
     const parent = this.transaction.changeset.parent
-    const ok = OperationFootprintImpl.canSubscribeTo(footprint, ov, parent, fk, h, timestamp)
+    const ok = OperationFootprintImpl.canListenTo(footprint, ov, parent, fk, h, timestamp)
     if (ok) {
       // Performance tracking
       let times: number = 0
@@ -736,26 +736,26 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
       }
       if (this.signals !== undefined) {
         // Acquire storage set
-        if (!footprint.subscribers)
-          footprint.subscribers = new Set<OperationFootprintImpl>()
+        if (!footprint.listeners)
+          footprint.listeners = new Set<OperationFootprintImpl>()
         // Two-way linking
-        const subscription: Subscription = { memberHint: Dump.snapshot2(h, ov.changeset, fk), usageCount: times }
-        footprint.subscribers.add(this)
-        this.signals!.set(footprint, subscription)
+        const listening: ListeningInfo = { memberHint: Dump.snapshot2(h, ov.changeset, fk), usageCount: times }
+        footprint.listeners.add(this)
+        this.signals!.set(footprint, listening)
         if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-          Log.write("║", "  ∞", `${this.hint()} is subscribed to ${Dump.snapshot2(h, ov.changeset, fk, footprint)}${subscription.usageCount > 1 ? ` (${subscription.usageCount} times)` : ""}`)
+          Log.write("║", "  ∞", `${this.hint()} now listens to ${Dump.snapshot2(h, ov.changeset, fk, footprint)}${listening.usageCount > 1 ? ` (${listening.usageCount} times)` : ""}`)
       }
       else if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write("║", "  x", `${this.hint()} is obsolete and is NOT subscribed to ${Dump.snapshot2(h, ov.changeset, fk, footprint)}`)
+        Log.write("║", "  x", `${this.hint()} is obsolete and is not listening to ${Dump.snapshot2(h, ov.changeset, fk, footprint)}`)
     }
     else {
       if (Log.isOn && (Log.opt.read || this.options.logging?.read))
-        Log.write("║", "  x", `${this.hint()} is NOT subscribed to already obsolete ${Dump.snapshot2(h, ov.changeset, fk, footprint)}`)
+        Log.write("║", "  x", `${this.hint()} is not listening to already obsolete ${Dump.snapshot2(h, ov.changeset, fk, footprint)}`)
     }
-    return ok // || subscription.next === r
+    return ok // || listening.next === r
   }
 
-  private static canSubscribeTo(footprint: ContentFootprint, ov: ObjectVersion, parent: Changeset | undefined, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
+  private static canListenTo(footprint: ContentFootprint, ov: ObjectVersion, parent: Changeset | undefined, fk: FieldKey, h: ObjectHandle, timestamp: number): boolean {
     const parentSnapshot = parent ? parent.lookupObjectVersion(h, fk, false) : h.applied
     const parentFootprint = parentSnapshot.data[fk]
     let result = footprint === parentFootprint || (
@@ -805,8 +805,8 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
     Changeset.markUsed = OperationFootprintImpl.markUsed // override
     Changeset.markEdited = OperationFootprintImpl.markEdited // override
     Changeset.tryResolveConflict = OperationFootprintImpl.tryResolveConflict // override
-    Changeset.propagateAllChangesThroughSubscriptions = OperationFootprintImpl.propagateAllChangesThroughSubscriptions // override
-    Changeset.revokeAllSubscriptions = OperationFootprintImpl.revokeAllSubscriptions // override
+    Changeset.propagateAllChangesToListeners = OperationFootprintImpl.propagateAllChangesToListeners // override
+    Changeset.discardAllListeners = OperationFootprintImpl.discardAllListeners // override
     Changeset.enqueueReactionsToRun = OperationFootprintImpl.enqueueReactionsToRun
     TransactionImpl.migrateContentFootprint = OperationFootprintImpl.migrateContentFootprint
     Mvcc.createOperationDescriptor = OperationFootprintImpl.createOperationDescriptor // override

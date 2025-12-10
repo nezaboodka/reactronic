@@ -79,8 +79,8 @@ export class Changeset implements AbstractChangeset {
   static markUsed: (cf: ContentFootprint, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle, kind: Kind, weak: boolean) => void = UNDEF
   static markEdited: (oldValue: any, newValue: any, edited: boolean, ov: ObjectVersion, fk: FieldKey, h: ObjectHandle) => void = UNDEF
   static tryResolveConflict: (theirValue: any, ourFormerValue: any, ourValue: any) => { isResolved: boolean, resolvedValue: any }  = UNDEF
-  static propagateAllChangesThroughSubscriptions = (changeset: Changeset): void => { /* nop */ }
-  static revokeAllSubscriptions = (changeset: Changeset): void => { /* nop */ }
+  static propagateAllChangesToListeners = (changeset: Changeset): void => { /* nop */ }
+  static discardAllListeners = (changeset: Changeset): void => { /* nop */ }
   static enqueueReactionsToRun = (reactions: Array<OperationFootprint>): void => { /* nop */ }
 
   lookupObjectVersion(h: ObjectHandle, fk: FieldKey, editing: boolean): ObjectVersion {
@@ -259,7 +259,7 @@ export class Changeset implements AbstractChangeset {
       counter++
       const ourContentFootprint = ours.data[fk] as ContentFootprint
       merged[fk] = ourContentFootprint
-      // if (subscriptions && !theirs.changeset.sealed) {
+      // if (signals && !theirs.changeset.sealed) {
       //   const theirValueSnapshot = theirs.data[fk] as ValueSnapshot
       //   const theirReactions = theirValueSnapshot.reactions
       //   if (theirReactions) {

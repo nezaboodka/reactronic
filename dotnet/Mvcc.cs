@@ -1,7 +1,7 @@
 ﻿
 internal class Mvcc<T>
 {
-  // Subscriptions, history, etc.
+  // Listening, history, etc.
 
   public Mvcc(T value)
   {

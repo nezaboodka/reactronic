@@ -324,7 +324,7 @@ export class TransactionImpl extends Transaction {
         if (after && after !== TransactionImpl.none)
           Log.write("║", " [!]", `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ""}`)
       }
-      Changeset.revokeAllSubscriptions(t.changeset)
+      Changeset.discardAllListeners(t.changeset)
     }
     t.sealed = true
   }
@@ -402,7 +402,7 @@ export class TransactionImpl extends Transaction {
       }
     }
     else if (!error)
-      Changeset.propagateAllChangesThroughSubscriptions(changeset)
+      Changeset.propagateAllChangesToListeners(changeset)
     return obsolete
   }
 
@@ -438,42 +438,42 @@ export class TransactionImpl extends Transaction {
     if (cf.isComputed) {
       const migrated = TransactionImpl.migrateContentFootprint(cf, tParent)
       if (ovParent.former.objectVersion.data[fk] !== cfParent) { // there are changes in parent
-        // Migrate subscribers from parent
-        let subscribers = cfParent.subscribers
-        if (subscribers) {
-          const migratedSubscribers = migrated.subscribers = new Set<OperationFootprint>()
-          subscribers.forEach(o => {
+        // Migrate listeners from parent
+        let listeners = cfParent.listeners
+        if (listeners) {
+          const migratedListeners = migrated.listeners = new Set<OperationFootprint>()
+          listeners.forEach(o => {
             const conformingSignals = o.signals!
             const sub = conformingSignals.get(cfParent)!
             conformingSignals.delete(cfParent)
             conformingSignals.set(migrated, sub)
-            migratedSubscribers.add(o)
+            migratedListeners.add(o)
           })
-          cfParent.subscribers = undefined
+          cfParent.listeners = undefined
         }
-        // Migrate subscribers from current (child)
-        subscribers = cf.subscribers
-        if (subscribers) {
-          let migratedSubscribers = migrated.subscribers
-          if (migratedSubscribers === undefined)
-            migratedSubscribers = migrated.subscribers = new Set<OperationFootprint>()
-          subscribers.forEach(o => {
+        // Migrate listeners from current (child)
+        listeners = cf.listeners
+        if (listeners) {
+          let migratedListeners = migrated.listeners
+          if (migratedListeners === undefined)
+            migratedListeners = migrated.listeners = new Set<OperationFootprint>()
+          listeners.forEach(o => {
             const conformingSignals = o.signals!
             const sub = conformingSignals.get(cf)!
             conformingSignals.delete(cf)
             conformingSignals.set(migrated, sub)
-            migratedSubscribers.add(o)
+            migratedListeners.add(o)
           })
-          cf.subscribers = undefined
+          cf.listeners = undefined
         }
         // Migrate signals from current (child)
         const signals = (cf as unknown as OperationFootprint).signals
         const migratedSignals = (migrated as unknown as OperationFootprint).signals
         if (signals) {
           signals.forEach((s, o) => {
-            const conformingSubscribers = o.subscribers!
-            conformingSubscribers.delete(cf as unknown as OperationFootprint)!
-            conformingSubscribers.add(migrated as unknown as OperationFootprint)
+            const conformingListeners = o.listeners!
+            conformingListeners.delete(cf as unknown as OperationFootprint)!
+            conformingListeners.add(migrated as unknown as OperationFootprint)
             migratedSignals!.set(o, s)
           })
           signals.clear()
@@ -482,26 +482,26 @@ export class TransactionImpl extends Transaction {
       }
       else {
         // Migrate reactions from current (child)
-        const subscribers = cf.subscribers
-        if (subscribers) {
-          const migratedReactions = migrated.subscribers = new Set<OperationFootprint>()
-          subscribers.forEach(o => {
+        const listeners = cf.listeners
+        if (listeners) {
+          const migratedReactions = migrated.listeners = new Set<OperationFootprint>()
+          listeners.forEach(o => {
             const conformingSignals = o.signals!
             const sub = conformingSignals.get(cf)!
             conformingSignals.delete(cf)
             conformingSignals.set(migrated, sub)
             migratedReactions.add(o)
           })
-          cf.subscribers = undefined
+          cf.listeners = undefined
         }
         // Migrate signals from current (child)
         const signals = (cf as unknown as OperationFootprint).signals
         const migratedSignals = (migrated as unknown as OperationFootprint).signals
         if (signals) {
           signals.forEach((s, o) => {
-            const conformingSubscribers = o.subscribers!
-            conformingSubscribers.delete(cf as unknown as OperationFootprint)
-            conformingSubscribers.add(migrated as unknown as OperationFootprint)
+            const conformingListeners = o.listeners!
+            conformingListeners.delete(cf as unknown as OperationFootprint)
+            conformingListeners.add(migrated as unknown as OperationFootprint)
             migratedSignals!.set(o, s)
           })
           signals.clear()
@@ -515,17 +515,17 @@ export class TransactionImpl extends Transaction {
       const parentContent = cfParent?.content
       if (ovParent.former.objectVersion.data[fk] !== cfParent) { // there are changes in parent
         cfParent.content = cf.content
-        // Migrate subscriptions
-        const subscribers = cf.subscribers
-        if (subscribers) {
-          if (cfParent.subscribers === undefined)
-            cfParent.subscribers = new Set()
-          subscribers.forEach(o => {
+        // Migrate listeners
+        const listeners = cf.listeners
+        if (listeners) {
+          if (cfParent.listeners === undefined)
+            cfParent.listeners = new Set()
+          listeners.forEach(o => {
             const conformingSignals = o.signals!
             const sub = conformingSignals.get(cf)!
             conformingSignals.delete(cf)
             conformingSignals.set(cfParent, sub)
-            cfParent.subscribers!.add(o)
+            cfParent.listeners!.add(o)
           })
         }
       }

@@ -59,7 +59,7 @@ class CompilationController extends SxObject {
 
   @reaction @options({ reentrance: Reentrance.cancelAndWaitPrevious })
   async reloadCompilation(): Promise<void> {
-    this.fsTreeVersion // subscribe
+    this.fsTreeVersion // listen
     const sourceFiles = new Array<SourceFile>()
     for (const sourceFile of this.fsTree) {
       await pause(200)

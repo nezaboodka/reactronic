@@ -187,8 +187,8 @@ in response to changes in signalling objects made by
 transactional functions. Cached function is called on-demand
 to renew the result if it was marked as obsolete due to
 changes made by an transactional functions. Reactive and cached
-functions are instrumented with hooks to seamlessly
-subscribe to those signalling objects and other cached
+functions are instrumented with hooks to seamless
+listening of those signalling objects and other cached
 functions (dependencies), which are used during their
 execution.
 
@@ -202,7 +202,7 @@ class MyView extends Component<{model: MyModel}> {
         <div>{this.props.model.content}</div>
       </div>
     )
-  } // render is subscribed to "url" and "content"
+  } // render is listening to "url" and "content"
 }
 ```
 
@@ -219,7 +219,7 @@ class Component<P> extends React.Component<P> {
       // Ask React to re-render
       Transaction.outside(() => this.setState({}))
     }
-  } // EnsureUpToDate is subscribed to render
+  } // EnsureUpToDate is listening to render
 
   shouldComponentUpdate(): boolean {
     const r = manageReaction(this.render)
@@ -227,7 +227,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentDidMount(): void {
-    // Run to subscribe for the first time
+    // Run for the first time to start listening
     this.ensureUpToDate()
   }
 
@@ -237,9 +237,9 @@ class Component<P> extends React.Component<P> {
 }
 ```
 
-In the example above, reactive function `refresh` is
-transparently subscribed to the cached function `render`.
-In turn, cached function `render` is subscribed to the
+In the example above, reactive function `refresh`
+transparently listens to the cached function `render`.
+In turn, cached function `render` listens to the
 properties `url` and `content` of a corresponding `MyModel`
 object. Once `url` or `content` values are changed, the
 cached function `render` becomes obsolete and causes the
@@ -260,7 +260,7 @@ reactive functions) or on-demand (for cached functions).
 Reactronic takes full care of tracking dependencies
 between all the signalling objects and reactive/cached
 functions. With Reactronic, you no longer need to create
-data change events in one set of objects, subscribe to
+data change events in one set of objects, listen to
 these events in other objects, and manually maintain
 switching from the previous object version to a new one.
 

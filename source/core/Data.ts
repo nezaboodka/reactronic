@@ -22,7 +22,7 @@ export type AbstractChangeset = {
 
 export class ContentFootprint<T = any> {
   content: T
-  subscribers?: Set<OperationFootprint>
+  listeners?: Set<OperationFootprint>
   lastEditorChangesetId: number
   get isComputed(): boolean { return false }
   constructor(content: T, lastEditorChangesetId: number) { this.content = content; this.lastEditorChangesetId = lastEditorChangesetId }
@@ -32,7 +32,7 @@ export class ContentFootprint<T = any> {
 
 export type OperationFootprint = {
   readonly order: number
-  readonly signals: Map<ContentFootprint, Subscription> | undefined
+  readonly signals: Map<ContentFootprint, ListeningInfo> | undefined
   readonly obsoleteSince: number
   hint(nop?: boolean): string
   markObsoleteDueTo(footprint: ContentFootprint, fk: FieldKey, changeset: AbstractChangeset, h: ObjectHandle, outer: string, since: number, collector: Array<OperationFootprint>): void
@@ -41,7 +41,7 @@ export type OperationFootprint = {
 
 export type FieldKey = PropertyKey
 
-export type Subscription = {
+export type ListeningInfo = {
   readonly memberHint: string
   readonly usageCount: number
 }
