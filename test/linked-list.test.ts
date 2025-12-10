@@ -69,7 +69,7 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
 
   const r2 = new LinkedListRenovation<Property>(list)
   for (const x of r2list) {
-    if (r2.tryToProlonge(x) === undefined)
+    if (r2.tryToProlong(x) === undefined)
       r2.thisIsAdded(new Property(x))
   }
   r2.done()
@@ -89,7 +89,7 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
 
   const r3 = new LinkedListRenovation<Property>(list)
   for (const x of r3list) {
-    if (r3.tryToProlonge(x) === undefined)
+    if (r3.tryToProlong(x) === undefined)
       r3.thisIsAdded(new Property(x))
   }
   r3.done()
