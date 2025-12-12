@@ -35,11 +35,11 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
   const r1list = ["A", "B", "C", "D"]
   const r1marks = [A, A, A, A]
 
-  const r = new LinkedListRenovation<Property>(list)
+  const r = list.beginRenovation()
   for (const x of r1list) {
     r.thisIsAdded(new Property(x))
   }
-  r.done()
+  list.endRenovation()
 
   t.is(list.count, 4)
   t.true(compareValues(list.items(), r1list))
@@ -66,12 +66,12 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
   const r2marks = [A, M, P, P, A, M, A, P]
   const r2lost = ["B"]
 
-  const r2 = new LinkedListRenovation<Property>(list)
+  const r2 = list.beginRenovation()
   for (const x of r2list) {
     if (r2.tryToProlong(x) === undefined)
       r2.thisIsAdded(new Property(x))
   }
-  r2.done()
+  list.endRenovation()
 
   t.is(list.count, r2result.length)
   t.true(compareValues(list.items(), r2result))
@@ -86,12 +86,12 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
   const r3marks = [P, P, M, P, P, P, P]
   const r3lost = ["D"]
 
-  const r3 = new LinkedListRenovation<Property>(list)
+  const r3 = list.beginRenovation()
   for (const x of r3list) {
     if (r3.tryToProlong(x) === undefined)
       r3.thisIsAdded(new Property(x))
   }
-  r3.done()
+  list.endRenovation()
 
   t.is(list.count, r3result.length)
   t.true(compareValues(list.items(), r3result))

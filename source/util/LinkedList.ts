@@ -27,7 +27,7 @@ export class LinkedList<T extends LinkedItem<T>> {
   items$: LinkedSubList<T>
 
   /* internal */
-  former$: LinkedSubList<T> | undefined
+  private renovation: LinkedListRenovation<T> | undefined
 
   constructor(
     keyExtractor: KeyExtractor<T>,
@@ -36,22 +36,22 @@ export class LinkedList<T extends LinkedItem<T>> {
     this.isStrictOrder$ = isStrictOrder
     this.map = new Map<string | undefined, T>()
     this.items$ = new LinkedSubList<T>()
-    this.former$ = undefined
+    this.renovation = undefined
   }
 
   get isStrictOrder(): boolean { return this.isStrictOrder$ }
   set isStrictOrder(value: boolean) {
-    if (this.former$ !== undefined)
+    if (this.renovation !== undefined)
       throw misuse("cannot change strict mode in the middle of renovation")
     this.isStrictOrder$ = value
   }
 
   get isRenovationInProgress(): boolean {
-    return this.former$ !== undefined
+    return this.renovation !== undefined
   }
 
   get count(): number {
-    return this.items$.count + (this.former$?.count ?? 0)
+    return this.items$.count + (this.renovation?.lostItemCount ?? 0)
   }
 
   items(): Generator<T> {
@@ -84,6 +84,42 @@ export class LinkedList<T extends LinkedItem<T>> {
     if (!item.isManagedExternally)
       throw misuse("cannot remove given item outside of renovation cycle")
     LinkedList.remove$(this, item)
+  }
+
+  beginRenovation(diff?: Array<T>): LinkedListRenovation<T> {
+    if (this.renovation !== undefined)
+      throw misuse("renovation is in progress already")
+    const former = this.items$
+    const renovation = new LinkedListRenovation<T>(this, former, diff)
+    this.items$ = new LinkedSubList<T>()
+    this.renovation = renovation
+    return renovation
+  }
+
+  endRenovation(error?: unknown): void {
+    const renovation = this.renovation
+    if (renovation === undefined)
+      throw misuse("renovation is ended already")
+    const items = this.items$
+    if (error === undefined) {
+      // Mark lost items
+      for (const x of renovation.lostItems()) {
+        if (!x.isManagedExternally) {
+          LinkedList.removeKey$(this, this.keyOf(x))
+          LinkedItem.setStatus$(x, Mark.removed, 0)
+        }
+        else // always prolong externally managed items
+          LinkedItem.link$(items, x, undefined)
+      }
+    }
+    else {
+      // Prolong lost items in case of error
+      for (const x of renovation.lostItems()) {
+        LinkedItem.link$(items, x, undefined)
+        LinkedItem.setStatus$(x, Mark.prolonged, items.count)
+      }
+    }
+    this.renovation = undefined
   }
 
   // Internal
@@ -288,17 +324,12 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   private absent: string | undefined
 
-  constructor(list: LinkedList<T>, diff?: Array<T>) {
-    if (list.former$ !== undefined)
-      throw misuse("renovation is in progress already")
-    const former = list.items$
+  constructor(list: LinkedList<T>, former: LinkedSubList<T>, diff?: Array<T>) {
     this.list = list
     this.diff = diff
     this.lost$ = former
     this.expected = former.first
     this.absent = undefined
-    list.former$ = former
-    list.items$ = new LinkedSubList<T>()
   }
 
   // найти
@@ -375,7 +406,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   // это-перемещено
   thisIsMoved(item: T, before: T | undefined): void {
-    if (item.list !== this.list.former$)
+    if (item.list !== this.lost$)
       throw misuse("cannot move item which doesn't belong to former list")
     LinkedList.move$(this.list, item, before)
     LinkedItem.setStatus$(item, Mark.modified, 0)
@@ -384,7 +415,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   // это-удалено
   thisIsRemoved(item: T): void {
-    if (item.list !== this.list.former$)
+    if (item.list !== this.lost$)
       throw misuse("cannot remove item which doesn't belong to former list")
     LinkedList.remove$(this.list, item)
     LinkedItem.setStatus$(item, Mark.removed, 0)
@@ -396,34 +427,6 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   // утерянные-элементы
   lostItems(): Generator<T> { return this.lost$.items() }
-
-  // готово
-  done(error?: unknown): void {
-    const list = this.list
-    if (!list.isRenovationInProgress)
-      throw misuse("renovation is ended already")
-    const items = this.list.items$
-    const lost = this.lost$
-    if (error === undefined) {
-      // Mark lost items
-      for (const x of lost.items()) {
-        if (!x.isManagedExternally) {
-          LinkedList.removeKey$(list, list.keyOf(x))
-          LinkedItem.setStatus$(x, Mark.removed, 0)
-        }
-        else // always prolong externally managed items
-          LinkedItem.link$(items, x, undefined)
-      }
-    }
-    else {
-      // Prolong lost items in case of error
-      for (const x of lost.items()) {
-        LinkedItem.link$(items, x, undefined)
-        LinkedItem.setStatus$(x, Mark.prolonged, items.count)
-      }
-    }
-    list.former$ = undefined
-  }
 
 }
 
