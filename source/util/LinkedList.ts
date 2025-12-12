@@ -318,7 +318,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   readonly diff: Array<T> | undefined // дельта
 
-  private lost$: LinkedSubList<T>
+  private former: LinkedSubList<T>
 
   private expected: T | undefined
 
@@ -327,7 +327,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
   constructor(list: LinkedList<T>, former: LinkedSubList<T>, diff?: Array<T>) {
     this.list = list
     this.diff = diff
-    this.lost$ = former
+    this.former = former
     this.expected = former.first
     this.absent = undefined
   }
@@ -406,7 +406,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   // это-перемещено
   thisIsMoved(item: T, before: T | undefined): void {
-    if (item.list !== this.lost$)
+    if (item.list !== this.former)
       throw misuse("cannot move item which doesn't belong to former list")
     LinkedList.move$(this.list, item, before)
     LinkedItem.setStatus$(item, Mark.modified, 0)
@@ -415,7 +415,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
 
   // это-удалено
   thisIsRemoved(item: T): void {
-    if (item.list !== this.lost$)
+    if (item.list !== this.former)
       throw misuse("cannot remove item which doesn't belong to former list")
     LinkedList.remove$(this.list, item)
     LinkedItem.setStatus$(item, Mark.removed, 0)
@@ -423,10 +423,10 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
   }
 
   // количество-утерянных-элементов
-  get lostItemCount(): number { return this.lost$.count }
+  get lostItemCount(): number { return this.former.count }
 
   // утерянные-элементы
-  lostItems(): Generator<T> { return this.lost$.items() }
+  lostItems(): Generator<T> { return this.former.items() }
 
 }
 
