@@ -8,8 +8,7 @@
 import test, { ExecutionContext } from "ava"
 import { TestsLoggingLevel } from "./brief.js"
 import { ReactiveSystem } from "../source/api.js"
-import { LinkedList, LinkedItem, Mark } from "../source/util/LinkedList.js"
-import { LinkedListRenovation } from "../source/util/LinkedListRenovation.js"
+import { LinkedList, LinkedItem, LinkedListRenovation, Mark } from "../source/util/LinkedList.js"
 
 const P = Mark.prolonged
 const A = Mark.added
