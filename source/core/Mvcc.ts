@@ -53,7 +53,7 @@ const DEFAULT_OPTIONS: ReactivityOptions = Object.freeze({
   order: 0,
   noSideEffects: false,
   signalArgs: false,
-  throttling: Number.MAX_SAFE_INTEGER, // disabled, @reactive sets it to -1 to enable
+  throttling: Number.MAX_SAFE_INTEGER, // disabled, @reaction sets it to -1 to enable
   reentrance: Reentrance.preventWithError,
   allowObsoleteToFinish: false,
   journal: undefined,
