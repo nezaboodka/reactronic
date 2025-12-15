@@ -15,7 +15,7 @@ import { Changeset, Dump, EMPTY_OBJECT_VERSION } from "./Changeset.js"
 import { Journal } from "./Journal.js"
 import { Indicator } from "./Indicator.js"
 
-// MvccObject, TransactionalObject, SignalObject
+// MvccObject, TxObject, SxObject
 
 export abstract class MvccObject {
   protected constructor(isSignal: boolean) {
