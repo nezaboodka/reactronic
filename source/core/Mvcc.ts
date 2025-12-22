@@ -156,10 +156,12 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   }
 
   defineProperty?(h: ObjectHandle, name: string | symbol, attributes: PropertyDescriptor): boolean {
-    const result = attributes.get !== undefined && attributes.set !== undefined
-    if (result)
-      Object.defineProperty(h.data, name, attributes)
-    return result
+    // const result = attributes.get !== undefined && attributes.set !== undefined
+    // if (result)
+    //   Object.defineProperty(h.data, name, attributes)
+    // return result
+    Object.defineProperty(h.data, name, attributes)
+    return true
   }
 
   getOwnPropertyDescriptor(h: ObjectHandle, fk: FieldKey): PropertyDescriptor | undefined {
