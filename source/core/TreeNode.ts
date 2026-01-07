@@ -18,8 +18,8 @@ import { ReactiveSystem, options, signal, reaction, runTransactional, runNonReac
 
 // Scripts
 
-export type Script<E> = (o: E, basis: () => void) => void
-export type ScriptAsync<E> = (o: E, basis: () => Promise<void>) => Promise<void>
+export type Script<E> = (this: E, o: E, basis: () => void) => void
+export type ScriptAsync<E> = (this: E, o: E, basis: () => Promise<void>) => Promise<void>
 export type Handler<E = unknown, R = void> = (o: E) => R
 
 // Actions
@@ -230,8 +230,8 @@ export abstract class ReactiveTreeNode<E = unknown> {
 // ReactiveTreeNodeDecl
 
 export type ReactiveTreeNodeDecl<E = unknown> = {
-  script?: Script<E>                // скрипт
-  scriptAsync?: ScriptAsync<E>      // скрипт-задача
+  script?: Script<E>                // сценарий
+  scriptAsync?: ScriptAsync<E>      // сценарий-задача
   key?: string                      // ключ
   mode?: Mode                       // режим
   preparation?: Script<E>           // подготовка
@@ -360,9 +360,9 @@ function invokeScriptUsingBasisChain(element: unknown, declaration: ReactiveTree
   if (script && scriptAsync)
     throw misuse("'script' and 'scriptAsync' cannot be defined together")
   if (script)
-    result = script(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
+    result = script.call(element, element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
   else if (scriptAsync)
-    result = scriptAsync(element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP_ASYNC)
+    result = scriptAsync.call(element, element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP_ASYNC)
   else if (basis)
     result = invokeScriptUsingBasisChain(element, basis)
   return result
@@ -376,9 +376,9 @@ function invokePreparationUsingBasisChain(element: unknown, declaration: Reactiv
   if (preparation && preparationAsync)
     throw misuse("'preparation' and 'preparationAsync' cannot be defined together")
   if (preparation)
-    result = preparation(element, basis ? () => invokePreparationUsingBasisChain(element, basis) : NOP)
+    result = preparation.call(element, element, basis ? () => invokePreparationUsingBasisChain(element, basis) : NOP)
   else if (preparationAsync)
-    result = preparationAsync(element, basis ? () => invokePreparationUsingBasisChain(element, basis) : NOP_ASYNC)
+    result = preparationAsync.call(element, element, basis ? () => invokePreparationUsingBasisChain(element, basis) : NOP_ASYNC)
   else if (basis)
     result = invokePreparationUsingBasisChain(element, basis)
   return result
@@ -388,7 +388,7 @@ function invokeFinalizationUsingBasisChain(element: unknown, declaration: Reacti
   const basis = declaration.basis
   const finalization = declaration.finalization
   if (finalization)
-    finalization(element, basis ? () => invokeFinalizationUsingBasisChain(element, basis) : NOP)
+    finalization.call(element, element, basis ? () => invokeFinalizationUsingBasisChain(element, basis) : NOP)
   else if (basis)
     invokeFinalizationUsingBasisChain(element, basis)
 }
