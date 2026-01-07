@@ -5,11 +5,11 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { SxObject, signal, runTransactional, transaction, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options, configureCurrentReaction } from "../source/api.js"
+import { RxObject, signal, runTransactional, transaction, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options, configureCurrentReaction } from "../source/api.js"
 
 export const output: string[] = []
 
-export class Demo extends SxObject {
+export class Demo extends RxObject {
   static stamp = 0
   static journal = runTransactional(() => Journal.create())
 
@@ -71,7 +71,7 @@ export class Demo extends SxObject {
   }
 }
 
-export class DemoView extends SxObject {
+export class DemoView extends RxObject {
   @signal(false) raw: string = "plain field"
   @signal(false) shared: string = "for testing purposes"
   @signal(false) readonly model: Demo
@@ -133,7 +133,7 @@ export class DemoView extends SxObject {
 // Person
 
 /* istanbul ignore next */
-export class Person extends SxObject {
+export class Person extends RxObject {
   @signal(false) dummy: string | null = null
   id: string | null = null
   name: string | null = null

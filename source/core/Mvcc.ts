@@ -39,7 +39,7 @@ export abstract class TxObject extends MvccObject {
   }
 }
 
-export abstract class SxObject extends MvccObject {
+export abstract class RxObject extends MvccObject {
   constructor() {
     super(true)
   }
@@ -109,7 +109,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
   static asyncActionDurationWarningThreshold: number = Number.MAX_SAFE_INTEGER // disabled
   static sensitivity: boolean = false
   static readonly tx: Mvcc = new Mvcc(false)
-  static readonly sx: Mvcc = new Mvcc(true)
+  static readonly rx: Mvcc = new Mvcc(true)
 
   readonly isSignal: boolean
 
@@ -189,11 +189,11 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
       Meta.acquire(proto, Meta.Initial)[fk] = new ContentFootprint(undefined, 0)
       const get = function(this: any): any {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.sx.get(h, fk, this)
+        return Mvcc.rx.get(h, fk, this)
       }
       const set = function(this: any, value: any): boolean {
         const h = Mvcc.acquireHandle(this)
-        return Mvcc.sx.set(h, fk, value, this)
+        return Mvcc.rx.set(h, fk, value, this)
       }
       const enumerable = true
       const configurable = false
@@ -247,7 +247,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
         throw misuse("only objects can be signalling")
       const initial = Meta.getFrom(Object.getPrototypeOf(obj), Meta.Initial)
       const ov = new ObjectVersion(EMPTY_OBJECT_VERSION.changeset, EMPTY_OBJECT_VERSION, {...initial})
-      h = new ObjectHandle(obj, obj, Mvcc.sx, ov, obj.constructor.name)
+      h = new ObjectHandle(obj, obj, Mvcc.rx, ov, obj.constructor.name)
       Meta.set(ov.data, Meta.Handle, h)
       Meta.set(obj, Meta.Handle, h)
       Meta.set(ov.data, Meta.Revision, new ContentFootprint(1, 0))
@@ -257,7 +257,7 @@ export class Mvcc implements ProxyHandler<ObjectHandle> {
 
   static createHandleForMvccObject(proto: any, data: any, blank: any, hint: string, isSignal: boolean): ObjectHandle {
     const ctx = Changeset.edit()
-    const mvcc = isSignal ? Mvcc.sx : Mvcc.tx
+    const mvcc = isSignal ? Mvcc.rx : Mvcc.tx
     const h = new ObjectHandle(data, undefined, mvcc, EMPTY_OBJECT_VERSION, hint)
     ctx.getEditableObjectVersion(h, Meta.Handle, blank)
     if (!Mvcc.reactivityAutoStartDisabled)

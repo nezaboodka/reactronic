@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { SxObject, runTransactional, reaction, cache, signal, options, ReactiveSystem } from "../source/api.js"
+import { RxObject, runTransactional, reaction, cache, signal, options, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
-export class DemoBase extends SxObject {
+export class DemoBase extends RxObject {
   @signal(false) raw: string = "plain data"
   title: string = "Demo"
   sideEffect: string = "no side effect"

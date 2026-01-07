@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { runTransactional, ReactiveSystem, SxObject } from "../source/api.js"
+import { runTransactional, ReactiveSystem, RxObject } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
-class Serializable extends SxObject {
+class Serializable extends RxObject {
   text: string = ""
   array?: Array<Serializable> = undefined
 }

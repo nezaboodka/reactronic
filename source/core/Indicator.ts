@@ -7,10 +7,10 @@
 
 import { Isolation } from "../Enums.js"
 import { Worker } from "../Worker.js"
-import { SxObject, Mvcc } from "./Mvcc.js"
+import { RxObject, Mvcc } from "./Mvcc.js"
 import { Transaction } from "./Transaction.js"
 
-export abstract class Indicator extends SxObject {
+export abstract class Indicator extends RxObject {
   abstract readonly isBusy: boolean
   abstract readonly counter: number
   abstract readonly workers: ReadonlySet<Worker>

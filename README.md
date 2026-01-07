@@ -325,7 +325,7 @@ NPM: `npm install reactronic`
 // Classes
 
 class TxObject { } // transactional object
-class SxObject { } // signalling object
+class RxObject { } // reactive object
 
 // Decorators & Operators
 

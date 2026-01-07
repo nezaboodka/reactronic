@@ -5,12 +5,12 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { SxObject, transaction, reaction, cache, options, Transaction, Indicator, Reentrance, ReactiveSystem, signal, all, pause } from "../source/api.js"
+import { RxObject, transaction, reaction, cache, options, Transaction, Indicator, Reentrance, ReactiveSystem, signal, all, pause } from "../source/api.js"
 
 export const output: string[] = []
 export const busy = Indicator.create("Busy", 0, 0, 1)
 
-export class AsyncDemo extends SxObject {
+export class AsyncDemo extends RxObject {
   url: string = "reactronic"
   log: string[] = ["RTA"]
 

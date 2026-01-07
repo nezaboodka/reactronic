@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { Indicator, SxObject, Reentrance, Transaction, transaction, reaction, options, pause, signal, runTransactional, ReactiveSystem, manageReaction } from "../source/api.js"
+import { Indicator, RxObject, Reentrance, Transaction, transaction, reaction, options, pause, signal, runTransactional, ReactiveSystem, manageReaction } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
@@ -45,7 +45,7 @@ class SourceFile {
   constructor(readonly text: string) { }
 }
 
-class CompilationController extends SxObject {
+class CompilationController extends RxObject {
   fsTreeVersion = 0
   @signal(false) fsTree = new Array<SourceFile>()
   @signal(false) compilation: Compilation | null = null

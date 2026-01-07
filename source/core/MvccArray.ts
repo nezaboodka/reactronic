@@ -102,9 +102,9 @@ export class TxArray<T> extends MvccArray<T> {
   }
 }
 
-// SxArray
+// RxArray
 
-export class SxArray<T> extends MvccArray<T> {
+export class RxArray<T> extends MvccArray<T> {
   constructor()
   constructor(arrayLength: number)
   constructor(arrayLength?: number)

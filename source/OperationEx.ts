@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import { F } from "./util/Utils.js"
-import { SxObject } from "./core/Mvcc.js"
+import { RxObject } from "./core/Mvcc.js"
 import { reaction } from "./System.js"
 
-export class ReactionEx<T> extends SxObject
+export class ReactionEx<T> extends RxObject
 {
   constructor(protected operation: F<T>) {
     super()

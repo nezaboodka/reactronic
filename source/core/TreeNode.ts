@@ -12,7 +12,7 @@ import { ReconciliationList, ReconciliationListReader, LinkedItem } from "../uti
 import { emitLetters, flags, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
 import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { ReactivityOptions } from "../Options.js"
-import { SxObject } from "../core/Mvcc.js"
+import { RxObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
 import { ReactiveSystem, options, signal, reaction, runTransactional, runNonReactive, manageReaction, disposeSignallingObject } from "../System.js"
 
@@ -395,7 +395,7 @@ function invokeFinalizationUsingBasisChain(element: unknown, declaration: Reacti
 
 // ReactiveTreeNodeContext$
 
-class ReactiveTreeNodeContext$<T extends Object = Object> extends SxObject implements ReactiveTreeNodeContext<T> {
+class ReactiveTreeNodeContext$<T extends Object = Object> extends RxObject implements ReactiveTreeNodeContext<T> {
   @signal(false) next: ReactiveTreeNodeContext$<object> | undefined
   @signal(false) variable: ReactiveTreeVariable<T>
   value: T

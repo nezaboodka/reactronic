@@ -18,7 +18,7 @@ import { JournalImpl } from "./Journal.js"
 
 const BOOT_ARGS: any[] = []
 const BOOT_CAUSE = "<boot>"
-const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.sx, EMPTY_OBJECT_VERSION, "<boot>")
+const EMPTY_HANDLE = new ObjectHandle(undefined, undefined, Mvcc.rx, EMPTY_OBJECT_VERSION, "<boot>")
 
 type ReuseOrRelaunchContext = {
   readonly footprint: OperationFootprintImpl

@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { SxObject, transaction, reaction, signal, runTransactional, runNonReactive, ReactiveSystem } from "../source/api.js"
+import { RxObject, transaction, reaction, signal, runTransactional, runNonReactive, ReactiveSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
-export class ReactiveDemo extends SxObject {
+export class ReactiveDemo extends RxObject {
   title: string = "ReactiveDemo"
   titleNested: string = "Abc"
   content: string = "Content"

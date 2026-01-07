@@ -6,10 +6,10 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { SxObject, transaction, cache } from "../source/api.js"
+import { RxObject, transaction, cache } from "../source/api.js"
 import { Component } from "./Component.js"
 
-class MyModel extends SxObject {
+class MyModel extends RxObject {
   url: string = "https://nezaboodka.com"
   content: string = ""
   timestamp: number = Date.now()

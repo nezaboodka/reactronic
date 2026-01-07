@@ -50,9 +50,9 @@ export class TxMap<K, V> extends MvccMap<K, V> {
   }
 }
 
-// SxMap<K, V>
+// RxMap<K, V>
 
-export class SxMap<K, V> extends MvccMap<K, V> {
+export class RxMap<K, V> extends MvccMap<K, V> {
   constructor()
   constructor(iterable?: Iterable<readonly [K, V]> | null)
   constructor(args?: any) {
