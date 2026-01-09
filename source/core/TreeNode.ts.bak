@@ -620,18 +620,18 @@ function launchNestedNodesThenDoImpl(node: ReactiveTreeNode$<any>, error: unknow
   })
 }
 
-function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNode$,
-  node: ReactiveTreeNode$, children: LinkedList<ReactiveTreeNode$>, sequential: boolean): boolean {
+function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNode,
+  node: ReactiveTreeNode, children: LinkedList<ReactiveTreeNode>, sequential: boolean): boolean {
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
   // TODO: Get rid of "node.element.native"
   if ((node.element as any).native && !node.has(Mode.external)) {
     if (mounting || node.host !== host) {
-      children.markAsMoved(node)
+      LinkedItem.setStatus$(node, Mark.modified, node.rank)
       mounting = false
     }
   }
-  else if (sequential && children.isMoved(node))
+  else if (sequential && node.mark === Mark.modified)
     mounting = true // apply to the first element having native HTML element
   node.host = host
   return mounting
