@@ -27,7 +27,7 @@ export class LinkedList<T extends LinkedItem<T>> {
   items$: LinkedSubList<T>
 
   /* internal */
-  private renovation: LinkedListRenovation<T> | undefined
+  private renovation$: LinkedListRenovation<T> | undefined
 
   constructor(
     keyExtractor: KeyExtractor<T>,
@@ -36,22 +36,29 @@ export class LinkedList<T extends LinkedItem<T>> {
     this.isStrictOrder$ = isStrictOrder
     this.map = new Map<string | undefined, T>()
     this.items$ = new LinkedSubList<T>()
-    this.renovation = undefined
+    this.renovation$ = undefined
   }
 
   get isStrictOrder(): boolean { return this.isStrictOrder$ }
   set isStrictOrder(value: boolean) {
-    if (this.renovation !== undefined)
+    if (this.renovation$ !== undefined)
       throw misuse("cannot change strict mode in the middle of renovation")
     this.isStrictOrder$ = value
   }
 
+  get renovation(): LinkedListRenovation<T> {
+    const r = this.renovation$
+    if (r === undefined)
+      throw misuse("renovation is not in progress")
+    return r
+  }
+
   get isRenovationInProgress(): boolean {
-    return this.renovation !== undefined
+    return this.renovation$ !== undefined
   }
 
   get count(): number {
-    return this.items$.count + (this.renovation?.lostItemCount ?? 0)
+    return this.items$.count + (this.renovation$?.lostItemCount ?? 0)
   }
 
   items(): Generator<T> {
@@ -87,17 +94,17 @@ export class LinkedList<T extends LinkedItem<T>> {
   }
 
   beginRenovation(diff?: Array<T>): LinkedListRenovation<T> {
-    if (this.renovation !== undefined)
+    if (this.renovation$ !== undefined)
       throw misuse("renovation is in progress already")
     const former = this.items$
     const renovation = new LinkedListRenovation<T>(this, former, diff)
     this.items$ = new LinkedSubList<T>()
-    this.renovation = renovation
+    this.renovation$ = renovation
     return renovation
   }
 
   endRenovation(error?: unknown): void {
-    const renovation = this.renovation
+    const renovation = this.renovation$
     if (renovation === undefined)
       throw misuse("renovation is ended already")
     const items = this.items$
@@ -119,7 +126,7 @@ export class LinkedList<T extends LinkedItem<T>> {
         LinkedItem.setStatus$(x, Mark.prolonged, items.count)
       }
     }
-    this.renovation = undefined
+    this.renovation$ = undefined
   }
 
   // Internal
