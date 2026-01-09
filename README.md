@@ -48,7 +48,7 @@ Quick introduction and detailed description is below.
 Here is an example of transactional reactive code:
 
 ``` typescript
-class Demo extends SignallingObject {
+class Demo extends RxObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
@@ -115,7 +115,7 @@ to track access to their properties, both on reads and
 writes.
 
 ``` typescript
-class MyModel extends SignallingObject {
+class MyModel extends RxObject {
   url: string = "https://github.com/nezaboodka/reactronic"
   content: string = "transactional reactive state management"
   timestamp: Date = Date.now()
@@ -123,7 +123,7 @@ class MyModel extends SignallingObject {
 ```
 
 In the example above, the class `MyModel` is based on
-Reactronic's `SignallingObject` class and all its
+Reactronic's `RxObject` class and all its
 properties `url`, `content`, and `timestamp` are hooked.
 
 ## Transactional Function
@@ -136,7 +136,7 @@ provide transparent atomicity (by implicit context
 switching and isolation).
 
 ``` typescript
-class MyModel extends SignallingObject {
+class MyModel extends RxObject {
   // ...
   @transaction
   async load(url: string): Promise<void> {
@@ -232,7 +232,7 @@ class Component<P> extends React.Component<P> {
   }
 
   componentWillUnmount(): void {
-    runTransactional(disposeSignallingObject, this)
+    runTransactional(disposeRxObject, this)
   }
 }
 ```

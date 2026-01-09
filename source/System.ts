@@ -75,7 +75,7 @@ export function configureCurrentReaction(options: Partial<ReactivityOptions>): R
   return ReactionImpl.configureImpl(undefined, options)
 }
 
-export function disposeSignallingObject(obj: any): void {
+export function disposeRxObject(obj: any): void {
   Changeset.dispose(obj)
 }
 

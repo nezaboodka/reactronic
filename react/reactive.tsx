@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { RxObject, Transaction, signal, runTransactional, reaction, cache, ReactiveSystem, LoggingOptions, manageReaction, disposeSignallingObject } from "../source/api.js"
+import { RxObject, Transaction, signal, runTransactional, reaction, cache, ReactiveSystem, LoggingOptions, manageReaction, disposeRxObject } from "../source/api.js"
 
 export function autorender(render: (cycle: number) => React.JSX.Element, name?: string, logging?: Partial<LoggingOptions>, op?: Transaction): React.JSX.Element {
   const [state, refresh] = React.useState<ReactState<React.JSX.Element>>(
@@ -39,7 +39,7 @@ class RxComponent<V> extends RxObject {
   @signal(false) refresh: (next: ReactState<V>) => void = nop
 
   @signal(false) readonly unmount = (): (() => void) => {
-    return (): void => { runTransactional(disposeSignallingObject, this) }
+    return (): void => { runTransactional(disposeRxObject, this) }
   }
 
   static create<V>(hint: string | undefined, logging: LoggingOptions | undefined): RxComponent<V> {

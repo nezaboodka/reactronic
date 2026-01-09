@@ -14,7 +14,7 @@ import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { ReactivityOptions } from "../Options.js"
 import { RxObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, signal, reaction, runTransactional, runNonReactive, manageReaction, disposeSignallingObject } from "../System.js"
+import { ReactiveSystem, options, signal, reaction, runTransactional, runNonReactive, manageReaction, disposeRxObject } from "../System.js"
 
 // Scripts
 
@@ -788,7 +788,7 @@ async function runDisposalLoop(): Promise<void> {
   while (slot !== undefined) {
     if (Transaction.isFrameOver(500, 5))
       await Transaction.requestNextFrame()
-    disposeSignallingObject(slot.instance)
+    disposeRxObject(slot.instance)
     slot = slot.aux
     ReactiveTreeNode$.disposableNodeCount--
   }

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { Transaction, Kind, runTransactional, runNonReactive, runSensitive, ReactiveSystem, manageReaction, disposeSignallingObject } from "../source/api.js"
+import { Transaction, Kind, runTransactional, runNonReactive, runSensitive, ReactiveSystem, manageReaction, disposeRxObject } from "../source/api.js"
 import { Person, Demo, DemoView, output, TestsLoggingLevel } from "./brief.js"
 
 const expected: string[] = [
@@ -203,8 +203,8 @@ test("brief", (t: ExecutionContext<unknown>) => {
   }
   finally {
     runTransactional(() => {
-      disposeSignallingObject(app.model)
-      disposeSignallingObject(app)
+      disposeRxObject(app.model)
+      disposeRxObject(app)
     })
     t.is(app.model.title as any, undefined)
     t.is(app.userFilter as any, undefined)

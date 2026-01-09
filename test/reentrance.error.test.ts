@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { runTransactional, pause, Reentrance, ReactiveSystem, manageReaction, disposeSignallingObject } from "../source/api.js"
+import { runTransactional, pause, Reentrance, ReactiveSystem, manageReaction, disposeRxObject } from "../source/api.js"
 import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
 import { TestsLoggingLevel } from "./brief.js"
 
@@ -61,8 +61,8 @@ test("reentrance.error", async (t: ExecutionContext<unknown>) => {
     t.is(r && r.length, 2)
     await pause(300)
     runTransactional(() => {
-      disposeSignallingObject(app)
-      disposeSignallingObject(app.model)
+      disposeRxObject(app)
+      disposeRxObject(app.model)
     })
   } /* istanbul ignore next */
   if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled)

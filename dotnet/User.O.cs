@@ -1,5 +1,5 @@
 ﻿
-// Signalling User
+// Reactive User
 
 internal class User_T : User
 {

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import * as React from "react"
-import { runTransactional, reaction, cache, Transaction, manageReaction, disposeSignallingObject } from "../source/api.js"
+import { runTransactional, reaction, cache, Transaction, manageReaction, disposeRxObject } from "../source/api.js"
 
 export class Component<P> extends React.Component<P> {
   @cache
@@ -29,6 +29,6 @@ export class Component<P> extends React.Component<P> {
   }
 
   override componentWillUnmount(): void {
-    runTransactional(disposeSignallingObject, this)
+    runTransactional(disposeRxObject, this)
   }
 }
