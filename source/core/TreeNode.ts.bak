@@ -8,7 +8,7 @@
 import { misuse } from "../util/Dbg.js"
 import { Uri } from "../util/Uri.js"
 import { LoggingOptions } from "../Logging.js"
-import { LinkedList, LinkedItem } from "../util/LinkedList.js"
+import { LinkedList, LinkedItem, Mark } from "../util/LinkedList.js"
 import { emitLetters, flags, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
 import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { ReactivityOptions } from "../Options.js"
@@ -79,8 +79,8 @@ export function declare<E = void>(
   if (owner) {
     let existing = owner.driver.declareChild(owner, driver, declaration, declaration.basis)
     // Reuse existing node or declare a new one
-    const children = owner.children
-    existing ??= children.tryReuse(
+    const renovation = owner.children.renovation
+    existing ??= renovation.tryToProlong(
       effectiveKey = effectiveKey || generateKey(owner), undefined,
       "nested elements can be declared inside 'script' only")
     if (existing) {
@@ -96,7 +96,7 @@ export function declare<E = void>(
     else {
       // Create new node
       result = new ReactiveTreeNode$<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
-      children.add(result as ReactiveTreeNode$<unknown>) as ReactiveTreeNode$<E>
+      renovation.thisIsAdded(result as ReactiveTreeNode$<unknown>) as ReactiveTreeNode$<E>
     }
   }
   else {
@@ -136,7 +136,7 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
   abstract readonly owner: ReactiveTreeNode
   abstract element: E
   abstract readonly host: ReactiveTreeNode
-  abstract readonly children: LinkedListReader<ReactiveTreeNode>
+  abstract readonly children: LinkedList<ReactiveTreeNode>
   abstract readonly stamp: number
   abstract readonly outer: ReactiveTreeNode
   abstract readonly context: ReactiveTreeNodeContext | undefined
@@ -189,13 +189,13 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
     const segments = t.path.split("/")
     let result = this as ReactiveTreeNode<any>
     for (let i = 1; i < segments.length && result !== undefined; i++)
-      result = result.children.lookup(segments[i])?.instance as ReactiveTreeNode<E>
+      result = result.children.lookup(segments[i]) as ReactiveTreeNode<E>
     return result
   }
 
   static findMatchingHost<E = unknown, R = unknown>(
     node: ReactiveTreeNode<E>, match: Handler<ReactiveTreeNode<E>, boolean>): ReactiveTreeNode<R> | undefined {
-    let p = node.host as ReactiveTreeNode$<any>
+    let p = node.host as ReactiveTreeNode<any>
     while (p !== p.host && !match(p))
       p = p.host
     return p
@@ -213,7 +213,7 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
     node: ReactiveTreeNode<E>, action: Handler<ReactiveTreeNode<E>>): void {
     action(node)
     for (const child of node.children.items())
-      ReactiveTreeNode.forEachChildRecursively<E>(child.instance as ReactiveTreeNode<any>, action)
+      ReactiveTreeNode.forEachChildRecursively<E>(child as ReactiveTreeNode<any>, action)
   }
 
   static getDefaultLoggingOptions(): LoggingOptions | undefined {
@@ -417,12 +417,12 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   readonly driver: ReactiveTreeNodeDriver<E>
   declaration: ReactiveTreeNodeDecl<E>
   readonly level: number
-  readonly owner: ReactiveTreeNode$
+  readonly owner: ReactiveTreeNode
   readonly element: E
-  host: ReactiveTreeNode$
-  readonly children: LinkedList<ReactiveTreeNode$>
+  host: ReactiveTreeNode
+  readonly children: LinkedList<ReactiveTreeNode>
   stamp: number
-  outer: ReactiveTreeNode$
+  outer: ReactiveTreeNode
   context: ReactiveTreeNodeContext$<any> | undefined
   numerator: number
   priority: Priority
@@ -450,7 +450,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
     }
     this.element = driver.create(this)
     this.host = thisAsUnknown // node is unmounted
-    this.children = new LinkedList<ReactiveTreeNode$>(getNodeKey, true)
+    this.children = new LinkedList<ReactiveTreeNode>(getNodeKey, true)
     this.stamp = Number.MAX_SAFE_INTEGER // newly created
     this.context = undefined
     this.numerator = 0
@@ -482,7 +482,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   }
 
   get isMoved(): boolean {
-    return this.owner.children.isMoved(this.slot! as LinkedItem<ReactiveTreeNode$>)
+    return this.mark === Mark.modified
   }
 
   has(mode: Mode): boolean {
@@ -514,8 +514,8 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   }
 
   static tryUseTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T | undefined {
-    let node = ReactiveTreeNode$.node
-    while (node.context?.variable !== variable && node.owner !== node)
+    let node = ReactiveTreeNode.current
+    while (node.context?.value !== variable && node.owner !== node)
       node = node.outer
     return node.context?.value as any // TODO: to get rid of any
   }
@@ -577,10 +577,10 @@ function launchNestedNodesThenDoImpl(node: ReactiveTreeNode$<any>, error: unknow
     if (children.isRenovationInProgress) {
       let promised: Promise<void> | undefined = undefined
       try {
-        children.endRenovation(error)
+        const renovation = children.endRenovation(error)
         // Deactivate removed elements
-        for (const child of children.itemsRemoved(true))
-          launchFinalizationViaSlot(child, true, true)
+        for (const child of renovation.lostItems())
+          launchFinalizationViaSlot(child as ReactiveTreeNode$, true, true)
         if (!error) {
           // Lay out and update actual elements
           const sequential = children.isStrictOrder
@@ -639,7 +639,7 @@ function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNode$,
 
 async function startIncrementalNestedScriptsRun(
   ownerNode: ReactiveTreeNode$,
-  allChildren: LinkedList<ReactiveTreeNode$>,
+  allChildren: LinkedList<ReactiveTreeNode>,
   priority1?: Array<ReactiveTreeNode$>,
   priority2?: Array<ReactiveTreeNode$>): Promise<void> {
   const stamp = ownerNode.stamp
@@ -650,7 +650,7 @@ async function startIncrementalNestedScriptsRun(
 }
 
 async function runNestedScriptsIncrementally(owner: ReactiveTreeNode$, stamp: number,
-  allChildren: LinkedList<ReactiveTreeNode$>, items: Array<ReactiveTreeNode$>,
+  allChildren: LinkedList<ReactiveTreeNode>, items: Array<ReactiveTreeNode$>,
   priority: Priority): Promise<void> {
   await Transaction.requestNextFrame()
   const node = owner

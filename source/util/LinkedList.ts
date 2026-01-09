@@ -103,7 +103,7 @@ export class LinkedList<T extends LinkedItem<T>> {
     return renovation
   }
 
-  endRenovation(error?: unknown): void {
+  endRenovation(error?: unknown): LinkedListRenovation<T> {
     const renovation = this.renovation$
     if (renovation === undefined)
       throw misuse("renovation is ended already")
@@ -127,6 +127,7 @@ export class LinkedList<T extends LinkedItem<T>> {
       }
     }
     this.renovation$ = undefined
+    return renovation
   }
 
   // Internal
