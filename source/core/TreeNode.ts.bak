@@ -33,7 +33,7 @@ export function declare<E = void>(
   preparation?: Script<E>,
   preparationAsync?: ScriptAsync<E>,
   finalization?: Script<E>,
-  triggers?: unknown,
+  signalArgs?: unknown,
   basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNode<E>
 
 export function declare<E = void>(
@@ -49,7 +49,7 @@ export function declare<E = void>(
   preparation?: Script<E>,
   preparationAsync?: ScriptAsync<E>,
   finalization?: Script<E>,
-  triggers?: unknown,
+  signalArgs?: unknown,
   basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E>
 
 export function declare<E = void>(
@@ -61,7 +61,7 @@ export function declare<E = void>(
   preparation?: Script<E>,
   preparationAsync?: ScriptAsync<E>,
   finalization?: Script<E>,
-  triggers?: unknown,
+  signalArgs?: unknown,
   basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E> {
   let result: ReactiveTreeNode$<E>
   let declaration: ReactiveTreeNodeDecl<E>
@@ -69,7 +69,7 @@ export function declare<E = void>(
   if (scriptOrDeclaration instanceof Function) {
     declaration = {
       script: scriptOrDeclaration, scriptAsync, key, mode,
-      preparation, preparationAsync, finalization, triggers, basis,
+      preparation, preparationAsync, finalization, signalArgs, basis,
     }
   }
   else
@@ -88,9 +88,9 @@ export function declare<E = void>(
       result = existing as ReactiveTreeNode$<E>
       if (result.driver !== driver && driver !== undefined)
         throw misuse(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
-      const exTriggers = result.declaration.triggers
-      if (signalsAreEqual(declaration.triggers, exTriggers))
-        declaration.triggers = exTriggers // preserve triggers instance
+      const exSignalArgs = result.declaration.signalArgs
+      if (signalsAreEqual(declaration.signalArgs, exSignalArgs))
+        declaration.signalArgs = exSignalArgs // preserve signal args instance
       result.declaration = declaration
     }
     else {
@@ -116,8 +116,8 @@ export function derivative<E = void>(
   return declaration
 }
 
-export function launch<T>(node: ReactiveTreeNode<T>, triggers?: unknown): ReactiveTreeNode<T> {
-  ReactiveTreeNode.launchScript(node, triggers)
+export function launch<T>(node: ReactiveTreeNode<T>, signalArgs?: unknown): ReactiveTreeNode<T> {
+  ReactiveTreeNode.launchScript(node, signalArgs)
   return node
 }
 
@@ -155,11 +155,11 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
     return ReactiveTreeNode.current.stamp === 1
   }
 
-  static launchScript(node: ReactiveTreeNode<any>, triggers: unknown): void {
+  static launchScript(node: ReactiveTreeNode<any>, signalArgs: unknown): void {
     const impl = node as ReactiveTreeNode$<any>
     const declaration = impl.declaration
-    if (node.stamp >= Number.MAX_SAFE_INTEGER || !signalsAreEqual(triggers, declaration.triggers)) {
-      declaration.triggers = triggers // remember new triggers
+    if (node.stamp >= Number.MAX_SAFE_INTEGER || !signalsAreEqual(signalArgs, declaration.signalArgs)) {
+      declaration.signalArgs = signalArgs // remember new signalArgs
       launchScriptImpl(impl)
     }
   }
@@ -235,7 +235,7 @@ export type ReactiveTreeNodeDecl<E = unknown> = {
   preparation?: Script<E>           // подготовка
   preparationAsync?: ScriptAsync<E> // подготовка-задача
   finalization?: Script<E>          // завершение
-  triggers?: unknown                // триггеры
+  signalArgs?: unknown              // аргументы-сигналы
   basis?: ReactiveTreeNodeDecl<E>   // базис
 }
 
@@ -496,8 +496,8 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
     signalArgs: true,
     noSideEffects: false,
   })
-  script(_triggers: unknown): void {
-    // triggers parameter is used to enforce script run by owner
+  script(_signalArgs: unknown): void {
+    // signalArgs parameter is used to enforce script run by owner
     runScriptNow(this)
   }
 
@@ -693,7 +693,7 @@ function launchScriptImpl(node: ReactiveTreeNode$<any>): void {
           })
         })
       }
-      runNonReactive(node.script, node.declaration.triggers) // reactive auto-update
+      runNonReactive(node.script, node.declaration.signalArgs) // reactive auto-update
     }
     else if (node.owner !== node)
       runScriptNow(node)
