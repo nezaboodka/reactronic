@@ -10,7 +10,7 @@ import { TestsLoggingLevel } from "./brief.js"
 import { ReactiveSystem } from "../source/api.js"
 import { LinkedList, LinkedItem, Mark } from "../source/util/LinkedList.js"
 
-const P = Mark.prolonged
+const V = Mark.reconciled
 const A = Mark.added
 const M = Mark.modified
 const R = Mark.removed
@@ -50,7 +50,7 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
   // External items
 
   const m1result = ["A", "B", "C", "m1", "D", "m2"]
-  const m1marks = [A, A, A, P, A, P]
+  const m1marks = [A, A, A, V, A, V]
 
   list.add(new Property("m1"), list.lookup("D"))
   list.add(new Property("m2"))
@@ -63,12 +63,12 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
 
   const r2list = ["X", "C", "D", "Y", "A", "Z"]
   const r2result = ["X", "C", "m1", "D", "Y", "A", "Z", "m2"]
-  const r2marks = [A, M, P, P, A, M, A, P]
+  const r2marks = [A, M, V, V, A, M, A, V]
   const r2lost = ["B"]
 
   const r2 = list.beginRenovation()
   for (const x of r2list) {
-    if (r2.tryToProlong(x) === undefined)
+    if (r2.tryToReconcile(x) === undefined)
       r2.thisIsAdded(new Property(x))
   }
   list.endRenovation()
@@ -83,12 +83,12 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
 
   const r3list = ["X", "C", "Y", "A", "Z"]
   const r3result = ["X", "C", "Y", "A", "Z", "m1", "m2"]
-  const r3marks = [P, P, M, P, P, P, P]
+  const r3marks = [V, V, M, V, V, V, V]
   const r3lost = ["D"]
 
   const r3 = list.beginRenovation()
   for (const x of r3list) {
-    if (r3.tryToProlong(x) === undefined)
+    if (r3.tryToReconcile(x) === undefined)
       r3.thisIsAdded(new Property(x))
   }
   list.endRenovation()
@@ -102,7 +102,7 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
   // External items
 
   const m2result = ["X", "C", "Y", "A", "Z"]
-  const m2marks = [P, P, M, P, P]
+  const m2marks = [V, V, M, V, V]
 
   t.throws(() => list.remove(list.lookup("X")!), {
     message: "cannot remove given item outside of renovation cycle" })

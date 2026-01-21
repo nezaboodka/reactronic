@@ -123,7 +123,7 @@ export class LinkedList<T extends LinkedItem<T>> {
       // Prolong lost items in case of error
       for (const x of renovation.lostItems()) {
         LinkedItem.link$(items, x, undefined)
-        LinkedItem.setStatus$(x, Mark.prolonged, items.count)
+        LinkedItem.setStatus$(x, Mark.reconciled, items.count)
       }
     }
     this.renovation$ = undefined
@@ -151,13 +151,13 @@ export class LinkedList<T extends LinkedItem<T>> {
 
 export enum Mark {
 
-  prolonged = 0,  // продлено
+  reconciled = 0,  // сверено
 
-  added = 1,      // добавлено
+  added = 1,       // добавлено
 
-  modified = 2,   // изменено
+  modified = 2,    // изменено
 
-  removed = 3,    // удалено
+  removed = 3,     // удалено
 
 }
 
@@ -357,8 +357,8 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     return result
   }
 
-  // попробовать-продлить
-  tryToProlong(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
+  // попробовать-сверить
+  tryToReconcile(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse(error ?? "renovation is no longer in progress")
@@ -376,7 +376,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
           this.diff?.push(x)
         }
         else
-          LinkedItem.setStatus$(x, Mark.prolonged, result.count)
+          LinkedItem.setStatus$(x, Mark.reconciled, result.count)
         this.expected = next
         if (resolution)
           resolution.isDuplicate = false
@@ -406,7 +406,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     if (item.list !== this.list.items$)
       throw misuse("only prolonged items can be marked as modified")
     const m = item.mark
-    if (m === Mark.prolonged)
+    if (m === Mark.reconciled)
       LinkedItem.setStatus$(item, Mark.modified, item.rank)
     else if (m !== Mark.modified)
       throw misuse("item is renovated already and cannot be marked as modified")
