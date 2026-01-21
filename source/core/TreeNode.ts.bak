@@ -80,7 +80,7 @@ export function declare<E = void>(
     let existing = owner.driver.declareChild(owner, driver, declaration, declaration.basis)
     // Reuse existing node or declare a new one
     const renovation = owner.children.renovation
-    existing ??= renovation.tryToProlong(
+    existing ??= renovation.tryToReconcile(
       effectiveKey = effectiveKey || generateKey(owner), undefined,
       "nested elements can be declared inside 'script' only")
     if (existing) {
