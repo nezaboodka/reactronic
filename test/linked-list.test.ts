@@ -10,7 +10,7 @@ import { TestsLoggingLevel } from "./brief.js"
 import { ReactiveSystem } from "../source/api.js"
 import { LinkedList, LinkedItem, Mark } from "../source/util/LinkedList.js"
 
-const V = Mark.reconciled
+const V = Mark.reaffirmed
 const A = Mark.added
 const M = Mark.modified
 const R = Mark.removed
@@ -68,7 +68,7 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
 
   const r2 = list.beginRenovation()
   for (const x of r2list) {
-    if (r2.tryToReconcile(x) === undefined)
+    if (r2.tryToReaffirm(x) === undefined)
       r2.thisIsAdded(new Property(x))
   }
   list.endRenovation()
@@ -88,7 +88,7 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
 
   const r3 = list.beginRenovation()
   for (const x of r3list) {
-    if (r3.tryToReconcile(x) === undefined)
+    if (r3.tryToReaffirm(x) === undefined)
       r3.thisIsAdded(new Property(x))
   }
   list.endRenovation()

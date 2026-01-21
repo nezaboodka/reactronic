@@ -123,7 +123,7 @@ export class LinkedList<T extends LinkedItem<T>> {
       // Prolong lost items in case of error
       for (const x of renovation.lostItems()) {
         LinkedItem.link$(items, x, undefined)
-        LinkedItem.setStatus$(x, Mark.reconciled, items.count)
+        LinkedItem.setStatus$(x, Mark.reaffirmed, items.count)
       }
     }
     this.renovation$ = undefined
@@ -151,7 +151,7 @@ export class LinkedList<T extends LinkedItem<T>> {
 
 export enum Mark {
 
-  reconciled = 0,  // сверено
+  reaffirmed = 0,  // подтверждено
 
   added = 1,       // добавлено
 
@@ -357,8 +357,8 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     return result
   }
 
-  // попробовать-сверить
-  tryToReconcile(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
+  // попробовать-подтвердить
+  tryToReaffirm(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse(error ?? "renovation is no longer in progress")
@@ -376,7 +376,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
           this.diff?.push(x)
         }
         else
-          LinkedItem.setStatus$(x, Mark.reconciled, result.count)
+          LinkedItem.setStatus$(x, Mark.reaffirmed, result.count)
         this.expected = next
         if (resolution)
           resolution.isDuplicate = false
@@ -406,7 +406,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     if (item.list !== this.list.items$)
       throw misuse("only prolonged items can be marked as modified")
     const m = item.mark
-    if (m === Mark.reconciled)
+    if (m === Mark.reaffirmed)
       LinkedItem.setStatus$(item, Mark.modified, item.rank)
     else if (m !== Mark.modified)
       throw misuse("item is renovated already and cannot be marked as modified")
