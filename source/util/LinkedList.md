@@ -12,7 +12,7 @@ const list = new LinkedList<LinkedValue>(s => s, true)
 const example1 = ['Hello', 'Welcome', 'Bye', 'End']
 const r1 = new LinkedListRenovation(list)
 for (const x of example1)
-  if (r1.tryToProlong(x) === undefined)
+  if (r1.tryReaffirm(x) === undefined)
     r1.thisIsAdded(x)
 r1.done()
 
@@ -21,7 +21,7 @@ r1.done()
 const example2 = ['Added1', 'Bye', 'End', 'Added2', 'Hello', 'Added3']
 const r2 = new LinkedListRenovation(list)
 for (const x of example2) {
-  const existing = r2.tryToProlong(x)
+  const existing = r2.tryReaffirm(x)
   if (existing) {
     // reuse prolonged item
   }

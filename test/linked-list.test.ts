@@ -68,7 +68,7 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
 
   const r2 = list.beginRenovation()
   for (const x of r2list) {
-    if (r2.tryToReaffirm(x) === undefined)
+    if (r2.tryReaffirm(x) === undefined)
       r2.thisIsAdded(new Property(x))
   }
   list.endRenovation()
@@ -88,7 +88,7 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
 
   const r3 = list.beginRenovation()
   for (const x of r3list) {
-    if (r3.tryToReaffirm(x) === undefined)
+    if (r3.tryReaffirm(x) === undefined)
       r3.thisIsAdded(new Property(x))
   }
   list.endRenovation()
@@ -104,10 +104,10 @@ test("linked-list", (t: ExecutionContext<unknown>) => {
   const m2result = ["X", "C", "Y", "A", "Z"]
   const m2marks = [V, V, M, V, V]
 
-  t.throws(() => list.remove(list.lookup("X")!), {
+  t.throws(() => list.remove(list.lookup("X")), {
     message: "cannot remove given item outside of renovation cycle" })
-  list.remove(list.lookup("m1")!)
-  list.remove(list.lookup("m2")!)
+  list.remove(list.lookup("m1"))
+  list.remove(list.lookup("m2"))
   t.is(list.count, m2result.length)
   t.true(compareValues(list.items(), m2result))
   t.true(compareMarks(marks(list.items()), m2marks))

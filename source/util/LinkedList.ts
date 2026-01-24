@@ -17,11 +17,11 @@ export type KeyExtractor<T> = Extractor<T, string | undefined>
 
 export class LinkedList<T extends LinkedItem<T>> {
 
-  readonly keyOf: KeyExtractor<T>
+  readonly keyExtractor: KeyExtractor<T>
 
   private isStrictOrder$: boolean
 
-  private map: Map<string | undefined, T>
+  private map: Map<string, T>
 
   /* internal */
   items$: LinkedSubList<T>
@@ -32,9 +32,9 @@ export class LinkedList<T extends LinkedItem<T>> {
   constructor(
     keyExtractor: KeyExtractor<T>,
     isStrictOrder: boolean = false) {
-    this.keyOf = keyExtractor
+    this.keyExtractor = keyExtractor
     this.isStrictOrder$ = isStrictOrder
-    this.map = new Map<string | undefined, T>()
+    this.map = new Map<string, T>()
     this.items$ = new LinkedSubList<T>()
     this.renovation$ = undefined
   }
@@ -65,12 +65,26 @@ export class LinkedList<T extends LinkedItem<T>> {
     return this.items$.items()
   }
 
-  lookup(key: string | undefined): T | undefined {
+  extractKey(item: T): string {
+    const result = this.keyExtractor(item)
+    if (result === undefined)
+      throw misuse("given item has no key")
+    return result
+  }
+
+  lookup(key: string): T {
+    const result = this.tryLookup(key)
+    if (result === undefined)
+      throw misuse(`item with given key doesn't exist: ${key}`)
+    return result
+  }
+
+  tryLookup(key: string): T | undefined {
     return this.map.get(key)
   }
 
   add(item: T, before?: T): void {
-    const key = this.keyOf(item)
+    const key = this.extractKey(item)
     if (this.map.get(key) !== undefined)
       throw misuse(`item with given key already exists: ${key}`)
     this.map.set(key, item)
@@ -112,7 +126,7 @@ export class LinkedList<T extends LinkedItem<T>> {
       // Mark lost items
       for (const x of renovation.lostItems()) {
         if (!x.isManagedExternally) {
-          LinkedList.removeKey$(this, this.keyOf(x))
+          LinkedList.removeKey$(this, this.extractKey(x))
           LinkedItem.setStatus$(x, Mark.removed, 0)
         }
         else // always prolong externally managed items
@@ -137,11 +151,12 @@ export class LinkedList<T extends LinkedItem<T>> {
   }
 
   static remove$<T extends LinkedItem<T>>(list: LinkedList<T>, item: T): void {
-    LinkedList.removeKey$(list, list.keyOf(item))
+    const key = list.extractKey(item)
+    LinkedList.removeKey$(list, key)
     LinkedItem.link$(undefined, item, undefined)
   }
 
-  static removeKey$<T extends LinkedItem<T>>(list: LinkedList<T>, key: string | undefined): void {
+  static removeKey$<T extends LinkedItem<T>>(list: LinkedList<T>, key: string): void {
     list.map.delete(key)
   }
 
@@ -341,12 +356,12 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
   }
 
   // найти
-  lookup(key: string | undefined): T | undefined {
+  tryLookup(key: string): T | undefined {
     let result: T | undefined = undefined
     if (key !== undefined && key !== this.absent) {
-      result = this.list.lookup(key)
+      result = this.list.tryLookup(key)
       if (result !== undefined) {
-        if (this.list.keyOf(result) !== key) {
+        if (this.list.keyExtractor(result) !== key) {
           this.absent = key
           result = undefined
         }
@@ -358,13 +373,13 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
   }
 
   // попробовать-подтвердить
-  tryToReaffirm(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
+  tryReaffirm(key: string, resolution?: { isDuplicate: boolean }, error?: string): T | undefined {
     const list = this.list
     if (!list.isRenovationInProgress)
       throw misuse(error ?? "renovation is no longer in progress")
     let x = this.expected
-    if (key !== (x ? list.keyOf(x) : undefined))
-      x = this.lookup(key)
+    if (key !== (x ? list.keyExtractor(x) : undefined))
+      x = this.tryLookup(key)
     if (x !== undefined) {
       const result = this.list.items$
       if (x.list !== result) {
