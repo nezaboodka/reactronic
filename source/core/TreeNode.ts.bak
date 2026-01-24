@@ -8,7 +8,7 @@
 import { misuse } from "../util/Dbg.js"
 import { Uri } from "../util/Uri.js"
 import { LoggingOptions } from "../Logging.js"
-import { LinkedList, LinkedItem, Mark } from "../util/LinkedList.js"
+import { LinkedList, LinkedItem, Mark, LinkedSubList } from "../util/LinkedList.js"
 import { emitLetters, flags, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
 import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { ReactivityOptions } from "../Options.js"
@@ -417,12 +417,12 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   readonly driver: ReactiveTreeNodeDriver<E>
   declaration: ReactiveTreeNodeDecl<E>
   readonly level: number
-  readonly owner: ReactiveTreeNode
+  readonly owner: ReactiveTreeNode$
   readonly element: E
   host: ReactiveTreeNode
   readonly children: LinkedList<ReactiveTreeNode>
   stamp: number
-  outer: ReactiveTreeNode
+  outer: ReactiveTreeNode$
   context: ReactiveTreeNodeContext$<any> | undefined
   numerator: number
   priority: Priority
@@ -588,16 +588,17 @@ function launchNestedNodesThenDoImpl(node: ReactiveTreeNode$<any>, error: unknow
           let p2: Array<ReactiveTreeNode$> | undefined = undefined
           let mounting = false
           let partition = owner
-          for (const child of children.items()) {
+          for (const c of children.items()) {
             if (Transaction.isCanceled)
               break
+            const child = c as ReactiveTreeNode$
             const isPart = child.driver.isPartition
             const host = isPart ? owner : partition
             mounting = markToMountIfNecessary(
               mounting, host, child, children, sequential)
             const p = child.priority ?? Priority.realtime
             if (p === Priority.realtime)
-              launchScriptImpl(child) // synchronously
+              launchScriptImpl(child as ReactiveTreeNode$) // synchronously
             else if (p === Priority.normal)
               p1 = push(child, p1) // defer for P1 async script run
             else
@@ -621,13 +622,13 @@ function launchNestedNodesThenDoImpl(node: ReactiveTreeNode$<any>, error: unknow
 }
 
 function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNode,
-  node: ReactiveTreeNode, children: LinkedList<ReactiveTreeNode>, sequential: boolean): boolean {
+  node: ReactiveTreeNode$, children: LinkedList<ReactiveTreeNode>, sequential: boolean): boolean {
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
   // TODO: Get rid of "node.element.native"
   if ((node.element as any).native && !node.has(Mode.external)) {
     if (mounting || node.host !== host) {
-      LinkedItem.setStatus$(node, Mark.modified, node.rank)
+      LinkedItem.setStatus$(node as ReactiveTreeNode, Mark.modified, node.rank)
       mounting = false
     }
   }
@@ -755,36 +756,32 @@ function launchFinalizationImpl(node: ReactiveTreeNode$, isLeader: boolean, indi
     const childrenAreLeaders = runNonReactive(() => driver.runFinalization(node, isLeader))
     if (node.has(Mode.autonomous)) {
       // Defer disposal if element is reactive (having autonomous mode)
-      node.aux = undefined
-      const last = gLastToDispose
-      if (last)
-        gLastToDispose = last.aux = node
-      else
-        gFirstToDispose = gLastToDispose = node
-      if (gFirstToDispose === node)
+      LinkedItem.link$(gDisposeList, node, undefined)
+      if (gDisposeList.first === node)
         runTransactional({ isolation: Isolation.disjoinForInternalDisposal, hint: `runDisposalLoop(initiator=${node.key})` }, () => {
           void runDisposalLoop().then(NOP, error => console.log(error))
         })
     }
     // Finalize children
     for (const child of node.children.items())
-      launchFinalizationImpl(child, childrenAreLeaders, false)
+      launchFinalizationImpl(child as ReactiveTreeNode$, childrenAreLeaders, false)
     ReactiveTreeNode$.grandNodeCount--
   }
 }
 
 async function runDisposalLoop(): Promise<void> {
   await Transaction.requestNextFrame()
-  let node = gFirstToDispose
+  let node = gDisposeList.first
   while (node !== undefined) {
     if (Transaction.isFrameOver(500, 5))
       await Transaction.requestNextFrame()
     disposeRxObject(node)
-    node = node.aux
+    LinkedItem.link$(undefined, node, undefined)
+    node = gDisposeList.first
     ReactiveTreeNode$.disposableNodeCount--
   }
   // console.log(`Element count: ${ReactiveTreeNodeImpl.grandNodeCount} totally (${ReactiveTreeNodeImpl.disposableNodeCount} disposable)`)
-  gFirstToDispose = gLastToDispose = undefined // reset loop
+  // gFirstToDispose = gLastToDispose = undefined // reset loop
 }
 
 function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T {
@@ -877,5 +874,4 @@ const NOP: any = (...args: any[]): void => { /* nop */ }
 const NOP_ASYNC: any = async (...args: any[]): Promise<void> => { /* nop */ }
 
 let gNode: ReactiveTreeNode$ | undefined = undefined
-let gFirstToDispose: ReactiveTreeNode$ | undefined = undefined
-let gLastToDispose: ReactiveTreeNode$ | undefined = undefined
+const gDisposeList: LinkedSubList<ReactiveTreeNode> = new LinkedSubList()
