@@ -166,7 +166,7 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
 
   static launchFinalization(node: ReactiveTreeNode<any>): void {
     const impl = node as ReactiveTreeNode$<any>
-    launchFinalizationViaSlot(impl, true, true)
+    launchFinalizationImpl(impl, true, true)
   }
 
   static launchNestedNodesThenDo(action: (error: unknown) => void): void {
@@ -580,7 +580,7 @@ function launchNestedNodesThenDoImpl(node: ReactiveTreeNode$<any>, error: unknow
         const renovation = children.endRenovation(error)
         // Deactivate removed elements
         for (const child of renovation.lostItems())
-          launchFinalizationViaSlot(child as ReactiveTreeNode$, true, true)
+          launchFinalizationImpl(child as ReactiveTreeNode$, true, true)
         if (!error) {
           // Lay out and update actual elements
           const sequential = children.isStrictOrder
@@ -745,7 +745,7 @@ function runScriptNow(node: ReactiveTreeNode$<any>): void {
   }
 }
 
-function launchFinalizationViaSlot(node: ReactiveTreeNode$, isLeader: boolean, individual: boolean): void {
+function launchFinalizationImpl(node: ReactiveTreeNode$, isLeader: boolean, individual: boolean): void {
   if (node.stamp >= 0) {
     const driver = node.driver
     if (individual && node.key !== node.declaration.key && !driver.isPartition)
@@ -768,7 +768,7 @@ function launchFinalizationViaSlot(node: ReactiveTreeNode$, isLeader: boolean, i
     }
     // Finalize children
     for (const child of node.children.items())
-      launchFinalizationViaSlot(child, childrenAreLeaders, false)
+      launchFinalizationImpl(child, childrenAreLeaders, false)
     ReactiveTreeNode$.grandNodeCount--
   }
 }
