@@ -3,7 +3,7 @@
 
 LinkedList provides fast reconciliation (renovation)
 algorithm for lists. It efficiently detects
-differences/changes: which items are prolonged, added,
+differences/changes: which items are reaffirmed, added,
 moved and removed.
 
 ``` typescript
@@ -23,7 +23,7 @@ const r2 = new LinkedListRenovation(list)
 for (const x of example2) {
   const existing = r2.tryReaffirm(x)
   if (existing) {
-    // reuse prolonged item
+    // reuse reaffirmed item
   }
   else
     r2.thisIsAdded(x)

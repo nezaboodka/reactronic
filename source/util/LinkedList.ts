@@ -65,11 +65,8 @@ export class LinkedList<T extends LinkedItem<T>> {
     return this.items$.items()
   }
 
-  extractKey(item: T): string {
-    const result = this.keyExtractor(item)
-    if (result === undefined)
-      throw misuse("given item has no key")
-    return result
+  tryLookup(key: string): T | undefined {
+    return this.map.get(key)
   }
 
   lookup(key: string): T {
@@ -77,10 +74,6 @@ export class LinkedList<T extends LinkedItem<T>> {
     if (result === undefined)
       throw misuse(`item with given key doesn't exist: ${key}`)
     return result
-  }
-
-  tryLookup(key: string): T | undefined {
-    return this.map.get(key)
   }
 
   add(item: T, before?: T): void {
@@ -129,12 +122,12 @@ export class LinkedList<T extends LinkedItem<T>> {
           LinkedList.removeKey$(this, this.extractKey(x))
           LinkedItem.setStatus$(x, Mark.removed, 0)
         }
-        else // always prolong externally managed items
+        else // always reaffirm externally managed items
           LinkedItem.link$(items, x, undefined)
       }
     }
     else {
-      // Prolong lost items in case of error
+      // Reaffirm lost items in case of error
       for (const x of renovation.lostItems()) {
         LinkedItem.link$(items, x, undefined)
         LinkedItem.setStatus$(x, Mark.reaffirmed, items.count)
@@ -142,6 +135,13 @@ export class LinkedList<T extends LinkedItem<T>> {
     }
     this.renovation$ = undefined
     return renovation
+  }
+
+  extractKey(item: T): string {
+    const result = this.keyExtractor(item)
+    if (result === undefined)
+      throw misuse("given item has no key")
+    return result
   }
 
   // Internal
@@ -419,7 +419,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
   // это-изменено
   thisIsModified(item: T): void {
     if (item.list !== this.list.items$)
-      throw misuse("only prolonged items can be marked as modified")
+      throw misuse("only reaffirmed items can be marked as modified")
     const m = item.mark
     if (m === Mark.reaffirmed)
       LinkedItem.setStatus$(item, Mark.modified, item.rank)
