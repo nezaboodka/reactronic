@@ -118,7 +118,7 @@ export function derivative<E = void>(
 }
 
 export function launch<T>(node: ReactiveTreeNode<T>, signalArgs?: unknown): ReactiveTreeNode<T> {
-  ReactiveTreeNode.buildBody(node, signalArgs)
+  ReactiveTreeNode.rebuildBody(node, signalArgs)
   return node
 }
 
@@ -157,12 +157,12 @@ export abstract class ReactiveTreeNode<E = unknown> {
     return ReactiveTreeNode.current.stamp === 1
   }
 
-  static buildBody(node: ReactiveTreeNode<any>, signalArgs: unknown): void {
+  static rebuildBody(node: ReactiveTreeNode<any>, signalArgs: unknown): void {
     const impl = node as ReactiveTreeNode$<any>
     const declaration = impl.declaration
     if (node.stamp >= Number.MAX_SAFE_INTEGER || !signalsAreEqual(signalArgs, declaration.signalArgs)) {
       declaration.signalArgs = signalArgs // remember new signal args
-      buildBodyViaSlot(impl.slot!)
+      rebuildBodyViaSlot(impl.slot!)
     }
   }
 
@@ -256,7 +256,7 @@ export type ReactiveTreeNodeDriver<E = unknown> = {
 
   runMount(node: ReactiveTreeNode<E>): void
 
-  buildBody(node: ReactiveTreeNode<E>): void | Promise<void>
+  rebuildBody(node: ReactiveTreeNode<E>): void | Promise<void>
 
   declareChild(ownerNode: ReactiveTreeNode<E>,
     childDriver: ReactiveTreeNodeDriver<any>,
@@ -297,8 +297,8 @@ export abstract class BaseDriver<E = unknown> implements ReactiveTreeNodeDriver<
     // nothing to do by default
   }
 
-  buildBody(node: ReactiveTreeNode<E>): void | Promise<void> {
-    return invokeBuildBodyUsingBasisChain(node.element, node.declaration)
+  rebuildBody(node: ReactiveTreeNode<E>): void | Promise<void> {
+    return invokeRebuildBodyUsingBasisChain(node.element, node.declaration)
   }
 
   declareChild(ownerNode: ReactiveTreeNode<E>,
@@ -352,7 +352,7 @@ export function getModeUsingBasisChain(declaration?: ReactiveTreeNodeDecl<any>):
   return declaration?.mode ?? (declaration?.basis ? getModeUsingBasisChain(declaration?.basis) : Mode.default)
 }
 
-function invokeBuildBodyUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void | Promise<void> {
+function invokeRebuildBodyUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
   const body = declaration.body
@@ -360,11 +360,11 @@ function invokeBuildBodyUsingBasisChain(element: unknown, declaration: ReactiveT
   if (body && bodyTask)
     throw misuse("'body' and 'bodyTask' cannot be defined together")
   if (body)
-    result = body.call(element, element, basis ? () => invokeBuildBodyUsingBasisChain(element, basis) : NOP)
+    result = body.call(element, element, basis ? () => invokeRebuildBodyUsingBasisChain(element, basis) : NOP)
   else if (bodyTask)
-    result = bodyTask.call(element, element, basis ? () => invokeBuildBodyUsingBasisChain(element, basis) : NOP_ASYNC)
+    result = bodyTask.call(element, element, basis ? () => invokeRebuildBodyUsingBasisChain(element, basis) : NOP_ASYNC)
   else if (basis)
-    result = invokeBuildBodyUsingBasisChain(element, basis)
+    result = invokeRebuildBodyUsingBasisChain(element, basis)
   return result
 }
 
@@ -502,7 +502,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   })
   body(_signalArgs: unknown): void {
     // signalArgs parameter is used to enforce body build by owner
-    buildBodyNow(this.slot!)
+    rebuildBodyNow(this.slot!)
   }
 
   configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions {
@@ -602,7 +602,7 @@ function launchNestedNodesThenDoImpl(nodeSlot: LinkedItem<ReactiveTreeNode$<any>
               mounting, host, child, children, sequential)
             const p = childNode.priority ?? Priority.realtime
             if (p === Priority.realtime)
-              buildBodyViaSlot(child) // synchronously
+              rebuildBodyViaSlot(child) // synchronously
             else if (p === Priority.normal)
               p1 = push(child, p1) // defer for P1 async body build
             else
@@ -669,7 +669,7 @@ async function runNestedBodyBuildIncrementally(owner: LinkedItem<ReactiveTreeNod
       const frameDurationLimit = priority === Priority.background ? ReactiveTreeNode.shortFrameDuration : Infinity
       let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveTreeNode.frameDuration / 4, ReactiveTreeNode.shortFrameDuration))
       for (const child of items) {
-        buildBodyViaSlot(child)
+        rebuildBodyViaSlot(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
           ReactiveTreeNode$.currentBodyPriority = outerPriority
           await Transaction.requestNextFrame(0)
@@ -687,7 +687,7 @@ async function runNestedBodyBuildIncrementally(owner: LinkedItem<ReactiveTreeNod
   }
 }
 
-function buildBodyViaSlot(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
+function rebuildBodyViaSlot(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) { // if not deactivated yet
     if (node.has(Mode.autonomous)) {
@@ -703,9 +703,9 @@ function buildBodyViaSlot(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
       runNonReactive(node.body, node.declaration.signalArgs) // reactive auto-update
     }
     else if (node.owner !== node)
-      buildBodyNow(nodeSlot)
+      rebuildBodyNow(nodeSlot)
     else // root node
-      runTransactional(() => buildBodyNow(nodeSlot))
+      runTransactional(() => rebuildBodyNow(nodeSlot))
   }
 }
 
@@ -726,7 +726,7 @@ function mountOrRemountIfNecessary(node: ReactiveTreeNode$): void {
     runNonReactive(() => driver.runMount(node)) // re-mount
 }
 
-function buildBodyNow(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
+function rebuildBodyNow(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
@@ -738,7 +738,7 @@ function buildBodyNow(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
           node.numerator = 0
           node.children.beginReconciliation()
           const driver = node.driver
-          result = driver.buildBody(node)
+          result = driver.rebuildBody(node)
           result = proceedSyncOrAsync(result,
             v => { launchNestedNodesThenDoImpl(nodeSlot, undefined, NOP); return v },
             e => { console.log(e); launchNestedNodesThenDoImpl(nodeSlot, e ?? new Error("unknown error"), NOP) })

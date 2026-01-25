@@ -117,7 +117,7 @@ export function derivative<E = void>(
 }
 
 export function launch<T>(node: ReactiveTreeNode<T>, signalArgs?: unknown): ReactiveTreeNode<T> {
-  ReactiveTreeNode.buildBody(node, signalArgs)
+  ReactiveTreeNode.rebuildBody(node, signalArgs)
   return node
 }
 
@@ -155,12 +155,12 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
     return ReactiveTreeNode.current.stamp === 1
   }
 
-  static buildBody(node: ReactiveTreeNode<any>, signalArgs: unknown): void {
+  static rebuildBody(node: ReactiveTreeNode<any>, signalArgs: unknown): void {
     const impl = node as ReactiveTreeNode$<any>
     const declaration = impl.declaration
     if (node.stamp >= Number.MAX_SAFE_INTEGER || !signalsAreEqual(signalArgs, declaration.signalArgs)) {
       declaration.signalArgs = signalArgs // remember new signalArgs
-      buildBodyImpl(impl)
+      rebuildBodyImpl(impl)
     }
   }
 
@@ -598,7 +598,7 @@ function launchNestedNodesThenDoImpl(node: ReactiveTreeNode$<any>, error: unknow
               mounting, host, child, children, sequential)
             const p = child.priority ?? Priority.realtime
             if (p === Priority.realtime)
-              buildBodyImpl(child as ReactiveTreeNode$) // synchronously
+              rebuildBodyImpl(child as ReactiveTreeNode$) // synchronously
             else if (p === Priority.normal)
               p1 = push(child, p1) // defer for P1 async body build
             else
@@ -664,7 +664,7 @@ async function runNestedScriptsIncrementally(owner: ReactiveTreeNode$, stamp: nu
       const frameDurationLimit = priority === Priority.background ? ReactiveTreeNode.shortFrameDuration : Infinity
       let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveTreeNode.frameDuration / 4, ReactiveTreeNode.shortFrameDuration))
       for (const child of items) {
-        buildBodyImpl(child)
+        reImpl(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
           ReactiveTreeNode$.currentBodyPriority = outerPriority
           await Transaction.requestNextFrame(0)
@@ -682,7 +682,7 @@ async function runNestedScriptsIncrementally(owner: ReactiveTreeNode$, stamp: nu
   }
 }
 
-function buildBodyImpl(node: ReactiveTreeNode$<any>): void {
+function rebuildBodyImpl(node: ReactiveTreeNode$<any>): void {
   if (node.stamp >= 0) { // if not deactivated yet
     if (node.has(Mode.autonomous)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
