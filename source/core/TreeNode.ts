@@ -26,8 +26,8 @@ export type Handler<E = unknown, R = void> = (o: E) => R
 
 export function declare<E = void>(
   driver: ReactiveTreeNodeDriver<E>,
-  script?: Script<E>,
-  scriptAsync?: ScriptAsync<E>,
+  body?: Script<E>,
+  bodyTask?: ScriptAsync<E>,
   key?: string,
   mode?: Mode,
   preparation?: Script<E>,
@@ -42,8 +42,8 @@ export function declare<E = void>(
 
 export function declare<E = void>(
   driver: ReactiveTreeNodeDriver<E>,
-  scriptOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
-  scriptAsync?: ScriptAsync<E>,
+  bodyOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
+  bodyTask?: ScriptAsync<E>,
   key?: string,
   mode?: Mode,
   preparation?: Script<E>,
@@ -54,8 +54,8 @@ export function declare<E = void>(
 
 export function declare<E = void>(
   driver: ReactiveTreeNodeDriver<E>,
-  scriptOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
-  scriptAsync?: ScriptAsync<E>,
+  bodyOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
+  bodyTask?: ScriptAsync<E>,
   key?: string,
   mode?: Mode,
   preparation?: Script<E>,
@@ -66,14 +66,14 @@ export function declare<E = void>(
   let result: ReactiveTreeNode$<E>
   let declaration: ReactiveTreeNodeDecl<E>
   // Normalize parameters
-  if (scriptOrDeclaration instanceof Function) {
+  if (bodyOrDeclaration instanceof Function) {
     declaration = {
-      script: scriptOrDeclaration, scriptAsync, key, mode,
+      body: bodyOrDeclaration, bodyTask, key, mode,
       preparation, preparationAsync, finalization, signalArgs, basis,
     }
   }
   else
-    declaration = scriptOrDeclaration ?? {}
+    declaration = bodyOrDeclaration ?? {}
   let effectiveKey = declaration.key
   const owner = gNodeSlot?.instance
   if (owner) {
@@ -82,7 +82,7 @@ export function declare<E = void>(
     const children = owner.children
     existing ??= children.tryReuse(
       effectiveKey = effectiveKey || generateKey(owner), undefined,
-      "nested elements can be declared inside 'script' only")
+      "nested elements can be declared inside 'body' only")
     if (existing) {
       // Reuse existing node
       result = existing.instance as ReactiveTreeNode$<E>
@@ -118,7 +118,7 @@ export function derivative<E = void>(
 }
 
 export function launch<T>(node: ReactiveTreeNode<T>, signalArgs?: unknown): ReactiveTreeNode<T> {
-  ReactiveTreeNode.launchScript(node, signalArgs)
+  ReactiveTreeNode.buildBody(node, signalArgs)
   return node
 }
 
@@ -128,7 +128,7 @@ export abstract class ReactiveTreeNode<E = unknown> {
   static readonly shortFrameDuration = 16 // ms
   static readonly longFrameDuration = 300 // ms
   static frameDuration = ReactiveTreeNode.longFrameDuration
-  static currentScriptPriority = Priority.realtime
+  static currentBodyPriority = Priority.realtime
 
   abstract readonly key: string
   abstract readonly driver: ReactiveTreeNodeDriver<E>
@@ -153,16 +153,16 @@ export abstract class ReactiveTreeNode<E = unknown> {
     return ReactiveTreeNode$.nodeSlot.instance
   }
 
-  static get isFirstScriptRun(): boolean {
+  static get isFirstBodyBuild(): boolean {
     return ReactiveTreeNode.current.stamp === 1
   }
 
-  static launchScript(node: ReactiveTreeNode<any>, signalArgs: unknown): void {
+  static buildBody(node: ReactiveTreeNode<any>, signalArgs: unknown): void {
     const impl = node as ReactiveTreeNode$<any>
     const declaration = impl.declaration
     if (node.stamp >= Number.MAX_SAFE_INTEGER || !signalsAreEqual(signalArgs, declaration.signalArgs)) {
       declaration.signalArgs = signalArgs // remember new signal args
-      launchScriptViaSlot(impl.slot!)
+      buildBodyViaSlot(impl.slot!)
     }
   }
 
@@ -230,14 +230,14 @@ export abstract class ReactiveTreeNode<E = unknown> {
 // ReactiveTreeNodeDecl
 
 export type ReactiveTreeNodeDecl<E = unknown> = {
-  script?: Script<E>                // сценарий
-  scriptAsync?: ScriptAsync<E>      // сценарий-задача
+  body?: Script<E>                  // тело
+  bodyTask?: ScriptAsync<E>         // тело-задача
   key?: string                      // ключ
   mode?: Mode                       // режим
   preparation?: Script<E>           // подготовка
   preparationAsync?: ScriptAsync<E> // подготовка-задача
   finalization?: Script<E>          // завершение
-  signalArgs?: unknown                // триггеры
+  signalArgs?: unknown              // аргументы-сигналы
   basis?: ReactiveTreeNodeDecl<E>   // базис
 }
 
@@ -256,7 +256,7 @@ export type ReactiveTreeNodeDriver<E = unknown> = {
 
   runMount(node: ReactiveTreeNode<E>): void
 
-  runScript(node: ReactiveTreeNode<E>): void | Promise<void>
+  buildBody(node: ReactiveTreeNode<E>): void | Promise<void>
 
   declareChild(ownerNode: ReactiveTreeNode<E>,
     childDriver: ReactiveTreeNodeDriver<any>,
@@ -297,8 +297,8 @@ export abstract class BaseDriver<E = unknown> implements ReactiveTreeNodeDriver<
     // nothing to do by default
   }
 
-  runScript(node: ReactiveTreeNode<E>): void | Promise<void> {
-    return invokeScriptUsingBasisChain(node.element, node.declaration)
+  buildBody(node: ReactiveTreeNode<E>): void | Promise<void> {
+    return invokeBuildBodyUsingBasisChain(node.element, node.declaration)
   }
 
   declareChild(ownerNode: ReactiveTreeNode<E>,
@@ -352,19 +352,19 @@ export function getModeUsingBasisChain(declaration?: ReactiveTreeNodeDecl<any>):
   return declaration?.mode ?? (declaration?.basis ? getModeUsingBasisChain(declaration?.basis) : Mode.default)
 }
 
-function invokeScriptUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void | Promise<void> {
+function invokeBuildBodyUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
-  const script = declaration.script
-  const scriptAsync = declaration.scriptAsync
-  if (script && scriptAsync)
-    throw misuse("'script' and 'scriptAsync' cannot be defined together")
-  if (script)
-    result = script.call(element, element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
-  else if (scriptAsync)
-    result = scriptAsync.call(element, element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP_ASYNC)
+  const body = declaration.body
+  const bodyTask = declaration.bodyTask
+  if (body && bodyTask)
+    throw misuse("'body' and 'bodyTask' cannot be defined together")
+  if (body)
+    result = body.call(element, element, basis ? () => invokeBuildBodyUsingBasisChain(element, basis) : NOP)
+  else if (bodyTask)
+    result = bodyTask.call(element, element, basis ? () => invokeBuildBodyUsingBasisChain(element, basis) : NOP_ASYNC)
   else if (basis)
-    result = invokeScriptUsingBasisChain(element, basis)
+    result = invokeBuildBodyUsingBasisChain(element, basis)
   return result
 }
 
@@ -500,15 +500,15 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
     signalArgs: true,
     noSideEffects: false,
   })
-  script(_signalArgs: unknown): void {
-    // signalArgs parameter is used to enforce script run by owner
-    runScriptNow(this.slot!)
+  body(_signalArgs: unknown): void {
+    // signalArgs parameter is used to enforce body build by owner
+    buildBodyNow(this.slot!)
   }
 
   configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions {
     if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.autonomous))
       throw misuse("reactronic can be configured only for elements with autonomous mode and only during preparation")
-    return manageReaction(this.script).configure(options)
+    return manageReaction(this.body).configure(options)
   }
 
   static get nodeSlot(): LinkedItem<ReactiveTreeNode$> {
@@ -602,17 +602,17 @@ function launchNestedNodesThenDoImpl(nodeSlot: LinkedItem<ReactiveTreeNode$<any>
               mounting, host, child, children, sequential)
             const p = childNode.priority ?? Priority.realtime
             if (p === Priority.realtime)
-              launchScriptViaSlot(child) // synchronously
+              buildBodyViaSlot(child) // synchronously
             else if (p === Priority.normal)
-              p1 = push(child, p1) // defer for P1 async script run
+              p1 = push(child, p1) // defer for P1 async body build
             else
-              p2 = push(child, p2) // defer for P2 async script run
+              p2 = push(child, p2) // defer for P2 async body build
             if (isPart)
               partition = childNode
           }
-          // Run scripts for incremental children (if any)
+          // Build bodies for incremental children (if any)
           if (!Transaction.isCanceled && (p1 !== undefined || p2 !== undefined))
-            promised = startIncrementalNestedScriptsRun(nodeSlot, children, p1, p2).then(
+            promised = startIncrementalNestedBodyBuild(nodeSlot, children, p1, p2).then(
               () => action(error),
               e => action(e))
         }
@@ -643,38 +643,38 @@ function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNode$,
   return mounting
 }
 
-async function startIncrementalNestedScriptsRun(
+async function startIncrementalNestedBodyBuild(
   ownerSlot: LinkedItem<ReactiveTreeNode$>,
   allChildren: ReconciliationList<ReactiveTreeNode$>,
   priority1?: Array<LinkedItem<ReactiveTreeNode$>>,
   priority2?: Array<LinkedItem<ReactiveTreeNode$>>): Promise<void> {
   const stamp = ownerSlot.instance.stamp
   if (priority1)
-    await runNestedScriptsIncrementally(ownerSlot, stamp, allChildren, priority1, Priority.normal)
+    await runNestedBodyBuildIncrementally(ownerSlot, stamp, allChildren, priority1, Priority.normal)
   if (priority2)
-    await runNestedScriptsIncrementally(ownerSlot, stamp, allChildren, priority2, Priority.background)
+    await runNestedBodyBuildIncrementally(ownerSlot, stamp, allChildren, priority2, Priority.background)
 }
 
-async function runNestedScriptsIncrementally(owner: LinkedItem<ReactiveTreeNode$>, stamp: number,
+async function runNestedBodyBuildIncrementally(owner: LinkedItem<ReactiveTreeNode$>, stamp: number,
   allChildren: ReconciliationList<ReactiveTreeNode$>, items: Array<LinkedItem<ReactiveTreeNode$>>,
   priority: Priority): Promise<void> {
   await Transaction.requestNextFrame()
   const node = owner.instance
   if (!Transaction.isCanceled || !Transaction.isFrameOver(1, ReactiveTreeNode$.shortFrameDuration / 3)) {
-    let outerPriority = ReactiveTreeNode$.currentScriptPriority
-    ReactiveTreeNode$.currentScriptPriority = priority
+    let outerPriority = ReactiveTreeNode$.currentBodyPriority
+    ReactiveTreeNode$.currentBodyPriority = priority
     try {
       if (node.childrenShuffling)
         shuffle(items)
       const frameDurationLimit = priority === Priority.background ? ReactiveTreeNode.shortFrameDuration : Infinity
       let frameDuration = Math.min(frameDurationLimit, Math.max(ReactiveTreeNode.frameDuration / 4, ReactiveTreeNode.shortFrameDuration))
       for (const child of items) {
-        launchScriptViaSlot(child)
+        buildBodyViaSlot(child)
         if (Transaction.isFrameOver(1, frameDuration)) {
-          ReactiveTreeNode$.currentScriptPriority = outerPriority
+          ReactiveTreeNode$.currentBodyPriority = outerPriority
           await Transaction.requestNextFrame(0)
-          outerPriority = ReactiveTreeNode$.currentScriptPriority
-          ReactiveTreeNode$.currentScriptPriority = priority
+          outerPriority = ReactiveTreeNode$.currentBodyPriority
+          ReactiveTreeNode$.currentBodyPriority = priority
           frameDuration = Math.min(4 * frameDuration, Math.min(frameDurationLimit, ReactiveTreeNode.frameDuration))
         }
         if (Transaction.isCanceled && Transaction.isFrameOver(1, ReactiveTreeNode.shortFrameDuration / 3))
@@ -682,12 +682,12 @@ async function runNestedScriptsIncrementally(owner: LinkedItem<ReactiveTreeNode$
       }
     }
     finally {
-      ReactiveTreeNode$.currentScriptPriority = outerPriority
+      ReactiveTreeNode$.currentBodyPriority = outerPriority
     }
   }
 }
 
-function launchScriptViaSlot(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
+function buildBodyViaSlot(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) { // if not deactivated yet
     if (node.has(Mode.autonomous)) {
@@ -695,17 +695,17 @@ function launchScriptViaSlot(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void
         Transaction.outside(() => {
           if (ReactiveSystem.isLogging)
             ReactiveSystem.setLoggingHint(node.element, node.key)
-          manageReaction(node.script).configure({
+          manageReaction(node.body).configure({
             order: node.level,
           })
         })
       }
-      runNonReactive(node.script, node.declaration.signalArgs) // reactive auto-update
+      runNonReactive(node.body, node.declaration.signalArgs) // reactive auto-update
     }
     else if (node.owner !== node)
-      runScriptNow(nodeSlot)
+      buildBodyNow(nodeSlot)
     else // root node
-      runTransactional(() => runScriptNow(nodeSlot))
+      runTransactional(() => buildBodyNow(nodeSlot))
   }
 }
 
@@ -726,7 +726,7 @@ function mountOrRemountIfNecessary(node: ReactiveTreeNode$): void {
     runNonReactive(() => driver.runMount(node)) // re-mount
 }
 
-function runScriptNow(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
+function buildBodyNow(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
   const node = nodeSlot.instance
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
@@ -738,14 +738,14 @@ function runScriptNow(nodeSlot: LinkedItem<ReactiveTreeNode$<any>>): void {
           node.numerator = 0
           node.children.beginReconciliation()
           const driver = node.driver
-          result = driver.runScript(node)
+          result = driver.buildBody(node)
           result = proceedSyncOrAsync(result,
             v => { launchNestedNodesThenDoImpl(nodeSlot, undefined, NOP); return v },
             e => { console.log(e); launchNestedNodesThenDoImpl(nodeSlot, e ?? new Error("unknown error"), NOP) })
         }
         catch (e: unknown) {
           launchNestedNodesThenDoImpl(nodeSlot, e, NOP)
-          console.log(`Reactive node script failed: ${node.key}`)
+          console.log(`Reactive node body build failed: ${node.key}`)
           console.log(`${e}`)
         }
       }
