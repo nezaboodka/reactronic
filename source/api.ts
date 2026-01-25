@@ -7,8 +7,7 @@
 
 export { all, pause, proceedSyncOrAsync } from "./util/Utils.js"
 export { Uri } from "./util/Uri.js"
-export { ReconciliationList } from "./util/ReconciliationList.js"
-export type { LinkedItem, ReconciliationListReader } from "./util/ReconciliationList.js"
+export { LinkedList, LinkedItem } from "./util/LinkedList.js"
 export { SealedArray } from "./util/SealedArray.js"
 export { SealedMap } from "./util/SealedMap.js"
 export { SealedSet } from "./util/SealedSet.js"
