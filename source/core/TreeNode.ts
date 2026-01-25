@@ -314,9 +314,11 @@ export abstract class BaseDriver<E = unknown> implements ReactiveTreeNodeDriver<
 // ReactiveTreeVariable
 
 export class ReactiveTreeVariable<T extends Object = Object> {
+  readonly hint: string
   readonly defaultValue: T | undefined
 
-  constructor(defaultValue?: T) {
+  constructor(hint: string, defaultValue?: T) {
+    this.hint = hint
     this.defaultValue = defaultValue
   }
 
