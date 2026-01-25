@@ -151,7 +151,7 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
     return ReactiveTreeNode$.node
   }
 
-  static get isFirstScriptRun(): boolean {
+  static get isFirstBodyBuild(): boolean {
     return ReactiveTreeNode.current.stamp === 1
   }
 
