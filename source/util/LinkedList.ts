@@ -61,6 +61,14 @@ export class LinkedList<T extends LinkedItem<T>> {
     return this.items$.count + (this.renovation$?.lostItemCount ?? 0)
   }
 
+  get firstItem(): T | undefined {
+    return this.items$.first
+  }
+
+  get lastItem(): T | undefined {
+    return this.items$.last
+  }
+
   items(): Generator<T> {
     return this.items$.items()
   }
