@@ -75,7 +75,7 @@ export function declare<E = void>(
   else
     declaration = scriptOrDeclaration ?? {}
   let effectiveKey = declaration.key
-  const owner = gNode
+  const owner = gCurrentNode
   if (owner) {
     let existing = owner.driver.declareChild(owner, driver, declaration, declaration.basis)
     // Reuse existing node or declare a new one
@@ -508,9 +508,9 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   }
 
   static get node(): ReactiveTreeNode$ {
-    if (!gNode)
-      throw misuse("current element is undefined")
-    return gNode
+    if (!gCurrentNode)
+      throw misuse("current node is undefined")
+    return gCurrentNode
   }
 
   static tryUseTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T | undefined {
@@ -786,7 +786,7 @@ async function runDisposalLoop(): Promise<void> {
 
 function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T {
   let wrappedToRunInside: (...args: any[]) => T
-  const outer = gNode
+  const outer = gCurrentNode
   if (outer)
     wrappedToRunInside = (...args: any[]): T => {
       return runInsideContextOfNode(outer, func, ...args)
@@ -797,13 +797,13 @@ function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T 
 }
 
 function runInsideContextOfNode<T>(node: ReactiveTreeNode$, func: (...args: any[]) => T, ...args: any[]): T {
-  const outer = gNode
+  const outer = gCurrentNode
   try {
-    gNode = node
+    gCurrentNode = node
     return func(...args)
   }
   finally {
-    gNode = outer
+    gCurrentNode = outer
   }
 }
 
@@ -873,5 +873,5 @@ Promise.prototype.then = reactronicDomHookedThen
 const NOP: any = (...args: any[]): void => { /* nop */ }
 const NOP_ASYNC: any = async (...args: any[]): Promise<void> => { /* nop */ }
 
-let gNode: ReactiveTreeNode$ | undefined = undefined
+let gCurrentNode: ReactiveTreeNode$ | undefined = undefined
 const gDisposeList: LinkedSubList<ReactiveTreeNode> = new LinkedSubList()
