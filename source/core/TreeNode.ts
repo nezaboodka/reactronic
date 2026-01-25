@@ -267,6 +267,7 @@ export type ReactiveTreeNodeDriver<E = unknown> = {
 // ReactiveTreeNodeContext
 
 export type ReactiveTreeNodeContext<T extends Object = Object> = {
+  variable: ReactiveTreeVariable<T>
   value: T
 }
 
@@ -517,9 +518,10 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
 
   static tryUseTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T | undefined {
     let node = ReactiveTreeNode.current
-    while (node.context?.value !== variable && node.owner !== node)
+    while (node.context?.variable !== variable && node.owner !== node)
       node = node.outer
-    return node.context?.value as any // TODO: to get rid of any
+    const ctx = node.context as ReactiveTreeNodeContext<T>
+    return ctx?.variable === variable ? ctx.value : undefined
   }
 
   static useTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T {
