@@ -31,7 +31,7 @@ export function declare<E = void>(
   key?: string,
   mode?: Mode,
   preparation?: Script<E>,
-  preparationAsync?: ScriptAsync<E>,
+  preparationTask?: ScriptAsync<E>,
   finalization?: Script<E>,
   signalArgs?: unknown,
   basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNode<E>
@@ -47,7 +47,7 @@ export function declare<E = void>(
   key?: string,
   mode?: Mode,
   preparation?: Script<E>,
-  preparationAsync?: ScriptAsync<E>,
+  preparationTask?: ScriptAsync<E>,
   finalization?: Script<E>,
   signalArgs?: unknown,
   basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E>
@@ -59,7 +59,7 @@ export function declare<E = void>(
   key?: string,
   mode?: Mode,
   preparation?: Script<E>,
-  preparationAsync?: ScriptAsync<E>,
+  preparationTask?: ScriptAsync<E>,
   finalization?: Script<E>,
   signalArgs?: unknown,
   basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E> {
@@ -69,7 +69,7 @@ export function declare<E = void>(
   if (bodyOrDeclaration instanceof Function) {
     declaration = {
       body: bodyOrDeclaration, bodyTask, key, mode,
-      preparation, preparationAsync, finalization, signalArgs, basis,
+      preparation, preparationTask, finalization, signalArgs, basis,
     }
   }
   else
@@ -235,7 +235,7 @@ export type ReactiveTreeNodeDecl<E = unknown> = {
   key?: string                      // ключ
   mode?: Mode                       // режим
   preparation?: Script<E>           // подготовка
-  preparationAsync?: ScriptAsync<E> // подготовка-задача
+  preparationTask?: ScriptAsync<E> // подготовка-задача
   finalization?: Script<E>          // завершение
   signalArgs?: unknown              // аргументы-сигналы
   basis?: ReactiveTreeNodeDecl<E>   // базис
@@ -372,13 +372,13 @@ function invokePreparationUsingBasisChain(element: unknown, declaration: Reactiv
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
   const preparation = declaration.preparation
-  const preparationAsync = declaration.preparationAsync
-  if (preparation && preparationAsync)
-    throw misuse("'preparation' and 'preparationAsync' cannot be defined together")
+  const preparationTask = declaration.preparationTask
+  if (preparation && preparationTask)
+    throw misuse("'preparation' and 'preparationTask' cannot be defined together")
   if (preparation)
     result = preparation.call(element, element, basis ? () => invokePreparationUsingBasisChain(element, basis) : NOP)
-  else if (preparationAsync)
-    result = preparationAsync.call(element, element, basis ? () => invokePreparationUsingBasisChain(element, basis) : NOP_ASYNC)
+  else if (preparationTask)
+    result = preparationTask.call(element, element, basis ? () => invokePreparationUsingBasisChain(element, basis) : NOP_ASYNC)
   else if (basis)
     result = invokePreparationUsingBasisChain(element, basis)
   return result
