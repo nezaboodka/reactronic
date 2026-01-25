@@ -254,7 +254,7 @@ export type ReactiveTreeNodeDriver<E = unknown> = {
 
   runMount(node: ReactiveTreeNode<E>): void
 
-  runScript(node: ReactiveTreeNode<E>): void | Promise<void>
+  rebuildBody(node: ReactiveTreeNode<E>): void | Promise<void>
 
   declareChild(ownerNode: ReactiveTreeNode<E>,
     childDriver: ReactiveTreeNodeDriver<any>,
@@ -295,7 +295,7 @@ export abstract class BaseDriver<E = unknown> implements ReactiveTreeNodeDriver<
     // nothing to do by default
   }
 
-  runScript(node: ReactiveTreeNode<E>): void | Promise<void> {
+  rebuildBody(node: ReactiveTreeNode<E>): void | Promise<void> {
     return invokeScriptUsingBasisChain(node.element, node.declaration)
   }
 
@@ -498,7 +498,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   })
   body(_signalArgs: unknown): void {
     // signalArgs parameter is used to enforce body run by owner
-    runScriptNow(this)
+    rebuildBodyNow(this)
   }
 
   configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions {
@@ -697,9 +697,9 @@ function rebuildBodyImpl(node: ReactiveTreeNode$<any>): void {
       runNonReactive(node.body, node.declaration.signalArgs) // reactive auto-update
     }
     else if (node.owner !== node)
-      runScriptNow(node)
+      rebuildBodyNow(node)
     else // root node
-      runTransactional(() => runScriptNow(node))
+      runTransactional(() => rebuildBodyNow(node))
   }
 }
 
@@ -720,7 +720,7 @@ function mountOrRemountIfNecessary(node: ReactiveTreeNode$): void {
     runNonReactive(() => driver.runMount(node)) // re-mount
 }
 
-function runScriptNow(node: ReactiveTreeNode$<any>): void {
+function rebuildBodyNow(node: ReactiveTreeNode$<any>): void {
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
     runInsideContextOfNode(node, () => {
@@ -731,7 +731,7 @@ function runScriptNow(node: ReactiveTreeNode$<any>): void {
           node.numerator = 0
           node.children.beginRenovation()
           const driver = node.driver
-          result = driver.runScript(node)
+          result = driver.rebuildBody(node)
           result = proceedSyncOrAsync(result,
             v => { launchNestedNodesThenDoImpl(node, undefined, NOP); return v },
             e => { console.log(e); launchNestedNodesThenDoImpl(node, e ?? new Error("unknown error"), NOP) })
