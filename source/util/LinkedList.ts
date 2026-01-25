@@ -69,8 +69,8 @@ export class LinkedList<T extends LinkedItem<T>> {
     return this.items$.last
   }
 
-  items(): Generator<T> {
-    return this.items$.items()
+  items(after?: T): Generator<T> {
+    return this.items$.items(after)
   }
 
   tryLookup(key: string): T | undefined {
@@ -305,8 +305,8 @@ export class LinkedSubList<T extends LinkedItem<T>> {
 
   last?: T = undefined;
 
-  *items(): Generator<T> {
-    let x = this.first
+  *items(after?: T): Generator<T> {
+    let x = after ? after.next : this.first
     while (x !== undefined) {
       const next = x.next
       yield x
