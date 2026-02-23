@@ -32,7 +32,7 @@
     "noUnusedLocals": true,
     "noImplicitOverride": true,
     // Other
-    "emitDecoratorMetadata": true,
+    "emitDecoratorMetadata": false,
     "experimentalDecorators": true,
     "jsx": "react",
     "forceConsistentCasingInFileNames": true,
