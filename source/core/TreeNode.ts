@@ -117,8 +117,8 @@ export function derivative<E = void>(
   return declaration
 }
 
-export function launch<T>(func: (...args: any[]) => T, ...args: any[]): void {
-  runInsideContextOfNode(undefined, func, ...args)
+export function launch<T>(func: (...args: any[]) => T, ...args: any[]): T {
+  return runInsideContextOfNode(undefined, func, ...args)
 }
 
 // ReactiveTreeNode
