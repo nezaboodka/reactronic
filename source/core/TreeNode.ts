@@ -102,6 +102,7 @@ export function declare<E = void>(
   else {
     // Create new root node
     result = new ReactiveTreeNode$(effectiveKey || generateKey(owner), driver, declaration, owner)
+    ReactiveTreeNode.rebuildBody(result, signalArgs)
   }
   return result
 }
@@ -116,9 +117,8 @@ export function derivative<E = void>(
   return declaration
 }
 
-export function launch<T>(node: ReactiveTreeNode<T>, signalArgs?: unknown): ReactiveTreeNode<T> {
-  ReactiveTreeNode.rebuildBody(node, signalArgs)
-  return node
+export function launch<T>(func: (...args: any[]) => T, ...args: any[]): void {
+  runInsideContextOfNode(undefined, func, ...args)
 }
 
 // ReactiveTreeNode
@@ -800,7 +800,11 @@ function wrapToRunInside<T>(func: (...args: any[]) => T): (...args: any[]) => T 
   return wrappedToRunInside
 }
 
-function runInsideContextOfNode<T>(node: ReactiveTreeNode$, func: (...args: any[]) => T, ...args: any[]): T {
+function runInsideContextOfNode<T>(
+  node: ReactiveTreeNode$ | undefined,
+  func: (...args: any[]) => T,
+  ...args: any[]): T {
+
   const outer = gCurrentNode
   try {
     gCurrentNode = node
