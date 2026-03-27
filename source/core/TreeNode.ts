@@ -613,8 +613,8 @@ function launchNestedNodesThenDoImpl(node: ReactiveTreeNode$<any>, error: unknow
             if (Transaction.isCanceled)
               break
             const child = c as ReactiveTreeNode$
-            const isPart = child.driver.isPartition
-            const host = isPart ? owner : partition
+            const isPartition = child.driver.isPartition
+            const host = isPartition ? owner : partition
             mounting = markToMountIfNecessary(
               mounting, host, child, children, sequential)
             const p = child.priority ?? Priority.realtime
@@ -624,7 +624,7 @@ function launchNestedNodesThenDoImpl(node: ReactiveTreeNode$<any>, error: unknow
               p1 = push(child, p1) // defer for P1 async body build
             else
               p2 = push(child, p2) // defer for P2 async body build
-            if (isPart)
+            if (isPartition)
               partition = child
           }
           // Build bodies for incremental children (if any)
