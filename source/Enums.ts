@@ -7,7 +7,7 @@
 
 export enum Mode {
   default = 0,
-  autonomous = 1,
+  primitive = 1,
   external = 2,
 }
 

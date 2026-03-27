@@ -461,7 +461,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
     this.childrenShuffling = false
     // Monitoring
     ReactiveTreeNode$.grandNodeCount++
-    if (this.has(Mode.autonomous))
+    if (!this.has(Mode.primitive))
       ReactiveTreeNode$.disposableNodeCount++
   }
 
@@ -505,8 +505,8 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   }
 
   configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions {
-    if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || !this.has(Mode.autonomous))
-      throw misuse("reactronic can be configured only for elements with autonomous mode and only during preparation")
+    if (this.stamp < Number.MAX_SAFE_INTEGER - 1 || this.has(Mode.primitive))
+      throw misuse("reactivity can be configured only for elements with non-primitive mode and only during preparation")
     return manageReaction(this.body).configure(options)
   }
 
@@ -688,7 +688,7 @@ async function runNestedScriptsIncrementally(owner: ReactiveTreeNode$, stamp: nu
 
 function rebuildBodyImpl(node: ReactiveTreeNode$<any>): void {
   if (node.stamp >= 0) { // if not deactivated yet
-    if (node.has(Mode.autonomous)) {
+    if (!node.has(Mode.primitive)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
         Transaction.outside(() => {
           if (ReactiveSystem.isLogging)
@@ -758,8 +758,8 @@ function launchFinalizationImpl(node: ReactiveTreeNode$, isLeader: boolean, indi
     node.stamp = ~node.stamp
     // Finalize element itself and remove it from collection
     const childrenAreLeaders = runNonReactive(() => driver.runFinalization(node, isLeader))
-    if (node.has(Mode.autonomous)) {
-      // Defer disposal if element is reactive (having autonomous mode)
+    if (!node.has(Mode.primitive)) {
+      // Defer disposal if element is reactive (having non-primitive mode)
       LinkedItem.link$(gDisposeList, node, undefined)
       if (gDisposeList.first === node)
         runTransactional({ isolation: Isolation.disjoinForInternalDisposal, hint: `runDisposalLoop(initiator=${node.key})` }, () => {
