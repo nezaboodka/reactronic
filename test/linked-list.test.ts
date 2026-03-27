@@ -12,7 +12,7 @@ import { LinkedList, LinkedItem, Mark } from "../source/util/LinkedList.js"
 
 const V = Mark.reaffirmed
 const A = Mark.added
-const M = Mark.modified
+const M = Mark.moved
 const R = Mark.removed
 
 class Property extends LinkedItem<Property> {

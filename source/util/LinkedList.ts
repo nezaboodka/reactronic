@@ -178,7 +178,7 @@ export enum Mark {
 
   added = 1,       // добавлено
 
-  modified = 2,    // изменено
+  moved = 2,       // перемещено
 
   removed = 3,     // удалено
 
@@ -395,7 +395,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
         const expected = grabExternalIfAny(result, x) ?? x
         LinkedItem.link$(result, x, undefined)
         if (list.isStrictOrder && expected !== this.expected) {
-          LinkedItem.setStatus$(x, Mark.modified, result.count)
+          LinkedItem.setStatus$(x, Mark.moved, result.count)
           this.diff?.push(x)
         }
         else
@@ -430,8 +430,8 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
       throw misuse("only reaffirmed items can be marked as modified")
     const m = item.mark
     if (m === Mark.reaffirmed)
-      LinkedItem.setStatus$(item, Mark.modified, item.rank)
-    else if (m !== Mark.modified)
+      LinkedItem.setStatus$(item, Mark.moved, item.rank)
+    else if (m !== Mark.moved)
       throw misuse("item is renovated already and cannot be marked as modified")
   }
 
@@ -440,7 +440,7 @@ export class LinkedListRenovation<T extends LinkedItem<T>> {
     if (item.list !== this.former)
       throw misuse("cannot move item which doesn't belong to former list")
     LinkedList.move$(this.list, item, before)
-    LinkedItem.setStatus$(item, Mark.modified, 0)
+    LinkedItem.setStatus$(item, Mark.moved, 0)
     this.diff?.push(item)
   }
 

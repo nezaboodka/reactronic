@@ -30,8 +30,10 @@ export function declare<E = void>(
   bodyTask?: ScriptAsync<E>,
   key?: string,
   mode?: Mode,
+  mounted?: boolean,
   preparation?: Script<E>,
   preparationTask?: ScriptAsync<E>,
+  mounting?: Script<E>,
   finalization?: Script<E>,
   signalArgs?: unknown,
   basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNode<E>
@@ -46,8 +48,10 @@ export function declare<E = void>(
   bodyTask?: ScriptAsync<E>,
   key?: string,
   mode?: Mode,
+  mounted?: boolean,
   preparation?: Script<E>,
   preparationTask?: ScriptAsync<E>,
+  mounting?: Script<E>,
   finalization?: Script<E>,
   signalArgs?: unknown,
   basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E>
@@ -58,8 +62,10 @@ export function declare<E = void>(
   bodyTask?: ScriptAsync<E>,
   key?: string,
   mode?: Mode,
+  mounted?: boolean,
   preparation?: Script<E>,
   preparationTask?: ScriptAsync<E>,
+  mounting?: Script<E>,
   finalization?: Script<E>,
   signalArgs?: unknown,
   basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E> {
@@ -228,12 +234,14 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
 // ReactiveTreeNodeDecl
 
 export type ReactiveTreeNodeDecl<E = unknown> = {
-  body?: Script<E>                // сценарий
-  bodyTask?: ScriptAsync<E>      // сценарий-задача
+  body?: Script<E>                  // тело
+  bodyTask?: ScriptAsync<E>         // тело-задача
   key?: string                      // ключ
   mode?: Mode                       // режим
+  mounted?: boolean,                // смонтировано
   preparation?: Script<E>           // подготовка
-  preparationTask?: ScriptAsync<E> // подготовка-задача
+  preparationTask?: ScriptAsync<E>  // подготовка-задача
+  mounting?: Script<E>,             // монтаж
   finalization?: Script<E>          // завершение
   signalArgs?: unknown              // аргументы-сигналы
   basis?: ReactiveTreeNodeDecl<E>   // базис
@@ -293,11 +301,11 @@ export abstract class BaseDriver<E = unknown> implements ReactiveTreeNodeDriver<
   }
 
   runMount(node: ReactiveTreeNode<E>): void {
-    // nothing to do by default
+    invokeMountingUsingBasisChain(node.element, node.declaration)
   }
 
   rebuildBody(node: ReactiveTreeNode<E>): void | Promise<void> {
-    return invokeScriptUsingBasisChain(node.element, node.declaration)
+    return invokeBodyUsingBasisChain(node.element, node.declaration)
   }
 
   declareChild(ownerNode: ReactiveTreeNode<E>,
@@ -353,7 +361,7 @@ export function getModeUsingBasisChain(declaration?: ReactiveTreeNodeDecl<any>):
   return declaration?.mode ?? (declaration?.basis ? getModeUsingBasisChain(declaration?.basis) : Mode.default)
 }
 
-function invokeScriptUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void | Promise<void> {
+function invokeBodyUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
   const basis = declaration.basis
   const body = declaration.body
@@ -361,11 +369,11 @@ function invokeScriptUsingBasisChain(element: unknown, declaration: ReactiveTree
   if (body && bodyTask)
     throw misuse("'body' and 'bodyTask' cannot be defined together")
   if (body)
-    result = body.call(element, element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP)
+    result = body.call(element, element, basis ? () => invokeBodyUsingBasisChain(element, basis) : NOP)
   else if (bodyTask)
-    result = bodyTask.call(element, element, basis ? () => invokeScriptUsingBasisChain(element, basis) : NOP_ASYNC)
+    result = bodyTask.call(element, element, basis ? () => invokeBodyUsingBasisChain(element, basis) : NOP_ASYNC)
   else if (basis)
-    result = invokeScriptUsingBasisChain(element, basis)
+    result = invokeBodyUsingBasisChain(element, basis)
   return result
 }
 
@@ -383,6 +391,15 @@ function invokePreparationUsingBasisChain(element: unknown, declaration: Reactiv
   else if (basis)
     result = invokePreparationUsingBasisChain(element, basis)
   return result
+}
+
+function invokeMountingUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void {
+  const basis = declaration.basis
+  const mounting = declaration.mounting
+  if (mounting)
+    mounting.call(element, element, basis ? () => invokeMountingUsingBasisChain(element, basis) : NOP)
+  else if (basis)
+    invokeMountingUsingBasisChain(element, basis)
 }
 
 function invokeFinalizationUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void {
@@ -485,7 +502,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   }
 
   get isMoved(): boolean {
-    return this.mark === Mark.modified
+    return this.mark === Mark.moved
   }
 
   has(mode: Mode): boolean {
@@ -632,11 +649,11 @@ function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNode,
   // TODO: Get rid of "node.element.native"
   if ((node.element as any).native && !node.has(Mode.external)) {
     if (mounting || node.host !== host) {
-      LinkedItem.setStatus$(node as ReactiveTreeNode, Mark.modified, node.rank)
+      LinkedItem.setStatus$(node as ReactiveTreeNode, Mark.moved, node.rank)
       mounting = false
     }
   }
-  else if (sequential && node.mark === Mark.modified)
+  else if (sequential && node.mark === Mark.moved)
     mounting = true // apply to the first element having native HTML element
   node.host = host
   return mounting
