@@ -57,6 +57,10 @@ export function flags(value: number, flags: number): boolean {
   return (value & flags) === flags
 }
 
+export function flagsAny(value: number, flags: number): boolean {
+  return (value & flags) !== 0
+}
+
 /* istanbul ignore next */
 export function UNDEF(...args: any[]): never {
   throw fatal(new Error("this method should never be called"))

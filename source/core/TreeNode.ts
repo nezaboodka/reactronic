@@ -9,7 +9,7 @@ import { misuse } from "../util/Dbg.js"
 import { Uri } from "../util/Uri.js"
 import { LoggingOptions } from "../Logging.js"
 import { LinkedList, LinkedItem, Mark, LinkedSubList } from "../util/LinkedList.js"
-import { emitLetters, flags, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
+import { emitLetters, flags, flagsAny, getCallerInfo, proceedSyncOrAsync } from "../util/Utils.js"
 import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { ReactivityOptions } from "../Options.js"
 import { RxObject } from "../core/Mvcc.js"
@@ -151,6 +151,7 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
   abstract strictOrder: boolean
   abstract getUri(relativeTo?: ReactiveTreeNode<any>): string
   abstract has(mode: Mode): boolean
+  abstract hasAny(mode: Mode): boolean
   abstract configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions
 
   static get current(): ReactiveTreeNode {
@@ -509,6 +510,10 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
     return flags(getModeUsingBasisChain(this.declaration), mode)
   }
 
+  hasAny(mode: Mode): boolean {
+    return flagsAny(getModeUsingBasisChain(this.declaration), mode)
+  }
+
   @reaction
   @options({
     reentrance: Reentrance.cancelAndWaitPrevious,
@@ -644,12 +649,11 @@ function launchNestedNodesThenDoImpl(node: ReactiveTreeNode$<any>, error: unknow
 
 function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNode,
   node: ReactiveTreeNode$, children: LinkedList<ReactiveTreeNode>, sequential: boolean): boolean {
-  // Detects element mounting when abstract elements
+  // Detects element mounting when artificial elements
   // exist among regular elements having native HTML elements
-  // TODO: Get rid of "node.element.native"
   if (node.declaration.unmounted)
     host = node
-  if ((node.element as any).native && !node.has(Mode.external)) {
+  if (!node.hasAny(Mode.external | Mode.artificial)) {
     if (mounting || node.host !== host) {
       LinkedItem.setStatus$(node as ReactiveTreeNode, Mark.moved, node.rank)
       mounting = false
