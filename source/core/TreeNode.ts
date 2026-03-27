@@ -30,7 +30,7 @@ export function declare<E = void>(
   bodyTask?: ScriptAsync<E>,
   key?: string,
   mode?: Mode,
-  mounted?: boolean,
+  unmounted?: boolean,
   preparation?: Script<E>,
   preparationTask?: ScriptAsync<E>,
   mounting?: Script<E>,
@@ -48,7 +48,7 @@ export function declare<E = void>(
   bodyTask?: ScriptAsync<E>,
   key?: string,
   mode?: Mode,
-  mounted?: boolean,
+  unmounted?: boolean,
   preparation?: Script<E>,
   preparationTask?: ScriptAsync<E>,
   mounting?: Script<E>,
@@ -62,7 +62,7 @@ export function declare<E = void>(
   bodyTask?: ScriptAsync<E>,
   key?: string,
   mode?: Mode,
-  mounted?: boolean,
+  unmounted?: boolean,
   preparation?: Script<E>,
   preparationTask?: ScriptAsync<E>,
   mounting?: Script<E>,
@@ -238,7 +238,7 @@ export type ReactiveTreeNodeDecl<E = unknown> = {
   bodyTask?: ScriptAsync<E>         // тело-задача
   key?: string                      // ключ
   mode?: Mode                       // режим
-  mounted?: boolean,                // смонтировано
+  unmounted?: boolean,              // размонтировано
   preparation?: Script<E>           // подготовка
   preparationTask?: ScriptAsync<E>  // подготовка-задача
   mounting?: Script<E>,             // монтаж
@@ -647,6 +647,8 @@ function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNode,
   // Detects element mounting when abstract elements
   // exist among regular elements having native HTML elements
   // TODO: Get rid of "node.element.native"
+  if (node.declaration.unmounted)
+    host = node
   if ((node.element as any).native && !node.has(Mode.external)) {
     if (mounting || node.host !== host) {
       LinkedItem.setStatus$(node as ReactiveTreeNode, Mark.moved, node.rank)
