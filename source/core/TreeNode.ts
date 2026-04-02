@@ -715,7 +715,7 @@ function rebuildBodyImpl(node: ReactiveTreeNode$<any>): void {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
         Transaction.outside(() => {
           if (ReactiveSystem.isLogging)
-            ReactiveSystem.setLoggingHint(node.element, node.key)
+            ReactiveSystem.setLoggingHint(node, node.key)
           manageReaction(node.body).configure({
             order: node.level,
           })
