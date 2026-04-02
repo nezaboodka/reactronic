@@ -653,7 +653,7 @@ function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNode,
   // exist among regular elements having native HTML elements
   if (node.declaration.unmounted)
     host = node
-  if (!node.hasAny(Mode.external | Mode.artificial)) {
+  if (!node.hasAny(Mode.intermediate | Mode.external)) {
     if (mounting || node.host !== host) {
       LinkedItem.setStatus$(node as ReactiveTreeNode, Mark.moved, node.rank)
       mounting = false

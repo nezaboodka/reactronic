@@ -8,8 +8,8 @@
 export enum Mode {
   default = 0,
   primitive = 1,
-  external = 2,
-  artificial = 4,
+  intermediate = 2,
+  external = 4,
 }
 
 export enum Priority {
