@@ -477,8 +477,6 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
   private static proceed(footprint: OperationFootprintImpl, proxy: any): void {
     footprint.enter()
     try {
-      if (footprint.options.getter === undefined)
-        console.log("(!)")
       footprint.result = footprint.options.getter.call(proxy, ...footprint.args)
     }
     finally {
