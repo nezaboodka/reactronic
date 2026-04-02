@@ -54,7 +54,7 @@ export class Changeset implements AbstractChangeset {
   readonly id: number
   readonly options: SnapshotOptions
   readonly parent?: Changeset
-  get hint(): string { return this.options.hint ?? "noname" }
+  get name(): string { return this.options.hint ?? "noname" }
   get timestamp(): number { return this.revision }
   private revision: number
   private bumper: number
@@ -71,6 +71,11 @@ export class Changeset implements AbstractChangeset {
     this.items = new Map<ObjectHandle, ObjectVersion>()
     this.obsolete = []
     this.sealed = false
+  }
+
+  get caption(): string {
+    const p = this.parent
+    return `T${this.id}${p ? `^${p.id}` : ""}[${this.name}]`
   }
 
   // To be redefined by transaction implementation
@@ -109,7 +114,7 @@ export class Changeset implements AbstractChangeset {
   getObjectVersion(h: ObjectHandle, fk: FieldKey): ObjectVersion {
     const r = this.lookupObjectVersion(h, fk, false)
     if (r === EMPTY_OBJECT_VERSION)
-      throw misuse(`${Dump.obj(h, fk)} is not yet available for T${this.id}[${this.hint}] because ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} is not yet applied (last applied T${h.applied.changeset.id}[${h.applied.changeset.hint}])`)
+      throw misuse(`${Dump.obj(h, fk)} is not yet available for ${this.caption} because ${h.editing ? h.editing.changeset.caption : ""} is not yet applied (last applied ${h.applied.changeset.caption})`)
     return r
   }
 
@@ -180,19 +185,19 @@ export class Changeset implements AbstractChangeset {
     // if (fk !== Meta.Handle && value !== Meta.Handle && this.token !== undefined && token !== this.token && (r.snapshot !== this || r.former.snapshot !== ROOT_REV))
     //   throw misuse(`method must have no side effects: ${this.hint} should not change ${Hints.snapshot(r, fk)}`)
     // if (r === ROOT_REV && fk !== Meta.Handle && value !== Meta.Handle) /* istanbul ignore next */
-    //   throw misuse(`${Hints.snapshot(r, fk)} is not yet available for T${this.id}[${this.hint}] because of unfinished ${h.editing ? `, unfinished T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ''} (last applied T${h.head.changeset.id}[${h.head.changeset.hint}])`)
+    //   throw misuse(`${Hints.snapshot(r, fk)} is not yet available for ${this.caption} because of unfinished ${h.editing ? `, unfinished ${h.editing.changeset.caption}` : ''} (last applied ${h.head.changeset.caption})`)
     if (fk !== Meta.Handle) {
       if (value !== Meta.Handle) {
         if (ov.changeset !== this || ov.former.objectVersion !== EMPTY_OBJECT_VERSION) {
           if (this.options.token !== undefined && token !== this.options.token)
-            throw misuse(`${this.hint} should not have side effects (trying to change ${Dump.snapshot(ov, fk)})`)
+            throw misuse(`${this.name} should not have side effects (trying to change ${Dump.snapshot(ov, fk)})`)
           // TODO: Detect uninitialized members
           // if (existing === undefined)
           //   throw misuse(`uninitialized member is detected: ${Hints.snapshot(r, fk)}`)
         }
       }
       // if (ov === EMPTY_SNAPSHOT)
-      //   throw misuse(`${Dump.snapshot(ov, fk)} is not yet available for T${this.id}[${this.hint}] because ${h.editing ? `T${h.editing.changeset.id}[${h.editing.changeset.hint}]` : ""} is not yet applied (last applied T${h.applied.changeset.id}[${h.applied.changeset.hint}])`)
+      //   throw misuse(`${Dump.snapshot(ov, fk)} is not yet available for ${this.caption} because ${h.editing ? h.editing.changeset.caption : ""} is not yet applied (last applied ${h.applied.changeset.caption})`)
     }
     return ov.changeset !== this && !this.sealed
   }
@@ -206,7 +211,7 @@ export class Changeset implements AbstractChangeset {
       if (Changeset.oldest === undefined)
         Changeset.oldest = this
       if (Log.isOn && Log.opt.transaction)
-        Log.write("╔══", `s${this.revision}`, `${this.hint}`)
+        Log.write("╔══", `s${this.revision}`, `${this.name}`)
     }
     return result
   }
@@ -356,7 +361,7 @@ export class Changeset implements AbstractChangeset {
 
   private unlinkHistory(): void {
     if (Log.isOn && Log.opt.gc)
-      Log.write("", "[G]", `Dismiss history below t${this.id}s${this.revision} (${this.hint})`)
+      Log.write("", "[G]", `Dismiss history below t${this.id}s${this.revision} (${this.name})`)
     this.items.forEach((ov: ObjectVersion, h: ObjectHandle) => {
       if (Log.isOn && Log.opt.gc && ov.former.objectVersion !== EMPTY_OBJECT_VERSION)
         Log.write(" ", "  ", `${Dump.snapshot2(h, ov.former.objectVersion.changeset)} is ready for GC because overwritten by ${Dump.snapshot2(h, ov.changeset)}`)
@@ -430,7 +435,7 @@ export class Dump {
   }
 
   static conflictingMemberHint(fk: FieldKey, ours: ObjectVersion, theirs: ObjectVersion): string {
-    return `${theirs.changeset.hint} (${Dump.snapshot(theirs, fk)})`
+    return `${theirs.changeset.name} (${Dump.snapshot(theirs, fk)})`
   }
 }
 

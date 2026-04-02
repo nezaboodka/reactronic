@@ -17,7 +17,8 @@ export abstract class Transaction implements Worker {
   static get current(): Transaction { return TransactionImpl.curr }
 
   abstract readonly id: number
-  abstract readonly hint: string
+  abstract readonly name: string
+  abstract readonly caption: string
   abstract readonly options: SnapshotOptions
   abstract readonly timestamp: number
   abstract readonly error: Error | undefined
@@ -78,8 +79,10 @@ export class TransactionImpl extends Transaction {
   }
 
   static get curr(): TransactionImpl { return TransactionImpl.gCurr }
+
   get id(): number { return this.changeset.id }
-  get hint(): string { return this.changeset.hint }
+  get name(): string { return this.changeset.name }
+  get caption(): string { return this.changeset.caption }
   get options(): SnapshotOptions { return this.changeset.options }
   get timestamp(): number { return this.changeset.timestamp }
   get error(): Error | undefined { return this.canceled }
@@ -94,7 +97,7 @@ export class TransactionImpl extends Transaction {
     try {
       TransactionImpl.isInspectionMode = true
       if (Log.isOn && Log.opt.transaction)
-        Log.write(" ", " ", `T${this.id}[${this.hint}] is being inspected by T${TransactionImpl.gCurr.id}[${TransactionImpl.gCurr.hint}]`)
+        Log.write(" ", " ", `${this.caption} is being inspected by ${TransactionImpl.gCurr.caption}`)
       return this.runImpl(undefined, func, ...args)
     }
     finally {
@@ -244,13 +247,13 @@ export class TransactionImpl extends Transaction {
     catch (error) {
       if (this.after !== TransactionImpl.none) {
         if (this.after) {
-          // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is waiting for restart`)
+          // if (Dbg.logging.transactions) Dbg.log("", "  ", `${this.caption} is waiting for restart`)
           // if (this.after !== this)
           //   await this.after.whenFinished()
           await this.after.whenFinished()
-          // if (Dbg.logging.transactions) Dbg.log("", "  ", `T${this.id} (${this.hint}) is ready for restart`)
+          // if (Dbg.logging.transactions) Dbg.log("", "  ", `${this.caption} is ready for restart`)
           const options: SnapshotOptions = {
-            hint: `${this.hint} - restart after T${this.after.id}`,
+            hint: `${this.name} - restart after T${this.after.id}`,
             isolation: this.options.isolation === Isolation.joinToCurrentTransaction ? Isolation.disjoinFromOuterTransaction : this.options.isolation,
             logging: this.changeset.options.logging,
             token: this.changeset.options.token,
@@ -322,7 +325,7 @@ export class TransactionImpl extends Transaction {
       if (Log.isOn && Log.opt.transaction) {
         Log.write("║", " [!]", `${error.message}`, undefined, " *** CANCEL ***")
         if (after && after !== TransactionImpl.none)
-          Log.write("║", " [!]", `T${t.id}[${t.hint}] will be restarted${t !== after ? ` after T${after.id}[${after.hint}]` : ""}`)
+          Log.write("║", " [!]", `${t.caption} will be restarted${t !== after ? ` after ${after.caption}` : ""}`)
       }
       Changeset.discardAllListeners(t.changeset)
     }
@@ -336,7 +339,7 @@ export class TransactionImpl extends Transaction {
   }
 
   private tryResolveConflicts(conflicts: ObjectVersion[]): void {
-    throw error(`T${this.id}[${this.hint}] conflicts with: ${Dump.conflicts(conflicts)}`, undefined)
+    throw error(`${this.caption} conflicts with: ${Dump.conflicts(conflicts)}`, undefined)
   }
 
   private applyOrDiscard(): Array<OperationFootprint> {
@@ -390,7 +393,7 @@ export class TransactionImpl extends Transaction {
         })
       }
       if (Log.opt.transaction)
-        Log.write(changeset.timestamp < UNDEFINED_REVISION ? "╚══" : /* istanbul ignore next */ "═══", `s${this.timestamp}`, `${this.hint} - ${error ? "CANCEL" : "APPLY"}(${this.changeset.items.size})${error ? ` - ${error}` : ""}`)
+        Log.write(changeset.timestamp < UNDEFINED_REVISION ? "╚══" : /* istanbul ignore next */ "═══", `s${this.timestamp}`, `${this.name} - ${error ? "CANCEL" : "APPLY"}(${this.changeset.items.size})${error ? ` - ${error}` : ""}`)
     }
     let obsolete = changeset.obsolete
     if (changeset.parent) {

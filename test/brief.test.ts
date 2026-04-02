@@ -76,7 +76,7 @@ test("brief", (t: ExecutionContext<unknown>) => {
       t.true(computed.startsWith("Demo.computed @ "))
       t.is(computed, app.model.computed)
       t.throws(() => tran1.apply(), { message: "cannot apply transaction having active operations running" })
-      app.model.shared = app.shared = tran1.hint
+      app.model.shared = app.shared = tran1.name
       daddy.id = "field restored during transaction"
       daddy.id = null // restore
       daddy.age += 2 // causes no execution of DemoApp.render
@@ -91,7 +91,7 @@ test("brief", (t: ExecutionContext<unknown>) => {
       t.is(daddy.children.length, 3)
       app.userFilter = "Jo" // set to the same value
     })
-    t.is(app.model.shared, tran1.hint)
+    t.is(app.model.shared, tran1.name)
     t.is(daddy.name, "John")
     t.is(tran1.inspect(() => daddy.name), "John Smith")
     t.throws(() => tran1.inspect(() => { daddy.name = "Forbidden" }), { message: "cannot make changes during transaction inspection" })

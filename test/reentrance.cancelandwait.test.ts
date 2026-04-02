@@ -38,7 +38,7 @@ test("reentrance.cancelandwait", async (t: ExecutionContext<unknown>) => {
     t.is(busy.counter, 1)
     t.is(busy.workers.size, 1)
     busy.workers.forEach(w =>
-      t.assert(w.hint.indexOf("AsyncDemo.load #23 - ") === 0))
+      t.assert(w.name.indexOf("AsyncDemo.load #23 - ") === 0))
     await all(responses)
   }
   catch (error: any) { /* istanbul ignore next */

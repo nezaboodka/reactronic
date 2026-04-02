@@ -69,7 +69,7 @@ export class ReactionImpl implements Reaction<any> {
     else if (Log.isOn && Log.opt.operation && (opts.logging === undefined ||
       opts.logging.operation === undefined || opts.logging.operation === true))
       Log.write(Transaction.current.isFinished ? "" : "║", " (=)",
-        `${Dump.snapshot2(ror.footprint.descriptor.ownerHandle, ror.changeset, this.fieldKey)} result is reused from T${ror.footprint.transaction.id}[${ror.footprint.transaction.hint}]`)
+        `${Dump.snapshot2(ror.footprint.descriptor.ownerHandle, ror.changeset, this.fieldKey)} result is reused from ${ror.footprint.transaction.caption}`)
     const t = ror.footprint
     Changeset.markUsed(t, ror.objectVersion, this.fieldKey, this.ownerHandle, t.options.kind, weak)
     return t
@@ -325,7 +325,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
     else if (this.descriptor.options.kind === Kind.transaction)
       cause = "   ◀◀   operation"
     else
-      cause = `   ◀◀   T${this.changeset.id}[${this.changeset.hint}]`
+      cause = `   ◀◀   ${this.changeset.caption}`
     return `${this.hint()}${cause}`
   }
 
@@ -394,7 +394,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
           // do not cancel itself
         }
         else if (!tran.isFinished && this !== footprint && !this.options.allowObsoleteToFinish) // restart after itself if canceled
-          tran.cancel(new Error(`T${tran.id}[${tran.hint}] is canceled due to obsolete ${Dump.snapshot2(h, changeset, fk)} changed by T${changeset.id}[${changeset.hint}]`), null)
+          tran.cancel(new Error(`${tran.caption} is canceled due to obsolete ${Dump.snapshot2(h, changeset, fk)} changed by ${changeset.caption}`), null)
       }
       else if (Log.isOn && (Log.opt.obsolete || this.options.logging?.obsolete))
         Log.write(" ", "x", `${this.hint()} is not obsolete due to its own change to ${Dump.snapshot2(h, changeset, fk, footprint)}`)
@@ -446,20 +446,20 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
         case Reentrance.preventWithError:
           if (!opponent.transaction.isCanceled)
             throw misuse(`${head.hint()} (${head.why()}) is not reentrant over ${opponent.hint()} (${opponent.why()})`)
-          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/PreventWithError due to canceled T${opponent.transaction.id}[${opponent.transaction.hint}]`)
+          error = new Error(`${this.transaction.caption} is on hold/PreventWithError due to canceled ${opponent.transaction.caption}`)
           this.transaction.cancel(error, opponent.transaction)
           break
         case Reentrance.waitAndRestart:
-          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/WaitAndRestart due to active T${opponent.transaction.id}[${opponent.transaction.hint}]`)
+          error = new Error(`${this.transaction.caption} is on hold/WaitAndRestart due to active ${opponent.transaction.caption}`)
           this.transaction.cancel(error, opponent.transaction)
           break
         case Reentrance.cancelAndWaitPrevious:
-          error = new Error(`T${this.transaction.id}[${this.transaction.hint}] is on hold/CancelAndWaitPrevious due to active T${opponent.transaction.id}[${opponent.transaction.hint}]`)
+          error = new Error(`${this.transaction.caption} is on hold/CancelAndWaitPrevious due to active ${opponent.transaction.caption}`)
           this.transaction.cancel(error, opponent.transaction)
-          opponent.transaction.cancel(new Error(`T${opponent.transaction.id}[${opponent.transaction.hint}] is canceled due to re-entering T${this.transaction.id}[${this.transaction.hint}]`), null)
+          opponent.transaction.cancel(new Error(`${opponent.transaction.caption} is canceled due to re-entering ${this.transaction.caption}`), null)
           break
         case Reentrance.cancelPrevious:
-          opponent.transaction.cancel(new Error(`T${opponent.transaction.id}[${opponent.transaction.hint}] is canceled due to re-entering T${this.transaction.id}[${this.transaction.hint}]`), null)
+          opponent.transaction.cancel(new Error(`${opponent.transaction.caption} is canceled due to re-entering ${this.transaction.caption}`), null)
           break
         case Reentrance.runSideBySide:
           break // do nothing
@@ -617,7 +617,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
     })
     obsolete.sort(compareReactionsByOrder)
     changeset.options.journal?.edited(
-      JournalImpl.buildPatch(changeset.hint, changeset.items))
+      JournalImpl.buildPatch(changeset.name, changeset.items))
   }
 
   private static discardAllListeners(changeset: Changeset): void {
@@ -636,7 +636,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
       // Propagate change to reactive functions
       const former = ov.former.objectVersion.data[fk]
       if (former !== undefined && former instanceof ContentFootprint) {
-        const why = `T${ov.changeset.id}[${ov.changeset.hint}]`
+        const why = ov.changeset.caption
         if (former instanceof OperationFootprintImpl) {
           if ((former.obsoleteSince === MAX_REVISION || former.obsoleteSince <= 0)) {
             former.obsoleteDueTo = why
@@ -646,7 +646,7 @@ class OperationFootprintImpl extends ContentFootprint implements OperationFootpr
           const formerSuccessor = former.successor
           if (formerSuccessor !== curr) {
             if (formerSuccessor && !formerSuccessor.transaction.isFinished)
-              formerSuccessor.transaction.cancel(new Error(`T${formerSuccessor.transaction.id}[${formerSuccessor.transaction.hint}] is canceled by T${ov.changeset.id}[${ov.changeset.hint}] and will not run anymore`), null)
+              formerSuccessor.transaction.cancel(new Error(`${formerSuccessor.transaction.caption} is canceled by ${ov.changeset.caption} and will not run anymore`), null)
           }
           else
             former.successor = undefined
@@ -871,7 +871,8 @@ function valueHint(value: any): string {
 
 function getMergedLoggingOptions(local: Partial<LoggingOptions> | undefined): LoggingOptions {
   const t = Transaction.current
-  let res = Log.merge(t.options.logging, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}` : `-${Changeset.idGen.toString().replace(/[0-9]/g, "-")}`, Log.global)
+  const p = t.parent
+  let res = Log.merge(t.options.logging, t.id > 1 ? 31 + t.id % 6 : 37, t.id > 1 ? `T${t.id}${p ? `^${p.id}` : ""}` : `-${Changeset.idGen.toString().replace(/[0-9]/g, "-")}`, Log.global)
   res = Log.merge({margin1: t.margin}, undefined, undefined, res)
   if (OperationFootprintImpl.current)
     res = Log.merge({margin2: OperationFootprintImpl.current.margin}, undefined, undefined, res)

@@ -13,7 +13,8 @@ export { Meta } from "./Meta.js"
 
 export type AbstractChangeset = {
   readonly id: number
-  readonly hint: string
+  readonly name: string
+  readonly caption: string
   readonly timestamp: number
   readonly sealed: boolean
 }
