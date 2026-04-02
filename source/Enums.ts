@@ -8,7 +8,7 @@
 export enum Mode {
   default = 0,
   primitive = 1,
-  intermediate = 2,
+  fragment = 2,
   external = 4,
 }
 
