@@ -15,7 +15,7 @@ export enum Mode {
 export enum Priority {
   realtime = 0,
   normal = 1,
-  background = 2
+  background = 2,
 }
 
 export enum Kind {
