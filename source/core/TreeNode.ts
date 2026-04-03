@@ -124,7 +124,7 @@ export function derivative<E = void>(
 }
 
 export function launch<T>(func: (...args: any[]) => T, ...args: any[]): T {
-  return runInsideContextOfNode(undefined, func, ...args)
+  return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
 }
 
 // ReactiveTreeNode
