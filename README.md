@@ -80,7 +80,7 @@ Here is an example of a cached result that is
 (re-)computed on-demand:
 
 ``` typescript
-class Demo extends SignallingObject {
+class Demo extends RxObject {
   name: string = 'Nezaboodka Software'
   email: string = 'contact@nezaboodka.com'
 
