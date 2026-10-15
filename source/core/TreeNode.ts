@@ -68,7 +68,21 @@ export function describe<E = void>(
   finalization?: Script<E>,
   signalArgs?: unknown,
   unmounted?: boolean,
-  basis?: ReactiveTreeNodeDesc<E>):  ReactiveTreeNode<E> {
+  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
+
+export function describe<E = void>(
+  driver: ReactiveTreeNodeDriver<E>,
+  bodyOrKeyOrModeDescription?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
+  bodyOrMode?: Script<E> | Mode,
+  body?: Script<E>,
+  bodyTask?: ScriptAsync<E>,
+  preparation?: Script<E>,
+  preparationTask?: ScriptAsync<E>,
+  mounting?: Script<E>,
+  finalization?: Script<E>,
+  signalArgs?: unknown,
+  unmounted?: boolean,
+  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
 //
   const p1 = bodyOrKeyOrModeDescription
   const p2 = bodyOrMode
