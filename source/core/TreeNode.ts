@@ -24,7 +24,7 @@ export type Handler<E = unknown, R = void> = (o: E) => R
 
 // Actions
 
-export function declare<E = void>(
+export function describe<E = void>(
   driver: ReactiveTreeNodeDriver<E>,
   body?: Script<E>,
   bodyTask?: ScriptAsync<E>,
@@ -36,15 +36,15 @@ export function declare<E = void>(
   mounting?: Script<E>,
   finalization?: Script<E>,
   signalArgs?: unknown,
-  basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNode<E>
+  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
-export function declare<E = void>(
+export function describe<E = void>(
   driver: ReactiveTreeNodeDriver<E>,
-  declaration?: ReactiveTreeNodeDecl<E>): ReactiveTreeNode<E>
+  description?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
-export function declare<E = void>(
+export function describe<E = void>(
   driver: ReactiveTreeNodeDriver<E>,
-  bodyOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
+  bodyOrDescription?: Script<E> | ReactiveTreeNodeDesc<E>,
   bodyTask?: ScriptAsync<E>,
   key?: string,
   mode?: Mode,
@@ -54,11 +54,11 @@ export function declare<E = void>(
   mounting?: Script<E>,
   finalization?: Script<E>,
   signalArgs?: unknown,
-  basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E>
+  basis?: ReactiveTreeNodeDesc<E>):  ReactiveTreeNode<E>
 
-export function declare<E = void>(
+export function describe<E = void>(
   driver: ReactiveTreeNodeDriver<E>,
-  bodyOrDeclaration?: Script<E> | ReactiveTreeNodeDecl<E>,
+  bodyOrDescription?: Script<E> | ReactiveTreeNodeDesc<E>,
   bodyTask?: ScriptAsync<E>,
   key?: string,
   mode?: Mode,
@@ -68,59 +68,59 @@ export function declare<E = void>(
   mounting?: Script<E>,
   finalization?: Script<E>,
   signalArgs?: unknown,
-  basis?: ReactiveTreeNodeDecl<E>):  ReactiveTreeNode<E> {
+  basis?: ReactiveTreeNodeDesc<E>):  ReactiveTreeNode<E> {
   let result: ReactiveTreeNode$<E>
-  let declaration: ReactiveTreeNodeDecl<E>
+  let desc: ReactiveTreeNodeDesc<E>
   // Normalize parameters
-  if (bodyOrDeclaration instanceof Function) {
-    declaration = {
-      body: bodyOrDeclaration, bodyTask, key, mode,
+  if (bodyOrDescription instanceof Function) {
+    desc = {
+      body: bodyOrDescription, bodyTask, key, mode,
       preparation, preparationTask, finalization, signalArgs, basis,
     }
   }
   else
-    declaration = bodyOrDeclaration ?? {}
-  let effectiveKey = declaration.key
+    desc = bodyOrDescription ?? {}
+  let effectiveKey = desc.key
   const owner = gCurrentNode
   if (owner) {
-    let existing = owner.driver.declareChild(owner, driver, declaration, declaration.basis)
-    // Reuse existing node or declare a new one
+    let existing = owner.driver.describeChild(owner, driver, desc, desc.basis)
+    // Reuse existing node or describe a new one
     const renovation = owner.children.renovation
     existing ??= renovation.tryReaffirm(
       effectiveKey = effectiveKey || generateKey(owner), undefined,
-      "nested elements can be declared inside 'body' only")
+      "nested elements can be described inside 'body' only")
     if (existing) {
       // Reuse existing node
       result = existing as ReactiveTreeNode$<E>
       if (result.driver !== driver && driver !== undefined)
         throw misuse(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
-      const exSignalArgs = result.declaration.signalArgs
-      if (signalsAreEqual(declaration.signalArgs, exSignalArgs))
-        declaration.signalArgs = exSignalArgs // preserve signal args instance
-      result.declaration = declaration
+      const exSignalArgs = result.description.signalArgs
+      if (signalsAreEqual(desc.signalArgs, exSignalArgs))
+        desc.signalArgs = exSignalArgs // preserve signal args instance
+      result.description = desc
     }
     else {
       // Create new node
-      result = new ReactiveTreeNode$<E>(effectiveKey || generateKey(owner), driver, declaration, owner)
+      result = new ReactiveTreeNode$<E>(effectiveKey || generateKey(owner), driver, desc, owner)
       renovation.thisIsAdded(result as ReactiveTreeNode$<unknown>) as ReactiveTreeNode$<E>
     }
   }
   else {
     // Create new root node
-    result = new ReactiveTreeNode$(effectiveKey || generateKey(owner), driver, declaration, owner)
+    result = new ReactiveTreeNode$(effectiveKey || generateKey(owner), driver, desc, owner)
     ReactiveTreeNode.rebuildBody(result, signalArgs)
   }
   return result
 }
 
 export function setBasis<E = void>(
-  declaration?: ReactiveTreeNodeDecl<E>,
-  basis?: ReactiveTreeNodeDecl<E>): ReactiveTreeNodeDecl<E> {
-  if (declaration)
-    declaration.basis = basis
+  description?: ReactiveTreeNodeDesc<E>,
+  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNodeDesc<E> {
+  if (description)
+    description.basis = basis
   else
-    declaration = basis ?? {}
-  return declaration
+    description = basis ?? {}
+  return description
 }
 
 export function launch<T>(func: (...args: any[]) => T, ...args: any[]): T {
@@ -137,7 +137,7 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
 
   abstract readonly key: string
   abstract readonly driver: ReactiveTreeNodeDriver<E>
-  abstract readonly declaration: Readonly<ReactiveTreeNodeDecl<E>/* | ReactiveTreeNodeDeclAsync<E>*/>
+  abstract readonly description: Readonly<ReactiveTreeNodeDesc<E>/* | ReactiveTreeNodeDescAsync<E>*/>
   abstract readonly level: number
   abstract readonly owner: ReactiveTreeNode
   abstract element: E
@@ -164,9 +164,9 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
 
   static rebuildBody(node: ReactiveTreeNode<any>, signalArgs: unknown): void {
     const impl = node as ReactiveTreeNode$<any>
-    const declaration = impl.declaration
-    if (node.stamp >= Number.MAX_SAFE_INTEGER || !signalsAreEqual(signalArgs, declaration.signalArgs)) {
-      declaration.signalArgs = signalArgs // remember new signalArgs
+    const desc = impl.description
+    if (node.stamp >= Number.MAX_SAFE_INTEGER || !signalsAreEqual(signalArgs, desc.signalArgs)) {
+      desc.signalArgs = signalArgs // remember new signalArgs
       rebuildBodyImpl(impl)
     }
   }
@@ -232,9 +232,9 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
   }
 }
 
-// ReactiveTreeNodeDecl
+// ReactiveTreeNodeDesc
 
-export type ReactiveTreeNodeDecl<E = unknown> = {
+export type ReactiveTreeNodeDesc<E = unknown> = {
   body?: Script<E>                  // тело
   bodyTask?: ScriptAsync<E>         // тело-задача
   key?: string                      // ключ
@@ -245,7 +245,7 @@ export type ReactiveTreeNodeDecl<E = unknown> = {
   mounting?: Script<E>,             // монтаж
   finalization?: Script<E>          // завершение
   signalArgs?: unknown              // аргументы-сигналы
-  basis?: ReactiveTreeNodeDecl<E>   // базис
+  basis?: ReactiveTreeNodeDesc<E>   // базис
 }
 
 // ReactiveTreeNodeDriver
@@ -265,10 +265,10 @@ export type ReactiveTreeNodeDriver<E = unknown> = {
 
   rebuildBody(node: ReactiveTreeNode<E>): void | Promise<void>
 
-  declareChild(ownerNode: ReactiveTreeNode<E>,
+  describeChild(ownerNode: ReactiveTreeNode<E>,
     childDriver: ReactiveTreeNodeDriver<any>,
-    childDeclaration?: ReactiveTreeNodeDecl<any>,
-    childBasis?: ReactiveTreeNodeDecl<any>): LinkedItem<ReactiveTreeNode> | undefined
+    childDescription?: ReactiveTreeNodeDesc<any>,
+    childBasis?: ReactiveTreeNodeDesc<any>): LinkedItem<ReactiveTreeNode> | undefined
 
   provideHost(node: ReactiveTreeNode<E>): ReactiveTreeNode<E>
 }
@@ -293,26 +293,26 @@ export abstract class BaseDriver<E = unknown> implements ReactiveTreeNodeDriver<
 
   runPreparation(node: ReactiveTreeNode<E>): void | Promise<void> {
     this.initialize?.(node.element)
-    return invokePreparationUsingBasisChain(node.element, node.declaration)
+    return invokePreparationUsingBasisChain(node.element, node.description)
   }
 
   runFinalization(node: ReactiveTreeNode<E>, isLeader: boolean): boolean {
-    invokeFinalizationUsingBasisChain(node.element, node.declaration)
+    invokeFinalizationUsingBasisChain(node.element, node.description)
     return isLeader // treat children as deactivation leaders as well
   }
 
   runMount(node: ReactiveTreeNode<E>): void {
-    invokeMountingUsingBasisChain(node.element, node.declaration)
+    invokeMountingUsingBasisChain(node.element, node.description)
   }
 
   rebuildBody(node: ReactiveTreeNode<E>): void | Promise<void> {
-    return invokeBodyUsingBasisChain(node.element, node.declaration)
+    return invokeBodyUsingBasisChain(node.element, node.description)
   }
 
-  declareChild(ownerNode: ReactiveTreeNode<E>,
+  describeChild(ownerNode: ReactiveTreeNode<E>,
     childDriver: ReactiveTreeNodeDriver<any>,
-    childDeclaration?: ReactiveTreeNodeDecl<any>,
-    childBasis?: ReactiveTreeNodeDecl<any>): LinkedItem<ReactiveTreeNode> | undefined {
+    childDescription?: ReactiveTreeNodeDesc<any>,
+    childBasis?: ReactiveTreeNodeDesc<any>): LinkedItem<ReactiveTreeNode> | undefined {
     return undefined
   }
 
@@ -358,15 +358,15 @@ export function generateKey(owner?: ReactiveTreeNode$): string {
   return result
 }
 
-export function getModeUsingBasisChain(declaration?: ReactiveTreeNodeDecl<any>): Mode {
-  return declaration?.mode ?? (declaration?.basis ? getModeUsingBasisChain(declaration?.basis) : Mode.default)
+export function getModeUsingBasisChain(description?: ReactiveTreeNodeDesc<any>): Mode {
+  return description?.mode ?? (description?.basis ? getModeUsingBasisChain(description?.basis) : Mode.default)
 }
 
-function invokeBodyUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void | Promise<void> {
+function invokeBodyUsingBasisChain(element: unknown, description: ReactiveTreeNodeDesc<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
-  const basis = declaration.basis
-  const body = declaration.body
-  const bodyTask = declaration.bodyTask
+  const basis = description.basis
+  const body = description.body
+  const bodyTask = description.bodyTask
   if (body && bodyTask)
     throw misuse("'body' and 'bodyTask' cannot be defined together")
   if (body)
@@ -378,11 +378,11 @@ function invokeBodyUsingBasisChain(element: unknown, declaration: ReactiveTreeNo
   return result
 }
 
-function invokePreparationUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void | Promise<void> {
+function invokePreparationUsingBasisChain(element: unknown, description: ReactiveTreeNodeDesc<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
-  const basis = declaration.basis
-  const preparation = declaration.preparation
-  const preparationTask = declaration.preparationTask
+  const basis = description.basis
+  const preparation = description.preparation
+  const preparationTask = description.preparationTask
   if (preparation && preparationTask)
     throw misuse("'preparation' and 'preparationTask' cannot be defined together")
   if (preparation)
@@ -394,18 +394,18 @@ function invokePreparationUsingBasisChain(element: unknown, declaration: Reactiv
   return result
 }
 
-function invokeMountingUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void {
-  const basis = declaration.basis
-  const mounting = declaration.mounting
+function invokeMountingUsingBasisChain(element: unknown, description: ReactiveTreeNodeDesc<any>): void {
+  const basis = description.basis
+  const mounting = description.mounting
   if (mounting)
     mounting.call(element, element, basis ? () => invokeMountingUsingBasisChain(element, basis) : NOP)
   else if (basis)
     invokeMountingUsingBasisChain(element, basis)
 }
 
-function invokeFinalizationUsingBasisChain(element: unknown, declaration: ReactiveTreeNodeDecl<any>): void {
-  const basis = declaration.basis
-  const finalization = declaration.finalization
+function invokeFinalizationUsingBasisChain(element: unknown, description: ReactiveTreeNodeDesc<any>): void {
+  const basis = description.basis
+  const finalization = description.finalization
   if (finalization)
     finalization.call(element, element, basis ? () => invokeFinalizationUsingBasisChain(element, basis) : NOP)
   else if (basis)
@@ -436,7 +436,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
 
   readonly key: string
   readonly driver: ReactiveTreeNodeDriver<E>
-  declaration: ReactiveTreeNodeDecl<E>
+  description: ReactiveTreeNodeDesc<E>
   readonly level: number
   readonly owner: ReactiveTreeNode$
   readonly element: E
@@ -451,13 +451,13 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
 
   constructor(
     key: string, driver: ReactiveTreeNodeDriver<E>,
-    declaration: Readonly<ReactiveTreeNodeDecl<E>>,
+    description: Readonly<ReactiveTreeNodeDesc<E>>,
     owner: ReactiveTreeNode$ | undefined) {
     super()
     const thisAsUnknown = this as ReactiveTreeNode$<unknown>
     this.key = key
     this.driver = driver
-    this.declaration = declaration
+    this.description = description
     if (owner) {
       const node = owner
       this.level = node.level + 1
@@ -507,11 +507,11 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   }
 
   has(mode: Mode): boolean {
-    return flags(getModeUsingBasisChain(this.declaration), mode)
+    return flags(getModeUsingBasisChain(this.description), mode)
   }
 
   hasAny(mode: Mode): boolean {
-    return flagsAny(getModeUsingBasisChain(this.declaration), mode)
+    return flagsAny(getModeUsingBasisChain(this.description), mode)
   }
 
   @reaction
@@ -651,7 +651,7 @@ function markToMountIfNecessary(mounting: boolean, host: ReactiveTreeNode,
   node: ReactiveTreeNode$, children: LinkedList<ReactiveTreeNode>, sequential: boolean): boolean {
   // Detects element mounting when artificial elements
   // exist among regular elements having native HTML elements
-  if (node.declaration.unmounted)
+  if (node.description.unmounted)
     host = node
   if (!node.hasAny(Mode.fragment | Mode.external)) {
     if (mounting || node.host !== host) {
@@ -721,7 +721,7 @@ function rebuildBodyImpl(node: ReactiveTreeNode$<any>): void {
           })
         })
       }
-      runNonReactive(node.body, node.declaration.signalArgs) // reactive auto-update
+      runNonReactive(node.body, node.description.signalArgs) // reactive auto-update
     }
     else if (node.owner !== node)
       rebuildBodyNow(node)
@@ -776,7 +776,7 @@ function rebuildBodyNow(node: ReactiveTreeNode$<any>): void {
 function launchFinalizationImpl(node: ReactiveTreeNode$, isLeader: boolean, individual: boolean): void {
   if (node.stamp >= 0) {
     const driver = node.driver
-    if (individual && node.key !== node.declaration.key && !driver.isPartition)
+    if (individual && node.key !== node.description.key && !driver.isPartition)
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
     // Finalize element itself and remove it from collection
