@@ -44,7 +44,7 @@ export function describe<E = void>(
 
 export function describe<E = void>(
   driver: ReactiveTreeNodeDriver<E>,
-  key?: string,
+  key: string,
   mode?: Mode,
   body?: Script<E>,
   bodyTask?: ScriptAsync<E>,
@@ -85,7 +85,7 @@ export function describe<E = void>(
     mode = p1
   else if (p1 instanceof Object)
     desc = p1
-  else
+  else if (p1 !== undefined)
     throw misuse(`wrong type of the first parameter: ${typeof(p1)}`)
   if (desc === undefined) {
     // Unpack second parameter
