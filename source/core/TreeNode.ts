@@ -24,6 +24,49 @@ export type Handler<E = unknown, R = void> = (o: E) => R
 
 // Actions
 
+export function args2desc<E = void>(
+  bodyOrKeyOrModeDescription?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
+  bodyOrMode?: Script<E> | Mode,
+  body?: Script<E>,
+  bodyTask?: ScriptAsync<E>,
+  preparation?: Script<E>,
+  preparationTask?: ScriptAsync<E>,
+  mounting?: Script<E>,
+  finalization?: Script<E>,
+  signalArgs?: unknown,
+  unmounted?: boolean,
+  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNodeDesc<E> {
+  const p1 = bodyOrKeyOrModeDescription
+  const p2 = bodyOrMode
+  let desc: ReactiveTreeNodeDesc<E> | undefined = undefined
+  let key: string | undefined = undefined
+  let mode: Mode | undefined = undefined
+  if (p1 instanceof Function)
+    body = p1
+  else if (typeof(p1) === "string")
+    key = p1
+  else if (typeof(p1) === "number")
+    mode = p1
+  else if (p1 instanceof Object)
+    desc = p1
+  else if (p1 !== undefined)
+    throw misuse(`wrong type of the first parameter: ${typeof(p1)}`)
+  if (desc === undefined) {
+    if (p2 instanceof Function)
+      body = p2
+    else if (typeof(p2) === "number")
+      mode = p2
+    else
+      throw misuse(`wrong type of the second parameter: ${typeof(p2)}`)
+    desc = {
+      key, mode,
+      body, bodyTask, preparation, preparationTask, finalization,
+      signalArgs, unmounted, basis,
+    }
+  }
+  return desc
+}
+
 export function describe<E = void>(
   driver: ReactiveTreeNodeDriver<E>,
   body: Script<E>): ReactiveTreeNode<E>
@@ -83,38 +126,9 @@ export function describe<E = void>(
   signalArgs?: unknown,
   unmounted?: boolean,
   basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
-//
-  const p1 = bodyOrKeyOrModeDescription
-  const p2 = bodyOrMode
+  const desc = args2desc(bodyOrKeyOrModeDescription, bodyOrMode, body, bodyTask,
+    preparation, preparationTask, mounting, finalization, signalArgs, unmounted, basis)
   let result: ReactiveTreeNode$<E>
-  let desc: ReactiveTreeNodeDesc<E> | undefined = undefined
-  let key: string | undefined = undefined
-  let mode: Mode | undefined = undefined
-  // Unpack first parameter
-  if (p1 instanceof Function)
-    body = p1
-  else if (typeof(p1) === "string")
-    key = p1
-  else if (typeof(p1) === "number")
-    mode = p1
-  else if (p1 instanceof Object)
-    desc = p1
-  else if (p1 !== undefined)
-    throw misuse(`wrong type of the first parameter: ${typeof(p1)}`)
-  if (desc === undefined) {
-    // Unpack second parameter
-    if (p2 instanceof Function)
-      body = p2
-    else if (typeof(p2) === "number")
-      mode = p2
-    else
-      throw misuse(`wrong type of the second parameter: ${typeof(p2)}`)
-    desc = {
-      key, mode,
-      body, bodyTask, preparation, preparationTask, finalization,
-      signalArgs, unmounted, basis,
-    }
-  }
   let effectiveKey = desc.key
   const owner = gCurrentNode
   if (owner) {
