@@ -142,7 +142,7 @@ export function describe<E = void>(
       // Reuse existing node
       result = existing as ReactiveTreeNode$<E>
       if (result.driver !== driver && driver !== undefined)
-        throw misuse(`changing element driver is not yet supported: "${result.driver.name}" -> "${driver?.name}"`)
+        throw misuse(`changing element driver is not yet supported: "${result.driver.id}" -> "${driver?.id}"`)
       const exSignalArgs = result.description.signalArgs
       if (signalsAreEqual(desc.signalArgs, exSignalArgs))
         desc.signalArgs = exSignalArgs // preserve signal args instance
@@ -300,7 +300,7 @@ export type ReactiveTreeNodeDesc<E = unknown> = {
 // ReactiveTreeNodeDriver
 
 export type ReactiveTreeNodeDriver<E = unknown> = {
-  readonly name: string,
+  readonly id: string,
   readonly isPartition: boolean,
   readonly initialize?: Handler<E>
 
@@ -333,7 +333,7 @@ export type ReactiveTreeNodeContext<T extends Object = Object> = {
 
 export abstract class BaseDriver<E = unknown> implements ReactiveTreeNodeDriver<E> {
   constructor(
-    readonly name: string,
+    readonly id: string,
     readonly isPartition: boolean,
     readonly initialize?: Handler<E>) {
   }
