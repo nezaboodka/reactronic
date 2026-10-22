@@ -19,24 +19,27 @@ atomically applied, are **consistently propagated** to
 corresponding visual components for (re)rendering. All
 that is done in automatic, seamless, and fine-grained
 way. Reactronic **takes full care of tracking dependencies**
-between visual components (reactive functions) and
-application state (signalling objects).
+between visual components (reactions and caches) and
+application state (reactive objects and their signals).
 
 Transactional reactivity is based on four fundamental
 concepts:
 
-  - **Signalling Objects** - a set of objects that store
-    data of an application (state) and cause reactions
-    upon their changes;
-  - **Transactional Function** - a function that makes
-    changes in signalling objects in atomic way ("all
-    or nothing");
-  - **Reactive Function** - a function that is
+  - **Reactive Object** (`RxObject`) - an object that stores
+    data of an application (state). Its fields are signals
+    and cause reactions upon their changes;
+  - **Transaction** (`@transaction`) - a function that makes
+    changes in signals in an atomic way ("all or nothing");
+  - **Reaction** (`@reaction`) - a function that is
     (re-)executed in response to changes made in
-    signalling objects by transactional functions;
-  - **Cache Function** -  a function which result is
-    remembered and, if becomes obsolete, causes
-    function to re-execute on-demand.
+    signals by transactions;
+  - **Cache** (`@cache`) - a function whose result is
+    remembered and, once obsolete, is re-executed on demand.
+
+The following picture illustrates relationships between
+the concepts in the source code:
+
+![Reactronic](diagram.jpg)
 
 Demo application built with Reactronic: https://nevod.io/#/playground.
 Source code of the demo: https://gitlab.com/nezaboodka/nevod.web.public/-/blob/master/README.md.
@@ -68,13 +71,13 @@ class Demo extends RxObject {
 }
 ```
 
-In the example above, `Demo` is a signalling object,
-meaning that access to its fields are seamlessly tracked
-to determine dependent reactive and cached functions.
-Reactive function `printContact` reads `name` and `email`
-fields, thus depends on them. It is executed automatically
-in response to changes of these fields made by the
-transactional function `saveContact`.
+In the example above, `Demo` is a reactive object,
+meaning that access to its signals is seamlessly tracked
+to determine dependent reactions and caches.
+Reaction `printContact` reads `name` and `email`
+signals, thus depends on them. It is executed automatically
+in response to changes of these signals made by the
+transaction `saveContact`.
 
 Here is an example of a cached result that is
 (re-)computed on-demand:
@@ -92,27 +95,27 @@ class Demo extends RxObject {
   @reaction
   printContact(): void {
     if (this.contact !== '')
-      Console.log(this.contact)
+      console.log(this.contact)
   }
 }
 ```
 
-In the example above, the result of `contact` getter is
-computed from source fields `name` and `email`. Once
-computed, the result is cached and is reused until
-source fields `name` and `email` are changed. Once
-source fields changed, `contact` result becomes obsolete,
-thus causing execution of depending reactive function
-`printContact`. When function of reactive function
-`printContact` runs it reads `contact` and causes its
-re-computation.
+In the example above, the result of the `contact` cache is
+computed from signals `name` and `email`. Once
+computed, the result is remembered and is reused until
+signals `name` and `email` are changed. Once
+those signals change, the `contact` result becomes obsolete,
+thus causing execution of the dependent reaction
+`printContact`. When reaction `printContact` runs,
+it reads `contact` and causes its re-computation.
 
-## Signalling Objects
+## Reactive Objects
 
-Signalling objects are aimed to store data of
-an application. All such objects are transparently hooked
-to track access to their properties, both on reads and
-writes.
+Reactive objects store data of an application.
+An `RxObject` tracks access to its signals, both on reads
+and writes. `@signal(false)` excludes a field from tracking.
+A transactional object (`TxObject`) tracks a field only when
+that field is marked with `@signal`.
 
 ``` typescript
 class MyModel extends RxObject {
@@ -123,15 +126,15 @@ class MyModel extends RxObject {
 ```
 
 In the example above, the class `MyModel` is based on
-Reactronic's `RxObject` class and all its
-properties `url`, `content`, and `timestamp` are hooked.
+Reactronic's `RxObject` class and its
+signals `url`, `content`, and `timestamp` are tracked.
 
-## Transactional Function
+## Transaction
 
-Transactional function makes changes in signalling
-objects in atomic way ("all or nothing"), thus provoking
-execution of dependent reactive and cached functions.
-Transactional function is instrumented with hooks to
+A transaction makes changes in signals in an atomic way
+("all or nothing"), thus provoking execution of dependent
+reactions and renewal of dependent caches.
+A transaction is instrumented with hooks to
 provide transparent atomicity (by implicit context
 switching and isolation).
 
@@ -147,49 +150,49 @@ class MyModel extends RxObject {
 }
 ```
 
-In the example above, the transactional function `load` makes
-changes to `url`, `content` and `timestamp` properties.
-While transactional function is running, the changes are visible
-only inside the function itself. The new values become
-atomically visible outside of the function only upon its
+In the example above, the transaction `load` makes
+changes to signals `url`, `content` and `timestamp`.
+While the transaction is running, the changes are visible
+only inside the transaction itself. The new values become
+atomically visible outside of the transaction only upon its
 completion.
 
 Atomicity is achieved by making changes in an isolated
 data snapshot that is not visible outside of the running
-function until it is fully finished and applied. Multiple
-objects and their properties can be changed with full
+transaction until it is fully finished and applied. Multiple
+objects and their signals can be changed with full
 respect to the all-or-nothing principle. To do so,
-separate data snapshot is automatically maintained for
-each transactional function. That is a logical snapshot
+a separate data snapshot is automatically maintained for
+each transaction. That is a logical snapshot
 that does not create a full copy of all the data.
 
 Compensating rollback operations are not needed in case
-of a transactional function failure, because all the changes
-made by transactional function in its logical snapshot are
-simply discarded. In case a transaction function is
-successfully applied, affected cached results are marked
-as obsolete and corresponding caching functions are
+of a transaction failure, because all the changes
+made by the transaction in its logical snapshot are
+simply discarded. Once a transaction is
+successfully applied, affected cache results are marked
+as obsolete and corresponding caches are
 re-executed in a proper order (but only when all the
 data changes are fully applied).
 
 Asynchronous operations (promises) are supported out of
-the box during transactional function execution.
-Transactional function may consist of a set of asynchronous
-calls prolonging the function until completion of all of
+the box during transaction execution.
+A transaction may consist of a set of asynchronous
+calls prolonging it until completion of all of
 them. An asynchronous call may spawn other asynchronous
-calls, which prolong transactional execution until the whole
+calls, which prolong the transaction until the whole
 chain of asynchronous operations is fully completed.
 
-## Reactive & Cached Functions
+## Reactions & Caches
 
-Reactive function is automatically and immediately called
-in response to changes in signalling objects made by
-transactional functions. Cached function is called on-demand
+A reaction is automatically and immediately called
+in response to changes in signals made by
+transactions. A cache is called on demand
 to renew the result if it was marked as obsolete due to
-changes made by an transactional functions. Reactive and cached
-functions are instrumented with hooks to seamless
-listening of those signalling objects and other cached
-functions (dependencies), which are used during their
+changes made by a transaction. Reactions and caches
+are instrumented with hooks for seamless
+listening to those signals and other caches
+(dependencies) which are used during their
 execution.
 
 ``` tsx
@@ -219,11 +222,11 @@ class Component<P> extends React.Component<P> {
       // Ask React to re-render
       Transaction.outside(() => this.setState({}))
     }
-  } // EnsureUpToDate is listening to render
+  } // ensureUpToDate is listening to render
 
   shouldComponentUpdate(): boolean {
     const r = manageReaction(this.render)
-    return !r.isUpToDate
+    return !r.isReusable
   }
 
   componentDidMount(): void {
@@ -237,29 +240,29 @@ class Component<P> extends React.Component<P> {
 }
 ```
 
-In the example above, reactive function `refresh`
-transparently listens to the cached function `render`.
-In turn, cached function `render` listens to the
-properties `url` and `content` of a corresponding `MyModel`
+In the example above, reaction `ensureUpToDate`
+transparently listens to the cache `render`.
+In turn, cache `render` listens to the
+signals `url` and `content` of a corresponding `MyModel`
 object. Once `url` or `content` values are changed, the
-cached function `render` becomes obsolete and causes the
-reactive function `refresh` to become obsolete and
-re-executed. While being executed, the reactive function
-`refresh` enqueues re-rendering request to React, which
-calls cached function `render` causing it to renew its
+cache `render` becomes obsolete and causes the
+reaction `ensureUpToDate` to become obsolete and
+re-execute. While being executed, the reaction
+`ensureUpToDate` enqueues a re-rendering request to React, which
+calls cache `render`, causing it to renew its
 cached value.
 
-In general case, all reactive and cached functions
+In the general case, all reactions and caches
 are automatically and immediately marked as obsolete
-when changes are made in those signalling objects and
-other cached results that were used during their
-execution. And once marked, the functions are
-automatically executed again, either immediately (for
-reactive functions) or on-demand (for cached functions).
+when changes are made in those signals and
+other cache results that were used during their
+execution. Once marked, they are
+executed again, either immediately (for
+reactions) or on demand (for caches).
 
 Reactronic takes full care of tracking dependencies
-between all the signalling objects and reactive/cached
-functions. With Reactronic, you no longer need to create
+between signals and reactions/caches.
+With Reactronic, you no longer need to create
 data change events in one set of objects, listen to
 these events in other objects, and manually maintain
 switching from the previous object version to a new one.
@@ -269,32 +272,31 @@ switching from the previous object version to a new one.
 There are multiple options to configure behavior of
 transactional reactivity.
 
-**Order** options defines order of execution for
-reactive functions:
+**Order** option defines the execution order of reactions.
+Reactions with a smaller `order` run first. The default is `0`.
 
-  - (TBD)
-
-**Throttling** option defines how often reactive function
+**Throttling** option defines how often a reaction
 is executed in case of recurring changes:
 
   - `(ms)` - minimal delay in milliseconds between executions;
-  - `-1` - execute immediately once transactional function changes are applied (synchronously);
+  - `-1` - execute immediately once transaction changes are applied (synchronously);
   - `0` - execute immediately via event loop (asynchronously with zero timeout);
   - `>= Number.MAX_SAFE_INTEGER` - never execute (suspended reaction).
 
-**Reentrance** option defines how to handle reentrant calls of transactional
-and reactive functions:
+**Reentrance** option defines how to handle reentrant calls of transactions
+and reactions:
 
   - `preventWithError` - fail with error if there is an existing call in progress;
-  - `waitAndRestart` - wait for previous call to finish and then restart current one;
-  - `cancelPrevious` - cancel previous call in favor of recent one;
-  - `cancelAndWaitPrevious` - cancel previous call in favor of recent one (but wait until canceling is completed)
-  - `runSideBySide` - multiple simultaneous calls are allowed.
+  - `waitAndRestart` - wait for the existing call to finish and then restart the reentrant one;
+  - `cancelPrevious` - cancel the previous call in favor of the recent one;
+  - `cancelAndWaitPrevious` - cancel the previous call in favor of the recent one (but wait until canceling is completed);
+  - `overwritePrevious` - allow the previous call to complete, but overwrite it, ignoring any conflicts;
+  - `runSideBySide` - multiple simultaneous operations are allowed.
 
-**Indicator** is an object that maintains status of running functions,
-which it is attached to. A single indicator object can be shared between
-multiple transactional, reactive, and cached functions, thus maintaining
-consolidated status for all of them (busy, workers, etc).
+**Indicator** is an object that maintains status of running operations
+it is attached to. A single indicator can be shared between
+multiple transactions, reactions, and caches, thus maintaining
+a consolidated status for all of them (busy, workers, etc).
 
 ## Notes
 
@@ -336,10 +338,15 @@ function reaction(proto, prop, pd) // method only
 function cache(proto, prop, pd) // method only
 function options(value: Partial<ReactivityOptions>): F<any>
 
+function runTransactional<T>(func: F<T>, ...args: any[]): T
+function runTransactional<T>(options: SnapshotOptions, func: F<T>, ...args: any[]): T
 function runNonReactive<T>(func: F<T>, ...args: any[]): T
-function runSensitive<T>(sensitivity: Sensitivity, func: F<T>, ...args: any[]): T
+function runSensitive<T>(sensitivity: boolean, func: F<T>, ...args: any[]): T
+function manageReaction<T>(method: F<T>): Reaction<T>
+function configureCurrentReaction(options: Partial<ReactivityOptions>): ReactivityOptions
+function disposeRxObject(obj: any): void
 
-// SnapshotOptions, ReactivityOptions, Kind, Reentrance, Indicator, LoggingOptions, ProfilingOptions
+// SnapshotOptions, ReactivityOptions, Kind, Isolation, Reentrance, Indicator, LoggingOptions, ProfilingOptions
 
 export type SnapshotOptions = {
   readonly hint?: string
@@ -357,6 +364,7 @@ type ReactivityOptions = {
   readonly signalArgs: boolean
   readonly throttling: number // milliseconds, -1 is immediately, Number.MAX_SAFE_INTEGER is never
   readonly reentrance: Reentrance
+  readonly allowObsoleteToFinish: boolean
   readonly journal: Journal | undefined
   readonly indicator: Indicator | null
   readonly logging?: Partial<LoggingOptions>
@@ -369,13 +377,21 @@ enum Kind {
   cache = 3
 }
 
+enum Isolation {
+  joinToCurrentTransaction = 0,
+  joinAsNestedTransaction = 1,
+  disjoinFromOuterTransaction = 2,
+  disjoinFromOuterAndInnerTransactions = 3,
+  disjoinForInternalDisposal = 4,
+}
+
 enum Reentrance {
   preventWithError = 1, // fail with error if there is an existing call in progress (default)
-  waitAndRestart = 0, // wait for existing call to finish and then restart current one
+  waitAndRestart = 0, // wait for existing call to finish and then restart reentrant one
   cancelPrevious = -1, // cancel previous call in favor of recent one
   cancelAndWaitPrevious = -2, // cancel previous call in favor of recent one (but wait until canceling is completed)
-  overwritePrevious = -2, // allow previous to complete, but overwrite it with ignoring any conflicts
-  runSideBySide = -3 // multiple simultaneous calls are allowed
+  overwritePrevious = -3, // allow previous to complete, but overwrite it with ignoring any conflicts
+  runSideBySide = -4 // multiple simultaneous operations are allowed
 }
 
 class Indicator {
@@ -385,20 +401,20 @@ class Indicator {
   readonly busyDuration: number
   abstract whenBusy(): Promise<void>
   abstract whenIdle(): Promise<void>
-  static create(hint: string, activationDelay: number, deactivationDelay: number): Indicator
+  static create(hint: string, activationDelay: number, deactivationDelay: number, durationResolution: number): Indicator
 }
 
 type Worker = {
   readonly id: number
-  readonly hint: string
-  isCanceled: boolean
-  isFinished: boolean
-  cancel(error?: Error, retryAfter?: Transaction): this
+  readonly name: string
+  readonly isCanceled: boolean
+  readonly isFinished: boolean
+  cancel(error: Error, restartAfter?: Worker | null): void
   whenFinished(): Promise<void>
 }
 
 type LoggingOptions = {
-  readonly off: boolean
+  readonly enabled: boolean
   readonly transaction: boolean
   readonly operation: boolean
   readonly step: boolean
@@ -410,12 +426,17 @@ type LoggingOptions = {
   readonly error: boolean
   readonly warning: boolean
   readonly gc: boolean
+  readonly color: number
+  readonly prefix: string
+  readonly margin1: number
+  readonly margin2: number
 }
 
 type ProfilingOptions = {
   repetitiveUsageWarningThreshold: number // default: 10 times
   mainThreadBlockingWarningThreshold: number // default: 16.6 ms
   asyncActionDurationWarningThreshold: number // default: 150 ms
+  garbageCollectionSummaryInterval: number // default: 3000 ms
 }
 
 // Transaction
@@ -426,57 +447,60 @@ class Transaction implements Worker {
   static readonly current: Transaction
 
   readonly id: number
-  readonly hint: string
+  readonly name: string
+  readonly caption: string
+  readonly options: SnapshotOptions
+  readonly timestamp: number
+  readonly error: Error | undefined
+  readonly parent?: Transaction
 
   run<T>(func: F<T>, ...args: any[]): T
-  wrap<T>(func: F<T>): F<T>
+  inspect<T>(func: F<T>, ...args: any[]): T
   apply(): void
   seal(): this // a1.seal().whenFinished().then(fulfill, reject)
-  cancel(error?: Error, retryAfter?: Transaction): this
-  isCanceled: boolean
-  isFinished: boolean
-  whenFinished(): Promise<void>
-  join<T>(p: Promise<T>): Promise<T>
+  wrapAsPending<T>(func: F<T>, secondary: boolean): F<T>
+  cancel(error: Error, retryAfterOrIgnore?: Worker | null): this
+  readonly isCanceled: boolean
+  readonly isFinished: boolean
+  whenFinished(includingParent?: boolean): Promise<void>
 
-  static create(options: SnapshotOptions | null): Transaction
+  static create(options: SnapshotOptions | null, parent?: Transaction): Transaction
   static run<T>(options: SnapshotOptions | null, func: F<T>, ...args: any[]): T
-  static off<T>(func: F<T>, ...args: any[]): T
+  static isolate<T>(func: F<T>, ...args: any[]): T
+  static outside<T>(func: F<T>, ...args: any[]): T
 
-  static isFrameOver(everyN: number, timeLimit: number): boolean
-  static requestNextFrame(sleepTime: number): Promise<void>
-  static isCanceled: boolean
+  static isFrameOver(everyN?: number, timeLimit?: number): boolean
+  static requestNextFrame(sleepTime?: number): Promise<void>
+  static readonly isCanceled: boolean
 }
 
 // Reaction
 
-abstract class Reaction<T> {
-  readonly options: Options
+type Reaction<T> = {
+  readonly options: ReactivityOptions
   readonly args: ReadonlyArray<any>
-  readonly value: T
+  readonly result: T
   readonly error: any
   readonly stamp: number
   readonly isReusable: boolean
 
-  configure(options: Partial<Options>): Options
-  markObsolete(): boolean
-  pullLastResult(args?: any[]): T | undefined
+  configure(options: Partial<ReactivityOptions>): ReactivityOptions
+  markObsolete(): void
+  pullLastResult(args?: any[]): any
 }
 
 // ReactiveSystem
 
 class ReactiveSystem {
-  static why(short: boolean = false): string
-  static getMethodCache<T>(method: F<T>): Cache<T>
-  static configureCurrentReaction(options: Partial<Options>): Options
+  static why(brief: boolean = false): string
   static getRevisionOf(obj: any): number
   static takeSnapshot<T>(obj: T): T
-  static dispose(obj: any): void
   static reactivityAutoStartDisabled: boolean
   static readonly isLogging: boolean
   static readonly loggingOptions: LoggingOptions
-  static setLoggingMode(isOn: boolean, options?: LoggingOptions)
+  static setLoggingMode(isOn: boolean, options?: LoggingOptions): void
   static setLoggingHint<T extends object>(obj: T, name: string | undefined): void
-  static getLoggingHint<T extends object>(obj: T): string | undefined
+  static getLoggingHint<T extends object>(obj: T, full?: boolean): string | undefined
   static setProfilingMode(isOn: boolean, options?: Partial<ProfilingOptions>): void
 }
 
