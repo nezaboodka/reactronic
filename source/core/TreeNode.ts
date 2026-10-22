@@ -143,7 +143,7 @@ export function describe<E = void>(
     // Reuse existing node or describe a new one
     const renovation = owner.children.renovation
     existing ??= renovation.tryReaffirm(
-      effectiveKey = effectiveKey || generateKey(owner), undefined,
+      effectiveKey = effectiveKey || generateKey(hint, owner), undefined,
       "nested elements can be described inside 'body' only")
     if (existing) {
       // Reuse existing node
@@ -157,13 +157,13 @@ export function describe<E = void>(
     }
     else {
       // Create new node
-      result = new ReactiveTreeNode$<E>(effectiveKey || generateKey(owner), driver, desc, owner)
+      result = new ReactiveTreeNode$<E>(effectiveKey || generateKey(hint, owner), driver, desc, owner)
       renovation.thisIsAdded(result as ReactiveTreeNode$<unknown>) as ReactiveTreeNode$<E>
     }
   }
   else {
     // Create new root node
-    result = new ReactiveTreeNode$(effectiveKey || generateKey(owner), driver, desc, owner)
+    result = new ReactiveTreeNode$(effectiveKey || generateKey(hint, owner), driver, desc, owner)
     ReactiveTreeNode.rebuildBody(result, signalArgs)
   }
   return result
@@ -403,14 +403,14 @@ export class ReactiveTreeVariable<T extends Object = Object> {
 
 // Utils
 
-export function generateKey(owner?: ReactiveTreeNode$): string {
+export function generateKey(hint: string, owner?: ReactiveTreeNode$): string {
   const n = owner !== undefined ? owner.sequencer++ : 0
   const lettered = emitLetters(n)
   let result: string
   if (ReactiveSystem.isLogging)
-    result = `·${getCallerInfo(lettered)}`
+    result = `·${hint}·${getCallerInfo(lettered)}`
   else
-    result = `·${lettered}`
+    result = `·${hint}·${lettered}`
   return result
 }
 
