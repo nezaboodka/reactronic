@@ -12,7 +12,7 @@
     "**/Build/": true,
     ".tsimp": true,
   },
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
   "cSpell.ignorePaths": [
     "node_modules",
     "**/node_modules",
