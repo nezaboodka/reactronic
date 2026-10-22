@@ -68,24 +68,29 @@ export function args2desc<E = void>(
 }
 
 export function describe<E = void>(
+  hint: string,
   driver: ReactiveTreeNodeDriver<E>,
   body: Script<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
+  hint: string,
   driver: ReactiveTreeNodeDriver<E>,
   key: string,
   body: Script<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
+  hint: string,
   driver: ReactiveTreeNodeDriver<E>,
   mode: Mode,
   body: Script<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
+  hint: string,
   driver: ReactiveTreeNodeDriver<E>,
   description: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
+  hint: string,
   driver: ReactiveTreeNodeDriver<E>,
   key: string,
   mode?: Mode,
@@ -100,6 +105,7 @@ export function describe<E = void>(
   basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
+  hint: string,
   driver: ReactiveTreeNodeDriver<E>,
   bodyOrKeyOrModeDescription?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
   bodyOrMode?: Script<E> | Mode,
@@ -114,6 +120,7 @@ export function describe<E = void>(
   basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
+  hint: string,
   driver: ReactiveTreeNodeDriver<E>,
   bodyOrKeyOrModeDescription?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
   bodyOrMode?: Script<E> | Mode,
