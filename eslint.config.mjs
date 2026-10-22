@@ -1,33 +1,16 @@
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import js from "@eslint/js";
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig, globalIgnores } from "eslint/config";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: js.configs.recommended,
-  allConfig: js.configs.all
-});
-
-export default [{
-    ignores: [
-      "**/node_modules",
-      "**/build",
-      "**/eslint.config.mjs",
-      "**/ava.config.*s",
-    ],
-  },
-  ...compat.extends("plugin:@typescript-eslint/recommended"), {
-    plugins: {
-      "@typescript-eslint": typescriptEslint,
-    },
+export default defineConfig(
+  globalIgnores([
+    "**/node_modules",
+    "**/build",
+    "**/eslint.config.mjs",
+    "**/ava.config.*s",
+  ]),
+  typescriptEslint.configs["flat/recommended"],
+  {
     languageOptions: {
-      globals: {},
-      parser: tsParser,
       ecmaVersion: "latest",
       sourceType: "script",
       parserOptions: {
@@ -60,15 +43,12 @@ export default [{
       "@typescript-eslint/no-unused-expressions": "off",
       "@typescript-eslint/no-wrapper-object-types": "off",
       "@typescript-eslint/no-unsafe-function-type": "off",
-      "@typescript-eslint/member-delimiter-style": "off",
       "@typescript-eslint/explicit-function-return-type": ["error", {
         allowExpressions: true,
       }],
       "@typescript-eslint/no-var-requires": "off",
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@typescript-eslint/ban-types": "off",
-
       "@typescript-eslint/strict-boolean-expressions": ["error", {
         allowNullableObject: true,
         allowNullableString: true,
@@ -77,13 +57,14 @@ export default [{
       }],
       "no-useless-rename": "error",
     },
-  }, {
+  },
+  {
     files: [
       "**/*.js",
-      "**/*.jsx"
+      "**/*.jsx",
     ],
     rules: {
       "@typescript-eslint/explicit-function-return-type": "off",
     },
-  }
-];
+  },
+);
