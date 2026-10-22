@@ -397,7 +397,7 @@ export class ReactiveTreeVariable<T extends Object = Object> {
 // Utils
 
 export function generateKey(owner?: ReactiveTreeNode$): string {
-  const n = owner !== undefined ? owner.numerator++ : 0
+  const n = owner !== undefined ? owner.sequencer++ : 0
   const lettered = emitLetters(n)
   let result: string
   if (ReactiveSystem.isLogging)
@@ -494,7 +494,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   stamp: number
   outer: ReactiveTreeNode$
   context: ReactiveTreeNodeContext$<any> | undefined
-  numerator: number
+  sequencer: number
   priority: Priority
   childrenShuffling: boolean
 
@@ -523,7 +523,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
     this.children = new LinkedList<ReactiveTreeNode>(getNodeKey, true)
     this.stamp = Number.MAX_SAFE_INTEGER // newly created
     this.context = undefined
-    this.numerator = 0
+    this.sequencer = 0
     this.priority = Priority.realtime
     this.childrenShuffling = false
     // Monitoring
@@ -804,7 +804,7 @@ function rebuildBodyNow(node: ReactiveTreeNode$<any>): void {
       if (node.stamp < Number.MAX_SAFE_INTEGER - 1) { // if mounted
         try {
           node.stamp++
-          node.numerator = 0
+          node.sequencer = 0
           node.children.beginRenovation()
           const driver = node.driver
           result = driver.rebuildBody(node)
