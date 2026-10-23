@@ -35,36 +35,40 @@ export function args2desc<E = void>(
   destruction?: Script<E>,
   signalArgs?: unknown,
   unmounted?: boolean,
-  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNodeDesc<E> {
+  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNodeDesc<E> | undefined {
+  //
+  let result: ReactiveTreeNodeDesc<E> | undefined
   const p1 = setupOrKeyOrModeDescription
-  const p2 = setupOrMode
-  let desc: ReactiveTreeNodeDesc<E> | undefined = undefined
-  let key: string | undefined = undefined
-  let mode: Mode | undefined = undefined
-  if (p1 instanceof Function)
-    setup = p1
-  else if (typeof(p1) === "string")
-    key = p1
-  else if (typeof(p1) === "number")
-    mode = p1
-  else if (p1 instanceof Object)
-    desc = p1
-  else if (p1 !== undefined)
-    throw misuse(`wrong type of the first parameter: ${typeof(p1)}`)
-  if (desc === undefined) {
-    if (p2 instanceof Function)
-      setup = p2
-    else if (typeof(p2) === "number")
-      mode = p2
-    else
-      throw misuse(`wrong type of the second parameter: ${typeof(p2)}`)
-    desc = {
-      key, mode,
-      setup, setupTask, creation, creationTask, destruction,
-      signalArgs, unmounted, basis,
+  if (p1 !== undefined) {
+    let key: string | undefined = undefined
+    let mode: Mode | undefined = undefined
+    if (p1 instanceof Function)
+      setup = p1
+    else if (typeof(p1) === "string")
+      key = p1
+    else if (typeof(p1) === "number")
+      mode = p1
+    else if (p1 instanceof Object)
+      result = p1
+    else if (p1 !== undefined)
+      throw misuse(`wrong type of the first parameter: ${typeof(p1)}`)
+    if (result === undefined) {
+      if (setupOrMode instanceof Function)
+        setup = setupOrMode
+      else if (typeof(setupOrMode) === "number")
+        mode = setupOrMode
+      else
+        throw misuse(`wrong type of the second parameter: ${typeof(setupOrMode)}`)
+      result = {
+        key, mode,
+        setup, setupTask, creation, creationTask, destruction,
+        signalArgs, unmounted, basis,
+      }
     }
   }
-  return desc
+  else
+    result = undefined
+  return result
 }
 
 export function describe<E = void>(
@@ -134,7 +138,7 @@ export function describe<E = void>(
   unmounted?: boolean,
   basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
   const desc = args2desc(setupOrKeyOrModeDescription, setupOrMode, setup, setupTask,
-    creation, creationTask, mounting, destruction, signalArgs, unmounted, basis)
+    creation, creationTask, mounting, destruction, signalArgs, unmounted, basis) ?? {}
   let result: ReactiveTreeNode$<E>
   let effectiveKey = desc.key
   const owner = gCurrentNode
