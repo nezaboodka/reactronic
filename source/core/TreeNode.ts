@@ -22,122 +22,56 @@ export type Script<E> = (this: E, o: E, basis: () => void) => void
 export type ScriptAsync<E> = (this: E, o: E, basis: () => Promise<void>) => Promise<void>
 export type Handler<E = unknown, R = void> = (o: E) => R
 
-// Actions
-
-export function args2desc<E = void>(
-  p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
-  p2?: Script<E> | Mode,
-  setup?: Script<E>,
-  setupTask?: ScriptAsync<E>,
-  creation?: Script<E>,
-  creationTask?: ScriptAsync<E>,
-  mounting?: Script<E>,
-  destruction?: Script<E>,
-  signalArgs?: unknown,
-  unmounted?: boolean,
-  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNodeDesc<E> | undefined {
-  //
-  let result: ReactiveTreeNodeDesc<E> | undefined
-  if (p1 !== undefined) {
-    let key: string | undefined = undefined
-    let mode: Mode | undefined = undefined
-    if (p1 instanceof Function)
-      setup = p1
-    else if (typeof(p1) === "string")
-      key = p1
-    else if (typeof(p1) === "number")
-      mode = p1
-    else if (p1 instanceof Object)
-      result = p1
-    else if (p1 !== undefined)
-      throw misuse(`wrong type of the first parameter: ${typeof(p1)}`)
-    if (result === undefined) {
-      if (p2 instanceof Function)
-        setup = p2
-      else if (typeof(p2) === "number")
-        mode = p2
-      else
-        throw misuse(`wrong type of the second parameter: ${typeof(p2)}`)
-      result = {
-        key, mode,
-        setup, setupTask, creation, creationTask, destruction,
-        signalArgs, unmounted, basis,
-      }
-    }
-  }
-  else
-    result = undefined
-  return result
-}
+// describe
 
 export function describe<E = void>(
   caller: string,
   driver: ReactiveTreeNodeDriver<E>,
-  setup: Script<E>): ReactiveTreeNode<E>
+  setup: Script<E>,
+  setupTask?: ScriptAsync<E>,
+  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
   caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   key: string,
-  setup: Script<E>): ReactiveTreeNode<E>
+  setup: Script<E>,
+  setupTask?: ScriptAsync<E>,
+  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
   caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   mode: Mode,
-  setup: Script<E>): ReactiveTreeNode<E>
-
-export function describe<E = void>(
-  caller: string,
-  driver: ReactiveTreeNodeDriver<E>,
-  description: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
+  setup: Script<E>,
+  setupTask?: ScriptAsync<E>,
+  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
   caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   key: string,
-  mode?: Mode,
-  setup?: Script<E>,
+  mode: Mode,
+  setup: Script<E>,
   setupTask?: ScriptAsync<E>,
-  creation?: Script<E>,
-  creationTask?: ScriptAsync<E>,
-  mounting?: Script<E>,
-  destruction?: Script<E>,
-  signalArgs?: unknown,
-  unmounted?: boolean,
+  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
+
+export function describe<E = void>(
+  caller: string,
+  driver: ReactiveTreeNodeDriver<E>,
+  description?: ReactiveTreeNodeDesc<E>,
   basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
   caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
-  p2?: Script<E> | Mode,
-  setup?: Script<E>,
-  setupTask?: ScriptAsync<E>,
-  creation?: Script<E>,
-  creationTask?: ScriptAsync<E>,
-  mounting?: Script<E>,
-  destruction?: Script<E>,
-  signalArgs?: unknown,
-  unmounted?: boolean,
-  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
-
-export function describe<E = void>(
-  caller: string,
-  driver: ReactiveTreeNodeDriver<E>,
-  p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
-  p2?: Script<E> | Mode,
-  setup?: Script<E>,
-  setupTask?: ScriptAsync<E>,
-  creation?: Script<E>,
-  creationTask?: ScriptAsync<E>,
-  mounting?: Script<E>,
-  destruction?: Script<E>,
-  signalArgs?: unknown,
-  unmounted?: boolean,
-  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
-  const desc = args2desc(p1, p2, setup, setupTask,
-    creation, creationTask, mounting, destruction, signalArgs, unmounted, basis) ?? {}
+  p2?: Script<E> | ScriptAsync<E> | Mode | ReactiveTreeNodeDesc<E>,
+  p3?: Script<E> | ScriptAsync<E> | ReactiveTreeNodeDesc<E>,
+  p4?: ScriptAsync<E> | ReactiveTreeNodeDesc<E>,
+  p5?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
+  //
+  const desc: ReactiveTreeNodeDesc<E> = args2desc(p1, p2, p3, p4, p5) ?? {}
   let result: ReactiveTreeNode$<E>
   let effectiveKey = desc.key
   const owner = gCurrentNode
@@ -167,22 +101,57 @@ export function describe<E = void>(
   else {
     // Create new root node
     result = new ReactiveTreeNode$(effectiveKey || generateKey(caller, owner), driver, desc, owner)
-    ReactiveTreeNode.launchSetup(result, signalArgs)
+    ReactiveTreeNode.launchSetup(result, desc.signalArgs)
   }
   return result
 }
 
-export function setBasis<E = void>(
-  description?: ReactiveTreeNodeDesc<E>,
-  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNodeDesc<E> {
-  if (description)
-    description.basis = basis
+// args2desc
+
+export function args2desc<E = void>(
+  p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
+  p2?: Script<E> | ScriptAsync<E> | Mode | ReactiveTreeNodeDesc<E>,
+  p3?: Script<E> | ScriptAsync<E> | ReactiveTreeNodeDesc<E>,
+  p4?: ScriptAsync<E> | ReactiveTreeNodeDesc<E>,
+  p5?: ReactiveTreeNodeDesc<E>): ReactiveTreeNodeDesc<E> | undefined {
+  //
+  let result: ReactiveTreeNodeDesc<E> | undefined
+  const t1 = typeof(p1)
+  if (t1 === "function")
+    result = { setup: p1 as Script<E>, setupTask: p2 as ScriptAsync<E>, basis: p3 as ReactiveTreeNodeDesc<E> }
+  else if (t1 === "string" && typeof(p2) !== "number")
+    result = { key: p1 as string, setup: p2 as Script<E>, setupTask: p3 as ScriptAsync<E>, basis: p4 as ReactiveTreeNodeDesc<E> }
+  else if (t1 === "string")
+    result = { key: p1 as string, mode: p2 as Mode, setup: p3 as Script<E>, setupTask: p4 as ScriptAsync<E>, basis: p5 }
+  else if (t1 === "number")
+    result = { mode: p1 as Mode, setup: p2 as Script<E>, setupTask: p3 as ScriptAsync<E>, basis: p4 as ReactiveTreeNodeDesc<E> }
+  else if (t1 === "object" && p1 !== null) {
+    result = p1 as ReactiveTreeNodeDesc<E>
+    if (p2 !== undefined)
+      result.basis = p2 as ReactiveTreeNodeDesc<E>
+  }
+  else if (p1 !== undefined)
+    throw misuse(`wrong type of the first parameter: ${t1}`)
   else
-    description = basis ?? {}
-  return description
+    result = p2 !== undefined ? { basis: p2 as ReactiveTreeNodeDesc<E> } : undefined
+  return result
 }
 
-export function launch<T>(func: (...args: any[]) => T, ...args: any[]): T {
+// // setBasis
+
+// export function setBasis<E = void>(
+//   description?: ReactiveTreeNodeDesc<E>,
+//   basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNodeDesc<E> {
+//   if (description)
+//     description.basis = basis
+//   else
+//     description = basis ?? {}
+//   return description
+// }
+
+// launch
+
+export function launchReactiveCascade<T>(func: (...args: any[]) => T, ...args: any[]): T {
   return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
 }
 
