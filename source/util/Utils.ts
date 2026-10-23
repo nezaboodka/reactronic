@@ -119,7 +119,7 @@ export function getCallerInfo(prefix: string): string {
   i = i >= 0 ? i + 2 : 5
   let caller = extractFunctionAndLocation(lines[i])
   let location = caller
-  if (caller.func.endsWith(".body")) {
+  if (caller.func.endsWith(".setup")) {
     i = i - 1
     caller = extractFunctionAndLocation(lines[i])
     location = extractFunctionAndLocation(lines[i + 1])
