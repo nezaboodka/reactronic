@@ -25,8 +25,8 @@ export type Handler<E = unknown, R = void> = (o: E) => R
 // Actions
 
 export function args2desc<E = void>(
-  setupOrKeyOrModeDescription?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
-  setupOrMode?: Script<E> | Mode,
+  p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
+  p2?: Script<E> | Mode,
   setup?: Script<E>,
   setupTask?: ScriptAsync<E>,
   creation?: Script<E>,
@@ -38,7 +38,6 @@ export function args2desc<E = void>(
   basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNodeDesc<E> | undefined {
   //
   let result: ReactiveTreeNodeDesc<E> | undefined
-  const p1 = setupOrKeyOrModeDescription
   if (p1 !== undefined) {
     let key: string | undefined = undefined
     let mode: Mode | undefined = undefined
@@ -53,12 +52,12 @@ export function args2desc<E = void>(
     else if (p1 !== undefined)
       throw misuse(`wrong type of the first parameter: ${typeof(p1)}`)
     if (result === undefined) {
-      if (setupOrMode instanceof Function)
-        setup = setupOrMode
-      else if (typeof(setupOrMode) === "number")
-        mode = setupOrMode
+      if (p2 instanceof Function)
+        setup = p2
+      else if (typeof(p2) === "number")
+        mode = p2
       else
-        throw misuse(`wrong type of the second parameter: ${typeof(setupOrMode)}`)
+        throw misuse(`wrong type of the second parameter: ${typeof(p2)}`)
       result = {
         key, mode,
         setup, setupTask, creation, creationTask, destruction,
@@ -111,8 +110,8 @@ export function describe<E = void>(
 export function describe<E = void>(
   caller: string,
   driver: ReactiveTreeNodeDriver<E>,
-  setupOrKeyOrModeDescription?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
-  setupOrMode?: Script<E> | Mode,
+  p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
+  p2?: Script<E> | Mode,
   setup?: Script<E>,
   setupTask?: ScriptAsync<E>,
   creation?: Script<E>,
@@ -126,8 +125,8 @@ export function describe<E = void>(
 export function describe<E = void>(
   caller: string,
   driver: ReactiveTreeNodeDriver<E>,
-  setupOrKeyOrModeDescription?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
-  setupOrMode?: Script<E> | Mode,
+  p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
+  p2?: Script<E> | Mode,
   setup?: Script<E>,
   setupTask?: ScriptAsync<E>,
   creation?: Script<E>,
@@ -137,7 +136,7 @@ export function describe<E = void>(
   signalArgs?: unknown,
   unmounted?: boolean,
   basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
-  const desc = args2desc(setupOrKeyOrModeDescription, setupOrMode, setup, setupTask,
+  const desc = args2desc(p1, p2, setup, setupTask,
     creation, creationTask, mounting, destruction, signalArgs, unmounted, basis) ?? {}
   let result: ReactiveTreeNode$<E>
   let effectiveKey = desc.key
