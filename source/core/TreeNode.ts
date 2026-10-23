@@ -168,7 +168,7 @@ export function describe<E = void>(
   else {
     // Create new root node
     result = new ReactiveTreeNode$(effectiveKey || generateKey(hint, owner), driver, desc, owner)
-    ReactiveTreeNode.rebuildSetup(result, signalArgs)
+    ReactiveTreeNode.launchSetup(result, signalArgs)
   }
   return result
 }
@@ -222,7 +222,7 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
     return ReactiveTreeNode.current.stamp === 1
   }
 
-  static rebuildSetup(node: ReactiveTreeNode<any>, signalArgs: unknown): void {
+  static launchSetup(node: ReactiveTreeNode<any>, signalArgs: unknown): void {
     const impl = node as ReactiveTreeNode$<any>
     const desc = impl.description
     if (node.stamp >= Number.MAX_SAFE_INTEGER || !signalsAreEqual(signalArgs, desc.signalArgs)) {
@@ -583,7 +583,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   })
   setup(_signalArgs: unknown): void {
     // signalArgs parameter is used to enforce setup run by owner
-    rebuildSetupNow(this)
+    runSetupNow(this)
   }
 
   configureReactivity(options: Partial<ReactivityOptions>): ReactivityOptions {
@@ -784,9 +784,9 @@ function launchSetupImpl(node: ReactiveTreeNode$<any>): void {
       runNonReactive(node.setup, node.description.signalArgs) // reactive auto-update
     }
     else if (node.owner !== node)
-      rebuildSetupNow(node)
+      runSetupNow(node)
     else // root node
-      runTransactional(() => rebuildSetupNow(node))
+      runTransactional(() => runSetupNow(node))
   }
 }
 
@@ -807,7 +807,7 @@ function mountOrRemountIfNecessary(node: ReactiveTreeNode$): void {
     runNonReactive(() => driver.runMount(node)) // re-mount
 }
 
-function rebuildSetupNow(node: ReactiveTreeNode$<any>): void {
+function runSetupNow(node: ReactiveTreeNode$<any>): void {
   if (node.stamp >= 0) { // if element is alive
     let result: unknown = undefined
     runInsideContextOfNode(node, () => {
