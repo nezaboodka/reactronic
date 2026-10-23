@@ -151,7 +151,7 @@ export function args2desc<E = void>(
 
 // launch
 
-export function launchReactiveCascade<T>(func: (...args: any[]) => T, ...args: any[]): T {
+export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[]): T {
   return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
 }
 
