@@ -72,29 +72,29 @@ export function args2desc<E = void>(
 }
 
 export function describe<E = void>(
-  hint: string,
+  caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   setup: Script<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
-  hint: string,
+  caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   key: string,
   setup: Script<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
-  hint: string,
+  caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   mode: Mode,
   setup: Script<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
-  hint: string,
+  caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   description: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
-  hint: string,
+  caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   key: string,
   mode?: Mode,
@@ -109,7 +109,7 @@ export function describe<E = void>(
   basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
-  hint: string,
+  caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   setupOrKeyOrModeDescription?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
   setupOrMode?: Script<E> | Mode,
@@ -124,7 +124,7 @@ export function describe<E = void>(
   basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
-  hint: string,
+  caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   setupOrKeyOrModeDescription?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
   setupOrMode?: Script<E> | Mode,
@@ -147,7 +147,7 @@ export function describe<E = void>(
     // Reuse existing node or describe a new one
     const renovation = owner.children.renovation
     existing ??= renovation.tryReaffirm(
-      effectiveKey = effectiveKey || generateKey(hint, owner), undefined,
+      effectiveKey = effectiveKey || generateKey(caller, owner), undefined,
       "nested elements can be described inside 'setup' only")
     if (existing) {
       // Reuse existing node
@@ -161,13 +161,13 @@ export function describe<E = void>(
     }
     else {
       // Create new node
-      result = new ReactiveTreeNode$<E>(effectiveKey || generateKey(hint, owner), driver, desc, owner)
+      result = new ReactiveTreeNode$<E>(effectiveKey || generateKey(caller, owner), driver, desc, owner)
       renovation.thisIsAdded(result as ReactiveTreeNode$<unknown>) as ReactiveTreeNode$<E>
     }
   }
   else {
     // Create new root node
-    result = new ReactiveTreeNode$(effectiveKey || generateKey(hint, owner), driver, desc, owner)
+    result = new ReactiveTreeNode$(effectiveKey || generateKey(caller, owner), driver, desc, owner)
     ReactiveTreeNode.launchSetup(result, signalArgs)
   }
   return result
@@ -407,14 +407,14 @@ export class ReactiveTreeVariable<T extends Object = Object> {
 
 // Utils
 
-export function generateKey(hint: string, owner?: ReactiveTreeNode$): string {
+export function generateKey(caller: string, owner?: ReactiveTreeNode$): string {
   const n = owner !== undefined ? owner.sequencer++ : 0
   const lettered = emitLetters(n)
   let result: string
   if (ReactiveSystem.isLogging)
-    result = `·${hint}·${getCallerInfo(lettered)}`
+    result = `·${caller}·${getCallerInfo(lettered)}`
   else
-    result = `·${hint}·${lettered}`
+    result = `·${caller}·${lettered}`
   return result
 }
 
