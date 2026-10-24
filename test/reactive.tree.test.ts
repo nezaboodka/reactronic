@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { BaseDriver, Mode, ReactiveSystem, ReactiveTreeNode, ReactiveTreeNodeDesc, Script, ScriptTask, args2desc, launchReactiveTree } from "../source/api.js"
+import { BaseDriver, ReactiveSystem, ReactiveTreeNode, ReactiveTreeNodeDesc, launchReactiveTree } from "../source/api.js"
 import { AbstractElement } from "../source/core/TreeNode.AbstractElement.js"
 
 // Sample
