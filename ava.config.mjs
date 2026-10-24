@@ -1,6 +1,6 @@
 export default {
   verbose: true,
-  extensions: { 'ts': 'module' },
+  extensions: ['ts'],
   nodeArguments: [
     '--import=tsimp',
     '--no-warnings'

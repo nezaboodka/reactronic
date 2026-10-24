@@ -36,7 +36,7 @@
     "@typescript-eslint/eslint-plugin": "8.72.0",
     "@typescript-eslint/parser": "8.72.0",
     "tsimp": "2.0.12",
-    "ava": "6.4.1",
+    "ava": "8.1.2",
     "c8": "12.0.0",
     "eslint": "10.13.0",
     "react": "19.3.1",
