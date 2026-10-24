@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Mode } from "../Enums.js"
-import { Script, ScriptTask, describe, ReactiveTreeNode, ReactiveTreeNodeDesc, BaseDriver, args2desc } from "./TreeNode.js"
+import { Script, ScriptTask, produce, ReactiveTreeNode, ReactiveTreeNodeDesc, BaseDriver, args2desc } from "./TreeNode.js"
 
 // AbstractElement
 
@@ -51,13 +51,13 @@ export abstract class AbstractElement {
     p5?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
     //
     const description = args2desc(this.name, p1, p2, p3, p4, p5)
-    return this.describe<E>(description)
+    return this.produce<E>(description)
   }
 
-  protected static describe<E = void>(
+  protected static produce<E = void>(
     this: typeof AbstractElement,
     description?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
     //
-    return describe<E>(this.name, this.driver, description)
+    return produce<E>(this.name, this.driver, description)
   }
 }

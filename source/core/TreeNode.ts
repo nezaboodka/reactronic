@@ -76,9 +76,9 @@ export function introduce<E = void>(impl: Use<E>): UsageApi<E> {
   return result
 }
 
-// describe
+// produce
 
-export function describe<E = void>(
+export function produce<E = void>(
   caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
@@ -94,12 +94,12 @@ export function describe<E = void>(
   let key = desc.key
   let result: ReactiveTreeNode$<E>
   if (owner) {
-    let existing = owner.driver.describeChild(owner, driver, desc, desc.basis)
-    // Reuse existing node or describe a new one
+    let existing = owner.driver.produceChild(owner, driver, desc, desc.basis)
+    // Reuse existing node or produce a new one
     const renovation = owner.children.renovation
     existing ??= renovation.tryReaffirm(
       key = key || generateKey(caller, owner), undefined,
-      "nested elements can be described inside 'setup' only")
+      "nested elements can be produced inside 'setup' only")
     if (existing) {
       // Reuse existing node
       result = existing as ReactiveTreeNode$<E>
@@ -296,7 +296,7 @@ export type ReactiveTreeNodeDriver<E = unknown> = {
 
   runSetup(node: ReactiveTreeNode<E>): void | Promise<void>
 
-  describeChild(ownerNode: ReactiveTreeNode<E>,
+  produceChild(ownerNode: ReactiveTreeNode<E>,
     childDriver: ReactiveTreeNodeDriver<any>,
     childDescription?: ReactiveTreeNodeDesc<any>,
     childBasis?: ReactiveTreeNodeDesc<any>): LinkedItem<ReactiveTreeNode> | undefined
@@ -340,7 +340,7 @@ export abstract class BaseDriver<E = unknown> implements ReactiveTreeNodeDriver<
     return invokeSetupUsingBasisChain(node.element, node.description)
   }
 
-  describeChild(ownerNode: ReactiveTreeNode<E>,
+  produceChild(ownerNode: ReactiveTreeNode<E>,
     childDriver: ReactiveTreeNodeDriver<any>,
     childDescription?: ReactiveTreeNodeDesc<any>,
     childBasis?: ReactiveTreeNodeDesc<any>): LinkedItem<ReactiveTreeNode> | undefined {

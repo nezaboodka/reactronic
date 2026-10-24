@@ -25,7 +25,7 @@ class Element extends AbstractElement {
 }
 
 class Button extends Element {
-  protected static override describe<E = void>(
+  protected static override produce<E = void>(
     this: typeof Button,
     description?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
     //
