@@ -21,11 +21,59 @@ import { ReactiveSystem, options, signal, reaction, runTransactional, runNonReac
 export type Script<E> = (this: E, o: E, basis: () => void) => void
 export type ScriptTask<E> = (this: E, o: E, basis: () => Promise<void>) => Promise<void>
 export type Handler<E = unknown, R = void> = (o: E) => R
+export type Describe<E> = (description?: ReactiveTreeNodeDesc<E>) => ReactiveTreeNode<E>
+
+// DescribeApi
+
+export type DescribeApi<E> = {
+  ( setup: Script<E>,
+    setupTask?: ScriptTask<E> | undefined,
+    basis?: ReactiveTreeNodeDesc<E> | undefined): ReactiveTreeNode<E>;
+
+  ( key: string,
+    setup: Script<E>,
+    setupTask?: ScriptTask<E> | undefined,
+    basis?: ReactiveTreeNodeDesc<E> | undefined): ReactiveTreeNode<E>;
+
+  ( mode: Mode,
+    setup: Script<E>,
+    setupTask?: ScriptTask<E> | undefined,
+    basis?: ReactiveTreeNodeDesc<E> | undefined): ReactiveTreeNode<E>;
+
+  ( key: string,
+    mode: Mode,
+    setup: Script<E>,
+    setupTask?: ScriptTask<E> | undefined,
+    basis?: ReactiveTreeNodeDesc<E> | undefined): ReactiveTreeNode<E>;
+
+  ( description?: ReactiveTreeNodeDesc<E> | undefined,
+    basis?: ReactiveTreeNodeDesc<E> | undefined): ReactiveTreeNode<E>;
+}
+
+// DescribeApiGateway (internal)
+
+type DescribeApiGateway<E> = {
+  ( p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
+    p2?: Script<E> | ScriptTask<E> | Mode | ReactiveTreeNodeDesc<E>,
+    p3?: Script<E> | ScriptTask<E> | ReactiveTreeNodeDesc<E>,
+    p4?: ScriptTask<E> | ReactiveTreeNodeDesc<E>,
+    p5?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
+}
 
 // launchReactiveTree
 
 export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[]): T {
   return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
+}
+
+// defineNodeType
+
+export function defineNodeType<E = void>(impl: Describe<E>): DescribeApi<E> {
+  const result: DescribeApiGateway<E> =
+    function gateway(p1, p2, p3, p4, p5) {
+      return impl(args2desc(impl.name, p1, p2, p3, p4, p5))
+    }
+  return result
 }
 
 // describe
