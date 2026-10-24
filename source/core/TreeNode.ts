@@ -39,16 +39,18 @@ export function describe<E = void>(
   p4?: ScriptTask<E> | ReactiveTreeNodeDesc<E>,
   p5?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
   //
-  const desc: ReactiveTreeNodeDesc<E> = args2desc(p1, p2, p3, p4, p5) ?? {}
-  let result: ReactiveTreeNode$<E>
-  let effectiveKey = desc.key
   const owner = gCurrentNode
+  const desc: ReactiveTreeNodeDesc<E> = args2desc(p1, p2, p3, p4, p5) ?? { }
+  if (desc.caller !== undefined)
+    caller = desc.caller
+  let key = desc.key
+  let result: ReactiveTreeNode$<E>
   if (owner) {
     let existing = owner.driver.describeChild(owner, driver, desc, desc.basis)
     // Reuse existing node or describe a new one
     const renovation = owner.children.renovation
     existing ??= renovation.tryReaffirm(
-      effectiveKey = effectiveKey || generateKey(caller, owner), undefined,
+      key = key || generateKey(caller, owner), undefined,
       "nested elements can be described inside 'setup' only")
     if (existing) {
       // Reuse existing node
@@ -62,13 +64,13 @@ export function describe<E = void>(
     }
     else {
       // Create new node
-      result = new ReactiveTreeNode$<E>(effectiveKey || generateKey(caller, owner), driver, desc, owner)
+      result = new ReactiveTreeNode$<E>(key || generateKey(caller, owner), driver, desc, owner)
       renovation.thisIsAdded(result as ReactiveTreeNode$<unknown>) as ReactiveTreeNode$<E>
     }
   }
   else {
     // Create new root node
-    result = new ReactiveTreeNode$(effectiveKey || generateKey(caller, owner), driver, desc, owner)
+    result = new ReactiveTreeNode$(key || generateKey(caller, owner), driver, desc, owner)
     ReactiveTreeNode.launchSetup(result, desc.signalArgs)
   }
   return result
@@ -213,12 +215,13 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
 // ReactiveTreeNodeDesc
 
 export type ReactiveTreeNodeDesc<E = unknown> = {
+  caller?: string                  // вызывающий
   key?: string                     // ключ
   mode?: Mode                      // режим
   setup?: Script<E>                // настройка
-  setupTask?: ScriptTask<E>       // настройка-задача
+  setupTask?: ScriptTask<E>        // настройка-задача
   creation?: Script<E>             // создание
-  creationTask?: ScriptTask<E>    // создание-задача
+  creationTask?: ScriptTask<E>     // создание-задача
   mounting?: Script<E>,            // монтаж
   destruction?: Script<E>          // уничтожение
   signalArgs?: unknown             // аргументы-сигналы
