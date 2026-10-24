@@ -40,7 +40,7 @@ export function describe<E = void>(
   p5?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
   //
   const owner = gCurrentNode
-  const desc: ReactiveTreeNodeDesc<E> = args2desc(p1, p2, p3, p4, p5) ?? { }
+  const desc: ReactiveTreeNodeDesc<E> = args2desc(caller, p1, p2, p3, p4, p5) ?? { }
   if (desc.caller !== undefined)
     caller = desc.caller
   let key = desc.key
@@ -78,7 +78,8 @@ export function describe<E = void>(
 
 // args2desc
 
-function args2desc<E = void>(
+export function args2desc<E = void>(
+  caller: string,
   p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
   p2?: Script<E> | ScriptTask<E> | Mode | ReactiveTreeNodeDesc<E>,
   p3?: Script<E> | ScriptTask<E> | ReactiveTreeNodeDesc<E>,
@@ -88,22 +89,23 @@ function args2desc<E = void>(
   let result: ReactiveTreeNodeDesc<E> | undefined
   const t1 = typeof(p1)
   if (t1 === "function")
-    result = { setup: p1 as Script<E>, setupTask: p2 as ScriptTask<E>, basis: p3 as ReactiveTreeNodeDesc<E> }
+    result = { caller, setup: p1 as Script<E>, setupTask: p2 as ScriptTask<E>, basis: p3 as ReactiveTreeNodeDesc<E> }
   else if (t1 === "string" && typeof(p2) !== "number")
-    result = { key: p1 as string, setup: p2 as Script<E>, setupTask: p3 as ScriptTask<E>, basis: p4 as ReactiveTreeNodeDesc<E> }
+    result = { caller, key: p1 as string, setup: p2 as Script<E>, setupTask: p3 as ScriptTask<E>, basis: p4 as ReactiveTreeNodeDesc<E> }
   else if (t1 === "string")
-    result = { key: p1 as string, mode: p2 as Mode, setup: p3 as Script<E>, setupTask: p4 as ScriptTask<E>, basis: p5 }
+    result = { caller, key: p1 as string, mode: p2 as Mode, setup: p3 as Script<E>, setupTask: p4 as ScriptTask<E>, basis: p5 }
   else if (t1 === "number")
-    result = { mode: p1 as Mode, setup: p2 as Script<E>, setupTask: p3 as ScriptTask<E>, basis: p4 as ReactiveTreeNodeDesc<E> }
+    result = { caller, mode: p1 as Mode, setup: p2 as Script<E>, setupTask: p3 as ScriptTask<E>, basis: p4 as ReactiveTreeNodeDesc<E> }
   else if (t1 === "object" && p1 !== null) {
     result = p1 as ReactiveTreeNodeDesc<E>
+    result.caller ??= caller
     if (p2 !== undefined)
       result.basis = p2 as ReactiveTreeNodeDesc<E>
   }
   else if (p1 !== undefined)
     throw misuse(`wrong type of the first parameter: ${t1}`)
   else
-    result = p2 !== undefined ? { basis: p2 as ReactiveTreeNodeDesc<E> } : undefined
+    result = p2 !== undefined ? { caller, basis: p2 as ReactiveTreeNodeDesc<E> } : undefined
   return result
 }
 
