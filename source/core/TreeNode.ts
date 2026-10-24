@@ -16,17 +16,17 @@ import { RxObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
 import { ReactiveSystem, options, signal, reaction, runTransactional, runNonReactive, manageReaction, disposeRxObject } from "../System.js"
 
+// Script, ScriptTask, Handler
+
+export type Script<E> = (this: E, o: E, basis: () => void) => void
+export type ScriptTask<E> = (this: E, o: E, basis: () => Promise<void>) => Promise<void>
+export type Handler<E = unknown, R = void> = (o: E) => R
+
 // launchReactiveTree
 
 export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[]): T {
   return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
 }
-
-// Scripts
-
-export type Script<E> = (this: E, o: E, basis: () => void) => void
-export type ScriptTask<E> = (this: E, o: E, basis: () => Promise<void>) => Promise<void>
-export type Handler<E = unknown, R = void> = (o: E) => R
 
 // describe
 
