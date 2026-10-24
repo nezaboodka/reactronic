@@ -105,18 +105,6 @@ function args2desc<E = void>(
   return result
 }
 
-// // setBasis
-
-// export function setBasis<E = void>(
-//   description?: ReactiveTreeNodeDesc<E>,
-//   basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNodeDesc<E> {
-//   if (description)
-//     description.basis = basis
-//   else
-//     description = basis ?? {}
-//   return description
-// }
-
 // ReactiveTreeNode
 
 export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveTreeNode<E>> {
