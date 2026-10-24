@@ -29,3 +29,4 @@ export { ReactiveSystem, signal, transaction, reaction, cache, options } from ".
 export { ReactionEx } from "./OperationEx.js"
 export { launchReactiveTree, describe, args2desc, ReactiveTreeNode, BaseDriver, ReactiveTreeVariable } from "./core/TreeNode.js"
 export type { Script, ScriptTask, Handler, ReactiveTreeNodeDesc, ReactiveTreeNodeDriver, ReactiveTreeNodeContext } from "./core/TreeNode.js"
+export { AbstractElement } from "./core/TreeNode.AbstractElement.js"
