@@ -21,11 +21,11 @@ import { ReactiveSystem, options, signal, reaction, runTransactional, runNonReac
 export type Script<E> = (this: E, o: E, basis: () => void) => void
 export type ScriptTask<E> = (this: E, o: E, basis: () => Promise<void>) => Promise<void>
 export type Handler<E = unknown, R = void> = (o: E) => R
-export type Describe<E> = (description?: ReactiveTreeNodeDesc<E>) => ReactiveTreeNode<E>
+export type Use<E> = (description?: ReactiveTreeNodeDesc<E>) => ReactiveTreeNode<E>
 
-// DescribeApi
+// UsageApi
 
-export type DescribeApi<E> = {
+export type UsageApi<E> = {
   ( setup: Script<E>,
     setupTask?: ScriptTask<E> | undefined,
     basis?: ReactiveTreeNodeDesc<E> | undefined): ReactiveTreeNode<E>;
@@ -50,9 +50,9 @@ export type DescribeApi<E> = {
     basis?: ReactiveTreeNodeDesc<E> | undefined): ReactiveTreeNode<E>;
 }
 
-// DescribeApiGateway (internal)
+// UsageApiGateway (internal)
 
-type DescribeApiGateway<E> = {
+type UsageApiGateway<E> = {
   ( p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
     p2?: Script<E> | ScriptTask<E> | Mode | ReactiveTreeNodeDesc<E>,
     p3?: Script<E> | ScriptTask<E> | ReactiveTreeNodeDesc<E>,
@@ -66,10 +66,10 @@ export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[
   return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
 }
 
-// defineNodeType
+// introduce
 
-export function defineNodeType<E = void>(impl: Describe<E>): DescribeApi<E> {
-  const result: DescribeApiGateway<E> =
+export function introduce<E = void>(impl: Use<E>): UsageApi<E> {
+  const result: UsageApiGateway<E> =
     function gateway(p1, p2, p3, p4, p5) {
       return impl(args2desc(impl.name, p1, p2, p3, p4, p5))
     }
