@@ -16,6 +16,12 @@ import { RxObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
 import { ReactiveSystem, options, signal, reaction, runTransactional, runNonReactive, manageReaction, disposeRxObject } from "../System.js"
 
+// launchReactiveTree
+
+export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[]): T {
+  return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
+}
+
 // Scripts
 
 export type Script<E> = (this: E, o: E, basis: () => void) => void
@@ -23,44 +29,6 @@ export type ScriptAsync<E> = (this: E, o: E, basis: () => Promise<void>) => Prom
 export type Handler<E = unknown, R = void> = (o: E) => R
 
 // describe
-
-export function describe<E = void>(
-  caller: string,
-  driver: ReactiveTreeNodeDriver<E>,
-  setup: Script<E>,
-  setupTask?: ScriptAsync<E>,
-  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
-
-export function describe<E = void>(
-  caller: string,
-  driver: ReactiveTreeNodeDriver<E>,
-  key: string,
-  setup: Script<E>,
-  setupTask?: ScriptAsync<E>,
-  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
-
-export function describe<E = void>(
-  caller: string,
-  driver: ReactiveTreeNodeDriver<E>,
-  mode: Mode,
-  setup: Script<E>,
-  setupTask?: ScriptAsync<E>,
-  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
-
-export function describe<E = void>(
-  caller: string,
-  driver: ReactiveTreeNodeDriver<E>,
-  key: string,
-  mode: Mode,
-  setup: Script<E>,
-  setupTask?: ScriptAsync<E>,
-  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
-
-export function describe<E = void>(
-  caller: string,
-  driver: ReactiveTreeNodeDriver<E>,
-  description?: ReactiveTreeNodeDesc<E>,
-  basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
 
 export function describe<E = void>(
   caller: string,
@@ -108,7 +76,7 @@ export function describe<E = void>(
 
 // args2desc
 
-export function args2desc<E = void>(
+function args2desc<E = void>(
   p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
   p2?: Script<E> | ScriptAsync<E> | Mode | ReactiveTreeNodeDesc<E>,
   p3?: Script<E> | ScriptAsync<E> | ReactiveTreeNodeDesc<E>,
@@ -148,12 +116,6 @@ export function args2desc<E = void>(
 //     description = basis ?? {}
 //   return description
 // }
-
-// launch
-
-export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[]): T {
-  return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
-}
 
 // ReactiveTreeNode
 
