@@ -25,7 +25,7 @@ export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[
 // Scripts
 
 export type Script<E> = (this: E, o: E, basis: () => void) => void
-export type ScriptAsync<E> = (this: E, o: E, basis: () => Promise<void>) => Promise<void>
+export type ScriptTask<E> = (this: E, o: E, basis: () => Promise<void>) => Promise<void>
 export type Handler<E = unknown, R = void> = (o: E) => R
 
 // describe
@@ -34,9 +34,9 @@ export function describe<E = void>(
   caller: string,
   driver: ReactiveTreeNodeDriver<E>,
   p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
-  p2?: Script<E> | ScriptAsync<E> | Mode | ReactiveTreeNodeDesc<E>,
-  p3?: Script<E> | ScriptAsync<E> | ReactiveTreeNodeDesc<E>,
-  p4?: ScriptAsync<E> | ReactiveTreeNodeDesc<E>,
+  p2?: Script<E> | ScriptTask<E> | Mode | ReactiveTreeNodeDesc<E>,
+  p3?: Script<E> | ScriptTask<E> | ReactiveTreeNodeDesc<E>,
+  p4?: ScriptTask<E> | ReactiveTreeNodeDesc<E>,
   p5?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
   //
   const desc: ReactiveTreeNodeDesc<E> = args2desc(p1, p2, p3, p4, p5) ?? {}
@@ -78,21 +78,21 @@ export function describe<E = void>(
 
 function args2desc<E = void>(
   p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
-  p2?: Script<E> | ScriptAsync<E> | Mode | ReactiveTreeNodeDesc<E>,
-  p3?: Script<E> | ScriptAsync<E> | ReactiveTreeNodeDesc<E>,
-  p4?: ScriptAsync<E> | ReactiveTreeNodeDesc<E>,
+  p2?: Script<E> | ScriptTask<E> | Mode | ReactiveTreeNodeDesc<E>,
+  p3?: Script<E> | ScriptTask<E> | ReactiveTreeNodeDesc<E>,
+  p4?: ScriptTask<E> | ReactiveTreeNodeDesc<E>,
   p5?: ReactiveTreeNodeDesc<E>): ReactiveTreeNodeDesc<E> | undefined {
   //
   let result: ReactiveTreeNodeDesc<E> | undefined
   const t1 = typeof(p1)
   if (t1 === "function")
-    result = { setup: p1 as Script<E>, setupTask: p2 as ScriptAsync<E>, basis: p3 as ReactiveTreeNodeDesc<E> }
+    result = { setup: p1 as Script<E>, setupTask: p2 as ScriptTask<E>, basis: p3 as ReactiveTreeNodeDesc<E> }
   else if (t1 === "string" && typeof(p2) !== "number")
-    result = { key: p1 as string, setup: p2 as Script<E>, setupTask: p3 as ScriptAsync<E>, basis: p4 as ReactiveTreeNodeDesc<E> }
+    result = { key: p1 as string, setup: p2 as Script<E>, setupTask: p3 as ScriptTask<E>, basis: p4 as ReactiveTreeNodeDesc<E> }
   else if (t1 === "string")
-    result = { key: p1 as string, mode: p2 as Mode, setup: p3 as Script<E>, setupTask: p4 as ScriptAsync<E>, basis: p5 }
+    result = { key: p1 as string, mode: p2 as Mode, setup: p3 as Script<E>, setupTask: p4 as ScriptTask<E>, basis: p5 }
   else if (t1 === "number")
-    result = { mode: p1 as Mode, setup: p2 as Script<E>, setupTask: p3 as ScriptAsync<E>, basis: p4 as ReactiveTreeNodeDesc<E> }
+    result = { mode: p1 as Mode, setup: p2 as Script<E>, setupTask: p3 as ScriptTask<E>, basis: p4 as ReactiveTreeNodeDesc<E> }
   else if (t1 === "object" && p1 !== null) {
     result = p1 as ReactiveTreeNodeDesc<E>
     if (p2 !== undefined)
@@ -228,9 +228,9 @@ export type ReactiveTreeNodeDesc<E = unknown> = {
   key?: string                     // ключ
   mode?: Mode                      // режим
   setup?: Script<E>                // настройка
-  setupTask?: ScriptAsync<E>       // настройка-задача
+  setupTask?: ScriptTask<E>       // настройка-задача
   creation?: Script<E>             // создание
-  creationTask?: ScriptAsync<E>    // создание-задача
+  creationTask?: ScriptTask<E>    // создание-задача
   mounting?: Script<E>,            // монтаж
   destruction?: Script<E>          // уничтожение
   signalArgs?: unknown             // аргументы-сигналы
