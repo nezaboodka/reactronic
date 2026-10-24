@@ -28,5 +28,4 @@ export { runTransactional, runNonReactive, runSensitive, runContextual, manageRe
 export { ReactiveSystem, signal, transaction, reaction, cache, options } from "./System.js"
 export { ReactionEx } from "./OperationEx.js"
 export { launchReactiveTree, describe, args2desc, ReactiveTreeNode, BaseDriver, ReactiveTreeVariable } from "./core/TreeNode.js"
-export { Sample, SampleDriver } from "./core/TreeNode.Sample.js"
 export type { Script, ScriptTask, Handler, ReactiveTreeNodeDesc, ReactiveTreeNodeDriver, ReactiveTreeNodeContext } from "./core/TreeNode.js"

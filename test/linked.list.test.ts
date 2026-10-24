@@ -24,7 +24,7 @@ class Property extends LinkedItem<Property> {
   }
 }
 
-test("linked-list", (t: ExecutionContext<unknown>) => {
+test("linked.list", (t: ExecutionContext<unknown>) => {
 
   ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
 

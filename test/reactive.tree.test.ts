@@ -1,0 +1,54 @@
+// The below copyright notice and the license permission notice
+// shall be included in all copies or substantial portions.
+// Copyright (C) 2016-2026 Nezaboodka Software <contact@nezaboodka.by>
+// License: https://raw.githubusercontent.com/nezaboodka/reactronic/master/LICENSE
+// By contributing, you agree that your contributions will be
+// automatically licensed under the license referred above.
+
+import test, { ExecutionContext } from "ava"
+import { BaseDriver, Mode, ReactiveSystem, ReactiveTreeNode, ReactiveTreeNodeDesc, Script, ScriptTask, args2desc, launchReactiveTree } from "../source/api.js"
+import { AbstractElement } from "../source/core/TreeNode.AbstractElement.js"
+
+// Sample
+
+class SampleDriver<T> extends BaseDriver<T> {
+  static readonly id: string = "SampleDriver"
+  static readonly glob = new SampleDriver<any>(SampleDriver.id, false)
+
+  override create(_node: ReactiveTreeNode<T>): T {
+    return {} as T
+  }
+}
+
+class Element extends AbstractElement {
+  static override readonly driver = new SampleDriver<any>("sample", false)
+}
+
+class Button extends Element {
+  protected static override describe<E = void>(
+    this: typeof Button,
+    description?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
+    //
+    return Element.d(description, {
+      setup(o, base) {
+        base()
+        // do noting
+      },
+    })
+  }
+}
+
+test("reactive.tree", (t: ExecutionContext<unknown>) => {
+  ReactiveSystem.setLoggingMode(false)
+  const root = launchReactiveTree(() => (
+    Element.d(() => {
+      Button.d(() => {
+        // do nothing
+      })
+    })
+  ))
+  const nested = [...root.children.items()]
+  t.is(root.key, "·Element·A")
+  t.is(nested.length, 1)
+  t.is(nested[0].key, "·Button·A")
+})
