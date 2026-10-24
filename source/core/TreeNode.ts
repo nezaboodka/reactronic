@@ -140,7 +140,7 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
     return ReactiveTreeNode$.node
   }
 
-  static get isFirstSetupBuild(): boolean {
+  static get isInitialSetup(): boolean {
     return ReactiveTreeNode.current.stamp === 1
   }
 
