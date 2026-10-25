@@ -7,7 +7,7 @@
 
 import test, { ExecutionContext } from "ava"
 import { TestsLoggingLevel } from "./brief.js"
-import { ReactiveSystem } from "../source/api.js"
+import { RtSystem } from "../source/api.js"
 import { LinkedList, LinkedItem, Mark } from "../source/util/LinkedList.js"
 
 const V = Mark.reaffirmed
@@ -26,7 +26,7 @@ class Property extends LinkedItem<Property> {
 
 test("linked.list", (t: ExecutionContext<unknown>) => {
 
-  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
+  RtSystem.setLoggingMode(true, TestsLoggingLevel)
 
   const list = new LinkedList<Property>(x => x.value, true)
 

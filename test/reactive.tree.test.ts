@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { BaseDriver, ReactiveSystem, RtNode, Conf, launchReactiveTree } from "../source/api.js"
+import { BaseDriver, RtSystem, RtNode, Conf, launchReactiveTree } from "../source/api.js"
 import { AbstractElement } from "../source/core/TreeNode.AbstractElement.js"
 
 // Sample
@@ -39,7 +39,7 @@ class Button extends Element {
 }
 
 test("reactive.tree", (t: ExecutionContext<unknown>) => {
-  ReactiveSystem.setLoggingMode(false)
+  RtSystem.setLoggingMode(false)
   const root = launchReactiveTree(() => (
     Element.d(() => {
       Button.d(() => {

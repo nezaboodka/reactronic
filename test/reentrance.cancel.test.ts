@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { runTransactional, all, pause, Reentrance, ReactiveSystem, manageReaction, disposeRxObject } from "../source/api.js"
+import { runTransactional, all, pause, Reentrance, RtSystem, manageReaction, disposeRxObject } from "../source/api.js"
 import { AsyncDemo, AsyncDemoView, busy, output } from "./reentrance.js"
 import { TestsLoggingLevel } from "./brief.js"
 
@@ -26,7 +26,7 @@ const expected: Array<string> = [
 ]
 
 test("reentrance.cancel", async (t: ExecutionContext<unknown>) => {
-  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
+  RtSystem.setLoggingMode(true, TestsLoggingLevel)
   const app = runTransactional(() => {
     const a = new AsyncDemoView(new AsyncDemo())
     manageReaction(a.print).configure({ order: 0 })
@@ -44,7 +44,7 @@ test("reentrance.cancel", async (t: ExecutionContext<unknown>) => {
   }
   catch (error: any) { /* istanbul ignore next */
     output.push(error.toString()) /* istanbul ignore next */
-    if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) console.log(error.toString())
+    if (RtSystem.isLogging && RtSystem.loggingOptions.enabled) console.log(error.toString())
   }
   finally {
     t.is(busy.counter, 0)
@@ -55,7 +55,7 @@ test("reentrance.cancel", async (t: ExecutionContext<unknown>) => {
       disposeRxObject(app.model)
     })
   } /* istanbul ignore next */
-  if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) {
+  if (RtSystem.isLogging && RtSystem.loggingOptions.enabled) {
     console.log("\nResults:\n")
     for (const x of output)
       console.log(x)
@@ -63,7 +63,7 @@ test("reentrance.cancel", async (t: ExecutionContext<unknown>) => {
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
+    if (RtSystem.isLogging && RtSystem.loggingOptions.enabled) console.log(`actual[${i}] = ${output[i]},    expected[${i}] = ${expected[i]}`)
     t.is(output[i], expected[i])
   }
 })

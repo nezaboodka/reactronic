@@ -125,7 +125,7 @@ export class ReactionImpl implements Reaction<any> {
   /* istanbul ignore next */
   static dependencies(): string[] {
     const l = OperationFootprintImpl.current
-    return l ? l.dependencies() : ["RxSystem.dependencies should be called from inside of reactive method"]
+    return l ? l.dependencies() : ["RtSystem.dependencies should be called from inside of reactive method"]
   }
 
   // Internal

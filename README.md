@@ -489,9 +489,9 @@ type Reaction<T> = {
   pullLastResult(args?: any[]): any
 }
 
-// ReactiveSystem
+// RtSystem
 
-class ReactiveSystem {
+class RtSystem {
   static why(brief: boolean = false): string
   static getRevisionOf(obj: any): number
   static takeSnapshot<T>(obj: T): T

@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { RxObject, runTransactional, reaction, cache, signal, options, ReactiveSystem } from "../source/api.js"
+import { RxObject, runTransactional, reaction, cache, signal, options, RtSystem } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 export class DemoBase extends RxObject {
@@ -39,7 +39,7 @@ export class DemoBase extends RxObject {
 
   @cache @options({ logging: {} })
   produceSideEffect(): void {
-    this.raw = ReactiveSystem.why()
+    this.raw = RtSystem.why()
     this.title = "should fail on this line"
   }
 
@@ -62,7 +62,7 @@ export class Demo extends DemoBase {
 }
 
 test("caching", (t: ExecutionContext<unknown>) => {
-  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
+  RtSystem.setLoggingMode(true, TestsLoggingLevel)
   const demo = runTransactional(() => {
     const d = new Demo()
     t.is(d.cachedTitle(), "Demo")

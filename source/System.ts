@@ -15,7 +15,7 @@ import { Mvcc } from "./core/Mvcc.js"
 import { Transaction } from "./core/Transaction.js"
 import { ReactionImpl } from "./core/Operation.js"
 
-export class ReactiveSystem {
+export class RtSystem {
   static why(brief: boolean = false): string { return brief ? ReactionImpl.briefWhy() : ReactionImpl.why() }
   static getRevisionOf(obj: any): number { return obj[Meta.Revision] }
   static takeSnapshot<T>(obj: T): T { return Changeset.takeSnapshot(obj) }

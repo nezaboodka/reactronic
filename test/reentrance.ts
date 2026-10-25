@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { RxObject, transaction, reaction, cache, options, Transaction, Indicator, Reentrance, ReactiveSystem, signal, all, pause } from "../source/api.js"
+import { RxObject, transaction, reaction, cache, options, Transaction, Indicator, Reentrance, RtSystem, signal, all, pause } from "../source/api.js"
 
 export const output: string[] = []
 export const busy = Indicator.create("Busy", 0, 0, 1)
@@ -36,7 +36,7 @@ export class AsyncDemoView {
     if (!Transaction.current.isCanceled) {
       for (const x of lines) {
         output.push(x) /* istanbul ignore next */
-        if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) console.log(x)
+        if (RtSystem.isLogging && RtSystem.loggingOptions.enabled) console.log(x)
       }
     }
   }

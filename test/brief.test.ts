@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { Transaction, Kind, runTransactional, runNonReactive, runSensitive, ReactiveSystem, manageReaction, disposeRxObject } from "../source/api.js"
+import { Transaction, Kind, runTransactional, runNonReactive, runSensitive, RtSystem, manageReaction, disposeRxObject } from "../source/api.js"
 import { Person, Demo, DemoView, output, TestsLoggingLevel } from "./brief.js"
 
 const expected: string[] = [
@@ -29,22 +29,22 @@ const expected: string[] = [
 ]
 
 test("brief", (t: ExecutionContext<unknown>) => {
-  ReactiveSystem.reactivityAutoStartDisabled = !ReactiveSystem.reactivityAutoStartDisabled
-  ReactiveSystem.reactivityAutoStartDisabled = false
-  ReactiveSystem.setProfilingMode(false)
-  ReactiveSystem.setProfilingMode(true, {})
-  ReactiveSystem.setProfilingMode(true, {
+  RtSystem.reactivityAutoStartDisabled = !RtSystem.reactivityAutoStartDisabled
+  RtSystem.reactivityAutoStartDisabled = false
+  RtSystem.setProfilingMode(false)
+  RtSystem.setProfilingMode(true, {})
+  RtSystem.setProfilingMode(true, {
     repetitiveUsageWarningThreshold: 3, // default: 10 times
     mainThreadBlockingWarningThreshold: 10, // default: 16.6 ms
     asyncActionDurationWarningThreshold: 100, // default: 150 ms
     garbageCollectionSummaryInterval: 2000, // default: 3000 ms
   })
-  ReactiveSystem.setLoggingMode(false)
-  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
+  RtSystem.setLoggingMode(false)
+  RtSystem.setLoggingMode(true, TestsLoggingLevel)
   // Simple transactions
   const app = runTransactional(() => new DemoView(new Demo()))
   try {
-    t.is(ReactiveSystem.why(), "<boot>")
+    t.is(RtSystem.why(), "<boot>")
     t.is(manageReaction(app.print).options.order, 123)
     t.notThrows(() => DemoView.test())
     const render = manageReaction(app.render)
@@ -63,7 +63,7 @@ test("brief", (t: ExecutionContext<unknown>) => {
     t.is(daddy.name, "John")
     t.is(daddy.age, 38)
     t.is(render.isReusable, true)
-    t.is(ReactiveSystem.takeSnapshot(daddy).age, 38)
+    t.is(RtSystem.takeSnapshot(daddy).age, 38)
     const stamp = render.stamp
     app.render(0)
     t.is(render.stamp, stamp)
@@ -165,10 +165,10 @@ test("brief", (t: ExecutionContext<unknown>) => {
     t.is(app.raw, "DemoView.render #23t117s111e117   ◀◀   DemoView.userFilter[=\"\"] #23t116s111e111    ◀◀    T116[noname]")
     t.is(render.options.kind, Kind.cache)
     t.is(render.error, undefined)
-    t.is(ReactiveSystem.getLoggingHint(app), "DemoView")
-    ReactiveSystem.setLoggingHint(app, "App")
-    t.is(ReactiveSystem.getLoggingHint(app, false), "App")
-    t.is(ReactiveSystem.getLoggingHint(app, true), "App#23")
+    t.is(RtSystem.getLoggingHint(app), "DemoView")
+    RtSystem.setLoggingHint(app, "App")
+    t.is(RtSystem.getLoggingHint(app, false), "App")
+    t.is(RtSystem.getLoggingHint(app, true), "App#23")
     t.deepEqual(Object.getOwnPropertyNames(app.model), ["shared", "title", "users", "collection1", "collection2", "usersWithoutLast"])
     t.deepEqual(Object.keys(app.model), ["shared", "title", "users", "collection1", "collection2", "usersWithoutLast"])
     t.is(Object.getOwnPropertyDescriptors(app.model).title.writable, true)
@@ -211,7 +211,7 @@ test("brief", (t: ExecutionContext<unknown>) => {
   }
   const n: number = Math.max(output.length, expected.length)
   for (let i = 0; i < n; i++) { /* istanbul ignore next */
-    if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
+    if (RtSystem.isLogging && RtSystem.loggingOptions.enabled) console.log(`actual[${i}] = \x1b[32m${output[i]}\x1b[0m,    expected[${i}] = \x1b[33m${expected[i]}\x1b[0m`)
     t.is(output[i], expected[i])
   }
 })

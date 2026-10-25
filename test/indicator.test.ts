@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { Indicator, RxObject, Reentrance, Transaction, transaction, reaction, options, pause, signal, runTransactional, ReactiveSystem, manageReaction } from "../source/api.js"
+import { Indicator, RxObject, Reentrance, Transaction, transaction, reaction, options, pause, signal, runTransactional, RtSystem, manageReaction } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 const expected: Array<string> = [
@@ -76,8 +76,8 @@ class CompilationController extends RxObject {
 }
 
 test("indicator", async (t: ExecutionContext<unknown>) => {
-  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
-  // RxSystem.setProfilingMode(true)
+  RtSystem.setLoggingMode(true, TestsLoggingLevel)
+  // RtSystem.setProfilingMode(true)
   const indicator = Indicator.create("indicator", 0, 0, 1000)
   const controller = runTransactional(() => {
     const result = new CompilationController()

@@ -7,12 +7,12 @@
 
 import test, { ExecutionContext } from "ava"
 import { TestsLoggingLevel } from "./brief.js"
-import { ReactiveSystem } from "../source/api.js"
+import { RtSystem } from "../source/api.js"
 import { ReconciliationList, LinkedItem } from "../source/util/ReconciliationList.js"
 
 test("reconciliation-list", (t: ExecutionContext<unknown>) => {
 
-  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
+  RtSystem.setLoggingMode(true, TestsLoggingLevel)
 
   const etalon1 = ["Hello", "Welcome", "Bye", "End"]
   const etalon2 = ["Added1", "Bye", "End", "Added2", "Hello", "Added3"]

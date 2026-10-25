@@ -14,7 +14,7 @@ import { Priority, Mode, Isolation, Reentrance } from "../Enums.js"
 import { ReactivityOptions } from "../Options.js"
 import { RxObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
-import { ReactiveSystem, options, signal, reaction, runTransactional, runNonReactive, manageReaction, disposeRxObject } from "../System.js"
+import { RtSystem, options, signal, reaction, runTransactional, runNonReactive, manageReaction, disposeRxObject } from "../System.js"
 
 // Script, ScriptTask, Handler
 
@@ -334,7 +334,7 @@ export function generateKey(caller: string, owner?: RtNode$): string {
   const n = owner !== undefined ? owner.sequencer++ : 0
   const lettered = emitLetters(n)
   let result: string
-  if (ReactiveSystem.isLogging)
+  if (RtSystem.isLogging)
     result = `·${caller}·${getCallerInfo(lettered)}`
   else
     result = `·${caller}·${lettered}`
@@ -697,8 +697,8 @@ function launchSetupImpl(node: RtNode$<any>): void {
     if (!node.has(Mode.primitive)) {
       if (node.stamp === Number.MAX_SAFE_INTEGER) {
         Transaction.outside(() => {
-          if (ReactiveSystem.isLogging)
-            ReactiveSystem.setLoggingHint(node, node.key)
+          if (RtSystem.isLogging)
+            RtSystem.setLoggingHint(node, node.key)
           manageReaction(node.setup).configure({
             order: node.level,
           })

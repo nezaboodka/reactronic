@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { runTransactional, ReactiveSystem, RxObject } from "../source/api.js"
+import { runTransactional, RtSystem, RxObject } from "../source/api.js"
 import { TestsLoggingLevel } from "./brief.js"
 
 class Serializable extends RxObject {
@@ -15,7 +15,7 @@ class Serializable extends RxObject {
 }
 
 test("serializing", (t: ExecutionContext<unknown>) => {
-  ReactiveSystem.setLoggingMode(true, TestsLoggingLevel)
+  RtSystem.setLoggingMode(true, TestsLoggingLevel)
   const serializable = runTransactional(() => {
     const s1 = new Serializable()
     s1.text = "s1"

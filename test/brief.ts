@@ -5,7 +5,7 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { RxObject, signal, runTransactional, transaction, reaction, cache, Journal, ReactiveSystem, LoggingOptions, options, configureCurrentReaction } from "../source/api.js"
+import { RxObject, signal, runTransactional, transaction, reaction, cache, Journal, RtSystem, LoggingOptions, options, configureCurrentReaction } from "../source/api.js"
 
 export const output: string[] = []
 
@@ -88,7 +88,7 @@ export class DemoView extends RxObject {
     const lines = this.render(0)
     lines.forEach(x => {
       output.push(x) /* istanbul ignore next */
-      if (ReactiveSystem.isLogging && ReactiveSystem.loggingOptions.enabled) console.log(x)
+      if (RtSystem.isLogging && RtSystem.loggingOptions.enabled) console.log(x)
     })
     configureCurrentReaction({ order: 123 })
   }
@@ -114,7 +114,7 @@ export class DemoView extends RxObject {
   @cache @options({ signalArgs: true })
   render(counter: number): string[] {
     // Print only those users who's name starts with filter string
-    this.raw = ReactiveSystem.why(true)
+    this.raw = RtSystem.why(true)
     const r: string[] = []
     r.push(`Filter: ${this.userFilter}`)
     const a = this.filteredUsers()
