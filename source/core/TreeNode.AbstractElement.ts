@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Mode } from "../Enums.js"
-import { Script, ScriptTask, produce, ReactiveTreeNode, ReactiveTreeNodeDesc, BaseDriver, args2desc } from "./TreeNode.js"
+import { Script, ScriptTask, produce, ReactiveTreeNode, Conf, BaseDriver, args2conf } from "./TreeNode.js"
 
 // AbstractElement
 
@@ -17,47 +17,47 @@ export abstract class AbstractElement {
   static d<E = void>(
     setup: Script<E>,
     setupTask?: ScriptTask<E>,
-    basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
+    basis?: Conf<E>): ReactiveTreeNode<E>
 
   static d<E = void>(
     key: string,
     setup: Script<E>,
     setupTask?: ScriptTask<E>,
-    basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
+    basis?: Conf<E>): ReactiveTreeNode<E>
 
   static d<E = void>(
     mode: Mode,
     setup: Script<E>,
     setupTask?: ScriptTask<E>,
-    basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
+    basis?: Conf<E>): ReactiveTreeNode<E>
 
   static d<E = void>(
     key: string,
     mode: Mode,
     setup: Script<E>,
     setupTask?: ScriptTask<E>,
-    basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
+    basis?: Conf<E>): ReactiveTreeNode<E>
 
   static d<E = void>(
-    description?: ReactiveTreeNodeDesc<E>,
-    basis?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E>
+    conf?: Conf<E>,
+    basis?: Conf<E>): ReactiveTreeNode<E>
 
   static d<E = void>(
     this: typeof AbstractElement,
-    p1?: Script<E> | string | Mode | ReactiveTreeNodeDesc<E>,
-    p2?: Script<E> | ScriptTask<E> | Mode | ReactiveTreeNodeDesc<E>,
-    p3?: Script<E> | ScriptTask<E> | ReactiveTreeNodeDesc<E>,
-    p4?: ScriptTask<E> | ReactiveTreeNodeDesc<E>,
-    p5?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
+    p1?: Script<E> | string | Mode | Conf<E>,
+    p2?: Script<E> | ScriptTask<E> | Mode | Conf<E>,
+    p3?: Script<E> | ScriptTask<E> | Conf<E>,
+    p4?: ScriptTask<E> | Conf<E>,
+    p5?: Conf<E>): ReactiveTreeNode<E> {
     //
-    const description = args2desc(this.name, p1, p2, p3, p4, p5)
-    return this.produce<E>(description)
+    const conf = args2conf(this.name, p1, p2, p3, p4, p5)
+    return this.produce<E>(conf)
   }
 
   protected static produce<E = void>(
     this: typeof AbstractElement,
-    description?: ReactiveTreeNodeDesc<E>): ReactiveTreeNode<E> {
+    conf?: Conf<E>): ReactiveTreeNode<E> {
     //
-    return produce<E>(this.name, this.driver, description)
+    return produce<E>(this.name, this.driver, conf)
   }
 }
