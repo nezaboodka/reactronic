@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { BaseDriver, ReactiveSystem, ReactiveTreeNode, Conf, launchReactiveTree } from "../source/api.js"
+import { BaseDriver, ReactiveSystem, RtNode, Conf, launchReactiveTree } from "../source/api.js"
 import { AbstractElement } from "../source/core/TreeNode.AbstractElement.js"
 
 // Sample
@@ -15,7 +15,7 @@ class SampleDriver<T> extends BaseDriver<T> {
   static readonly id: string = "SampleDriver"
   static readonly glob = new SampleDriver<any>(SampleDriver.id, false)
 
-  override create(_node: ReactiveTreeNode<T>): T {
+  override create(_node: RtNode<T>): T {
     return {} as T
   }
 }
@@ -27,7 +27,7 @@ class Element extends AbstractElement {
 class Button extends Element {
   protected static override produce<E = void>(
     this: typeof Button,
-    conf?: Conf<E>): ReactiveTreeNode<E> {
+    conf?: Conf<E>): RtNode<E> {
     //
     return Element.d(conf, {
       setup(o, base) {

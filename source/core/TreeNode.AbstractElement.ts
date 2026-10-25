@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import { Mode } from "../Enums.js"
-import { Script, ScriptTask, produce, ReactiveTreeNode, Conf, BaseDriver, args2conf } from "./TreeNode.js"
+import { Script, ScriptTask, produce, RtNode, Conf, BaseDriver, args2conf } from "./TreeNode.js"
 
 // AbstractElement
 
@@ -17,30 +17,30 @@ export abstract class AbstractElement {
   static d<E = void>(
     setup: Script<E>,
     setupTask?: ScriptTask<E>,
-    basis?: Conf<E>): ReactiveTreeNode<E>
+    basis?: Conf<E>): RtNode<E>
 
   static d<E = void>(
     key: string,
     setup: Script<E>,
     setupTask?: ScriptTask<E>,
-    basis?: Conf<E>): ReactiveTreeNode<E>
+    basis?: Conf<E>): RtNode<E>
 
   static d<E = void>(
     mode: Mode,
     setup: Script<E>,
     setupTask?: ScriptTask<E>,
-    basis?: Conf<E>): ReactiveTreeNode<E>
+    basis?: Conf<E>): RtNode<E>
 
   static d<E = void>(
     key: string,
     mode: Mode,
     setup: Script<E>,
     setupTask?: ScriptTask<E>,
-    basis?: Conf<E>): ReactiveTreeNode<E>
+    basis?: Conf<E>): RtNode<E>
 
   static d<E = void>(
     conf?: Conf<E>,
-    basis?: Conf<E>): ReactiveTreeNode<E>
+    basis?: Conf<E>): RtNode<E>
 
   static d<E = void>(
     this: typeof AbstractElement,
@@ -48,7 +48,7 @@ export abstract class AbstractElement {
     p2?: Script<E> | ScriptTask<E> | Mode | Conf<E>,
     p3?: Script<E> | ScriptTask<E> | Conf<E>,
     p4?: ScriptTask<E> | Conf<E>,
-    p5?: Conf<E>): ReactiveTreeNode<E> {
+    p5?: Conf<E>): RtNode<E> {
     //
     const conf = args2conf(this.name, p1, p2, p3, p4, p5)
     return this.produce<E>(conf)
@@ -56,7 +56,7 @@ export abstract class AbstractElement {
 
   protected static produce<E = void>(
     this: typeof AbstractElement,
-    conf?: Conf<E>): ReactiveTreeNode<E> {
+    conf?: Conf<E>): RtNode<E> {
     //
     return produce<E>(this.name, this.driver, conf)
   }
