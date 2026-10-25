@@ -32,7 +32,7 @@ export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[
 
 export function produce<E = void>(
   caller: string,
-  driver: ReactiveTreeNodeDriver<E>,
+  driver: Driver<E>,
   p1?: Script<E> | string | Mode | Conf<E>,
   p2?: Script<E> | ScriptTask<E> | Mode | Conf<E>,
   p3?: Script<E> | ScriptTask<E> | Conf<E>,
@@ -118,7 +118,7 @@ export abstract class ReactiveTreeNode<E = unknown> extends LinkedItem<ReactiveT
   static currentNodePriority = Priority.realtime
 
   abstract readonly key: string
-  abstract readonly driver: ReactiveTreeNodeDriver<E>
+  abstract readonly driver: Driver<E>
   abstract readonly conf: Readonly<Conf<E>/* | ConfAsync<E>*/>
   abstract readonly level: number
   abstract readonly owner: ReactiveTreeNode
@@ -231,9 +231,9 @@ export type Conf<E = unknown> = {
   basis?: Conf<E>                  // базис
 }
 
-// ReactiveTreeNodeDriver
+// Driver
 
-export type ReactiveTreeNodeDriver<E = unknown> = {
+export type Driver<E = unknown> = {
   readonly id: string,
   readonly isPartition: boolean,
   readonly initialize?: Handler<E>
@@ -249,7 +249,7 @@ export type ReactiveTreeNodeDriver<E = unknown> = {
   runSetup(node: ReactiveTreeNode<E>): void | Promise<void>
 
   produceChild(ownerNode: ReactiveTreeNode<E>,
-    childDriver: ReactiveTreeNodeDriver<any>,
+    childDriver: Driver<any>,
     childConf?: Conf<any>,
     childBasis?: Conf<any>): LinkedItem<ReactiveTreeNode> | undefined
 
@@ -265,7 +265,7 @@ export type ReactiveTreeNodeContext<T extends Object = Object> = {
 
 // BaseDriver
 
-export abstract class BaseDriver<E = unknown> implements ReactiveTreeNodeDriver<E> {
+export abstract class BaseDriver<E = unknown> implements Driver<E> {
   constructor(
     readonly id: string,
     readonly isPartition: boolean,
@@ -293,7 +293,7 @@ export abstract class BaseDriver<E = unknown> implements ReactiveTreeNodeDriver<
   }
 
   produceChild(ownerNode: ReactiveTreeNode<E>,
-    childDriver: ReactiveTreeNodeDriver<any>,
+    childDriver: Driver<any>,
     childConf?: Conf<any>,
     childBasis?: Conf<any>): LinkedItem<ReactiveTreeNode> | undefined {
     return undefined
@@ -418,7 +418,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   static disposableNodeCount: number = 0
 
   readonly key: string
-  readonly driver: ReactiveTreeNodeDriver<E>
+  readonly driver: Driver<E>
   conf: Conf<E>
   readonly level: number
   readonly owner: ReactiveTreeNode$
@@ -433,7 +433,7 @@ class ReactiveTreeNode$<E = unknown> extends ReactiveTreeNode<E> {
   childrenShuffling: boolean
 
   constructor(
-    key: string, driver: ReactiveTreeNodeDriver<E>,
+    key: string, driver: Driver<E>,
     conf: Readonly<Conf<E>>,
     owner: ReactiveTreeNode$ | undefined) {
     super()
