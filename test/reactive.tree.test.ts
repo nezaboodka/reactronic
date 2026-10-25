@@ -7,7 +7,7 @@
 
 import test, { ExecutionContext } from "ava"
 import { BaseDriver, RtSystem, RtNode, Conf, launchReactiveTree } from "../source/api.js"
-import { AbstractElement } from "../source/core/TreeNode.AbstractElement.js"
+import { RtElement } from "../source/core/TreeNode.AbstractElement.js"
 
 // Sample
 
@@ -20,7 +20,7 @@ class SampleDriver<T> extends BaseDriver<T> {
   }
 }
 
-class Element extends AbstractElement {
+class Element extends RtElement {
   static override readonly driver = new SampleDriver<any>("sample", false)
 }
 

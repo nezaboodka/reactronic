@@ -6,11 +6,11 @@
 // automatically licensed under the license referred above.
 
 import { Mode } from "../Enums.js"
-import { Script, ScriptTask, produce, RtNode, Conf, BaseDriver, args2conf } from "./TreeNode.js"
+import { Script, ScriptTask, produce, RtNode, Conf, BaseDriver, args2conf } from "./ReactiveTree.js"
 
-// AbstractElement
+// RtElement
 
-export abstract class AbstractElement {
+export abstract class RtElement {
 
   static readonly driver: BaseDriver<any>
 
@@ -43,7 +43,7 @@ export abstract class AbstractElement {
     basis?: Conf<E>): RtNode<E>
 
   static d<E = void>(
-    this: typeof AbstractElement,
+    this: typeof RtElement,
     p1?: Script<E> | string | Mode | Conf<E>,
     p2?: Script<E> | ScriptTask<E> | Mode | Conf<E>,
     p3?: Script<E> | ScriptTask<E> | Conf<E>,
@@ -55,7 +55,7 @@ export abstract class AbstractElement {
   }
 
   protected static produce<E = void>(
-    this: typeof AbstractElement,
+    this: typeof RtElement,
     conf?: Conf<E>): RtNode<E> {
     //
     return produce<E>(this.name, this.driver, conf)
