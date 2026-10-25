@@ -259,7 +259,7 @@ export type Driver<E = unknown> = {
 // RtNodeContext
 
 export type RtNodeContext<T extends Object = Object> = {
-  variable: ReactiveTreeVariable<T>
+  variable: RtVariable<T>
   value: T
 }
 
@@ -306,7 +306,7 @@ export abstract class BaseDriver<E = unknown> implements Driver<E> {
 
 // ReactiveTreeVariable
 
-export class ReactiveTreeVariable<T extends Object = Object> {
+export class RtVariable<T extends Object = Object> {
   readonly hint: string
   readonly defaultValue: T | undefined
 
@@ -399,10 +399,10 @@ function invokeDestructionUsingBasisChain(element: unknown, conf: Conf<any>): vo
 
 class RtNodeContext$<T extends Object = Object> extends RxObject implements RtNodeContext<T> {
   @signal(false) next: RtNodeContext$<object> | undefined
-  @signal(false) variable: ReactiveTreeVariable<T>
+  @signal(false) variable: RtVariable<T>
   value: T
 
-  constructor(variable: ReactiveTreeVariable<T>, value: T) {
+  constructor(variable: RtVariable<T>, value: T) {
     super()
     this.next = undefined
     this.variable = variable
@@ -521,7 +521,7 @@ class RtNode$<E = unknown> extends RtNode<E> {
     return gCurrentNode
   }
 
-  static tryUseTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T | undefined {
+  static tryUseTreeVariableValue<T extends Object>(variable: RtVariable<T>): T | undefined {
     let node = RtNode.current
     while (node.context?.variable !== variable && node.owner !== node)
       node = node.outer
@@ -529,14 +529,14 @@ class RtNode$<E = unknown> extends RtNode<E> {
     return ctx?.variable === variable ? ctx.value : undefined
   }
 
-  static useTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>): T {
+  static useTreeVariableValue<T extends Object>(variable: RtVariable<T>): T {
     const result = RtNode$.tryUseTreeVariableValue(variable) ?? variable.defaultValue
     if (!result)
       throw misuse("unknown node variable")
     return result
   }
 
-  static setTreeVariableValue<T extends Object>(variable: ReactiveTreeVariable<T>, value: T | undefined): void {
+  static setTreeVariableValue<T extends Object>(variable: RtVariable<T>, value: T | undefined): void {
     const node = RtNode$.node
     const owner = node.owner
     const hostCtx = runNonReactive(() => owner.context?.value)
