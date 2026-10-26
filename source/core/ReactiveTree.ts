@@ -79,6 +79,26 @@ export function conf<E = void>(
     caption, key, mode, signalArgs, unmounted, basis }
 }
 
+// inherit
+
+export function inherit<E>(cos: ConfOrScript<E> | undefined, basis: ConfOrScript<E>): ConfOrScript<E> {
+  cos = norm(cos)
+  if (cos !== undefined) {
+    let tail = cos
+    while (tail.basis !== undefined) {
+      const next = tail.basis
+      if (next instanceof Function)
+        tail = tail.basis = { setup: next }
+      else
+        tail = next
+    }
+    tail.basis = basis
+  }
+  else
+    cos = basis
+  return cos
+}
+
 // RtNode
 
 export abstract class RtNode<E = unknown> extends LinkedItem<RtNode<E>> {
@@ -153,24 +173,6 @@ export abstract class RtNode<E = unknown> extends LinkedItem<RtNode<E>> {
       RtNode.launchSetup(result, conf.signalArgs)
     }
     return result
-  }
-
-  static inheritance<E>(cos: ConfOrScript<E> | undefined, basis: ConfOrScript<E>): ConfOrScript<E> {
-    cos = norm(cos)
-    if (cos !== undefined) {
-      let tail = cos
-      while (tail.basis !== undefined) {
-        const next = tail.basis
-        if (next instanceof Function)
-          tail = tail.basis = { setup: next }
-        else
-          tail = next
-      }
-      tail.basis = basis
-    }
-    else
-      cos = basis
-    return cos
   }
 
   static launchSetup(node: RtNode<any>, signalArgs: unknown): void {

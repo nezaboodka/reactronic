@@ -5,13 +5,13 @@
 // By contributing, you agree that your contributions will be
 // automatically licensed under the license referred above.
 
-import { RtDriver, RtNode, ConfOrScript } from "../source/api.js"
+import { inherit, RtDriver, RtNode, ConfOrScript } from "../source/api.js"
 import { trace } from "./trace.js"
 
 // Widget
 
 export function Widget<E>(conf?: ConfOrScript<E>): RtNode<E> {
-  return RtNode.produce(RtNode.inheritance(conf, {
+  return RtNode.produce(inherit(conf, {
     caption: Widget.name,
     driver: WidgetDriver.glob,
     setup(o, base) {
@@ -23,7 +23,7 @@ export function Widget<E>(conf?: ConfOrScript<E>): RtNode<E> {
 // Button
 
 export function Button<E>(conf?: ConfOrScript<E>, successor?: ConfOrScript<E>): RtNode<E> {
-  return Widget<E>(RtNode.inheritance(conf, {
+  return Widget<E>(inherit(conf, {
     caption: Button.name,
     setup(o, base) {
       trace(`${Button.name}.setup`, base)
