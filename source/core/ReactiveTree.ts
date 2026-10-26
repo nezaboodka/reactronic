@@ -50,6 +50,54 @@ export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[
   return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
 }
 
+// ElementBase
+
+export function RtElement<E>(conf?: ConfOrScript<E>): RtNode<E> {
+  return produce(conf)
+}
+
+function produce<E = void>(
+  conf?: ConfOrScript<E>): RtNode<E> {
+  // Normalization
+  conf = norm(conf) ?? {}
+  conf.driver = getDriverUsingBasisChain(conf)
+  conf.caption = getProducerUsingBasisChain(conf)
+  // Production
+  const owner = gCurrentNode
+  let key = conf.key
+  let result: RtNode$<E>
+  if (owner) {
+    const driver = owner.conf.driver
+    let existing = driver?.produceChild(owner, driver, conf, norm(conf.basis))
+    // Reuse existing node or produce a new one
+    const renovation = owner.children.renovation
+    existing ??= renovation.tryReaffirm(
+      key = key || generateKey(conf.caption, owner), undefined,
+      "nested elements can be produced inside 'setup' only")
+    if (existing) {
+      // Reuse existing node
+      result = existing as RtNode$<E>
+      if (result.conf.driver !== driver && driver !== undefined)
+        throw misuse(`changing element driver is not yet supported: "${result.conf.driver?.id}" -> "${driver.id}"`)
+      const exSignalArgs = result.conf.signalArgs
+      if (signalsAreEqual(conf.signalArgs, exSignalArgs))
+        conf.signalArgs = exSignalArgs // preserve signal args instance
+      result.conf = conf
+    }
+    else {
+      // Create new node
+      result = new RtNode$<E>(key || generateKey(conf.caption, owner), conf, owner)
+      renovation.thisIsAdded(result as RtNode$<unknown>) as RtNode$<E>
+    }
+  }
+  else {
+    // Create new root node
+    result = new RtNode$(key || generateKey(conf.caption, owner), conf, owner)
+    RtNode.launchSetup(result, conf.signalArgs)
+  }
+  return result
+}
+
 // norm
 
 export function norm<E = void>(arg: ConfOrScript<E> | undefined): Conf<E> | undefined {
@@ -131,48 +179,6 @@ export abstract class RtNode<E = unknown> extends LinkedItem<RtNode<E>> {
 
   static get isInitialSetup(): boolean {
     return RtNode.current.stamp === 1
-  }
-
-  static produce<E = void>(
-    conf?: ConfOrScript<E>): RtNode<E> {
-    // Normalization
-    conf = norm(conf) ?? {}
-    conf.driver = getDriverUsingBasisChain(conf)
-    conf.caption = getProducerUsingBasisChain(conf)
-    // Production
-    const owner = gCurrentNode
-    let key = conf.key
-    let result: RtNode$<E>
-    if (owner) {
-      const driver = owner.conf.driver
-      let existing = driver?.produceChild(owner, driver, conf, norm(conf.basis))
-      // Reuse existing node or produce a new one
-      const renovation = owner.children.renovation
-      existing ??= renovation.tryReaffirm(
-        key = key || generateKey(conf.caption, owner), undefined,
-        "nested elements can be produced inside 'setup' only")
-      if (existing) {
-        // Reuse existing node
-        result = existing as RtNode$<E>
-        if (result.conf.driver !== driver && driver !== undefined)
-          throw misuse(`changing element driver is not yet supported: "${result.conf.driver?.id}" -> "${driver.id}"`)
-        const exSignalArgs = result.conf.signalArgs
-        if (signalsAreEqual(conf.signalArgs, exSignalArgs))
-          conf.signalArgs = exSignalArgs // preserve signal args instance
-        result.conf = conf
-      }
-      else {
-        // Create new node
-        result = new RtNode$<E>(key || generateKey(conf.caption, owner), conf, owner)
-        renovation.thisIsAdded(result as RtNode$<unknown>) as RtNode$<E>
-      }
-    }
-    else {
-      // Create new root node
-      result = new RtNode$(key || generateKey(conf.caption, owner), conf, owner)
-      RtNode.launchSetup(result, conf.signalArgs)
-    }
-    return result
   }
 
   static launchSetup(node: RtNode<any>, signalArgs: unknown): void {
