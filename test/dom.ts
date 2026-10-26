@@ -15,7 +15,7 @@ export function Widget<E>(conf?: ConfOrScript<E>): RtNode<E> {
     caption: Widget.name,
     driver: WidgetDriver.glob,
     setup(o, base) {
-      trace("predefined", base)
+      trace(`${Widget.name}.setup`, base)
     },
   }))
 }
@@ -26,7 +26,7 @@ export function Button<E>(conf?: ConfOrScript<E>, successor?: ConfOrScript<E>): 
   return Widget<E>(RtNode.inheritance(conf, {
     caption: Button.name,
     setup(o, base) {
-      trace("predefined", base)
+      trace(`${Button.name}.setup`, base)
     },
   }))
 }

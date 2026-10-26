@@ -11,16 +11,16 @@ import { Widget, Button } from "./dom.js"
 import { traceLog, trace } from "./trace.js"
 
 const expected: string[] = [
-  "  ·Widget·A: customization",
-  "    ·Widget·A: predefined",
-  "    /·Widget·A: predefined",
-  "  /·Widget·A: customization",
-  "    ·Button·A: customization",
-  "      ·Button·A: predefined",
-  "        ·Button·A: predefined",  // TODO: Widget
-  "        /·Button·A: predefined", // TODO: Widget
-  "      /·Button·A: predefined",
-  "    /·Button·A: customization",
+  "  Widget: customization",
+  "    Widget: Widget.setup",
+  "    /Widget: Widget.setup",
+  "  /Widget: customization",
+  "    Button: customization",
+  "      Button: Button.setup",
+  "        Button: Widget.setup",
+  "        /Button: Widget.setup",
+  "      /Button: Button.setup",
+  "    /Button: customization",
 ]
 
 test("reactive-tree", (t: ExecutionContext<unknown>) => {
