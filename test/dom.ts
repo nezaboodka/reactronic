@@ -22,7 +22,7 @@ export function Widget<E>(conf?: ConfOrScript<E>): RtNode<E> {
 
 // Button
 
-export function Button<E>(conf?: ConfOrScript<E>, successor?: ConfOrScript<E>): RtNode<E> {
+export function Button<E>(conf?: ConfOrScript<E>): RtNode<E> {
   return Widget<E>(inherit(conf, {
     caption: Button.name,
     setup(o, base) {
