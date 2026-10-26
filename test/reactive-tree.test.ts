@@ -17,8 +17,8 @@ const expected: string[] = [
   "  /·Widget·A: customization",
   "    ·Button·A: customization",
   "      ·Button·A: predefined",
-  "        ·Button·A: predefined",
-  "        /·Button·A: predefined",
+  "        ·Button·A: predefined",  // TODO: Widget
+  "        /·Button·A: predefined", // TODO: Widget
   "      /·Button·A: predefined",
   "    /·Button·A: customization",
 ]
