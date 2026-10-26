@@ -52,7 +52,7 @@ export class ReactiveDemo extends RxObject {
   }
 }
 
-test("reactive", (t: ExecutionContext<unknown>) => {
+test("reactivity", (t: ExecutionContext<unknown>) => {
   RtSystem.setLoggingMode(true, TestsLoggingLevel)
   const demo = runTransactional(() => new ReactiveDemo())
   t.is(demo.title, "Title/1")

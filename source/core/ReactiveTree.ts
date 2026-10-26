@@ -16,11 +16,33 @@ import { RxObject } from "../core/Mvcc.js"
 import { Transaction } from "../core/Transaction.js"
 import { RtSystem, options, signal, reaction, runTransactional, runNonReactive, manageReaction, disposeRxObject } from "../System.js"
 
+// ConfOrScript
+
+export type ConfOrScript<E> = Conf<E> | Script<E>
+
 // Script, ScriptTask, Handler
 
 export type Script<E> = (this: E, o: E, basis: () => void) => void
 export type ScriptTask<E> = (this: E, o: E, basis: () => Promise<void>) => Promise<void>
 export type Handler<E = unknown, R = void> = (o: E) => R
+
+// Conf
+
+export type Conf<E = unknown> = {
+  setup?: Script<E>                // настройка
+  setupTask?: ScriptTask<E>        // настройка-задача
+  creation?: Script<E>             // создание
+  creationTask?: ScriptTask<E>     // создание-задача
+  mounting?: Script<E>             // монтаж
+  destruction?: Script<E>          // уничтожение
+  caption?: string                 // заголовок
+  driver?: Driver<E>               // драйвер
+  key?: string                     // ключ
+  mode?: Mode                      // режим
+  signalArgs?: unknown             // аргументы-сигналы
+  unmounted?: boolean,             // размонтировано
+  basis?: ConfOrScript<E>          // базис
+}
 
 // launchReactiveTree
 
@@ -28,85 +50,33 @@ export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[
   return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
 }
 
-// produce
+// norm
 
-export function produce<E = void>(
-  caller: string,
-  driver: Driver<E>,
-  p1?: Script<E> | string | Mode | Conf<E>,
-  p2?: Script<E> | ScriptTask<E> | Mode | Conf<E>,
-  p3?: Script<E> | ScriptTask<E> | Conf<E>,
-  p4?: ScriptTask<E> | Conf<E>,
-  p5?: Conf<E>): RtNode<E> {
-  //
-  const owner = gCurrentNode
-  const conf: Conf<E> = args2conf(caller, p1, p2, p3, p4, p5) ?? { }
-  if (conf.caller !== undefined)
-    caller = conf.caller
-  let key = conf.key
-  let result: RtNode$<E>
-  if (owner) {
-    let existing = owner.driver.produceChild(owner, driver, conf, conf.basis)
-    // Reuse existing node or produce a new one
-    const renovation = owner.children.renovation
-    existing ??= renovation.tryReaffirm(
-      key = key || generateKey(caller, owner), undefined,
-      "nested elements can be produced inside 'setup' only")
-    if (existing) {
-      // Reuse existing node
-      result = existing as RtNode$<E>
-      if (result.driver !== driver && driver !== undefined)
-        throw misuse(`changing element driver is not yet supported: "${result.driver.id}" -> "${driver?.id}"`)
-      const exSignalArgs = result.conf.signalArgs
-      if (signalsAreEqual(conf.signalArgs, exSignalArgs))
-        conf.signalArgs = exSignalArgs // preserve signal args instance
-      result.conf = conf
-    }
-    else {
-      // Create new node
-      result = new RtNode$<E>(key || generateKey(caller, owner), driver, conf, owner)
-      renovation.thisIsAdded(result as RtNode$<unknown>) as RtNode$<E>
-    }
-  }
-  else {
-    // Create new root node
-    result = new RtNode$(key || generateKey(caller, owner), driver, conf, owner)
-    RtNode.launchSetup(result, conf.signalArgs)
-  }
-  return result
+export function norm<E = void>(arg: ConfOrScript<E> | undefined): Conf<E> | undefined {
+  if (arg instanceof Function)
+    arg = conf(arg)
+  return arg
 }
 
-// args2conf
+// conf
 
-export function args2conf<E = void>(
-  caller: string,
-  p1?: Script<E> | string | Mode | Conf<E>,
-  p2?: Script<E> | ScriptTask<E> | Mode | Conf<E>,
-  p3?: Script<E> | ScriptTask<E> | Conf<E>,
-  p4?: ScriptTask<E> | Conf<E>,
-  p5?: Conf<E>): Conf<E> | undefined {
+export function conf<E = void>(
+  setup?: Script<E>,
+  setupTask?: ScriptTask<E>,
+  creation?: Script<E>,
+  creationTask?: ScriptTask<E>,
+  mounting?: Script<E>,
+  destruction?: Script<E>,
+  caption?: string,
+  key?: string,
+  mode?: Mode,
+  signalArgs?: unknown,
+  unmounted?: boolean,
+  basis?: Conf<E>): Conf<E> {
   //
-  let result: Conf<E> | undefined
-  const t1 = typeof(p1)
-  if (t1 === "function")
-    result = { caller, setup: p1 as Script<E>, setupTask: p2 as ScriptTask<E>, basis: p3 as Conf<E> }
-  else if (t1 === "string" && typeof(p2) !== "number")
-    result = { caller, key: p1 as string, setup: p2 as Script<E>, setupTask: p3 as ScriptTask<E>, basis: p4 as Conf<E> }
-  else if (t1 === "string")
-    result = { caller, key: p1 as string, mode: p2 as Mode, setup: p3 as Script<E>, setupTask: p4 as ScriptTask<E>, basis: p5 }
-  else if (t1 === "number")
-    result = { caller, mode: p1 as Mode, setup: p2 as Script<E>, setupTask: p3 as ScriptTask<E>, basis: p4 as Conf<E> }
-  else if (t1 === "object" && p1 !== null) {
-    result = p1 as Conf<E>
-    result.caller ??= caller
-    if (p2 !== undefined)
-      result.basis = p2 as Conf<E>
-  }
-  else if (p1 !== undefined)
-    throw misuse(`wrong type of the first parameter: ${t1}`)
-  else
-    result = p2 !== undefined ? { caller, basis: p2 as Conf<E> } : undefined
-  return result
+  return {
+    setup, setupTask, creation, creationTask, mounting, destruction,
+    caption, key, mode, signalArgs, unmounted, basis }
 }
 
 // RtNode
@@ -118,7 +88,6 @@ export abstract class RtNode<E = unknown> extends LinkedItem<RtNode<E>> {
   static currentNodePriority = Priority.realtime
 
   abstract readonly key: string
-  abstract readonly driver: Driver<E>
   abstract readonly conf: Readonly<Conf<E>/* | ConfAsync<E>*/>
   abstract readonly level: number
   abstract readonly owner: RtNode
@@ -142,6 +111,66 @@ export abstract class RtNode<E = unknown> extends LinkedItem<RtNode<E>> {
 
   static get isInitialSetup(): boolean {
     return RtNode.current.stamp === 1
+  }
+
+  static produce<E = void>(
+    conf?: ConfOrScript<E>): RtNode<E> {
+    // Normalization
+    conf = norm(conf) ?? {}
+    conf.driver = getDriverUsingBasisChain(conf)
+    conf.caption = getProducerUsingBasisChain(conf)
+    // Production
+    const owner = gCurrentNode
+    let key = conf.key
+    let result: RtNode$<E>
+    if (owner) {
+      const driver = owner.conf.driver
+      let existing = driver?.produceChild(owner, driver, conf, norm(conf.basis))
+      // Reuse existing node or produce a new one
+      const renovation = owner.children.renovation
+      existing ??= renovation.tryReaffirm(
+        key = key || generateKey(conf.caption, owner), undefined,
+        "nested elements can be produced inside 'setup' only")
+      if (existing) {
+        // Reuse existing node
+        result = existing as RtNode$<E>
+        if (result.conf.driver !== driver && driver !== undefined)
+          throw misuse(`changing element driver is not yet supported: "${result.conf.driver?.id}" -> "${driver.id}"`)
+        const exSignalArgs = result.conf.signalArgs
+        if (signalsAreEqual(conf.signalArgs, exSignalArgs))
+          conf.signalArgs = exSignalArgs // preserve signal args instance
+        result.conf = conf
+      }
+      else {
+        // Create new node
+        result = new RtNode$<E>(key || generateKey(conf.caption, owner), conf, owner)
+        renovation.thisIsAdded(result as RtNode$<unknown>) as RtNode$<E>
+      }
+    }
+    else {
+      // Create new root node
+      result = new RtNode$(key || generateKey(conf.caption, owner), conf, owner)
+      RtNode.launchSetup(result, conf.signalArgs)
+    }
+    return result
+  }
+
+  static inheritance<E>(cos: ConfOrScript<E> | undefined, basis: ConfOrScript<E>): ConfOrScript<E> {
+    cos = norm(cos)
+    if (cos !== undefined) {
+      let tail = cos
+      while (tail.basis !== undefined) {
+        const next = tail.basis
+        if (next instanceof Function)
+          tail = tail.basis = { setup: next }
+        else
+          tail = next
+      }
+      tail.basis = basis
+    }
+    else
+      cos = basis
+    return cos
   }
 
   static launchSetup(node: RtNode<any>, signalArgs: unknown): void {
@@ -214,23 +243,6 @@ export abstract class RtNode<E = unknown> extends LinkedItem<RtNode<E>> {
   }
 }
 
-// Conf
-
-export type Conf<E = unknown> = {
-  caller?: string                  // вызывающий
-  key?: string                     // ключ
-  mode?: Mode                      // режим
-  setup?: Script<E>                // настройка
-  setupTask?: ScriptTask<E>        // настройка-задача
-  creation?: Script<E>             // создание
-  creationTask?: ScriptTask<E>     // создание-задача
-  mounting?: Script<E>,            // монтаж
-  destruction?: Script<E>          // уничтожение
-  signalArgs?: unknown             // аргументы-сигналы
-  unmounted?: boolean,             // размонтировано
-  basis?: Conf<E>                  // базис
-}
-
 // Driver
 
 export type Driver<E = unknown> = {
@@ -263,9 +275,9 @@ export type RtNodeContext<T extends Object = Object> = {
   value: T
 }
 
-// BaseDriver
+// RtDriver
 
-export abstract class BaseDriver<E = unknown> implements Driver<E> {
+export abstract class RtDriver<E = unknown> implements Driver<E> {
   constructor(
     readonly id: string,
     readonly isPartition: boolean,
@@ -330,69 +342,84 @@ export class RtVariable<T extends Object = Object> {
 
 // Utils
 
-export function generateKey(caller: string, owner?: RtNode$): string {
+export function generateKey(caller?: string, owner?: RtNode$): string {
   const n = owner !== undefined ? owner.sequencer++ : 0
   const lettered = emitLetters(n)
   let result: string
   if (RtSystem.isLogging)
-    result = `·${caller}·${getCallerInfo(lettered)}`
+    result = `·${caller ?? "???"}·${getCallerInfo(lettered)}`
   else
-    result = `·${caller}·${lettered}`
+    result = `·${caller ?? "???"}·${lettered}`
   return result
+}
+
+function tryAsConf<E>(cos: ConfOrScript<E> | undefined): Conf<E> | undefined {
+  return (typeof cos === "object" ? cos : undefined)
+}
+
+export function getDriverUsingBasisChain(conf?: Conf<any>): Driver<any> | undefined {
+  return conf?.driver ?? (conf?.basis ? getDriverUsingBasisChain(tryAsConf(conf?.basis)) : undefined)
+}
+
+export function getProducerUsingBasisChain(conf?: Conf<any>): string | undefined {
+  return conf?.caption ?? (conf?.basis ? getProducerUsingBasisChain(tryAsConf(conf?.basis)) : undefined)
 }
 
 export function getModeUsingBasisChain(conf?: Conf<any>): Mode {
-  return conf?.mode ?? (conf?.basis ? getModeUsingBasisChain(conf?.basis) : Mode.default)
+  return conf?.mode ?? (conf?.basis ? getModeUsingBasisChain(tryAsConf(conf?.basis)) : Mode.default)
 }
 
-function invokeSetupUsingBasisChain(element: unknown, conf: Conf<any>): void | Promise<void> {
+function invokeSetupUsingBasisChain(el: unknown, cos: ConfOrScript<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
-  const basis = conf.basis
-  const setup = conf.setup
-  const setupTask = conf.setupTask
+  const basis = typeof cos === "object" ? cos.basis : undefined
+  const setup = typeof cos === "object" ? cos.setup : cos
+  const setupTask = tryAsConf(cos)?.setupTask
   if (setup && setupTask)
     throw misuse("'setup' and 'setupTask' cannot be defined together")
   if (setup)
-    result = setup.call(element, element, basis ? () => invokeSetupUsingBasisChain(element, basis) : NOP)
+    result = setup.call(el, el, basis ? () => invokeSetupUsingBasisChain(el, basis) : NOP)
   else if (setupTask)
-    result = setupTask.call(element, element, basis ? () => invokeSetupUsingBasisChain(element, basis) : NOP_ASYNC)
+    result = setupTask.call(el, el, basis ? () => invokeSetupUsingBasisChain(el, basis) : NOP_ASYNC)
   else if (basis)
-    result = invokeSetupUsingBasisChain(element, basis)
+    result = invokeSetupUsingBasisChain(el, basis)
   return result
 }
 
-function invokeCreationUsingBasisChain(element: unknown, conf: Conf<any>): void | Promise<void> {
+function invokeCreationUsingBasisChain(el: unknown, cos: ConfOrScript<any>): void | Promise<void> {
   let result: void | Promise<void> = undefined
-  const basis = conf.basis
-  const creation = conf.creation
-  const creationTask = conf.creationTask
+  const c = tryAsConf(cos)
+  const basis = c?.basis
+  const creation = c?.creation
+  const creationTask = c?.creationTask
   if (creation && creationTask)
     throw misuse("'creation' and 'creationTask' cannot be defined together")
   if (creation)
-    result = creation.call(element, element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP)
+    result = creation.call(el, el, basis ? () => invokeCreationUsingBasisChain(el, basis) : NOP)
   else if (creationTask)
-    result = creationTask.call(element, element, basis ? () => invokeCreationUsingBasisChain(element, basis) : NOP_ASYNC)
+    result = creationTask.call(el, el, basis ? () => invokeCreationUsingBasisChain(el, basis) : NOP_ASYNC)
   else if (basis)
-    result = invokeCreationUsingBasisChain(element, basis)
+    result = invokeCreationUsingBasisChain(el, basis)
   return result
 }
 
-function invokeMountingUsingBasisChain(element: unknown, conf: Conf<any>): void {
-  const basis = conf.basis
-  const mounting = conf.mounting
+function invokeMountingUsingBasisChain(el: unknown, cos: ConfOrScript<any>): void {
+  const c = tryAsConf(cos)
+  const basis = c?.basis
+  const mounting = c?.mounting
   if (mounting)
-    mounting.call(element, element, basis ? () => invokeMountingUsingBasisChain(element, basis) : NOP)
+    mounting.call(el, el, basis ? () => invokeMountingUsingBasisChain(el, basis) : NOP)
   else if (basis)
-    invokeMountingUsingBasisChain(element, basis)
+    invokeMountingUsingBasisChain(el, basis)
 }
 
-function invokeDestructionUsingBasisChain(element: unknown, conf: Conf<any>): void {
-  const basis = conf.basis
-  const destruction = conf.destruction
+function invokeDestructionUsingBasisChain(el: unknown, cos: ConfOrScript<any>): void {
+  const c = tryAsConf(cos)
+  const basis = c?.basis
+  const destruction = c?.destruction
   if (destruction)
-    destruction.call(element, element, basis ? () => invokeDestructionUsingBasisChain(element, basis) : NOP)
+    destruction.call(el, el, basis ? () => invokeDestructionUsingBasisChain(el, basis) : NOP)
   else if (basis)
-    invokeDestructionUsingBasisChain(element, basis)
+    invokeDestructionUsingBasisChain(el, basis)
 }
 
 // RtNodeContext$
@@ -418,7 +445,7 @@ class RtNode$<E = unknown> extends RtNode<E> {
   static disposableNodeCount: number = 0
 
   readonly key: string
-  readonly driver: Driver<E>
+  // readonly driver: Driver<E>
   conf: Conf<E>
   readonly level: number
   readonly owner: RtNode$
@@ -433,13 +460,12 @@ class RtNode$<E = unknown> extends RtNode<E> {
   childrenShuffling: boolean
 
   constructor(
-    key: string, driver: Driver<E>,
+    key: string,
     conf: Readonly<Conf<E>>,
     owner: RtNode$ | undefined) {
     super()
     const thisAsUnknown = this as RtNode$<unknown>
     this.key = key
-    this.driver = driver
     this.conf = conf
     if (owner) {
       const node = owner
@@ -452,7 +478,9 @@ class RtNode$<E = unknown> extends RtNode<E> {
       this.owner = owner = thisAsUnknown
       this.outer = thisAsUnknown
     }
-    this.element = driver.create(this)
+    if (conf.driver === undefined)
+      debugger
+    this.element = conf.driver!.create(this)
     this.host = thisAsUnknown // node is unmounted
     this.children = new LinkedList<RtNode>(getNodeKey, true)
     this.stamp = Number.MAX_SAFE_INTEGER // newly created
@@ -601,7 +629,7 @@ function launchNestedNodesThenDoImpl(node: RtNode$<any>, error: unknown, action:
             if (Transaction.isCanceled)
               break
             const child = c as RtNode$
-            const isPartition = child.driver.isPartition
+            const isPartition = child.conf.driver?.isPartition
             const host = isPartition ? owner : partition
             mounting = markToMountIfNecessary(
               mounting, host, child, children, sequential)
@@ -714,20 +742,20 @@ function launchSetupImpl(node: RtNode$<any>): void {
 }
 
 function mountOrRemountIfNecessary(node: RtNode$): void {
-  const driver = node.driver
+  const driver = node.conf.driver
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
     runNonReactive(() => {
       node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as activated
-      driver.runCreation(node)
+      driver?.runCreation(node)
       if (!node.has(Mode.external)) {
         node.stamp = 0 // mark as mounted
         if (node.host !== node)
-          driver.runMount(node) // initial mount
+          driver?.runMount(node) // initial mount
       }
     })
   }
   else if (node.isMoved && !node.has(Mode.external) && node.host !== node)
-    runNonReactive(() => driver.runMount(node)) // re-mount
+    runNonReactive(() => driver?.runMount(node)) // re-mount
 }
 
 function runSetupNow(node: RtNode$<any>): void {
@@ -740,8 +768,7 @@ function runSetupNow(node: RtNode$<any>): void {
           node.stamp++
           node.sequencer = 0
           node.children.beginRenovation()
-          const driver = node.driver
-          result = driver.runSetup(node)
+          result = node.conf.driver?.runSetup(node)
           result = proceedSyncOrAsync(result,
             v => { launchNestedNodesThenDoImpl(node, undefined, NOP); return v },
             e => { console.log(e); launchNestedNodesThenDoImpl(node, e ?? new Error("unknown error"), NOP) })
@@ -758,12 +785,12 @@ function runSetupNow(node: RtNode$<any>): void {
 
 function launchDestructionImpl(node: RtNode$, isLeader: boolean, individual: boolean): void {
   if (node.stamp >= 0) {
-    const driver = node.driver
-    if (individual && node.key !== node.conf.key && !driver.isPartition)
+    const driver = node.conf.driver
+    if (individual && node.key !== node.conf.key && !driver?.isPartition)
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
     // Destroy element itself and remove it from collection
-    const childrenAreLeaders = runNonReactive(() => driver.runDestruction(node, isLeader))
+    const childrenAreLeaders = runNonReactive(() => driver?.runDestruction(node, isLeader))
     if (!node.has(Mode.primitive)) {
       // Defer disposal if element is reactive (having non-primitive mode)
       LinkedItem.link$(gDisposeList, node, undefined)
@@ -774,7 +801,7 @@ function launchDestructionImpl(node: RtNode$, isLeader: boolean, individual: boo
     }
     // Destroy children
     for (const child of node.children.items())
-      launchDestructionImpl(child as RtNode$, childrenAreLeaders, false)
+      launchDestructionImpl(child as RtNode$, childrenAreLeaders ?? false, false)
     RtNode$.grandNodeCount--
   }
 }

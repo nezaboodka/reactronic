@@ -11,7 +11,7 @@
       "sourceMaps": true,
       "cwd": "${workspaceRoot}",
       "args": ["${relativeFile}"],
-      "runtimeArgs": ["--nolazy", "-r", "ts-node/esm"],
+      "runtimeArgs": ["--nolazy", "--import=tsimp"],
       "smartStep": true,
       "skipFiles": [
         "<node_internals>/**/*.js"
