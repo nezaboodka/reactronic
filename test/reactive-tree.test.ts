@@ -11,16 +11,16 @@ import { Widget, Button } from "./dom.js"
 import { traceLog, trace } from "./trace.js"
 
 const expected: string[] = [
-  "  Widget: () => {}",
-  "    Widget: Widget.setup",
-  "    /Widget: Widget.setup",
-  "  /Widget: () => {}",
-  "    Button: () => {}",
-  "      Button: Button.setup",
-  "        Button: Widget.setup",
-  "        /Button: Widget.setup",
-  "      /Button: Button.setup",
-  "    /Button: () => {}",
+  "  ·Widget·A: () => {}",
+  "    Widget.setup",
+  "    /Widget.setup",
+  "  /·Widget·A: () => {}",
+  "    ·Button·A: () => {}",
+  "      Button.setup",
+  "        Widget.setup",
+  "        /Widget.setup",
+  "      /Button.setup",
+  "    /·Button·A: () => {}",
 ]
 
 test("reactive-tree", (t: ExecutionContext<unknown>) => {
@@ -28,10 +28,10 @@ test("reactive-tree", (t: ExecutionContext<unknown>) => {
   traceLog.length = 0
   const root = launchReactiveTree(() => (
     Widget((o, base) => {
-      trace("() => {}", () => {
+      trace("() => {}", true, () => {
         base()
         Button((o, base) => {
-          trace("() => {}", base)
+          trace("() => {}", true, base)
         })
       })
     })

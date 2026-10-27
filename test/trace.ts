@@ -10,11 +10,11 @@ import { RtNode } from "../source/api.js"
 export const traceLog: string[] = []
 export let traceDepth = 0
 
-export function trace(step: string, base: () => void): void {
+export function trace(step: string, head: boolean, base: () => void): void {
   const node = RtNode.current
-  const caption = node.conf.caption ?? "???"
+  const key = head ? `${node.key}: ` : ""
   const indent = "  ".repeat(node.level + traceDepth)
-  traceLog.push(`${indent}${caption}: ${step}`)
+  traceLog.push(`${indent}${key}${step}`)
   traceDepth++
   try {
     base()
@@ -22,5 +22,5 @@ export function trace(step: string, base: () => void): void {
   finally {
     traceDepth--
   }
-  traceLog.push(`${indent}/${caption}: ${step}`)
+  traceLog.push(`${indent}/${key}${step}`)
 }

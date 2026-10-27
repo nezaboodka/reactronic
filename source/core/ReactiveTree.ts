@@ -55,25 +55,26 @@ export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[
 export function RtElement<E>(conf?: ConfOrScript<E>): RtNode<E> {
   // Normalization
   conf = norm(conf) ?? {}
-  conf.driver = getDriverUsingBasisChain(conf)
-  conf.caption = getProducerUsingBasisChain(conf)
+  const driver = getDriverUsingBasisChain<E>(conf)
+  if (driver === undefined)
+    throw misuse("driver is required to produce an element")
+  const caption = getProducerUsingBasisChain<E>(conf)
   // Production
   const owner = gCurrentNode
   let key = conf.key
   let result: RtNode$<E>
   if (owner) {
-    const driver = owner.conf.driver
-    let existing = driver?.produceChild(owner, driver, conf, norm(conf.basis))
+    let existing = owner.driver.produceChild(owner, driver, conf, norm(conf.basis))
     // Reuse existing node or produce a new one
     const renovation = owner.children.renovation
     existing ??= renovation.tryReaffirm(
-      key = key || generateKey(conf.caption, owner), undefined,
+      key = key || generateKey(caption, owner), undefined,
       "nested elements can be produced inside 'setup' only")
     if (existing) {
       // Reuse existing node
       result = existing as RtNode$<E>
-      if (result.conf.driver !== driver && driver !== undefined)
-        throw misuse(`changing element driver is not yet supported: "${result.conf.driver?.id}" -> "${driver.id}"`)
+      if (result.driver !== driver && driver !== undefined)
+        throw misuse(`changing element driver is not yet supported: "${result.driver.id}" -> "${driver.id}"`)
       const exSignalArgs = result.conf.signalArgs
       if (signalsAreEqual(conf.signalArgs, exSignalArgs))
         conf.signalArgs = exSignalArgs // preserve signal args instance
@@ -81,13 +82,13 @@ export function RtElement<E>(conf?: ConfOrScript<E>): RtNode<E> {
     }
     else {
       // Create new node
-      result = new RtNode$<E>(key || generateKey(conf.caption, owner), conf, owner)
+      result = new RtNode$<E>(key || generateKey(caption, owner), driver, conf, owner)
       renovation.thisIsAdded(result as RtNode$<unknown>) as RtNode$<E>
     }
   }
   else {
     // Create new root node
-    result = new RtNode$(key || generateKey(conf.caption, owner), conf, owner)
+    result = new RtNode$(key || generateKey(caption, owner), driver, conf, owner)
     RtNode.launchSetup(result, conf.signalArgs)
   }
   return result
@@ -360,15 +361,15 @@ function tryAsConf<E>(cos: ConfOrScript<E> | undefined): Conf<E> | undefined {
   return (typeof cos === "object" ? cos : undefined)
 }
 
-export function getDriverUsingBasisChain(conf?: Conf<any>): Driver<any> | undefined {
+export function getDriverUsingBasisChain<E>(conf?: Conf<E>): Driver<E> | undefined {
   return conf?.driver ?? (conf?.basis ? getDriverUsingBasisChain(tryAsConf(conf?.basis)) : undefined)
 }
 
-export function getProducerUsingBasisChain(conf?: Conf<any>): string | undefined {
+export function getProducerUsingBasisChain<E>(conf?: Conf<E>): string | undefined {
   return conf?.caption ?? (conf?.basis ? getProducerUsingBasisChain(tryAsConf(conf?.basis)) : undefined)
 }
 
-export function getModeUsingBasisChain(conf?: Conf<any>): Mode {
+export function getModeUsingBasisChain<E>(conf?: Conf<E>): Mode {
   return conf?.mode ?? (conf?.basis ? getModeUsingBasisChain(tryAsConf(conf?.basis)) : Mode.default)
 }
 
@@ -448,7 +449,7 @@ class RtNode$<E = unknown> extends RtNode<E> {
   static disposableNodeCount: number = 0
 
   readonly key: string
-  // readonly driver: Driver<E>
+  driver: Driver<E>
   conf: Conf<E>
   readonly level: number
   readonly owner: RtNode$
@@ -464,11 +465,13 @@ class RtNode$<E = unknown> extends RtNode<E> {
 
   constructor(
     key: string,
+    driver: Driver<E>,
     conf: Readonly<Conf<E>>,
     owner: RtNode$ | undefined) {
     super()
     const thisAsUnknown = this as RtNode$<unknown>
     this.key = key
+    this.driver = driver
     this.conf = conf
     if (owner) {
       const node = owner
@@ -481,9 +484,7 @@ class RtNode$<E = unknown> extends RtNode<E> {
       this.owner = owner = thisAsUnknown
       this.outer = thisAsUnknown
     }
-    if (conf.driver === undefined)
-      debugger
-    this.element = conf.driver!.create(this)
+    this.element = driver.create(this)
     this.host = thisAsUnknown // node is unmounted
     this.children = new LinkedList<RtNode>(getNodeKey, true)
     this.stamp = Number.MAX_SAFE_INTEGER // newly created
@@ -632,7 +633,7 @@ function launchNestedNodesThenDoImpl(node: RtNode$<any>, error: unknown, action:
             if (Transaction.isCanceled)
               break
             const child = c as RtNode$
-            const isPartition = child.conf.driver?.isPartition
+            const isPartition = child.driver.isPartition
             const host = isPartition ? owner : partition
             mounting = markToMountIfNecessary(
               mounting, host, child, children, sequential)
@@ -745,7 +746,7 @@ function launchSetupImpl(node: RtNode$<any>): void {
 }
 
 function mountOrRemountIfNecessary(node: RtNode$): void {
-  const driver = node.conf.driver
+  const driver = node.driver
   if (node.stamp === Number.MAX_SAFE_INTEGER) {
     runNonReactive(() => {
       node.stamp = Number.MAX_SAFE_INTEGER - 1 // mark as activated
@@ -771,7 +772,7 @@ function runSetupNow(node: RtNode$<any>): void {
           node.stamp++
           node.sequencer = 0
           node.children.beginRenovation()
-          result = node.conf.driver?.runSetup(node)
+          result = node.driver.runSetup(node)
           result = proceedSyncOrAsync(result,
             v => { launchNestedNodesThenDoImpl(node, undefined, NOP); return v },
             e => { console.log(e); launchNestedNodesThenDoImpl(node, e ?? new Error("unknown error"), NOP) })
@@ -788,7 +789,7 @@ function runSetupNow(node: RtNode$<any>): void {
 
 function launchDestructionImpl(node: RtNode$, isLeader: boolean, individual: boolean): void {
   if (node.stamp >= 0) {
-    const driver = node.conf.driver
+    const driver = node.driver
     if (individual && node.key !== node.conf.key && !driver?.isPartition)
       console.log(`WARNING: it is recommended to assign explicit key for conditional element in order to avoid unexpected side effects: ${node.key}`)
     node.stamp = ~node.stamp
