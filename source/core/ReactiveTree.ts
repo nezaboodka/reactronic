@@ -50,14 +50,9 @@ export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[
   return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
 }
 
-// ElementBase
+// RtElement
 
 export function RtElement<E>(conf?: ConfOrScript<E>): RtNode<E> {
-  return produce(conf)
-}
-
-function produce<E = void>(
-  conf?: ConfOrScript<E>): RtNode<E> {
   // Normalization
   conf = norm(conf) ?? {}
   conf.driver = getDriverUsingBasisChain(conf)
