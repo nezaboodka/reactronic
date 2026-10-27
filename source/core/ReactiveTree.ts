@@ -152,6 +152,7 @@ export abstract class RtNode<E = unknown> extends LinkedItem<RtNode<E>> {
   static currentNodePriority = Priority.realtime
 
   abstract readonly key: string
+  abstract readonly driver: Driver<E>
   abstract readonly conf: Readonly<Conf<E>/* | ConfAsync<E>*/>
   abstract readonly level: number
   abstract readonly owner: RtNode
