@@ -44,9 +44,9 @@ export type Conf<E = unknown> = {
   basis?: ConfOrScript<E>          // базис
 }
 
-// launchReactiveTree
+// launchReactiveProcessing
 
-export function launchReactiveTree<T>(func: (...args: any[]) => T, ...args: any[]): T {
+export function launchReactiveProcessing<T>(func: (...args: any[]) => T, ...args: any[]): T {
   return Transaction.isolate<T>(runInsideContextOfNode, undefined, func, ...args)
 }
 
