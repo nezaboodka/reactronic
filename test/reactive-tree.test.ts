@@ -6,7 +6,7 @@
 // automatically licensed under the license referred above.
 
 import test, { ExecutionContext } from "ava"
-import { RtSystem, reactiveWork } from "../source/api.js"
+import { RtSystem, reactiveProcess } from "../source/api.js"
 import { Widget, Button } from "./dom.js"
 import { traceLog, trace } from "./trace.js"
 
@@ -26,7 +26,7 @@ const expected: string[] = [
 test("reactive-tree", (t: ExecutionContext<unknown>) => {
   RtSystem.setLoggingMode(false)
   traceLog.length = 0
-  const root = reactiveWork(() => (
+  const root = reactiveProcess(() => (
     Widget((o, base) => {
       trace("() => {}", true, () => {
         base()
